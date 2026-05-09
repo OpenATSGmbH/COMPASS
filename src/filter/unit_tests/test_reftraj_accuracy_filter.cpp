@@ -110,7 +110,7 @@ TEST_CASE("RefTrajAccuracyFilter non-RefTraj with x/y stddev still emits", "[fil
 TEST_CASE("RefTrajAccuracyFilter without x/y stddev returns empty", "[filter][reftrajaccuracy][partial]")
 {
     // dbcontent without X StdDev / Y StdDev meta vars must not assert in
-    // metaGetVariableDBColumn — the filter must early-return.
+    // metaGetVariableDBColumn - the filter must early-return.
     auto mock = createStandardMock();
     auto cfg = makeFilterConfig("RefTrajAccuracyFilter", "RefTrajAccuracyFilter0", {
         {"active", true},

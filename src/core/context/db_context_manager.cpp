@@ -296,7 +296,7 @@ void DBContextManager::setActiveContext(const string& name)
 
     invalidateDataSourceCache();
 
-    // switching context while a DB with imported data is open is not allowed —
+    // switching context while a DB with imported data is open is not allowed -
     // callers (GUI, RT commands) must prevent this
     traced_assert(!compass_.dbOpened() || !hasInsertedData());
 
@@ -360,7 +360,7 @@ void DBContextManager::ensureDataSourceCache() const
     if (hasActiveContext())
     {
         // ds_id lookup is served directly by activeContext().dataSources() (a
-        // std::map) — no by-id cache needed. Only the RU-name cache is built
+        // std::map) - no by-id cache needed. Only the RU-name cache is built
         // here, since it requires JSON parsing per-DS.
         for (const auto& [ds_id, ds] : activeContext().dataSources())
         {
@@ -476,7 +476,7 @@ void DBContextManager::autoAssignColors(DataSource& ds) const
 
     ColorProvider::Band band = ColorProvider::Band::Light;
 
-    std::vector<QColor> existing; // only same-DSType neighbours — cross-type
+    std::vector<QColor> existing; // only same-DSType neighbours - cross-type
                                   // spacing is handled by the per-DSType hue range.
     if (hasActiveContext())
     {
@@ -615,7 +615,7 @@ void DBContextManager::setLoadOnlyDataSources(map<unsigned int, set<unsigned int
     {
         ds_loading_wanted_[ds_id] = true;
 
-        // Also enable the DSType of this DS — otherwise an inconsistent
+        // Also enable the DSType of this DS - otherwise an inconsistent
         // viewpoint (lists this DS but not its DSType) or a stale per-DSType
         // filter would silently override the explicit per-DS request and
         // skip loading data for DBContents whose DS lives in another DSType.
@@ -1176,7 +1176,7 @@ void DBContextManager::mergeAsterixInfoInto(AsterixInfoMap& dst,
 {
     for (const auto& [ds_id, cat_map] : delta)
     {
-        if (ds_id == 0) // unknown SAC/SIC bucket — skip
+        if (ds_id == 0) // unknown SAC/SIC bucket - skip
             continue;
 
         for (const auto& [cat, cat_stats] : cat_map)
@@ -1360,7 +1360,7 @@ map<unsigned int, map<string, json>> DBContextManager::getNetworkLines() const
 
 void DBContextManager::createNetworkDBDataSources()
 {
-    // TODO: implement when wiring network import — create data sources from network config
+    // TODO: implement when wiring network import - create data sources from network config
     loginf << "createNetworkDBDataSources not yet implemented";
 }
 
@@ -1716,16 +1716,16 @@ void DBContextManager::databaseOpenedSlot()
     {
         if (!db.existsDBContextTable())
         {
-            // no active context and DB has no stored context (legacy or new empty DB) — stay in "None" state
-            logwrn << "no active context and DB has no stored context — remaining in 'None' state";
+            // no active context and DB has no stored context (legacy or new empty DB) - stay in "None" state
+            logwrn << "no active context and DB has no stored context - remaining in 'None' state";
             return;
         }
 
-        // no active context, but the DB carries one — adopt it silently
+        // no active context, but the DB carries one - adopt it silently
         DBContext db_ctx = readContextFromDB();
         const string db_name = db_ctx.name();
 
-        loginf << "no active context — adopting DB context '" << db_name << "'";
+        loginf << "no active context - adopting DB context '" << db_name << "'";
 
         if (!hasContext(db_name))
         {
@@ -1746,8 +1746,8 @@ void DBContextManager::databaseOpenedSlot()
 
     if (!db.existsDBContextTable())
     {
-        // new DB — write the active context
-        loginf << "no db_context table — writing active context to DB";
+        // new DB - write the active context
+        loginf << "no db_context table - writing active context to DB";
         writeContextToDB();
         loadCountsFromDB();
         loadAsterixInfoFromDB();
@@ -1758,13 +1758,13 @@ void DBContextManager::databaseOpenedSlot()
 
         if (db_ctx.name() != activeContext().name())
         {
-            // DB was saved with a different context — align to it before loading counts
+            // DB was saved with a different context - align to it before loading counts
             loginf << "DB context '" << db_ctx.name() << "' differs from active '"
-                   << activeContext().name() << "' — switching to DB context";
+                   << activeContext().name() << "' - switching to DB context";
 
             if (!hasContext(db_ctx.name()))
             {
-                // context doesn't exist on disk — create from DB data
+                // context doesn't exist on disk - create from DB data
                 loginf << "context '" << db_ctx.name() << "' not found on disk, creating from DB";
                 db_ctx.modified(DBContext::currentTimestamp());
                 DBContextSerializer::save(db_ctx, basePath());
@@ -1854,7 +1854,7 @@ void DBContextManager::databaseOpenedSlot()
             }
             else
             {
-                loginf << "context matches DB — no action needed";
+                loginf << "context matches DB - no action needed";
             }
         }
     }

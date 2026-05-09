@@ -213,7 +213,7 @@ class Variable : public QObject, public Property, public Configurable
     /// For STANDARD (and any non-JSON-aware mode) returns value.dump().
     /// For MLAT_RUS expects value to be an array of integer RU indices and
     /// resolves each through ctx_man.remoteUnitName(ds_id, idx); returns a
-    /// "[name1, name2, ...]" string. ctx_man may be null and ds_id 0 — in
+    /// "[name1, name2, ...]" string. ctx_man may be null and ds_id 0 - in
     /// which case the index is rendered as a number.
     std::string getAsJSONRepresentationString(const nlohmann::json& value,
                                               const context::DBContextManager* ctx_man,

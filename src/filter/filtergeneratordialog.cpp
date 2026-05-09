@@ -548,7 +548,7 @@ void FilterGeneratorDialog::populateUIFromCondition(const ConditionTemplate& con
         }
     }
 
-    // operator — updateOperatorCombo was triggered by variable change,
+    // operator - updateOperatorCombo was triggered by variable change,
     // now set the correct operator
     int op_idx = condition_combo_->findText(QString::fromStdString(cond.operator_));
     if (op_idx >= 0)

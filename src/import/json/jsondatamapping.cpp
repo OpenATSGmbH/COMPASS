@@ -30,7 +30,7 @@
 using namespace Utils;
 using namespace nlohmann;
 
-// Legacy constructor removed — use json-backed constructor below
+// Legacy constructor removed - use json-backed constructor below
 // JSONDataMapping::JSONDataMapping(... Configurable& parent) { ... }
 
 //JSONDataMapping& JSONDataMapping::operator=(JSONDataMapping&& other)

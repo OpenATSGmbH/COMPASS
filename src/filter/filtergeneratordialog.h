@@ -91,7 +91,7 @@ class FilterGeneratorDialog : public QDialog
     QCheckBox* condition_absolute_{nullptr};
     QCheckBox* condition_include_null_{nullptr};
 
-    // value field area — swapped based on operator
+    // value field area - swapped based on operator
     QHBoxLayout* condition_value_layout_{nullptr};
     QLineEdit* condition_value_{nullptr};       // default single value
     QLineEdit* condition_value_min_{nullptr};    // BETWEEN min

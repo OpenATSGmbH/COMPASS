@@ -1659,7 +1659,7 @@ nlohmann::json SectionContentTable::exportContent(unsigned int row,
     }
     else if (mode == ReportExportMode::DOCX)
     {
-        // cell export for docx — plain text, styling applied separately via cellStyle()
+        // cell export for docx - plain text, styling applied separately via cellStyle()
         std::string s;
 
         if (SectionContentTable::cellShowsIcon(style))

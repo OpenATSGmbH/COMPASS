@@ -15,14 +15,14 @@ questions.
 
 In classical radar usage, PD is the probability that a single scan or
 antenna turn produces a detection of a target that should be detected
-within the radar's coverage. It is a **per-scan** quantity — see for
-example the Radartutorial entry referenced below — defined as the
+within the radar's coverage. It is a **per-scan** quantity - see for
+example the Radartutorial entry referenced below - defined as the
 ratio of detected targets to the targets that should have been
 detected on that scan. A typical operational requirement is "≥ 90 %
 PD".
 
 This kind of PD is a property of the sensor itself and is not directly
-observable from a recorded ASTERIX target report stream alone — the
+observable from a recorded ASTERIX target report stream alone - the
 ground truth of "what was actually present on the scan" must come from
 elsewhere (a higher-quality reference). Evaluation tools such as
 SASS-C and COMPASS therefore use the operational definition below,
@@ -45,10 +45,10 @@ PD = (number of update intervals with detections)
 ```
 
 The "expected" denominator is derived from a reference
-(an independent, higher-quality source — typically a multi-sensor tracker
+(an independent, higher-quality source - typically a multi-sensor tracker
 output, test flight/drive or reconstructed reference from traffic of opportunity).
 The period at which the system under test
-is expected to update is the **update interval** — for an ASR it can be a
+is expected to update is the **update interval** - for an ASR it can be a
 4–5 s scan period; for MLAT and ADS-B 1 s, etc.
 
 EUROCONTROL ESASSP typically requires PD ≥ 97 % per measurement-interval
@@ -69,11 +69,11 @@ known. In that case PD reduces to a simple per-interval question.
 
 Sources of exact update-interval timing:
 
-- **Radars** — the *north marker* messages (e.g. CAT034 / CAT002 sector
+- **Radars** - the *north marker* messages (e.g. CAT034 / CAT002 sector
   crossing or north-crossing messages) mark the end of each antenna
   rotation. The interval `[north_n, north_{n+1}]` is one expected
   update interval of the radar.
-- **MLAT, system trackers, fused trackers** — the cadence is artificial
+- **MLAT, system trackers, fused trackers** - the cadence is artificial
   (no rotating antenna), but the data source can relay it through
   status messages such as **CAT019** (MLAT system status), **CAT021**
   status records, or **CAT010 / CAT023 "Start of Update Cycle"**.
@@ -94,9 +94,9 @@ PD = (#EUI − #MUI) / #EUI
 
 ### 2.2 Time-difference method
 
-Used when no exact cycle timing is recorded — for example when status
+Used when no exact cycle timing is recorded - for example when status
 messages are missing, not transmitted by the source, or filtered out
-upstream — only the configured nominal update interval is available.
+upstream - only the configured nominal update interval is available.
 
 In this case the **update interval of the sensor must be known and
 supplied externally**, typically from the configuration of the data
@@ -106,7 +106,7 @@ the method cannot produce a result, since it is the only available
 yardstick against which gaps are evaluated.
 
 The reference trajectory for the target is first split into
-**reference periods** (also called *legs*) — continuous time windows
+**reference periods** (also called *legs*) - continuous time windows
 during which the reference is tracking the target. Walking the
 reference timestamps, consecutive samples are merged into the same
 period as long as their spacing stays small relative to the reference
@@ -114,7 +114,7 @@ cadence (a typical rule of thumb: gap > ~2× the reference update
 period starts a new period). The result is the set of windows during
 which the system under test is *expected* to deliver reports. Edge
 cases (minimum period length, exclusion of operator-flagged
-intervals) are implementation choices — see §3.2 for the COMPASS
+intervals) are implementation choices - see §3.2 for the COMPASS
 specifics.
 
 The total reference coverage time is binned into **expected update
@@ -130,7 +130,7 @@ When a gap exceeds the update interval,
 `floor(gap / update_interval)` missed update intervals (#MUI) are
 attributed to that gap. A reference period with no test report at all
 contributes its full duration `(period.end − period.begin)` as a gap.
-This edge handling is essential — without it a target with no test
+This edge handling is essential - without it a target with no test
 data at all would yield zero #MUI, which is obviously wrong.
 
 ```
@@ -149,7 +149,7 @@ question but make different assumptions about the data.
 available**, because:
 
 - It matches the system's **real cadence**, not a configured nominal
-  one — a radar that runs slightly fast or slow, or a tracker whose
+  one - a radar that runs slightly fast or slow, or a tracker whose
   cycle drifts, is still measured against its actual update intervals.
 - A single test report inside an interval is enough to count as a
   detection. There is no ambiguity about how many "missed slots" sit
@@ -158,7 +158,7 @@ available**, because:
   inside a reference period or it is not. No special-case logic for
   the start or end of a coverage period.
 - Edge cases like target re-entry into coverage do not require
-  configurable filters — if no interval is expected, no miss can be
+  configurable filters - if no interval is expected, no miss can be
   recorded.
 
 **The time-difference method is preferable when cycle messages are
@@ -166,12 +166,12 @@ not available, or when the system's true cadence is irregular**,
 because:
 
 - It only needs the test report stream and a configured nominal update
-  interval — no auxiliary status messages have to be present, decoded
+  interval - no auxiliary status messages have to be present, decoded
   correctly, or trustworthy.
 - It is robust to **non-uniform cadence**: ADS-B reports, fused
   trackers without start-of-cycle records, or recordings where status
   messages were filtered out upstream can still be evaluated.
-- It tolerates small reference/test sample-rate mismatches — the
+- It tolerates small reference/test sample-rate mismatches - the
   metric is driven by the spacing of test reports, not by per-interval
   matching.
 - It can model "soft" tolerances naturally (miss tolerance,
@@ -191,7 +191,7 @@ timestamped test report stream and a timestamped reference trajectory;
 both methods walk these two streams together. For the period-based
 method the test data source additionally supplies status messages
 from which the exact update-interval boundaries of the system under
-test are derived — those intervals are sensor-wide and apply to every
+test are derived - those intervals are sensor-wide and apply to every
 target the sensor covers.
 
 Both methods share a common minimum: a timestamped **reference
@@ -234,26 +234,26 @@ time-difference method.
 
 ### 3.1 Inputs
 
-- Reference chain (`target_data.refChain()`) — a high-quality reference
+- Reference chain (`target_data.refChain()`) - a high-quality reference
   trajectory.
-- Test chain (`target_data.tstChain()`) — the system under test.
+- Test chain (`target_data.tstChain()`) - the system under test.
 - Sector layer geometry, exclusion intervals.
 - Configurable parameters:
-  - `Update Interval [s]` — expected cadence of the system under test.
+  - `Update Interval [s]` - expected cadence of the system under test.
   - `Probability` (threshold) and check type (`>=`).
-  - `Use Miss Tolerance` / `Miss Tolerance [s]` — slack added to the
+  - `Use Miss Tolerance` / `Miss Tolerance [s]` - slack added to the
     update interval before a gap counts as a miss.
-  - `Use Minimum Gap Length [s]` — gaps below this are ignored.
-  - `Use Maximum Gap Length [s]` — gaps above this are ignored
+  - `Use Minimum Gap Length [s]` - gaps below this are ignored.
+  - `Use Maximum Gap Length [s]` - gaps above this are ignored
     (avoids counting target-out-of-coverage periods).
-  - `Hold for any Target` — threshold must hold per individual target,
+  - `Hold for any Target` - threshold must hold per individual target,
     not only at the sector aggregate.
 
-### 3.2 Phase 1 — Build reference periods
+### 3.2 Phase 1 - Build reference periods
 
 Walk all reference timestamps. At each timestamp the sample is
 considered *inside* if (a) the reference position lies inside the
-sector polygon (per-sample point-in-polygon — no interpolation or
+sector polygon (per-sample point-in-polygon - no interpolation or
 boundary-crossing computation between samples) and (b) the timestamp
 is not in an exclusion interval. While samples stay inside,
 consecutive timestamps are merged into the current period as long as
@@ -264,19 +264,19 @@ inside sample starts a new one. Periods shorter than one second
 (hardcoded threshold) are discarded. The result is a set of windows
 during which the test system is *expected* to detect.
 
-### 3.3 Phase 2 — Count expected update intervals (#EUI)
+### 3.3 Phase 2 - Count expected update intervals (#EUI)
 
 #EUI is the total reference-period duration inside the sector divided
 by the configured update interval, **floored to an integer**.
 
-### 3.4 Phase 3 — Walk test timestamps and count missed update intervals (#MUI)
+### 3.4 Phase 3 - Walk test timestamps and count missed update intervals (#MUI)
 
 The algorithm walks the **test report stream** (not the periods),
 keeping per-period state for the last test timestamp seen inside each
 period. For every test report:
 
 - Any reference periods that lie strictly before the test report's
-  timestamp are finalized — closed against their end. The gap used
+  timestamp are finalized - closed against their end. The gap used
   for each such period is `period.end − last_test_ts_in_period`, or
   the full period duration `period.end − period.begin` if no test
   report was ever seen inside it.
@@ -294,7 +294,7 @@ sector. Two subtleties matter here:
 
 - The sector check uses the **reference's position interpolated to
   the test timestamp**, not the test report's own reported position
-  — easy to misread when reimplementing, and a common source of bugs.
+  - easy to misread when reimplementing, and a common source of bugs.
 - After such a skip, the next valid in-sector test report in the
   same period is treated as a fresh entry: no gap is computed for it
   and the in-period state simply advances to the new timestamp.
@@ -363,7 +363,7 @@ method (§2.2). Notable specifics worth knowing:
   individual reference report. Misses are inferred from gaps; matched
   detections are not labelled (only "no miss in this gap").
 - **Min/Max gap length filtering.** These are practical filters not
-  always present in textbook formulations — they let the user exclude
+  always present in textbook formulations - they let the user exclude
   short transients (small gaps) and structural exits/re-entries (large
   gaps) from the miss count.
 - **Per-period boundary handling.** Gaps are evaluated separately at
@@ -383,7 +383,7 @@ method (§2.2). Notable specifics worth knowing:
   (ESASSP), Volumes 1 and 2:
   <https://www.eurocontrol.int/sites/default/files/2023-06/eurocontrol-spec-esassp-vol-1.pdf>
   <https://www.eurocontrol.int/sites/default/files/2023-06/eurocontrol-spec-esassp-vol-2.pdf>
-- EUROCONTROL SASS-C — Surveillance Analysis Support System for ATC
+- EUROCONTROL SASS-C - Surveillance Analysis Support System for ATC
   Centres:
   <https://www.eurocontrol.int/online-tool/surveillance-analysis-support-system-atc-centres>
 - ICAO SURICG/6 IP/04, *Practical approach to assess the performance

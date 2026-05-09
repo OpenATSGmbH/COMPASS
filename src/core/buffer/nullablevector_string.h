@@ -266,7 +266,7 @@ inline void NullableVector<std::string>::append(unsigned int index, std::string 
 
         resizeIndicesTo(index + 1);
 
-        // newly created entry — just set the value
+        // newly created entry - just set the value
         indices_[index] = getOrInsert(value);
         unsetNull(index);
         return;
@@ -759,7 +759,7 @@ inline void NullableVector<std::string>::addData(NullableVector<std::string>& ot
         traced_assert(null_flags_.size() <= buffer_.size_);
     }
 
-    // empty dictionary means all entries are null — indices may contain junk 0s
+    // empty dictionary means all entries are null - indices may contain junk 0s
     // from ensureMinSize/resizeIndicesTo, so skip index remapping entirely
     if (other.dictionary_.empty())
     {
@@ -773,7 +773,7 @@ inline void NullableVector<std::string>::addData(NullableVector<std::string>& ot
         }
         else
         {
-            // no null flags and no dictionary — synthesise nulls for other's rows
+            // no null flags and no dictionary - synthesise nulls for other's rows
             null_flags_.resize(null_flags_.size() + other.buffer_.size_, true);
         }
         return;

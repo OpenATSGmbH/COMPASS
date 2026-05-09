@@ -143,7 +143,7 @@ public:
 
     /**
      * Scans a buffer. Returns true if the scan ran; an all-null column is a
-     * valid outcome — the null count was already incremented in the loop
+     * valid outcome - the null count was already incremented in the loop
      * above, the dbcontent still needs to appear in the result (as a NULL
      * bar), and other buffers can establish the range.
      */

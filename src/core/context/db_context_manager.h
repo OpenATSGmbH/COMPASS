@@ -48,7 +48,7 @@ namespace context
 
 /**
  * Manages named DBContexts stored at ~/.compass/data_contexts/.
- * Owned by COMPASS. NOT Configurable — uses its own file-based persistence.
+ * Owned by COMPASS. NOT Configurable - uses its own file-based persistence.
  *
  * Only one context is active at a time. On DB open, the stored context is
  * compared with the file definition; diffs must be resolved.
@@ -221,7 +221,7 @@ public:
 
     void saveAsterixInfoToDB();
 
-    /// Pure data-manipulation helpers — exposed for unit testing.
+    /// Pure data-manipulation helpers - exposed for unit testing.
     static void mergeAsterixInfoInto(AsterixInfoMap& dst, const AsterixInfoMap& delta);
     static nlohmann::json asterixInfoToJSON(const AsterixInfoMap& src);
     static AsterixInfoMap asterixInfoFromJSON(const nlohmann::json& j);

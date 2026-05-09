@@ -1,6 +1,6 @@
-# User Manual — Structure & Extension Reference
+# User Manual - Structure & Extension Reference
 
-Source: `doc/user_manual/` — LaTeX memoir-class document.  
+Source: `doc/user_manual/` - LaTeX memoir-class document.  
 Root file: `user_manual.tex` (includes all chapters via `\subfile{}`).  
 Current version: **0.9.2** ("Charismatic Capybara").  
 Authors: Helmut Puhr & Philipp Wagner.
@@ -109,9 +109,9 @@ appendix/
 ### Introduction
 Overview of COMPASS purpose (ATC surveillance data inspection, analysis, evaluation). Explains the manual layout section by section. Licensing summary (GPL-3.0 source, CC BY 4.0 AppImage + manual).
 
-**intro_feature_highlights**: Bullet list of feature highlights grouped by category — Application modes, Import, Analysis, Visualization, MLAT/WAM Contributing Receivers, Reference Trajectory Calculation, Evaluation, Semi-automated Processing.
+**intro_feature_highlights**: Bullet list of feature highlights grouped by category - Application modes, Import, Analysis, Visualization, MLAT/WAM Contributing Receivers, Reference Trajectory Calculation, Evaluation, Semi-automated Processing.
 
-**intro_general_aspects**: High-level architecture description — database (DuckDB), Offline vs. Live modes, data loading concept (filter → query → result set → views).
+**intro_general_aspects**: High-level architecture description - database (DuckDB), Offline vs. Live modes, data loading concept (filter → query → result set → views).
 
 **intro_acknowledgements**: Credits to contributors and third-party libraries.
 
@@ -122,7 +122,7 @@ Overview of COMPASS purpose (ATC surveillance data inspection, analysis, evaluat
 - ASTERIX Data Import (jASTERIX library, JSON mapping to DBContent variables)
 - JSON Data Import (same mapping mechanism as ASTERIX)
 - Meta Variables (group same-content variables across DBContent types)
-- Unique Target Numbers (UTN — assigned per unique target during association)
+- Unique Target Numbers (UTN - assigned per unique target during association)
 - Data Loading (single unified dataset, all views share it, reload needed when variables change)
 - Live Mode (three states: Offline, Live: Running, Live: Paused)
 - Calculation of Reference Trajectories (Traffic of Opportunity, time-sliced, used as eval reference)
@@ -161,15 +161,15 @@ Then includes subfiles for each section in detail. Dark mode appendix at end of 
 
 **ui_main_window**: Main window layout, status bar, loading indicator.
 
-**ui_filters** (`sec:filters`): Filter system — built-in filter types, custom filters, filter configuration panel. Covered in detail in Flight Deck chapter.
+**ui_filters** (`sec:filters`): Filter system - built-in filter types, custom filters, filter configuration panel. Covered in detail in Flight Deck chapter.
 
 **ui_views**: How views are opened/closed, view presets.
 
-**ui_import/\***: Per-import-type dialogs — ASTERIX (framing, edition, decoder config, time offset, date handling), PCAP, network UDP streams, JSON, GPS NMEA, View Points JSON.
+**ui_import/\***: Per-import-type dialogs - ASTERIX (framing, edition, decoder config, time offset, date handling), PCAP, network UDP streams, JSON, GPS NMEA, View Points JSON.
 
-**ui_configuration/\***: Per-configuration dialogs — Data Sources (name, SAC/SIC, DSType, network lines), FFTs (Fixed Field Transponders), Meta Variables (read-only display), Sectors (import from GML/KML/SHP/GeoJSON, altitude limits, sector layers), Licenses (enter/verify pro license key).
+**ui_configuration/\***: Per-configuration dialogs - Data Sources (name, SAC/SIC, DSType, network lines), FFTs (Fixed Field Transponders), Meta Variables (read-only display), Sectors (import from GML/KML/SHP/GeoJSON, altitude limits, sector layers), Licenses (enter/verify pro license key).
 
-**ui_process/\***: Per-process-task dialogs — Radar plot position calculation, ARTAS TRI association, Reconstruct References (links to Reconstructor chapter), Evaluate (links to Evaluation chapter).
+**ui_process/\***: Per-process-task dialogs - Radar plot position calculation, ARTAS TRI association, Reconstruct References (links to Reconstructor chapter), Evaluate (links to Evaluation chapter).
 
 ---
 
@@ -178,13 +178,13 @@ Central panel for interactive data control. Contains tabs for Data Sources, Filt
 
 **datasources/data_sources**: Enable/disable data sources per DBContent and line. Live mode adds network status per source.
 
-**filters/filters**: Full filter system — standard filters (time, Mode A/C, Mode C, target address, callsign, data sources, sector, UTN), custom filters, filter enable/disable, save/load filter configs.
+**filters/filters**: Full filter system - standard filters (time, Mode A/C, Mode C, target address, callsign, data sources, sector, UTN), custom filters, filter enable/disable, save/load filter configs.
 
-**targets/targets**: List of all UTNs — filter by type, show/hide in views, flag targets for exclusion from evaluation.
+**targets/targets**: List of all UTNs - filter by type, show/hide in views, flag targets for exclusion from evaluation.
 
-**sensorstatus/sensor_status**: Live mode only — per-sensor update rate, last update time, status indicators.
+**sensorstatus/sensor_status**: Live mode only - per-sensor update rate, last update time, status indicators.
 
-**reports/reports**: Manage generated evaluation reports — open, export, delete.
+**reports/reports**: Manage generated evaluation reports - open, export, delete.
 
 **viewpoints/view_points** (`sec:view_points`): Import/export view point files, navigate through view point list, apply view points to current views.
 
@@ -203,7 +203,7 @@ Processing is time-sliced (typically 15-minute intervals).
 
 **Workflow** per slice: load TRs → remove previous slice → associate by secondary attributes (Mode S addr/ID, track number) → associate by Mode A/C + position → associate by position only → self-associate new targets → retry-associate → compute references → write.
 
-**reconstructor_config**: Configuration panel — reconstructor selection, time slice duration, association thresholds, per-DSType enable/disable.
+**reconstructor_config**: Configuration panel - reconstructor selection, time slice duration, association thresholds, per-DSType enable/disable.
 
 **Details sections**: Position matching, new target creation, self-association, target types (from ECAT, Mode C, FFT lists), discussion of limitations.
 
@@ -226,11 +226,11 @@ Pre-requisites: associations set, sector defined, reference data and test data e
 
 **Requirement types** (table in evaluation.tex): ~30 types covering detection, identification, Mode 3/A, Mode C, position (distance, across, along, latency, azimuth, range, RMS), speed, track angle, ROCD, MoM, coasting, dubious targets/tracks, extra data/tracks, acceleration.
 
-**eval_inspect**: Results tree — per-standard, per-sector, per-requirement, per-target drill-down. Integration with Geographic View for spatial visualization.
+**eval_inspect**: Results tree - per-standard, per-sector, per-requirement, per-target drill-down. Integration with Geographic View for spatial visualization.
 
 **eval_excluded_data**: Table of target reports excluded due to sector altitude filtering.
 
-**eval_targets**: Per-UTN result table — pass/fail per requirement, manual remove from evaluation.
+**eval_targets**: Per-UTN result table - pass/fail per requirement, manual remove from evaluation.
 
 **eval_requirements**: Per-requirement-type detailed documentation (separate files: eval_req_det, _dub, _extra, _id, _m3a, _mc, _mom, _pos, _speed, _trk_cst).
 
@@ -314,7 +314,7 @@ Known issues: AppImage FUSE permissions on CentOS, missing glibc library version
 
 **appendix_view_points** (`sec:appendix_view_points`): View point JSON format specification (version 0.3). Context block + view point array. Fields: content_type, version, view_points[]. Per view point: id, type, text, time, position, ds_types, data_sources, filters, context_variables, annotations. Annotation types: points, lines, linestring, ellipses, text, grid, histogram, scatter, colorvec, nested.
 
-**appendix_maps**: Custom map setup for Geographic View — OSM via QGIS, dark mode maps, GeoTIFF.
+**appendix_maps**: Custom map setup for Geographic View - OSM via QGIS, dark mode maps, GeoTIFF.
 
 **appendix_algorithms**: Position accuracy ellipses (68-95-99.7 rule, 95% = 2σ), ADS-B accuracy variable mapping (MOPS version, NACp, NUCp/NIC).
 
@@ -343,18 +343,18 @@ Known issues: AppImage FUSE permissions on CentOS, missing glibc library version
 ### File / Module Organization
 - One `\chapter{}` per top-level `.tex` file
 - Sections and subsections either inline or split into `\subfile{}` calls
-- Each subfile begins directly with `\section{}` or `\subsection{}` — no preamble
+- Each subfile begins directly with `\section{}` or `\subsection{}` - no preamble
 - Labels: `\label{sec:snake_case_name}` immediately after `\chapter/\section/\subsection`
 - Cross-references: `\nameref{sec:label}` for human-readable names, `\ref{sec:label}` for numbers
 
 ### Text Style
-- Professional technical tone — aimed at ATC surveillance domain experts
+- Professional technical tone - aimed at ATC surveillance domain experts
 - No first-person singular; no marketing language
 - Short opening paragraph per section, then structured content
 - Paragraph break: `\\` or `\  \\` (explicit line spacing, no blank lines between items)
 - Key terms bolded on first introduction: `\textbf{UTN}`, `\textbf{DSType}`, etc.
 - Abbreviations introduced inline: `\textbf{U}nique \textbf{T}arget \textbf{N}umber (\textbf{UTN})`
-- No prose lists — always `\begin{itemize}...\end{itemize}`
+- No prose lists - always `\begin{itemize}...\end{itemize}`
 - Nested itemize for sub-details (up to 3 levels)
 - Workflow steps as itemize (not enumerate) unless strict order matters
 
@@ -409,7 +409,7 @@ Known issues: AppImage FUSE permissions on CentOS, missing glibc library version
 ```
 
 ### Section Label Naming
-Pattern: `sec:<module>_<topic>` — e.g.:
+Pattern: `sec:<module>_<topic>` - e.g.:
 - `sec:eval_req_detection`
 - `sec:ui_import_asterix`
 - `sec:configure_datasources_network`
@@ -418,7 +418,7 @@ Pattern: `sec:<module>_<topic>` — e.g.:
 - `chap:flight_deck` (chapters use `chap:` prefix)
 
 ### Adding New Content
-1. Create `<folder>/<topic>.tex` — start with `\section{Title}\label{sec:name}`
+1. Create `<folder>/<topic>.tex` - start with `\section{Title}\label{sec:name}`
 2. Add `\subfile{<topic>}` in the parent chapter file
 3. Add a `figures/` subfolder if the section has screenshots
 4. Register label in the parent chapter's `\nameref{}` links if cross-referenced

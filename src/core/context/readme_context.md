@@ -46,7 +46,7 @@ Related files outside this directory:
 
 ## Signals
 
-`DBContextManager` exposes section-specific signals. Each one has narrow semantics — pick the narrowest signal that matches the change. Listeners that care about a section's contents must connect to BOTH the section signal AND `activeContextChangedSignal`, because a context switch wipes the previous list.
+`DBContextManager` exposes section-specific signals. Each one has narrow semantics - pick the narrowest signal that matches the change. Listeners that care about a section's contents must connect to BOTH the section signal AND `activeContextChangedSignal`, because a context switch wipes the previous list.
 
 | Signal | Fires when |
 |--------|------------|
@@ -82,7 +82,7 @@ class DBContext {
 };
 ```
 
-**Name invariants:** Context names must be non-empty and unique within the manager. Empty names are never valid — `DBContextManager` asserts `!name.empty()` on `createContext`, `renameContext`, `duplicateContext`, `setActiveContext`, and `importContext`. The `db_context` table is only created in the DB when first writing a context (not eagerly on DB creation), so `databaseOpenedSlot` can distinguish a new DB (no table) from an existing one.
+**Name invariants:** Context names must be non-empty and unique within the manager. Empty names are never valid - `DBContextManager` asserts `!name.empty()` on `createContext`, `renameContext`, `duplicateContext`, `setActiveContext`, and `importContext`. The `db_context` table is only created in the DB when first writing a context (not eagerly on DB creation), so `databaseOpenedSlot` can distinguish a new DB (no table) from an existing one.
 
 - `toJSON()` / `fromJSON()` serialize the full context as one JSON object.
 - `operator==` compares all fields.
@@ -96,7 +96,7 @@ Identified by SAC/SIC. ID computed via `Utils::Number::dsIdFrom(sac, sic)`.
 - **Import/commands:** `DBContext::addOrReplaceDataSource()` overwrites an existing entry with the same SAC/SIC instead of creating a duplicate.
 - **File/DB loading:** `DBContextSerializer::load()` and `DBContextManager::readContextFromDB()` detect duplicates, log an error, and keep only the first occurrence.
 
-Never use `dataSources().push_back()` directly when adding from external input — always use `addOrReplaceDataSource()`.
+Never use `dataSources().push_back()` directly when adding from external input - always use `addOrReplaceDataSource()`.
 
 ```cpp
 class DataSource {
@@ -195,7 +195,7 @@ GDAL-based sector import: `sector_utils::parseGDALFile(filepath)` returns `vecto
 
 ## No Context state
 
-COMPASS may legally run with no active context — `hasActiveContext()` returns `false`. This is the startup state when `~/.compass/data_contexts/active_context.json` is missing or names a context that no longer exists, and it is re-entered whenever the user deletes the active context.
+COMPASS may legally run with no active context - `hasActiveContext()` returns `false`. This is the startup state when `~/.compass/data_contexts/active_context.json` is missing or names a context that no longer exists, and it is re-entered whenever the user deletes the active context.
 
 While in this state:
 
@@ -273,7 +273,7 @@ Detail widgets: `DataSourceEditWidget`, `SectorEditWidget`, `FFTEditWidget`, `AS
 
 Context management dialogs: `Create`, `Select`, `Rename`, `Delete`, `Copy`.
 
-**Deletion guards:** Data sources that have data in the current database (`hasNumInserted`) cannot be deleted — the context menu "Delete" action is disabled with a tooltip. "Delete All" is also disabled if any data source has DB data.
+**Deletion guards:** Data sources that have data in the current database (`hasNumInserted`) cannot be deleted - the context menu "Delete" action is disabled with a tooltip. "Delete All" is also disabled if any data source has DB data.
 
 ## Accessing from code
 
@@ -281,14 +281,14 @@ Context management dialogs: `Create`, `Select`, `Rename`, `Delete`, `Copy`.
 // From any manager that has COMPASS&
 auto& ctx_mgr = compass.dbContextManager();
 
-// Guard before using — "No Context" is a legal state, and activeContext()
+// Guard before using - "No Context" is a legal state, and activeContext()
 // asserts hasActiveContext() internally.
 if (ctx_mgr.hasActiveContext()) {
     auto& ctx = ctx_mgr.activeContext();
     // query data sources, FFTs, sectors...
 }
 
-// Signal handlers MUST early-return when no context is active — the signal
+// Signal handlers MUST early-return when no context is active - the signal
 // fires both when entering and leaving the "No Context" state.
 void MyClass::onContextChanged() {
     if (!ctx_mgr.hasActiveContext())

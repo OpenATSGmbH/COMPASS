@@ -16,11 +16,11 @@
  */
 
 // ---------------------------------------------------------------------------
-// __cxa_throw interception — captures a stacktrace at every throw site so
+// __cxa_throw interception - captures a stacktrace at every throw site so
 // that terminate/signal handlers can report where the exception originated,
 // even after the stack has been unwound.
 //
-// IMPORTANT — the second parameter type differs between compilers.
+// IMPORTANT - the second parameter type differs between compilers.
 //
 // The Itanium C++ ABI specifies std::type_info* as the second parameter of
 // __cxa_throw, and that is what <cxxabi.h> declares.  However, GCC 15 has a

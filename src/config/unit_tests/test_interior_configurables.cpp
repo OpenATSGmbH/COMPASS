@@ -128,7 +128,7 @@ TEST_CASE("Dimension construction", "[interior][dimension]")
         for (const auto& [name, unit] : dim.units())
             unit->writeBackConfig();
 
-        // Sub-configs live in storage, not backing json — use generateJSON to verify
+        // Sub-configs live in storage, not backing json - use generateJSON to verify
         json output;
         dim.generateJSON(output, Configuration::JSONExportType::General);
 
@@ -282,7 +282,7 @@ TEST_CASE("generateJSON produces complete nested output", "[interior][generatejs
         json cfg = makeFullUnitManagerConfig();
         UnitManager um(cfg, nullptr);
 
-        // Deliberately skip writeBackConfigRecursive — sub_configs are shallow
+        // Deliberately skip writeBackConfigRecursive - sub_configs are shallow
         json output;
         um.generateJSON(output, Configuration::JSONExportType::General);
 

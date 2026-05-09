@@ -276,7 +276,7 @@ void EvaluationManager::databaseOpenedSlot()
 
     traced_assert(calculator_);
 
-    // sectors are now loaded by DBContextManager — forward its signal
+    // sectors are now loaded by DBContextManager - forward its signal
     connect(&compass_.dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
             this, &EvaluationManager::sectorsChangedSignal);
     connect(&compass_.dbContextManager(), &context::DBContextManager::sectorsChangedSignal,

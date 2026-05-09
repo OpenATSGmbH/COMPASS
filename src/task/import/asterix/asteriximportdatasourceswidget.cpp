@@ -98,7 +98,7 @@ QString contextDsWarning(const context::DataSource& ds)
     if (ds.dsType() == "Radar" && !ds.hasPosition())
         msgs << QObject::tr("Radar position is not configured.");
     if (ds.dsType() == "Other")
-        msgs << QObject::tr("Data source has DS type \"Other\" — assign a real type "
+        msgs << QObject::tr("Data source has DS type \"Other\" - assign a real type "
                             "(Radar, MLAT, ADSB, Tracker, RefTraj).");
     return msgs.join('\n');
 }
@@ -293,7 +293,7 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
 {
     auto& ctx_man = task_.compass().dbContextManager();
 
-    // tree items about to be deleted — drop the dangling pointer
+    // tree items about to be deleted - drop the dangling pointer
     last_committed_item_ = nullptr;
     tree_widget_->clear();
 
@@ -308,7 +308,7 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
     // empty/error states
     if (!ctx_man.hasActiveContext())
     {
-        placeholder_->setText("No active context — open or create a context to see data sources.");
+        placeholder_->setText("No active context - open or create a context to see data sources.");
         showDetailWidget(placeholder_);
         report_warnings(false);
         return;
@@ -403,7 +403,7 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
             }
             ds_item->setText(2, QString::number(total));
 
-            // category children — only when there is probe data
+            // category children - only when there is probe data
             if (probe_it != last_result_.probe_by_dsid.end())
             {
                 for (const auto& cat_kv : probe_it->second.categories)
@@ -543,7 +543,7 @@ void ASTERIXImportDataSourcesWidget::onTreeSelectionChanged()
     QTreeWidgetItem* new_item = items.isEmpty() ? nullptr : items.first();
 
     // Confirm before leaving an in-progress transient (probe-only) edit.
-    // Prompt always — even when nothing was actually changed — per spec.
+    // Prompt always - even when nothing was actually changed - per spec.
     if (transient_editing_ && new_item != last_committed_item_)
     {
         const bool ok = QuestionDialog::ask(
@@ -558,7 +558,7 @@ void ASTERIXImportDataSourcesWidget::onTreeSelectionChanged()
             return;
         }
 
-        // discard the transient — the new selection will overwrite ds_edit_widget_
+        // discard the transient - the new selection will overwrite ds_edit_widget_
         transient_editing_ = false;
         transient_ds_.reset();
         banner_widget_->hide();
@@ -584,14 +584,14 @@ void ASTERIXImportDataSourcesWidget::onTreeSelectionChanged()
         auto& ctx_man = task_.compass().dbContextManager();
         if (auto* ds = ctx_man.dataSource(ds_id))
         {
-            // existing context DS — normal edit flow
+            // existing context DS - normal edit flow
             banner_widget_->hide();
             ds_edit_widget_->show(*ds, task_.compass().lastUsedPath());
             showDetailWidget(ds_edit_widget_);
         }
         else
         {
-            // probe-only DS — build a transient DataSource and show the
+            // probe-only DS - build a transient DataSource and show the
             // edit widget on it. Nothing is added to the context until the
             // user clicks "Add to Context".
             const auto probe_it = last_result_.probe_by_dsid.find(ds_id);
@@ -607,7 +607,7 @@ void ASTERIXImportDataSourcesWidget::onTreeSelectionChanged()
             transient_ds_->sic(probe_it->second.sic);
             transient_ds_->dsType(
                 ASTERIXImportProbeAggregator::inferDsType(probe_it->second.categories));
-            // pre-fill name with "sac/sic" — gives the user a sensible default
+            // pre-fill name with "sac/sic" - gives the user a sensible default
             // and makes the "Add to Context" button immediately enabled
             transient_ds_->name(std::to_string(probe_it->second.sac) + "/" +
                                 std::to_string(probe_it->second.sic));
@@ -648,7 +648,7 @@ void ASTERIXImportDataSourcesWidget::populateItemsTable(unsigned int ds_id,
     items_table_->setSortingEnabled(false);
     items_table_->setRowCount(0);
 
-    // pick the right probe bucket — ds_id == 0 means the "unknown SAC/SIC" group
+    // pick the right probe bucket - ds_id == 0 means the "unknown SAC/SIC" group
     const ASTERIXImportProbeAggregator::CategoryProbe* probe = nullptr;
     if (ds_id == 0)
     {
@@ -679,7 +679,7 @@ void ASTERIXImportDataSourcesWidget::populateItemsTable(unsigned int ds_id,
 
     // header label
     {
-        QString header = QString("CAT%1 — ").arg(
+        QString header = QString("CAT%1 - ").arg(
             QString::fromStdString(Utils::String::categoryString(category)));
         if (probe)
             header += QString("%1 records").arg(probe->total_count);
@@ -722,7 +722,7 @@ void ASTERIXImportDataSourcesWidget::populateItemsTable(unsigned int ds_id,
         auto* name_item = new QTableWidgetItem(QString::fromStdString(key));
         items_table_->setItem(row, 0, name_item);
 
-        // Count and presence percentage share one cell — sort numerically by count
+        // Count and presence percentage share one cell - sort numerically by count
         auto* count_item = new NumericSortItem();
         if (stats)
         {
@@ -824,8 +824,8 @@ void ASTERIXImportDataSourcesWidget::addToContextClicked()
     auto& new_ds = ctx_man.createDataSource(sac, sic, name, ds_type);
 
     // copy the fields the edit widget commonly sets (everything stored in
-    // info() — position, ranges, accuracies, bias, MLAT remote units,
-    // network lines — plus an explicit short name if set). Color stays
+    // info() - position, ranges, accuracies, bias, MLAT remote units,
+    // network lines - plus an explicit short name if set). Color stays
     // whatever createDataSource auto-assigned.
     new_ds.info(transient_ds_->info());
     if (transient_ds_->hasShortName())

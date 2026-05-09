@@ -154,7 +154,7 @@ void GridViewDataWidget::resetStashDependentData()
 
     // NOTE: payloads_ intentionally not cleared here. The layer tree's
     // DBContentLeafItems hold raw pointers into these payloads and outlive
-    // this reset — clearing would dangle the tree and crash on next click or
+    // this reset - clearing would dangle the tree and crash on next click or
     // render (itemData() / onEffectiveHiddenChanged dereference payload_).
     // Payload lifetime is managed by processStash(): on a non-toggle
     // recompute a fresh vector is built and swapped in, and the old one stays
@@ -178,7 +178,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
     y_axis_name_ = view_->variable(1).description();
     title_       = "";
 
-    // Build one payload per group (total count + # Null), unconditionally —
+    // Build one payload per group (total count + # Null), unconditionally -
     // the panel should show the full dataset breakdown regardless of which
     // layers are currently visible.
     size_t num_null_values = 0;
@@ -193,7 +193,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
         num_null_values += gds.nan_count;
 
         // Display name for the leaf row: the dbcontent token from the group
-        // key "<ds_type>:<ds_name>:L<n>:<dbcontent>" — fall back to the full
+        // key "<ds_type>:<ds_name>:L<n>:<dbcontent>" - fall back to the full
         // key if the scheme is not met.
         std::string leaf_name = group_key;
         {
@@ -214,7 +214,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
     // and stay alive until this function returns. rebuildLayerTree below
     // walks the current (NEW) payloads_ to build fresh tree entries, and
     // refreshSubtree inside it destroys the old DBContentLeafItems. Those
-    // old items held raw pointers into the OLD payloads — still valid here
+    // old items held raw pointers into the OLD payloads - still valid here
     // because new_payloads keeps them alive. After rebuildLayerTree returns,
     // new_payloads goes out of scope and the OLD payloads are finally freed.
     payloads_.swap(new_payloads);
@@ -351,7 +351,7 @@ void GridViewDataWidget::rebuildLayerTree()
     {
         const std::string& key = p->persistenceId();
 
-        // Parse "<ds_type>:<ds_name>:L<n>:<dbcontent>" — the group key format
+        // Parse "<ds_type>:<ds_name>:L<n>:<dbcontent>" - the group key format
         // produced when group_per_datasource is on. Malformed keys fall back
         // to a single leaf under an "<unknown>" branch.
         std::string ds_type, ds_name, line_tok, dbcontent;
@@ -418,7 +418,7 @@ void GridViewDataWidget::layersChangedSlot()
     loginf << "captured " << hidden_series_.size() << " hidden series";
 
     // Match the scatter plot pattern: a layer toggle only re-aggregates and
-    // re-renders. Do NOT call redrawData(true) — that resets the stash and
+    // re-renders. Do NOT call redrawData(true) - that resets the stash and
     // payloads_, which would dangle the tree items' payload_ pointers and
     // crash on the next cascadeEffectiveHidden(). The stash and layer tree
     // are untouched here; we only rebuild the Grid2D from the currently

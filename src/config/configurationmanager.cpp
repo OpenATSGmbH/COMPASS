@@ -192,7 +192,7 @@ void ConfigurationManager::saveConfiguration()
         else
         {
             loginf << "no registered configurable for class '" << key.first
-                   << "' instance '" << key.second << "' — saving json as-is";
+                   << "' instance '" << key.second << "' - saving json as-is";
         }
 
         try

@@ -48,7 +48,7 @@ double hueDistance(double a, double b)
     return d;
 }
 
-/// Returns a thread-local RNG seeded once. Deterministic is acceptable here —
+/// Returns a thread-local RNG seeded once. Deterministic is acceptable here -
 /// the HSV sampler does not require cryptographic randomness.
 std::mt19937& rng()
 {
@@ -211,7 +211,7 @@ DSTypeSamplingRange rangeFor(const std::string& ds_type)
     }
     else if (ds_type == "Tracker")
     {
-        // light grey + very light pastel tints — very low saturation, cap value
+        // light grey + very light pastel tints - very low saturation, cap value
         // below 1.0 so generated base colors can't land on pure white
         r.hue_center = 0.0; r.hue_half_window = 180.0;
         r.s_min = 0.00; r.s_max = 0.18;
@@ -250,7 +250,7 @@ QColor ColorProvider::generateBaseColor(const std::vector<QColor>& existing, Ban
         if (!c.isValid()) continue;
         qreal h, s, v, a;
         c.getHsvF(&h, &s, &v, &a);
-        if (h < 0) continue; // achromatic — no defined hue
+        if (h < 0) continue; // achromatic - no defined hue
         existing_hues.push_back(h * 360.0);
     }
 
@@ -334,7 +334,7 @@ QColor resolveSeriesColor(const std::string& ds_type,
 
     if (!ctx_mgr.hasActiveContext())
     {
-        // key carries ds_type / dbcontent_name directly — DSType & DBContent palettes still resolvable
+        // key carries ds_type / dbcontent_name directly - DSType & DBContent palettes still resolvable
         if (mode == ColorProvider::Mode::DSType && !ds_type.empty())
             return ColorProvider::defaultDSTypeColor(ds_type);
         if (mode == ColorProvider::Mode::DBContent && !dbcontent_name.empty())

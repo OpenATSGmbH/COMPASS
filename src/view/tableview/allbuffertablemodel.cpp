@@ -53,7 +53,7 @@ namespace
 /// buffers. Each row references a (dbcont_num, buffer_index) pair; the
 /// NullableVector for each dbcont_num is resolved once via nvec_map to avoid
 /// per-row map lookups. Returns a permutation perm such that
-/// new[i] = old[perm[i]] — caller applies it (row_indexes_ + parallel arrays).
+/// new[i] = old[perm[i]] - caller applies it (row_indexes_ + parallel arrays).
 template <typename T>
 std::vector<unsigned int> typedSortPerm(
     const std::vector<std::pair<unsigned int, unsigned int>>& row_indexes,
@@ -190,7 +190,7 @@ unsigned int AllBufferTableModel::dataColumnCount() const
 
 QVariant AllBufferTableModel::prefixColumnData(unsigned int col, const RowData& row_data) const
 {
-    if (col == 0)  // checkbox+icon cell — checkbox via CheckStateRole, icon via
+    if (col == 0)  // checkbox+icon cell - checkbox via CheckStateRole, icon via
                    // DecorationRole; no DisplayRole text.
         return QVariant();
     if (col == 1)  // DBContent name column
@@ -251,7 +251,7 @@ QIcon AllBufferTableModel::iconFor(const std::string& layer_id, bool selected) c
     if (selected)
     {
         // Selection yellow wins over the layer's own color, even for layers
-        // that would otherwise render blank (non-target-report) — so
+        // that would otherwise render blank (non-target-report) - so
         // selection is always visible.
         color = ViewDataWidget::ColorSelected;
     }
@@ -399,7 +399,7 @@ void AllBufferTableModel::buildRowIndexes()
     auto& ctx_mgr = view_.compass().dbContextManager();
     const bool filter_enabled = allowed_layer_ids_.has_value();
 
-    // dedup pool across all buffers — typical datasets have a few dozen
+    // dedup pool across all buffers - typical datasets have a few dozen
     // distinct layer ids vs. millions of rows.
     std::map<std::string, unsigned int> layer_id_to_index;
 
@@ -428,7 +428,7 @@ void AllBufferTableModel::buildRowIndexes()
         traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
         NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
-        // Per-row layer id resolution — wire ds_id/line_id columns up once
+        // Per-row layer id resolution - wire ds_id/line_id columns up once
         // per buffer.
         const NullableVector<unsigned int>* ds_ids_vec   = nullptr;
         const NullableVector<unsigned int>* line_ids_vec = nullptr;
@@ -537,7 +537,7 @@ void AllBufferTableModel::buildRowIndexes()
     }
 
     // Default ordering: timestamp. If a sort column is active, sortRowIndexes()
-    // will overwrite this anyway — skip the work in that case.
+    // will overwrite this anyway - skip the work in that case.
     if (sort_column_ < 0)
     {
         std::stable_sort(timed_entries.begin(), timed_entries.end(),
@@ -617,7 +617,7 @@ void AllBufferTableModel::sortRowIndexes()
     unsigned int col = static_cast<unsigned int>(sort_column_);
     bool ascending = (sort_order_ == Qt::AscendingOrder);
 
-    if (col == 0)  // checkbox+icon column — not sortable
+    if (col == 0)  // checkbox+icon column - not sortable
         return;
 
     if (col == 1)  // DBContent name column
@@ -640,7 +640,7 @@ void AllBufferTableModel::sortRowIndexes()
         return;
     }
 
-    // data column — resolve variable per DBContent, dispatch on type
+    // data column - resolve variable per DBContent, dispatch on type
     unsigned int data_col = col - prefixColumnCount();
     std::map<unsigned int, std::string> dbcont_num_to_var_name;
     PropertyDataType dt = PropertyDataType::BOOL;  // will be overwritten

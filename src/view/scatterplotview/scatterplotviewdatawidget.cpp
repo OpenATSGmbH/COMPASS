@@ -151,7 +151,7 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
 
     // Build new payloads from scatter_series_, parsing the "<ds_type>:<ds_name>
     // :L<n>:<dbcontent>" key convention. The pooled "Selected" overlay series
-    // does not fit that scheme — it is kept aside and injected as a dedicated
+    // does not fit that scheme - it is kept aside and injected as a dedicated
     // top-level leaf after the DBContent subtree is built.
     std::vector<std::unique_ptr<ScatterLeafPayload>> new_payloads;
     std::vector<DBContentRootItem::LeafEntry>        entries;
@@ -194,7 +194,7 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
             }
             else
             {
-                // malformed key fallback — collapse to a single leaf under an
+                // malformed key fallback - collapse to a single leaf under an
                 // "<unknown>" branch so it's still visible.
                 ds_type   = "<unknown>";
                 ds_name   = full_key;
@@ -265,7 +265,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
 
     // Remember the current axis ranges so a redraw caused by e.g. a selection
     // change does not throw away the user's zoom. Only do this if the prior
-    // render actually drew content — otherwise the "captured" range is the
+    // render actually drew content - otherwise the "captured" range is the
     // meaningless default of an empty chart.
     bool capture_zoom = prior_draw_had_content_ &&
                         chart_view_ &&

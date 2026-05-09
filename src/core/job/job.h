@@ -88,7 +88,7 @@ public:
         //set thread affinity
         job::setThreadAffinity(thread_affinity_, job_id_);
 
-        //invoke derived — catch exceptions to prevent std::terminate in worker threads
+        //invoke derived - catch exceptions to prevent std::terminate in worker threads
         try
         {
             run_impl();

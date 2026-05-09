@@ -43,7 +43,7 @@ namespace context { class DataSource; }
  * sensors detected by jASTERIX during the import probe (testFileDecoding()).
  *
  * Left:  three-level tree DSType -> DataSource -> Category
- * Right: stacked widget — DataSourceEditWidget on DS click,
+ * Right: stacked widget - DataSourceEditWidget on DS click,
  *        items table on Category click, placeholder otherwise.
  */
 class ASTERIXImportDataSourcesWidget : public QWidget

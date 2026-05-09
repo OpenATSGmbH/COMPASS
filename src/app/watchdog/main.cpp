@@ -78,7 +78,7 @@ int main(int argc, char** argv)
         {
             // Shell convention: signal-death encoded as 128 + signum.
             // Qt's exitCode on CrashExit is often 0 on Unix, which would
-            // collide with a clean exit — force the high bit so the
+            // collide with a clean exit - force the high bit so the
             // Python test framework can distinguish via proc.returncode.
             relay_code = 128 + (exitCode > 0 ? exitCode : 6 /* SIGABRT fallback */);
             QString err = "COMPASS client crashed with code " + QString::number(exitCode)

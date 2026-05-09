@@ -136,7 +136,7 @@ void ColorsEditWidget::buildUI()
         auto* box = new QGroupBox("Data Source Colors");
         auto* vbox = new QVBoxLayout(box);
 
-        // bulk actions — applied to every data source
+        // bulk actions - applied to every data source
         auto* bulk_row = new QHBoxLayout();
 
         auto* all_light = new QPushButton("Auto Light All");
@@ -229,7 +229,7 @@ void ColorsEditWidget::refresh()
     light_radio_->setChecked(colors.preference == ContextColors::Preference::Light);
     dark_radio_->setChecked(colors.preference == ContextColors::Preference::Dark);
 
-    // DSType rows (grid — label and button columns align across all rows)
+    // DSType rows (grid - label and button columns align across all rows)
     clearGrid(ds_type_grid_);
     ds_type_buttons_.clear();
     {
@@ -251,7 +251,7 @@ void ColorsEditWidget::refresh()
                 color = it->second;
             applySwatch(btn, color);
             if (!color.isValid())
-                btn->setText("—");
+                btn->setText("-");
 
             connect(btn, &QPushButton::clicked, this,
                     &ColorsEditWidget::dsTypeColorClickedSlot);
@@ -295,7 +295,7 @@ void ColorsEditWidget::refresh()
                 color = cit->second;
             applySwatch(btn, color);
             if (!color.isValid())
-                btn->setText("—");
+                btn->setText("-");
 
             connect(btn, &QPushButton::clicked, this,
                     &ColorsEditWidget::dbContentColorClickedSlot);
@@ -306,7 +306,7 @@ void ColorsEditWidget::refresh()
         }
     }
 
-    // Data Source rows — columns align across rows:
+    // Data Source rows - columns align across rows:
     //   col 0: name   col 1: base   col 2: "Lines"   col 3..6: L1..L4   col 7: stretch
     clearGrid(data_source_grid_);
 
@@ -326,7 +326,7 @@ void ColorsEditWidget::refresh()
         base_btn->setMinimumWidth(100);
         applySwatch(base_btn, ds.baseColor());
         if (!ds.baseColor().isValid())
-            base_btn->setText("—");
+            base_btn->setText("-");
         connect(base_btn, &QPushButton::clicked, this,
                 &ColorsEditWidget::dsBaseColorClickedSlot);
         data_source_grid_->addWidget(base_btn, row_idx, 1);
@@ -338,7 +338,7 @@ void ColorsEditWidget::refresh()
         {
             auto* lb = new QPushButton(QString("L%1").arg(i + 1));
             lb->setIcon(QIcon());
-            lb->setToolTip(QString("Color for line L%1 — click to edit").arg(i + 1));
+            lb->setToolTip(QString("Color for line L%1 - click to edit").arg(i + 1));
             lb->setProperty("ds_id", ds.id());
             lb->setProperty("line_id", i);
             lb->setMinimumWidth(56);

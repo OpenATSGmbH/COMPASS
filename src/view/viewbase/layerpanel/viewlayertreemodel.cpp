@@ -32,7 +32,7 @@ ViewLayerTreeModel::ViewLayerTreeModel(const std::vector<LayerColumnSpec>& custo
     for (const auto& col : custom_columns)
         addColumn(col);
 
-    // Always-shown "DBContent" root — panel owns it via the model.
+    // Always-shown "DBContent" root - panel owns it via the model.
     auto root_uptr = std::make_unique<DBContentRootItem>();
     dbcontent_root_item_ = root_uptr.get();
     addRootItem(std::move(root_uptr));

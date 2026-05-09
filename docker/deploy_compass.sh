@@ -46,7 +46,7 @@ export NO_STRIP=1
 # linuxdeploy's default excludelist skips libasan, so force-include it explicitly
 # or the AppImage fails to launch with "cannot open shared object file: libasan.so.<N>".
 #
-# Resolve the actual path via ldd on the built binary — authoritative across any
+# Resolve the actual path via ldd on the built binary - authoritative across any
 # GCC version (8 → libasan.so.5, 10 → .so.6, 12+ → .so.8).
 LINUXDEPLOY_EXTRA=()
 if [[ $ASAN -eq 1 ]]; then
@@ -55,7 +55,7 @@ if [[ $ASAN -eq 1 ]]; then
         echo "AppImage bundling libasan: $LIBASAN_PATH"
         LINUXDEPLOY_EXTRA+=(--library="$LIBASAN_PATH")
     else
-        echo "ERROR: ASAN=1 but ldd /usr/bin/compass_client shows no libasan link — the binary was not built with -fsanitize=address"
+        echo "ERROR: ASAN=1 but ldd /usr/bin/compass_client shows no libasan link - the binary was not built with -fsanitize=address"
         exit 1
     fi
 fi

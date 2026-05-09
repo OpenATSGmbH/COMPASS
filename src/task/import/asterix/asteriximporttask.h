@@ -155,8 +155,8 @@ protected:
 
     void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
 
-    void initjASTERIX() const;        // create decoder, validate framings — no context needed
-    void configurejASTERIX() const;   // apply context category configs to decoder — needs context
+    void initjASTERIX() const;        // create decoder, validate framings - no context needed
+    void configurejASTERIX() const;   // apply context category configs to decoder - needs context
     void refreshjASTERIX() const;     // init + configure
 
     void sourceChanged();

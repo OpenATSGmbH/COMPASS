@@ -245,7 +245,7 @@ ASTERIXImportTask::ASTERIXImportTask(nlohmann::json& config, TaskManager* parent
     jASTERIX::frame_chunk_size      = settings_.chunk_size_jasterix;
     jASTERIX::data_block_chunk_size = settings_.chunk_size_jasterix;
 
-    initjASTERIX(); // create decoder for ASTERIXJSONParser — no context needed
+    initjASTERIX(); // create decoder for ASTERIXJSONParser - no context needed
 
     createSubConfigurables();
 
@@ -269,7 +269,7 @@ void ASTERIXImportTask::generateSubConfigurable(nlohmann::json& child_json)
     if (class_name == "ASTERIXCategoryConfig")
     {
         loginf << "skipping legacy ASTERIXCategoryConfig '"
-               << instance_name << "' — now managed by DBContextManager";
+               << instance_name << "' - now managed by DBContextManager";
     }
     else if (class_name == "ASTERIXJSONParsingSchema")
     {
@@ -424,7 +424,7 @@ void ASTERIXImportTask::sourceChanged()
     settings_.setFileFramingOverride(decoder_->requiredASTERIXFraming());
 
     // skip the network probe (10s UDP listen) when driven non-interactively
-    // (e.g. via the import_asterix_network rt-command) — the caller wants the
+    // (e.g. via the import_asterix_network rt-command) - the caller wants the
     // import to start immediately
     if (source_.isNetworkType() && !allow_user_interactions_)
     {
@@ -494,7 +494,7 @@ void ASTERIXImportTask::configurejASTERIX() const
 
     // Build a signature of what we're about to apply so we can decide whether to log
     // verbosely (first run, or config changed since last run) or quietly. Configure
-    // is called on every refreshjASTERIX (i.e. once per analyze line) — full per-cat
+    // is called on every refreshjASTERIX (i.e. once per analyze line) - full per-cat
     // logging there would be very noisy.
     std::string signature = ctx_mgr.activeContext().name() + "|";
     for (const auto& cfg : ctx_mgr.activeContext().asterixDecoding())
@@ -888,9 +888,6 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 
     //reset state before new run
     reset();
-
-    //open task result
-    beginResultReport();
 
     float free_ram = System::getFreeRAMinGB();
 
@@ -1720,14 +1717,14 @@ void ASTERIXImportTask::checkAllDone()
         if (source_.isFileType())
             compass_.dbInterface().cleanupDB(true);
 
-        // finalize task result: discard on cancel/error, store on success
-        if (compass_.taskManager().hasCurrentResult())
+        // append this import to the persistent "ASTERIX Import" task result.
+        // Skip on cancel/error: we never open the result so previous content
+        // (from earlier imports) stays untouched.
+        if (!stopped_ && !error_ && compass_.hasActiveContext())
         {
-            const bool ok = !stopped_ && !error_;
-            if (ok)
-                buildResultReport(boost::posix_time::microsec_clock::local_time());
-
-            compass_.taskManager().endTaskResultWriting(ok, allow_user_interactions_);
+            beginResultReport();
+            buildResultReport(boost::posix_time::microsec_clock::local_time());
+            compass_.taskManager().endTaskResultWriting(true, allow_user_interactions_);
         }
 
         emit doneSignal();
@@ -1845,7 +1842,20 @@ namespace
         return s.substr(0, head) + "…" + s.substr(s.size() - tail);
     }
 
-    /// "<count>" or "<count> (<pct.1f> %)" — matches the per-item display
+    /// Human-readable byte size (decimal SI prefixes), 2 decimals from kB up.
+    std::string formatBytes(std::size_t bytes)
+    {
+        const double b = static_cast<double>(bytes);
+        if (b >= 1e9)
+            return Utils::String::doubleToStringPrecision(b * 1e-9, 2) + " GB";
+        if (b >= 1e6)
+            return Utils::String::doubleToStringPrecision(b * 1e-6, 2) + " MB";
+        if (b >= 1e3)
+            return Utils::String::doubleToStringPrecision(b * 1e-3, 2) + " kB";
+        return std::to_string(bytes) + " B";
+    }
+
+    /// "<count>" or "<count> (<pct.1f> %)" - matches the per-item display
     /// in ASTERIXImportDataSourcesWidget.
     std::string formatCountWithPercent(std::size_t count, std::size_t total)
     {
@@ -1861,33 +1871,19 @@ namespace
 */
 void ASTERIXImportTask::beginResultReport()
 {
-    if (!compass_.hasActiveContext())
-        return; // no context — no result store; skip
-
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
-    std::string ts = Utils::Time::toString(now, 0);
-    // strip seconds for the file-import title — minutes is enough
-    std::string ts_short = ts.size() >= 16 ? ts.substr(0, 16) : ts;
-
-    std::string result_name;
-    if (source_.isFileType())
-    {
-        const std::size_t n = source_.files().size();
-        result_name = "ASTERIX Import " + std::to_string(n)
-                    + (n == 1 ? std::string(" file ") : std::string(" files "))
-                    + ts_short;
-    }
-    else
-    {
-        result_name = "ASTERIX Network Import " + ts;
-    }
-
+    // Single, persistent task result accumulating across all ASTERIX imports
+    // into the open DB. Pass clear_existing=false so prior imports' content
+    // is not wiped on each call. Network imports share the same result.
     compass_.taskManager().beginTaskResultWriting(
-        result_name, task::TaskResultType::Generic);
+        "ASTERIX Import", task::TaskResultType::Generic, /*clear_existing=*/false);
 }
 
 /**
-*/
+ * Build/append this import's content to the persistent "ASTERIX Import" report.
+ * Each imported file becomes a new section under "Files" and a new row in the
+ * Overview "Imported Files" table that links to that section. Earlier imports'
+ * sections are left untouched.
+ */
 void ASTERIXImportTask::buildResultReport(const boost::posix_time::ptime& end_time)
 {
     auto& tm = compass_.taskManager();
@@ -1897,266 +1893,294 @@ void ASTERIXImportTask::buildResultReport(const boost::posix_time::ptime& end_ti
 
     const double elapsed_s =
         std::max(0.0, (end_time - start_time_).total_milliseconds() / 1000.0);
-    const int rec_per_s =
-        static_cast<int>(num_records_ / std::max(1.0, elapsed_s));
+    const std::string elapsed_str = Utils::String::timeStringFromDouble(elapsed_s, false);
+    const std::string source_type = source_.sourceTypeAsString();
+    const std::string framing =
+        settings_.activeFileFraming().empty() ? std::string("(none)")
+                                              : settings_.activeFileFraming();
 
-    // ----- Overview -----
+    // ---- Overview / Imported Files (one row per imported file) ----
     auto& overview = report->getSection("Overview");
-    if (!overview.hasTable("Info"))
-        overview.addTable("Info", 2, {"Property", "Value"}, false);
-    {
-        auto& info = overview.getTable("Info");
-        info.addRow({"Begin",            Utils::Time::toString(start_time_)});
-        info.addRow({"End",              Utils::Time::toString(end_time)});
-        info.addRow({"Elapsed",          Utils::String::timeStringFromDouble(elapsed_s, false)});
-        info.addRow({"Records inserted", static_cast<long long>(num_records_)});
-        info.addRow({"Records / second", rec_per_s});
-        info.addRow({"Max process RAM (GB)",
-                     Utils::String::doubleToStringPrecision(max_process_ram_gb_, 2)});
-    }
+    if (!overview.hasTable("Imported Files"))
+        overview.addTable("Imported Files", 9,
+                          {"#", "Begin", "Elapsed", "File",
+                           "Size", "Source", "Framing",
+                           "Errors", "Warnings"},
+                          true, 0);
+    auto& overview_t = overview.getTable("Imported Files");
 
-    if (!overview.hasTable("Source"))
-        overview.addTable("Source", 2, {"Property", "Value"}, false);
-    {
-        auto& src_t = overview.getTable("Source");
-        src_t.addRow({"Type", source_.sourceTypeAsString()});
-        src_t.addRow({"Framing",
-                      settings_.activeFileFraming().empty()
-                          ? std::string("(none)")
-                          : settings_.activeFileFraming()});
-        if (source_.isFileType())
-        {
-            src_t.addRow({"Number of files", static_cast<long long>(source_.files().size())});
-            src_t.addRow({"Total size (bytes)",
-                          static_cast<long long>(source_.totalFileSizeInBytes(false))});
-        }
-        if (decoder_)
-        {
-            src_t.addRow({"Decoder errors",   static_cast<long long>(decoder_->numErrors())});
-            src_t.addRow({"Decoder warnings", static_cast<long long>(decoder_->numWarnings())});
-        }
-    }
+    // existing row count = number of files previously listed → next index N
+    const std::size_t prev_total = overview_t.numRows();
 
-    // Network mode: keep minimal — only Overview, no per-file or per-DS tables.
-    if (source_.isNetworkType())
-        return;
+    // ---- Files tree: one new section per file ----
+    auto& jasterix = jasterix_; // current shared instance
 
-    // ----- Files tree -----
-    int file_idx = 0;
+    int local_idx = 0;
     for (const auto& fi : source_.files())
     {
-        ++file_idx;
+        if (!fi.used)
+            continue;
+
+        ++local_idx;
+        const std::size_t global_idx = prev_total + local_idx; // 1-based
+
         const std::string basename = Utils::Files::getFilenameFromPath(fi.filename);
         const std::string heading_basename = abbreviateForHeading(basename, 60);
 
-        std::string file_heading = "File " + std::to_string(file_idx) + " - " + heading_basename;
-        // colons are the section path separator — strip them defensively
+        std::string file_heading = "#" + std::to_string(global_idx) + " " + heading_basename;
+        // colons are the section path separator - strip them defensively
         std::replace(file_heading.begin(), file_heading.end(), ':', '_');
 
-        auto& file_section = report->getSection("Files:" + file_heading);
+        const std::string section_id = "Files:" + file_heading;
 
+        // overview row (linked)
+        const bool fi_has_error  = fi.hasError();
+        const bool fi_has_warn   = fi.hasWarning();
+        overview_t.addRow(
+            {static_cast<long long>(global_idx),
+             Utils::Time::toString(start_time_, 0),
+             elapsed_str,
+             basename,
+             formatBytes(fi.sizeInBytes()),
+             source_type,
+             framing,
+             fi_has_error ? std::string("yes") : std::string("no"),
+             fi_has_warn  ? std::string("yes") : std::string("no")},
+            ResultReport::SectionContentViewable(),
+            section_id);
+
+        // per-file section (always fresh - global_idx is unique)
+        auto& file_section = report->getSection(section_id);
+
+        // Info
         if (!file_section.hasTable("Info"))
             file_section.addTable("Info", 2, {"Property", "Value"}, false);
         {
-            auto& fi_t = file_section.getTable("Info");
-            fi_t.addRow({"Filename",     basename});
-            fi_t.addRow({"Path",         fi.filename});
-            fi_t.addRow({"Size (bytes)", static_cast<long long>(fi.sizeInBytes())});
+            auto& info_t = file_section.getTable("Info");
+            info_t.addRow({"Filename",      basename});
+            info_t.addRow({"Path",          fi.filename});
+            info_t.addRow({"Size",          formatBytes(fi.sizeInBytes())});
             if (!fi.contentinfo.empty())
-                fi_t.addRow({"Content info", fi.contentinfo});
-            fi_t.addRow({"Used", fi.used ? "yes" : "no"});
-            fi_t.addRow({"Number of file sections",
-                         static_cast<long long>(fi.sections.size())});
+                info_t.addRow({"Content info", fi.contentinfo});
+            info_t.addRow({"Source",        source_type});
+            info_t.addRow({"Framing",       framing});
+            info_t.addRow({"Imported on",   Utils::Time::toString(start_time_, 0)});
+            info_t.addRow({"Elapsed",       elapsed_str});
+            info_t.addRow({"PCAP sections", static_cast<long long>(fi.sections.size())});
         }
 
-        if (!fi.records_per_category.empty())
+        // Records per data source: one row per DS seen in the file; the
+        // "Records" cell lists "<dbcontent>: <count>" per CAT, one per line.
+        auto file_probe = ASTERIXImportProbeAggregator::aggregateFile(fi);
+        if (file_probe.probe_available)
         {
-            if (!file_section.hasTable("Records by Category"))
-                file_section.addTable("Records by Category", 2,
-                                      {"Category", "Records"}, true);
-            auto& cat_t = file_section.getTable("Records by Category");
-            for (const auto& [cat, count] : fi.records_per_category)
-                cat_t.addRow({"CAT" + Utils::String::categoryString(cat),
-                              static_cast<long long>(count)});
+            if (!file_section.hasTable("Records per Data Source"))
+                file_section.addTable("Records per Data Source", 3,
+                                      {"Data Source", "DS Type", "Records"}, true);
+            auto& rec_t = file_section.getTable("Records per Data Source");
+
+            for (const auto& [ds_id, ds_probe] : file_probe.probe_by_dsid)
+            {
+                const unsigned int sac = Utils::Number::sacFromDsId(ds_id);
+                const unsigned int sic = Utils::Number::sicFromDsId(ds_id);
+
+                std::string ds_label;
+                if (auto* ds = compass_.dbContextManager().dataSource(ds_id))
+                    ds_label = ds->name() + " (" + std::to_string(sac) + "/" + std::to_string(sic) + ")";
+                else
+                    ds_label = std::to_string(sac) + "/" + std::to_string(sic);
+
+                std::string ds_type;
+                if (auto* ds = compass_.dbContextManager().dataSource(ds_id))
+                    ds_type = ds->dsType();
+                if (ds_type.empty())
+                    ds_type = ASTERIXImportProbeAggregator::inferDsType(ds_probe.categories);
+                if (ds_type.empty())
+                    ds_type = "Other";
+
+                std::string records_text;
+                bool first = true;
+                for (const auto& [cat, cat_probe] : ds_probe.categories)
+                {
+                    std::string dbc_name;
+                    if (schema_ && schema_->hasObjectParser(cat))
+                        dbc_name = schema_->parser(cat).dbContentName();
+                    if (dbc_name.empty())
+                        dbc_name = "CAT" + Utils::String::categoryString(cat);
+
+                    if (!first)
+                        records_text += "\n";
+                    first = false;
+                    records_text += dbc_name + ": " + std::to_string(cat_probe.total_count);
+                }
+
+                // Build the section path matching what the DSType/DS-tree
+                // block below creates: file_heading is already colon-stripped;
+                // mirror the strip on ds_type and ds_label so the link
+                // resolves correctly via Report::getSection.
+                std::string ds_type_link  = ds_type;
+                std::string ds_label_link = ds_label;
+                std::replace(ds_type_link.begin(),  ds_type_link.end(),  ':', '_');
+                std::replace(ds_label_link.begin(), ds_label_link.end(), ':', '_');
+                const std::string ds_link =
+                    section_id + ":" + ds_type_link + ":" + ds_label_link;
+
+                rec_t.addRow({ds_label, ds_type, records_text},
+                             ResultReport::SectionContentViewable(),
+                             ds_link);
+            }
         }
 
-        if (fi.error.hasError() || !fi.warning.empty())
+        // Data sources: DSType group sub-section > DS sub-section > one table per CAT.
+        if (file_probe.probe_available)
+        {
+            // Group ds_id -> ds_type
+            std::map<std::string,
+                     std::map<unsigned int,
+                              const ASTERIXImportProbeAggregator::DSProbe*>> by_type;
+
+            for (const auto& [ds_id, ds_probe] : file_probe.probe_by_dsid)
+            {
+                std::string ds_type;
+                if (auto* ds = compass_.dbContextManager().dataSource(ds_id))
+                    ds_type = ds->dsType();
+                if (ds_type.empty())
+                    ds_type = ASTERIXImportProbeAggregator::inferDsType(ds_probe.categories);
+                if (ds_type.empty())
+                    ds_type = "Other";
+
+                by_type[ds_type][ds_id] = &ds_probe;
+            }
+
+            for (const auto& [ds_type, ds_map] : by_type)
+            {
+                auto& type_section = file_section.hasSubSection(ds_type)
+                                         ? file_section.getSubSection(ds_type)
+                                         : file_section.addSubSection(ds_type);
+
+                for (const auto& [ds_id, ds_probe_ptr] : ds_map)
+                {
+                    const auto& ds_probe = *ds_probe_ptr;
+                    const unsigned int sac = Utils::Number::sacFromDsId(ds_id);
+                    const unsigned int sic = Utils::Number::sicFromDsId(ds_id);
+
+                    std::string ds_label;
+                    if (auto* ds = compass_.dbContextManager().dataSource(ds_id))
+                        ds_label = ds->name() + " (" + std::to_string(sac) + "/" + std::to_string(sic) + ")";
+                    else
+                        ds_label = std::to_string(sac) + "/" + std::to_string(sic);
+                    std::replace(ds_label.begin(), ds_label.end(), ':', '_');
+
+                    auto& ds_section = type_section.hasSubSection(ds_label)
+                                           ? type_section.getSubSection(ds_label)
+                                           : type_section.addSubSection(ds_label);
+
+                    // Note about data origin (probing). Add once per DS section.
+                    if (!ds_section.hasText("Note"))
+                    {
+                        auto& note = ds_section.addText("Note");
+                        note.addText("The information below comes from probing - only the beginning of "
+                                     "the ASTERIX file is read. Counts, min and max values are "
+                                     "sample-side estimates and do not reflect the full file. Items "
+                                     "defined in the active edition but not seen during probing are "
+                                     "listed with count 0 (highlighted red).");
+                    }
+
+                    for (const auto& [cat, cat_probe] : ds_probe.categories)
+                    {
+                        const std::string table_name =
+                            "CAT" + Utils::String::categoryString(cat);
+
+                        if (!ds_section.hasTable(table_name))
+                            ds_section.addTable(table_name, 5,
+                                                {"Item", "Count", "Min", "Max", "Description"},
+                                                true);
+                        auto& it_t = ds_section.getTable(table_name);
+
+                        // union of probe-seen items + edition-defined items
+                        jASTERIX::CategoryItemInfo edition_items;
+                        if (jasterix && jasterix->hasCategory(cat))
+                        {
+                            auto cat_def = jasterix->category(cat);
+                            if (cat_def)
+                                edition_items = cat_def->itemInfo();
+                        }
+
+                        std::set<std::string> all_keys;
+                        for (const auto& kv : cat_probe.items)
+                            all_keys.insert(kv.first);
+                        for (const auto& kv : edition_items)
+                            if (ASTERIXImportProbeAggregator::isDisplayableDataItem(kv.first))
+                                all_keys.insert(kv.first);
+
+                        for (const auto& key : all_keys)
+                        {
+                            std::string description;
+                            auto info_it = edition_items.find(key);
+                            if (info_it != edition_items.end())
+                                description = info_it->second.description_;
+
+                            std::size_t count = 0;
+                            std::string min_s;
+                            std::string max_s;
+                            auto stats_it = cat_probe.items.find(key);
+                            if (stats_it != cat_probe.items.end())
+                            {
+                                count = stats_it->second.count;
+                                if (!stats_it->second.min.is_null())
+                                    min_s = stats_it->second.min.dump();
+                                if (!stats_it->second.max.is_null())
+                                    max_s = stats_it->second.max.dump();
+                            }
+
+                            const unsigned int row_style =
+                                count == 0 ? ResultReport::CellStyleTextColorRed : 0u;
+
+                            it_t.addRow({key,
+                                         formatCountWithPercent(count, cat_probe.total_count),
+                                         min_s,
+                                         max_s,
+                                         description},
+                                        ResultReport::SectionContentViewable(),
+                                        std::string(),
+                                        std::string(),
+                                        QVariant(),
+                                        row_style);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Errors / Warnings (probe-time, per file + sections)
+        if (fi.error.hasError() || !fi.warning.empty()
+            || std::any_of(fi.sections.begin(), fi.sections.end(),
+                           [](const auto& s){ return s.used && (s.error.hasError() || !s.warning.empty()); }))
         {
             auto& issues_text = file_section.addText("Errors / Warnings");
             if (fi.error.hasError())
                 issues_text.addText(std::string("Error: ") + fi.error.errinfo);
             if (!fi.warning.empty())
                 issues_text.addText(std::string("Warning: ") + fi.warning);
-        }
-
-        // PCAP file sections
-        int sec_idx = 0;
-        for (const auto& sec : fi.sections)
-        {
-            ++sec_idx;
-            if (!sec.used)
-                continue;
-
-            std::string sec_heading = "Section " + std::to_string(sec_idx);
-            if (!sec.description.empty())
-                sec_heading += " - " + abbreviateForHeading(sec.description, 50);
-            std::replace(sec_heading.begin(), sec_heading.end(), ':', '_');
-
-            auto& ss = file_section.hasSubSection(sec_heading)
-                           ? file_section.getSubSection(sec_heading)
-                           : file_section.addSubSection(sec_heading);
-
-            if (!ss.hasTable("Info"))
-                ss.addTable("Info", 2, {"Property", "Value"}, false);
+            for (const auto& sec : fi.sections)
             {
-                auto& si = ss.getTable("Info");
-                if (!sec.description.empty())
-                    si.addRow({"Description", sec.description});
-                if (!sec.info.empty())
-                    si.addRow({"Info", sec.info});
-                if (!sec.contentinfo.empty())
-                    si.addRow({"Content info", sec.contentinfo});
-                si.addRow({"Total size (bytes)",
-                           static_cast<long long>(sec.total_size_bytes)});
-            }
-
-            if (!sec.records_per_category.empty())
-            {
-                if (!ss.hasTable("Records by Category"))
-                    ss.addTable("Records by Category", 2,
-                                {"Category", "Records"}, true);
-                auto& ct = ss.getTable("Records by Category");
-                for (const auto& [cat, count] : sec.records_per_category)
-                    ct.addRow({"CAT" + Utils::String::categoryString(cat),
-                               static_cast<long long>(count)});
-            }
-
-            if (sec.error.hasError() || !sec.warning.empty())
-            {
-                auto& issues_text = ss.addText("Errors / Warnings");
+                if (!sec.used)
+                    continue;
                 if (sec.error.hasError())
-                    issues_text.addText(std::string("Error: ") + sec.error.errinfo);
+                    issues_text.addText("Section " + sec.id + " error: " + sec.error.errinfo);
                 if (!sec.warning.empty())
-                    issues_text.addText(std::string("Warning: ") + sec.warning);
+                    issues_text.addText("Section " + sec.id + " warning: " + sec.warning);
             }
         }
     }
 
-    // ----- Data Sources (cumulative across this DB) -----
-    auto& ctx_man = compass_.dbContextManager();
-    auto jasterix = jasterix_; // current shared instance
+    // For network mode, source_.files() carries the synthesized probe entry -
+    // it's already covered by the loop above. No extra handling.
 
-    for (const auto& [ds_id, cat_map] : ctx_man.asterixInfo())
-    {
-        const auto* ds = ctx_man.dataSource(ds_id);
-        const unsigned int sac = Utils::Number::sacFromDsId(ds_id);
-        const unsigned int sic = Utils::Number::sicFromDsId(ds_id);
-
-        std::string ds_label;
-        if (ds)
-            ds_label = ds->name() + " (" + std::to_string(sac) + "/" + std::to_string(sic) + ")";
-        else
-            ds_label = std::to_string(sac) + "/" + std::to_string(sic);
-        std::replace(ds_label.begin(), ds_label.end(), ':', '_');
-
-        auto& ds_section = report->getSection("Data Sources:" + ds_label);
-
-        // categories overview
-        if (!ds_section.hasTable("Categories"))
-            ds_section.addTable("Categories", 2,
-                                {"Category", "Records"}, true);
-        {
-            auto& ct = ds_section.getTable("Categories");
-            for (const auto& [cat, cat_stats] : cat_map)
-                ct.addRow({"CAT" + Utils::String::categoryString(cat),
-                           static_cast<long long>(cat_stats.total_count)});
-        }
-
-        // per-category item table
-        for (const auto& [cat, cat_stats] : cat_map)
-        {
-            const std::string cat_heading =
-                "CAT" + Utils::String::categoryString(cat);
-
-            auto& cat_section = ds_section.hasSubSection(cat_heading)
-                                    ? ds_section.getSubSection(cat_heading)
-                                    : ds_section.addSubSection(cat_heading);
-
-            // pull the edition's defined items so spec-known but never-seen
-            // items are listed too (with zero count)
-            jASTERIX::CategoryItemInfo edition_items;
-            if (jasterix && jasterix->hasCategory(cat))
-            {
-                auto cat_def = jasterix->category(cat);
-                if (cat_def)
-                    edition_items = cat_def->itemInfo();
-            }
-
-            std::set<std::string> all_keys;
-            for (const auto& kv : cat_stats.items)
-                all_keys.insert(kv.first);
-            for (const auto& kv : edition_items)
-                if (ASTERIXImportProbeAggregator::isDisplayableDataItem(kv.first))
-                    all_keys.insert(kv.first);
-
-            const std::string items_table = "Data Items";
-            if (!cat_section.hasTable(items_table))
-                cat_section.addTable(items_table, 5,
-                                     {"Item", "Description", "Count", "Min", "Max"},
-                                     true);
-            auto& it_t = cat_section.getTable(items_table);
-
-            for (const auto& key : all_keys)
-            {
-                std::string description;
-                auto info_it = edition_items.find(key);
-                if (info_it != edition_items.end())
-                    description = info_it->second.description_;
-
-                std::size_t count = 0;
-                std::string min_s;
-                std::string max_s;
-                auto stats_it = cat_stats.items.find(key);
-                if (stats_it != cat_stats.items.end())
-                {
-                    count = stats_it->second.count;
-                    if (!stats_it->second.min.is_null())
-                        min_s = stats_it->second.min.dump();
-                    if (!stats_it->second.max.is_null())
-                        max_s = stats_it->second.max.dump();
-                }
-
-                it_t.addRow({key,
-                             description,
-                             formatCountWithPercent(count, cat_stats.total_count),
-                             min_s,
-                             max_s});
-            }
-        }
-    }
-
-    // ----- Decoder Issues (post-decode, global) -----
-    if (decoder_)
-    {
-        auto errors = decoder_->errors();
-        auto warnings = decoder_->warnings();
-
-        if (!errors.empty() || !warnings.empty())
-        {
-            auto& issues = report->getSection("Decoder Issues");
-            if (!errors.empty())
-            {
-                auto& et = issues.addText("Errors");
-                for (const auto& e : errors)
-                    et.addText(e);
-            }
-            if (!warnings.empty())
-            {
-                auto& wt = issues.addText("Warnings");
-                for (const auto& w : warnings)
-                    wt.addText(w);
-            }
-        }
-    }
+    // Sections cache their content widget after first display. We have just
+    // appended new rows/sections to a report that may already be visible in
+    // the Task Results panel; rebuild every section's UI so the additions
+    // show up without the user having to re-open the result.
+    report->updateContents();
 }
 

@@ -40,7 +40,7 @@ target_link_libraries ( compass_client
     compass_config compass_core compass_reconstruction
     compass_gui compass_filter compass_task
     compass_eval compass_view compass_report
-    # Repeated: static archive link order — COMPASS:: methods in compass_app
+    # Repeated: static archive link order - COMPASS:: methods in compass_app
     # and compass_core symbols are needed by libs listed above (eval, view, task, etc.)
     compass_app compass_core
     ${jASTERIX_LIBRARIES}

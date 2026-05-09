@@ -64,8 +64,8 @@ namespace
     // Pump only the events that are safe during loading dispatch:
     //   paint / timer / WM-ping replies (so the WM does not flag us as unresponsive).
     // Excluded:
-    //   user input  — modal dialog already blocks it; double-belt against any non-modal load path.
-    //   sockets     — keeps RT command TCP from firing a second load mid-dispatch.
+    //   user input  - modal dialog already blocks it; double-belt against any non-modal load path.
+    //   sockets     - keeps RT command TCP from firing a second load mid-dispatch.
     inline void pumpLoadingEvents()
     {
         QCoreApplication::processEvents(
@@ -944,7 +944,7 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
 
     // Threshold: only pump events between views once the loop has been running
     // for a while. Short loops (typical UI test loads, ~1-2 s total) finish
-    // before the threshold and never pump — this keeps queued RT commands from
+    // before the threshold and never pump - this keeps queued RT commands from
     // interleaving with view dispatch and breaking UI test injection. Long
     // loads (the original "WM unresponsive" case, 12+ s) cross the threshold
     // and start pumping, restoring responsiveness for the user.

@@ -1,4 +1,4 @@
-# DB layer — merged into compass_core
+# DB layer - merged into compass_core
 
 include("${CMAKE_CURRENT_LIST_DIR}/command/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/interface/CMakeLists.txt")

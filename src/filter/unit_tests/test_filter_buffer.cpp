@@ -101,7 +101,7 @@ TEST_CASE("ModeCFilter filterBuffer with null_wanted", "[filter][buffer][modec]"
 
     auto& vec = buffer->get<float>("Mode C Code");
     vec.set(0, 2500.0f);   // in range
-    vec.setNull(1);         // null — wanted
+    vec.setNull(1);         // null - wanted
 
     auto removed = filter.filterBuffer("CAT048", buffer);
 
@@ -184,21 +184,21 @@ TEST_CASE("PrimaryOnlyFilter filterBuffer", "[filter][buffer][primaryonly]")
     auto& acid = buffer->get<std::string>("Aircraft Identification");
     auto& dtype = buffer->get<unsigned char>("Type");
 
-    // Row 0: all null, PSR detection type — should be kept (primary only)
+    // Row 0: all null, PSR detection type - should be kept (primary only)
     m3a.setNull(0);
     mc.setNull(0);
     acad.setNull(0);
     acid.setNull(0);
     dtype.set(0, 1);  // PSR detection
 
-    // Row 1: has m3a — should be removed
+    // Row 1: has m3a - should be removed
     m3a.set(1, 2041u);
     mc.setNull(1);
     acad.setNull(1);
     acid.setNull(1);
     dtype.setNull(1);
 
-    // Row 2: all null, non-PSR detection — should be removed
+    // Row 2: all null, non-PSR detection - should be removed
     m3a.setNull(2);
     mc.setNull(2);
     acad.setNull(2);

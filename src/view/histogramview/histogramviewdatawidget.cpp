@@ -70,7 +70,7 @@ using namespace std;
 namespace
 {
     /// Group key derived from a full layer id ("<ds_type>:<ds_name>:L<n>:
-    /// <dbcontent>") for the given color mode — this is what the chart
+    /// <dbcontent>") for the given color mode - this is what the chart
     /// actually stacks on (one bar set per group). Matches the semantics of
     /// COMPASS::colorMode():
     ///   0 DSType, 1 DBContent, 2 Data Source, 3 Data Source + Line.
@@ -146,7 +146,7 @@ void HistogramViewDataWidget::attachLayerPanel(DBContentRootItem* root,
 
     // Color-mode change -> resolveSeriesColor outputs differ -> rebuild
     // payloads (leaf icon + panel group colors) AND redraw the chart so
-    // the stacked bar colors match. The histogram values are unchanged —
+    // the stacked bar colors match. The histogram values are unchanged -
     // redrawData(true) does recompute, but rebuilding the histogram on a
     // color-mode toggle is cheap compared to a buffer reload.
     connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
@@ -215,7 +215,7 @@ void HistogramViewDataWidget::preUpdateVariableDataEvent()
  */
 void HistogramViewDataWidget::postUpdateVariableDataEvent()
 {
-    //nothing to do — panel is refreshed from updateDataEvent on data arrival,
+    //nothing to do - panel is refreshed from updateDataEvent on data arrival,
     //and the per-redraw filter is rebuilt inside updateFromVariables().
 }
 
@@ -318,7 +318,7 @@ void HistogramViewDataWidget::updateFromVariables()
 
     // Build per-buffer row-layer ids once (covers every row). The row filter
     // uses the full layer id (panel visibility is per-layer). The layer
-    // lookup fed to the generator returns the color-mode *group key* — that
+    // lookup fed to the generator returns the color-mode *group key* - that
     // way the generator produces one bucket per visible group (e.g. 5 in
     // DSType mode) rather than per full-layer, and no merge step is needed
     // downstream.
@@ -395,7 +395,7 @@ void HistogramViewDataWidget::compileRawDataFromGenerator()
         return;
 
     // Color map keyed by the generator's group key (DSType / DBContent /
-    // Data Source / Data Source + Line — determined by color mode). All
+    // Data Source / Data Source + Line - determined by color mode). All
     // full-layer payloads that collapse to the same group share the same
     // color by construction, so "first wins" is safe.
     const unsigned int color_mode = view_->compass().colorMode();
@@ -478,7 +478,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     QString y_axis_name = "Count";
 
     // Legend visibility is decided later based on series count (see
-    // MaxLegendEntries below) — at a few layers it's still useful, but with
+    // MaxLegendEntries below) - at a few layers it's still useful, but with
     // many layers the layer panel is the better reference.
     chart->legend()->setAlignment(Qt::AlignBottom);
 
@@ -488,7 +488,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
     //create x axis; use setTitleText(" ") to reserve layout space for the axis
     // title, then render the actual label via ChartView::setXAxisLabel() as a
-    // QGraphicsSimpleTextItem — Qt Charts truncates the real title to "..." when
+    // QGraphicsSimpleTextItem - Qt Charts truncates the real title to "..." when
     // tick labels are rotated
     QBarCategoryAxis* chart_x_axis = new QBarCategoryAxis;
     chart_x_axis->setLabelsAngle(LabelAngleX);
@@ -554,7 +554,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
         // Log scale disallows zero, so zero-count bins need a tiny positive
         // fallback to silence QLogValueAxis warnings. With stacked bars this
-        // fallback accumulates across all layers in a bin — at 10e-3 per
+        // fallback accumulates across all layers in a bin - at 10e-3 per
         // layer the cumulative (N * 0.01) crossed the log axis min (0.1) and
         // produced a visible "floor". 1e-12 keeps the cumulative well below
         // any realistic axis min even for thousands of layers.
@@ -651,7 +651,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     // Must run AFTER chart-view construction: the ChartView base constructor
     // auto-sets legend visibility from marker labels (non-empty -> visible),
     // which would otherwise override whatever we set earlier. Hide the
-    // legend when there are too many entries to be useful — the layer panel
+    // legend when there are too many entries to be useful - the layer panel
     // carries per-layer identity in that case.
     {
         constexpr int MaxLegendEntries = 8;
@@ -1081,7 +1081,7 @@ void HistogramViewDataWidget::computeRowLayerIds()
             continue;
 
         // If a dbcontent has no ds_id/line_id we leave row_layer_ids_ with
-        // no entry for it — the generator falls back to the bare dbcontent
+        // no entry for it - the generator falls back to the bare dbcontent
         // as the group key (one bar per such dbcontent).
         if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) ||
             !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))

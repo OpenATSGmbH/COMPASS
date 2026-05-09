@@ -447,7 +447,7 @@ std::string DBContentManager::composeWhereClause(const std::string& name,
             traced_assert(line_var.dataType() == PropertyDataType::UINT);
 
             // Build per-DS clauses into a list, OR-join only the non-empty
-            // ones. A DS with no wanted lines must be skipped — emitting
+            // ones. A DS with no wanted lines must be skipped - emitting
             // "line_id IN ()" would produce invalid SQL.
             std::vector<std::string> per_ds_clauses;
             for (auto ds_id_it : ds_ids_to_load)
@@ -476,7 +476,7 @@ std::string DBContentManager::composeWhereClause(const std::string& name,
 
             if (per_ds_clauses.empty())
             {
-                // Nothing wanted from any DS — return a no-row sentinel
+                // Nothing wanted from any DS - return a no-row sentinel
                 // rather than asserting or emitting empty IN().
                 filter_clause = "1=0";
             }
@@ -573,7 +573,7 @@ void DBContentManager::beginViewProgressPhase(unsigned int num_views)
     }
 
     progress_dialog_->setValue(static_cast<int>(progress_value_));
-    // Synchronous paint, not processEvents() — pumping arbitrary queued events
+    // Synchronous paint, not processEvents() - pumping arbitrary queued events
     // here lets queued RT commands (e.g. uiset from UI tests) fire mid-loop in
     // ViewManager::loadingDoneSlot and break injection assumptions.
     progress_dialog_->repaint();
@@ -969,7 +969,7 @@ void DBContentManager::finishLoading()
 
     current_request_ = LoadRequest{};
 
-    // close the dialog only after every listener (views, etc.) has processed the signal —
+    // close the dialog only after every listener (views, etc.) has processed the signal -
     // direct-connected slots ran inside emit; processEvents drains queued ones
     if (progress_dialog_)
     {
@@ -1001,7 +1001,7 @@ void DBContentManager::setAssociationsIdentifier(const std::string& assoc_id)
     has_associations_ = true;
     associations_id_ = assoc_id;
 
-    // updateWidgets removed — handled by signals
+    // updateWidgets removed - handled by signals
 
     emit associationStatusChangedSignal();
 }
@@ -1027,7 +1027,7 @@ void DBContentManager::clearAssociationsIdentifier()
 
     dbinterface.saveProperties();
 
-    // updateWidgets removed — handled by signals
+    // updateWidgets removed - handled by signals
 
     emit associationStatusChangedSignal();
 }
@@ -1285,7 +1285,7 @@ void DBContentManager::finishInserting()
     else
     {
         //non-live updates
-        // updateWidgets removed — handled by signals
+        // updateWidgets removed - handled by signals
         //compass_.dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
         logdbg << "update widgets + lines took "
@@ -1507,7 +1507,7 @@ void DBContentManager::processLiveModeSlot()
         }
     }
 
-    // updateWidgets removed — handled by signals
+    // updateWidgets removed - handled by signals
 
     //compass_.dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
 
@@ -1546,7 +1546,7 @@ void DBContentManager::addInsertedDataToChache()
         //label_generator_->addVariables(buf_it->first, read_set);
 
         //sensor status
-        // TODO: addSensorStatusVariables — to be migrated to DBContextManager
+        // TODO: addSensorStatusVariables - to be migrated to DBContextManager
 
         // for (unsigned int i = 0; i < read_set.getSize(); ++i)
         //     loginf << buf_it->first << " " << read_set.getVariable(i).name() << " (" << read_set.getVariable(i).dbColumnName() << ")";

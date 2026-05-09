@@ -35,7 +35,7 @@ class QTreeView;
  *
  * Notes:
  *  - color() is read at leaf construction to populate the icon; the payload
- *    is not expected to change color after rebuild — on color mode change
+ *    is not expected to change color after rebuild - on color mode change
  *    the view rebuilds the tree.
  *  - setVisible is called on every effective-hidden-state change.
  */
@@ -154,7 +154,7 @@ public:
     /// Build the DSType/DS/Line/DBContent subtree from `entries` as a list of
     /// DETACHED top-level children (the view hands these to
     /// LayerTreeModel::refreshSubtree, which attaches them inside scoped
-    /// begin/endInsertRows — no full model reset needed).
+    /// begin/endInsertRows - no full model reset needed).
     std::vector<std::unique_ptr<LayerTreeItem>> buildChildrenFrom(
         const std::vector<LeafEntry>& entries) const;
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# gdb_watch_sigabrt.sh — preemptive gdb attach to catch SIGABRT (or SEGV/BUS)
+# gdb_watch_sigabrt.sh - preemptive gdb attach to catch SIGABRT (or SEGV/BUS)
 #
 # Purpose
 #   When a COMPASS process aborts deep inside library code (glibc heap check,
@@ -18,12 +18,12 @@
 #          deliver it to the program, so the process stays inspectable.
 #        - "continue" in --batch mode runs until the next signal.
 #   4. Dumps info threads and thread apply all bt 60 on stop.
-#   5. Detaches cleanly — the test framework continues its normal path.
+#   5. Detaches cleanly - the test framework continues its normal path.
 #
 # Why the helper shell does the attach, not gdb directly
 #   The gdb attach needs to happen at a very specific moment (right before
 #   the suspected abort). Polling a log file for a trigger is easier in bash
-#   than from gdb. Also, sudo is avoided deliberately — see below.
+#   than from gdb. Also, sudo is avoided deliberately - see below.
 #
 # Why no sudo
 #   ptrace_scope=0 on crunch lets the process owner attach without root.
@@ -44,7 +44,7 @@
 #   like "quitting running compass instance" sit in the buffer until the
 #   process ends, so the watcher would trigger after the event it was
 #   supposed to catch. The runner MUST set PYTHONUNBUFFERED=1 (or use
-#   `python3 -u`) — otherwise this script can't find its trigger in time.
+#   `python3 -u`) - otherwise this script can't find its trigger in time.
 #
 # Environment / arguments
 #   TESTLOG            path to the test framework's live log (required)
@@ -90,19 +90,19 @@ while :; do
     if [ "$CNT" -ge "$TRIGGER_COUNT" ]; then break; fi
     sleep 0.05
 done
-log "trigger matched ($CNT x) — locating process"
+log "trigger matched ($CNT x) - locating process"
 
 CLIENT_PID=$(pgrep -x "$PROCESS_NAME" | head -1)
 log "process pid: ${CLIENT_PID:-<none>}"
 if [ -z "$CLIENT_PID" ]; then
-    log "no pid found — aborting gdb attach"
+    log "no pid found - aborting gdb attach"
     exit 0
 fi
 
 CLIENT_EXE="$APPIMAGE_EXTRACT_DIR/squashfs-root/usr/bin/$PROCESS_NAME"
 LIB_DIR="$APPIMAGE_EXTRACT_DIR/squashfs-root/usr/lib"
 if [ ! -x "$CLIENT_EXE" ]; then
-    log "WARN: $CLIENT_EXE not found — symbols will be missing"
+    log "WARN: $CLIENT_EXE not found - symbols will be missing"
 fi
 
 log "attaching gdb (file=$CLIENT_EXE libs=$LIB_DIR)"

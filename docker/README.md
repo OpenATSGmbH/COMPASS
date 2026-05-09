@@ -4,8 +4,8 @@ Dockerfiles and scripts for building COMPASS AppImages inside Debian containers.
 
 ## Dockerfiles
 
-- **Dockerfile_deb10** — Debian 10 (Buster) build environment (primary)
-- **Dockerfile_deb9** — Debian 9 (Stretch) build environment (deprecated)
+- **Dockerfile_deb10** - Debian 10 (Buster) build environment (primary)
+- **Dockerfile_deb9** - Debian 9 (Stretch) build environment (deprecated)
 
 Each Dockerfile bakes in an `OS_NAME` env var (`deb10` / `deb9`) used by the build scripts.
 

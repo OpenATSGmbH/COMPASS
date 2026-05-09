@@ -235,7 +235,7 @@ dbContent::targetReport::PositionAccuracy SimpleAccuracyEstimator::positionAccur
         return *tr.position_accuracy_;
     }
 
-    // no reported accuracy — try polar model from data source radar accuracies
+    // no reported accuracy - try polar model from data source radar accuracies
     if (tr.position_)
     {
         auto it = radar_sources_.find(tr.ds_id_);

@@ -82,7 +82,7 @@ pipeline {
             steps {
                 script {
                     // When ASAN=true, LSan runs at process exit and returns its own
-                    // nonzero exitcode (default 23) when it finds leaks — that would
+                    // nonzero exitcode (default 23) when it finds leaks - that would
                     // fail the stage even if all assertions passed. exitcode=0 keeps
                     // leak output visible while letting the real test exit code stand.
                     def lsanEnv = params.ASAN ? "LSAN_OPTIONS=exitcode=0 " : ''
@@ -169,7 +169,7 @@ pipeline {
                     //     surviving pipe drops and archived with the build artifacts.
                     // LSAN_OPTIONS exitcode=0 keeps leak output visible but prevents
                     // LSan's default exit 23 (on detected leaks) from surfacing as a
-                    // returncode — without this, isCrashed() in the test framework
+                    // returncode - without this, isCrashed() in the test framework
                     // wrongly flags every clean shutdown with framework leaks as a crash.
                     // Real ASan errors (heap-corruption etc.) still abort via
                     // abort_on_error=1 → SIGABRT → watchdog relays 128+6=134.

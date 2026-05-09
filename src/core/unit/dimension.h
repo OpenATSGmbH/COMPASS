@@ -25,7 +25,7 @@ class UnitManager;
 class Dimension : public Configurable
 {
   public:
-    // Legacy constructor removed — use json-backed constructor below
+    // Legacy constructor removed - use json-backed constructor below
     // Dimension(const std::string& class_name, const std::string& instance_name, Configurable* parent);
     /// @brief Constructor backed by a json reference
     Dimension(nlohmann::json& config, UnitManager* parent);

@@ -54,7 +54,7 @@ namespace
 
 /// Builds a color icon matching the Geographic View's rounded square texture:
 /// a 14x14 rounded-square with a 1px darkGray border. An invalid color yields
-/// a fully transparent 14x14 pixmap — the icon slot is reserved so rows stay
+/// a fully transparent 14x14 pixmap - the icon slot is reserved so rows stay
 /// aligned, but nothing is drawn.
 QIcon makeColorIcon(const QColor& color)
 {
@@ -95,7 +95,7 @@ QColor commonChildEffectiveColor(const QTreeWidgetItem* item)
             continue;
         const QColor cc = child->effectiveColor();
         if (!cc.isValid())
-            continue; // colorless child — ignored
+            continue; // colorless child - ignored
         if (!common.isValid())
             common = cc;
         else if (common != cc)
@@ -213,7 +213,7 @@ void DataSourceTypeItem::updateContent()
     traced_assert(!ds_type_.empty());
 
     // The DSType is "enabled" only when at least one of its Data Sources has
-    // inserted data in the current database — otherwise there is nothing to
+    // inserted data in the current database - otherwise there is nothing to
     // act on. Disabled rows are greyed out and carry no checkbox.
     bool has_data = false;
 
@@ -243,7 +243,7 @@ void DataSourceTypeItem::updateContent()
         setCheckStateIfChanged(0, Qt::Unchecked);
     }
 
-    // Icon color propagates up from descendants — painted only when every
+    // Icon color propagates up from descendants - painted only when every
     // leaf under this DSType agrees on a single color (see effectiveColor).
     // Disabled rows (no data) show no color; makeColorIcon with an invalid
     // color yields a transparent 14x14 pixmap so the slot stays reserved and
@@ -498,7 +498,7 @@ DataSourceLineButton::DataSourceLineButton(DataSourcesWidget* widget,
     setFixedSize(button_size_px, button_size_px);
     setCheckable(true);
 
-    // initial style — updateContent() will re-apply once init() has set ds_id_
+    // initial style - updateContent() will re-apply once init() has set ds_id_
     bool dark_mode = widget_->ctxManager().compass().darkMode();
 
     if (dark_mode)
@@ -913,7 +913,7 @@ int DataSourcesWidget::generateContent(bool force_rebuild)
 
     tree_widget_->blockSignals(false);
 
-    // expandAll is expensive — skip when no structural change. Existing
+    // expandAll is expensive - skip when no structural change. Existing
     // expansion state is preserved across plain count updates.
     if (force_rebuild || changes > 0)
         tree_widget_->expandAll();
@@ -1462,7 +1462,7 @@ void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
                 const std::string ds_type = ti->dsType();
                 QTreeWidgetItem*  raw_ti  = raw;
 
-                // Skip the per-item section entirely for empty DSTypes —
+                // Skip the per-item section entirely for empty DSTypes -
                 // they have no data and their row carries no interactive
                 // state, so only the global "All" actions apply.
                 bool dstype_has_data = false;
@@ -1492,7 +1492,7 @@ void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
                     [this, raw_ti]{ expandSubtree(raw_ti, false); });
 
                 // Only offer Delete if at least one DS of this DSType has
-                // data in the database — otherwise there is nothing to delete.
+                // data in the database - otherwise there is nothing to delete.
                 bool any_has_data = false;
                 if (ctx_man_.hasActiveContext())
                 {
@@ -1565,7 +1565,7 @@ void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
         }
     }
 
-    // --- Global section (always) — mirrors the top-right "Data Sources"
+    // --- Global section (always) - mirrors the top-right "Data Sources"
     //     menu (addActionsToConfigMenu) with the same labels and submenus;
     //     plus a few context-menu-only conveniences (Select All, Expand All).
     menu.addSection("All");

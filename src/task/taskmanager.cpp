@@ -374,7 +374,8 @@ std::shared_ptr<TaskResult> TaskManager::createResult(unsigned int id,
 /**
  */
 void TaskManager::beginTaskResultWriting(const std::string& name,
-                                         task::TaskResultType type)
+                                         task::TaskResultType type,
+                                         bool clear_existing)
 {
     if (widget_)
         widget_->setDisabled(true);
@@ -386,15 +387,20 @@ void TaskManager::beginTaskResultWriting(const std::string& name,
     traced_assert(!current_result_);
     current_result_ = getOrCreateResult(name, type);
 
-    //prepare result for new content
-    auto res = current_result_->prepareResult();
-    if (!res.ok())
-        logerr << "result could not be initialized: " << res.error();
+    //prepare result for new content (clears the report) - opt out for results
+    //that accumulate across runs (e.g. ASTERIX Import)
+    if (clear_existing)
+    {
+        auto res = current_result_->prepareResult();
+        if (!res.ok())
+            logerr << "result could not be initialized: " << res.error();
+
+        traced_assert(res.ok());
+    }
 
     loginf << "beginning result id " << current_result_->id()
-           << " name " << current_result_->name();
-    
-    traced_assert(res.ok());
+           << " name " << current_result_->name()
+           << " clear_existing " << clear_existing;
 }
 
 /**

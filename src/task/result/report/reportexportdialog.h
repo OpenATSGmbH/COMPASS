@@ -118,7 +118,7 @@ protected:
 
     ResultT<nlohmann::json> export_result_;
 
-    bool export_triggered_ = false;  // see showEvent() — prevents re-triggering export on desktop switch
+    bool export_triggered_ = false;  // see showEvent() - prevents re-triggering export on desktop switch
 };
 
 }

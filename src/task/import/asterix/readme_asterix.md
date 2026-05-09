@@ -71,7 +71,7 @@ For any radar-derived report, polar is the *measured* form and Cartesian/WGS-84 
 
 #### Position accuracy information
 
-Each category expresses position uncertainty differently — from "not transmitted at all" (CAT048) through compound standard-deviation items (CAT010, CAT020, CAT062) up to a multi-extension catalogue of integrity/accuracy categories (CAT021). The latest editions in `data/jasterix_definitions/` are summarised below; item references are to the most recent editions in the spec folder (see "Reference documents").
+Each category expresses position uncertainty differently - from "not transmitted at all" (CAT048) through compound standard-deviation items (CAT010, CAT020, CAT062) up to a multi-extension catalogue of integrity/accuracy categories (CAT021). The latest editions in `data/jasterix_definitions/` are summarised below; item references are to the most recent editions in the spec folder (see "Reference documents").
 
 **CAT048 - monoradar (ed 1.28)**
 
@@ -311,21 +311,22 @@ The full chain is therefore:
 
 with categories chosen at the top of that chain determining what kind of surveillance data ends up in which DBContent table.
 
-What happens *after* the buffers reach DuckDB — the DBContent / Variable / MetaVariable model, the `db_content*.json` schema, ToD wrap and SAC/SIC handling, how loaded data feeds views/filters/eval/reconstruction — is documented in [readme_dbcontent.md](../../db/dbcontent/readme_dbcontent.md).
+What happens *after* the buffers reach DuckDB - the DBContent / Variable / MetaVariable model, the `db_content*.json` schema, ToD wrap and SAC/SIC handling, how loaded data feeds views/filters/eval/reconstruction - is documented in [readme_dbcontent.md](../../db/dbcontent/readme_dbcontent.md).
 
 ## Import result report
 
-Every file-based ASTERIX import produces a `TaskResult` (type `Generic`) stored in the task results browser, exportable to DOCX/LaTeX/JSON via the standard report-export path. Network imports produce a minimal stub with start/stop timestamps. Cancelled or errored imports discard the result.
+Every successful ASTERIX import appends to a **single, persistent `TaskResult`** named `"ASTERIX Import"` (type `Generic`), stored in the task results browser and exportable to DOCX/LaTeX/JSON. Cancelled or errored imports leave the result untouched (the task manager is opened with `clear_existing=false` only inside the success branch of `checkAllDone()`). One `"ASTERIX Import"` result lives per DB; opening another DB loads its own result from `db_info`-adjacent storage.
 
-Sections:
+Structure:
 
-- **Overview/Info**: begin/end/elapsed, records inserted, rec/s, max process RAM.
-- **Overview/Source**: source type, framing, file count, total bytes, decoder errors/warnings counts.
-- **Files/File N - <basename>**: per-file `Info` (path, size, content info, used flag, PCAP section count), `Records by Category` (from probe-time `records_per_category`), and `Errors / Warnings` (from `ASTERIXImportFileError` / per-file warning). PCAP files add one sub-section per used `ASTERIXImportFileSection`.
-- **Data Sources/<DS name (sac/sic)>**: a `Categories` table (record total per CAT) and one `CAT NNN` sub-section per category, each carrying a `Data Items` table (item, description, count + percent of CAT total, min, max). Tables include items defined in the active edition that have never been seen, listed with count 0. Source: the **cumulative** `db_info / "asterix_info"` store on `DBContextManager`, refined on every import by merging the latest `ASTERIXImportProbeAggregator::aggregate(...)` result via `DBContextManager::mergeAsterixInfo(...)`.
-- **Decoder Issues**: `ASTERIXDecoderBase::errors()` / `warnings()` (post-decode, global).
+- **Overview / Imported Files**: one row per file ever imported into this DB, in chronological order. Columns: `#`, `Begin`, `Elapsed`, `File`, `Size (bytes)`, `Source`, `Framing`, `Errors`, `Warnings`. Each row links to the corresponding per-file section under `Files`.
+- **Files / #N <basename>**: one section per imported file, with `N` a globally unique 1-based index across all imports into this DB. Inside:
+  - `Info` table: filename, full path, size, content info, source type, framing, import timestamp, elapsed, PCAP section count.
+  - `Records by Category` table: from probe-time `records_per_category`.
+  - One sub-section per **DS type** seen in this file (`Radar`, `MLAT`, `ADSB`, `Tracker`, `Other`), each containing one sub-section per **data source** of that type (heading: `<DS name> (<sac>/<sic>)`). Each data-source sub-section contains one **table per CAT** (no further nesting). Tables have columns `Item`, `Count`, `Min`, `Max`, `Description`. The count cell is formatted `"<n> (<pct.1f> %)"` against the per-(DS,CAT) total. Items defined in the active edition but never seen in the file are listed with count 0. Source: `ASTERIXImportProbeAggregator::aggregateFile(file_info)`. DS type comes from the registered `DataSource::dsType()` when known; otherwise inferred via `ASTERIXImportProbeAggregator::inferDsType(...)`.
+  - `Errors / Warnings` text: from `ASTERIXImportFileError` plus per-PCAP-section errors/warnings, when any.
 
-The cumulative `asterix_info` store is per-DB (cleared on DB close, persisted in `db_info`), not per-context. See [readme_context.md](../../../core/context/readme_context.md) for the runtime-state persistence model.
+The cumulative cross-import per-(DS, CAT, item) summary persists separately in `DBContextManager::asterixInfo()` (db_info key `"asterix_info"`, see [readme_context.md](../../../core/context/readme_context.md)) and is refined on every import via `DBContextManager::mergeAsterixInfo(...)`. The report itself only renders per-file probe data - for the cumulative store, query the `DBContextManager` directly.
 
 ## Reference documents
 

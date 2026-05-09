@@ -277,7 +277,7 @@ void ASTERIXNetworkDecoder::checkDecoding_impl(bool force_recompute,
         ++line_idx;
 
         // jASTERIX refresh per line is ~1s/line, so per-line status is no longer
-        // a flicker — show concrete progress instead of one stable message.
+        // a flicker - show concrete progress instead of one stable message.
         if (progress)
             progress->setMessage("Analyzing line " + std::to_string(line_idx) + "/"
                                  + std::to_string(line_total) + " ...", false, true);
@@ -321,7 +321,7 @@ void ASTERIXNetworkDecoder::checkDecoding_impl(bool force_recompute,
 
         // pre-analyze diagnostic: total bytes, packet count, and the buffer prefix
         // as hex. The first byte should be a valid ASTERIX CAT and bytes 1..2 the
-        // big-endian data block length — anything else points to a framing/alignment
+        // big-endian data block length - anything else points to a framing/alignment
         // issue before jASTERIX even gets a chance.
         {
             boost::mutex::scoped_lock lk(buf_mutex);

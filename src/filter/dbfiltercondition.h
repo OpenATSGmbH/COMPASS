@@ -116,7 +116,7 @@ private:
     bool usable_{true};
     bool value_invalid_{false};
 
-    std::string label_prefix_; // "AND " or "OR " — set by widget
+    std::string label_prefix_; // "AND " or "OR " - set by widget
     std::string base_label_text_; // e.g. "altitude >"
 
     QLineEdit* edit_{nullptr};

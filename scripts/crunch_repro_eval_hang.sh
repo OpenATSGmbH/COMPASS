@@ -1,13 +1,13 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# crunch_repro_eval_hang.sh — reproduce the eval-shutdown heap-corruption hang
+# crunch_repro_eval_hang.sh - reproduce the eval-shutdown heap-corruption hang
 #                             on crunch and capture its backtrace in gdb.
 #
 # Purpose
 #   CI build #50 (and similar) fail at tests like eval_mlat_all / eval_radar
 #   with "application terminated (0)" / "application crashed (-9)" after the
 #   previous eval's COMPASS is asked to quit. The bug does NOT reproduce by
-#   running a single eval test — it needs at least two evals back-to-back so
+#   running a single eval test - it needs at least two evals back-to-back so
 #   the second one's open_db triggers the (failing) quit of the first one.
 #
 #   This script runs eval_adsb_dubious followed by eval_mlat_all on crunch,
@@ -31,7 +31,7 @@
 # Why PYTHONUNBUFFERED=1 is mandatory
 #   The watcher polls the test log for "quitting running compass instance".
 #   Without unbuffered stdout, Python holds that line in a buffer until the
-#   process exits — long after the crash has already happened. Line buffering
+#   process exits - long after the crash has already happened. Line buffering
 #   makes the trigger appear in real time.
 #
 # Why --no_highdpi -r is used
@@ -62,14 +62,14 @@ EXTRACT_DIR=${EXTRACT_DIR:-/tmp/compass_extracted}
 TESTLOG=${TESTLOG:-/tmp/repro_test.log}
 GDBLOG=${GDBLOG:-/tmp/repro_gdb.log}
 
-# location of the watcher — same dir as this script
+# location of the watcher - same dir as this script
 WATCHER_SCRIPT="$(cd "$(dirname "$0")" && pwd)/gdb_watch_sigabrt.sh"
 if [ ! -x "$WATCHER_SCRIPT" ]; then
     echo "error: watcher not found or not executable: $WATCHER_SCRIPT" >&2
     exit 1
 fi
 
-# kill any lingering COMPASS processes from earlier runs (force-kill is safe —
+# kill any lingering COMPASS processes from earlier runs (force-kill is safe -
 # they would otherwise confuse pidof / block AppImage mount ports).
 for N in COMPASS_deb10-x86_64.AppImage compass_client compass_handler; do
     pkill -9 "$N" 2>/dev/null || true
@@ -78,7 +78,7 @@ sleep 1
 
 # extract AppImage to a stable path so gdb can find the binary with debug
 # symbols (the running FUSE mount path changes each invocation and is
-# unreadable by root anyway — see gdb_watch_sigabrt.sh header).
+# unreadable by root anyway - see gdb_watch_sigabrt.sh header).
 rm -rf "$EXTRACT_DIR"
 mkdir -p "$EXTRACT_DIR"
 (cd "$EXTRACT_DIR" && "$APPIMAGE" --appimage-extract > /dev/null 2>&1)
@@ -87,9 +87,9 @@ mkdir -p "$EXTRACT_DIR"
 rm -f "$TESTLOG" "$GDBLOG"
 
 # launch the watcher in the background. It waits for the 2nd occurrence of
-# "quitting running compass instance" — the first fires at eval_adsb_dubious
+# "quitting running compass instance" - the first fires at eval_adsb_dubious
 # (quits whatever was open from calculate_references), the second fires at
-# eval_mlat_all (quits eval_adsb_dubious's COMPASS — the one that hangs).
+# eval_mlat_all (quits eval_adsb_dubious's COMPASS - the one that hangs).
 APPIMAGE_EXTRACT_DIR="$EXTRACT_DIR" \
 TESTLOG="$TESTLOG" GDBLOG="$GDBLOG" \
 TRIGGER_RE='quitting running compass instance' TRIGGER_COUNT=2 \

@@ -1030,7 +1030,7 @@ void DBContextEditDialog::importZipSlot()
         return;
 
     // peek at the zip to find the context name (first directory component)
-    // by attempting the import — but first check if a context of that name exists
+    // by attempting the import - but first check if a context of that name exists
     // We need to read the name from the zip before extracting.
     // Use a temporary extraction to read the name, then confirm overwrite.
 

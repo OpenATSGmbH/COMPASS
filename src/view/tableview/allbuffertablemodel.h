@@ -91,7 +91,7 @@ class AllBufferTableModel : public BaseBufferTableModel
 
     /// Per-row layer-id index, parallel to row_indexes_. Each entry indexes
     /// into layer_id_pool_. Computed once in buildRowIndexes() and reordered
-    /// via applyRowPermutation() — avoids per-cell-paint DBContent / data
+    /// via applyRowPermutation() - avoids per-cell-paint DBContent / data
     /// source lookups in prefixColumnDecoration().
     std::vector<unsigned int> row_layer_index_;
     std::vector<std::string>  layer_id_pool_;   // 0 = "" (unknown)

@@ -1,29 +1,29 @@
-# COMPASS — Compliance Assessment
+# COMPASS - Compliance Assessment
 
 OpenATS COMPASS is a C++ application for air traffic surveillance data inspection, analysis, and evaluation. It imports EUROCONTROL ASTERIX recordings into a database for visualization, compliance assessment (e.g. EUROCAE ED-116, ED-117), and report generation.
 
 ## Platform & distribution
 
-- **OS**: Linux 64-bit (x86_64) only — no Windows or macOS support
+- **OS**: Linux 64-bit (x86_64) only - no Windows or macOS support
 - **Tested distributions**: Debian 10+, Ubuntu 18.04+, Linux Mint 18.3+
-- **Distribution format**: AppImage — single self-contained executable, no installation required. Downloaded from GitHub releases. The AppImage is built on Debian 10 (Buster) via Docker to maximize glibc compatibility across distributions.
+- **Distribution format**: AppImage - single self-contained executable, no installation required. Downloaded from GitHub releases. The AppImage is built on Debian 10 (Buster) via Docker to maximize glibc compatibility across distributions.
 - **No plugin system**: Extensions require source code modification. The Geographic View lives in a separate closed-source repository (`experimental_src/`) and is only published in the AppImage binary, not in source builds.
 - **Licensing**: Source code is GPL-3.0; AppImage binary is CC BY 4.0; Geographic View is closed-source (AppImage only). Free for all use including commercial.
 - **Hardware requirements**: Minimum 2+ physical CPU cores, dedicated NVidia or ATI GPU (native drivers, OpenGL 3.0+), 8 GB RAM. Recommended: Intel i5+, 16 GB+ RAM. Large datasets (>1M reports/hour): 32 GB RAM.
 
 ## Application architecture
 
-COMPASS is a **monolithic Qt5 desktop application** with a **DuckDB** embedded database backend. There is no client-server split — the GUI, database, and processing engine run in a single process (`compass_client`), with a separate `compass_handler` watchdog process for long-running/live deployments.
+COMPASS is a **monolithic Qt5 desktop application** with a **DuckDB** embedded database backend. There is no client-server split - the GUI, database, and processing engine run in a single process (`compass_client`), with a separate `compass_handler` watchdog process for long-running/live deployments.
 
 **Key architectural layers:**
 - **GUI layer**: Qt5 Widgets with signals/slots. Main thread runs the Qt event loop; views render from a single shared in-memory dataset.
 - **Data layer**: Columnar `Buffer`/`NullableVector<T>` containers loaded from DuckDB. Only one unified dataset exists at a time; all views share it.
 - **Processing layer**: Async job management (`JobManager`), parallelized via Intel TBB. Reconstruction and evaluation run in background jobs on worker threads.
 - **3D rendering**: OpenSceneGraph + osgEarth for the Geographic View. Runs on the main thread with 1-second update intervals and overload detection (skip rendering at >3s latency, skip ASTERIX decoding at >60s).
-- **Configuration**: `Configurable` base class — most components inherit from it. Parameters are auto-serialized to/from JSON files in `~/.compass/<version>/`. Read at startup, written at shutdown.
+- **Configuration**: `Configurable` base class - most components inherit from it. Parameters are auto-serialized to/from JSON files in `~/.compass/<version>/`. Read at startup, written at shutdown.
 - **External interfaces**: CLI for batch processing (options executed in order), TCP runtime command interface (`localhost:27960`) for controlling a running instance from Python or other tools.
 
-**Design patterns**: Dependency injection (not singletons) — `COMPASS` is created by `Client` in `main()` and passed by reference through the manager tree (e.g. `task_.manager().compass()`). Managers store a `COMPASS&` and expose it via `compass()` accessors. Only `Logger` and `RTCommandRegistry` are true singletons (via `Singleton` base class). Qt signals/slots throughout GUI, `Configurable` inheritance for JSON persistence, smart pointers (`unique_ptr`/`shared_ptr`).
+**Design patterns**: Dependency injection (not singletons) - `COMPASS` is created by `Client` in `main()` and passed by reference through the manager tree (e.g. `task_.manager().compass()`). Managers store a `COMPASS&` and expose it via `compass()` accessors. Only `Logger` and `RTCommandRegistry` are true singletons (via `Singleton` base class). Qt signals/slots throughout GUI, `Configurable` inheritance for JSON persistence, smart pointers (`unique_ptr`/`shared_ptr`).
 
 ## Build
 
@@ -37,10 +37,10 @@ Build output goes to `build/bin/` (executables) and `build/lib/` (libraries).
 **C++ standard**: The project uses **C++17** (`-std=c++17`). The AppImage is built inside a Debian 10 Docker container (see `docker/Dockerfile_deb10`) using GCC 8.3. C++17 features such as structured bindings (`auto [x, y] = ...`), `std::optional`, `std::variant`, `if constexpr`, `std::string_view`, and `std::any` are available and may be used freely.
 
 **Targets:**
-- `compass` — main library
-- `compass_client` — GUI application
-- `compass_handler` — watchdog process
-- `compass_tests` — unit tests
+- `compass` - main library
+- `compass_client` - GUI application
+- `compass_handler` - watchdog process
+- `compass_tests` - unit tests
 
 ## Testing
 
@@ -123,20 +123,20 @@ doc/                    Documentation and user manual (LaTeX)
 - **Qt slots:** suffixed with `Slot`: `databaseOpenedSlot()`
 
 ### Patterns
-- **COMPASS access:** `COMPASS` is not a singleton — it is created by `Client` in `main()` and passed by reference. Access via parent chain, e.g. `task_.manager().compass().dataSourceManager()`. Managers store `COMPASS&` and expose `compass()`.
+- **COMPASS access:** `COMPASS` is not a singleton - it is created by `Client` in `main()` and passed by reference. Access via parent chain, e.g. `task_.manager().compass().dataSourceManager()`. Managers store `COMPASS&` and expose `compass()`.
 - **True singletons:** Only `Logger::getInstance()` and `RTCommandRegistry::instance()` (both inherit from `Singleton` base class in `src/core/util/singleton.h`).
 - **Configurable base class:** most components inherit from `Configurable` for JSON-based config persistence
 - **Qt signals/slots** throughout the GUI layer; `Q_OBJECT` macro required
 - **Smart pointers:** prefer `std::unique_ptr` and `std::shared_ptr`
-- **Buffer/NullableVector<T>:** columnar data storage — the central data structure for surveillance records. Supports bool, char, uchar, int, uint, long, ulong, float, double, string, json, ptime.
+- **Buffer/NullableVector<T>:** columnar data storage - the central data structure for surveillance records. Supports bool, char, uchar, int, uint, long, ulong, float, double, string, json, ptime.
 - **PropertyList / PropertyDataType:** type-safe schema for Buffer columns
 
 ### Logging
 Use the LOG4CPP-based stream macros defined in `logger.h`. They auto-prepend the function name and are used like C++ output streams:
-- `logerr` — errors (always printed)
-- `logwrn` — warnings
-- `loginf` — informational messages
-- `logdbg` — debug (compiled in, but filtered by runtime log level)
+- `logerr` - errors (always printed)
+- `logwrn` - warnings
+- `loginf` - informational messages
+- `logdbg` - debug (compiled in, but filtered by runtime log level)
 
 Usage: `loginf << "loaded " << count << " records";`
 
@@ -149,13 +149,13 @@ All source files must include the GPL-3.0 header (see any existing `.h`/`.cpp` f
 
 - **Qt5** (Widgets, Core, OpenGL, Charts, Test)
 - **Boost** (regex, system, program_options, filesystem, iostreams, thread, stacktrace_backtrace)
-- **Eigen3** — linear algebra
-- **DuckDB** — embedded database backend
-- **GDAL** — geographic data
-- **OpenSceneGraph** — 3D rendering
-- **osgEarth** — geographic visualization
-- **GeographicLib** — geographic calculations
-- **jASTERIX** — ASTERIX data decoding
-- **LOG4CPP** — logging
-- **TBB** — threading
-- **nlohmann/json** — JSON (header-only in `lib/`)
+- **Eigen3** - linear algebra
+- **DuckDB** - embedded database backend
+- **GDAL** - geographic data
+- **OpenSceneGraph** - 3D rendering
+- **osgEarth** - geographic visualization
+- **GeographicLib** - geographic calculations
+- **jASTERIX** - ASTERIX data decoding
+- **LOG4CPP** - logging
+- **TBB** - threading
+- **nlohmann/json** - JSON (header-only in `lib/`)

@@ -976,7 +976,7 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
         return false;
     }
 
-    // mark as non-interactive before changing the source — sourceChanged() uses this
+    // mark as non-interactive before changing the source - sourceChanged() uses this
     // to skip the 10s UDP probe, since the rt-command starts the import directly
     import_task.allowUserInteractions(false);
 

@@ -158,10 +158,10 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
 
     rt_cmd_runner_.reset(new rtcommand::RTCommandRunner(*this));
 
-    // DBContextManager — not a Configurable, created directly
+    // DBContextManager - not a Configurable, created directly
     context_manager_.reset(new context::DBContextManager(*this));
 
-    // database opening & closing — DBContextManager connects FIRST
+    // database opening & closing - DBContextManager connects FIRST
 
     QObject::connect(this, &COMPASS::databaseOpenedSignal,
                      context_manager_.get(), &context::DBContextManager::databaseOpenedSlot);
@@ -212,7 +212,7 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
     // sectors changed (direct edits within active context)
     connect (context_manager_.get(), &context::DBContextManager::sectorsChangedSignal,
              &task_manager_->reconstructReferencesTask(), &ReconstructorTask::sectorsChangedSlot);
-    // context changed (DB open, context switch — sectors come with the new context)
+    // context changed (DB open, context switch - sectors come with the new context)
     connect (context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
              &task_manager_->reconstructReferencesTask(), &ReconstructorTask::sectorsChangedSlot);
 
@@ -300,7 +300,7 @@ void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
     }
     else if (class_name == "DataSourceManager")
     {
-        // legacy — DataSourceManager replaced by DBContextManager, ignore config
+        // legacy - DataSourceManager replaced by DBContextManager, ignore config
         loginf << "ignoring legacy DataSourceManager config";
     }
     else if (class_name == "FilterManager")
@@ -329,7 +329,7 @@ void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
     }
     else if (class_name == "FFTManager")
     {
-        // legacy — FFTManager replaced by DBContextManager, ignore config
+        // legacy - FFTManager replaced by DBContextManager, ignore config
         loginf << "ignoring legacy FFTManager config";
     }
     else if (class_name == "LicenseManager")
@@ -1033,7 +1033,7 @@ void COMPASS::shutdown()
 
 #if USE_EXPERIMENTAL_SOURCE == true
     // Release cached textures, retired GL contexts, and drain osgEarth's
-    // job pool — must happen while OSG globals are still alive.
+    // job pool - must happen while OSG globals are still alive.
     geo_view::shutdown();
 #endif
 

@@ -52,7 +52,7 @@ target_link_libraries(compass_eval
         compass_gui
 )
 
-# eval sources include headers from app and view — circular deps
+# eval sources include headers from app and view - circular deps
 target_include_directories(compass_eval PRIVATE
     "${CMAKE_SOURCE_DIR}/src/app/client"
     "${CMAKE_SOURCE_DIR}/src/view"

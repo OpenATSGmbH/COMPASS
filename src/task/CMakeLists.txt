@@ -33,7 +33,7 @@ target_link_libraries(compass_task
         ${jASTERIX_LIBRARIES}
 )
 
-# task sources include headers from app, report, view, eval — circular deps
+# task sources include headers from app, report, view, eval - circular deps
 target_include_directories(compass_task PRIVATE
     "${CMAKE_SOURCE_DIR}/src/app/client"
     "${CMAKE_SOURCE_DIR}/src/report"

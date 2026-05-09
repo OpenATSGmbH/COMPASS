@@ -380,7 +380,7 @@ void MainWindow::createMenus ()
     connect(quit_act, &QAction::triggered, this, &MainWindow::quitSlot);
     file_menu->addAction(quit_act);
 
-    // context menu — shows current context name as menu title
+    // context menu - shows current context name as menu title
     createContextMenu();
 
     // import menu
@@ -572,7 +572,7 @@ void MainWindow::updateMenus()
                               || a == dark_mode_action_
                               || a == fullscreen_action_ ? true : db_open);
 
-    // context-state gating always wins — applied after DB/live-state logic above
+    // context-state gating always wins - applied after DB/live-state logic above
     updateMenuEnabledState();
 }
 
@@ -639,7 +639,7 @@ void MainWindow::updateMenuEnabledState()
         if (context_copy_action_)
             context_copy_action_->setEnabled(true);
         // context_delete_action_ / context_switch_menu_ enabled state is
-        // managed by updateContextMenuTitle() — leave as-is.
+        // managed by updateContextMenuTitle() - leave as-is.
         // context_compare_action_ stays disabled (deferred feature).
     }
 }
@@ -1132,7 +1132,7 @@ void MainWindow::resetViewsMenuSlot()
         // reset stuff
         compass_.dbContentManager().resetToStartupConfiguration();
 
-        // context reset handled by DBContextManager — loading state is per-session
+        // context reset handled by DBContextManager - loading state is per-session
 
         compass_.filterManager().resetToStartupConfiguration();
 

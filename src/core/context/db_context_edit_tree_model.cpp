@@ -96,7 +96,7 @@ void DBContextEditTreeModel::buildTree()
     }
     root_->appendChild(std::move(fft_group));
 
-    // Colors group — leaf, no sub-items (the ColorsEditWidget covers all
+    // Colors group - leaf, no sub-items (the ColorsEditWidget covers all
     // sub-sections inline with its own group boxes)
     root_->appendChild(std::make_unique<GroupItem>(GroupItem::Colors, root_.get()));
 }

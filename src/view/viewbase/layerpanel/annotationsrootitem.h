@@ -24,7 +24,7 @@
 /**
  * "Annotations" root item placed as a sibling to the DBContent root in a
  * LayerPanelWidget. Mirrors the Geographic View's Annotations item in name
- * and icon (compass.png). Currently a structural placeholder — no children,
+ * and icon (compass.png). Currently a structural placeholder - no children,
  * visibility toggling is display-only.
  */
 class AnnotationsRootItem : public LayerTreeItem

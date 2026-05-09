@@ -348,7 +348,7 @@ TEST_CASE("DBFilter custom with partially present meta vars", "[filter][conditio
 
     CHECK(filter.getNumConditions() == 2);
 
-    SECTION("filters CAT048 — Track Number present, X StdDev not")
+    SECTION("filters CAT048 - Track Number present, X StdDev not")
     {
         CHECK(filter.filters("CAT048"));
 
@@ -362,7 +362,7 @@ TEST_CASE("DBFilter custom with partially present meta vars", "[filter][conditio
         CHECK(sql.find("x_stddev") == std::string::npos);
     }
 
-    SECTION("filters CAT062 — both present")
+    SECTION("filters CAT062 - both present")
     {
         CHECK(filter.filters("CAT062"));
 
@@ -483,7 +483,7 @@ TEST_CASE("DBFilter viewpoint save/load round-trip", "[filter][condition]")
     CHECK(vp_filters.contains("Position"));
     CHECK(vp_filters["Position"].contains("Latitude Maximum"));
 
-    // Load into fresh filter — must use a separate config copy since
+    // Load into fresh filter - must use a separate config copy since
     // the first filter's constructor consumed cfg
     auto cfg2 = makeFilterConfig("DBFilter", "Position", {
         {"active", true},

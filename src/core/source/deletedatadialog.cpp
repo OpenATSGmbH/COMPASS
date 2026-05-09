@@ -338,7 +338,7 @@ nlohmann::json DeleteDataDialog::selectedDeleteInfo() const
 
 void DeleteDataDialog::itemChangedSlot(QTreeWidgetItem* /*item*/, int /*column*/)
 {
-    // no propagation — each item is toggled independently, like in DataSourcesUseWidget
+    // no propagation - each item is toggled independently, like in DataSourcesUseWidget
 }
 
 void DeleteDataDialog::setCheckRecursive(QTreeWidgetItem* item, Qt::CheckState state)
@@ -354,7 +354,7 @@ void DeleteDataDialog::showTreeContextMenu(const QPoint& pos)
 
     QMenu menu;
 
-    // Select All — entire tree
+    // Select All - entire tree
     menu.addAction("Select All", [this]() {
         ds_tree_->blockSignals(true);
         for (int i = 0; i < ds_tree_->topLevelItemCount(); ++i)
@@ -362,7 +362,7 @@ void DeleteDataDialog::showTreeContextMenu(const QPoint& pos)
         ds_tree_->blockSignals(false);
     });
 
-    // Select None — entire tree
+    // Select None - entire tree
     menu.addAction("Select None", [this]() {
         ds_tree_->blockSignals(true);
         for (int i = 0; i < ds_tree_->topLevelItemCount(); ++i)
@@ -374,7 +374,7 @@ void DeleteDataDialog::showTreeContextMenu(const QPoint& pos)
     {
         menu.addSeparator();
 
-        // Select All Siblings — same parent, same level, propagate down
+        // Select All Siblings - same parent, same level, propagate down
         menu.addAction("Select All Siblings", [this, item]() {
             ds_tree_->blockSignals(true);
             QTreeWidgetItem* parent = item->parent();
@@ -408,7 +408,7 @@ void DeleteDataDialog::showTreeContextMenu(const QPoint& pos)
             ds_tree_->blockSignals(false);
         });
 
-        // Select All Children — only if item has children
+        // Select All Children - only if item has children
         if (item->childCount() > 0)
         {
             menu.addSeparator();

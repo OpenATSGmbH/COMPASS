@@ -42,7 +42,7 @@ message("Qt Widgets version: ${Qt5Widgets_VERSION}")
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-# Global AUTOMOC is OFF — each target opts in explicitly to avoid
+# Global AUTOMOC is OFF - each target opts in explicitly to avoid
 # duplicate MOC generation when a library's .cpp files #include
 # Q_OBJECT headers from dependency libraries.
 set(CMAKE_AUTOMOC OFF)
@@ -207,7 +207,7 @@ add_subdirectory(src/eval)
 add_subdirectory(src/view)
 add_subdirectory(src/report)
 
-# Experimental source — creates its own library targets
+# Experimental source - creates its own library targets
 IF (EXPERIMENTAL_SRC)
     MESSAGE(STATUS "Including experimental source")
     include(experimental_src/CMakeLists.txt)

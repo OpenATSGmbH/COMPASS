@@ -21,7 +21,7 @@ ASAN_MARKER=$BUILD_DIR/.asan_state
 if [[ -d "$BUILD_DIR" ]]; then
     PREV_ASAN=$(cat "$ASAN_MARKER" 2>/dev/null || echo "")
     if [[ "$PREV_ASAN" != "$ASAN" ]]; then
-        echo "ASAN state changed (prev='$PREV_ASAN' now='$ASAN') — forcing clean build"
+        echo "ASAN state changed (prev='$PREV_ASAN' now='$ASAN') - forcing clean build"
         CLEAN=1
     fi
 fi
@@ -32,7 +32,7 @@ fi
 
 CMAKE_EXTRA=()
 if [[ $ASAN -eq 1 ]]; then
-    # AddressSanitizer build — must match compass flags so shared symbols line up.
+    # AddressSanitizer build - must match compass flags so shared symbols line up.
     echo "AddressSanitizer build enabled"
     CMAKE_EXTRA+=(-DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer -O1 -g")
     CMAKE_EXTRA+=(-DCMAKE_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer -O1 -g")

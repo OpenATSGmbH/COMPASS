@@ -103,7 +103,8 @@ public:
     TaskResultsWidget* widget();
 
     void beginTaskResultWriting(const std::string& name,
-                                task::TaskResultType type);
+                                task::TaskResultType type,
+                                bool clear_existing = true);
     bool hasCurrentResult() const;
     std::shared_ptr<TaskResult>& currentResult();
     std::shared_ptr<ResultReport::Report>& currentReport();

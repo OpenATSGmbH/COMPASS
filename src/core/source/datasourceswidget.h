@@ -99,7 +99,7 @@ public:
     /// Color this item currently represents. For leaves (DataSourceCountItem)
     /// this is derived from the active ColorProvider::Mode and the data
     /// context palettes. For groups (DataSourceItem, DataSourceTypeItem) it is
-    /// the common color of the descendants, or invalid if they disagree — so
+    /// the common color of the descendants, or invalid if they disagree - so
     /// colors propagate up only when every leaf below agrees. DataSourceLine
     /// mode carries no tree-icon color (the color is on the line buttons).
     virtual QColor effectiveColor() const { return QColor(); }
@@ -218,7 +218,7 @@ public slots:
     // Add this slot
     void onItemSelectionChanged();
 
-    /// Context-menu handler — dispatches the menu based on the item under
+    /// Context-menu handler - dispatches the menu based on the item under
     /// `pos` (DSType row, DataSource row, DBContent count row, or blank
     /// background).
     void showContextMenuSlot(const QPoint& pos);
