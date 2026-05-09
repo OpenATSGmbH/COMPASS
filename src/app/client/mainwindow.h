@@ -68,7 +68,7 @@ public slots:
     void livePauseResumeSlot();
     void liveStopSlot();
 
-    void configureMetaVariablesSlot();
+    void configureDBContentSlot();
 
     void importAsterixRecordingSlot();
     void importRecentAsterixRecordingSlot();
@@ -179,6 +179,7 @@ protected:
     QAction* dark_mode_action_ {nullptr};
     QAction* fullscreen_action_ {nullptr};
     QAction* auto_refresh_views_action_ {nullptr};
+    QAction* dbcontent_action_ {nullptr};
 
     // process menu
     QMenu* process_menu_ {nullptr};

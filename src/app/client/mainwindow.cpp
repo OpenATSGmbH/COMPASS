@@ -28,7 +28,7 @@
 #include "dbcontent/target/targetlistwidget.h"
 #include "datasourcestoolwidget.h"
 #include "datasourcesstatustoolwidget.h"
-#include "dbcontent/variable/metavariableconfigurationdialog.h"
+#include "dbcontent/db_content_edit_dialog.h"
 #include "files.h"
 #include "filtermanager.h"
 #include "filtermanagerwidget.h"
@@ -428,15 +428,15 @@ void MainWindow::createMenus ()
     config_menu_->setToolTipsVisible(true);
 
             // configure operations
-    QAction* meta_action = new QAction("Meta Variables");
+    dbcontent_action_ = new QAction("DBContent");
 
     if (expert_mode)
-        meta_action->setToolTip("Configure Meta Variables");
+        dbcontent_action_->setToolTip("Configure DBContent");
     else
-        meta_action->setToolTip("Show Meta Variables");
+        dbcontent_action_->setToolTip("Show DBContent");
 
-    connect(meta_action, &QAction::triggered, this, &MainWindow::configureMetaVariablesSlot);
-    config_menu_->addAction(meta_action);
+    connect(dbcontent_action_, &QAction::triggered, this, &MainWindow::configureDBContentSlot);
+    config_menu_->addAction(dbcontent_action_);
 
 #if USE_EXPERIMENTAL_SOURCE == true
     config_menu_->addSeparator();
@@ -570,7 +570,8 @@ void MainWindow::updateMenus()
         a->setEnabled(a == license_action_
                       || a == auto_refresh_views_action_
                               || a == dark_mode_action_
-                              || a == fullscreen_action_ ? true : db_open);
+                              || a == fullscreen_action_
+                              || a == dbcontent_action_ ? true : db_open);
 
     // context-state gating always wins - applied after DB/live-state logic above
     updateMenuEnabledState();
@@ -598,11 +599,11 @@ void MainWindow::updateMenuEnabledState()
         if (save_config_action_)
             save_config_action_->setDisabled(true);
 
-        // Import / Configuration / Process / UI: entire menus disabled.
+        // Import / Process / UI: entire menus disabled.
+        // Configuration menu stays enabled so DBContent / Dark Mode / Fullscreen /
+        // Refresh-Views-Automatically remain reachable without an open DB.
         if (import_menu_)
             import_menu_->menuAction()->setEnabled(false);
-        if (config_menu_)
-            config_menu_->menuAction()->setEnabled(false);
         if (process_menu_)
             process_menu_->menuAction()->setEnabled(false);
         if (ui_menu_)
@@ -627,8 +628,6 @@ void MainWindow::updateMenuEnabledState()
         // managed by updateMenus() / updateContextMenuTitle().
         if (import_menu_)
             import_menu_->menuAction()->setEnabled(true);
-        if (config_menu_)
-            config_menu_->menuAction()->setEnabled(true);
         if (process_menu_)
             process_menu_->menuAction()->setEnabled(true);
         if (ui_menu_)
@@ -1082,11 +1081,11 @@ void MainWindow::evaluateSlot()
     compass_.evaluationManager().evaluate(true);
 }
 
-void MainWindow::configureMetaVariablesSlot()
+void MainWindow::configureDBContentSlot()
 {
     loginf;
 
-    compass_.dbContentManager().metaVariableConfigdialog()->show();
+    compass_.dbContentManager().dbContentEditDialog()->show();
 }
 
 void MainWindow::quitRequestedSlot()

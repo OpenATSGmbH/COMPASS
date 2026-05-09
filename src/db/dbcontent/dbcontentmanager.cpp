@@ -36,7 +36,7 @@
 #include "filtermanager.h"
 #include "util/number.h"
 #include "util/timeconv.h"
-#include "dbcontent/variable/metavariableconfigurationdialog.h"
+#include "dbcontent/db_content_edit_dialog.h"
 #include "dbcontentdeletedbjob.h"
 #include "dbcontent_commands.h"
 #include "viewpoint.h"
@@ -323,11 +323,8 @@ void DBContentManager::renameMetaVariable(const std::string& old_var_name, const
     meta_variables_.emplace(new_var_name, std::move(meta_var));
 
 
-    if (meta_cfg_dialog_)
-    {
-        meta_cfg_dialog_->updateList();
-        meta_cfg_dialog_->selectMetaVariable(new_var_name);
-    }
+    if (db_content_edit_dialog_)
+        db_content_edit_dialog_->rebuildTree();
 }
 
 /**
@@ -339,11 +336,8 @@ void DBContentManager::deleteMetaVariable(const std::string& var_name)
 
     meta_variables_.erase(var_name);
 
-    if (meta_cfg_dialog_)
-    {
-        meta_cfg_dialog_->updateList();
-        meta_cfg_dialog_->clearDetails();
-    }
+    if (db_content_edit_dialog_)
+        db_content_edit_dialog_->rebuildTree();
 }
 
 /**
@@ -934,10 +928,10 @@ void DBContentManager::deleteJobDoneSlot()
 
 /**
  */
-void DBContentManager::metaDialogOKSlot()
+void DBContentManager::dbContentEditDialogOKSlot()
 {
-    traced_assert(meta_cfg_dialog_);
-    meta_cfg_dialog_->hide();
+    traced_assert(db_content_edit_dialog_);
+    db_content_edit_dialog_->hide();
 }
 
 /**
@@ -2206,18 +2200,18 @@ void DBContentManager::addStandardVariables(std::string dbcont_name, dbContent::
 
 /**
  */
-MetaVariableConfigurationDialog* DBContentManager::metaVariableConfigdialog()
+DBContentEditDialog* DBContentManager::dbContentEditDialog()
 {
-    if (!meta_cfg_dialog_)
+    if (!db_content_edit_dialog_)
     {
-        meta_cfg_dialog_.reset(new MetaVariableConfigurationDialog(*this));
+        db_content_edit_dialog_.reset(new DBContentEditDialog(*this));
 
-        connect(meta_cfg_dialog_.get(), &MetaVariableConfigurationDialog::okSignal,
-                this, &DBContentManager::metaDialogOKSlot);
+        connect(db_content_edit_dialog_.get(), &DBContentEditDialog::okSignal,
+                this, &DBContentManager::dbContentEditDialogOKSlot);
     }
 
-    traced_assert(meta_cfg_dialog_);
-    return meta_cfg_dialog_.get();
+    traced_assert(db_content_edit_dialog_);
+    return db_content_edit_dialog_.get();
 }
 
 /**

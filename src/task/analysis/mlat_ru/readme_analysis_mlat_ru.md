@@ -14,10 +14,11 @@ Prerequisites:
 Reference data: **only the Reference Trajectory (RefTraj) is used as ground truth.** Tracker- and ADS-B-based reference selection is not part of this task.
 
 Iteration scope:
-- **Feature A** (PD per cell, both categories) - implemented in this iteration.
-- **Feature 1** (per-RU coverage, CAT020 only) - implemented in this iteration.
-- **Feature B** (per-cell position accuracy) - listed below; **design TBD, to be implemented later.**
-- **Feature 2** (per-RU offset and RU combination analysis, CAT020 only) - listed below; **design TBD, to be implemented later.**
+- **Feature 1** (data item analysis from probing info, both categories) - implemented in this iteration.
+- **Feature 2** (PD per cell, both categories) - implemented in this iteration.
+- **Feature 4** (per-RU coverage, CAT020 only) - implemented in this iteration.
+- **Feature 3** (per-cell position accuracy) - listed below; **design TBD, to be implemented later.**
+- **Feature 5** (per-RU offset and RU combination analysis, CAT020 only) - listed below; **design TBD, to be implemented later.**
 
 ---
 
@@ -32,7 +33,7 @@ Iteration scope:
 
 ## Features
 
-### Feature A: Sensor Coverage Analysis (PD) - this iteration
+### Feature 2: Sensor Coverage Analysis (PD) - this iteration
 
 Always calculated. Computes per-cell PD across a configurable 3D grid, using RefTraj as ground truth.
 
@@ -58,7 +59,7 @@ Algorithmic details are in the [Design](#design) section.
 
 ---
 
-### Feature B: Position Accuracy Analysis - to be implemented later, design TBD
+### Feature 3: Position Accuracy Analysis - to be implemented later, design TBD
 
 The horizontal position error for each TR is the Cartesian distance between the MLAT reported position and the interpolated RefTraj position at the same timestamp.
 
@@ -85,19 +86,19 @@ The horizontal position error for each TR is the Cartesian distance between the 
 - Altitude/longitude and altitude/latitude error projection images
 - Table: overall mean error, P95 error, worst-area cell
 
-> **Status:** design pending - to be specified once Feature A is in place. Algorithm detail will follow the same "per-target compute, cell-cut" structure as Feature A.
+> **Status:** design pending - to be specified once Feature 2 is in place. Algorithm detail will follow the same "per-target compute, cell-cut" structure as Feature 2.
 
 ---
 
-### Feature 1: RU Coverage Analysis (CAT020 only) - this iteration
+### Feature 4: RU Coverage Analysis (CAT020 only) - this iteration
 
-Optional. Built on the same 3D grid as Feature A, broken down by **contributing RU (I020/400)**.
+Optional. Built on the same 3D grid as Feature 2, broken down by **contributing RU (I020/400)**.
 
 **Availability:** CAT020 only. CAT010 has no Contributing Receivers item, so this feature is hidden when the configured data source is CAT010.
 
 No reference trajectory required - this is a contribution-count analysis, not PD per RU.
 
-**1a. Coverage Map per RU**
+**4a. Coverage Map per RU**
 
 For each RU listed in the data source's RemoteUnitDefinition: a 2D lat/lon heatmap showing how often that RU contributed to MLAT positions in each cell. Color scale: transparent (0) - red (few) - green (many). User selects which RU to display from the GridView layer panel or a dropdown.
 
@@ -105,7 +106,7 @@ Report output:
 - One coverage map image per RU
 - Table: RU name, total contribution count, estimated coverage area, max cell count
 
-**1b. Dominant RU Map**
+**4b. Dominant RU Map**
 
 A single horizontal map where each cell is colored by the RU that contributed most often there. Optional opacity encodes dominance ratio. Clicking a cell shows: dominant RU + count, runner-up RU + count.
 
@@ -117,11 +118,11 @@ Report output:
 
 ---
 
-### Feature 2: RU Offset and Combination Analysis (CAT020 only) - to be implemented later, design TBD
+### Feature 5: RU Offset and Combination Analysis (CAT020 only) - to be implemented later, design TBD
 
-Built on the same 3D grid as Feature B, broken down by contributing RU.
+Built on the same 3D grid as Feature 3, broken down by contributing RU.
 
-**2a. Average Position Error Heat-Map per RU**
+**5a. Average Position Error Heat-Map per RU**
 
 For each RU: a 2D heatmap (horizontal projection) where each cell value is the mean (or median) position error of all TRs in that cell where that RU contributed.
 
@@ -134,7 +135,7 @@ Report output:
 - Overall system error map image
 - Table: RU name, overall mean error, 95th percentile error, worst-area cell location
 
-**2b. RU Combination Analysis**
+**5b. RU Combination Analysis**
 
 Answers: which specific sets of contributing RUs produce the best and worst position accuracy?
 
@@ -151,7 +152,7 @@ Report output:
 - RU pair matrix image (green = low error pairs, red = high error pairs)
 - Minimum RU count analysis: "reports with >=N RUs have avg error X" for N = 2, 3, 4, 5
 
-> **Status:** design pending - depends on Feature B. Available only for CAT020 (uses I020/400).
+> **Status:** design pending - depends on Feature 3. Available only for CAT020 (uses I020/400).
 
 ---
 
@@ -175,7 +176,7 @@ Geographic bounds are auto-derived from the data extent by default, or user-spec
 | Altitude/Longitude | lon / alt | aggregated over lat_bins |
 | Altitude/Latitude | lat / alt | aggregated over lon_bins |
 
-For PD layers the aggregation across the dropped axis is sum-of-#EUI / sum-of-#MUI; for count layers (Feature 1) it is sum-of-counts; for error layers (Feature B, when implemented) the aggregation rule will be specified with the Feature B design.
+For PD layers the aggregation across the dropped axis is sum-of-#EUI / sum-of-#MUI; for count layers (Feature 4) it is sum-of-counts; for error layers (Feature 3, when implemented) the aggregation rule will be specified with the Feature 3 design.
 
 **Sector overlay:** sectors defined in the active data context are drawn as outlines on top of all three projections. Display only - no filtering or grouping by sector.
 
@@ -190,7 +191,7 @@ For PD layers the aggregation across the dropped axis is sum-of-#EUI / sum-of-#M
 | Time of applicability | I020/140 | I010/140 |
 | Position (WGS-84) | I020/041 | I010/041 |
 | Barometric altitude | I020/090 (Mode-S binary FL) | I010/090 (FL) |
-| Contributing receivers (Feature 1, Feature 2) | I020/400 | **not available** |
+| Contributing receivers (Feature 4, Feature 5) | I020/400 | **not available** |
 | System status / cadence (period-based PD) | CAT019 (associated MLAT) | CAT019 / CAT023 if associated |
 | Reference trajectory | RefTraj (post-reconstruction) | RefTraj |
 
@@ -200,11 +201,11 @@ I020/110 and I010/091 (locally-referenced measured heights) are **not used** - t
 
 ## Design
 
-This section covers Feature A only. Design for Feature B and Feature 2 will be added in a later iteration.
+This section covers Feature 2 only. Design for Feature 3 and Feature 5 will be added in a later iteration.
 
-### PD computation (Feature A)
+### PD computation (Feature 2)
 
-Feature A reuses the existing COMPASS detection requirement's per-target machinery, then "cuts up" the per-target #EUI / #MUI integers into 3D cells so that summing cell counters reproduces the per-target totals. Per-target PD is therefore identical to what the detection requirement would produce on the same data; per-cell PD is a strict refinement of it.
+Feature 2 reuses the existing COMPASS detection requirement's per-target machinery, then "cuts up" the per-target #EUI / #MUI integers into 3D cells so that summing cell counters reproduces the per-target totals. Per-target PD is therefore identical to what the detection requirement would produce on the same data; per-cell PD is a strict refinement of it.
 
 **Per-target slot-walk** (counters live on cells; reused from `detection.cpp`):
 
@@ -289,11 +290,11 @@ I020/110 (local Cartesian) and I010/091 (local airport frame) are deliberately n
 | `MLATRUAnalysisDialog` | `mlatruanalysisdialog.h/.cpp` | Pre-run configuration dialog |
 | `MLATRUAnalysisJob` | `mlatruanalysisjob.h/.cpp` | Background job - drives analyzers, assembles result |
 | `MLATRUAnalysisResult` | `mlatruanalysisresult.h/.cpp` | Result container + report section generator |
-| `MLATPDAnalyzer` | `mlatpdanalyzer.h/.cpp` | Feature A: per-target slot-walk, cell attribution, 3 projections |
-| `MLATRUCoverageAnalyzer` | `mlatrucoverageanalyzer.h/.cpp` | Feature 1: per-RU contribution layers + dominant-RU layer (CAT020 only) |
-| `MLATAccuracyAnalyzer` *(later)* | `mlataccuracyanalyzer.h/.cpp` | Feature B - design TBD |
-| `MLATRUOffsetAnalyzer` *(later)* | `mlatruoffsetanalyzer.h/.cpp` | Feature 2a - design TBD |
-| `MLATCombinationAnalyzer` *(later)* | `mlatcombinationanalyzer.h/.cpp` | Feature 2b - design TBD |
+| `MLATPDAnalyzer` | `mlatpdanalyzer.h/.cpp` | Feature 2: per-target slot-walk, cell attribution, 3 projections |
+| `MLATRUCoverageAnalyzer` | `mlatrucoverageanalyzer.h/.cpp` | Feature 4: per-RU contribution layers + dominant-RU layer (CAT020 only) |
+| `MLATAccuracyAnalyzer` *(later)* | `mlataccuracyanalyzer.h/.cpp` | Feature 3 - design TBD |
+| `MLATRUOffsetAnalyzer` *(later)* | `mlatruoffsetanalyzer.h/.cpp` | Feature 5a - design TBD |
+| `MLATCombinationAnalyzer` *(later)* | `mlatcombinationanalyzer.h/.cpp` | Feature 5b - design TBD |
 
 ### Data Flow
 
@@ -305,18 +306,18 @@ CAT020 / CAT010 TRs                RefTraj from reconstruction
        \                             /
         \                           /
          v                         v
-         MLATPDAnalyzer  [Feature A, both cats]
+         MLATPDAnalyzer  [Feature 2, both cats]
             per target: walk reference periods in UI steps
                         cell-cut #EUI / #MUI by ref pos at slot t
             project to 3x Grid2DLayer (PD per cell)
 
-         MLATRUCoverageAnalyzer  [Feature 1, CAT020 only]
+         MLATRUCoverageAnalyzer  [Feature 4, CAT020 only]
             per TR: increment cell.count for each contributing RU index
             project to per-RU horizontal layers + dominant-RU layer
 
-         MLATAccuracyAnalyzer      [Feature B, later]
-         MLATRUOffsetAnalyzer      [Feature 2a, later]
-         MLATCombinationAnalyzer   [Feature 2b, later]
+         MLATAccuracyAnalyzer      [Feature 3, later]
+         MLATRUOffsetAnalyzer      [Feature 5a, later]
+         MLATCombinationAnalyzer   [Feature 5b, later]
 ```
 
 ---
@@ -350,7 +351,7 @@ Goal: the shared data structure that all analyzers build on.
   - Sector overlay: `addSectorLayer(sector)` returns sector outline as `Grid2DLayer`
 - [ ] Unit test: bucket known TRs, verify projection counts and PD aggregation identity
 
-### Phase 3 - Feature A: PD Analysis
+### Phase 3 - Feature 2: PD Analysis
 
 - [ ] Implement `MLATPDAnalyzer::run()`:
   - Per target, build reference periods using detection.cpp's parameters and rules
@@ -361,25 +362,25 @@ Goal: the shared data structure that all analyzers build on.
 - [ ] Optional: CAT019 cadence source (otherwise leave behind a TODO + UI option disabled)
 - [ ] Verify per-target totals match a plain detection requirement run on the same data
 
-### Phase 4 - Feature 1: RU Coverage Analysis (CAT020)
+### Phase 4 - Feature 4: RU Coverage Analysis (CAT020)
 
 - [ ] Implement `MLATRUCoverageAnalyzer::run()` (skipped if data source is CAT010):
   - Per TR, parse I020/400, increment per-RU count layer at `cell_of(TR pos)`
   - Build dominant-RU horizontal layer + optional contested-areas variant
 - [ ] Implement RU coverage report sections
-- [ ] Verify per-RU coverage maps appear in report; verify CAT010 sources skip Feature 1 cleanly
+- [ ] Verify per-RU coverage maps appear in report; verify CAT010 sources skip Feature 4 cleanly
 
-### Phase 5 - Polish (covers Feature A + Feature 1)
+### Phase 5 - Polish (covers Feature 2 + Feature 4)
 
 - [ ] Configurable color scales for PD and count layers
 - [ ] CSV export for cell counters and per-RU summary tables
 - [ ] Progress reporting per phase
 - [ ] Performance profiling on large datasets (>1M TRs)
 
-### Phase 6 - Feature B: Position Accuracy Analysis (later)
+### Phase 6 - Feature 3: Position Accuracy Analysis (later)
 
-Design TBD. To be specified once Phases 1-5 are in place. Expected to follow the same "per-target compute, cell-cut" structure as Feature A.
+Design TBD. To be specified once Phases 1-5 are in place. Expected to follow the same "per-target compute, cell-cut" structure as Feature 2.
 
-### Phase 7 - Feature 2: RU Offset and Combination Analysis (later)
+### Phase 7 - Feature 5: RU Offset and Combination Analysis (later)
 
-Design TBD. Depends on Feature B. CAT020 only (uses I020/400).
+Design TBD. Depends on Feature 3. CAT020 only (uses I020/400).
