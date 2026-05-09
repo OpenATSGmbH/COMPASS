@@ -104,6 +104,7 @@ public:
 
     void beginTaskResultWriting(const std::string& name,
                                 task::TaskResultType type);
+    bool hasCurrentResult() const;
     std::shared_ptr<TaskResult>& currentResult();
     std::shared_ptr<ResultReport::Report>& currentReport();
     void endTaskResultWriting(bool store_result,

@@ -757,6 +757,7 @@ Result COMPASS::closeDBInternal()
     {
         dbcontent_manager_->saveTargets();
         context_manager_->saveCountsToDB();
+        context_manager_->saveAsterixInfoToDB();
 
         db_interface_->closeDB();
         traced_assert(!db_interface_->ready());

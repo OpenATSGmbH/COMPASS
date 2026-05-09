@@ -56,6 +56,7 @@ Related files outside this directory:
 | `fftsChangedSignal()` | FFT list of the active context was mutated: `createFFT`, `deleteFFT`, `deleteAllFFTs`, `importFFTs`. |
 | `sectorsChangedSignal()` | Sector list of the active context was mutated. |
 | `countsChangedSignal()` | Per-session inserted/loaded counts changed. |
+| `asterixInfoChangedSignal()` | Cumulative ASTERIX probe info (per-DS / per-CAT / per-item counts + min/max) for the open DB changed. |
 
 All signals may fire with `hasActiveContext() == false` -- handlers must early-return when no context is active (see [No Context state](#no-context-state)).
 
@@ -234,6 +235,7 @@ These are per-session, managed by `DBContextManager`:
 
 - **Loading filters**: `ds_type_loading_wanted_`, `ds_loading_wanted_`, `line_loading_wanted_` -- which data sources to load from DB.
 - **Counts**: `inserted_counts_`, `loaded_counts_` (ds_id -> dbcontent_name -> line_id -> count). Persisted in `db_info` on DB close, not in context files.
+- **ASTERIX info**: `asterix_info_` (ds_id -> cat -> { total_count, items[item_name] -> { count, min, max } }). Cumulative per-data-source probe summary across all ASTERIX imports into the open DB. Populated by `ASTERIXImportTask` after each import via `mergeAsterixInfo`. Persisted in `db_info` under key `"asterix_info"` on DB close, loaded on open, cleared on close. Not in context files.
 - **Max timestamps**: `max_timestamps_` (ds_id -> line_id -> ptime).
 - **Sensor config**: `SensorConfig` struct with radar stddevs, status widget config, display options.
 

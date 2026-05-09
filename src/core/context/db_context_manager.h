@@ -67,6 +67,7 @@ signals:
     void fftsChangedSignal();
     void sectorsChangedSignal();
     void countsChangedSignal();
+    void asterixInfoChangedSignal();
 
 public:
     explicit DBContextManager(COMPASS& compass);
@@ -187,6 +188,43 @@ public:
     unsigned int numLoaded(unsigned int ds_id, const std::string& dbcontent_name) const;
     std::map<unsigned int, unsigned int> numInsertedPerLine(unsigned int ds_id, const std::string& dbcontent_name) const;
     std::map<unsigned int, unsigned int> numInsertedLinesMap(unsigned int ds_id) const;
+
+    // ================================================================
+    // Cumulative ASTERIX import info (per DS, per CAT, per data item)
+    // Persisted in db_info under key "asterix_info"; cleared on DB close.
+    // Populated by ASTERIXImportTask after each import via mergeAsterixInfo.
+    // ================================================================
+    struct AsterixItemStats
+    {
+        std::size_t    count = 0;
+        nlohmann::json min;     // null if not provided / unknown
+        nlohmann::json max;     // null if not provided / unknown
+    };
+
+    struct AsterixCategoryStats
+    {
+        std::size_t                                total_count = 0;
+        std::map<std::string, AsterixItemStats>    items;
+    };
+
+    // ds_id -> cat -> { total_count, items[item_name] -> stats }
+    using AsterixInfoMap = std::map<unsigned int,
+                                    std::map<unsigned int, AsterixCategoryStats>>;
+
+    const AsterixInfoMap& asterixInfo() const { return asterix_info_; }
+    bool hasAsterixInfo(unsigned int ds_id) const;
+    bool hasAnyAsterixInfo() const;
+
+    /// Sum counts/total_count and refine min/max from `delta` into the cumulative store.
+    /// Skips ds_id == 0 (the aggregator's "unknown SAC/SIC" bucket).
+    void mergeAsterixInfo(const AsterixInfoMap& delta);
+
+    void saveAsterixInfoToDB();
+
+    /// Pure data-manipulation helpers — exposed for unit testing.
+    static void mergeAsterixInfoInto(AsterixInfoMap& dst, const AsterixInfoMap& delta);
+    static nlohmann::json asterixInfoToJSON(const AsterixInfoMap& src);
+    static AsterixInfoMap asterixInfoFromJSON(const nlohmann::json& j);
 
     // ================================================================
     // Network lines (replaces DataSourceManager network methods)
@@ -345,6 +383,7 @@ private:
     void saveActiveContextName();
     void loadActiveContextName();
     void loadCountsFromDB();
+    void loadAsterixInfoFromDB();
 
     void ensureDataSourceCache() const;
     void invalidateDataSourceCache() const;
@@ -367,6 +406,9 @@ private:
     // ds_id -> dbcontent_name -> line_id -> count
     std::map<unsigned int, std::map<std::string, std::map<unsigned int, unsigned int>>> inserted_counts_;
     std::map<unsigned int, std::map<std::string, std::map<unsigned int, unsigned int>>> loaded_counts_;
+
+    // cumulative ASTERIX probe stats for this DB (persisted in db_info on close)
+    AsterixInfoMap asterix_info_;
 
     // runtime max timestamps: ds_id -> line_id -> max_timestamp
     std::map<unsigned int, std::map<unsigned int, boost::posix_time::ptime>> max_timestamps_;

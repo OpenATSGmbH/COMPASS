@@ -399,6 +399,11 @@ void TaskManager::beginTaskResultWriting(const std::string& name,
 
 /**
  */
+bool TaskManager::hasCurrentResult() const
+{
+    return current_result_ != nullptr;
+}
+
 std::shared_ptr<TaskResult>& TaskManager::currentResult()
 {
     traced_assert(current_result_);

@@ -161,6 +161,9 @@ protected:
 
     void sourceChanged();
 
+    void beginResultReport();
+    void buildResultReport(const boost::posix_time::ptime& end_time);
+
     COMPASS&          compass_;
     DBContentManager& dbcontent_man_;
 

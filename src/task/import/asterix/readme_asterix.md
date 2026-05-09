@@ -313,6 +313,20 @@ with categories chosen at the top of that chain determining what kind of surveil
 
 What happens *after* the buffers reach DuckDB — the DBContent / Variable / MetaVariable model, the `db_content*.json` schema, ToD wrap and SAC/SIC handling, how loaded data feeds views/filters/eval/reconstruction — is documented in [readme_dbcontent.md](../../db/dbcontent/readme_dbcontent.md).
 
+## Import result report
+
+Every file-based ASTERIX import produces a `TaskResult` (type `Generic`) stored in the task results browser, exportable to DOCX/LaTeX/JSON via the standard report-export path. Network imports produce a minimal stub with start/stop timestamps. Cancelled or errored imports discard the result.
+
+Sections:
+
+- **Overview/Info**: begin/end/elapsed, records inserted, rec/s, max process RAM.
+- **Overview/Source**: source type, framing, file count, total bytes, decoder errors/warnings counts.
+- **Files/File N - <basename>**: per-file `Info` (path, size, content info, used flag, PCAP section count), `Records by Category` (from probe-time `records_per_category`), and `Errors / Warnings` (from `ASTERIXImportFileError` / per-file warning). PCAP files add one sub-section per used `ASTERIXImportFileSection`.
+- **Data Sources/<DS name (sac/sic)>**: a `Categories` table (record total per CAT) and one `CAT NNN` sub-section per category, each carrying a `Data Items` table (item, description, count + percent of CAT total, min, max). Tables include items defined in the active edition that have never been seen, listed with count 0. Source: the **cumulative** `db_info / "asterix_info"` store on `DBContextManager`, refined on every import by merging the latest `ASTERIXImportProbeAggregator::aggregate(...)` result via `DBContextManager::mergeAsterixInfo(...)`.
+- **Decoder Issues**: `ASTERIXDecoderBase::errors()` / `warnings()` (post-decode, global).
+
+The cumulative `asterix_info` store is per-DB (cleared on DB close, persisted in `db_info`), not per-context. See [readme_context.md](../../../core/context/readme_context.md) for the runtime-state persistence model.
+
 ## Reference documents
 
 The original EUROCONTROL specification PDFs are kept locally under `~/Nextcloud/documents/asterix/`, organised by category. The most recent editions present (and used as the basis for the per-category descriptions above) are:

@@ -16,7 +16,16 @@
  */
 
 #include "asteriximporttask.h"
+#include "asteriximportprobeaggregator.h"
 #include "asterix_decoding_config.h"
+
+#include "task/result/report/report.h"
+#include "task/result/report/section.h"
+#include "task/result/report/sectioncontenttable.h"
+#include "task/result/report/sectioncontenttext.h"
+
+#include "data_source.h"
+#include "number.h"
 #include "compass.h"
 #include "buffer.h"
 #include "configurable.h"
@@ -880,6 +889,9 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     //reset state before new run
     reset();
 
+    //open task result
+    beginResultReport();
+
     float free_ram = System::getFreeRAMinGB();
 
     loginf << "filenames " << source_.filesAsString() << " free RAM " << free_ram << " GB";
@@ -1652,6 +1664,34 @@ void ASTERIXImportTask::checkAllDone()
         }
 
         compass_.dbContextManager().saveCountsToDB();
+
+        // merge per-DS / per-CAT / per-item probe stats into the cumulative
+        // store and persist them for this DB
+        {
+            auto agg = ASTERIXImportProbeAggregator::aggregate(
+                source_, compass_.dbContextManager());
+
+            context::DBContextManager::AsterixInfoMap delta;
+            for (const auto& [ds_id, ds_probe] : agg.probe_by_dsid)
+            {
+                for (const auto& [cat, cat_probe] : ds_probe.categories)
+                {
+                    auto& dst = delta[ds_id][cat];
+                    dst.total_count = cat_probe.total_count;
+                    for (const auto& [item, st] : cat_probe.items)
+                    {
+                        auto& di = dst.items[item];
+                        di.count = st.count;
+                        di.min   = st.min;
+                        di.max   = st.max;
+                    }
+                }
+            }
+
+            compass_.dbContextManager().mergeAsterixInfo(delta);
+            compass_.dbContextManager().saveAsterixInfoToDB();
+        }
+
         emit dbcontent_man_.dbContentStatusChanged();
         compass_.dbInterface().saveProperties();
 
@@ -1679,6 +1719,16 @@ void ASTERIXImportTask::checkAllDone()
         //cleanup db after import
         if (source_.isFileType())
             compass_.dbInterface().cleanupDB(true);
+
+        // finalize task result: discard on cancel/error, store on success
+        if (compass_.taskManager().hasCurrentResult())
+        {
+            const bool ok = !stopped_ && !error_;
+            if (ok)
+                buildResultReport(boost::posix_time::microsec_clock::local_time());
+
+            compass_.taskManager().endTaskResultWriting(ok, allow_user_interactions_);
+        }
 
         emit doneSignal();
     }
@@ -1779,5 +1829,334 @@ void ASTERIXImportTask::runDialog(QWidget* parent)
 
     //otherwise run import
     run();
+}
+
+namespace
+{
+    /// Middle-ellipsis a string to fit `max_chars`. Preserves the file
+    /// extension where possible (last 12 chars).
+    std::string abbreviateForHeading(const std::string& s, std::size_t max_chars)
+    {
+        if (s.size() <= max_chars || max_chars < 12)
+            return s;
+
+        const std::size_t tail = std::min<std::size_t>(12, max_chars / 2);
+        const std::size_t head = max_chars - tail - 1; // 1 char for ellipsis
+        return s.substr(0, head) + "…" + s.substr(s.size() - tail);
+    }
+
+    /// "<count>" or "<count> (<pct.1f> %)" — matches the per-item display
+    /// in ASTERIXImportDataSourcesWidget.
+    std::string formatCountWithPercent(std::size_t count, std::size_t total)
+    {
+        if (total == 0)
+            return std::to_string(count);
+
+        const double pct = 100.0 * static_cast<double>(count) / static_cast<double>(total);
+        return std::to_string(count) + " (" + Utils::String::doubleToStringPrecision(pct, 1) + " %)";
+    }
+}
+
+/**
+*/
+void ASTERIXImportTask::beginResultReport()
+{
+    if (!compass_.hasActiveContext())
+        return; // no context — no result store; skip
+
+    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
+    std::string ts = Utils::Time::toString(now, 0);
+    // strip seconds for the file-import title — minutes is enough
+    std::string ts_short = ts.size() >= 16 ? ts.substr(0, 16) : ts;
+
+    std::string result_name;
+    if (source_.isFileType())
+    {
+        const std::size_t n = source_.files().size();
+        result_name = "ASTERIX Import " + std::to_string(n)
+                    + (n == 1 ? std::string(" file ") : std::string(" files "))
+                    + ts_short;
+    }
+    else
+    {
+        result_name = "ASTERIX Network Import " + ts;
+    }
+
+    compass_.taskManager().beginTaskResultWriting(
+        result_name, task::TaskResultType::Generic);
+}
+
+/**
+*/
+void ASTERIXImportTask::buildResultReport(const boost::posix_time::ptime& end_time)
+{
+    auto& tm = compass_.taskManager();
+    auto report = tm.currentReport();
+    if (!report)
+        return;
+
+    const double elapsed_s =
+        std::max(0.0, (end_time - start_time_).total_milliseconds() / 1000.0);
+    const int rec_per_s =
+        static_cast<int>(num_records_ / std::max(1.0, elapsed_s));
+
+    // ----- Overview -----
+    auto& overview = report->getSection("Overview");
+    if (!overview.hasTable("Info"))
+        overview.addTable("Info", 2, {"Property", "Value"}, false);
+    {
+        auto& info = overview.getTable("Info");
+        info.addRow({"Begin",            Utils::Time::toString(start_time_)});
+        info.addRow({"End",              Utils::Time::toString(end_time)});
+        info.addRow({"Elapsed",          Utils::String::timeStringFromDouble(elapsed_s, false)});
+        info.addRow({"Records inserted", static_cast<long long>(num_records_)});
+        info.addRow({"Records / second", rec_per_s});
+        info.addRow({"Max process RAM (GB)",
+                     Utils::String::doubleToStringPrecision(max_process_ram_gb_, 2)});
+    }
+
+    if (!overview.hasTable("Source"))
+        overview.addTable("Source", 2, {"Property", "Value"}, false);
+    {
+        auto& src_t = overview.getTable("Source");
+        src_t.addRow({"Type", source_.sourceTypeAsString()});
+        src_t.addRow({"Framing",
+                      settings_.activeFileFraming().empty()
+                          ? std::string("(none)")
+                          : settings_.activeFileFraming()});
+        if (source_.isFileType())
+        {
+            src_t.addRow({"Number of files", static_cast<long long>(source_.files().size())});
+            src_t.addRow({"Total size (bytes)",
+                          static_cast<long long>(source_.totalFileSizeInBytes(false))});
+        }
+        if (decoder_)
+        {
+            src_t.addRow({"Decoder errors",   static_cast<long long>(decoder_->numErrors())});
+            src_t.addRow({"Decoder warnings", static_cast<long long>(decoder_->numWarnings())});
+        }
+    }
+
+    // Network mode: keep minimal — only Overview, no per-file or per-DS tables.
+    if (source_.isNetworkType())
+        return;
+
+    // ----- Files tree -----
+    int file_idx = 0;
+    for (const auto& fi : source_.files())
+    {
+        ++file_idx;
+        const std::string basename = Utils::Files::getFilenameFromPath(fi.filename);
+        const std::string heading_basename = abbreviateForHeading(basename, 60);
+
+        std::string file_heading = "File " + std::to_string(file_idx) + " - " + heading_basename;
+        // colons are the section path separator — strip them defensively
+        std::replace(file_heading.begin(), file_heading.end(), ':', '_');
+
+        auto& file_section = report->getSection("Files:" + file_heading);
+
+        if (!file_section.hasTable("Info"))
+            file_section.addTable("Info", 2, {"Property", "Value"}, false);
+        {
+            auto& fi_t = file_section.getTable("Info");
+            fi_t.addRow({"Filename",     basename});
+            fi_t.addRow({"Path",         fi.filename});
+            fi_t.addRow({"Size (bytes)", static_cast<long long>(fi.sizeInBytes())});
+            if (!fi.contentinfo.empty())
+                fi_t.addRow({"Content info", fi.contentinfo});
+            fi_t.addRow({"Used", fi.used ? "yes" : "no"});
+            fi_t.addRow({"Number of file sections",
+                         static_cast<long long>(fi.sections.size())});
+        }
+
+        if (!fi.records_per_category.empty())
+        {
+            if (!file_section.hasTable("Records by Category"))
+                file_section.addTable("Records by Category", 2,
+                                      {"Category", "Records"}, true);
+            auto& cat_t = file_section.getTable("Records by Category");
+            for (const auto& [cat, count] : fi.records_per_category)
+                cat_t.addRow({"CAT" + Utils::String::categoryString(cat),
+                              static_cast<long long>(count)});
+        }
+
+        if (fi.error.hasError() || !fi.warning.empty())
+        {
+            auto& issues_text = file_section.addText("Errors / Warnings");
+            if (fi.error.hasError())
+                issues_text.addText(std::string("Error: ") + fi.error.errinfo);
+            if (!fi.warning.empty())
+                issues_text.addText(std::string("Warning: ") + fi.warning);
+        }
+
+        // PCAP file sections
+        int sec_idx = 0;
+        for (const auto& sec : fi.sections)
+        {
+            ++sec_idx;
+            if (!sec.used)
+                continue;
+
+            std::string sec_heading = "Section " + std::to_string(sec_idx);
+            if (!sec.description.empty())
+                sec_heading += " - " + abbreviateForHeading(sec.description, 50);
+            std::replace(sec_heading.begin(), sec_heading.end(), ':', '_');
+
+            auto& ss = file_section.hasSubSection(sec_heading)
+                           ? file_section.getSubSection(sec_heading)
+                           : file_section.addSubSection(sec_heading);
+
+            if (!ss.hasTable("Info"))
+                ss.addTable("Info", 2, {"Property", "Value"}, false);
+            {
+                auto& si = ss.getTable("Info");
+                if (!sec.description.empty())
+                    si.addRow({"Description", sec.description});
+                if (!sec.info.empty())
+                    si.addRow({"Info", sec.info});
+                if (!sec.contentinfo.empty())
+                    si.addRow({"Content info", sec.contentinfo});
+                si.addRow({"Total size (bytes)",
+                           static_cast<long long>(sec.total_size_bytes)});
+            }
+
+            if (!sec.records_per_category.empty())
+            {
+                if (!ss.hasTable("Records by Category"))
+                    ss.addTable("Records by Category", 2,
+                                {"Category", "Records"}, true);
+                auto& ct = ss.getTable("Records by Category");
+                for (const auto& [cat, count] : sec.records_per_category)
+                    ct.addRow({"CAT" + Utils::String::categoryString(cat),
+                               static_cast<long long>(count)});
+            }
+
+            if (sec.error.hasError() || !sec.warning.empty())
+            {
+                auto& issues_text = ss.addText("Errors / Warnings");
+                if (sec.error.hasError())
+                    issues_text.addText(std::string("Error: ") + sec.error.errinfo);
+                if (!sec.warning.empty())
+                    issues_text.addText(std::string("Warning: ") + sec.warning);
+            }
+        }
+    }
+
+    // ----- Data Sources (cumulative across this DB) -----
+    auto& ctx_man = compass_.dbContextManager();
+    auto jasterix = jasterix_; // current shared instance
+
+    for (const auto& [ds_id, cat_map] : ctx_man.asterixInfo())
+    {
+        const auto* ds = ctx_man.dataSource(ds_id);
+        const unsigned int sac = Utils::Number::sacFromDsId(ds_id);
+        const unsigned int sic = Utils::Number::sicFromDsId(ds_id);
+
+        std::string ds_label;
+        if (ds)
+            ds_label = ds->name() + " (" + std::to_string(sac) + "/" + std::to_string(sic) + ")";
+        else
+            ds_label = std::to_string(sac) + "/" + std::to_string(sic);
+        std::replace(ds_label.begin(), ds_label.end(), ':', '_');
+
+        auto& ds_section = report->getSection("Data Sources:" + ds_label);
+
+        // categories overview
+        if (!ds_section.hasTable("Categories"))
+            ds_section.addTable("Categories", 2,
+                                {"Category", "Records"}, true);
+        {
+            auto& ct = ds_section.getTable("Categories");
+            for (const auto& [cat, cat_stats] : cat_map)
+                ct.addRow({"CAT" + Utils::String::categoryString(cat),
+                           static_cast<long long>(cat_stats.total_count)});
+        }
+
+        // per-category item table
+        for (const auto& [cat, cat_stats] : cat_map)
+        {
+            const std::string cat_heading =
+                "CAT" + Utils::String::categoryString(cat);
+
+            auto& cat_section = ds_section.hasSubSection(cat_heading)
+                                    ? ds_section.getSubSection(cat_heading)
+                                    : ds_section.addSubSection(cat_heading);
+
+            // pull the edition's defined items so spec-known but never-seen
+            // items are listed too (with zero count)
+            jASTERIX::CategoryItemInfo edition_items;
+            if (jasterix && jasterix->hasCategory(cat))
+            {
+                auto cat_def = jasterix->category(cat);
+                if (cat_def)
+                    edition_items = cat_def->itemInfo();
+            }
+
+            std::set<std::string> all_keys;
+            for (const auto& kv : cat_stats.items)
+                all_keys.insert(kv.first);
+            for (const auto& kv : edition_items)
+                if (ASTERIXImportProbeAggregator::isDisplayableDataItem(kv.first))
+                    all_keys.insert(kv.first);
+
+            const std::string items_table = "Data Items";
+            if (!cat_section.hasTable(items_table))
+                cat_section.addTable(items_table, 5,
+                                     {"Item", "Description", "Count", "Min", "Max"},
+                                     true);
+            auto& it_t = cat_section.getTable(items_table);
+
+            for (const auto& key : all_keys)
+            {
+                std::string description;
+                auto info_it = edition_items.find(key);
+                if (info_it != edition_items.end())
+                    description = info_it->second.description_;
+
+                std::size_t count = 0;
+                std::string min_s;
+                std::string max_s;
+                auto stats_it = cat_stats.items.find(key);
+                if (stats_it != cat_stats.items.end())
+                {
+                    count = stats_it->second.count;
+                    if (!stats_it->second.min.is_null())
+                        min_s = stats_it->second.min.dump();
+                    if (!stats_it->second.max.is_null())
+                        max_s = stats_it->second.max.dump();
+                }
+
+                it_t.addRow({key,
+                             description,
+                             formatCountWithPercent(count, cat_stats.total_count),
+                             min_s,
+                             max_s});
+            }
+        }
+    }
+
+    // ----- Decoder Issues (post-decode, global) -----
+    if (decoder_)
+    {
+        auto errors = decoder_->errors();
+        auto warnings = decoder_->warnings();
+
+        if (!errors.empty() || !warnings.empty())
+        {
+            auto& issues = report->getSection("Decoder Issues");
+            if (!errors.empty())
+            {
+                auto& et = issues.addText("Errors");
+                for (const auto& e : errors)
+                    et.addText(e);
+            }
+            if (!warnings.empty())
+            {
+                auto& wt = issues.addText("Warnings");
+                for (const auto& w : warnings)
+                    wt.addText(w);
+            }
+        }
+    }
 }
 
