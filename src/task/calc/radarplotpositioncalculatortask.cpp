@@ -128,6 +128,7 @@ void RadarPlotPositionCalculatorTask::run()
     dbcontent_done_.clear();
 
     compass_.viewManager().disableDataDistribution(true);
+    compass_.dbContentManager().enableDataDistribution(false);
 
     connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &RadarPlotPositionCalculatorTask::loadedDataSlot);
@@ -191,6 +192,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     dbcontent_man.clearData();
 
     compass_.viewManager().disableDataDistribution(false);
+    compass_.dbContentManager().enableDataDistribution(true);
 
     ProjectionManager& proj_man = compass_.projectionManager();
 

@@ -210,6 +210,7 @@ void CreateARTASAssociationsTask::run()
     auto& ctx_man = manager().compass().dbContextManager();
 
     manager().compass().viewManager().disableDataDistribution(true);
+    manager().compass().dbContentManager().enableDataDistribution(false);
 
     connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &CreateARTASAssociationsTask::loadedDataDataSlot);
@@ -305,6 +306,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
     dbcontent_man.clearData();
 
     manager().compass().viewManager().disableDataDistribution(false);
+    manager().compass().dbContentManager().enableDataDistribution(true);
 
     create_job_ = std::make_shared<CreateARTASAssociationsJob>(
                 *this, manager().compass().dbInterface(), data_);

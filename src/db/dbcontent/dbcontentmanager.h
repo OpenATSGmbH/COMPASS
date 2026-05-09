@@ -119,7 +119,9 @@ public:
     dbContent::MetaVariableConfigurationDialog* metaVariableConfigdialog();
 
     void load(const LoadRequest& req);
-    void loadBlocking(const LoadRequest& req, unsigned int sleep_msecs = 1);
+    void loadBlocking(const LoadRequest& req, unsigned int sleep_msecs = 1u);
+
+    void enableDataDistribution(bool ok);
 
     // Progress-dialog hooks for the post-load view-processing phase.
     // The progress bar is sized so the load phase fills 0..50% (one slice per
@@ -284,6 +286,7 @@ protected:
     bool load_in_progress_{false};
     bool insert_in_progress_{false};
     bool loading_done_{false};
+    bool distribute_data_{true};
 
     LoadRequest current_request_;
     std::unique_ptr<QProgressDialog> progress_dialog_;

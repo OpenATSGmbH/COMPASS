@@ -93,6 +93,7 @@ bool RTCommandGetData::run_impl()
     }
 
     compass_->viewManager().disableDataDistribution(true);
+    compass_->dbContentManager().enableDataDistribution(false);
 
     // loading stuff
 
@@ -120,6 +121,7 @@ bool RTCommandGetData::checkResult_impl()
     DBContentManager& dbcontent_man = compass_->dbContentManager();
 
     compass_->viewManager().disableDataDistribution(false);
+    compass_->dbContentManager().enableDataDistribution(true);
 
     if (!dbcontent_man.hasData())
     {

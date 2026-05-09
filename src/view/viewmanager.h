@@ -60,6 +60,7 @@ class ViewManager : public QObject, public Configurable
     void databaseClosedSlot();
 
     void loadingStartedSlot();
+    
     // all data contained, also new one. requires_reset true indicates that all shown info should be re-created,
     // e.g. when data in the beginning was removed, or order of previously emitted data was changed, etc.
     void loadedDataSlot (const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
