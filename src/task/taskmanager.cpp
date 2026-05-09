@@ -26,6 +26,7 @@
 #include "gpstrailimporttask.h"
 //#include "gpsimportcsvtask.h"
 #include "reconstructortask.h"
+#include "analysedatasourcetask.h"
 #include "mainwindow.h"
 #include "viewabledataconfig.h"
 #include "viewmanager.h"
@@ -144,6 +145,13 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(reconstruct_references_task_);
         addTask(class_name, reconstruct_references_task_.get());
     }
+    else if (class_name == "AnalyseDataSourceTask")
+    {
+        traced_assert(!analyse_data_source_task_);
+        analyse_data_source_task_.reset(new AnalyseDataSourceTask(child_json, this));
+        traced_assert(analyse_data_source_task_);
+        addTask(class_name, analyse_data_source_task_.get());
+    }
     else if (class_name == "ReportExport")
     {
         traced_assert(!report_export_);
@@ -219,6 +227,12 @@ void TaskManager::checkSubConfigurables()
         traced_assert(reconstruct_references_task_);
     }
 
+    if (!analyse_data_source_task_)
+    {
+        generateSubConfigurableFromConfig("AnalyseDataSourceTask", "AnalyseDataSourceTask0");
+        traced_assert(analyse_data_source_task_);
+    }
+
     if (!report_export_)
     {
         generateSubConfigurableFromConfig("ReportExport", "ReportExport0");
@@ -262,6 +276,7 @@ void TaskManager::shutdown()
     radar_plot_position_calculator_task_ = nullptr;
     create_artas_associations_task_ = nullptr;
     reconstruct_references_task_ = nullptr;
+    analyse_data_source_task_ = nullptr;
 }
 
 /**
@@ -338,6 +353,14 @@ ReconstructorTask& TaskManager::reconstructReferencesTask() const
 {
     traced_assert(reconstruct_references_task_);
     return *reconstruct_references_task_;
+}
+
+/**
+ */
+AnalyseDataSourceTask& TaskManager::analyseDataSourceTask() const
+{
+    traced_assert(analyse_data_source_task_);
+    return *analyse_data_source_task_;
 }
 
 /**

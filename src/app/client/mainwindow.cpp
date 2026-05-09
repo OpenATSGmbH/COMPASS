@@ -64,6 +64,7 @@
 #include "createartasassociationstaskdialog.h"
 #include "reconstructortask.h"
 #include "reconstructortaskdialog.h"
+#include "analysedatasourcetask.h"
 #include "util/async.h"
 #include "util/system.h"
 #include "util/stringconv.h"
@@ -488,6 +489,17 @@ void MainWindow::createMenus ()
     reconstruct_action->setToolTip("Associate Unique Targets andd reconstruct Reference Trajectories");
     connect(reconstruct_action, &QAction::triggered, this, &MainWindow::reconstructReferencesSlot);
     process_menu_->addAction(reconstruct_action);
+
+    QMenu* analyze_menu = process_menu_->addMenu("Analyze");
+    analyze_menu->setToolTipsVisible(true);
+
+    QAction* analyse_mlat_action = new QAction("MLAT");
+    analyse_mlat_action->setToolTip(
+        "Analyse one or more MLAT (CAT020 / CAT010) data sources from multiple angles "
+        "(data items, sensor coverage / PD, position accuracy)");
+    connect(analyse_mlat_action, &QAction::triggered,
+            this, &MainWindow::analyseMLATDataSourceSlot);
+    analyze_menu->addAction(analyse_mlat_action);
 
     QAction* eval_action = new QAction("Evaluate");
     eval_action->setToolTip("Evaluate test against reference data according to defined standards");
@@ -1072,6 +1084,13 @@ void MainWindow::reconstructReferencesSlot()
     loginf;
 
     compass_.taskManager().reconstructReferencesTask().showDialog();
+}
+
+void MainWindow::analyseMLATDataSourceSlot()
+{
+    loginf;
+
+    compass_.taskManager().analyseDataSourceTask().showDialog();
 }
 
 void MainWindow::evaluateSlot()

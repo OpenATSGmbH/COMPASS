@@ -11,7 +11,8 @@
         "task_import_json.json",
         "task_calc_radar_pos.json",
         "task_reconstructor.json",
-        "task_import_view_points.json"
+        "task_import_view_points.json",
+        "task_analyse_data_source.json"
     ],
     "sub_configs": [
         {

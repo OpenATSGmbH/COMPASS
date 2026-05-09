@@ -85,6 +85,7 @@ public slots:
     void calculateAssociationsARTASSlot();
     void reconstructReferencesSlot();
     void evaluateSlot();
+    void analyseMLATDataSourceSlot();
 
     void quitRequestedSlot();
     void showAddViewMenuSlot();

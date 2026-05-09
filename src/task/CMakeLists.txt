@@ -1,6 +1,7 @@
 add_library(compass_task "")
 
 include("${CMAKE_SOURCE_DIR}/src/import/CMakeLists.txt")
+include("${CMAKE_CURRENT_LIST_DIR}/analyze/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/assoc/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/calc/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/import/CMakeLists.txt")
