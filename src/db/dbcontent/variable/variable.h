@@ -86,6 +86,9 @@ class Variable : public QObject, public Property, public Configurable
     const std::string& description() const { return description_; }
     void description(const std::string& description) { description_ = description; }
 
+    const std::string& source() const { return source_; }
+    void source(const std::string& source) { source_ = source; }
+
     std::string info() const;
 
     std::string dbColumnName() const;
@@ -248,7 +251,8 @@ private:
     Representation representation_;
 
     std::string description_;
-    
+    std::string source_;
+
     std::string db_column_name_;
     bool is_key_ {false};
 

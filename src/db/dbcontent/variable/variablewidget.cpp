@@ -79,6 +79,14 @@ VariableWidget::VariableWidget(Variable& variable, QWidget* parent, Qt::WindowFl
     properties_layout_->addWidget(description_edit_, row, 1);
     row++;
 
+    QLabel* source_label = new QLabel("Source");
+    properties_layout_->addWidget(source_label, row, 0);
+
+    source_edit_ = new QLineEdit(variable_->source().c_str());
+    connect(source_edit_, SIGNAL(returnPressed()), this, SLOT(editSourceSlot()));
+    properties_layout_->addWidget(source_edit_, row, 1);
+    row++;
+
     QLabel* type_label = new QLabel("Data Type");
     properties_layout_->addWidget(type_label, row, 0);
 
@@ -117,6 +125,7 @@ void VariableWidget::lock()
 
     name_edit_->setDisabled(true);
     description_edit_->setDisabled(true);
+    source_edit_->setDisabled(true);
     type_combo_->setDisabled(true);
     representation_box_->setDisabled(true);
     unit_sel_->setDisabled(true);
@@ -131,6 +140,7 @@ void VariableWidget::unlock()
 
     name_edit_->setDisabled(false);
     description_edit_->setDisabled(false);
+    source_edit_->setDisabled(false);
     type_combo_->setDisabled(false);
     representation_box_->setDisabled(false);
     unit_sel_->setDisabled(false);
@@ -149,6 +159,7 @@ void VariableWidget::update()
 {
     name_edit_->setText(variable_->name().c_str());
     description_edit_->setText(variable_->description().c_str());
+    source_edit_->setText(variable_->source().c_str());
     type_combo_->setType(variable_->dataTypeRef(), variable_->dataTypeStringRef());
     representation_box_->setRepresentation(variable_->representationRef(),
                                      variable_->representationStringRef());
@@ -173,6 +184,15 @@ void VariableWidget::editDescriptionSlot()
     std::string text = description_edit_->text().toStdString();
     traced_assert(text.size() > 0);
     variable_->description(text);
+    emit dbcontVariableChangedSignal();
+}
+
+void VariableWidget::editSourceSlot()
+{
+    logdbg;
+    traced_assert(source_edit_);
+
+    variable_->source(source_edit_->text().toStdString());
     emit dbcontVariableChangedSignal();
 }
 

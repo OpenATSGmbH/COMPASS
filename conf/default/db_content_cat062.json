@@ -18,12 +18,13 @@
                 "db_column_name": "service_identification",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 015.Service Identification",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Service Identification",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/015.Service Identification",
                 "unit": ""
             }
         },
@@ -35,12 +36,13 @@
                 "db_column_name": "md5_reply",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.MD5\n\n0 No Mode 5 interrogation\n1 Friendly target\n2 Unknown target\n3 No reply",
+                "description": "0 No Mode 5 interrogation\n1 Friendly target\n2 Unknown target\n3 No reply",
                 "dimension": "",
                 "is_key": false,
                 "name": "MD5 Reply",
                 "representation_str": "STANDARD",
                 "short_name": "MD5",
+                "source": "I062/080.MD5",
                 "unit": ""
             }
         },
@@ -52,12 +54,13 @@
                 "db_column_name": "destination_airport_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.DST.Destination Airport",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Destination Airport FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.DST.Destination Airport",
                 "unit": ""
             }
         },
@@ -69,12 +72,13 @@
                 "db_column_name": "runway_designation_nu1_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.RDS.NU1\n\nFirst number",
+                "description": "First number",
                 "dimension": "",
                 "is_key": false,
                 "name": "Runway Designation NU1 FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.RDS.NU1",
                 "unit": ""
             }
         },
@@ -86,12 +90,13 @@
                 "db_column_name": "runway_designation_nu2_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.RDS.NU2\n\nSecond number",
+                "description": "Second number",
                 "dimension": "",
                 "is_key": false,
                 "name": "Runway Designation NU2 FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.RDS.NU2",
                 "unit": ""
             }
         },
@@ -103,12 +108,13 @@
                 "db_column_name": "runway_designation_ltr_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.RDS.LTR\n\nLetter",
+                "description": "Letter",
                 "dimension": "",
                 "is_key": false,
                 "name": "Runway Designation LTR FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.RDS.LTR",
                 "unit": ""
             }
         },
@@ -120,12 +126,13 @@
                 "db_column_name": "current_cleared_flight_level_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.CFL.CFL",
+                "description": "",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "Current Cleared Flight Level FPL",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "I062/390.CFL.CFL",
                 "unit": "Feet"
             }
         },
@@ -137,12 +144,13 @@
                 "db_column_name": "centre_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.CTL.Centre\n\n8-bit group Identification code",
+                "description": "8-bit group Identification code",
                 "dimension": "",
                 "is_key": false,
                 "name": "Centre FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.CTL.Centre",
                 "unit": ""
             }
         },
@@ -154,12 +162,13 @@
                 "db_column_name": "position_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.CTL.Position\n\n8-bit Control Position identification code",
+                "description": "8-bit Control Position identification code",
                 "dimension": "",
                 "is_key": false,
                 "name": "Position FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.CTL.Position",
                 "unit": ""
             }
         },
@@ -171,12 +180,13 @@
                 "db_column_name": "aircraft_stand_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.AST.Aircraft Stand",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Aircraft Stand FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.AST.Aircraft Stand",
                 "unit": ""
             }
         },
@@ -188,12 +198,13 @@
                 "db_column_name": "stand_status_avl_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.STS.AVL\n\n0 Available\n1 Not available\n2 Unknown\n3 Invalid",
+                "description": "0 Available\n1 Not available\n2 Unknown\n3 Invalid",
                 "dimension": "",
                 "is_key": false,
                 "name": "Stand Status AVL FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.STS.AVL",
                 "unit": ""
             }
         },
@@ -205,12 +216,13 @@
                 "db_column_name": "stand_status_emp_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.STS.EMP\n\n0 Empty\n1 Occupied\n2 Unknown\n3 Invalid",
+                "description": "0 Empty\n1 Occupied\n2 Unknown\n3 Invalid",
                 "dimension": "",
                 "is_key": false,
                 "name": "Stand Status EMP FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.STS.EMP",
                 "unit": ""
             }
         },
@@ -222,12 +234,13 @@
                 "db_column_name": "mds_coasting",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.MDS\n\n0 Default value\n1 Age of the last received Mode S track update is higher than system dependent threshold",
+                "description": "0 Default value\n1 Age of the last received Mode S track update is higher than system dependent threshold",
                 "dimension": "",
                 "is_key": false,
                 "name": "MDS Coasting",
                 "representation_str": "STANDARD",
                 "short_name": "MDS C",
+                "source": "I062/080.MDS",
                 "unit": ""
             }
         },
@@ -239,12 +252,13 @@
                 "db_column_name": "standard_instrument_arrival_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.STA.Standard Instrument Arrival",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Standard Instrument Arrival FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.STA.Standard Instrument Arrival",
                 "unit": ""
             }
         },
@@ -256,12 +270,13 @@
                 "db_column_name": "standard_instrument_departure_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.STD.Standard Instrument Departure",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Standard Instrument Departure FPl",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.STD.Standard Instrument Departure",
                 "unit": ""
             }
         },
@@ -273,12 +288,13 @@
                 "db_column_name": "mode_3a_code_pre_em_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.PEM.Mode-3/A reply\n\nIn octal representation",
+                "description": "In octal representation",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Code Pre-Em FPL",
                 "representation_str": "DEC_TO_OCTAL",
                 "short_name": "MA PEm FPL",
+                "source": "I062/390.PEM.Mode-3/A reply",
                 "unit": ""
             }
         },
@@ -290,12 +306,13 @@
                 "db_column_name": "mode_3a_code_pre_em_valid_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.PEM.VA\n\nValidity\n0 No valid Mode 3/A available\n1 Valid Mode 3/A available",
+                "description": "Validity\n0 No valid Mode 3/A available\n1 Valid Mode 3/A available",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Code Pre-Em Valid FPL",
                 "representation_str": "STANDARD",
                 "short_name": "MA PEm V FPL",
+                "source": "I062/390.PEM.VA",
                 "unit": ""
             }
         },
@@ -307,12 +324,13 @@
                 "db_column_name": "callsign_pre_em_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.PEC.Pre-Emergency Callsign",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Callsign Pre-Em FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.PEC.Pre-Emergency Callsign",
                 "unit": ""
             }
         },
@@ -324,12 +342,13 @@
                 "db_column_name": "geometric_altitude_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.AGA.AGA\n\nEstimated accuracy (i.e. standard deviation) of the calculated geometric altitude of a target.",
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated geometric altitude of a target.",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "Geometric Altitude StdDev",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "GA StdDev",
+                "source": "I062/500.AGA.AGA",
                 "unit": "Feet"
             }
         },
@@ -341,12 +360,13 @@
                 "db_column_name": "vx_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.ATV.ATV (X-Component)\n\nEstimated accuracy (i.e. standard deviation) of the calculated track velocity in Cartesian co-ordinates.",
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated track velocity in Cartesian co-ordinates.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Vx StdDev",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/500.ATV.ATV (X-Component)",
                 "unit": ""
             }
         },
@@ -358,12 +378,13 @@
                 "db_column_name": "vy_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.ATV.ATV (Y-Component)\n\nEstimated accuracy (i.e. standard deviation) of the calculated track velocity in Cartesian co-ordinates.",
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated track velocity in Cartesian co-ordinates.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Vy StdDev",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/500.ATV.ATV (Y-Component)",
                 "unit": ""
             }
         },
@@ -375,12 +396,13 @@
                 "db_column_name": "ax_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.AA.AA (X-Component)\n\nEstimated accuracy (i.e. standard deviation) of the calculated acceleration in Cartesian co-ordinates.",
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated acceleration in Cartesian co-ordinates.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Ax StdDev",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/500.AA.AA (X-Component)",
                 "unit": ""
             }
         },
@@ -392,12 +414,13 @@
                 "db_column_name": "ay_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.AA.AA (Y-Component)\n\nEstimated accuracy (i.e. standard deviation) of the calculated acceleration in Cartesian co-ordinates.",
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated acceleration in Cartesian co-ordinates.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Ay StdDev",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/500.AA.AA (Y-Component)",
                 "unit": ""
             }
         },
@@ -409,12 +432,13 @@
                 "db_column_name": "adsb_coasting",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.ADS\n\n0 Default value\n1 Age of the last received ADS-B track update is higher than system dependent threshold",
+                "description": "0 Default value\n1 Age of the last received ADS-B track update is higher than system dependent threshold",
                 "dimension": "",
                 "is_key": false,
                 "name": "ADS-B Coasting",
                 "representation_str": "STANDARD",
                 "short_name": "ADS C",
+                "source": "I062/080.ADS",
                 "unit": ""
             }
         },
@@ -426,12 +450,13 @@
                 "db_column_name": "rate_of_climb_descent_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.ARC.ARC\n\nEstimated accuracy (i.e. standard deviation) of the calculated rate of Climb/Descent of an aircraft.",
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated rate of Climb/Descent of an aircraft.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Rate Of Climb/Descent StdDev",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/500.ARC.ARC",
                 "unit": ""
             }
         },
@@ -443,12 +468,13 @@
                 "db_column_name": "barometric_altitude_calculated_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.ABA.ABA\n\nEstimated accuracy (i.e. standard deviation) of the calculated barometric altitude of the track.",
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated barometric altitude of the track.",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "Barometric Altitude Calculated StdDev",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "I062/500.ABA.ABA",
                 "unit": "Feet"
             }
         },
@@ -460,12 +486,13 @@
                 "db_column_name": "acas_mb_data",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.ACS.MB Data\n\n56-bit message conveying Mode S Comm B message data of BDS Register 3,0",
+                "description": "56-bit message conveying Mode S Comm B message data of BDS Register 3,0",
                 "dimension": "",
                 "is_key": false,
                 "name": "ACAS MB Data",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/380.ACS.MB Data",
                 "unit": ""
             }
         },
@@ -477,12 +504,13 @@
                 "db_column_name": "mode_s_mb_data",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.MB.Mode S MB Data.MB Data\n\n56-bit message conveying Mode S Comm B message data",
+                "description": "56-bit message conveying Mode S Comm B message data",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode S MB Data",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/380.MB.Mode S MB Data.MB Data",
                 "unit": ""
             }
         },
@@ -494,12 +522,13 @@
                 "db_column_name": "psr_coasting",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.PSR\n\n0 Default value\n1 Age of the last received PSR track update is higher than system dependent threshold",
+                "description": "0 Default value\n1 Age of the last received PSR track update is higher than system dependent threshold",
                 "dimension": "",
                 "is_key": false,
                 "name": "PSR Coasting",
                 "representation_str": "STANDARD",
                 "short_name": "PSR C",
+                "source": "I062/080.PSR",
                 "unit": ""
             }
         },
@@ -511,12 +540,13 @@
                 "db_column_name": "ssr_coasting",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.SSR\n\n0 Default value\n1 Age of the last received SSR track update is higher than system dependent threshold",
+                "description": "0 Default value\n1 Age of the last received SSR track update is higher than system dependent threshold",
                 "dimension": "",
                 "is_key": false,
                 "name": "SSR Coasting",
                 "representation_str": "STANDARD",
                 "short_name": "SSR C",
+                "source": "I062/080.SSR",
                 "unit": ""
             }
         },
@@ -528,12 +558,13 @@
                 "db_column_name": "special_used_mode_3a",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.SUC\n\n0 Default value\n1 Special Used Code (Mode A codes to be defined in the system to mark a track with special interest)",
+                "description": "0 Default value\n1 Special Used Code (Mode A codes to be defined in the system to mark a track with special interest)",
                 "dimension": "",
                 "is_key": false,
                 "name": "Special Used Mode 3/A",
                 "representation_str": "STANDARD",
                 "short_name": "SUC",
+                "source": "I062/080.SUC",
                 "unit": ""
             }
         },
@@ -545,12 +576,13 @@
                 "db_column_name": "mode_3a_conflict",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.AAC\n\n0 Default value\n1 Assigned Mode A Code Conflict (same discrete Mode A Code assigned to another track)",
+                "description": "0 Default value\n1 Assigned Mode A Code Conflict (same discrete Mode A Code assigned to another track)",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Conflict",
                 "representation_str": "STANDARD",
                 "short_name": "AAC",
+                "source": "I062/080.AAC",
                 "unit": ""
             }
         },
@@ -562,12 +594,13 @@
                 "db_column_name": "surveillance_data_status",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.SDS\n\nSurveillance Data Status\n0 Combined\n1 Co-operative only\n2 Non-Cooperative only\n3 Not defined",
+                "description": "Surveillance Data Status\n0 Combined\n1 Co-operative only\n2 Non-Cooperative only\n3 Not defined",
                 "dimension": "",
                 "is_key": false,
                 "name": "Surveillance Data Status",
                 "representation_str": "STANDARD",
                 "short_name": "SDS",
+                "source": "I062/080.SDS",
                 "unit": ""
             }
         },
@@ -579,12 +612,13 @@
                 "db_column_name": "potential_false_track",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.PFT\n\n0 No indication\n1 Potential False Track Indication",
+                "description": "0 No indication\n1 Potential False Track Indication",
                 "dimension": "",
                 "is_key": false,
                 "name": "Potential False Track",
                 "representation_str": "STANDARD",
                 "short_name": "PFT",
+                "source": "I062/080.PFT",
                 "unit": ""
             }
         },
@@ -596,12 +630,13 @@
                 "db_column_name": "flight_plan_track",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.FPLT\n\n0 Default value\n1 Track created / updated with FPL data",
+                "description": "0 Default value\n1 Track created / updated with FPL data",
                 "dimension": "",
                 "is_key": false,
                 "name": "Flight Plan Track",
                 "representation_str": "STANDARD",
                 "short_name": "FPLT",
+                "source": "I062/080.FPLT",
                 "unit": ""
             }
         },
@@ -613,12 +648,13 @@
                 "db_column_name": "mode_3a_change",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.CH\n\nChange in Mode 3/A\n0 No Change\n1 Mode 3/A has changed",
+                "description": "Change in Mode 3/A\n0 No Change\n1 Mode 3/A has changed",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Change",
                 "representation_str": "STANDARD",
                 "short_name": "MA C",
+                "source": "I062/060.CH",
                 "unit": ""
             }
         },
@@ -630,12 +666,13 @@
                 "db_column_name": "mode_3a_duplicate",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.DUPT\n\n0 Default value\n1 Duplicate Mode 3/A Code",
+                "description": "0 Default value\n1 Duplicate Mode 3/A Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Duplicate",
                 "representation_str": "STANDARD",
                 "short_name": "DUPT",
+                "source": "I062/080.DUPT",
                 "unit": ""
             }
         },
@@ -647,12 +684,13 @@
                 "db_column_name": "flight_plan_duplicate",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.DUPF\n\n0 Default value\n1 Duplicate Flight Plan",
+                "description": "0 Default value\n1 Duplicate Flight Plan",
                 "dimension": "",
                 "is_key": false,
                 "name": "Flight Plan Duplicate",
                 "representation_str": "STANDARD",
                 "short_name": "DUPF",
+                "source": "I062/080.DUPF",
                 "unit": ""
             }
         },
@@ -664,12 +702,13 @@
                 "db_column_name": "flight_plan_manual_duplicate",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.DUPM\n\n0 Default value\n1 Duplicate Flight Plan due to manual correlation",
+                "description": "0 Default value\n1 Duplicate Flight Plan due to manual correlation",
                 "dimension": "",
                 "is_key": false,
                 "name": "Flight Plan Manual Duplicate",
                 "representation_str": "STANDARD",
                 "short_name": "DUPM",
+                "source": "I062/080.DUPM",
                 "unit": ""
             }
         },
@@ -681,12 +720,13 @@
                 "db_column_name": "aircraft_identification_duplicate",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.IDD\n\n0 No indication\n1 Duplicate Flight-ID",
+                "description": "0 No indication\n1 Duplicate Flight-ID",
                 "dimension": "",
                 "is_key": false,
                 "name": "Aircraft Identification Duplicate",
                 "representation_str": "STANDARD",
                 "short_name": "ACID D",
+                "source": "I062/080.IDD",
                 "unit": ""
             }
         },
@@ -698,12 +738,13 @@
                 "db_column_name": "emergency_code_inconsistent",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.IEC\n\n0 Default value\n1 Inconsistent Emergency Code",
+                "description": "0 Default value\n1 Inconsistent Emergency Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "Emergency Code Inconsistent",
                 "representation_str": "STANDARD",
                 "short_name": "IEC",
+                "source": "I062/080.IEC",
                 "unit": ""
             }
         },
@@ -715,12 +756,13 @@
                 "db_column_name": "surface_target",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.SFC\n\n0 Default value\n1 Surface target",
+                "description": "0 Default value\n1 Surface target",
                 "dimension": "",
                 "is_key": false,
                 "name": "Surface Target",
                 "representation_str": "STANDARD",
                 "short_name": "SFC",
+                "source": "I062/080.SFC",
                 "unit": ""
             }
         },
@@ -732,12 +774,13 @@
                 "db_column_name": "x",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 100.X\n\nCalculated position in Cartesian co-ordinates with a resolution of\n0.5m",
+                "description": "Calculated position in Cartesian co-ordinates with a resolution of\n0.5m",
                 "dimension": "",
                 "is_key": false,
                 "name": "X",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "I062/100.X",
                 "unit": ""
             }
         },
@@ -749,12 +792,13 @@
                 "db_column_name": "y",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 100.Y\n\nCalculated position in Cartesian co-ordinates with a resolution of\n0.5m",
+                "description": "Calculated position in Cartesian co-ordinates with a resolution of\n0.5m",
                 "dimension": "",
                 "is_key": false,
                 "name": "Y",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "I062/100.Y",
                 "unit": ""
             }
         },
@@ -766,12 +810,13 @@
                 "db_column_name": "barometric_altitude_qnh_corrected",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 135.QNH\n\n0 No QNH correction applied\n1 QNH correction applied",
+                "description": "0 No QNH correction applied\n1 QNH correction applied",
                 "dimension": "",
                 "is_key": false,
                 "name": "Barometric Altitude QNH Corrected",
                 "representation_str": "STANDARD",
                 "short_name": "BA QNH C C",
+                "source": "I062/135.QNH",
                 "unit": ""
             }
         },
@@ -783,12 +828,13 @@
                 "db_column_name": "vx",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 185.Vx\n\nCalculated track velocity expressed in Cartesian co-ordinates\n\n(LSB) = 0.25 m/s\n\n-8192m/s <= Vx <= 8191.75m/s",
+                "description": "Calculated track velocity expressed in Cartesian co-ordinates\n\n(LSB) = 0.25 m/s\n\n-8192m/s <= Vx <= 8191.75m/s",
                 "dimension": "Speed",
                 "is_key": false,
                 "name": "Vx",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/185.Vx",
                 "unit": "Meter/Second"
             }
         },
@@ -800,12 +846,13 @@
                 "db_column_name": "geometric_altitude_calculated_src",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.SRC\nSource of calculated track altitude for I062/130\n0 no source\n1 GNSS\n2 3D radar\n3 triangulation\n4 height from coverage\n5 speed look-up table\n6 default height\n7 multilateration",
+                "description": "Source of calculated track altitude for I062/130\n0 no source\n1 GNSS\n2 3D radar\n3 triangulation\n4 height from coverage\n5 speed look-up table\n6 default height\n7 multilateration",
                 "dimension": "",
                 "is_key": false,
                 "name": "Geometric Altitude Calculated Src",
                 "representation_str": "STANDARD",
                 "short_name": "GA C Src",
+                "source": "I062/080.SRC",
                 "unit": ""
             }
         },
@@ -817,12 +864,13 @@
                 "db_column_name": "vy",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 185.Vy\n\nCalculated track velocity expressed in Cartesian co-ordinates\n\n(LSB) = 0.25 m/s\n\n-8192m/s <= Vx <= 8191.75m/s",
+                "description": "Calculated track velocity expressed in Cartesian co-ordinates\n\n(LSB) = 0.25 m/s\n\n-8192m/s <= Vx <= 8191.75m/s",
                 "dimension": "Speed",
                 "is_key": false,
                 "name": "Vy",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/185.Vy",
                 "unit": "Meter/Second"
             }
         },
@@ -834,12 +882,13 @@
                 "db_column_name": "mom_altitude_discrepancy",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 200.ADF\n\nMode of Movement\n\nAltitude Discrepancy Flag\n0 No altitude discrepancy\n1 Altitude discrepancy",
+                "description": "Mode of Movement\n\nAltitude Discrepancy Flag\n0 No altitude discrepancy\n1 Altitude discrepancy",
                 "dimension": "",
                 "is_key": false,
                 "name": "MOM Altitude Discrepancy",
                 "representation_str": "STANDARD",
                 "short_name": "MON ADF",
+                "source": "I062/200.ADF",
                 "unit": ""
             }
         },
@@ -851,12 +900,13 @@
                 "db_column_name": "ax",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 210.Ax\n\nCalculated Acceleration of the target expressed in Cartesian co-\nordinates\n\n(LSB) = 0.25 m/s^2",
+                "description": "Calculated Acceleration of the target expressed in Cartesian co-\nordinates\n\n(LSB) = 0.25 m/s^2",
                 "dimension": "",
                 "is_key": false,
                 "name": "Ax",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/210.Ax",
                 "unit": ""
             }
         },
@@ -868,12 +918,13 @@
                 "db_column_name": "ay",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 210.Ay\n\nCalculated Acceleration of the target expressed in Cartesian co-\nordinates\n\n(LSB) = 0.25 m/s^2",
+                "description": "Calculated Acceleration of the target expressed in Cartesian co-\nordinates\n\n(LSB) = 0.25 m/s^2",
                 "dimension": "",
                 "is_key": false,
                 "name": "Ay",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/210.Ay",
                 "unit": ""
             }
         },
@@ -885,12 +936,13 @@
                 "db_column_name": "aircraft_identification_sti",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 245.STI\n\n0 Callsign or registration downlinked from target\n1 Callsign not downlinked from target\n2 Registration not downlinked from target\n3 Invalid",
+                "description": "0 Callsign or registration downlinked from target\n1 Callsign not downlinked from target\n2 Registration not downlinked from target\n3 Invalid",
                 "dimension": "",
                 "is_key": false,
                 "name": "Aircraft Identification STI",
                 "representation_str": "STANDARD",
                 "short_name": "ACID STI",
+                "source": "I062/245.STI",
                 "unit": ""
             }
         },
@@ -902,12 +954,13 @@
                 "db_column_name": "aircraft_identification",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 245.Target Identification",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Aircraft Identification",
                 "representation_str": "STANDARD",
                 "short_name": "ACID",
+                "source": "I062/245.Target Identification",
                 "unit": ""
             }
         },
@@ -919,12 +972,13 @@
                 "db_column_name": "target_length",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 270.LENGTH\n\nWhen the length only is sent, the largest dimension is provided.",
+                "description": "When the length only is sent, the largest dimension is provided.",
                 "dimension": "Length",
                 "is_key": false,
                 "name": "Target Length",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/270.LENGTH",
                 "unit": "Meter"
             }
         },
@@ -936,12 +990,13 @@
                 "db_column_name": "target_orientation",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 270.ORIENTATION\n\nThe orientation gives the direction which the target nose is pointing to, relative to the Geographical North.",
+                "description": "The orientation gives the direction which the target nose is pointing to, relative to the Geographical North.",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Target Orientation",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/270.ORIENTATION",
                 "unit": "Degree"
             }
         },
@@ -953,12 +1008,13 @@
                 "db_column_name": "target_width",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 270.WIDTH",
+                "description": "",
                 "dimension": "Length",
                 "is_key": false,
                 "name": "Target Width",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/270.WIDTH",
                 "unit": "Meter"
             }
         },
@@ -970,12 +1026,13 @@
                 "db_column_name": "adsc_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 290.ADS.Age\n\nAge of the last ADS-C report used to update the track",
+                "description": "Age of the last ADS-C report used to update the track",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "ADS-C Update Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/290.ADS.Age",
                 "unit": "Second"
             }
         },
@@ -987,12 +1044,13 @@
                 "db_column_name": "flight_plan_correlated",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.FPC\n\n0 Not flight-plan correlated\n1 Flight plan correlated",
+                "description": "0 Not flight-plan correlated\n1 Flight plan correlated",
                 "dimension": "",
                 "is_key": false,
                 "name": "Flight Plan Correlated",
                 "representation_str": "STANDARD",
                 "short_name": "FPC",
+                "source": "I062/080.FPC",
                 "unit": ""
             }
         },
@@ -1004,12 +1062,13 @@
                 "db_column_name": "loop_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 290.LOP.Age\n\nAge of the last magnetic loop detection",
+                "description": "Age of the last magnetic loop detection",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Loop Update Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/290.LOP.Age",
                 "unit": "Second"
             }
         },
@@ -1021,12 +1080,13 @@
                 "db_column_name": "track_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 290.TRK.Age\n\nActual track age since occurence",
+                "description": "Actual track age since occurence",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Track Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/290.TRK.Age",
                 "unit": "Second"
             }
         },
@@ -1038,12 +1098,13 @@
                 "db_column_name": "adsb_uat_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 290.UAT.Age\n\nAge of the last UAT ADS-B report used to update the track",
+                "description": "Age of the last UAT ADS-B report used to update the track",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "ADS-B UAT Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/290.UAT.Age",
                 "unit": "Second"
             }
         },
@@ -1055,12 +1116,13 @@
                 "db_column_name": "adsb_vdl_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 290.VDL.Age\n\nAge of the last VDL Mode 4 ADS-B report used to update the track",
+                "description": "Age of the last VDL Mode 4 ADS-B report used to update the track",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "ADS-B VDL Update Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/290.VDL.Age",
                 "unit": "Second"
             }
         },
@@ -1072,12 +1134,13 @@
                 "db_column_name": "vehicle_fleet_identification",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 300.VFI\n\n0 Unknown\n1 ATC equipment maintenance\n2 Airport maintenance\n3 Fire\n4 Bird scarer\n5 Snow plough\n6 Runway sweeper\n7 Emergency\n8 Police\n9 Bus\n10 Tug (push/tow)\n11 Grass cutter\n12 Fuel\n13 Baggage\n14 Catering\n15 Aircraft maintenance\n16 Flyco (follow me)",
+                "description": "0 Unknown\n1 ATC equipment maintenance\n2 Airport maintenance\n3 Fire\n4 Bird scarer\n5 Snow plough\n6 Runway sweeper\n7 Emergency\n8 Police\n9 Bus\n10 Tug (push/tow)\n11 Grass cutter\n12 Fuel\n13 Baggage\n14 Catering\n15 Aircraft maintenance\n16 Flyco (follow me)",
                 "dimension": "",
                 "is_key": false,
                 "name": "Vehicle Fleet Identification",
                 "representation_str": "STANDARD",
                 "short_name": "VFI",
+                "source": "I062/300.VFI",
                 "unit": ""
             }
         },
@@ -1089,12 +1152,13 @@
                 "db_column_name": "range_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.POS.RHO\n\nMax. range = 256 NM",
+                "description": "Max. range = 256 NM",
                 "dimension": "Length",
                 "is_key": false,
                 "name": "Range LM",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/340.POS.RHO",
                 "unit": "Nautical Mile"
             }
         },
@@ -1106,12 +1170,13 @@
                 "db_column_name": "azimuth_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.POS.THETA",
+                "description": "",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Azimuth LM",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/340.POS.THETA",
                 "unit": "Degree"
             }
         },
@@ -1123,12 +1188,13 @@
                 "db_column_name": "height_3d_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.HEI.HEIGHT\n\nMeasured 3-D Height\n\nThe reference level for this height information is the same as the\nreference level applied by the sensor system providing this information.",
+                "description": "Measured 3-D Height\n\nThe reference level for this height information is the same as the\nreference level applied by the sensor system providing this information.",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "3D Height LM",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "I062/340.HEI.HEIGHT",
                 "unit": "Feet"
             }
         },
@@ -1140,12 +1206,13 @@
                 "db_column_name": "fft_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.TYP.RAB\n\n0 Report from aircraft transponder\n1 Report from field monitor(fixed transponder)",
+                "description": "0 Report from aircraft transponder\n1 Report from field monitor(fixed transponder)",
                 "dimension": "",
                 "is_key": false,
                 "name": "FFT LM",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/340.TYP.RAB",
                 "unit": ""
             }
         },
@@ -1157,12 +1224,13 @@
                 "db_column_name": "simulated_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.TYP.SIM\n\n0  Actual target report\n1 Simulated target report",
+                "description": "0  Actual target report\n1 Simulated target report",
                 "dimension": "",
                 "is_key": false,
                 "name": "Simulated LM",
                 "representation_str": "STANDARD",
                 "short_name": "SIM LM",
+                "source": "I062/340.TYP.SIM",
                 "unit": ""
             }
         },
@@ -1174,12 +1242,13 @@
                 "db_column_name": "adsb_data_inconsistent",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.AFF\n\n0 default value\n1 ADS-B data inconsistent with other surveillance information",
+                "description": "0 default value\n1 ADS-B data inconsistent with other surveillance information",
                 "dimension": "",
                 "is_key": false,
                 "name": "ADS-B Data Inconsistent",
                 "representation_str": "STANDARD",
                 "short_name": "AFF",
+                "source": "I062/080.AFF",
                 "unit": ""
             }
         },
@@ -1191,12 +1260,13 @@
                 "db_column_name": "test_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.TYP.TST\n\n0 Real target report\n 1 Test target report",
+                "description": "0 Real target report\n 1 Test target report",
                 "dimension": "",
                 "is_key": false,
                 "name": "Test LM",
                 "representation_str": "STANDARD",
                 "short_name": "TST LM",
+                "source": "I062/340.TYP.TST",
                 "unit": ""
             }
         },
@@ -1208,12 +1278,13 @@
                 "db_column_name": "magnetic_heading_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.MHG.Magnetic Heading",
+                "description": "",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Magnetic Heading ADD",
                 "representation_str": "STANDARD",
                 "short_name": "MH ADD",
+                "source": "I062/380.MHG.Magnetic Heading",
                 "unit": "Degree"
             }
         },
@@ -1225,12 +1296,13 @@
                 "db_column_name": "air_speed_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.AIS.Air Speed\n\nAir Speed (IAS or Mach)",
+                "description": "Air Speed (IAS or Mach)",
                 "dimension": "",
                 "is_key": false,
                 "name": "Air Speed ADD",
                 "representation_str": "STANDARD",
                 "short_name": "ASpd ADD",
+                "source": "I062/380.AIS.Air Speed",
                 "unit": ""
             }
         },
@@ -1242,12 +1314,13 @@
                 "db_column_name": "true_airspeed_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.TAS.True Airspeed\n\n0 <= True Air Speed <= 2046 knots",
+                "description": "0 <= True Air Speed <= 2046 knots",
                 "dimension": "Speed",
                 "is_key": false,
                 "name": "True Airspeed ADD",
                 "representation_str": "STANDARD",
                 "short_name": "TASpd ADD",
+                "source": "I062/380.TAS.True Airspeed",
                 "unit": "Knots"
             }
         },
@@ -1259,12 +1332,13 @@
                 "db_column_name": "selected_altitude_source_av_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.SAL.SAS\n\n0 No source information provided\n1 Source Information provided",
+                "description": "0 No source information provided\n1 Source Information provided",
                 "dimension": "",
                 "is_key": false,
                 "name": "Selected Altitude Source Av ADD",
                 "representation_str": "STANDARD",
                 "short_name": "SA Src Av\nADD",
+                "source": "I062/380.SAL.SAS",
                 "unit": ""
             }
         },
@@ -1276,12 +1350,13 @@
                 "db_column_name": "fs_sa_ah_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.FSS.AH\n\nFinal State Selected Altitude\n\nAltitude Hold\n0 Not active\n1 Active",
+                "description": "Final State Selected Altitude\n\nAltitude Hold\n0 Not active\n1 Active",
                 "dimension": "",
                 "is_key": false,
                 "name": "FS SA AH ADD",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/380.FSS.AH",
                 "unit": ""
             }
         },
@@ -1293,12 +1368,13 @@
                 "db_column_name": "fs_sa_am_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.FSS.AM\n\nFinal State Selected Altitude\n\nApproach Mode\n0 Not active\n1 Active",
+                "description": "Final State Selected Altitude\n\nApproach Mode\n0 Not active\n1 Active",
                 "dimension": "",
                 "is_key": false,
                 "name": "FS SA AM ADD",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/380.FSS.AM",
                 "unit": ""
             }
         },
@@ -1310,12 +1386,13 @@
                 "db_column_name": "fs_sa_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.FSS.Altitude\n\nFinal State Selected Altitude\n\nBarometric Altitude\n-1300ft <= Altitude <= 100000ft",
+                "description": "Final State Selected Altitude\n\nBarometric Altitude\n-1300ft <= Altitude <= 100000ft",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "FS SA ADD",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "I062/380.FSS.Altitude",
                 "unit": "Feet"
             }
         },
@@ -1327,12 +1404,13 @@
                 "db_column_name": "fs_sa_mv_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.FSS.MV\n\nFinal State Selected Altitude\n\nManage Vertical Mode\n0 Not active\n1 Active",
+                "description": "Final State Selected Altitude\n\nManage Vertical Mode\n0 Not active\n1 Active",
                 "dimension": "",
                 "is_key": false,
                 "name": "FS SA MV ADD",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/380.FSS.MV",
                 "unit": ""
             }
         },
@@ -1344,12 +1422,13 @@
                 "db_column_name": "acid_capability_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.COM.AIC\n\nAircraft identification capability\n0 No\n1 Yes",
+                "description": "Aircraft identification capability\n0 No\n1 Yes",
                 "dimension": "",
                 "is_key": false,
                 "name": "ACID Capability ADD",
                 "representation_str": "STANDARD",
                 "short_name": "AIC ADD",
+                "source": "I062/380.COM.AIC",
                 "unit": ""
             }
         },
@@ -1361,12 +1440,13 @@
                 "db_column_name": "slave_track_promotion",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.STP\n\n0 default value\n1 Slave Track Promotion",
+                "description": "0 default value\n1 Slave Track Promotion",
                 "dimension": "",
                 "is_key": false,
                 "name": "Slave Track Promotion",
                 "representation_str": "STANDARD",
                 "short_name": "STP",
+                "source": "I062/080.STP",
                 "unit": ""
             }
         },
@@ -1378,12 +1458,13 @@
                 "db_column_name": "altitude_reporting_capability_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.COM.ARC\n\nAltitude reporting capability\n0 100 ft resolution\n1 25 ft resolution",
+                "description": "Altitude reporting capability\n0 100 ft resolution\n1 25 ft resolution",
                 "dimension": "",
                 "is_key": false,
                 "name": "Altitude Reporting Capability ADD",
                 "representation_str": "STANDARD",
                 "short_name": "ARC ADD",
+                "source": "I062/380.COM.ARC",
                 "unit": ""
             }
         },
@@ -1395,12 +1476,13 @@
                 "db_column_name": "b1a_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.COM.B1A\n\nBDS 1,0 bit 16",
+                "description": "BDS 1,0 bit 16",
                 "dimension": "",
                 "is_key": false,
                 "name": "B1A ADD",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/380.COM.B1A",
                 "unit": ""
             }
         },
@@ -1412,12 +1494,13 @@
                 "db_column_name": "b1b_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.COM.B1B\n\nBDS 1,0 bits 37/40",
+                "description": "BDS 1,0 bits 37/40",
                 "dimension": "",
                 "is_key": false,
                 "name": "B1B ADD",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/380.COM.B1B",
                 "unit": ""
             }
         },
@@ -1429,12 +1512,13 @@
                 "db_column_name": "transponder_com_capability_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.COM.COM\n\nCommunications capability of the transponder\n0 No communications capability (surveillance only)\n1 Comm. A and Comm. B capability\n2 Comm. A, Comm. B and Uplink ELM\n3 Comm. A, Comm. B, Uplink ELM and Downlink ELM\n4 Level 5 Transponder capability\n5 to 7 Not assigned",
+                "description": "Communications capability of the transponder\n0 No communications capability (surveillance only)\n1 Comm. A and Comm. B capability\n2 Comm. A, Comm. B and Uplink ELM\n3 Comm. A, Comm. B, Uplink ELM and Downlink ELM\n4 Level 5 Transponder capability\n5 to 7 Not assigned",
                 "dimension": "",
                 "is_key": false,
                 "name": "Transponder Com. Capability ADD",
                 "representation_str": "STANDARD",
                 "short_name": "COM ADD",
+                "source": "I062/380.COM.COM",
                 "unit": ""
             }
         },
@@ -1446,12 +1530,13 @@
                 "db_column_name": "ssc_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.COM.SSC\n\nSpecific Service Capability\n0 No\n1 Yes",
+                "description": "Specific Service Capability\n0 No\n1 Yes",
                 "dimension": "",
                 "is_key": false,
                 "name": "SSC ADD",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/380.COM.SSC",
                 "unit": ""
             }
         },
@@ -1463,12 +1548,13 @@
                 "db_column_name": "flight_status_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.COM.STAT\n\nFlight Status\n0 No alert, no SPI, aircraft airborne\n1 No alert, no SPI, aircraft on ground\n2 Alert, no SPI, aircraft airborne\n3 Alert, no SPI, aircraft on ground\n4 Alert, SPI, aircraft airborne or on ground\n5 No alert, SPI, aircraft airborne or on ground",
+                "description": "Flight Status\n0 No alert, no SPI, aircraft airborne\n1 No alert, no SPI, aircraft on ground\n2 Alert, no SPI, aircraft airborne\n3 Alert, no SPI, aircraft on ground\n4 Alert, SPI, aircraft airborne or on ground\n5 No alert, SPI, aircraft airborne or on ground",
                 "dimension": "",
                 "is_key": false,
                 "name": "Flight Status ADD",
                 "representation_str": "STANDARD",
                 "short_name": "STAT ADD",
+                "source": "I062/380.COM.STAT",
                 "unit": ""
             }
         },
@@ -1480,12 +1566,13 @@
                 "db_column_name": "acas_status_adsb_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.SAB.AC\n\n0 unknown\n1 ACAS not operational\n2 ACAS operational\n3 invalid",
+                "description": "0 unknown\n1 ACAS not operational\n2 ACAS operational\n3 invalid",
                 "dimension": "",
                 "is_key": false,
                 "name": "ACAS Status ADS-B ADD",
                 "representation_str": "STANDARD",
                 "short_name": "AC ADSB ADD",
+                "source": "I062/380.SAB.AC",
                 "unit": ""
             }
         },
@@ -1497,12 +1584,13 @@
                 "db_column_name": "differential_correction_adsb_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.SAB.DC\n\n0 unknown\n1 Differential correction\n2 No differential correction\n3 invalid",
+                "description": "0 unknown\n1 Differential correction\n2 No differential correction\n3 invalid",
                 "dimension": "",
                 "is_key": false,
                 "name": "Differential Correction ADS-B ADD",
                 "representation_str": "STANDARD",
                 "short_name": "DC ADSB ADD",
+                "source": "I062/380.SAB.DC",
                 "unit": ""
             }
         },
@@ -1514,12 +1602,13 @@
                 "db_column_name": "ground_bit_adsb_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.SAB.GBS\n\n0 Transponder Ground Bit not set or unknown\n1 Transponder Ground Bit set",
+                "description": "0 Transponder Ground Bit not set or unknown\n1 Transponder Ground Bit set",
                 "dimension": "",
                 "is_key": false,
                 "name": "Ground Bit ADS-B ADD",
                 "representation_str": "STANDARD",
                 "short_name": "GBS ADSB ADD",
+                "source": "I062/380.SAB.GBS",
                 "unit": ""
             }
         },
@@ -1531,12 +1620,13 @@
                 "db_column_name": "multiple_navigational_aids_adsb_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.SAB.MN\n\n0 unknown\n1 Multiple navigational aids not operating\n2 Multiple navigational aids operating\n3 invalid",
+                "description": "0 unknown\n1 Multiple navigational aids not operating\n2 Multiple navigational aids operating\n3 invalid",
                 "dimension": "",
                 "is_key": false,
                 "name": "Multiple Navigational Aids ADS-B ADD",
                 "representation_str": "STANDARD",
                 "short_name": "MN ADSB ADD",
+                "source": "I062/380.SAB.MN",
                 "unit": ""
             }
         },
@@ -1548,12 +1638,13 @@
                 "db_column_name": "background_service_used",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.KOS\n\n0 Complementary service used\n1 Background service used",
+                "description": "0 Complementary service used\n1 Background service used",
                 "dimension": "",
                 "is_key": false,
                 "name": "Background Service Used",
                 "representation_str": "STANDARD",
                 "short_name": "KOS",
+                "source": "I062/080.KOS",
                 "unit": ""
             }
         },
@@ -1565,12 +1656,13 @@
                 "db_column_name": "priority_status_adsb_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.SAB.STAT\n\nFlight Status\n0 No emergency\n1 General emergency\n2 Lifeguard / medical\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 'Downed' Aircraft\n7 Unknown",
+                "description": "Flight Status\n0 No emergency\n1 General emergency\n2 Lifeguard / medical\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 'Downed' Aircraft\n7 Unknown",
                 "dimension": "",
                 "is_key": false,
                 "name": "Priority Status ADS-B ADD",
                 "representation_str": "STANDARD",
                 "short_name": "PS ADSB ADD",
+                "source": "I062/380.SAB.STAT",
                 "unit": ""
             }
         },
@@ -1582,12 +1674,13 @@
                 "db_column_name": "barometric_vertical_rate_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.BVR.Barometric Vertical Rate\n\nUnit:  feet/minute",
+                "description": "Unit:  feet/minute",
                 "dimension": "",
                 "is_key": false,
                 "name": "Barometric Vertical Rate ADD",
                 "representation_str": "STANDARD",
                 "short_name": "BVR ADD",
+                "source": "I062/380.BVR.Barometric Vertical Rate",
                 "unit": ""
             }
         },
@@ -1599,12 +1692,13 @@
                 "db_column_name": "geometric_vertical_rate_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.GVR.Geometric Vertical Rate\n\nUnit: feet/minute",
+                "description": "Unit: feet/minute",
                 "dimension": "",
                 "is_key": false,
                 "name": "Geometric Vertical Rate ADD",
                 "representation_str": "STANDARD",
                 "short_name": "GVR ADD",
+                "source": "I062/380.GVR.Geometric Vertical Rate",
                 "unit": ""
             }
         },
@@ -1616,12 +1710,13 @@
                 "db_column_name": "roll_angle_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.RAN.Roll Angle\n\nRoll Angle\n-180 <= Roll Angle <= 180\n",
+                "description": "Roll Angle\n-180 <= Roll Angle <= 180",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Roll Angle ADD",
                 "representation_str": "STANDARD",
                 "short_name": "RAN ADD",
+                "source": "I062/380.RAN.Roll Angle",
                 "unit": "Degree"
             }
         },
@@ -1633,12 +1728,13 @@
                 "db_column_name": "track_angle_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.TAN.Track Angle",
+                "description": "",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Track Angle ADD",
                 "representation_str": "FLOAT_PREC1",
                 "short_name": "TAN ADD",
+                "source": "I062/380.TAN.Track Angle",
                 "unit": "Degree"
             }
         },
@@ -1650,12 +1746,13 @@
                 "db_column_name": "track_angle_rate_ti_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.TAR.TI\n\nTurn Indicator\n0 Not available\n1 Left\n2 Right\n3 Straight",
+                "description": "Turn Indicator\n0 Not available\n1 Left\n2 Right\n3 Straight",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Angle Rate TI ADD",
                 "representation_str": "STANDARD",
                 "short_name": "TAR TI ADD",
+                "source": "I062/380.TAR.TI",
                 "unit": ""
             }
         },
@@ -1667,12 +1764,13 @@
                 "db_column_name": "ground_speed_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.GSP.Ground Speed\n\nGround Speed in two's complement form referenced to WGS84\n-2 NM/s <= Ground Speed < 2 NM/s",
+                "description": "Ground Speed in two's complement form referenced to WGS84\n-2 NM/s <= Ground Speed < 2 NM/s",
                 "dimension": "Speed",
                 "is_key": false,
                 "name": "Ground Speed ADD",
                 "representation_str": "FLOAT_PREC1",
                 "short_name": "GSP ADD",
+                "source": "I062/380.GSP.Ground Speed",
                 "unit": "NM/Second"
             }
         },
@@ -1684,12 +1782,13 @@
                 "db_column_name": "velocity_uncertainty_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.VUN.Velocity Uncertainty Category",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Velocity Uncertainty ADD",
                 "representation_str": "STANDARD",
                 "short_name": "VUN ADD",
+                "source": "I062/380.VUN.Velocity Uncertainty Category",
                 "unit": ""
             }
         },
@@ -1701,12 +1800,13 @@
                 "db_column_name": "wind_speed_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.MET.WS.Wind Speed\n\n0 <= Wind Speed <= 300",
+                "description": "0 <= Wind Speed <= 300",
                 "dimension": "Speed",
                 "is_key": false,
                 "name": "Wind Speed ADD",
                 "representation_str": "STANDARD",
                 "short_name": "WS ADD",
+                "source": "I062/380.MET.WS.Wind Speed",
                 "unit": "Knots"
             }
         },
@@ -1718,12 +1818,13 @@
                 "db_column_name": "wind_direction_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.MET.WD.Wind Direction\n\n1 <= Wind Direction <= 360",
+                "description": "1 <= Wind Direction <= 360",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Wind Direction ADD",
                 "representation_str": "STANDARD",
                 "short_name": "WD ADD",
+                "source": "I062/380.MET.WD.Wind Direction",
                 "unit": "Degree"
             }
         },
@@ -1735,12 +1836,13 @@
                 "db_column_name": "md4_reply",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.MD4\n\n0 No Mode 4 interrogation\n1 Friendly target\n2 Unknown target\n3 No reply",
+                "description": "0 No Mode 4 interrogation\n1 Friendly target\n2 Unknown target\n3 No reply",
                 "dimension": "",
                 "is_key": false,
                 "name": "MD4 Reply",
                 "representation_str": "STANDARD",
                 "short_name": "MD4",
+                "source": "I062/080.MD4",
                 "unit": ""
             }
         },
@@ -1752,12 +1854,13 @@
                 "db_column_name": "temperature_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.MET.TMP.Temperature\n\nTemperature in degrees celsius\n-100 °C <= Temperature <= 100 °C",
+                "description": "Temperature in degrees celsius\n-100 °C <= Temperature <= 100 °C",
                 "dimension": "",
                 "is_key": false,
                 "name": "Temperature ADD",
                 "representation_str": "STANDARD",
                 "short_name": "TMP ADD",
+                "source": "I062/380.MET.TMP.Temperature",
                 "unit": ""
             }
         },
@@ -1769,12 +1872,13 @@
                 "db_column_name": "turbulence_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.MET.TRB.Turbulence\n\nInteger between 0 and 15 inclusive",
+                "description": "Integer between 0 and 15 inclusive",
                 "dimension": "",
                 "is_key": false,
                 "name": "Turbulence ADD",
                 "representation_str": "STANDARD",
                 "short_name": "TRB ADD",
+                "source": "I062/380.MET.TRB.Turbulence",
                 "unit": ""
             }
         },
@@ -1786,12 +1890,13 @@
                 "db_column_name": "emitter_category_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.EMC.ECAT\n\n1 light aircraft ≤ 7000 kg\n2 reserved\n3 7000 kg < medium aircraft < 136000 kg\n4 reserved\n5 136000 kg ≤ heavy aircraft\n6 highly manoeuvrable (5g acceleration capability) and high speed (>400 knots cruise)\n7 to 9 reserved\n10 rotocraft\n11 glider / sailplane\n12 lighter-than-air\n13 unmanned aerial vehicle\n14 space / transatmospheric vehicle\n15 ultralight / handglider / paraglider\n16 parachutist / skydiver\n17 to 19 reserved\n20 surface emergency vehicle\n21 surface service vehicle\n22 fixed ground or tethered obstruction\n23 to 24 reserved",
+                "description": "1 light aircraft ≤ 7000 kg\n2 reserved\n3 7000 kg < medium aircraft < 136000 kg\n4 reserved\n5 136000 kg ≤ heavy aircraft\n6 highly manoeuvrable (5g acceleration capability) and high speed (>400 knots cruise)\n7 to 9 reserved\n10 rotocraft\n11 glider / sailplane\n12 lighter-than-air\n13 unmanned aerial vehicle\n14 space / transatmospheric vehicle\n15 ultralight / handglider / paraglider\n16 parachutist / skydiver\n17 to 19 reserved\n20 surface emergency vehicle\n21 surface service vehicle\n22 fixed ground or tethered obstruction\n23 to 24 reserved",
                 "dimension": "",
                 "is_key": false,
                 "name": "Emitter Category ADD",
                 "representation_str": "STANDARD",
                 "short_name": "ECAT ADD",
+                "source": "I062/380.EMC.ECAT",
                 "unit": ""
             }
         },
@@ -1803,12 +1908,13 @@
                 "db_column_name": "latitude_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.POS.Latitude\n\nIn WGS.84 in two’s complement form.\nRange -90 <= latitude <= 90 deg.",
+                "description": "In WGS.84 in two’s complement form.\nRange -90 <= latitude <= 90 deg.",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Latitude ADD",
                 "representation_str": "STANDARD",
                 "short_name": "Lat ADD",
+                "source": "I062/380.POS.Latitude",
                 "unit": "Degree"
             }
         },
@@ -1820,12 +1926,13 @@
                 "db_column_name": "longitude_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.POS.Longitude\n\nIn WGS.84 in two’s complement form.\nRange -180 <= longitude < 180 deg.",
+                "description": "In WGS.84 in two’s complement form.\nRange -180 <= longitude < 180 deg.",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Longitude ADD",
                 "representation_str": "STANDARD",
                 "short_name": "Lon ADD",
+                "source": "I062/380.POS.Longitude",
                 "unit": "Degree"
             }
         },
@@ -1837,12 +1944,13 @@
                 "db_column_name": "position_uncertainty_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.PUN.Position Uncertainty",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Position Uncertainty ADD",
                 "representation_str": "STANDARD",
                 "short_name": "PUN ADD",
+                "source": "I062/380.PUN.Position Uncertainty",
                 "unit": ""
             }
         },
@@ -1854,12 +1962,13 @@
                 "db_column_name": "indicated_air_speed_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.IAR.Indicated Air Speed\n\n0 Kt <= Indicated Airspeed <= 1100 Kt\n",
+                "description": "0 Kt <= Indicated Airspeed <= 1100 Kt",
                 "dimension": "Speed",
                 "is_key": false,
                 "name": "Indicated Air Speed ADD",
                 "representation_str": "STANDARD",
                 "short_name": "IASpd ADD",
+                "source": "I062/380.IAR.Indicated Air Speed",
                 "unit": "Knots"
             }
         },
@@ -1871,12 +1980,13 @@
                 "db_column_name": "mach_number_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.MAC.Mach Number\n\n0 <= Mach Number <= 4.096",
+                "description": "0 <= Mach Number <= 4.096",
                 "dimension": "Speed",
                 "is_key": false,
                 "name": "Mach Number ADD",
                 "representation_str": "STANDARD",
                 "short_name": "MAC ADD",
+                "source": "I062/380.MAC.Mach Number",
                 "unit": "Mach"
             }
         },
@@ -1888,12 +1998,13 @@
                 "db_column_name": "barometric_pressure_setting_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.BPS.Barometric Pressure Setting\n\nDerived from Mode S BDS 4,0\n\n-0mb <= BPS <= 409.5 mb\n\nBPS is the barometric pressure setting of the aircraft minus 800 mb.",
+                "description": "Derived from Mode S BDS 4,0\n\n-0mb <= BPS <= 409.5 mb\n\nBPS is the barometric pressure setting of the aircraft minus 800 mb.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Barometric Pressure Setting ADD",
                 "representation_str": "STANDARD",
                 "short_name": "BPS ADD",
+                "source": "I062/380.BPS.Barometric Pressure Setting",
                 "unit": ""
             }
         },
@@ -1905,12 +2016,13 @@
                 "db_column_name": "sac_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.TAG.SAC\n\nFlight Plan Related Data\nSystem Area Code from ",
+                "description": "Flight Plan Related Data\nSystem Area Code from",
                 "dimension": "",
                 "is_key": false,
                 "name": "SAC FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.TAG.SAC",
                 "unit": ""
             }
         },
@@ -1922,12 +2034,13 @@
                 "db_column_name": "military_identification",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.MI\n\n0 default value\n1 Military Identification present in the last report received from a sensor capable of decoding this data",
+                "description": "0 default value\n1 Military Identification present in the last report received from a sensor capable of decoding this data",
                 "dimension": "",
                 "is_key": false,
                 "name": "Military Identification",
                 "representation_str": "STANDARD",
                 "short_name": "MI",
+                "source": "I062/080.MI",
                 "unit": ""
             }
         },
@@ -1939,12 +2052,13 @@
                 "db_column_name": "sic_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.TAG.SIC\n\nFlight Plan Related Data\nSystem Identity Code",
+                "description": "Flight Plan Related Data\nSystem Identity Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SIC FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.TAG.SIC",
                 "unit": ""
             }
         },
@@ -1956,12 +2070,13 @@
                 "db_column_name": "ifps_flight_id_typ_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.IFI.TYP\n\n0 Plan Number\n1 Unit 1 internal flight number\n2 Unit 2 internal flight number\n3 Unit 3 internal flight number",
+                "description": "0 Plan Number\n1 Unit 1 internal flight number\n2 Unit 2 internal flight number\n3 Unit 3 internal flight number",
                 "dimension": "",
                 "is_key": false,
                 "name": "IFPS_FLIGHT_ID TYP FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.IFI.TYP",
                 "unit": ""
             }
         },
@@ -1973,12 +2088,13 @@
                 "db_column_name": "ifps_flight_id_nbr_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.IFI.NBR\n\nNumber from 0 to 99 999 999",
+                "description": "Number from 0 to 99 999 999",
                 "dimension": "",
                 "is_key": false,
                 "name": "IFPS_FLIGHT_ID NBR FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.IFI.NBR",
                 "unit": ""
             }
         },
@@ -1990,12 +2106,13 @@
                 "db_column_name": "flight_category_gat_oat_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.FCT.GAT/OAT\n\n0 Unknown\n1 General Air Traffic\n2 Operational Air Traffic\n3 Not applicable",
+                "description": "0 Unknown\n1 General Air Traffic\n2 Operational Air Traffic\n3 Not applicable",
                 "dimension": "",
                 "is_key": false,
                 "name": "Flight Category GAT/OAT FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.FCT.GAT/OAT",
                 "unit": ""
             }
         },
@@ -2007,12 +2124,13 @@
                 "db_column_name": "flight_category_fr1_fr2_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.FCT.FR1/FR2\n\n0 Instrument Flight Rules\n1 Visual Flight Rules\n2 Not applicable\n3 Controlled Visual Flight Rules",
+                "description": "0 Instrument Flight Rules\n1 Visual Flight Rules\n2 Not applicable\n3 Controlled Visual Flight Rules",
                 "dimension": "",
                 "is_key": false,
                 "name": "Flight Category FR1/FR2 FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.FCT.FR1/FR2",
                 "unit": ""
             }
         },
@@ -2024,12 +2142,13 @@
                 "db_column_name": "flight_category_rvsm_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.FCT.RVSM\n\n0 Unknown\n1 Approved\n2 Exempt\n3 Not Approved",
+                "description": "0 Unknown\n1 Approved\n2 Exempt\n3 Not Approved",
                 "dimension": "",
                 "is_key": false,
                 "name": "Flight Category RVSM FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.FCT.RVSM",
                 "unit": ""
             }
         },
@@ -2041,12 +2160,13 @@
                 "db_column_name": "flight_category_hpr_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.FCT.HPR\n\n0 Normal Priority Flight\n1 High Priority Flight",
+                "description": "0 Normal Priority Flight\n1 High Priority Flight",
                 "dimension": "",
                 "is_key": false,
                 "name": "Flight Category HPR FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.FCT.HPR",
                 "unit": ""
             }
         },
@@ -2058,12 +2178,13 @@
                 "db_column_name": "type_of_aircraft_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.TAC.Type of Aircraft",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Type of Aircraft FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.TAC.Type of Aircraft",
                 "unit": ""
             }
         },
@@ -2075,12 +2196,13 @@
                 "db_column_name": "wake_turbulence_category_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.WTC.Wake Turbulence Category\n\nWake Turbulence Category is an ASCII character\ncode which should be one of the following\nvalues:\nL = Light\nM = Medium\nH = Heavy\nJ = 'Super'",
+                "description": "Wake Turbulence Category is an ASCII character\ncode which should be one of the following\nvalues:\nL = Light\nM = Medium\nH = Heavy\nJ = 'Super'",
                 "dimension": "",
                 "is_key": false,
                 "name": "Wake Turbulence Category FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.WTC.Wake Turbulence Category",
                 "unit": ""
             }
         },
@@ -2092,12 +2214,13 @@
                 "db_column_name": "departure_airport_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.DEP.Departure Airport",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Departure Airport FPL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/390.DEP.Departure Airport",
                 "unit": ""
             }
         },
@@ -2109,12 +2232,13 @@
                 "db_column_name": "num_ref_contrib_sensors",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From REF.CSN REP: Number of Sensors contributing to the system track and not providing a local track-number",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Num Contributing Sensors",
                 "representation_str": "STANDARD",
                 "short_name": "Num REF CSN",
+                "source": "I062/REF.CSN REP: Number of Sensors contributing to the system track and not providing a local track-number",
                 "unit": ""
             }
         },
@@ -2126,12 +2250,13 @@
                 "db_column_name": "num_ref_contrib_sensors_tn",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From REF.CST REP: Number of Sensors contributing to the system track and providing a local track-number",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Num Contributing Sensors Track Number",
                 "representation_str": "STANDARD",
                 "short_name": "Num REF CST",
+                "source": "I062/REF.CST REP: Number of Sensors contributing to the system track and providing a local track-number",
                 "unit": ""
             }
         },
@@ -2143,12 +2268,13 @@
                 "db_column_name": "ref_contrib_sensors",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From REF.CSN: List of Sensors contributing to the system track and not providing a local track-number",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Contributing Sensors",
                 "representation_str": "STANDARD",
                 "short_name": "REF CSN",
+                "source": "I062/REF.CSN: List of Sensors contributing to the system track and not providing a local track-number",
                 "unit": ""
             }
         },
@@ -2160,12 +2286,13 @@
                 "db_column_name": "ref_contrib_sensors_tn",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From REF.CST: List of Sensors contributing to the system track and providing a local track-number",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Contributing Sensors Track Number",
                 "representation_str": "STANDARD",
                 "short_name": "REF CST",
+                "source": "I062/REF.CST: List of Sensors contributing to the system track and providing a local track-number",
                 "unit": ""
             }
         },
@@ -2180,12 +2307,13 @@
                     "Num Contributing Sensors",
                     "Num Contributing Sensors Track Number"
                 ],
-                "description": "Total sum of number of contributing sensors",
+                "description": "Total sum of the number of contributing sensors across all contribution types.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Sum Number Contributing Sensors",
                 "representation_str": "STANDARD",
                 "short_name": "Sum REF CSN CST",
+                "source": "Calculated from per-sensor counts in I062/REF.PSR / SSR / MDS / ADS / GPS / LOC contribution items",
                 "unit": ""
             }
         },
@@ -2197,12 +2325,13 @@
                 "db_column_name": "timestamp",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Epoch timestamp based on Time of Day",
+                "description": "Epoch timestamp computed from Time of Day plus the resolved calendar date (handles midnight wrap).",
                 "dimension": "",
                 "is_key": false,
                 "name": "Timestamp",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "Calculated from Time of Day, calendar date",
                 "unit": ""
             }
         },
@@ -2214,12 +2343,13 @@
                 "db_column_name": "utn",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Unique Target Number",
+                "description": "Unique Target Number, assigned by the reconstructor.",
                 "dimension": "",
                 "is_key": false,
                 "name": "UTN",
                 "representation_str": "STANDARD",
                 "short_name": "UTN",
+                "source": "Filled by the reconstructor",
                 "unit": ""
             }
         },
@@ -2231,12 +2361,13 @@
                 "db_column_name": "most_reliable_height",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.MRH\n\n0 Barometric altitude (Mode C) more reliable\n1 Geometric altitude more reliable",
+                "description": "0 Barometric altitude (Mode C) more reliable\n1 Geometric altitude more reliable",
                 "dimension": "",
                 "is_key": false,
                 "name": "Most Reliable Height",
                 "representation_str": "STANDARD",
                 "short_name": "MRH",
+                "source": "I062/080.MRH",
                 "unit": ""
             }
         },
@@ -2248,12 +2379,13 @@
                 "db_column_name": "geometric_altitude_calculated",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 130.Altitude\n\nCalculated Track Geometric Altitude\n\nVertical distance between the target and the projection of its position on the earth’s ellipsoid, as defined by WGS84",
+                "description": "Calculated Track Geometric Altitude\n\nVertical distance between the target and the projection of its position on the earth’s ellipsoid, as defined by WGS84",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "Geometric Altitude Calculated",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "GA C",
+                "source": "I062/130.Altitude",
                 "unit": "Feet"
             }
         },
@@ -2265,12 +2397,13 @@
                 "db_column_name": "rate_of_climb_descent",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 220.Rate of Climb/Descent\n\nCalculated rate of Climb/Descent of an aircraft",
+                "description": "Calculated rate of Climb/Descent of an aircraft",
                 "dimension": "",
                 "is_key": false,
                 "name": "Rate Of Climb/Descent",
                 "representation_str": "STANDARD",
                 "short_name": "RoCD",
+                "source": "I062/220.Rate of Climb/Descent",
                 "unit": ""
             }
         },
@@ -2282,12 +2415,13 @@
                 "db_column_name": "civil_emergency",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.EMS\n\nEmergency Status Indication\n0 No emergency\n1 General emergency\n2 Lifeguard / medical\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 \"Downed\" Aircraft\n7 Undefined",
+                "description": "Emergency Status Indication\n0 No emergency\n1 General emergency\n2 Lifeguard / medical\n3 Minimum fuel\n4 No communications\n5 Unlawful interference\n6 \"Downed\" Aircraft\n7 Undefined",
                 "dimension": "",
                 "is_key": false,
                 "name": "Civil Emergency",
                 "representation_str": "STANDARD",
                 "short_name": "EMS",
+                "source": "I062/080.EMS",
                 "unit": ""
             }
         },
@@ -2299,12 +2433,13 @@
                 "db_column_name": "ds_id",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Data Source Identifier",
+                "description": "Data Source Identifier (bit-packed SAC/SIC)",
                 "dimension": "",
                 "is_key": false,
                 "name": "DS ID",
                 "representation_str": "DATA_SRC_NAME",
                 "short_name": "",
+                "source": "Calculated from I062/010.SAC, I062/010.SIC",
                 "unit": ""
             }
         },
@@ -2316,12 +2451,13 @@
                 "db_column_name": "callsign_fpl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 390.CSN.Callsign\n\nFlight Plan Related Data\n",
+                "description": "Flight Plan Related Data",
                 "dimension": "",
                 "is_key": false,
                 "name": "Callsign FPL",
                 "representation_str": "STANDARD",
                 "short_name": "CS FPL",
+                "source": "I062/390.CSN.Callsign",
                 "unit": ""
             }
         },
@@ -2339,6 +2475,7 @@
                 "name": "Ground Speed",
                 "representation_str": "FLOAT_PREC1",
                 "short_name": "GSpd",
+                "source": "Calculated from Vx, Vy",
                 "unit": "Knots"
             }
         },
@@ -2350,12 +2487,13 @@
                 "db_column_name": "line_id",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Communication line ID",
+                "description": "Communication line ID determining the origin of the record.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Line ID",
                 "representation_str": "LINE_NAME",
                 "short_name": "",
+                "source": "Internal: import line/source identifier",
                 "unit": ""
             }
         },
@@ -2367,12 +2505,13 @@
                 "db_column_name": "mode_c_code_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.MDC.Last Measured Mode C Code\n\nLast Measured Mode C Code",
+                "description": "Last Measured Mode C Code",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "Mode C Code LM",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "MC LM",
+                "source": "I062/340.MDC.Last Measured Mode C Code",
                 "unit": "Feet"
             }
         },
@@ -2384,12 +2523,13 @@
                 "db_column_name": "mode_c_garbled_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.MDC.G\n\n0 Default\n1 Garbled code\n",
+                "description": "0 Default\n1 Garbled code",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode C Garbled LM",
                 "representation_str": "STANDARD",
                 "short_name": "MC G LM",
+                "source": "I062/340.MDC.G",
                 "unit": ""
             }
         },
@@ -2401,12 +2541,13 @@
                 "db_column_name": "mode_c_valid_lm_",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.MDC.V\n\n0 Code not validated\n1 Code validated\n\n\n",
+                "description": "0 Code not validated\n1 Code validated",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode C Valid LM",
                 "representation_str": "STANDARD",
                 "short_name": "MC V LM",
+                "source": "I062/340.MDC.V",
                 "unit": ""
             }
         },
@@ -2418,12 +2559,13 @@
                 "db_column_name": "geometric_altitude_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.GAL.Geometric Altitude\n\n-1500 ft <= Altitude <= 150000 ft",
+                "description": "-1500 ft <= Altitude <= 150000 ft",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "Geometric Altitude ADD",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "GA ADD",
+                "source": "I062/380.GAL.Geometric Altitude",
                 "unit": "Feet"
             }
         },
@@ -2435,12 +2577,13 @@
                 "db_column_name": "mode_3a_code_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.MDA.Mode-3/A reply\n\n",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Code LM",
                 "representation_str": "DEC_TO_OCTAL",
                 "short_name": "MA LM",
+                "source": "I062/340.MDA.Mode-3/A reply",
                 "unit": ""
             }
         },
@@ -2452,12 +2595,13 @@
                 "db_column_name": "mode_3a_garbled_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.MDA.G\n\n0 Default\n1 Garbled code\n\n",
+                "description": "0 Default\n1 Garbled code",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Garbled LM",
                 "representation_str": "STANDARD",
                 "short_name": "MA G LM",
+                "source": "I062/340.MDA.G",
                 "unit": ""
             }
         },
@@ -2469,12 +2613,13 @@
                 "db_column_name": "mode_3a_smoothed_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.MDA.L\n\n0 Mode-3/A code derived from the reply of the transponder\n1 Mode-3/A code not extracted during the last scan\n\nSmoothed MODE 3/A data (L = 1) will be used in case of absence of\nMODE 3/A code information in the plot or in case of difference between plot and sensor local track MODE 3/A code information.\n\n",
+                "description": "0 Mode-3/A code derived from the reply of the transponder\n1 Mode-3/A code not extracted during the last scan\n\nSmoothed MODE 3/A data (L = 1) will be used in case of absence of\nMODE 3/A code information in the plot or in case of difference between plot and sensor local track MODE 3/A code information.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Smoothed LM",
                 "representation_str": "STANDARD",
                 "short_name": "MA S LM",
+                "source": "I062/340.MDA.L",
                 "unit": ""
             }
         },
@@ -2486,12 +2631,13 @@
                 "db_column_name": "mode_3a_valid_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.MDA.V\n\n0 Code not validated\n1 Code validated\n\n",
+                "description": "0 Code not validated\n1 Code validated",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Valid LM",
                 "representation_str": "STANDARD",
                 "short_name": "MA V LM",
+                "source": "I062/340.MDA.V",
                 "unit": ""
             }
         },
@@ -2503,12 +2649,13 @@
                 "db_column_name": "flight_level_measured_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.MFL.Age\n\nAge of the last valid and credible Mode C code or barometric altitude from ADS-B used to update the track (I062/136)",
+                "description": "Age of the last valid and credible Mode C code or barometric altitude from ADS-B used to update the track (I062/136)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Flight Level Measured Age",
                 "representation_str": "STANDARD",
                 "short_name": "FL M Age",
+                "source": "I062/295.MFL.Age",
                 "unit": "Second"
             }
         },
@@ -2520,12 +2667,13 @@
                 "db_column_name": "flight_level_measured",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 136.Measured Flight Level\n\nLast valid and credible flight level used to update the track.",
+                "description": "Last valid and credible flight level used to update the track.",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "Flight Level Measured",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "FL M",
+                "source": "I062/136.Measured Flight Level",
                 "unit": "Feet"
             }
         },
@@ -2537,12 +2685,13 @@
                 "db_column_name": "mode_3a_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.MDA.Age\n\nAge of the last valid and credible Mode 3/A code used to update the track (I062/060)",
+                "description": "Age of the last valid and credible Mode 3/A code used to update the track (I062/060)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Mode 3/A Age",
                 "representation_str": "STANDARD",
                 "short_name": "MA Age",
+                "source": "I062/295.MDA.Age",
                 "unit": "Second"
             }
         },
@@ -2554,12 +2703,13 @@
                 "db_column_name": "military_emergency",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.ME\n\n0 default value\n1 Military Emergency present in the last report received from a sensor capable of decoding this data",
+                "description": "0 default value\n1 Military Emergency present in the last report received from a sensor capable of decoding this data",
                 "dimension": "",
                 "is_key": false,
                 "name": "Military Emergency",
                 "representation_str": "STANDARD",
                 "short_name": "ME",
+                "source": "I062/080.ME",
                 "unit": ""
             }
         },
@@ -2571,12 +2721,13 @@
                 "db_column_name": "mode_3a_garbled",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.G\n\nMode-3/A Garbled\n\n0 Default\n1 Garbled Code",
+                "description": "Mode-3/A Garbled\n\n0 Default\n1 Garbled Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Garbled",
                 "representation_str": "STANDARD",
                 "short_name": "MA G",
+                "source": "I062/060.G",
                 "unit": ""
             }
         },
@@ -2588,12 +2739,13 @@
                 "db_column_name": "mode_3a_valid",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.V\n\n0 Code not validated\n1 Code validated",
+                "description": "0 Code not validated\n1 Code validated",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Valid",
                 "representation_str": "STANDARD",
                 "short_name": "MA V",
+                "source": "I062/060.V",
                 "unit": ""
             }
         },
@@ -2605,12 +2757,13 @@
                 "db_column_name": "mom_longitudinal_acc",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 200.LONG\n\nMode of Movement\n\nLongitudinal Acceleration :\n0 Constant Groundspeed\n1 Increasing Groundspeed\n2 Decreasing Groundspeed\n3 Undetermined",
+                "description": "Mode of Movement\n\nLongitudinal Acceleration :\n0 Constant Groundspeed\n1 Increasing Groundspeed\n2 Decreasing Groundspeed\n3 Undetermined",
                 "dimension": "",
                 "is_key": false,
                 "name": "MOM Longitudinal Acc",
                 "representation_str": "STANDARD",
                 "short_name": "MON LONG",
+                "source": "I062/200.LONG",
                 "unit": ""
             }
         },
@@ -2622,12 +2775,13 @@
                 "db_column_name": "mom_transversal_acc",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 200.TRANS\n\nMode of Movement\n\nTransversal Acceleration:\n0 Constant Course\n1 Right Turn\n2 Left Turn\n3 Undetermined",
+                "description": "Mode of Movement\n\nTransversal Acceleration:\n0 Constant Course\n1 Right Turn\n2 Left Turn\n3 Undetermined",
                 "dimension": "",
                 "is_key": false,
                 "name": "MOM Transversal Acc",
                 "representation_str": "STANDARD",
                 "short_name": "MOM TRANS",
+                "source": "I062/200.TRANS",
                 "unit": ""
             }
         },
@@ -2639,12 +2793,13 @@
                 "db_column_name": "mom_vertical_rate",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 200.VERT\n\nMode of Movement\n\nVertical Rate :\n0 Level\n1 Climb\n2 Descent\n3 Undetermined",
+                "description": "Mode of Movement\n\nVertical Rate :\n0 Level\n1 Climb\n2 Descent\n3 Undetermined",
                 "dimension": "",
                 "is_key": false,
                 "name": "MOM Vertical Rate",
                 "representation_str": "CLIMB_DESCENT",
                 "short_name": "MOM VERT",
+                "source": "I062/200.VERT",
                 "unit": ""
             }
         },
@@ -2656,12 +2811,13 @@
                 "db_column_name": "monosensor",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.MON\n\n0 Multisensor track\n1 Monosensor track",
+                "description": "0 Multisensor track\n1 Monosensor track",
                 "dimension": "",
                 "is_key": false,
                 "name": "Monosensor",
                 "representation_str": "STANDARD",
                 "short_name": "MON",
+                "source": "I062/080.MON",
                 "unit": ""
             }
         },
@@ -2673,12 +2829,13 @@
                 "db_column_name": "latitude",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 105.Latitude\n\nCalculated Position in WGS-84 Co-ordinates with a resolution of\n180/2^25 degrees",
+                "description": "Calculated Position in WGS-84 Co-ordinates with a resolution of\n180/2^25 degrees",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Latitude",
                 "representation_str": "STANDARD",
                 "short_name": "Lat",
+                "source": "I062/105.Latitude\nCalculated from X, Y (Cartesian->WGS-84 projection when 105 absent)",
                 "unit": "Degree"
             }
         },
@@ -2690,12 +2847,13 @@
                 "db_column_name": "longitude",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 105.Longitude\n\nCalculated Position in WGS-84 Co-ordinates with a resolution of\n180/2^25 degrees",
+                "description": "Calculated Position in WGS-84 Co-ordinates with a resolution of\n180/2^25 degrees",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Longitude",
                 "representation_str": "STANDARD",
                 "short_name": "Lon",
+                "source": "I062/105.Longitude\nCalculated from X, Y (Cartesian->WGS-84 projection when 105 absent)",
                 "unit": "Degree"
             }
         },
@@ -2707,12 +2865,13 @@
                 "db_column_name": "latitude_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.APW.APW (Latitude Component)\n\nEstimated accuracy (i.e. standard deviation) of the calculated position of a target expressed in WGS-84.\n ",
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated position of a target expressed in WGS-84.",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Latitude StdDev",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/500.APW.APW (Latitude Component)",
                 "unit": "Degree"
             }
         },
@@ -2724,12 +2883,13 @@
                 "db_column_name": "longitude_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.APW.APW (Longitude Component)\n\nEstimated accuracy (i.e. standard deviation) of the calculated position of a target expressed in WGS-84.",
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated position of a target expressed in WGS-84.",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Longitude StdDev",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/500.APW.APW (Longitude Component)",
                 "unit": "Degree"
             }
         },
@@ -2741,12 +2901,13 @@
                 "db_column_name": "x_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.APC.APC (X-Component)\n\nStandard deviation of x component in meters",
+                "description": "Standard deviation of x component in meters",
                 "dimension": "Length",
                 "is_key": false,
                 "name": "X StdDev",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "I062/500.APC.APC (X-Component)",
                 "unit": "Meter"
             }
         },
@@ -2758,12 +2919,13 @@
                 "db_column_name": "x_y_covariance",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.COV.COV (XY Covariance Component)\n\nXY Covariance Component\n\n1. XY covariance component = sign {Cov(X,Y)} * sqrt {abs [Cov (X,Y)]}\n2. The maximum value for the (unsigned) XY covariance component is 16.383 km.",
+                "description": "XY Covariance Component\n\n1. XY covariance component = sign {Cov(X,Y)} * sqrt {abs [Cov (X,Y)]}\n2. The maximum value for the (unsigned) XY covariance component is 16.383 km.",
                 "dimension": "",
                 "is_key": false,
                 "name": "X/Y Covariance",
                 "representation_str": "FLOAT_PREC4",
                 "short_name": "",
+                "source": "I062/500.COV.COV (XY Covariance Component)",
                 "unit": ""
             }
         },
@@ -2775,12 +2937,13 @@
                 "db_column_name": "y_stddev",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 500.APC.APC (Y-Component)\n\nStandard deviation of y component in meters",
+                "description": "Standard deviation of y component in meters",
                 "dimension": "Length",
                 "is_key": false,
                 "name": "Y StdDev",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "I062/500.APC.APC (Y-Component)",
                 "unit": "Meter"
             }
         },
@@ -2792,12 +2955,13 @@
                 "db_column_name": "record_number",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Unique record id starting with 0 on every new recording",
+                "description": "Unique record id starting with 0 on every new recording.",
                 "dimension": "",
                 "is_key": true,
                 "name": "Record Number",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "Internal: ascending record number assigned at import",
                 "unit": ""
             }
         },
@@ -2809,12 +2973,13 @@
                 "db_column_name": "type_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.TYP.TYP\n\nLast Measured Detection Type\n\n000 No detection\n001 Single PSR detection\n010 Single SSR detection\n011 SSR + PSR detection\n100 Single ModeS All-Call\n101 Single ModeS Roll-Call\n110 ModeS All-Call + PSR\n111 ModeS Roll-Call +PSR",
+                "description": "Last Measured Detection Type\n\n000 No detection\n001 Single PSR detection\n010 Single SSR detection\n011 SSR + PSR detection\n100 Single ModeS All-Call\n101 Single ModeS Roll-Call\n110 ModeS All-Call + PSR\n111 ModeS Roll-Call +PSR",
                 "dimension": "",
                 "is_key": false,
                 "name": "Type LM",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/340.TYP.TYP",
                 "unit": ""
             }
         },
@@ -2826,12 +2991,13 @@
                 "db_column_name": "sac",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 010.SAC\n\nSystem Area Code",
+                "description": "System Area Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SAC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/010.SAC",
                 "unit": ""
             }
         },
@@ -2843,12 +3009,13 @@
                 "db_column_name": "selected_altitude_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.SAL.Altitude\n\nBarometric Altitude\n-1300ft <= Altitude <= 100000ft",
+                "description": "Barometric Altitude\n-1300ft <= Altitude <= 100000ft",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "Selected Altitude ADD",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "SA ADD",
+                "source": "I062/380.SAL.Altitude",
                 "unit": "Feet"
             }
         },
@@ -2860,12 +3027,13 @@
                 "db_column_name": "selected_altitude_source_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.SAL.Source\n\n0 Unknown\n01 Aircraft Altitude\n2 FCU/MCP Selected Altitude\n3 FMS Selected Altitude\n\n",
+                "description": "0 Unknown\n01 Aircraft Altitude\n2 FCU/MCP Selected Altitude\n3 FMS Selected Altitude",
                 "dimension": "",
                 "is_key": false,
                 "name": "Selected Altitude Source ADD",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/380.SAL.Source",
                 "unit": ""
             }
         },
@@ -2877,12 +3045,13 @@
                 "db_column_name": "sic",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 010.SIC\n\nSystem Identification Code",
+                "description": "System Identification Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SIC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/010.SIC",
                 "unit": ""
             }
         },
@@ -2894,12 +3063,13 @@
                 "db_column_name": "simulated",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.SIM\n\n0 Actual track\n1 Simulated track",
+                "description": "0 Actual track\n1 Simulated track",
                 "dimension": "",
                 "is_key": false,
                 "name": "Simulated",
                 "representation_str": "STANDARD",
                 "short_name": "SIM",
+                "source": "I062/080.SIM",
                 "unit": ""
             }
         },
@@ -2911,12 +3081,13 @@
                 "db_column_name": "spi",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.SPI\n\n0 default value\n1 SPI present in the last report received from a sensor capable of decoding this data",
+                "description": "0 default value\n1 SPI present in the last report received from a sensor capable of decoding this data",
                 "dimension": "",
                 "is_key": false,
                 "name": "SPI",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/080.SPI",
                 "unit": ""
             }
         },
@@ -2928,12 +3099,13 @@
                 "db_column_name": "aircraft_address",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.ADR.Target Address\n\n24 bits Target Address (ADD)",
+                "description": "24 bits Target Address (ADD)",
                 "dimension": "",
                 "is_key": false,
                 "name": "Aircraft Address",
                 "representation_str": "DEC_TO_HEX",
                 "short_name": "ACAD",
+                "source": "I062/380.ADR.Target Address",
                 "unit": ""
             }
         },
@@ -2945,12 +3117,13 @@
                 "db_column_name": "time_of_day",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.Time Of Track Information\n\nAbsolute time stamping of the information provided in the track\nmessage, in the form of elapsed time since last midnight, expressed as UTC.",
+                "description": "Absolute time stamping of the information provided in the track\nmessage, in the form of elapsed time since last midnight, expressed as UTC.",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Time of Day",
                 "representation_str": "SECONDS_TO_TIME",
                 "short_name": "ToD",
+                "source": "I062/070.Time Of Track Information",
                 "unit": "Second"
             }
         },
@@ -2962,12 +3135,13 @@
                 "db_column_name": "acas_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.ACS.Age\n\nAge of the DAP 'ACAS Resolution Advisory Report' in item 062/380 (Subfield #12)",
+                "description": "Age of the DAP 'ACAS Resolution Advisory Report' in item 062/380 (Subfield #12)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "ACAS Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/295.ACS.Age",
                 "unit": "Second"
             }
         },
@@ -2979,12 +3153,13 @@
                 "db_column_name": "amalgamated",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.AMA\n\n0 track not resulting from amalgamation process\n1 track resulting from amalgamation process",
+                "description": "0 track not resulting from amalgamation process\n1 track resulting from amalgamation process",
                 "dimension": "",
                 "is_key": false,
                 "name": "Amalgamated",
                 "representation_str": "STANDARD",
                 "short_name": "AMA",
+                "source": "I062/080.AMA",
                 "unit": ""
             }
         },
@@ -3002,6 +3177,7 @@
                 "name": "Track Angle",
                 "representation_str": "FLOAT_PREC1",
                 "short_name": "TrAng",
+                "source": "Calculated from Vx, Vy",
                 "unit": "Degree"
             }
         },
@@ -3013,12 +3189,13 @@
                 "db_column_name": "barometric_pressure_setting_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.BPS.Age\n\nAge of the DAP 'Barometric Pressure Setting' in item 062/380 (Subfield #28)",
+                "description": "Age of the DAP 'Barometric Pressure Setting' in item 062/380 (Subfield #28)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Barometric Pressure Setting ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "BPS ADD Age",
+                "source": "I062/295.BPS.Age",
                 "unit": "Second"
             }
         },
@@ -3030,12 +3207,13 @@
                 "db_column_name": "barometric_vertical_rate_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.BVR.Age\n\nAge of the DAP 'Barometric Vertical Rate' in item 062/380 (Subfield #13)",
+                "description": "Age of the DAP 'Barometric Vertical Rate' in item 062/380 (Subfield #13)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Barometric Vertical Rate ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/295.BVR.Age",
                 "unit": "Second"
             }
         },
@@ -3047,12 +3225,13 @@
                 "db_column_name": "coasting",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.CST\n\n0 Default value\n1 Age of the last received track update is higher than system dependent threshold (coasting)",
+                "description": "0 Default value\n1 Age of the last received track update is higher than system dependent threshold (coasting)",
                 "dimension": "",
                 "is_key": false,
                 "name": "Coasting",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/080.CST",
                 "unit": ""
             }
         },
@@ -3064,12 +3243,13 @@
                 "db_column_name": "com_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.COM.Age\n\nAge of the DAP 'Communication/ACAS Capability and Flight Status' in item 062/380 (Subfield #10)",
+                "description": "Age of the DAP 'Communication/ACAS Capability and Flight Status' in item 062/380 (Subfield #10)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "COM ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/295.COM.Age",
                 "unit": "Second"
             }
         },
@@ -3081,12 +3261,13 @@
                 "db_column_name": "confirmed",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.CNF\n\n0 Tentative track\n1 Confirmed track\n",
+                "description": "0 Tentative track\n1 Confirmed track",
                 "dimension": "",
                 "is_key": false,
                 "name": "Confirmed",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/080.CNF",
                 "unit": ""
             }
         },
@@ -3098,12 +3279,13 @@
                 "db_column_name": "track_begin",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.TSB\n\n 0 default value\n1 first message transmitted to the user for the track",
+                "description": "0 default value\n1 first message transmitted to the user for the track",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Begin",
                 "representation_str": "STANDARD",
                 "short_name": "TSB",
+                "source": "I062/080.TSB",
                 "unit": ""
             }
         },
@@ -3115,12 +3297,13 @@
                 "db_column_name": "emitter_category_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.EMC.Age\n\nAge of the DAP 'Emitter Category' in item 062/380 (Subfield #21)",
+                "description": "Age of the DAP 'Emitter Category' in item 062/380 (Subfield #21)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Emitter Category ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "ECAT ADD Age",
+                "source": "I062/295.EMC.Age",
                 "unit": "Second"
             }
         },
@@ -3132,12 +3315,13 @@
                 "db_column_name": "track_end",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 080.TSE\n\n0 default value\n1 last message transmitted to the user for the track",
+                "description": "0 default value\n1 last message transmitted to the user for the track",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track End",
                 "representation_str": "STANDARD",
                 "short_name": "TSE",
+                "source": "I062/080.TSE",
                 "unit": ""
             }
         },
@@ -3149,12 +3333,13 @@
                 "db_column_name": "ads_b_es_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 290.ES.Age\n\nAge of the last 1090 Extended Squitter ADS-B report used to update the track",
+                "description": "Age of the last 1090 Extended Squitter ADS-B report used to update the track",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "ADS-B ES Update Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/290.ES.Age",
                 "unit": "Second"
             }
         },
@@ -3166,12 +3351,13 @@
                 "db_column_name": "fs_sa_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.FSS.Age\n\nAge of the DAP 'Final State Selected Altitude' in item 062/380 (Subfield #7)",
+                "description": "Age of the DAP 'Final State Selected Altitude' in item 062/380 (Subfield #7)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "FS SA ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "FSS ADD Age",
+                "source": "I062/295.FSS.Age",
                 "unit": "Second"
             }
         },
@@ -3183,12 +3369,13 @@
                 "db_column_name": "geometric_altitude_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.GAL.Age\n\nAge of the DAP 'Geometric Altitude' in item 062/380 (Subfield #24)",
+                "description": "Age of the DAP 'Geometric Altitude' in item 062/380 (Subfield #24)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Geometric Altitude ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "GA ADD Age",
+                "source": "I062/295.GAL.Age",
                 "unit": "Second"
             }
         },
@@ -3200,12 +3387,13 @@
                 "db_column_name": "ground_speed_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.GSP.Age\n\nAge of the DAP 'Ground Speed' in item 062/380 (Subfield #18)",
+                "description": "Age of the DAP 'Ground Speed' in item 062/380 (Subfield #18)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Ground Speed ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "GSP ADD Age",
+                "source": "I062/295.GSP.Age",
                 "unit": "Second"
             }
         },
@@ -3217,12 +3405,13 @@
                 "db_column_name": "geometric_vertical_rate_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.GVR.Age\n\nAge of the DAP 'Geometrical Vertical Rate' in item 062/380 (Subfield #14)",
+                "description": "Age of the DAP 'Geometrical Vertical Rate' in item 062/380 (Subfield #14)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Geometric Vertical Rate ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "GVR ADD Age",
+                "source": "I062/295.GVR.Age",
                 "unit": "Second"
             }
         },
@@ -3234,12 +3423,13 @@
                 "db_column_name": "indicated_airspeed_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.IAR.Age\n\nAge of the DAP 'Indicated Airspeed' in item 062/380 (Subfield #26)",
+                "description": "Age of the DAP 'Indicated Airspeed' in item 062/380 (Subfield #26)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Indicated Airspeed ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "IASpd ADD Age",
+                "source": "I062/295.IAR.Age",
                 "unit": "Second"
             }
         },
@@ -3251,12 +3441,13 @@
                 "db_column_name": "indicated_airspeed_mach_nb_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.IAS.Age\n\nAge of the DAP 'Indicated Airspeed/ Mach Number' in item 062/380 (Subfield #4)\n\nDespite there are now two subfields (#29 and #30) reporting the ages\nof, respectively, the Indicated Airspeed track data and the Mach\nNumber track data, this former subfield is kept free in order to prevent\na full incompatibility with previous releases of ASTERIX Cat. 062\nalready implemented.",
+                "description": "Age of the DAP 'Indicated Airspeed/ Mach Number' in item 062/380 (Subfield #4)\n\nDespite there are now two subfields (#29 and #30) reporting the ages\nof, respectively, the Indicated Airspeed track data and the Mach\nNumber track data, this former subfield is kept free in order to prevent\na full incompatibility with previous releases of ASTERIX Cat. 062\nalready implemented.",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Indicated Airspeed/Mach Nb ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "IAS Age",
+                "source": "I062/295.IAS.Age",
                 "unit": "Second"
             }
         },
@@ -3268,12 +3459,13 @@
                 "db_column_name": "sac_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.SID.SAC\n\nMeasured Information Sensor Identification\nSystem Area Code",
+                "description": "Measured Information Sensor Identification\nSystem Area Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SAC LM",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/340.SID.SAC",
                 "unit": ""
             }
         },
@@ -3285,12 +3477,13 @@
                 "db_column_name": "sic_lm",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 340.SID.SIC\n\nMeasured Information Sensor Identification\nSystem Identification Code",
+                "description": "Measured Information Sensor Identification\nSystem Identification Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SIC LM",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/340.SID.SIC",
                 "unit": ""
             }
         },
@@ -3302,12 +3495,13 @@
                 "db_column_name": "mach_number_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.MAC.Age\n\nAge of the DAP 'Mach Number' in item 062/380 (Subfield #27)",
+                "description": "Age of the DAP 'Mach Number' in item 062/380 (Subfield #27)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Mach Number ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/295.MAC.Age",
                 "unit": "Second"
             }
         },
@@ -3319,12 +3513,13 @@
                 "db_column_name": "mode_s_mb_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.MB.Age\n\nAge of the DAP 'Mode S MB Data' in item 062/380 (Subfield #22)",
+                "description": "Age of the DAP 'Mode S MB Data' in item 062/380 (Subfield #22)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Mode S MB ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "MB ADD Age",
+                "source": "I062/295.MB.Age",
                 "unit": "Second"
             }
         },
@@ -3336,12 +3531,13 @@
                 "db_column_name": "mode_s_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 290.MDS.Age\n\nAge of the last Mode S detection used to update the track",
+                "description": "Age of the last Mode S detection used to update the track",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Mode S Update Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/290.MDS.Age",
                 "unit": "Second"
             }
         },
@@ -3353,12 +3549,13 @@
                 "db_column_name": "met_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.MET.Age\n\nAge of the DAP 'Meteorological Data' in item 062/380 (Subfield #20)",
+                "description": "Age of the DAP 'Meteorological Data' in item 062/380 (Subfield #20)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "MET ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/295.MET.Age",
                 "unit": "Second"
             }
         },
@@ -3370,12 +3567,13 @@
                 "db_column_name": "magnetic_heading_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.MHG.Age\n\nAge of the DAP 'Magnetic Heading' in item 062/380 (Subfield #3)",
+                "description": "Age of the DAP 'Magnetic Heading' in item 062/380 (Subfield #3)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Magnetic Heading ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "MHG ADD Age",
+                "source": "I062/295.MHG.Age",
                 "unit": "Second"
             }
         },
@@ -3387,12 +3585,13 @@
                 "db_column_name": "mlat_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 290.MLT.Age\n\nAge of the last MLT detection",
+                "description": "Age of the last MLT detection",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "MLAT Update Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/290.MLT.Age",
                 "unit": "Second"
             }
         },
@@ -3404,12 +3603,13 @@
                 "db_column_name": "track_number",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 040.Track Number\n\nIdentification of a track",
+                "description": "Identification of a track",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Number",
                 "representation_str": "STANDARD",
                 "short_name": "TN",
+                "source": "I062/040.Track Number",
                 "unit": ""
             }
         },
@@ -3421,12 +3621,13 @@
                 "db_column_name": "position_data_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.POS.Age\n\nAge of the DAP 'Position' in item 062/380 (Subfield #23)",
+                "description": "Age of the DAP 'Position' in item 062/380 (Subfield #23)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Position Data ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/295.POS.Age",
                 "unit": "Second"
             }
         },
@@ -3438,12 +3639,13 @@
                 "db_column_name": "psr_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 290.PSR.Age\n\nAge of the last primary detection used to update the track",
+                "description": "Age of the last primary detection used to update the track",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "PSR Update Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/290.PSR.Age",
                 "unit": "Second"
             }
         },
@@ -3455,12 +3657,13 @@
                 "db_column_name": "position_uncertainty_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.PUN.Age\n\nAge of the DAP 'Position Uncertainty' in item 062/380 (Subfield #25)",
+                "description": "Age of the DAP 'Position Uncertainty' in item 062/380 (Subfield #25)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Position Uncertainty ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "PUN ADD Age",
+                "source": "I062/295.PUN.Age",
                 "unit": "Second"
             }
         },
@@ -3472,12 +3675,13 @@
                 "db_column_name": "roll_angle_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.RAN.Age\n\nAge of the DAP 'Roll Angle' in item 062/380 (Subfield #15)",
+                "description": "Age of the DAP 'Roll Angle' in item 062/380 (Subfield #15)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Roll Angle ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "RAN ADD Age",
+                "source": "I062/295.RAN.Age",
                 "unit": "Second"
             }
         },
@@ -3489,12 +3693,13 @@
                 "db_column_name": "sab_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.SAB.Age\n\nAge of the DAP 'Status Reported by ADS-B' in item 062/380 (Subfield #11)",
+                "description": "Age of the DAP 'Status Reported by ADS-B' in item 062/380 (Subfield #11)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "SAB ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/295.SAB.Age",
                 "unit": "Second"
             }
         },
@@ -3506,12 +3711,13 @@
                 "db_column_name": "selected_altitude_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.SAL.Age\n\nAge of the DAP 'Selected Altitude' in item 062/380 (Subfield #6)",
+                "description": "Age of the DAP 'Selected Altitude' in item 062/380 (Subfield #6)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Selected Altitude ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "SAL ADD Age",
+                "source": "I062/295.SAL.Age",
                 "unit": "Second"
             }
         },
@@ -3523,12 +3729,13 @@
                 "db_column_name": "ssr_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 290.SSR.Age\n\nAge of the last secondary detection used to update the track ",
+                "description": "Age of the last secondary detection used to update the track",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "SSR Update Age",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I062/290.SSR.Age",
                 "unit": "Second"
             }
         },
@@ -3540,12 +3747,13 @@
                 "db_column_name": "track_angle_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.TAN.Age\n\nAge of the DAP 'Track Angle' in item 062/380 (Subfield #17)",
+                "description": "Age of the DAP 'Track Angle' in item 062/380 (Subfield #17)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Track Angle ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "TAN ADD Age",
+                "source": "I062/295.TAN.Age",
                 "unit": "Second"
             }
         },
@@ -3557,12 +3765,13 @@
                 "db_column_name": "track_angle_rate_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.TAR.Age\n\nAge of the DAP 'Track Angle Rate' in item 062/380 (Subfield #16)",
+                "description": "Age of the DAP 'Track Angle Rate' in item 062/380 (Subfield #16)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Track Angle Rate ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "TAR ADD Age",
+                "source": "I062/295.TAR.Age",
                 "unit": "Second"
             }
         },
@@ -3574,12 +3783,13 @@
                 "db_column_name": "true_airspeed_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.TAS.Age\n\nAge of the DAP 'True Airspeed' in item 062/380 (Subfield #5)",
+                "description": "Age of the DAP 'True Airspeed' in item 062/380 (Subfield #5)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "True Airspeed ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "TAS ADD Age",
+                "source": "I062/295.TAS.Age",
                 "unit": "Second"
             }
         },
@@ -3591,12 +3801,13 @@
                 "db_column_name": "trajectory_intent_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.TID.Age\n\nAge of the DAP 'Trajectory Intent' in item 062/380 (Subfield #8)",
+                "description": "Age of the DAP 'Trajectory Intent' in item 062/380 (Subfield #8)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Trajectory Intent ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "TID Age",
+                "source": "I062/295.TID.Age",
                 "unit": "Second"
             }
         },
@@ -3608,12 +3819,13 @@
                 "db_column_name": "velocity_uncertainty_add_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 295.VUN.Age\n\nAge of the DAP 'Velocity Uncertainty' in item 062/380 (Subfield #19)",
+                "description": "Age of the DAP 'Velocity Uncertainty' in item 062/380 (Subfield #19)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Velocity Uncertainty ADD Age",
                 "representation_str": "STANDARD",
                 "short_name": "VUN ADD Age",
+                "source": "I062/295.VUN.Age",
                 "unit": "Second"
             }
         },
@@ -3625,12 +3837,13 @@
                 "db_column_name": "barometric_altitude_calculated",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 135.Calculated Track Barometric Altitude\n\nCalculated Barometric Altitude of the track",
+                "description": "Calculated Barometric Altitude of the track",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "Barometric Altitude Calculated",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "BA C",
+                "source": "I062/135.Calculated Track Barometric Altitude",
                 "unit": "Feet"
             }
         },
@@ -3642,12 +3855,13 @@
                 "db_column_name": "mode_3a_code",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.Mode-3/A reply\n\nMode-3/A code",
+                "description": "Mode-3/A code",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Code",
                 "representation_str": "DEC_TO_OCTAL",
                 "short_name": "MA",
+                "source": "I062/060.Mode-3/A reply",
                 "unit": ""
             }
         },
@@ -3659,12 +3873,13 @@
                 "db_column_name": "target_report_identifiers",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From SPF.Target Report Identifiers.TRI\n\nARTAS MD5 Hash Codes",
+                "description": "ARTAS MD5 Hash Codes",
                 "dimension": "",
                 "is_key": false,
                 "name": "Target Report Identifiers",
                 "representation_str": "STANDARD",
                 "short_name": "TRI",
+                "source": "I062/SPF.Target Report Identifiers.TRI",
                 "unit": ""
             }
         },
@@ -3676,12 +3891,13 @@
                 "db_column_name": "target_report_identifier_recnums",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From SPF.Target Report Identifiers.TRI\n\nARTAS associated record numbers",
+                "description": "ARTAS associated record numbers",
                 "dimension": "",
                 "is_key": false,
                 "name": "TRI Record Numbers",
                 "representation_str": "STANDARD",
                 "short_name": "TRI RecNums",
+                "source": "I062/SPF.Target Report Identifiers.TRI",
                 "unit": ""
             }
         },
@@ -3693,12 +3909,13 @@
                 "db_column_name": "track_angle_rate_add",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 380.TAR.Rate of Turn\n\nTurn rate in deg/sec\n\nA positive value represents a right turn, whereas a negative value represents a left turn.\nValue 15 means 15 deg/sec or above.",
+                "description": "Turn rate in deg/sec\n\nA positive value represents a right turn, whereas a negative value represents a left turn.\nValue 15 means 15 deg/sec or above.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Angle Rate ADD",
                 "representation_str": "STANDARD",
                 "short_name": "TAR ADD",
+                "source": "I062/380.TAR.Rate of Turn",
                 "unit": ""
             }
         },
@@ -3719,6 +3936,7 @@
                 "name": "X/Y StdDev Max",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "Calculated from X StdDev, Y StdDev (max of the two)",
                 "unit": "Meter"
             }
         }

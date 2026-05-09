@@ -68,6 +68,14 @@ The read path is in [readme_loading.md](readme_loading.md). The insert path is t
   - `data_type_str` - `BOOL`, `CHAR`, `UCHAR`, `INT`, `UINT`, `LONGINT`, `ULONGINT`, `FLOAT`, `DOUBLE`, `STRING`, `JSON`, `TIMESTAMP`. Maps directly to `PropertyDataType` and to the DuckDB column type.
   - `dimension` + `unit` - physical units (`Time`/`Second`, `Length`/`Meter`, `Angle`/`Degree`, ...). Used for unit conversion when crossing variables and for display.
   - `representation_str` - display formatter (`STANDARD`, `SECONDS_TO_TIME`, `DEC_TO_OCTAL`, `FLOAT_PREC2`, ...).
+  - `description` - free-form semantic description of what the value means. Should *not* repeat the origin (that goes in `source`).
+  - `source` - documents where the value comes from. One of these shapes (multi-line shapes use a literal `\n` between alternatives):
+    - **ASTERIX item** in EUROCONTROL notation: `"I048/140.Time-of-Day"`.
+    - **ASTERIX item with rewrite note** when the buffer value is not the raw decoded number: `"I020/500.SDP.rho-xy (rescaled to covariance: rho * sigma_x * sigma_y)"`. See "Post-import derivations" below.
+    - **Multi-source / fallback chain** in priority order, `\n`-separated: `"I021/071.Time of Applicability for Position\nI021/073.Time of Message Reception for Position\nI021/077.Time of Report Transmission\nI021/030.Time of Day (deprecated)"`.
+    - **Calculated from other variables**: `"Calculated from Vx, Vy"`, `"Calculated from Range, Azimuth, 3D Height (radar polar->WGS-84 projection)"`, `"Calculated from Time of Day, calendar date"`. Names other DBContent variables on the same record, since the computation reads the buffer columns by then.
+    - **Internal**: `"Internal: ASTERIX category number"`, `"Internal: import line/source identifier"`, `"Calculated from I048/010.SAC, I048/010.SIC"` (ds_id).
+    - **Empty** for variables with no canonical source (e.g. `Unique Target Number`, `Ascending record number`).
   - `db_expression` - optional SQL expression for *computed* columns (the column doesn't physically exist; SQL evaluates it on read).
   - `is_key` - primary-key flag.
 - **MetaVariable** (`variable/metavariable.h`) - the unified concept across DBContents. Maps a single conceptual name (`"Time of Day"`, `"Aircraft Address"`, `"Position Latitude"`) to per-DBContent Variable names. Example from [`db_content.json`](../../../conf/default/db_content.json):
@@ -106,6 +114,8 @@ All schema is JSON; nothing is hard-coded. There are two parallel families of fi
       "data_type_str": "DOUBLE",
       "dimension": "Time", "unit": "Second",
       "representation_str": "SECONDS_TO_TIME",
+      "description": "Absolute time stamping expressed as Co-ordinated Universal Time (UTC)",
+      "source": "I048/140.Time-of-Day",
       "is_key": false,
       "db_expression": ""
     }
@@ -172,6 +182,61 @@ Other DB tables (no DBContent backing them):
 - `sectors`, `viewpoints` - airspace and annotation persistence.
 - `properties` - generic key/value store used by misc. managers.
 - Plus jASTERIX/import bookkeeping tables.
+
+## Post-import derivations
+
+Most DBContent Variables are filled by direct `JSONDataMapping` from a single jASTERIX JSON key. The cases that are *not* a direct mapping fall into four groups; all of them are documented in the per-Variable `source` field (see "Variable model" above).
+
+### Synthesized columns (added to every record)
+
+[`asterixpostprocess.cpp`](../../import/asterix/asterixpostprocess.cpp) `postProcessFlat`, before the `JSONDataMapping` step. Three columns are appended to every record's JSON dictionary:
+
+| Column | Source |
+|---|---|
+| `category` | The ASTERIX category number, constant per buffer. |
+| `line_id` | The import line/source identifier passed to the decoder, constant per buffer. |
+| `ds_id` | Bit-packed `(SAC, SIC)` from `010.SAC` / `010.SIC` (`Number::dsIdFrom`). Falls back to `(0, 255)` with a warning when SAC or SIC is absent. |
+
+### In-place wire-value rewrites
+
+The Variable still maps from a single ASTERIX item, but the value written into the buffer is no longer the raw decoded number. The `source` field includes a parenthetical note explaining the rewrite.
+
+| DBContent | Variable | Wire item | Rewrite |
+|---|---|---|---|
+| CAT020 | `X/Y StdDev Cov` | `I020/500.SDP.rho-xy` | correlation `rho` -> covariance `rho * sigma_x * sigma_y` |
+| CAT020 | `X/Y StdDev Cov` (REF variant) | `I020/REF.PA.SDC.COV-XY` | sign-square encoded -> `sign(v) * v^2` |
+| CAT020 | `RUs` | `I020/400.Contributing Receivers` | per-record `[{RUx: byte}, ...]` 8-RU bitmaps -> array of 1-based receiver indices, written under `400.Contributing Receivers.RUx` |
+| CAT062 | `XY StdDev Cov` | `I062/500.COV.COV (XY Covariance Component)` | sign-square encoded -> `sign(v) * v^2` |
+
+### Fallback chains (variable filled from one of several alternatives)
+
+Listed in priority order; the first non-null source wins.
+
+| DBContent | Variable | Where | Sources tried |
+|---|---|---|---|
+| CAT021 | `Time of Day` | [`asterixtimestampcalculator.cpp`](../../task/import/asterix/asterixtimestampcalculator.cpp) `doADSBTimeProcessing` | `I021/071.Time of Applicability for Position`, then `I021/073.Time of Message Reception for Position`, then `I021/077.Time of Report Transmission`, then `I021/030.Time of Day (deprecated)` |
+| CAT021 | `Latitude` / `Longitude` | [`asterixpostprocessjob.cpp`](../../task/import/asterix/asterixpostprocessjob.cpp) `doADSBPositionProcessing` | normal `I021/130` low-resolution position; if null, the `Latitude HR` / `Longitude HR` from `I021/131` high-resolution position is copied in |
+| CAT020 / CAT021 | various position-accuracy variables | `task_import_asterix_cat020.json`, `task_import_asterix_cat021.json` | multiple `JSONDataMapping` entries with the same `db_content_variable_name` (legacy `I020/500` *or* `I020/REF.PA`; DO-260 `I021/090.NUCp or NIC` *or* DO-260A `I021/090.PA`) |
+
+### Computed variables (not from any single ASTERIX item)
+
+[`asterixpostprocessjob.cpp`](../../task/import/asterix/asterixpostprocessjob.cpp) `run_impl` runs the projection and velocity calculations once the buffer is built; [`asterixtimestampcalculator.cpp`](../../task/import/asterix/asterixtimestampcalculator.cpp) `doTimeStampCalculation` computes the wall-clock `Timestamp`.
+
+| Variable | DBContent(s) | Inputs | Computation |
+|---|---|---|---|
+| `Latitude` / `Longitude` | CAT001, CAT010, CAT048 | `Range`, `Azimuth`, `3D Height` (or FFT lookup when missing), sensor coordinate system from `ds_id` | `ProjectionManager::calculateRadarPlotPositions` -> `Projection::polarSlantToWGS84` (RS2G / OGR / ...) |
+| `Latitude` / `Longitude` | CAT010, CAT020, CAT062 | `X`, `Y`, sensor coordinate system from `ds_id` | `ProjectionManager::doXYPositionCalculations` -> `Projection::localXYToWGS84` |
+| `Ground Speed` | any DBContent with vx/vy | `Vx`, `Vy` | `sqrt(vx^2 + vy^2)`, then m/s -> knots |
+| `Track Angle` | any DBContent with vx/vy | `Vx`, `Vy` | `atan2(vx, vy)` -> radians -> degrees, normalised to [0, 360) |
+| `Ground Speed` | CAT021 (when no vx/vy) | `SGV GSS` (I021/160), or `0.0` when `SGV STP` stopped bit is set | direct copy / hard zero |
+| `Track Angle` | CAT021 (when no vx/vy) | `SGV HGT`, `SGV HTT`, `SGV HRD`, plus `Latitude` / `Longitude` / `Mode C` (for declination) | when `HTT`=track and `HRD`=magnetic, add `ProjectionManager::declination(year, lat, lon, alt)`; otherwise pass through |
+| `Time of Day` | CAT063 | `Time of Day` from CAT063 record, plus first ToD seen in CAT062 and CAT063 | `tod += tod0_cat062 - tod0_cat063` to align CAT063 service messages with the corresponding CAT062 stream |
+| `Time of Day` | all categories | `Time of Day` and `override_tod_offset` setting | additive shift when `override_tod_active` is set |
+| `Timestamp` (`ptime`) | all target-report DBContents | `Time of Day`, resolved calendar date | `doTimeStampCalculation` adds the per-file resolved date, handling midnight wrap (`had_late_time_`) and time-jumps from previous-day offsets |
+
+### Filtering and obfuscation
+
+[`asterixpostprocessjob.cpp`](../../task/import/asterix/asterixpostprocessjob.cpp) also runs `doFilters` (drops records by ToD / position rectangle / circular range / Mode C window) and `doObfuscate` (rewrites Mode 3/A, ACAD, ACID with deterministic obfuscated values, drops military-reserved 3/A codes). These do not produce new variables; they remove rows or rewrite values of existing variables.
 
 ## DBContentDataStore
 
