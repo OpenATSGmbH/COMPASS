@@ -18,58 +18,76 @@
 #include "analysedatasourcedialog.h"
 #include "analysedatasourcetask.h"
 #include "datasourceinspectorbase.h"
+#include "mlatdataiteminspector.h"
+#include "mlatcoverageinspector.h"
+
+#if USE_EXPERIMENTAL_SOURCE == true
+#include "mlataccuracyinspector.h"
+#endif
 
 #include "compass.h"
 #include "db_context_manager.h"
 #include "data_source.h"
 
+#include <QCheckBox>
+#include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QGroupBox>
 #include <QHBoxLayout>
-#include <QVBoxLayout>
-#include <QSplitter>
-#include <QTreeWidget>
-#include <QTreeWidgetItem>
-#include <QStackedWidget>
-#include <QPushButton>
+#include <QHeaderView>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
-#include <QHeaderView>
+#include <QPushButton>
+#include <QScrollArea>
+#include <QSpinBox>
+#include <QSplitter>
+#include <QStackedWidget>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
+#include <QVBoxLayout>
 
 AnalyseDataSourceDialog::AnalyseDataSourceDialog(AnalyseDataSourceTask& task, QWidget* parent)
     : QDialog(parent), task_(task)
 {
     setWindowTitle(QString::fromStdString("Analyse " + task_.dsType() + " Data Source"));
-    setMinimumSize(900, 500);
+    setMinimumSize(900, 720);
 
     auto* main_layout = new QVBoxLayout(this);
 
     auto* splitter = new QSplitter(Qt::Horizontal, this);
 
     tree_ = new QTreeWidget(splitter);
-    tree_->setHeaderLabels({"Inspector"});
-    tree_->setColumnCount(1);
-    tree_->setRootIsDecorated(true);
+    tree_->setHeaderHidden(true);
+    tree_->setColumnCount(2);
+    tree_->setRootIsDecorated(false);
     tree_->setSelectionBehavior(QAbstractItemView::SelectRows);
     tree_->setSelectionMode(QAbstractItemView::SingleSelection);
+    tree_->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+    tree_->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     splitter->addWidget(tree_);
 
     stack_ = new QStackedWidget(splitter);
     splitter->addWidget(stack_);
 
-    splitter->setStretchFactor(0, 2);
-    splitter->setStretchFactor(1, 3);
-    splitter->setSizes({360, 540});
+    tree_->setMinimumWidth(180);
+    splitter->setChildrenCollapsible(false);
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 1);
+    splitter->setSizes({400, 600});
 
     main_layout->addWidget(splitter, 1);
 
     auto* button_row = new QHBoxLayout();
-    button_row->addStretch(1);
 
     auto* cancel = new QPushButton("Cancel", this);
     cancel->setIcon(QIcon());
     cancel->setToolTip("Close the dialog without running the analysis");
     connect(cancel, &QPushButton::clicked, this, &QDialog::reject);
     button_row->addWidget(cancel);
+    button_row->addStretch(1);
 
     run_button_ = new QPushButton("Run", this);
     run_button_->setIcon(QIcon());
@@ -92,25 +110,43 @@ AnalyseDataSourceDialog::AnalyseDataSourceDialog(AnalyseDataSourceTask& task, QW
     updateRunEnabled();
 }
 
+namespace
+{
+QWidget* wrapInScroll(QWidget* content)
+{
+    auto* scroll = new QScrollArea();
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setWidget(content);
+    return scroll;
+}
+}
+
 void AnalyseDataSourceDialog::buildTree()
 {
     updating_ui_ = true;
 
-    ds_item_ = new QTreeWidgetItem(tree_);
-    ds_item_->setText(0, "Data Source");
-    ds_item_->setExpanded(true);
-    stack_->insertWidget(0, buildDataSourceWidget());
+    int stack_idx = 0;
 
-    int stack_idx = 1;
+    ds_item_ = new QTreeWidgetItem(tree_);
+    ds_item_->setText(0, "Data Sources");
+    ds_stack_idx_ = stack_idx;
+    stack_->insertWidget(stack_idx++, wrapInScroll(buildDataSourcesWidget()));
+
     for (const auto& ins_uptr : task_.inspectors())
     {
         DataSourceInspectorBase* ins = ins_uptr.get();
 
-        auto* item = new QTreeWidgetItem(ds_item_);
-        std::string label = ins->name();
+        auto* item = new QTreeWidgetItem(tree_);
+        item->setText(0, QString::fromStdString(ins->name()));
         if (ins->requiresProfessionalLicense())
-            label += "  [pro]";
-        item->setText(0, QString::fromStdString(label));
+        {
+            item->setText(1, "[pro]");
+            item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+            QFont f = item->font(1);
+            f.setItalic(true);
+            item->setFont(1, f);
+        }
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
         item->setCheckState(0, task_.inspectorEnabled(ins->className())
                                    ? Qt::Checked : Qt::Unchecked);
@@ -121,44 +157,38 @@ void AnalyseDataSourceDialog::buildTree()
         {
             item->setDisabled(true);
             item->setToolTip(0, QString::fromStdString(reason));
-            item->setCheckState(0, Qt::Unchecked);
         }
         else if (!ins->description().empty())
         {
             item->setToolTip(0, QString::fromStdString(ins->description()));
         }
 
-        stack_->insertWidget(stack_idx++, buildInspectorWidget(ins));
+        stack_->insertWidget(stack_idx++, wrapInScroll(buildInspectorWidget(ins)));
         inspector_rows_.push_back({item, ins});
     }
+
+    report_item_ = new QTreeWidgetItem(tree_);
+    report_item_->setText(0, "Report");
+    report_stack_idx_ = stack_idx;
+    stack_->insertWidget(stack_idx++, wrapInScroll(buildReportWidget()));
 
     tree_->setCurrentItem(ds_item_);
 
     updating_ui_ = false;
 }
 
-QWidget* AnalyseDataSourceDialog::buildDataSourceWidget()
+namespace
 {
-    auto* w = new QWidget();
-    auto* layout = new QVBoxLayout(w);
 
-    auto* info = new QLabel(
-        QString("Select the %1 data source(s) to fold into the combined dataset.")
-            .arg(QString::fromStdString(task_.dsType())));
-    info->setWordWrap(true);
-    layout->addWidget(info);
-
-    auto* list = new QListWidget();
-    auto& ctx = task_.compass().dbContextManager();
-    auto types = ctx.dsTypes();
-
+void populateDSList(QListWidget* list,
+                    const std::set<unsigned int>& ds_ids,
+                    context::DBContextManager& ctx,
+                    const std::function<bool(unsigned int)>& checked_fn,
+                    const QString& empty_msg)
+{
     bool found_any = false;
-    for (auto ds_id : ctx.allDataSourceIds())
+    for (auto ds_id : ds_ids)
     {
-        auto it = types.find(ds_id);
-        if (it == types.end() || it->second != task_.dsType())
-            continue;
-
         const auto* ds = ctx.dataSource(ds_id);
         if (!ds)
             continue;
@@ -168,19 +198,116 @@ QWidget* AnalyseDataSourceDialog::buildDataSourceWidget()
         auto* item = new QListWidgetItem(QString::fromStdString(label), list);
         item->setData(Qt::UserRole, ds_id);
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-        item->setCheckState(task_.useDataSource(ds_id) ? Qt::Checked : Qt::Unchecked);
+        item->setCheckState(checked_fn(ds_id) ? Qt::Checked : Qt::Unchecked);
         found_any = true;
     }
 
     if (!found_any)
     {
-        auto* placeholder = new QListWidgetItem(
-            QString("No data sources of type ") + QString::fromStdString(task_.dsType())
-            + " present.", list);
+        auto* placeholder = new QListWidgetItem(empty_msg, list);
         placeholder->setFlags(Qt::NoItemFlags);
     }
+}
 
-    connect(list, &QListWidget::itemChanged, this, [this](QListWidgetItem* it) {
+}
+
+QWidget* AnalyseDataSourceDialog::buildDataSourcesWidget()
+{
+    auto* w = new QWidget();
+    auto* outer = new QVBoxLayout(w);
+
+    auto& ctx = task_.compass().dbContextManager();
+    auto types = ctx.dsTypes();
+
+    // -- Reference Data ----------------------------------------------------
+    auto* ref_box    = new QGroupBox("Reference Data");
+    auto* ref_layout = new QVBoxLayout(ref_box);
+
+    auto* ref_list = new QListWidget();
+    populateDSList(
+        ref_list,
+        task_.referenceDataSourceCandidateIDs(),
+        ctx,
+        [this](unsigned int ds_id) { return task_.useReferenceDataSource(ds_id); },
+        "No RefTraj data sources present.");
+    connect(ref_list, &QListWidget::itemChanged, this, [this](QListWidgetItem* it) {
+        if (updating_ui_)
+            return;
+        bool ok = false;
+        unsigned int ds_id = it->data(Qt::UserRole).toUInt(&ok);
+        if (!ok)
+            return;
+        task_.useReferenceDataSource(ds_id, it->checkState() == Qt::Checked);
+        updateRunEnabled();
+    });
+    ref_layout->addWidget(ref_list, 1);
+
+    auto setListCheckedAll = [](QListWidget* list, Qt::CheckState state) {
+        for (int i = 0; i < list->count(); ++i)
+        {
+            auto* it = list->item(i);
+            if (it->flags() & Qt::ItemIsUserCheckable)
+                it->setCheckState(state);
+        }
+    };
+
+    auto* ref_btn_row = new QHBoxLayout();
+    auto* ref_sel_all = new QPushButton("Select All");
+    ref_sel_all->setIcon(QIcon());
+    ref_sel_all->setToolTip("Select all reference data sources");
+    connect(ref_sel_all, &QPushButton::clicked, this,
+            [ref_list, setListCheckedAll]() {
+                setListCheckedAll(ref_list, Qt::Checked);
+            });
+    auto* ref_sel_none = new QPushButton("Select None");
+    ref_sel_none->setIcon(QIcon());
+    ref_sel_none->setToolTip("Deselect all reference data sources");
+    connect(ref_sel_none, &QPushButton::clicked, this,
+            [ref_list, setListCheckedAll]() {
+                setListCheckedAll(ref_list, Qt::Unchecked);
+            });
+    ref_btn_row->addWidget(ref_sel_all);
+    ref_btn_row->addStretch(1);
+    ref_btn_row->addWidget(ref_sel_none);
+    ref_layout->addLayout(ref_btn_row);
+
+    auto* ref_line_row = new QHBoxLayout();
+    ref_line_row->addWidget(new QLabel("Line"));
+    ref_line_combo_ = new QComboBox();
+    ref_line_combo_->addItems({"L1", "L2", "L3", "L4"});
+    ref_line_combo_->setCurrentIndex(static_cast<int>(task_.lineIDRef()));
+    connect(ref_line_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int idx) {
+                if (updating_ui_ || idx < 0)
+                    return;
+                task_.setLineIDRef(static_cast<unsigned int>(idx));
+            });
+    ref_line_row->addWidget(ref_line_combo_, 1);
+    ref_layout->addLayout(ref_line_row);
+
+    outer->addWidget(ref_box, 1);
+
+    // -- Test Data --------------------------------------------------------
+    auto* tst_box    = new QGroupBox("Test Data");
+    auto* tst_layout = new QVBoxLayout(tst_box);
+
+    std::set<unsigned int> tst_cands;
+    for (auto ds_id : ctx.allDataSourceIds())
+    {
+        auto it = types.find(ds_id);
+        if (it != types.end() && it->second == task_.dsType())
+            tst_cands.insert(ds_id);
+    }
+
+    auto* tst_list = new QListWidget();
+    populateDSList(
+        tst_list,
+        tst_cands,
+        ctx,
+        [this](unsigned int ds_id) { return task_.useDataSource(ds_id); },
+        QString("No data sources of type ") + QString::fromStdString(task_.dsType())
+            + " present.");
+    connect(tst_list, &QListWidget::itemChanged, this, [this](QListWidgetItem* it) {
         if (updating_ui_)
             return;
         bool ok = false;
@@ -189,12 +316,267 @@ QWidget* AnalyseDataSourceDialog::buildDataSourceWidget()
             return;
         task_.useDataSource(ds_id, it->checkState() == Qt::Checked);
         refreshInspectorRows();
+        updateSuggestedReportName();
         updateRunEnabled();
     });
+    tst_layout->addWidget(tst_list, 1);
 
-    layout->addWidget(list, 1);
+    auto* tst_btn_row = new QHBoxLayout();
+    auto* tst_sel_all = new QPushButton("Select All");
+    tst_sel_all->setIcon(QIcon());
+    tst_sel_all->setToolTip("Select all test data sources");
+    connect(tst_sel_all, &QPushButton::clicked, this,
+            [tst_list, setListCheckedAll]() {
+                setListCheckedAll(tst_list, Qt::Checked);
+            });
+    auto* tst_sel_none = new QPushButton("Select None");
+    tst_sel_none->setIcon(QIcon());
+    tst_sel_none->setToolTip("Deselect all test data sources");
+    connect(tst_sel_none, &QPushButton::clicked, this,
+            [tst_list, setListCheckedAll]() {
+                setListCheckedAll(tst_list, Qt::Unchecked);
+            });
+    tst_btn_row->addWidget(tst_sel_all);
+    tst_btn_row->addStretch(1);
+    tst_btn_row->addWidget(tst_sel_none);
+    tst_layout->addLayout(tst_btn_row);
+
+    auto* tst_line_row = new QHBoxLayout();
+    tst_line_row->addWidget(new QLabel("Line"));
+    tst_line_combo_ = new QComboBox();
+    tst_line_combo_->addItems({"L1", "L2", "L3", "L4"});
+    tst_line_combo_->setCurrentIndex(static_cast<int>(task_.lineIDTst()));
+    connect(tst_line_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int idx) {
+                if (updating_ui_ || idx < 0)
+                    return;
+                task_.setLineIDTst(static_cast<unsigned int>(idx));
+                updateSuggestedReportName();
+            });
+    tst_line_row->addWidget(tst_line_combo_, 1);
+    tst_layout->addLayout(tst_line_row);
+
+    outer->addWidget(tst_box, 1);
 
     return w;
+}
+
+QWidget* AnalyseDataSourceDialog::buildReportWidget()
+{
+    auto* w = new QWidget();
+    auto* form = new QFormLayout(w);
+
+    report_name_edit_ = new QLineEdit();
+    report_name_edit_->setText(QString::fromStdString(task_.reportName()));
+    report_name_user_edited_ = task_.hasCustomReportName();
+    connect(report_name_edit_, &QLineEdit::textEdited,
+            this, [this](const QString& text) {
+                report_name_user_edited_ = true;
+                task_.setCustomReportName(text.toStdString());
+            });
+    form->addRow("Report Name", report_name_edit_);
+
+    auto* h_spin = new QDoubleSpinBox();
+    h_spin->setRange(1.0, 100000.0);
+    h_spin->setDecimals(1);
+    h_spin->setSingleStep(10.0);
+    h_spin->setSuffix(" m");
+    h_spin->setValue(task_.cellSizeMeters());
+    connect(h_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double v) {
+                if (updating_ui_) return;
+                task_.setCellSizeMeters(static_cast<float>(v));
+            });
+    form->addRow("Horizontal cell size", h_spin);
+
+    auto* v_spin = new QDoubleSpinBox();
+    v_spin->setRange(1.0, 100000.0);
+    v_spin->setDecimals(1);
+    v_spin->setSingleStep(50.0);
+    v_spin->setSuffix(" ft");
+    v_spin->setValue(task_.cellSizeFeet());
+    connect(v_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double v) {
+                if (updating_ui_) return;
+                task_.setCellSizeFeet(static_cast<float>(v));
+            });
+    form->addRow("Vertical cell size", v_spin);
+
+    auto* max_spin = new QSpinBox();
+    max_spin->setRange(10, 2000);
+    max_spin->setSingleStep(50);
+    max_spin->setValue(static_cast<int>(task_.maxCellsPerAxis()));
+    connect(max_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int v) {
+                if (updating_ui_) return;
+                task_.setMaxCellsPerAxis(static_cast<unsigned int>(v));
+            });
+    form->addRow("Max cells per axis", max_spin);
+
+    return w;
+}
+
+void AnalyseDataSourceDialog::updateSuggestedReportName()
+{
+    if (report_name_user_edited_ || !report_name_edit_)
+        return;
+    QSignalBlocker blocker(report_name_edit_);
+    report_name_edit_->setText(QString::fromStdString(task_.suggestReportName()));
+}
+
+namespace
+{
+
+QDoubleSpinBox* makeFloatSpin(double min, double max, double step, int decimals,
+                              const QString& suffix, double value)
+{
+    auto* s = new QDoubleSpinBox();
+    s->setRange(min, max);
+    s->setSingleStep(step);
+    s->setDecimals(decimals);
+    if (!suffix.isEmpty())
+        s->setSuffix(suffix);
+    s->setValue(value);
+    return s;
+}
+
+void buildDataItemSettings(QFormLayout* form,
+                           AnalyseDataSourceTask& task,
+                           MLATDataItemInspectorSettings& s)
+{
+    auto* group = new QGroupBox("Categories to Include");
+    auto* gl = new QVBoxLayout(group);
+
+    std::set<unsigned int> cats;
+    auto& info_map = task.compass().dbContextManager().asterixInfo();
+    for (auto ds_id : task.selectedDataSourceIDs())
+    {
+        auto it = info_map.find(ds_id);
+        if (it == info_map.end())
+            continue;
+        for (const auto& cat_kv : it->second)
+            cats.insert(cat_kv.first);
+    }
+
+    if (cats.empty())
+    {
+        auto* lbl = new QLabel(
+            "(no ASTERIX info available - select test data sources first)");
+        lbl->setStyleSheet("color: gray;");
+        gl->addWidget(lbl);
+    }
+    else
+    {
+        for (auto cat : cats)
+        {
+            char buf[16];
+            std::snprintf(buf, sizeof(buf), "CAT%03u", cat);
+            auto* cb = new QCheckBox(buf);
+            cb->setChecked(s.catIncluded(cat));
+            QObject::connect(cb, &QCheckBox::toggled, [&s, cat](bool on) {
+                s.setCatIncluded(cat, on);
+            });
+            gl->addWidget(cb);
+        }
+    }
+
+    form->addRow(group);
+}
+
+void buildCoverageSettings(QFormLayout* form,
+                           MLATCoverageInspectorSettings& s)
+{
+    auto* method_combo = new QComboBox();
+    method_combo->addItem("Time Difference",
+                          static_cast<int>(MLATCoverageInspectorSettings::PDMethod::TimeDifference));
+    method_combo->addItem("Status Period Message Based",
+                          static_cast<int>(MLATCoverageInspectorSettings::PDMethod::StatusPeriodMessage));
+    int sel_idx = method_combo->findData(s.pd_method_int_);
+    method_combo->setCurrentIndex(sel_idx >= 0 ? sel_idx : 0);
+
+    auto* ui_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_s_);
+
+    auto on_method = [&s, ui_spin, method_combo](int) {
+        s.pd_method_int_ = method_combo->currentData().toInt();
+        ui_spin->setEnabled(s.pdMethod() ==
+                            MLATCoverageInspectorSettings::PDMethod::TimeDifference);
+    };
+    QObject::connect(method_combo,
+                     QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     on_method);
+    on_method(0);
+
+    QObject::connect(ui_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.update_interval_s_ = static_cast<float>(v); });
+
+    form->addRow("PD Calculation Method", method_combo);
+    form->addRow("Update Interval", ui_spin);
+
+    auto* miss_cb  = new QCheckBox();
+    miss_cb->setChecked(s.use_miss_tolerance_);
+    auto* miss_spin = makeFloatSpin(0.0, 60.0, 0.05, 3, " s", s.miss_tolerance_s_);
+    miss_spin->setEnabled(s.use_miss_tolerance_);
+    QObject::connect(miss_cb, &QCheckBox::toggled, [&s, miss_spin](bool on) {
+        s.use_miss_tolerance_ = on;
+        miss_spin->setEnabled(on);
+    });
+    QObject::connect(miss_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.miss_tolerance_s_ = static_cast<float>(v); });
+    form->addRow("Use Miss Tolerance", miss_cb);
+    form->addRow("Miss Tolerance",     miss_spin);
+
+    auto* acc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_acceptable_above_);
+    QObject::connect(acc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.pd_acceptable_above_ = static_cast<float>(v); });
+    form->addRow("Value Acceptable (green)", acc_spin);
+
+    auto* unacc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_unacceptable_below_);
+    QObject::connect(unacc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.pd_unacceptable_below_ = static_cast<float>(v); });
+    form->addRow("Value Unacceptable (red)", unacc_spin);
+}
+
+#if USE_EXPERIMENTAL_SOURCE == true
+void buildAccuracySettings(QFormLayout* form,
+                           MLATAccuracyInspectorSettings& s)
+{
+    auto bind_float = [](QDoubleSpinBox* spin, float* dst) {
+        QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                         [dst](double v) { *dst = static_cast<float>(v); });
+    };
+
+    auto* pa_acc = makeFloatSpin(0.0, 10000.0, 1.0, 1, " m",
+                                 s.pos_acc_acceptable_below_m_);
+    bind_float(pa_acc, &s.pos_acc_acceptable_below_m_);
+    form->addRow("Position Accuracy Acceptable (green)", pa_acc);
+
+    auto* pa_unacc = makeFloatSpin(0.0, 10000.0, 1.0, 1, " m",
+                                   s.pos_acc_unacceptable_above_m_);
+    bind_float(pa_unacc, &s.pos_acc_unacceptable_above_m_);
+    form->addRow("Position Accuracy Unacceptable (red)", pa_unacc);
+
+    auto* lower_acc = makeFloatSpin(0.0, 10.0, 0.05, 2, "",
+                                    s.consistency_lower_acceptable_above_);
+    bind_float(lower_acc, &s.consistency_lower_acceptable_above_);
+    form->addRow("Consistency Lower Acceptable (green)", lower_acc);
+
+    auto* lower_unacc = makeFloatSpin(0.0, 10.0, 0.05, 2, "",
+                                      s.consistency_lower_unacceptable_below_);
+    bind_float(lower_unacc, &s.consistency_lower_unacceptable_below_);
+    form->addRow("Consistency Lower Unacceptable (red)", lower_unacc);
+
+    auto* upper_acc = makeFloatSpin(0.0, 100.0, 0.05, 2, "",
+                                    s.consistency_upper_acceptable_below_);
+    bind_float(upper_acc, &s.consistency_upper_acceptable_below_);
+    form->addRow("Consistency Upper Acceptable (green)", upper_acc);
+
+    auto* upper_unacc = makeFloatSpin(0.0, 100.0, 0.05, 2, "",
+                                      s.consistency_upper_unacceptable_above_);
+    bind_float(upper_unacc, &s.consistency_upper_unacceptable_above_);
+    form->addRow("Consistency Upper Unacceptable (red)", upper_unacc);
+}
+#endif
+
 }
 
 QWidget* AnalyseDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* inspector)
@@ -209,19 +591,18 @@ QWidget* AnalyseDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* 
     title->setFont(f);
     layout->addWidget(title);
 
-    if (!inspector->description().empty())
-    {
-        auto* desc = new QLabel(QString::fromStdString(inspector->description()));
-        desc->setWordWrap(true);
-        layout->addWidget(desc);
-    }
+    auto* form = new QFormLayout();
+    layout->addLayout(form);
 
-    auto* hint = new QLabel(
-        "Settings for this inspector are configured via the JSON configuration file. "
-        "A graphical settings widget will be added in a later iteration.");
-    hint->setWordWrap(true);
-    hint->setStyleSheet("color: gray;");
-    layout->addWidget(hint);
+    const std::string cn = inspector->className();
+    if (cn == "MLATDataItemInspector")
+        buildDataItemSettings(form, task_, task_.dataItemSettings());
+    else if (cn == "MLATCoverageInspector")
+        buildCoverageSettings(form, task_.coverageSettings());
+#if USE_EXPERIMENTAL_SOURCE == true
+    else if (cn == "MLATAccuracyInspector")
+        buildAccuracySettings(form, task_.accuracySettings());
+#endif
 
     layout->addStretch(1);
     return w;
@@ -237,8 +618,9 @@ void AnalyseDataSourceDialog::refreshInspectorRows()
         row.item->setDisabled(!ok);
         row.item->setToolTip(0, QString::fromStdString(ok ? row.inspector->description()
                                                           : reason));
-        if (!ok)
-            row.item->setCheckState(0, Qt::Unchecked);
+        // Preserve the user's check state even when prerequisites are
+        // temporarily unmet (e.g. no test data sources selected); the Run
+        // button gates execution.
     }
     updating_ui_ = false;
 }
@@ -252,7 +634,19 @@ void AnalyseDataSourceDialog::treeSelectionChangedSlot()
 
     if (sel == ds_item_)
     {
-        stack_->setCurrentIndex(0);
+        stack_->setCurrentIndex(ds_stack_idx_);
+        return;
+    }
+    if (sel == report_item_)
+    {
+        stack_->setCurrentIndex(report_stack_idx_);
+        // Refresh shown text in case the suggestion changed while another
+        // page was active.
+        if (report_name_edit_ && !report_name_user_edited_)
+        {
+            QSignalBlocker blocker(report_name_edit_);
+            report_name_edit_->setText(QString::fromStdString(task_.reportName()));
+        }
         return;
     }
 
@@ -260,7 +654,8 @@ void AnalyseDataSourceDialog::treeSelectionChangedSlot()
     {
         if (inspector_rows_[i].item == sel)
         {
-            stack_->setCurrentIndex(static_cast<int>(i + 1));
+            // Inspector pages are inserted between Data Sources and Report.
+            stack_->setCurrentIndex(ds_stack_idx_ + 1 + static_cast<int>(i));
             return;
         }
     }
@@ -287,7 +682,8 @@ void AnalyseDataSourceDialog::updateRunEnabled()
     if (!run_button_)
         return;
 
-    bool can_run = !task_.selectedDataSourceIDs().empty();
+    bool can_run = !task_.selectedDataSourceIDs().empty()
+                   && !task_.selectedReferenceDataSourceIDs().empty();
     if (can_run)
     {
         bool any_enabled = false;

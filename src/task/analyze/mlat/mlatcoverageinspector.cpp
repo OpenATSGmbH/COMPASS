@@ -46,21 +46,14 @@ MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& con
                                                              Configurable* parent)
     : InspectorSettingsBase(config_json, parent)
 {
-    registerParameter("cadence_source_int", &cadence_source_int_, cadence_source_int_);
-    registerParameter("update_interval_s",  &update_interval_s_,  update_interval_s_);
+    registerParameter("pd_method_int",   &pd_method_int_,   pd_method_int_);
+    registerParameter("update_interval_s", &update_interval_s_, update_interval_s_);
 
     registerParameter("use_miss_tolerance", &use_miss_tolerance_, use_miss_tolerance_);
     registerParameter("miss_tolerance_s",   &miss_tolerance_s_,   miss_tolerance_s_);
-    registerParameter("use_min_gap_length", &use_min_gap_length_, use_min_gap_length_);
-    registerParameter("min_gap_length_s",   &min_gap_length_s_,   min_gap_length_s_);
-    registerParameter("use_max_gap_length", &use_max_gap_length_, use_max_gap_length_);
-    registerParameter("max_gap_length_s",   &max_gap_length_s_,   max_gap_length_s_);
 
-    registerParameter("cell_size_m",  &cell_size_m_,  cell_size_m_);
-    registerParameter("cell_size_ft", &cell_size_ft_, cell_size_ft_);
-
-    registerParameter("pd_red_below",    &pd_red_below_,    pd_red_below_);
-    registerParameter("pd_yellow_below", &pd_yellow_below_, pd_yellow_below_);
+    registerParameter("pd_acceptable_above",   &pd_acceptable_above_,   pd_acceptable_above_);
+    registerParameter("pd_unacceptable_below", &pd_unacceptable_below_, pd_unacceptable_below_);
 }
 
 MLATCoverageInspector::MLATCoverageInspector(AnalyseDataSourceTask& task,
@@ -96,10 +89,6 @@ bool gapIsMiss(double gap_s, const Settings& s)
     if (s.use_miss_tolerance_)
         adj -= s.miss_tolerance_s_;
     if (adj <= s.update_interval_s_)
-        return false;
-    if (s.use_min_gap_length_ && gap_s < s.min_gap_length_s_)
-        return false;
-    if (s.use_max_gap_length_ && gap_s > s.max_gap_length_s_)
         return false;
     return true;
 }
@@ -159,7 +148,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     double ref_lat = dataset->centreLatitudeDeg();
     if (ref_lat == 0.0) ref_lat = 47.0;
 
-    TargetReport3DGrid grid(settings.cell_size_m_, settings.cell_size_ft_, ref_lat);
+    TargetReport3DGrid grid(task_.cellSizeMeters(), task_.cellSizeFeet(), ref_lat);
 
     time_duration d_max = boost::posix_time::seconds(60);
 
@@ -297,11 +286,12 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     auto& section  = root.addSubSection(name());
 
     auto& recap = section.addTable("Settings", 2, {"Setting", "Value"}, false);
-    recap.addRow({"Cadence source",
-                  settings.cadenceSource() ==
-                          MLATCoverageInspectorSettings::CadenceSource::TimeDifference
-                      ? std::string("Time difference")
-                      : std::string("CAT019 cycle (time-difference fallback)")});
+    recap.addRow({"PD calculation method",
+                  settings.pdMethod() ==
+                          MLATCoverageInspectorSettings::PDMethod::TimeDifference
+                      ? std::string("Time Difference")
+                      : std::string("Status Period Message Based "
+                                    "(time-difference fallback)")});
     {
         std::ostringstream os;
         os << settings.update_interval_s_ << " s";
@@ -313,18 +303,18 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
         os << settings.miss_tolerance_s_ << " s";
         recap.addRow({"Miss tolerance", os.str()});
     }
-    recap.addRow({"Use min gap length", settings.use_min_gap_length_ ? "yes" : "no"});
-    recap.addRow({"Use max gap length", settings.use_max_gap_length_ ? "yes" : "no"});
     {
         std::ostringstream os;
-        os << settings.cell_size_m_ << " m horizontal / " << settings.cell_size_ft_ << " ft vertical";
+        os << task_.cellSizeMeters() << " m horizontal / "
+           << task_.cellSizeFeet()   << " ft vertical (max "
+           << task_.maxCellsPerAxis() << " cells/axis)";
         recap.addRow({"Grid resolution", os.str()});
     }
     {
         std::ostringstream os;
-        os << "red below " << settings.pd_red_below_
-           << ", yellow below " << settings.pd_yellow_below_
-           << ", green above";
+        os << "green >= " << settings.pd_acceptable_above_
+           << ", red <= "  << settings.pd_unacceptable_below_
+           << ", orange in between";
         recap.addRow({"PD color thresholds", os.str()});
     }
 

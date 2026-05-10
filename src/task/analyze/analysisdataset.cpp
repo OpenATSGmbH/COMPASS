@@ -48,6 +48,9 @@ AnalysisDataset::AnalysisDataset(COMPASS& compass)
 AnalysisDataset::~AnalysisDataset() = default;
 
 bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
+                           unsigned int line_id_tst,
+                           const std::set<unsigned int>& ref_ds_ids,
+                           unsigned int line_id_ref,
                            const std::set<std::string>& test_dbcontents,
                            std::string& error_out)
 {
@@ -70,18 +73,23 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
 
     auto& ctx_man = compass_.dbContextManager();
 
-    // Loading filter: selected data sources for the test side, plus all RefTraj
-    // data sources (so the reference trajectory loads regardless of the MLAT
-    // selection - RefTraj DSes carry their own ds_id).
+    if (ref_ds_ids.empty())
+    {
+        error_out = "No reference data source (RefTraj) selected.";
+        return false;
+    }
+
+    // Loading filter: selected test data sources on the configured test line,
+    // plus the configured reference data sources on the configured ref line.
     std::map<unsigned int, std::set<unsigned int>> ds_load_map;
     for (auto ds_id : selected_ds_ids)
-        ds_load_map[ds_id] = {};
+        ds_load_map[ds_id] = { line_id_tst };
 
-    auto ds_types = ctx_man.dsTypes();
-    for (const auto& kv : ds_types)
+    for (auto ref_ds_id : ref_ds_ids)
     {
-        if (kv.second == "RefTraj")
-            ds_load_map[kv.first] = {};
+        if (!ctx_man.hasDataSource(ref_ds_id))
+            continue;
+        ds_load_map[ref_ds_id] = { line_id_ref };
     }
 
     ctx_man.setLoadDSTypes(true);
@@ -129,7 +137,7 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
     // emits the cleared loadedDataSignal that flushes any view state.
     dbcontent_man.clearData();
 
-    buildChains(selected_ds_ids, test_dbcontents);
+    buildChains(selected_ds_ids, ref_ds_ids, test_dbcontents);
 
     if (!hasUsableData())
     {
@@ -142,19 +150,23 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
 }
 
 void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
+                                  const std::set<unsigned int>& ref_ds_ids,
                                   const std::set<std::string>& test_dbcontents)
 {
     using namespace dbcontent_vars;
 
     bool first_position = true;
 
-    // Reference (RefTraj): take all rows that are associated to a UTN.
+    // Reference (RefTraj): take rows from the configured ref DS that are
+    // associated to a UTN.
     if (accessor_->has(kReferenceDBContent)
         && accessor_->hasMetaVar<ptime>(kReferenceDBContent, meta_var_timestamp_)
-        && accessor_->hasMetaVar<unsigned int>(kReferenceDBContent, meta_var_utn_))
+        && accessor_->hasMetaVar<unsigned int>(kReferenceDBContent, meta_var_utn_)
+        && accessor_->hasMetaVar<unsigned int>(kReferenceDBContent, meta_var_ds_id_))
     {
-        auto& ts_vec  = accessor_->getMetaVar<ptime>(kReferenceDBContent, meta_var_timestamp_);
-        auto& utn_vec = accessor_->getMetaVar<unsigned int>(kReferenceDBContent, meta_var_utn_);
+        auto& ts_vec    = accessor_->getMetaVar<ptime>(kReferenceDBContent, meta_var_timestamp_);
+        auto& utn_vec   = accessor_->getMetaVar<unsigned int>(kReferenceDBContent, meta_var_utn_);
+        auto& ds_id_vec = accessor_->getMetaVar<unsigned int>(kReferenceDBContent, meta_var_ds_id_);
 
         const bool has_lat = accessor_->hasMetaVar<double>(kReferenceDBContent, meta_var_latitude_);
         const bool has_lon = accessor_->hasMetaVar<double>(kReferenceDBContent, meta_var_longitude_);
@@ -162,7 +174,10 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
         unsigned int n = ts_vec.contentSize();
         for (unsigned int i = 0; i < n; ++i)
         {
-            if (ts_vec.isNull(i) || utn_vec.isNull(i))
+            if (ts_vec.isNull(i) || utn_vec.isNull(i) || ds_id_vec.isNull(i))
+                continue;
+
+            if (!ref_ds_ids.count(ds_id_vec.get(i)))
                 continue;
 
             unsigned int utn = utn_vec.get(i);

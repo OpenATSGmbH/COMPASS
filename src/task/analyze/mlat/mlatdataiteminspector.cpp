@@ -17,6 +17,8 @@
 
 #include "mlatdataiteminspector.h"
 #include "analysedatasourcetask.h"
+#include "asterixreporthelpers.h"
+#include "asteriximporttask.h"
 
 #include "compass.h"
 #include "db_context_manager.h"
@@ -25,42 +27,37 @@
 #include "section.h"
 #include "sectioncontenttable.h"
 #include "sectioncontenttext.h"
+#include "stringconv.h"
+#include "taskmanager.h"
 
 #include "json.hpp"
 
-#include <set>
-#include <sstream>
+#include <jasterix/jasterix.h>
 
 MLATDataItemInspectorSettings::MLATDataItemInspectorSettings(nlohmann::json& config_json,
                                                              Configurable* parent)
     : InspectorSettingsBase(config_json, parent)
 {
-    registerParameter("include_cat019", &include_cat019_, true);
+    registerParameter("included_cats", &included_cats_, nlohmann::json::object());
+}
+
+bool MLATDataItemInspectorSettings::catIncluded(unsigned int cat) const
+{
+    auto key = std::to_string(cat);
+    if (included_cats_.contains(key))
+        return included_cats_.at(key).get<bool>();
+    return true;
+}
+
+void MLATDataItemInspectorSettings::setCatIncluded(unsigned int cat, bool value)
+{
+    included_cats_[std::to_string(cat)] = value;
 }
 
 MLATDataItemInspector::MLATDataItemInspector(AnalyseDataSourceTask& task,
                                              MLATDataItemInspectorSettings& settings)
     : DataSourceInspectorBase(task, settings)
 {
-}
-
-namespace
-{
-std::string jsonScalarToString(const nlohmann::json& j)
-{
-    if (j.is_null())            return "";
-    if (j.is_string())          return j.get<std::string>();
-    if (j.is_boolean())         return j.get<bool>() ? "true" : "false";
-    if (j.is_number_integer())  return std::to_string(j.get<long long>());
-    if (j.is_number_unsigned()) return std::to_string(j.get<unsigned long long>());
-    if (j.is_number_float())
-    {
-        std::ostringstream os;
-        os << j.get<double>();
-        return os.str();
-    }
-    return j.dump();
-}
 }
 
 void MLATDataItemInspector::writeReport(ResultReport::Section& root)
@@ -73,11 +70,6 @@ void MLATDataItemInspector::writeReport(ResultReport::Section& root)
 
     auto& settings = static_cast<MLATDataItemInspectorSettings&>(settings_);
 
-    std::set<unsigned int> mlat_cats   = {20, 10};
-    std::set<unsigned int> in_scope_cats = mlat_cats;
-    if (settings.include_cat019_)
-        in_scope_cats.insert(19);
-
     auto selected = task_.selectedDataSourceIDs();
 
     if (selected.empty())
@@ -87,6 +79,15 @@ void MLATDataItemInspector::writeReport(ResultReport::Section& root)
         return;
     }
 
+    // Borrow the active jASTERIX from the import task so the rendered tables
+    // can include edition-defined-but-unseen items (count 0, red).
+    std::shared_ptr<jASTERIX::jASTERIX> jasterix;
+    try
+    {
+        jasterix = compass.taskManager().asterixImporterTask().jASTERIX();
+    }
+    catch (...) { /* helper handles a null pointer gracefully */ }
+
     auto& summary = section.addTable("Summary",
                                      3,
                                      {"Data Source", "CATs", "Total records"},
@@ -95,8 +96,12 @@ void MLATDataItemInspector::writeReport(ResultReport::Section& root)
     for (auto ds_id : selected)
     {
         const auto* ds = ctx.dataSource(ds_id);
-        std::string ds_label = ds ? (ds->name() + " (" + std::to_string(ds_id) + ")")
-                                  : std::to_string(ds_id);
+        std::string ds_label;
+        if (ds)
+            ds_label = ds->name() + " (" + std::to_string(ds->sac())
+                       + "/" + std::to_string(ds->sic()) + ")";
+        else
+            ds_label = std::to_string(ds_id);
 
         auto info_it = info_map.find(ds_id);
         if (info_it == info_map.end())
@@ -105,60 +110,38 @@ void MLATDataItemInspector::writeReport(ResultReport::Section& root)
             continue;
         }
 
+        // Summary row.
         std::string cats_str;
         std::size_t total = 0;
         for (const auto& cat_kv : info_it->second)
         {
             unsigned int cat = cat_kv.first;
-            if (!in_scope_cats.count(cat))
+            if (!settings.catIncluded(cat))
                 continue;
             if (!cats_str.empty()) cats_str += ", ";
-            char buf[8];
-            std::snprintf(buf, sizeof(buf), "%03u", cat);
-            cats_str += buf;
+            cats_str += "CAT" + Utils::String::categoryString(cat);
             total += cat_kv.second.total_count;
         }
         summary.addRow({ds_label, cats_str, std::to_string(total)});
 
+        // Per-DS section, identical layout to the ASTERIX Import report.
         auto& ds_section = section.addSubSection(ds_label);
 
-        for (const auto& cat_kv : info_it->second)
+        std::map<unsigned int, ASTERIXReportHelpers::CategoryView> view_cats;
+        for (const auto& [cat, cat_stats] : info_it->second)
         {
-            unsigned int cat = cat_kv.first;
-            if (!in_scope_cats.count(cat))
+            if (!settings.catIncluded(cat))
                 continue;
-
-            char cat_buf[16];
-            std::snprintf(cat_buf, sizeof(cat_buf), "CAT%03u", cat);
-            std::string cat_heading = cat_buf;
-
-            auto& cat_section = ds_section.addSubSection(cat_heading);
-
-            auto& info_t = cat_section.addTable(
-                cat_heading + " Records",
-                2,
-                {"Property", "Value"},
-                false);
-            info_t.addRow({"Total records", std::to_string(cat_kv.second.total_count)});
-
-            auto& items_t = cat_section.addTable(
-                cat_heading + " Items",
-                4,
-                {"Item", "Count", "Min", "Max"},
-                true,
-                0,
-                Qt::AscendingOrder);
-
-            for (const auto& it_kv : cat_kv.second.items)
+            auto& cv = view_cats[cat];
+            cv.total_count = cat_stats.total_count;
+            for (const auto& [name, stats] : cat_stats.items)
             {
-                items_t.addRow({
-                    it_kv.first,
-                    std::to_string(it_kv.second.count),
-                    jsonScalarToString(it_kv.second.min),
-                    jsonScalarToString(it_kv.second.max)
-                });
+                cv.items[name] = { stats.count, &stats.min, &stats.max };
             }
         }
+
+        ASTERIXReportHelpers::renderDataItemTablesForDS(
+            ds_section, view_cats, jasterix.get());
     }
 
     loginf << "data-item analysis for " << selected.size() << " data sources written";

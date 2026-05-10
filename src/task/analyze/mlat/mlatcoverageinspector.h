@@ -30,31 +30,23 @@ public:
 
     std::string inspectorClassName() const override { return "MLATCoverageInspector"; }
 
-    // Cadence
-    enum class CadenceSource : int { TimeDifference = 0, CAT019Cycle = 1 };
-    int  cadence_source_int_ = static_cast<int>(CadenceSource::TimeDifference);
+    // PD calculation method
+    enum class PDMethod : int { TimeDifference = 0, StatusPeriodMessage = 1 };
+    int  pd_method_int_ = static_cast<int>(PDMethod::TimeDifference);
 
-    CadenceSource cadenceSource() const
-    { return static_cast<CadenceSource>(cadence_source_int_); }
+    PDMethod pdMethod() const
+    { return static_cast<PDMethod>(pd_method_int_); }
 
-    float update_interval_s_ = 1.0f;   // UI
+    float update_interval_s_ = 1.0f;   // UI; Time Difference only.
 
-    // Miss test (mirrors the detection requirement)
+    // Miss test (mirrors the detection requirement, simplified to miss tolerance only).
     bool  use_miss_tolerance_ = true;
     float miss_tolerance_s_   = 0.1f;
-    bool  use_min_gap_length_ = false;
-    float min_gap_length_s_   = 5.0f;
-    bool  use_max_gap_length_ = false;
-    float max_gap_length_s_   = 600.0f;
 
-    // 3D grid resolution (shared with other 3D-grid inspectors).
-    float cell_size_m_  = 1000.0f;
-    float cell_size_ft_ = 1000.0f;
-
-    // PD color thresholds (ED-117 / ESASSP guidance).
-    float pd_red_below_     = 0.97f;
-    float pd_yellow_below_  = 0.99f;
-    // green at and above pd_yellow_below_.
+    // PD color thresholds: green at/above acceptable, red at/below unacceptable,
+    // orange in between. Values are PD ratios (0..1).
+    float pd_acceptable_above_    = 0.95f;
+    float pd_unacceptable_below_  = 0.70f;
 };
 
 /**

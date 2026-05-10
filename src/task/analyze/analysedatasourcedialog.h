@@ -31,6 +31,8 @@ class QTreeWidgetItem;
 class QStackedWidget;
 class QWidget;
 class QPushButton;
+class QLineEdit;
+class QComboBox;
 
 class AnalyseDataSourceDialog : public QDialog
 {
@@ -47,10 +49,12 @@ private slots:
 
 private:
     void buildTree();
-    QWidget* buildDataSourceWidget();
+    QWidget* buildDataSourcesWidget();
+    QWidget* buildReportWidget();
     QWidget* buildInspectorWidget(DataSourceInspectorBase* inspector);
     void refreshInspectorRows();
     void updateRunEnabled();
+    void updateSuggestedReportName();
 
     AnalyseDataSourceTask&  task_;
 
@@ -58,7 +62,17 @@ private:
     QStackedWidget* stack_        = nullptr;
     QPushButton*    run_button_   = nullptr;
 
-    QTreeWidgetItem* ds_item_ = nullptr;
+    QTreeWidgetItem* ds_item_     = nullptr;
+    QTreeWidgetItem* report_item_ = nullptr;
+
+    int ds_stack_idx_     = -1;
+    int report_stack_idx_ = -1;
+
+    QLineEdit*       report_name_edit_ = nullptr;
+    QComboBox*       ref_line_combo_   = nullptr;
+    QComboBox*       tst_line_combo_   = nullptr;
+
+    bool             report_name_user_edited_ = false;
 
     struct InspectorRow
     {

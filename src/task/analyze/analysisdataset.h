@@ -59,13 +59,19 @@ public:
 
     /**
      * Configure load filters and block-load the requested dbcontents.
-     * @param selected_ds_ids   data source IDs to fold into the combined dataset
+     * @param selected_ds_ids   test data source IDs to fold into the combined dataset
+     * @param line_id_tst       line ID (0..3) to load on the test side
+     * @param ref_ds_ids        reference (RefTraj) data source IDs to load
+     * @param line_id_ref       line ID (0..3) to load on the reference side
      * @param test_dbcontents   dbcontent names to load on the test side
      *                          (the reference dbcontent "RefTraj" is always added)
      * @param error_out         filled with a human-readable error if the load fails
      * @return true on success.
      */
     bool load(const std::set<unsigned int>& selected_ds_ids,
+              unsigned int line_id_tst,
+              const std::set<unsigned int>& ref_ds_ids,
+              unsigned int line_id_ref,
               const std::set<std::string>& test_dbcontents,
               std::string& error_out);
 
@@ -121,6 +127,7 @@ public:
 
 private:
     void buildChains(const std::set<unsigned int>& selected_ds_ids,
+                     const std::set<unsigned int>& ref_ds_ids,
                      const std::set<std::string>& test_dbcontents);
     void addToReferenceChain(unsigned int utn, boost::posix_time::ptime ts, unsigned int idx);
     void addToTestChain(unsigned int utn, const std::string& dbcontent,

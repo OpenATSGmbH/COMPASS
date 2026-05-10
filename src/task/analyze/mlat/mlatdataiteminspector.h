@@ -20,6 +20,8 @@
 #include "datasourceinspectorbase.h"
 #include "inspectorsettingsbase.h"
 
+#include "json_fwd.hpp"
+
 class MLATDataItemInspectorSettings : public InspectorSettingsBase
 {
 public:
@@ -28,8 +30,11 @@ public:
 
     std::string inspectorClassName() const override { return "MLATDataItemInspector"; }
 
-    /// Include the associated CAT019 source (when present) in the per-DS scope.
-    bool include_cat019_ = true;
+    /// Per-CAT enable flag. CATs not present in the map default to enabled.
+    nlohmann::json included_cats_;  // cat (uint, e.g. "020") -> bool
+
+    bool catIncluded(unsigned int cat) const;
+    void setCatIncluded(unsigned int cat, bool value);
 };
 
 class MLATDataItemInspector : public DataSourceInspectorBase

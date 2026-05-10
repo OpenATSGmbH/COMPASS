@@ -63,14 +63,48 @@ public:
     /// DSType this task analyses (currently always "MLAT").
     const std::string& dsType() const { return ds_type_; }
 
-    /// Per-data-source enable flags.
+    /// Per-data-source enable flags (test side).
     bool useDataSource(unsigned int ds_id) const;
     void useDataSource(unsigned int ds_id, bool value);
     bool useDataSourceLine(unsigned int ds_id, unsigned int line_id) const;
     void useDataSourceLine(unsigned int ds_id, unsigned int line_id, bool value);
 
-    /// IDs of selected data sources of `ds_type_` (filters to existing DS only).
+    /// IDs of selected test data sources of `ds_type_` (filters to existing DS only).
     std::set<unsigned int> selectedDataSourceIDs() const;
+
+    /// Common test-side line ID (0..3, displayed as L1..L4).
+    unsigned int lineIDTst() const { return line_id_tst_; }
+    void setLineIDTst(unsigned int line_id);
+
+    /// Per-data-source enable flags for the reference (RefTraj) side.
+    bool useReferenceDataSource(unsigned int ds_id) const;
+    void useReferenceDataSource(unsigned int ds_id, bool value);
+
+    /// IDs of selected reference (RefTraj) data sources (filters to existing DS only).
+    std::set<unsigned int> selectedReferenceDataSourceIDs() const;
+
+    /// Reference-side line ID (0..3).
+    unsigned int lineIDRef() const { return line_id_ref_; }
+    void setLineIDRef(unsigned int line_id);
+
+    /// All existing RefTraj data source IDs in the active context.
+    std::set<unsigned int> referenceDataSourceCandidateIDs() const;
+
+    /// Editable report name. `reportName()` returns the custom name if set,
+    /// otherwise `suggestReportName()`.
+    std::string reportName() const;
+    std::string suggestReportName() const;
+    bool hasCustomReportName() const { return !custom_report_name_.empty(); }
+    void setCustomReportName(const std::string& name);
+    void resetCustomReportName();
+
+    /// Shared grid resolution (consumed by all 3D-grid inspectors).
+    float cellSizeMeters() const { return cell_size_m_; }
+    float cellSizeFeet()   const { return cell_size_ft_; }
+    unsigned int maxCellsPerAxis() const { return max_cells_per_axis_; }
+    void setCellSizeMeters(float v);
+    void setCellSizeFeet(float v);
+    void setMaxCellsPerAxis(unsigned int v);
 
     /// True if any selected data source has CAT020 reports (asterixInfo lookup).
     bool selectionContainsCAT020() const;
@@ -105,9 +139,18 @@ private:
 
     std::string ds_type_;
 
-    nlohmann::json use_data_sources_;        // ds_id -> bool
-    nlohmann::json use_data_sources_lines_;  // ds_id -> line_id -> bool
-    nlohmann::json inspector_enabled_;       // inspector_class_name -> bool
+    nlohmann::json use_data_sources_;            // ds_id -> bool (test side)
+    nlohmann::json use_data_sources_lines_;      // ds_id -> line_id -> bool
+    nlohmann::json use_reference_data_sources_;  // ds_id -> bool (reference side)
+    nlohmann::json inspector_enabled_;           // inspector_class_name -> bool
+
+    unsigned int line_id_tst_ = 0;
+    unsigned int line_id_ref_ = 0;
+    std::string  custom_report_name_;
+
+    float        cell_size_m_        = 20.0f;
+    float        cell_size_ft_       = 100.0f;
+    unsigned int max_cells_per_axis_ = 1000;
 
     std::unique_ptr<MLATDataItemInspectorSettings> data_item_settings_;
     std::unique_ptr<MLATCoverageInspectorSettings> coverage_settings_;

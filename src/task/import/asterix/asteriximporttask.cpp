@@ -17,6 +17,7 @@
 
 #include "asteriximporttask.h"
 #include "asteriximportprobeaggregator.h"
+#include "asterixreporthelpers.h"
 #include "asterix_decoding_config.h"
 
 #include "task/result/report/report.h"
@@ -1855,16 +1856,6 @@ namespace
         return std::to_string(bytes) + " B";
     }
 
-    /// "<count>" or "<count> (<pct.1f> %)" - matches the per-item display
-    /// in ASTERIXImportDataSourcesWidget.
-    std::string formatCountWithPercent(std::size_t count, std::size_t total)
-    {
-        if (total == 0)
-            return std::to_string(count);
-
-        const double pct = 100.0 * static_cast<double>(count) / static_cast<double>(total);
-        return std::to_string(count) + " (" + Utils::String::doubleToStringPrecision(pct, 1) + " %)";
-    }
 }
 
 /**
@@ -2075,79 +2066,21 @@ void ASTERIXImportTask::buildResultReport(const boost::posix_time::ptime& end_ti
                                            ? type_section.getSubSection(ds_label)
                                            : type_section.addSubSection(ds_label);
 
-                    // Note about data origin (probing). Add once per DS section.
-                    if (!ds_section.hasText("Note"))
-                    {
-                        auto& note = ds_section.addText("Note");
-                        note.addText("The information below comes from probing - only the beginning of "
-                                     "the ASTERIX file is read. Counts, min and max values are "
-                                     "sample-side estimates and do not reflect the full file. Items "
-                                     "defined in the active edition but not seen during probing are "
-                                     "listed with count 0 (highlighted red).");
-                    }
-
+                    // Build the renderer's view of this DS's per-CAT data
+                    // and delegate to the shared helper.
+                    std::map<unsigned int, ASTERIXReportHelpers::CategoryView> view_cats;
                     for (const auto& [cat, cat_probe] : ds_probe.categories)
                     {
-                        const std::string table_name =
-                            "CAT" + Utils::String::categoryString(cat);
-
-                        if (!ds_section.hasTable(table_name))
-                            ds_section.addTable(table_name, 5,
-                                                {"Item", "Count", "Min", "Max", "Description"},
-                                                true);
-                        auto& it_t = ds_section.getTable(table_name);
-
-                        // union of probe-seen items + edition-defined items
-                        jASTERIX::CategoryItemInfo edition_items;
-                        if (jasterix && jasterix->hasCategory(cat))
+                        auto& cv = view_cats[cat];
+                        cv.total_count = cat_probe.total_count;
+                        for (const auto& [key, stats] : cat_probe.items)
                         {
-                            auto cat_def = jasterix->category(cat);
-                            if (cat_def)
-                                edition_items = cat_def->itemInfo();
-                        }
-
-                        std::set<std::string> all_keys;
-                        for (const auto& kv : cat_probe.items)
-                            all_keys.insert(kv.first);
-                        for (const auto& kv : edition_items)
-                            if (ASTERIXImportProbeAggregator::isDisplayableDataItem(kv.first))
-                                all_keys.insert(kv.first);
-
-                        for (const auto& key : all_keys)
-                        {
-                            std::string description;
-                            auto info_it = edition_items.find(key);
-                            if (info_it != edition_items.end())
-                                description = info_it->second.description_;
-
-                            std::size_t count = 0;
-                            std::string min_s;
-                            std::string max_s;
-                            auto stats_it = cat_probe.items.find(key);
-                            if (stats_it != cat_probe.items.end())
-                            {
-                                count = stats_it->second.count;
-                                if (!stats_it->second.min.is_null())
-                                    min_s = stats_it->second.min.dump();
-                                if (!stats_it->second.max.is_null())
-                                    max_s = stats_it->second.max.dump();
-                            }
-
-                            const unsigned int row_style =
-                                count == 0 ? ResultReport::CellStyleTextColorRed : 0u;
-
-                            it_t.addRow({key,
-                                         formatCountWithPercent(count, cat_probe.total_count),
-                                         min_s,
-                                         max_s,
-                                         description},
-                                        ResultReport::SectionContentViewable(),
-                                        std::string(),
-                                        std::string(),
-                                        QVariant(),
-                                        row_style);
+                            cv.items[key] = { stats.count, &stats.min, &stats.max };
                         }
                     }
+
+                    ASTERIXReportHelpers::renderDataItemTablesForDS(
+                        ds_section, view_cats, jasterix.get());
                 }
             }
         }
