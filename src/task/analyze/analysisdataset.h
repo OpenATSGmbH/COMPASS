@@ -125,6 +125,13 @@ public:
     double minLongitudeDeg() const { return min_lon_; }
     double maxLongitudeDeg() const { return max_lon_; }
 
+    /// Altitude bounds of the loaded reference data (feet, barometric).
+    /// `hasAltitudeExtent()` is false when no reference rows had a usable
+    /// Mode-C value; in that case `min/max` are 0.
+    bool   hasAltitudeExtent() const { return has_altitude_extent_; }
+    double minAltitudeFt()    const { return min_alt_ft_; }
+    double maxAltitudeFt()    const { return max_alt_ft_; }
+
 private:
     void buildChains(const std::set<unsigned int>& selected_ds_ids,
                      const std::set<unsigned int>& ref_ds_ids,
@@ -154,4 +161,7 @@ private:
     double min_lat_ = 0.0, max_lat_ = 0.0;
     double min_lon_ = 0.0, max_lon_ = 0.0;
     bool   has_position_extent_ = false;
+
+    double min_alt_ft_ = 0.0, max_alt_ft_ = 0.0;
+    bool   has_altitude_extent_ = false;
 };

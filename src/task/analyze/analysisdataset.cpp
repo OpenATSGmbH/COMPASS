@@ -170,6 +170,7 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
 
         const bool has_lat = accessor_->hasMetaVar<double>(kReferenceDBContent, meta_var_latitude_);
         const bool has_lon = accessor_->hasMetaVar<double>(kReferenceDBContent, meta_var_longitude_);
+        const bool has_mc  = accessor_->hasMetaVar<float>(kReferenceDBContent, meta_var_mc_);
 
         unsigned int n = ts_vec.contentSize();
         for (unsigned int i = 0; i < n; ++i)
@@ -206,6 +207,25 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
                         if (lat > max_lat_) max_lat_ = lat;
                         if (lon < min_lon_) min_lon_ = lon;
                         if (lon > max_lon_) max_lon_ = lon;
+                    }
+                }
+            }
+
+            if (has_mc)
+            {
+                auto& mc_vec = accessor_->getMetaVar<float>(kReferenceDBContent, meta_var_mc_);
+                if (!mc_vec.isNull(i))
+                {
+                    double alt = static_cast<double>(mc_vec.get(i));
+                    if (!has_altitude_extent_)
+                    {
+                        min_alt_ft_ = max_alt_ft_ = alt;
+                        has_altitude_extent_ = true;
+                    }
+                    else
+                    {
+                        if (alt < min_alt_ft_) min_alt_ft_ = alt;
+                        if (alt > max_alt_ft_) max_alt_ft_ = alt;
                     }
                 }
             }

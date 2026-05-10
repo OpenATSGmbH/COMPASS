@@ -25,8 +25,18 @@
 #include "section.h"
 #include "sectioncontenttable.h"
 #include "sectioncontenttext.h"
+#include "stringconv.h"
+#include "system.h"
 #include "targetposition.h"
 #include "dbcontent/target/targetreportchain.h"
+
+#include "grid2dlayer.h"
+#include "grid2dlayerrenderer.h"
+#include "grid2drendersettings.h"
+#include "colormap.h"
+
+#include "viewpointgenerator.h"
+#include "plotmetadata.h"
 
 #include "json.hpp"
 
@@ -37,6 +47,7 @@
 #include <iomanip>
 #include <set>
 #include <sstream>
+#include <utility>
 
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
@@ -61,6 +72,8 @@ MLATCoverageInspector::MLATCoverageInspector(AnalyseDataSourceTask& task,
     : DataSourceInspectorBase(task, settings)
 {
 }
+
+MLATCoverageInspector::~MLATCoverageInspector() = default;
 
 std::set<std::string> MLATCoverageInspector::testDBContentNames() const
 {
@@ -114,6 +127,17 @@ ptime addSeconds(ptime t, double s)
     return t + boost::posix_time::microseconds(us);
 }
 
+void logRAM(const std::string& tag)
+{
+    loginf << "RAM [Sensor Coverage / " << tag << "] process "
+           << Utils::String::doubleToStringPrecision(
+                  Utils::System::getProcessRAMinGB(), 2)
+           << " GB free "
+           << Utils::String::doubleToStringPrecision(
+                  Utils::System::getFreeRAMinGB(), 2)
+           << " GB";
+}
+
 double percentile(std::vector<double> v, double p)
 {
     if (v.empty())
@@ -139,6 +163,7 @@ std::string formatNumber(double v, int prec = 4)
 void MLATCoverageInspector::compute(AnalysisDataset* dataset)
 {
     result_ = ComputeResult{};
+    grid_.reset();
 
     if (!dataset)
         return;
@@ -148,16 +173,40 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     double ref_lat = dataset->centreLatitudeDeg();
     if (ref_lat == 0.0) ref_lat = 47.0;
 
-    TargetReport3DGrid grid(task_.cellSizeMeters(), task_.cellSizeFeet(), ref_lat);
+    auto sizing = task_.clampedCellSizes(*dataset);
+    if (sizing.horizontal_clamped || sizing.vertical_clamped)
+    {
+        loginf << "MLATCoverageInspector: cell sizes clamped to fit max "
+               << task_.maxCellsPerAxis() << " cells/axis -- "
+               << "horizontal " << task_.cellSizeMeters() << " m x"
+               << sizing.horizontal_multiplier << " = " << sizing.cell_size_m << " m, "
+               << "vertical " << task_.cellSizeFeet() << " ft x"
+               << sizing.vertical_multiplier   << " = " << sizing.cell_size_ft << " ft";
+    }
+
+    grid_.reset(new TargetReport3DGrid(sizing.cell_size_m, sizing.cell_size_ft, ref_lat));
+    auto& grid = *grid_;
+
+    logRAM("compute begin");
 
     time_duration d_max = boost::posix_time::seconds(60);
 
     unsigned int targets_walked = 0;
     unsigned int targets_no_ref = 0;
     unsigned int targets_no_tst = 0;
+    unsigned int targets_seen   = 0;
 
-    for (auto utn : dataset->utns())
+    const auto utns = dataset->utns();
+    const std::size_t total_utns = utns.size();
+    const std::size_t log_every  = std::max<std::size_t>(1, total_utns / 20); // ~20 ticks
+
+    for (auto utn : utns)
     {
+        ++targets_seen;
+        if (targets_seen == 1 || targets_seen % log_every == 0 || targets_seen == total_utns)
+            logRAM("compute target " + std::to_string(targets_seen)
+                   + "/" + std::to_string(total_utns)
+                   + " grid_cells " + std::to_string(grid.numCells()));
         if (!dataset->hasReferenceChain(utn))
         {
             ++targets_no_ref;
@@ -240,7 +289,11 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         }
     }
 
+    logRAM("compute target loop done, grid_cells " + std::to_string(grid.numCells()));
+
     auto horizontal = grid.projectHorizontal();
+    logRAM("compute after projectHorizontal, horizontal_cells "
+           + std::to_string(horizontal.size()));
     std::uint64_t total_eui = 0, total_mui = 0;
     double worst_pd = 1.0;
     bool   worst_set = false;
@@ -280,6 +333,62 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     result_.worst_cell_pd      = worst_pd;
 }
 
+namespace
+{
+// Per-cell PD scalar: only cells with #EUI > 0 contribute.
+std::optional<double> pdScalar(const TargetReport3DGrid::Cell& c)
+{
+    if (c.num_eui == 0)
+        return std::nullopt;
+    return (static_cast<double>(c.num_eui) - static_cast<double>(c.num_mui))
+           / static_cast<double>(c.num_eui);
+}
+
+std::uint64_t pdSampleCount(const TargetReport3DGrid::Cell& c)
+{
+    return c.num_eui;
+}
+
+void attachPDFigure(ResultReport::Section& section,
+                    const std::string& fig_name,
+                    TargetReport3DGrid::ProjectionResult& proj,
+                    const MLATCoverageInspectorSettings& settings)
+{
+    if (!proj.valid || !proj.layer)
+        return;
+
+    Grid2DRenderSettings rs;
+    rs.color_map.create(ColorMap::ColorScale::Red2Green, 10);
+    rs.min_value = settings.pd_unacceptable_below_;
+    rs.max_value = settings.pd_acceptable_above_;
+
+    PlotMetadata meta("Sensor Coverage", fig_name,
+                      proj.x_axis_label, proj.y_axis_label);
+
+    auto vp = std::make_unique<ViewPointGenVP>(fig_name, 0, "Grid");
+    vp->noDataLoaded(true);
+
+    auto* anno = vp->annotations().getOrCreateAnnotation("PD");
+
+    // Note: ViewPointGenFeatureGeoImage / ViewPointGenFeatureGrid take
+    // ownership of the layer payload via copy; the unique_ptr in `proj`
+    // keeps the Grid2DLayer alive until end of scope.
+    if (proj.x_axis_label == "Longitude (deg)" && proj.y_axis_label == "Latitude (deg)")
+    {
+        auto rendered = Grid2DLayerRenderer::render(*proj.layer, rs);
+        anno->addFeature(new ViewPointGenFeatureGeoImage(rendered.first, rendered.second));
+    }
+    else
+    {
+        anno->addFeature(new ViewPointGenFeatureGrid(*proj.layer, rs, meta));
+    }
+
+    nlohmann::json vp_json;
+    vp->toJSON(vp_json);
+    section.addFigure(fig_name, ResultReport::SectionContentViewable(vp_json));
+}
+}
+
 void MLATCoverageInspector::writeReport(ResultReport::Section& root)
 {
     auto& settings = static_cast<MLATCoverageInspectorSettings&>(settings_);
@@ -290,7 +399,7 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
                   settings.pdMethod() ==
                           MLATCoverageInspectorSettings::PDMethod::TimeDifference
                       ? std::string("Time Difference")
-                      : std::string("Status Period Message Based "
+                      : std::string("Status Period Message Based\n"
                                     "(time-difference fallback)")});
     {
         std::ostringstream os;
@@ -305,16 +414,16 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     }
     {
         std::ostringstream os;
-        os << task_.cellSizeMeters() << " m horizontal / "
-           << task_.cellSizeFeet()   << " ft vertical (max "
-           << task_.maxCellsPerAxis() << " cells/axis)";
+        os << task_.cellSizeMeters() << " m horizontal\n"
+           << task_.cellSizeFeet()   << " ft vertical\n"
+           << "max " << task_.maxCellsPerAxis() << " cells/axis";
         recap.addRow({"Grid resolution", os.str()});
     }
     {
         std::ostringstream os;
-        os << "green >= " << settings.pd_acceptable_above_
-           << ", red <= "  << settings.pd_unacceptable_below_
-           << ", orange in between";
+        os << "green >= " << settings.pd_acceptable_above_ << "\n"
+           << "red <= "   << settings.pd_unacceptable_below_ << "\n"
+           << "orange in between";
         recap.addRow({"PD color thresholds", os.str()});
     }
 
@@ -337,6 +446,30 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     summary.addRow({"P5 per-cell PD",              formatNumber(result_.p5_per_cell_pd)});
     if (result_.has_worst_cell)
         summary.addRow({"Worst cell PD (>=5 EUI)", formatNumber(result_.worst_cell_pd)});
+
+    if (grid_)
+    {
+        logRAM("writeReport before projections, grid_cells "
+               + std::to_string(grid_->numCells()));
+
+        auto horiz  = grid_->projectionLayer(TargetReport3DGrid::Projection::Horizontal,
+                                             pdScalar, pdSampleCount, "pd");
+        logRAM("writeReport after Horizontal projection");
+
+        auto altlon = grid_->projectionLayer(TargetReport3DGrid::Projection::AltLon,
+                                             pdScalar, pdSampleCount, "pd");
+        logRAM("writeReport after AltLon projection");
+
+        auto altlat = grid_->projectionLayer(TargetReport3DGrid::Projection::AltLat,
+                                             pdScalar, pdSampleCount, "pd");
+        logRAM("writeReport after AltLat projection");
+
+        attachPDFigure(section, "PD - Horizontal",         horiz,  settings);
+        attachPDFigure(section, "PD - Altitude/Longitude", altlon, settings);
+        attachPDFigure(section, "PD - Altitude/Latitude",  altlat, settings);
+
+        logRAM("writeReport after attaching figures");
+    }
 
     loginf << "MLATCoverageInspector: walked " << result_.targets_walked << " target(s), "
            << result_.total_eui << " EUI, " << result_.total_mui

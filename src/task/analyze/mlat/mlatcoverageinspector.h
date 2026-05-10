@@ -21,6 +21,9 @@
 #include "inspectorsettingsbase.h"
 
 #include <cstdint>
+#include <memory>
+
+class TargetReport3DGrid;
 
 class MLATCoverageInspectorSettings : public InspectorSettingsBase
 {
@@ -62,7 +65,6 @@ class MLATCoverageInspector : public DataSourceInspectorBase
 {
 public:
     MLATCoverageInspector(AnalyseDataSourceTask& task, MLATCoverageInspectorSettings& settings);
-    ~MLATCoverageInspector() override = default;
 
     std::string className() const override { return "MLATCoverageInspector"; }
     std::string name()      const override { return "Sensor Coverage"; }
@@ -83,6 +85,8 @@ public:
     void compute(AnalysisDataset* dataset) override;
     void writeReport(ResultReport::Section& root) override;
 
+    ~MLATCoverageInspector() override;
+
 private:
     /// Aggregated result of the per-target slot-walk. Populated by `compute()`
     /// (worker-thread safe) and consumed by `writeReport()` (main thread).
@@ -102,5 +106,6 @@ private:
         double worst_cell_pd       = 1.0;
     };
 
-    ComputeResult result_;
+    ComputeResult                      result_;
+    std::unique_ptr<TargetReport3DGrid> grid_;
 };

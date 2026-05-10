@@ -35,6 +35,8 @@ class COMPASS;
 class DataSourceInspectorBase;
 class InspectorSettingsBase;
 
+class AnalysisDataset;
+
 class MLATDataItemInspectorSettings;
 class MLATCoverageInspectorSettings;
 
@@ -105,6 +107,28 @@ public:
     void setCellSizeMeters(float v);
     void setCellSizeFeet(float v);
     void setMaxCellsPerAxis(unsigned int v);
+
+    /// Effective cell sizes for an inspector: the configured horizontal and
+    /// vertical cell sizes, multiplied by an integer factor on the 1-2-5
+    /// ladder (1, 2, 5, 10, 20, 50, ...) only as much as is needed to keep
+    /// each axis under `maxCellsPerAxis()` cells across the loaded data
+    /// extent. The factor is the smallest ladder value that fits, so the
+    /// resulting cells are always integer multiples of the configured cell
+    /// size and stay close to the limit.
+    ///
+    /// Inputs come from the dataset extents (lat/lon/alt) - the task does not
+    /// scan the data itself. Altitude defaults to 50000 ft when the dataset
+    /// did not record an altitude extent.
+    struct CellSizing
+    {
+        float        cell_size_m;
+        float        cell_size_ft;
+        unsigned int horizontal_multiplier; // applied to configured cell_size_m
+        unsigned int vertical_multiplier;   // applied to configured cell_size_ft
+        bool         horizontal_clamped;
+        bool         vertical_clamped;
+    };
+    CellSizing clampedCellSizes(const AnalysisDataset& dataset) const;
 
     /// True if any selected data source has CAT020 reports (asterixInfo lookup).
     bool selectionContainsCAT020() const;

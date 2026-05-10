@@ -1,0 +1,54 @@
+{
+    "class_name": "AnalyseDataSourceTask",
+    "instance_name": "AnalyseDataSourceTask0",
+    "parameters": {
+        "ds_type": "MLAT",
+        "use_data_sources": {},
+        "use_data_sources_lines": {},
+        "inspector_enabled": {}
+    },
+    "sub_configs": [
+        {
+            "class_name": "MLATDataItemInspectorSettings",
+            "instance_name": "MLATDataItemInspectorSettings0",
+            "parameters": {
+                "include_cat019": true
+            }
+        },
+        {
+            "class_name": "MLATCoverageInspectorSettings",
+            "instance_name": "MLATCoverageInspectorSettings0",
+            "parameters": {
+                "cadence_source_int": 0,
+                "update_interval_s": 1.0,
+                "use_miss_tolerance": true,
+                "miss_tolerance_s": 0.1,
+                "use_min_gap_length": false,
+                "min_gap_length_s": 5.0,
+                "use_max_gap_length": false,
+                "max_gap_length_s": 600.0,
+                "cell_size_m": 1000.0,
+                "cell_size_ft": 1000.0,
+                "pd_red_below": 0.97,
+                "pd_yellow_below": 0.99
+            }
+        },
+        {
+            "class_name": "MLATAccuracyInspectorSettings",
+            "instance_name": "MLATAccuracyInspectorSettings0",
+            "parameters": {
+                "cell_size_m": 1000.0,
+                "cell_size_ft": 1000.0,
+                "pos_acc_green_below_m": 12.0,
+                "pos_acc_yellow_below_m": 24.0,
+                "pos_acc_orange_below_m": 60.0,
+                "consistency_red_below": 0.5,
+                "consistency_green_lower": 0.8,
+                "consistency_green_upper": 1.25,
+                "consistency_red_above": 2.0,
+                "include_legacy_i020_500": true,
+                "include_ref_position_accuracy": true
+            }
+        }
+    ]
+}

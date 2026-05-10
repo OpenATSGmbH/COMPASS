@@ -23,6 +23,9 @@
 #include "mlatdataiteminspector.h"
 #include "mlatcoverageinspector.h"
 
+#include <array>
+#include <cmath>
+
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "mlataccuracyinspector.h"
 #endif
@@ -40,6 +43,7 @@
 #include "sectioncontenttable.h"
 #include "sectioncontenttext.h"
 #include "stringconv.h"
+#include "system.h"
 #include "taskresult.h"
 #include "traced_assert.h"
 
@@ -293,6 +297,88 @@ void AnalyseDataSourceTask::setMaxCellsPerAxis(unsigned int v)
         max_cells_per_axis_ = v;
 }
 
+namespace
+{
+/// Smallest 1-2-5-ladder integer value (1, 2, 5, 10, 20, 50, 100, ...) that is
+/// >= the requested minimum. Used to scale a configured cell size up to fit a
+/// per-axis cell-count budget while keeping the result an integer multiple of
+/// the original.
+unsigned int next125(double min_value)
+{
+    if (min_value <= 1.0) return 1;
+    static const std::array<unsigned int, 3> ladder = { 1, 2, 5 };
+    unsigned int decade = 1;
+    for (int p = 0; p < 12; ++p, decade *= 10)
+    {
+        for (unsigned int m : ladder)
+        {
+            unsigned int candidate = m * decade;
+            if (static_cast<double>(candidate) >= min_value)
+                return candidate;
+        }
+    }
+    return 1000000000u;
+}
+
+constexpr double kEarthRadiusM = 6371000.0;
+
+/// Required cell-size multiplier on a single axis: smallest integer (on the
+/// 1-2-5 ladder) such that `extent / (base * mult) <= max_cells`.
+unsigned int axisMultiplier(double extent, double base_cell, unsigned int max_cells)
+{
+    if (extent <= 0.0 || base_cell <= 0.0 || max_cells == 0)
+        return 1;
+    double min_mult = extent / (base_cell * static_cast<double>(max_cells));
+    return next125(min_mult);
+}
+}
+
+AnalyseDataSourceTask::CellSizing
+AnalyseDataSourceTask::clampedCellSizes(const AnalysisDataset& dataset) const
+{
+    CellSizing out{};
+    out.cell_size_m            = cell_size_m_;
+    out.cell_size_ft           = cell_size_ft_;
+    out.horizontal_multiplier  = 1;
+    out.vertical_multiplier    = 1;
+    out.horizontal_clamped     = false;
+    out.vertical_clamped       = false;
+
+    // Horizontal extent: use the larger of the lat/lon extents (in metres).
+    double horizontal_extent_m = 0.0;
+    if (dataset.minLatitudeDeg() != dataset.maxLatitudeDeg()
+        || dataset.minLongitudeDeg() != dataset.maxLongitudeDeg())
+    {
+        const double dlat_deg = dataset.maxLatitudeDeg() - dataset.minLatitudeDeg();
+        const double dlon_deg = dataset.maxLongitudeDeg() - dataset.minLongitudeDeg();
+        const double ref_lat  = dataset.centreLatitudeDeg();
+        const double cos_lat  = std::cos(ref_lat * M_PI / 180.0);
+        const double safe_cos = (std::abs(cos_lat) > 1e-6) ? cos_lat : 1.0;
+        const double lat_m = dlat_deg * (M_PI / 180.0) * kEarthRadiusM;
+        const double lon_m = dlon_deg * (M_PI / 180.0) * kEarthRadiusM * safe_cos;
+        horizontal_extent_m = std::max(lat_m, lon_m);
+    }
+
+    out.horizontal_multiplier = axisMultiplier(horizontal_extent_m,
+                                               static_cast<double>(cell_size_m_),
+                                               max_cells_per_axis_);
+    out.cell_size_m           = cell_size_m_ * static_cast<float>(out.horizontal_multiplier);
+    out.horizontal_clamped    = (out.horizontal_multiplier > 1);
+
+    // Vertical extent: from the dataset, otherwise default to 50000 ft.
+    double vertical_extent_ft = 50000.0;
+    if (dataset.hasAltitudeExtent())
+        vertical_extent_ft = std::max(0.0, dataset.maxAltitudeFt() - dataset.minAltitudeFt());
+
+    out.vertical_multiplier   = axisMultiplier(vertical_extent_ft,
+                                               static_cast<double>(cell_size_ft_),
+                                               max_cells_per_axis_);
+    out.cell_size_ft          = cell_size_ft_ * static_cast<float>(out.vertical_multiplier);
+    out.vertical_clamped      = (out.vertical_multiplier > 1);
+
+    return out;
+}
+
 bool AnalyseDataSourceTask::selectionContainsCAT020() const
 {
     auto& ctx = compass().dbContextManager();
@@ -496,18 +582,25 @@ void AnalyseDataSourceTask::run()
     auto& overview = root.addSubSection("Overview");
 
     auto& info = overview.addTable("Run Configuration", 2, {"Property", "Value"}, false);
-    info.addRow({"DSType", ds_type_});
-    info.addRow({"Selected data sources", std::to_string(selectedDataSourceIDs().size())});
-    {
-        std::string sel;
-        for (auto ds_id : selectedDataSourceIDs())
+
+    auto formatDSList = [&](const std::set<unsigned int>& ids) {
+        std::string out;
+        for (auto ds_id : ids)
         {
             const auto* ds = compass().dbContextManager().dataSource(ds_id);
             if (!ds)
                 continue;
-            if (!sel.empty()) sel += ", ";
-            sel += ds->name() + " (" + std::to_string(ds_id) + ")";
+            if (!out.empty()) out += "\n";
+            out += ds->name() + " (" + std::to_string(ds->sac())
+                   + "/" + std::to_string(ds->sic()) + ")";
         }
+        return out;
+    };
+
+    info.addRow({"DSType", ds_type_});
+    info.addRow({"Selected data sources", std::to_string(selectedDataSourceIDs().size())});
+    {
+        std::string sel = formatDSList(selectedDataSourceIDs());
         if (!sel.empty())
             info.addRow({"Names", sel});
     }
@@ -515,15 +608,7 @@ void AnalyseDataSourceTask::run()
     {
         auto ref_ids = selectedReferenceDataSourceIDs();
         info.addRow({"Selected reference data sources", std::to_string(ref_ids.size())});
-        std::string sel;
-        for (auto ds_id : ref_ids)
-        {
-            const auto* ds = compass().dbContextManager().dataSource(ds_id);
-            if (!ds)
-                continue;
-            if (!sel.empty()) sel += ", ";
-            sel += ds->name() + " (" + std::to_string(ds_id) + ")";
-        }
+        std::string sel = formatDSList(ref_ids);
         if (!sel.empty())
             info.addRow({"Reference", sel});
     }
@@ -571,9 +656,20 @@ void AnalyseDataSourceTask::run()
         }
     }
 
+    auto logRAM = [](const std::string& tag) {
+        loginf << "RAM [" << tag << "] process "
+               << Utils::String::doubleToStringPrecision(
+                      Utils::System::getProcessRAMinGB(), 2)
+               << " GB free "
+               << Utils::String::doubleToStringPrecision(
+                      Utils::System::getFreeRAMinGB(), 2)
+               << " GB";
+    };
+
     for (auto* ins : active_inspectors)
     {
         loginf << "running inspector " << ins->name();
+        logRAM("inspector " + ins->name() + " before compute");
         advanceStep("Running inspector: " + ins->name() + "...");
         AnalysisDataset* ds = ins->requiresLoadedDataset() ? dataset.get() : nullptr;
 
@@ -601,8 +697,12 @@ void AnalyseDataSourceTask::run()
             ins->compute(ds);
         }
 
+        logRAM("inspector " + ins->name() + " after compute");
+
         // Report writing is always on the main thread.
         ins->writeReport(root);
+
+        logRAM("inspector " + ins->name() + " after writeReport");
     }
 
     advanceStep("Saving result...");

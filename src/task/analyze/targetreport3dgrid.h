@@ -20,8 +20,13 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <memory>
+#include <optional>
+#include <string>
 #include <unordered_map>
 #include <vector>
+
+struct Grid2DLayer;
 
 /**
  * @brief Sparse 3D grid (latitude / longitude / barometric flight level) for
@@ -31,27 +36,45 @@
  * (converted to degrees at the configured reference latitude) and vertical bin
  * size in feet. The grid is sparse: cells that receive no data are not stored.
  *
- * Per cell the grid keeps:
- *  - PD counters: num_eui (expected slots), num_mui (missed slots) for Feature 2.
- *  - Position-offset samples: distance to RefTraj, plus the reported per-report
- *    std-dev (Cartesian magnitude). Used by Feature 3 to derive mean / median /
- *    P95 of distance, mean of reported std-dev, and the distance / std-dev ratio.
+ * Per cell the grid keeps running sums only - never per-sample arrays - so that
+ * the per-cell footprint is O(1) regardless of how many target reports fall
+ * into the cell. This is the central reason the grid scales to multi-hour
+ * 1 Hz CAT020 inputs without blowing memory: per-sample storage would push
+ * peak memory into tens of GB on heavy datasets, especially because each of
+ * the three 2D projections temporarily duplicates per-cell content.
  *
- * The grid produces three 2D projections (horizontal, alt/lon, alt/lat) for
- * downstream rendering. Aggregation across the dropped axis is sum-of-counters
- * for PD and concatenation-of-samples for the accuracy series, so derived
- * statistics on the projected grid match what would be produced if the same
- * samples had been bucketed into the projected cell directly.
+ *  - PD counters: num_eui (expected slots), num_mui (missed slots) for Feature 2.
+ *  - Accuracy running sums for Feature 3:
+ *      sum_distance_m / num_distance     -> mean horizontal offset
+ *      sum_stddev_m   / num_stddev       -> mean reported std-dev
+ *      sum_ratio      / num_ratio        -> mean (offset / reported std-dev)
+ *
+ * The three 2D projections (horizontal, alt/lon, alt/lat) merge cells along
+ * the dropped axis by summing these counters, so the projected per-cell mean
+ * is the sample-weighted mean across the merged cells.
+ *
+ * Note: median / P95 of distance can no longer be derived from a cell. The
+ * task-wide median / P95 in the inspector summary is computed from a flat
+ * sample list maintained at the inspector level, not from cells.
  */
 class TargetReport3DGrid
 {
 public:
     struct Cell
     {
-        std::uint64_t       num_eui = 0;
-        std::uint64_t       num_mui = 0;
-        std::vector<double> distances_m;        // Feature 3: |MLAT - RefTraj|
-        std::vector<double> reported_stddevs_m; // Feature 3: sqrt(sx^2 + sy^2)
+        std::uint64_t num_eui = 0;
+        std::uint64_t num_mui = 0;
+
+        std::uint64_t num_samples    = 0;  // total accuracy samples added (any kind)
+
+        std::uint64_t num_distance   = 0;
+        double        sum_distance_m = 0.0;
+
+        std::uint64_t num_stddev     = 0;
+        double        sum_stddev_m   = 0.0;
+
+        std::uint64_t num_ratio      = 0;
+        double        sum_ratio      = 0.0;
     };
 
     /**
@@ -78,6 +101,66 @@ public:
     std::unordered_map<std::uint64_t, Cell> projectAltLon() const;
     /// Altitude / latitude projection: aggregate over lon bin. key = (alt_bin, lat_bin).
     std::unordered_map<std::uint64_t, Cell> projectAltLat() const;
+
+    /// One of three projections of the 3D grid down to a 2D layer.
+    /// - Horizontal: x = lon (deg),   y = lat (deg);   geo-renderable.
+    /// - AltLon:    x = lon (deg),   y = baro alt (ft); not geo.
+    /// - AltLat:    x = lat (deg),   y = baro alt (ft); not geo.
+    enum class Projection
+    {
+        Horizontal = 0,
+        AltLon,
+        AltLat
+    };
+
+    /// Result of `projectionLayer(...)`. The `layer` carries the per-cell scalar
+    /// values plus a `RasterReference` matching the layer's continuous bounds.
+    /// For Horizontal the consumer passes it to `Grid2DLayerRenderer::render`
+    /// and wraps as `ViewPointGenFeatureGeoImage`; for AltLon / AltLat it is
+    /// passed directly to `ViewPointGenFeatureGrid` with axis labels carried
+    /// by `PlotMetadata`.
+    struct ProjectionResult
+    {
+        bool                          valid = false;
+
+        std::unique_ptr<Grid2DLayer>  layer;
+
+        std::string x_axis_label;
+        std::string y_axis_label;
+
+        double x_min = 0.0, x_max = 0.0;
+        double y_min = 0.0, y_max = 0.0;
+
+        // Stats over per-cell scalar values (cells where the scalar functor
+        // returned a value).
+        std::size_t cells_with_value = 0;
+        double      v_min   = 0.0;
+        double      v_mean  = 0.0;
+        double      v_max   = 0.0;
+        double      v_median= 0.0;
+        double      v_p95   = 0.0;
+
+        // Stats over per-cell sample counts (the CellWeight functor).
+        std::uint64_t total_samples = 0;
+        std::size_t   spc_min       = 0;
+        std::size_t   spc_max       = 0;
+        double        spc_mean      = 0.0;
+
+        ProjectionResult();
+        ~ProjectionResult();
+        ProjectionResult(ProjectionResult&&) noexcept;
+        ProjectionResult& operator=(ProjectionResult&&) noexcept;
+        ProjectionResult(const ProjectionResult&) = delete;
+        ProjectionResult& operator=(const ProjectionResult&) = delete;
+    };
+
+    using CellScalar = std::function<std::optional<double>(const Cell&)>;
+    using CellWeight = std::function<std::uint64_t(const Cell&)>;
+
+    ProjectionResult projectionLayer(Projection projection,
+                                     const CellScalar& cell_value,
+                                     const CellWeight& cell_samples,
+                                     const std::string& layer_name = "value") const;
 
     /// Pack two 32-bit signed bin indices into a single 64-bit key (used as
     /// the result map's key in the projection helpers).
