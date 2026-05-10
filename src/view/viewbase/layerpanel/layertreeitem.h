@@ -108,7 +108,11 @@ public:
 
     /// Flip hidden state on self, cascade updateHidden() through subtree, emit
     /// `hiddenChangedSignal` via model once at the end (unless suppressed).
-    void setHidden(bool value, bool emit_signal = true);
+    /// Virtual so subclasses can replace the toggle with custom semantics
+    /// (e.g. radio-style single-select). Subclasses overriding this method
+    /// should call the base via `LayerTreeItem::setHidden(...)` for any path
+    /// that should retain the default behaviour.
+    virtual void setHidden(bool value, bool emit_signal = true);
 
     /// Flip all descendants hidden (includes self). Emits once at end.
     void hideSubtree(bool emit_signal = true);

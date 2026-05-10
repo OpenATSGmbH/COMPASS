@@ -33,6 +33,7 @@ class ScatterPlotViewDataSource;
 class Buffer;
 class DBContentRootItem;
 class LayerTreeModel;
+class AnnotationsRootItem;
 class ScatterLeafPayload;
 
 namespace QtCharts 
@@ -143,8 +144,9 @@ private:
     bool x_axis_is_datetime_ = false;
     bool y_axis_is_datetime_ = false;
 
-    DBContentRootItem* db_content_root_{nullptr};   // owned by layer panel model
-    LayerTreeModel*    layer_model_    {nullptr};   // owned by LayerPanelWidget
+    DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
+    LayerTreeModel*      layer_model_      {nullptr};   // owned by LayerPanelWidget
+    AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
 
     std::vector<std::unique_ptr<ScatterLeafPayload>> payloads_;
 

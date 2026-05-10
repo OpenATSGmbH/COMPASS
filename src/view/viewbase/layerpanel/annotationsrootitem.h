@@ -18,14 +18,26 @@
 #pragma once
 
 #include "layertreeitem.h"
+#include "variableview.h"
 
 #include <QIcon>
+
+#include <vector>
 
 /**
  * "Annotations" root item placed as a sibling to the DBContent root in a
  * LayerPanelWidget. Mirrors the Geographic View's Annotations item in name
- * and icon (compass.png). Currently a structural placeholder - no children,
- * visibility toggling is display-only.
+ * and icon (compass.png).
+ *
+ * Children are AnnotationGroupItems (one per PlotMetadata::plot_group_) each
+ * holding a flat list of AnnotationLeafItems. The variable-view annotation
+ * model is consumer-side flat: VariableView::scanViewPointForAnnotations
+ * collapses any nested feature hierarchy into 2 levels keyed by plot_group_.
+ *
+ * Lifecycle: data widgets call update() in response to
+ * VariableView::annotationsChangedSignal. The update routes through
+ * LayerTreeModel::refreshSubtree so expansion / selection elsewhere in the
+ * panel survive.
  */
 class AnnotationsRootItem : public LayerTreeItem
 {
@@ -34,6 +46,16 @@ public:
     ~AnnotationsRootItem() override = default;
 
     QVariant icon() const override;
+
+    /// Rebuild the annotation subtree from the supplied groups. The leaf at
+    /// (current_group_idx, current_anno_idx) starts with hidden_ == false;
+    /// every other leaf starts hidden. Empty groups -> empty subtree.
+    /// `view` is the VariableView passed through to each leaf so radio-style
+    /// activation can call setCurrentAnnotation / showAnnotation.
+    void update(const std::vector<VariableView::AnnotationGroup>& groups,
+                int           current_group_idx,
+                int           current_anno_idx,
+                VariableView* view);
 
 private:
     QIcon icon_;

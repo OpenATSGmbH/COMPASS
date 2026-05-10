@@ -375,6 +375,8 @@ void VariableView::clearAnnotations()
 
     current_annotation_group_idx_ = -1;
     current_annotation_idx_       = -1;
+
+    emit annotationsChangedSignal();
 }
 
 /**
@@ -420,6 +422,8 @@ void VariableView::scanViewPointForAnnotations()
         current_annotation_group_idx_ = 0;
         current_annotation_idx_       = 0;
     }
+
+    emit annotationsChangedSignal();
 }
 
 /**

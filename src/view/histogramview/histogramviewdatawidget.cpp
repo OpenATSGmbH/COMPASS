@@ -32,6 +32,8 @@
 #include "histogramviewdatasource.h"
 #include "histogramviewchartview.h"
 #include "layertreemodel.h"
+#include "viewlayertreemodel.h"
+#include "annotationsrootitem.h"
 #include "logger.h"
 #include "number.h"
 #include "stringconv.h"
@@ -121,6 +123,18 @@ HistogramViewDataWidget::HistogramViewDataWidget(HistogramViewWidget* view_widge
     x_axis_name_ = view_->variable(0).description();
 
     updateChart();
+
+    // Annotations subtree of the layer panel mirrors view_->annotations(); the
+    // panel is wired via attachLayerPanel and may not yet be present at
+    // construction time.
+    connect(view_, &VariableView::annotationsChangedSignal, this, [this]()
+    {
+        if (annotations_root_)
+            annotations_root_->update(view_->annotations(),
+                                      view_->currentAnnotationGroupIdx(),
+                                      view_->currentAnnotationIdx(),
+                                      view_);
+    });
 }
 
 /**
@@ -134,6 +148,9 @@ void HistogramViewDataWidget::attachLayerPanel(DBContentRootItem* root,
 {
     db_content_root_ = root;
     layer_model_     = layer_model;
+
+    if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
+        annotations_root_ = vlm->annotationsRootItem();
 
     // Visibility toggle -> capture the new hidden set, then trigger a full
     // redraw so the histogram is rebuilt without the hidden layers.
@@ -156,6 +173,14 @@ void HistogramViewDataWidget::attachLayerPanel(DBContentRootItem* root,
             });
 
     rebuildLayerTree();
+
+    // Same for annotations: VariableView may have already populated them via
+    // a view point load that fired before attachLayerPanel.
+    if (annotations_root_)
+        annotations_root_->update(view_->annotations(),
+                                  view_->currentAnnotationGroupIdx(),
+                                  view_->currentAnnotationIdx(),
+                                  view_);
 }
 
 /**

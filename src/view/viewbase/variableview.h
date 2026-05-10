@@ -33,6 +33,15 @@ class ViewableDataConfig;
 */
 class VariableView : public View
 {
+    Q_OBJECT
+
+signals:
+    /// Emitted whenever annotations_ is repopulated or cleared. Subscribers
+    /// (e.g. data widgets) refresh the annotations subtree of their layer
+    /// panel from annotations() / currentAnnotationGroupIdx() /
+    /// currentAnnotationIdx().
+    void annotationsChangedSignal();
+
 public:
     struct Annotation
     {

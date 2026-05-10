@@ -37,6 +37,7 @@ class Grid2D;
 class ColorLegendWidget;
 class DBContentRootItem;
 class LayerTreeModel;
+class AnnotationsRootItem;
 class GridLeafPayload;
 
 namespace QtCharts
@@ -175,8 +176,9 @@ private:
     std::string  y_axis_name_;
     std::string  title_;
 
-    DBContentRootItem* db_content_root_{nullptr};   // owned by layer panel model
-    LayerTreeModel*    layer_model_    {nullptr};   // owned by LayerPanelWidget
+    DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
+    LayerTreeModel*      layer_model_      {nullptr};   // owned by LayerPanelWidget
+    AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
 
     std::vector<std::unique_ptr<GridLeafPayload>> payloads_;
 

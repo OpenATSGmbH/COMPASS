@@ -34,6 +34,8 @@
 #include "scatterleafpayload.h"
 #include "dbcontentlayer.h"
 #include "layertreemodel.h"
+#include "viewlayertreemodel.h"
+#include "annotationsrootitem.h"
 #include "logger.h"
 #include "property_templates.h"
 #include "timeconv.h"
@@ -102,6 +104,18 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
     // attachLayerPanel(); color-mode redraw is connected here independently.
     connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
             this, [this](unsigned int /*mode*/) { redrawData(true); });
+
+    // Annotations subtree of the layer panel mirrors view_->annotations(); the
+    // panel is wired via attachLayerPanel and may not yet be present at
+    // construction time.
+    connect(view_, &VariableView::annotationsChangedSignal, this, [this]()
+    {
+        if (annotations_root_)
+            annotations_root_->update(view_->annotations(),
+                                      view_->currentAnnotationGroupIdx(),
+                                      view_->currentAnnotationIdx(),
+                                      view_);
+    });
 }
 
 /**
@@ -137,9 +151,20 @@ void ScatterPlotViewDataWidget::attachLayerPanel(DBContentRootItem* root,
     db_content_root_ = root;
     layer_model_     = layer_model;
 
+    if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
+        annotations_root_ = vlm->annotationsRootItem();
+
     // If scatter_series_ was already populated before the panel was attached,
     // push it into the tree now so the UI matches reality.
     rebuildLayerTree();
+
+    // Same for annotations: VariableView may have already populated them via
+    // a view point load that fired before attachLayerPanel.
+    if (annotations_root_)
+        annotations_root_->update(view_->annotations(),
+                                  view_->currentAnnotationGroupIdx(),
+                                  view_->currentAnnotationIdx(),
+                                  view_);
 }
 
 /**
