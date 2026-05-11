@@ -261,8 +261,13 @@ TargetReport3DGrid::projectionLayer(Projection projection,
 
     // 3. Determine continuous bounds and per-axis cell sizes.
     double x_size = 0.0, y_size = 0.0;
-    std::string srs    = "wgs84";
-    bool        is_geo = (projection == Projection::Horizontal);
+    std::string srs = "wgs84";
+    // `srs_is_north_up` is misnamed in the raster pipeline: it controls the y
+    // flip in Grid2DLayerRenderer, which lays out pixel-row 0 at the painter
+    // top. The chart draws image-top at the larger-y end of the y axis, so
+    // setting this to true (= flip) is what produces "larger y at the top",
+    // which is what we want for both latitude and altitude.
+    const bool srs_is_north_up = true;
 
     switch (projection)
     {
@@ -299,7 +304,7 @@ TargetReport3DGrid::projectionLayer(Projection projection,
     if (!grid.create(roi,
                      grid2d::GridResolution().setCellCount(nx, ny),
                      srs,
-                     /*srs_is_north_up*/ is_geo))
+                     srs_is_north_up))
         return out;
 
     std::vector<double> values;

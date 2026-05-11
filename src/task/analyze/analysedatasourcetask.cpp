@@ -31,6 +31,7 @@
 #endif
 
 #include "compass.h"
+#include "mainwindow.h"
 #include "taskmanager.h"
 #include "db_context_manager.h"
 #include "data_source.h"
@@ -716,4 +717,9 @@ void AnalyseDataSourceTask::run()
 
     done_ = true;
     emit doneSignal();
+
+    // Mirror the evaluation flow: switch to the Task Results tool and show
+    // the freshly written report so the user lands on it without an extra
+    // click. See MainWindow::showResult / showEvaluationResult.
+    compass().mainWindow().showResult(result_name);
 }

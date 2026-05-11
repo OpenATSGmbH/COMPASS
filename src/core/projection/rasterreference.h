@@ -167,6 +167,12 @@ struct RasterReference
     double      img_origin_y;         // y-coordinate of the left-upper corner of the image
     double      img_pixel_size_x;     // width of a pixel in srs units
     double      img_pixel_size_y;     // height of a pixel in srs units
-    bool        is_north_up = true;   // is the srs north-up (most likely)
+    // Despite the geographic-flavoured name, this flag controls the y-flip in
+    // Grid2DLayerRenderer / consumers: when true, image pixel-row 0 is the
+    // largest data y (chart-top / north); when false, image pixel-row 0 is the
+    // smallest data y. Use true for any axis where larger y belongs at the top
+    // of the rendered output - that includes barometric altitude on the
+    // non-geographic GridView projections, not only WGS-84 latitude.
+    bool        is_north_up = true;
     bool        srs_is_wkt = false;   // if true the srs name can directly be interpreted as a wkt string
 };

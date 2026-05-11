@@ -19,6 +19,7 @@
 
 #include "variableviewstashdatawidget.h"
 #include "grid2dlayer.h"
+#include "grid2drendersettings.h"
 #include "colormap.h"
 
 #include <memory>
@@ -175,6 +176,11 @@ private:
     std::string  x_axis_name_;
     std::string  y_axis_name_;
     std::string  title_;
+
+    /// Render settings declared inside the currently shown annotation's
+    /// `render_settings` block. When present they override the view's own
+    /// min/max/colour-scale settings for the duration of the annotation.
+    boost::optional<Grid2DRenderSettings> annotation_render_settings_;
 
     DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
     LayerTreeModel*      layer_model_      {nullptr};   // owned by LayerPanelWidget

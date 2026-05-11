@@ -165,6 +165,7 @@ void GridViewDataWidget::resetStashDependentData()
 {
     resetGrid();
     resetGridLayers();
+    annotation_render_settings_.reset();
 
     // NOTE: payloads_ intentionally not cleared here. The layer tree's
     // DBContentLeafItems hold raw pointers into these payloads and outlive
@@ -526,6 +527,16 @@ bool GridViewDataWidget::updateFromAnnotations()
         traced_assert(grid_value_min_.value() <= grid_value_max_.value());
     }
 
+    annotation_render_settings_.reset();
+    if (feature.contains(ViewPointGenFeatureGrid::FeatureGridFieldNameRenderSettings))
+    {
+        Grid2DRenderSettings rs;
+        if (rs.fromJSON(feature[ ViewPointGenFeatureGrid::FeatureGridFieldNameRenderSettings ]))
+            annotation_render_settings_ = rs;
+        else
+            logwrn << "render_settings present but unparseable; ignored";
+    }
+
     loginf << "done, generated " << grid_layers_.numLayers() << " layers";
 
     return true;
@@ -741,9 +752,17 @@ void GridViewDataWidget::updateRendering()
         //combine data range with user override range
         std::pair<double, double> range(grid_value_min_.value(), grid_value_max_.value());
 
-        auto vmin = view_->getMinValue();
-        auto vmax = view_->getMaxValue();
-        
+        //annotation-provided min/max take priority over view UI min/max
+        boost::optional<double> ann_min, ann_max;
+        if (annotation_render_settings_.has_value())
+        {
+            ann_min = annotation_render_settings_->min_value;
+            ann_max = annotation_render_settings_->max_value;
+        }
+
+        auto vmin = ann_min.has_value() ? ann_min : view_->getMinValue();
+        auto vmax = ann_max.has_value() ? ann_max : view_->getMaxValue();
+
         if (vmin.has_value() || vmax.has_value())
         {
             if (vmin.has_value() && vmax.has_value() && vmin.value() <= vmax.value())
@@ -774,11 +793,27 @@ void GridViewDataWidget::updateRendering()
 
         auto dtype = view_->currentLegendDataType();
 
-        //derive suggested number of color steps from ui value
-        size_t num_steps = property_templates::suggestedNumColorSteps(dtype, 
-                                                                      range.first, 
-                                                                      range.second, 
-                                                                      settings.render_color_num_steps);
+        //colour scale: annotation override -> view setting
+        int active_color_scale = settings.render_color_scale;
+        if (annotation_render_settings_.has_value()
+            && annotation_render_settings_->color_map.valid())
+        {
+            active_color_scale = static_cast<int>(
+                annotation_render_settings_->color_map.colorScale());
+        }
+
+        //number of colour steps: annotation override -> derived from ui
+        size_t num_steps = 0;
+        if (annotation_render_settings_.has_value()
+            && annotation_render_settings_->color_map.valid())
+        {
+            num_steps = annotation_render_settings_->color_map.colorSteps();
+        }
+        else
+        {
+            num_steps = property_templates::suggestedNumColorSteps(
+                dtype, range.first, range.second, settings.render_color_num_steps);
+        }
 
         loginf << "suggested color steps = " << num_steps;
 
@@ -786,7 +821,7 @@ void GridViewDataWidget::updateRendering()
         if (num_steps == 1)
         {
             //single value
-            render_settings.color_map.create((colorscale::ColorScale)settings.render_color_scale,
+            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
                                             1,
                                             ColorMap::Type::LinearSamples,
                                             range);
@@ -794,7 +829,7 @@ void GridViewDataWidget::updateRendering()
         else if (num_steps == 2)
         {
             //binary
-            render_settings.color_map.create((colorscale::ColorScale)settings.render_color_scale,
+            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
                                             2,
                                             ColorMap::Type::Binary,
                                             range);
@@ -802,7 +837,7 @@ void GridViewDataWidget::updateRendering()
         else if (num_steps > 0)
         {
             //multi-value
-            render_settings.color_map.create((colorscale::ColorScale)settings.render_color_scale,
+            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
                                             num_steps,
                                             ColorMap::Type::LinearSamples,
                                             range);

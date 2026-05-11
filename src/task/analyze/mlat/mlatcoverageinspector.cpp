@@ -34,6 +34,7 @@
 #include "grid2dlayerrenderer.h"
 #include "grid2drendersettings.h"
 #include "colormap.h"
+#include "colorlegend.h"
 
 #include "viewpointgenerator.h"
 #include "plotmetadata.h"
@@ -127,17 +128,6 @@ ptime addSeconds(ptime t, double s)
     return t + boost::posix_time::microseconds(us);
 }
 
-void logRAM(const std::string& tag)
-{
-    loginf << "RAM [Sensor Coverage / " << tag << "] process "
-           << Utils::String::doubleToStringPrecision(
-                  Utils::System::getProcessRAMinGB(), 2)
-           << " GB free "
-           << Utils::String::doubleToStringPrecision(
-                  Utils::System::getFreeRAMinGB(), 2)
-           << " GB";
-}
-
 double percentile(std::vector<double> v, double p)
 {
     if (v.empty())
@@ -170,8 +160,13 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
 
     auto& settings = static_cast<MLATCoverageInspectorSettings&>(settings_);
 
+    if (!dataset->hasPositionExtent())
+    {
+        logwrn << "MLATCoverageInspector: dataset has no reference positions, skipping";
+        return;
+    }
+
     double ref_lat = dataset->centreLatitudeDeg();
-    if (ref_lat == 0.0) ref_lat = 47.0;
 
     auto sizing = task_.clampedCellSizes(*dataset);
     if (sizing.horizontal_clamped || sizing.vertical_clamped)
@@ -187,26 +182,16 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     grid_.reset(new TargetReport3DGrid(sizing.cell_size_m, sizing.cell_size_ft, ref_lat));
     auto& grid = *grid_;
 
-    logRAM("compute begin");
-
     time_duration d_max = boost::posix_time::seconds(60);
 
     unsigned int targets_walked = 0;
     unsigned int targets_no_ref = 0;
     unsigned int targets_no_tst = 0;
-    unsigned int targets_seen   = 0;
 
     const auto utns = dataset->utns();
-    const std::size_t total_utns = utns.size();
-    const std::size_t log_every  = std::max<std::size_t>(1, total_utns / 20); // ~20 ticks
 
     for (auto utn : utns)
     {
-        ++targets_seen;
-        if (targets_seen == 1 || targets_seen % log_every == 0 || targets_seen == total_utns)
-            logRAM("compute target " + std::to_string(targets_seen)
-                   + "/" + std::to_string(total_utns)
-                   + " grid_cells " + std::to_string(grid.numCells()));
         if (!dataset->hasReferenceChain(utn))
         {
             ++targets_no_ref;
@@ -289,11 +274,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         }
     }
 
-    logRAM("compute target loop done, grid_cells " + std::to_string(grid.numCells()));
-
     auto horizontal = grid.projectHorizontal();
-    logRAM("compute after projectHorizontal, horizontal_cells "
-           + std::to_string(horizontal.size()));
     std::uint64_t total_eui = 0, total_mui = 0;
     double worst_pd = 1.0;
     bool   worst_set = false;
@@ -357,8 +338,15 @@ void attachPDFigure(ResultReport::Section& section,
     if (!proj.valid || !proj.layer)
         return;
 
+    // Three discrete colour bands so unacceptable / orange-between /
+    // acceptable map directly to the three render colours. The explicit value
+    // range on the colour map is required for colorLegend() to emit entries.
+    const std::pair<double, double> range(settings.pd_unacceptable_below_,
+                                          settings.pd_acceptable_above_);
+
     Grid2DRenderSettings rs;
-    rs.color_map.create(ColorMap::ColorScale::Red2Green, 10);
+    rs.color_map.create(ColorMap::ColorScale::Red2Green, 3,
+                        ColorMap::Type::LinearSamples, range);
     rs.min_value = settings.pd_unacceptable_below_;
     rs.max_value = settings.pd_acceptable_above_;
 
@@ -376,7 +364,19 @@ void attachPDFigure(ResultReport::Section& section,
     if (proj.x_axis_label == "Longitude (deg)" && proj.y_axis_label == "Latitude (deg)")
     {
         auto rendered = Grid2DLayerRenderer::render(*proj.layer, rs);
-        anno->addFeature(new ViewPointGenFeatureGeoImage(rendered.first, rendered.second));
+
+        // Reverse so the colour-map's "good" end (green for PD) ends up at the
+        // top of the legend tree, matching operator expectation.
+        auto raw = rs.color_map.colorLegend(
+            /*add_sel_color=*/false,
+            /*add_null_color=*/false,
+            [](double v) { return Utils::String::doubleToStringPrecision(v, 2); });
+        ColorLegend legend;
+        const auto& entries = raw.entries();
+        for (auto it = entries.rbegin(); it != entries.rend(); ++it)
+            legend.addEntry(it->first, it->second);
+
+        anno->addFeature(new ViewPointGenFeatureGeoImage(rendered.first, rendered.second, legend));
     }
     else
     {
@@ -449,26 +449,18 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
 
     if (grid_)
     {
-        logRAM("writeReport before projections, grid_cells "
-               + std::to_string(grid_->numCells()));
-
         auto horiz  = grid_->projectionLayer(TargetReport3DGrid::Projection::Horizontal,
                                              pdScalar, pdSampleCount, "pd");
-        logRAM("writeReport after Horizontal projection");
 
         auto altlon = grid_->projectionLayer(TargetReport3DGrid::Projection::AltLon,
                                              pdScalar, pdSampleCount, "pd");
-        logRAM("writeReport after AltLon projection");
 
         auto altlat = grid_->projectionLayer(TargetReport3DGrid::Projection::AltLat,
                                              pdScalar, pdSampleCount, "pd");
-        logRAM("writeReport after AltLat projection");
 
         attachPDFigure(section, "PD - Horizontal",         horiz,  settings);
         attachPDFigure(section, "PD - Altitude/Longitude", altlon, settings);
         attachPDFigure(section, "PD - Altitude/Latitude",  altlat, settings);
-
-        logRAM("writeReport after attaching figures");
     }
 
     loginf << "MLATCoverageInspector: walked " << result_.targets_walked << " target(s), "

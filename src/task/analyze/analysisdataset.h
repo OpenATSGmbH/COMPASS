@@ -118,6 +118,10 @@ public:
     /// degree/metre conversion in the 3D grid). 0.0 if unknown.
     double centreLatitudeDeg() const { return centre_lat_deg_; }
 
+    /// True when at least one reference position was loaded, i.e. the
+    /// lat/lon/centre values are derived from real data.
+    bool hasPositionExtent() const { return has_position_extent_; }
+
     /// Bounds of the loaded data (latitude / longitude). Both default-constructed
     /// when no positions were loaded.
     double minLatitudeDeg() const { return min_lat_; }
