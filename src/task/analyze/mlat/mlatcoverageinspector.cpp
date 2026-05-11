@@ -30,6 +30,8 @@
 #include "targetposition.h"
 #include "dbcontent/target/targetreportchain.h"
 
+#include "eval/requirement/detection/detection_pd_helpers.h"
+
 #include "grid2dlayer.h"
 #include "grid2dlayerrenderer.h"
 #include "grid2drendersettings.h"
@@ -52,7 +54,6 @@
 
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
-using dbContent::TargetReport::Chain;
 
 MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& config_json,
                                                              Configurable* parent)
@@ -63,6 +64,8 @@ MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& con
 
     registerParameter("use_miss_tolerance", &use_miss_tolerance_, use_miss_tolerance_);
     registerParameter("miss_tolerance_s",   &miss_tolerance_s_,   miss_tolerance_s_);
+
+    registerParameter("ref_max_time_diff_s", &ref_max_time_diff_s_, ref_max_time_diff_s_);
 
     registerParameter("pd_acceptable_above",   &pd_acceptable_above_,   pd_acceptable_above_);
     registerParameter("pd_unacceptable_below", &pd_unacceptable_below_, pd_unacceptable_below_);
@@ -96,25 +99,19 @@ bool MLATCoverageInspector::prerequisitesMet(std::string& reason_out) const
 namespace
 {
 using Settings = MLATCoverageInspectorSettings;
+using EvaluationRequirement::PDHelpers::MissTestParams;
+using EvaluationRequirement::PDHelpers::RefPeriod;
 
-bool gapIsMiss(double gap_s, const Settings& s)
+MissTestParams missParamsFromSettings(const Settings& s)
 {
-    double adj = gap_s;
-    if (s.use_miss_tolerance_)
-        adj -= s.miss_tolerance_s_;
-    if (adj <= s.update_interval_s_)
-        return false;
-    return true;
-}
-
-std::uint32_t numMissesIn(double gap_s, const Settings& s)
-{
-    double adj = gap_s;
-    if (s.use_miss_tolerance_)
-        adj -= s.miss_tolerance_s_;
-    if (adj <= 0.0 || s.update_interval_s_ <= 0.0)
-        return 0;
-    return static_cast<std::uint32_t>(std::floor(adj / s.update_interval_s_));
+    MissTestParams p;
+    p.update_interval_s  = s.update_interval_s_;
+    p.use_miss_tolerance = s.use_miss_tolerance_;
+    p.miss_tolerance_s   = s.miss_tolerance_s_;
+    // min/max gap filters not exposed on the inspector: the dataset
+    // already restricts the load to selected sources, so out-of-coverage
+    // gating from the detection requirement is not needed here.
+    return p;
 }
 
 double partialSeconds(const time_duration& d)
@@ -126,6 +123,12 @@ ptime addSeconds(ptime t, double s)
 {
     long long us = static_cast<long long>(std::llround(s * 1.0e6));
     return t + boost::posix_time::microseconds(us);
+}
+
+time_duration durationFromSeconds(double s)
+{
+    long long us = static_cast<long long>(std::llround(s * 1.0e6));
+    return boost::posix_time::microseconds(us);
 }
 
 double percentile(std::vector<double> v, double p)
@@ -147,6 +150,113 @@ std::string formatNumber(double v, int prec = 4)
     std::ostringstream os;
     os << std::fixed << std::setprecision(prec) << v;
     return os.str();
+}
+
+// Gather and sort all test timestamps for `utn` across the test dbcontents
+// present in the dataset.
+std::vector<ptime> gatherTestTimestamps(unsigned int utn,
+                                        AnalysisDataset& dataset)
+{
+    std::vector<ptime> out;
+    for (const auto& dbc : dataset.testDbContentsPresent())
+    {
+        if (!dataset.hasTestChain(utn, dbc))
+            continue;
+        auto& chain = dataset.testChain(utn, dbc);
+        for (const auto& kv : chain.timestampIndexes())
+            out.push_back(kv.first);
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+// Time-difference walk per target.
+//
+// For each reference period:
+//   - attribute one #EUI per UI slot, at the cell of the reference position
+//     at slot timestamp `period.begin + k * UI`;
+//   - walk the test timestamps that fall inside `[period.begin, period.end]`
+//     and form gaps (period.begin -> first test, between consecutive tests,
+//     last test -> period.end; or `period` itself when no tests are inside);
+//   - for each gap that passes the miss test, attribute one #MUI per missed
+//     UI slot at the cell of the reference position at the slot timestamp.
+//
+// Both per-cell counters live on `grid`; the caller aggregates them.
+void walkTargetTimeDifference(unsigned int utn,
+                              const std::vector<RefPeriod>& periods,
+                              const std::vector<ptime>& tst_ts_sorted,
+                              AnalysisDataset& dataset,
+                              TargetReport3DGrid& grid,
+                              const Settings& settings)
+{
+    const auto miss_params = missParamsFromSettings(settings);
+
+    const time_duration d_max = boost::posix_time::seconds(60);
+
+    for (const auto& period : periods)
+    {
+        const double period_s = partialSeconds(period.end - period.begin);
+        if (period_s <= 0.0 || settings.update_interval_s_ <= 0.0f)
+            continue;
+
+        const unsigned int n_slots = static_cast<unsigned int>(
+            std::floor(period_s / settings.update_interval_s_));
+
+        for (unsigned int k = 0; k < n_slots; ++k)
+        {
+            ptime t_slot = addSeconds(period.begin,
+                                      k * settings.update_interval_s_);
+            auto pos = dataset.mappedRefPos(utn, t_slot, d_max);
+            if (!pos.has_value())
+                continue;
+            double alt_ft = pos->has_altitude_
+                              ? static_cast<double>(pos->altitude_) : 0.0;
+            grid.addEUI(pos->latitude_, pos->longitude_, alt_ft);
+        }
+
+        // Test timestamps inside [period.begin, period.end].
+        auto first = std::lower_bound(tst_ts_sorted.begin(),
+                                      tst_ts_sorted.end(), period.begin);
+        auto last  = std::upper_bound(tst_ts_sorted.begin(),
+                                      tst_ts_sorted.end(), period.end);
+
+        std::vector<ptime> walk;
+        walk.reserve(static_cast<std::size_t>(std::distance(first, last)) + 2);
+        walk.push_back(period.begin);
+        for (auto it = first; it != last; ++it)
+            walk.push_back(*it);
+        walk.push_back(period.end);
+
+        for (std::size_t i = 0; i + 1 < walk.size(); ++i)
+        {
+            ptime gap_start = walk[i];
+            ptime gap_end   = walk[i + 1];
+            if (gap_end <= gap_start)
+                continue;
+            const float gap_s =
+                static_cast<float>(partialSeconds(gap_end - gap_start));
+
+            if (!EvaluationRequirement::PDHelpers::isMiss(gap_s, miss_params))
+                continue;
+
+            const unsigned int n_misses =
+                EvaluationRequirement::PDHelpers::numMisses(gap_s, miss_params);
+
+            for (unsigned int m = 0; m < n_misses; ++m)
+            {
+                ptime t_miss = addSeconds(gap_start,
+                                          (m + 1) * settings.update_interval_s_);
+                if (t_miss >= gap_end)
+                    break;
+                auto pos = dataset.mappedRefPos(utn, t_miss, d_max);
+                if (!pos.has_value())
+                    continue;
+                double alt_ft = pos->has_altitude_
+                                  ? static_cast<double>(pos->altitude_) : 0.0;
+                grid.addMUI(pos->latitude_, pos->longitude_, alt_ft);
+            }
+        }
+    }
 }
 }
 
@@ -182,7 +292,19 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     grid_.reset(new TargetReport3DGrid(sizing.cell_size_m, sizing.cell_size_ft, ref_lat));
     auto& grid = *grid_;
 
-    time_duration d_max = boost::posix_time::seconds(60);
+    // The status-message-based variant is not implemented yet; it falls back
+    // to time-difference here, as documented in readme_analysis_mlat_ru.md
+    // ("CAT019 period-based variant").
+    if (settings.pdMethod() ==
+        MLATCoverageInspectorSettings::PDMethod::StatusPeriodMessage)
+    {
+        logwrn << "MLATCoverageInspector: Status-Period-Message PD method not"
+               << " implemented, falling back to Time-Difference";
+    }
+
+    const time_duration ref_max_gap =
+        durationFromSeconds(settings.ref_max_time_diff_s_);
+    const time_duration min_period_duration = boost::posix_time::seconds(1);
 
     unsigned int targets_walked = 0;
     unsigned int targets_no_ref = 0;
@@ -197,81 +319,33 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
             ++targets_no_ref;
             continue;
         }
-
-        std::set<ptime> tst_timestamps;
-        for (const auto& dbc : dataset->testDbContentsPresent())
-        {
-            if (!dataset->hasTestChain(utn, dbc))
-                continue;
-            const auto& tst_chain = dataset->testChain(utn, dbc);
-            for (const auto& kv : tst_chain.timestampIndexes())
-                tst_timestamps.insert(kv.first);
-        }
-        if (tst_timestamps.empty())
-        {
-            ++targets_no_tst;
-            continue;
-        }
-
         auto& ref_chain = dataset->referenceChain(utn);
         if (!ref_chain.hasData())
+        {
+            ++targets_no_ref;
             continue;
+        }
 
-        ptime t_begin = ref_chain.timeBegin();
-        ptime t_end   = ref_chain.timeEnd();
-        if (t_begin.is_not_a_date_time() || t_end.is_not_a_date_time() || t_end <= t_begin)
-            continue;
+        std::set<ptime> ref_ts;
+        for (const auto& kv : ref_chain.timestampIndexes())
+            ref_ts.insert(kv.first);
 
-        double duration_s = partialSeconds(t_end - t_begin);
-        unsigned int n_slots = static_cast<unsigned int>(
-            std::floor(duration_s / settings.update_interval_s_));
-        if (n_slots == 0)
+        auto periods = EvaluationRequirement::PDHelpers::buildReferencePeriods(
+            ref_ts, ref_max_gap, min_period_duration);
+        if (periods.empty())
+        {
+            ++targets_no_ref;
             continue;
+        }
+
+        auto tst_ts_sorted = gatherTestTimestamps(utn, *dataset);
+        if (tst_ts_sorted.empty())
+            ++targets_no_tst;
 
         ++targets_walked;
 
-        for (unsigned int k = 0; k < n_slots; ++k)
-        {
-            ptime t_slot = addSeconds(t_begin, k * settings.update_interval_s_);
-            auto pos = dataset->mappedRefPos(utn, t_slot, d_max);
-            if (!pos.has_value())
-                continue;
-            double alt_ft = pos->has_altitude_ ? static_cast<double>(pos->altitude_) : 0.0;
-            grid.addEUI(pos->latitude_, pos->longitude_, alt_ft);
-        }
-
-        std::vector<ptime> walk_points;
-        walk_points.reserve(tst_timestamps.size() + 2);
-        walk_points.push_back(t_begin);
-        for (auto ts : tst_timestamps)
-            if (ts > t_begin && ts < t_end)
-                walk_points.push_back(ts);
-        walk_points.push_back(t_end);
-
-        for (std::size_t i = 0; i + 1 < walk_points.size(); ++i)
-        {
-            ptime gap_start = walk_points[i];
-            ptime gap_end   = walk_points[i + 1];
-            if (gap_end <= gap_start)
-                continue;
-            double gap_s = partialSeconds(gap_end - gap_start);
-
-            if (!gapIsMiss(gap_s, settings))
-                continue;
-
-            std::uint32_t n_misses = numMissesIn(gap_s, settings);
-            for (std::uint32_t m = 0; m < n_misses; ++m)
-            {
-                ptime t_miss = addSeconds(gap_start, (m + 1) * settings.update_interval_s_);
-                if (t_miss >= gap_end)
-                    break;
-                auto pos = dataset->mappedRefPos(utn, t_miss, d_max);
-                if (!pos.has_value())
-                    continue;
-                double alt_ft = pos->has_altitude_ ? static_cast<double>(pos->altitude_) : 0.0;
-                grid.addMUI(pos->latitude_, pos->longitude_, alt_ft);
-            }
-        }
+        walkTargetTimeDifference(utn, periods, tst_ts_sorted,
+                                 *dataset, grid, settings);
     }
 
     auto horizontal = grid.projectHorizontal();
@@ -411,6 +485,11 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
         std::ostringstream os;
         os << settings.miss_tolerance_s_ << " s";
         recap.addRow({"Miss tolerance", os.str()});
+    }
+    {
+        std::ostringstream os;
+        os << settings.ref_max_time_diff_s_ << " s";
+        recap.addRow({"Reference period split threshold", os.str()});
     }
     {
         std::ostringstream os;

@@ -46,6 +46,11 @@ public:
     bool  use_miss_tolerance_ = true;
     float miss_tolerance_s_   = 0.1f;
 
+    // Reference-period construction: a gap larger than this in the loaded
+    // reference chain starts a new period. Mirrors the per-standard
+    // `referenceMaxTimeDiff()` used by the detection requirement.
+    float ref_max_time_diff_s_ = 4.0f;
+
     // PD color thresholds: green at/above acceptable, red at/below unacceptable,
     // orange in between. Values are PD ratios (0..1).
     float pd_acceptable_above_    = 0.95f;

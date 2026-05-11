@@ -30,5 +30,7 @@ if(EXPERIMENTAL_SRC)
         PRIVATE
             "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat/mlataccuracyinspector.h"
             "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat/mlataccuracyinspector.cpp"
+            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat/mlatrucoverageinspector.h"
+            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat/mlatrucoverageinspector.cpp"
     )
 endif()

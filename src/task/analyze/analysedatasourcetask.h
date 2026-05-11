@@ -42,6 +42,7 @@ class MLATCoverageInspectorSettings;
 
 #if USE_EXPERIMENTAL_SOURCE == true
 class MLATAccuracyInspectorSettings;
+class MLATRUCoverageInspectorSettings;
 #endif
 
 namespace ResultReport { class Section; }
@@ -147,7 +148,8 @@ public:
     MLATCoverageInspectorSettings& coverageSettings()  const;
 
 #if USE_EXPERIMENTAL_SOURCE == true
-    MLATAccuracyInspectorSettings& accuracySettings() const;
+    MLATAccuracyInspectorSettings&   accuracySettings()   const;
+    MLATRUCoverageInspectorSettings& ruCoverageSettings() const;
 #endif
 
     /// True if the active license enables Professional features.
@@ -180,7 +182,8 @@ private:
     std::unique_ptr<MLATCoverageInspectorSettings> coverage_settings_;
 
 #if USE_EXPERIMENTAL_SOURCE == true
-    std::unique_ptr<MLATAccuracyInspectorSettings> accuracy_settings_;
+    std::unique_ptr<MLATAccuracyInspectorSettings>   accuracy_settings_;
+    std::unique_ptr<MLATRUCoverageInspectorSettings> ru_coverage_settings_;
 #endif
 
     std::vector<std::unique_ptr<DataSourceInspectorBase>> inspectors_;

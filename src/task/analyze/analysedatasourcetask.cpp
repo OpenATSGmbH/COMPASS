@@ -28,6 +28,7 @@
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "mlataccuracyinspector.h"
+#include "mlatrucoverageinspector.h"
 #endif
 
 #include "compass.h"
@@ -110,6 +111,12 @@ void AnalyseDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
         accuracy_settings_.reset(new MLATAccuracyInspectorSettings(child_json, this));
         traced_assert(accuracy_settings_);
     }
+    else if (class_name == "MLATRUCoverageInspectorSettings")
+    {
+        traced_assert(!ru_coverage_settings_);
+        ru_coverage_settings_.reset(new MLATRUCoverageInspectorSettings(child_json, this));
+        traced_assert(ru_coverage_settings_);
+    }
 #endif
     else
     {
@@ -135,6 +142,11 @@ void AnalyseDataSourceTask::checkSubConfigurables()
         generateSubConfigurableFromConfig("MLATAccuracyInspectorSettings",
                                           "MLATAccuracyInspectorSettings0");
     traced_assert(accuracy_settings_);
+
+    if (!ru_coverage_settings_)
+        generateSubConfigurableFromConfig("MLATRUCoverageInspectorSettings",
+                                          "MLATRUCoverageInspectorSettings0");
+    traced_assert(ru_coverage_settings_);
 #endif
 }
 
@@ -152,6 +164,7 @@ void AnalyseDataSourceTask::registerInspectors()
 
 #if USE_EXPERIMENTAL_SOURCE == true
     inspectors_.emplace_back(new MLATAccuracyInspector(*this, *accuracy_settings_));
+    inspectors_.emplace_back(new MLATRUCoverageInspector(*this, *ru_coverage_settings_));
 #endif
 }
 
@@ -434,6 +447,12 @@ MLATAccuracyInspectorSettings& AnalyseDataSourceTask::accuracySettings() const
     traced_assert(accuracy_settings_);
     return *accuracy_settings_;
 }
+
+MLATRUCoverageInspectorSettings& AnalyseDataSourceTask::ruCoverageSettings() const
+{
+    traced_assert(ru_coverage_settings_);
+    return *ru_coverage_settings_;
+}
 #endif
 
 bool AnalyseDataSourceTask::professionalLicenseEnabled() const
@@ -466,23 +485,39 @@ void AnalyseDataSourceTask::showDialog()
 bool AnalyseDataSourceTask::canRun()
 {
     if (selectedDataSourceIDs().empty())
+    {
+        loginf << "no test data source selected";
         return false;
+    }
 
     if (selectedReferenceDataSourceIDs().empty())
+    {
+        loginf << "no reference data source selected";
         return false;
+    }
 
     bool any_enabled = false;
     for (const auto& ins : inspectors_)
     {
         if (!inspectorEnabled(ins->className()))
+        {
+            loginf << "inspector '" << ins->className() << "' not enabled";
             continue;
+        }
 
         std::string reason;
         if (!ins->prerequisitesMet(reason))
+        {
+            loginf << "inspector '" << ins->className()
+                   << "' prerequisites not met: " << reason;
             return false;
+        }
 
+        loginf << "inspector '" << ins->className() << "' OK";
         any_enabled = true;
     }
+    if (!any_enabled)
+        loginf << "no inspector enabled";
     return any_enabled;
 }
 

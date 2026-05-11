@@ -11,6 +11,7 @@ set_target_properties(compass_tests PROPERTIES AUTOMOC OFF)
 include("${CMAKE_SOURCE_DIR}/src/config/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/core/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/core/context/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/eval/requirement/detection/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/filter/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/gui/unit_tests/CMakeLists.txt")
 
