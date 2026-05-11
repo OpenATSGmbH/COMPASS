@@ -55,6 +55,10 @@ signals:
     void hiddenChangedSignal();
     void colorChangedSignal();
     void modelChangedSignal();
+    /// Emitted at the end of refreshSubtree() with the parent whose children
+    /// were just rebuilt. Lets panel-level code (re-)apply expansion or other
+    /// view state without having to subscribe to begin/endInsertRows manually.
+    void subtreeRefreshedSignal(LayerTreeItem* parent);
 
 public:
     enum DataRole

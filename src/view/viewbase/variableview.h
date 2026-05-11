@@ -124,11 +124,11 @@ private:
 
     void clearAnnotations();
     void scanViewPointForAnnotations();
-    void onShowAnnotationChanged(bool update_config_widget);
+    void onShowAnnotationChanged();
     void onEvalResultsChanged();
 
-    void showVariables(bool force, bool update_config);
-    void showAnnotation(bool force, bool update_config);
+    void showVariables(bool force);
+    void showAnnotation(bool force);
 
     std::vector<std::unique_ptr<ViewVariable>> variables_;
 

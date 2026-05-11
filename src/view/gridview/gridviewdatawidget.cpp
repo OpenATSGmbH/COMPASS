@@ -435,6 +435,16 @@ void GridViewDataWidget::layersChangedSlot()
     if (in_layer_recompute_)
         return;
 
+    // Annotation mode: hiddenChangedSignal here originates from the
+    // annotations subtree's radio activation (AnnotationLeafItem). The
+    // activation already triggered a full redraw via setCurrentAnnotation ->
+    // onShowAnnotationChanged -> redrawData(true), which repopulated
+    // grid_layers_ from the new annotation. Running buildGridFromStash() now
+    // would wipe that grid by trying to rebuild from the (possibly empty)
+    // variable stash, leaving the chart blank.
+    if (view_->showsAnnotation())
+        return;
+
     in_layer_recompute_ = true;
 
     if (layer_model_)

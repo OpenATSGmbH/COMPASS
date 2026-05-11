@@ -50,7 +50,12 @@ void AnnotationsRootItem::update(const std::vector<VariableView::AnnotationGroup
         {
             const auto& group = groups[g];
 
-            auto group_item = std::make_unique<AnnotationGroupItem>(group.name);
+            // Build the leaves for this group up front; they go either under
+            // a named group item, or - when the group name is empty - directly
+            // under the AnnotationsRootItem so the user does not see a blank
+            // intermediate row for the "no plot_group" case.
+            std::vector<std::unique_ptr<LayerTreeItem>> leaves;
+            leaves.reserve(group.annotations.size());
 
             for (int a = 0; a < (int)group.annotations.size(); ++a)
             {
@@ -62,10 +67,21 @@ void AnnotationsRootItem::update(const std::vector<VariableView::AnnotationGroup
                 const bool is_active = (g == current_group_idx && a == current_anno_idx);
                 leaf->LayerTreeItem::setHidden(!is_active, /*emit_signal=*/false);
 
-                group_item->appendChild(std::move(leaf));
+                leaves.push_back(std::move(leaf));
             }
 
-            out.push_back(std::move(group_item));
+            if (group.name.empty())
+            {
+                for (auto& leaf : leaves)
+                    out.push_back(std::move(leaf));
+            }
+            else
+            {
+                auto group_item = std::make_unique<AnnotationGroupItem>(group.name);
+                for (auto& leaf : leaves)
+                    group_item->appendChild(std::move(leaf));
+                out.push_back(std::move(group_item));
+            }
         }
 
         return out;

@@ -114,6 +114,8 @@ void LayerTreeModel::refreshSubtree(LayerTreeItem* parent,
             parent->appendChild(std::move(c));
         endInsertRows();
     }
+
+    emit subtreeRefreshedSignal(parent);
 }
 
 void LayerTreeModel::traverse(const std::function<void(const QModelIndex&, LayerTreeItem*)>& fn,

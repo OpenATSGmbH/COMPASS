@@ -306,7 +306,7 @@ Recurring components inside the config widget:
 - **Layer panel**: `ViewLayerPanelWidget`, hierarchical checkbox tree showing data sources and their fields. Used to hide / show series.
 - **Display toggles**: bare `QCheckBox` rows for "Show Only Selected", "Use Presentation", "Log Scale", etc.
 - **Color scale picker**: `ColorScaleSelection` (used by GridView, [gridviewconfigwidget.h:98](../view/gridview/gridviewconfigwidget.h#L98)).
-- **Annotation picker** (if the View supports view-point annotations): `VariableViewAnnotationWidget`, two combos (group + annotation).
+- **Annotation switching** (if the View supports view-point annotations) lives in the layer panel's `Annotations` subtree, not in the config widget. See Section 10.7.
 - **Export button**: a single `QPushButton "Export"` triggering an async export; do not put export under a sub-menu.
 
 **Behaviour**:
@@ -344,10 +344,12 @@ For columns / ordered sets in a tabular view, use `VariableOrderedSetWidget`.
 
 ### 10.7 Annotations / View Points
 
-A View opts into annotations by extending `VariableView` and surfacing `VariableViewAnnotationWidget` in its config widget. Then:
+A View opts into annotations by extending `VariableView` and constructing its `ViewLayerPanelWidget` with the `show_annotations` flag set (already true by default for views whose `canShowAnnotations()` returns true). The annotation switch UI then appears in the layer panel as a separate `Annotations` subtree alongside the `DBContent` subtree.
 
 - `VariableView::currentAnnotation()` returns the user-selected annotation; the data widget reads it and overlays it (time markers, regions, ...).
-- A View that does not support annotations returns `false` from `hasAnnotations()` ([variableviewdatawidget...]) — that is the contract; do not silently accept annotation calls and ignore them.
+- The annotation subtree is radio-style single-select: when annotations are present, exactly one is always shown. Clicking another leaf swaps the active annotation; the active leaf cannot be unchecked. There is no "show variables instead" escape hatch in the UI - on view-point unshow, the framework reverts to variable display automatically.
+- The flat 2-level structure (group -> annotation) is built by `AnnotationsRootItem::update(...)` ([annotationsrootitem.h](../view/viewbase/layerpanel/annotationsrootitem.h)) from `VariableView::annotations()`. Data widgets connect to `VariableView::annotationsChangedSignal` and call `annotationsRootItem()->update(...)` on every change. See [scatterplotviewdatawidget.cpp](../view/scatterplotview/scatterplotviewdatawidget.cpp), [histogramviewdatawidget.cpp](../view/histogramview/histogramviewdatawidget.cpp), [gridviewdatawidget.cpp](../view/gridview/gridviewdatawidget.cpp) for the wiring.
+- A View that does not support annotations returns `false` from `canShowAnnotations()`. The `Annotations` subtree is then never created. Do not silently accept annotation calls and ignore them.
 - **Saving** the current visualisation as a view point is not a per-View action. The Flight Deck's `View Points` tool ([viewpointswidget.h:34-101](../view/points/viewpointswidget.h#L34-L101)) handles export / import / management.
 
 ### 10.8 Wording inside Views
@@ -412,7 +414,7 @@ When adding a new View:
 - [ ] Selection vocabulary: Select / Zoom to Rectangle / Navigate / Invert Selection / Delete Selection / Zoom to Home. Don't introduce synonyms.
 - [ ] Config widget extends `TabStyleViewConfigWidget`. Variables picked via `VariableSelectionWidget` (one per axis) or `VariableOrderedSetWidget` (column sets). Changes apply immediately; no Apply / Cancel.
 - [ ] Status feedback through `ViewLoadStateWidget` only. No popups for routine state. Disable inapplicable toolbar actions instead of warning the user.
-- [ ] Annotations / view points via `VariableView` + `VariableViewAnnotationWidget`. Views that don't support annotations return `false` from `hasAnnotations()`.
+- [ ] Annotations / view points via `VariableView` + the layer panel's `Annotations` subtree (radio-style single-select). Views that don't support annotations return `false` from `canShowAnnotations()`.
 - [ ] All persistent settings are `Configurable` parameters on the View class; widgets read/write through setters. No per-widget JSON.
 - [ ] Colors come from DBContent / `ColorScaleSelection`. No hard-coded per-view palette, no colored buttons.
 

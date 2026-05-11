@@ -346,7 +346,7 @@ void GridViewConfigWidget::updateExport()
     bool enable_export = false;
     std::string tooltip;
 
-    if (showsAnnotation())
+    if (view_->showsAnnotation())
     {
         //annotation shown => allow export on users discretion
         enable_export = false;
@@ -517,7 +517,7 @@ void GridViewConfigWidget::updateVariableDataType()
 */
 void GridViewConfigWidget::updateUIFromSource()
 {
-    bool shows_anno = showsAnnotation();
+    bool shows_anno = view_->showsAnnotation();
 
     grid_resolution_box_->setVisible(!shows_anno);
     grid_resolution_placeh_label_->setVisible(shows_anno);

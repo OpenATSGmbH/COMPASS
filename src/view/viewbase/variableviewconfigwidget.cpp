@@ -19,27 +19,24 @@
 #include "variableview.h"
 #include "viewvariable.h"
 
-#include "variableviewannotationwidget.h"
-
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 
+#include "files.h"
 #include "logger.h"
 #include "variable.h"
 #include "metavariable.h"
-#include "ui_test_common.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QTabWidget>
-#include <QRadioButton>
 #include <QToolButton>
 #include <QPainter>
 
 /**
 */
-VariableViewConfigWidget::VariableViewConfigWidget(ViewWidget* view_widget, 
+VariableViewConfigWidget::VariableViewConfigWidget(ViewWidget* view_widget,
                                                    VariableView* view,
                                                    QWidget* parent)
 :   TabStyleViewConfigWidget(view_widget, parent)
@@ -64,7 +61,7 @@ VariableViewConfigWidget::VariableViewConfigWidget(ViewWidget* view_widget,
         var_selection_widgets_.push_back(sel_widget);
         updateSelectedVariables(idx);
 
-        connect(sel_widget, &dbContent::VariableSelectionWidget::selectionChanged, 
+        connect(sel_widget, &dbContent::VariableSelectionWidget::selectionChanged,
             [ this, idx ] () { this->selectedVariableChangedSlot(idx); } );
 
         layout->addWidget(sel_widget);
@@ -122,29 +119,20 @@ VariableViewConfigWidget::VariableViewConfigWidget(ViewWidget* view_widget,
         }
 
         switch_layout->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::Fixed, QSizePolicy::Minimum));
-        //switch_layout->addStretch(1);
     };
-
-    bool show_annotation = var_view_->showsAnnotation() && 
-                           var_view_->hasCurrentAnnotation();
 
     QWidget*     cfg_widget = new QWidget();
     QVBoxLayout* cfg_layout = new QVBoxLayout();
 
-    // variables
+    // variable selectors. The annotation switch / picker that used to live here
+    // moved to the layer panel's Annotations subtree (see
+    // src/view/viewbase/layerpanel/annotationsrootitem.h). The variable
+    // selectors are always enabled now; the data widgets pick variables-vs-
+    // annotation rendering off VariableView::showsAnnotation() at draw time.
     {
-        show_variables_box_ = new QRadioButton("Show Variable Data");
-        show_variables_box_->setChecked(!show_annotation);
-        UI_TEST_OBJ_NAME(show_variables_box_, show_variables_box_->text())
-
-        connect(show_variables_box_, &QRadioButton::toggled, this, &VariableViewConfigWidget::dataSourceToggled);
-
-        cfg_layout->addWidget(show_variables_box_);
-
-        variables_widget_ = new QWidget;
-
+        QWidget*     var_outer  = new QWidget;
         QHBoxLayout* var_layout_outer = new QHBoxLayout;
-        variables_widget_->setLayout(var_layout_outer);
+        var_outer->setLayout(var_layout_outer);
 
         QVBoxLayout* var_layout = new QVBoxLayout;
         var_layout_outer->addLayout(var_layout);
@@ -155,30 +143,8 @@ VariableViewConfigWidget::VariableViewConfigWidget(ViewWidget* view_widget,
         for (size_t i = 0; i < var_view_->numVariables(); ++i)
             addVariableUI(var_layout, switch_layout, i);
 
-        cfg_layout->addWidget(variables_widget_);
+        cfg_layout->addWidget(var_outer);
     }
-
-    //eval results
-    {
-        show_annotations_box_ = new QRadioButton("Show Annotations");
-        show_annotations_box_->setChecked(!show_annotation);
-        UI_TEST_OBJ_NAME(show_annotations_box_, show_annotations_box_->text())
-
-        connect(show_annotations_box_, &QRadioButton::toggled, this, &VariableViewConfigWidget::dataSourceToggled);
-
-        cfg_layout->addWidget(show_annotations_box_);
-
-        annotation_widget_ = new VariableViewAnnotationWidget(var_view_);
-
-        connect(annotation_widget_, &VariableViewAnnotationWidget::currentAnnotationChanged, this, &VariableViewConfigWidget::annotationChanged);
-
-        cfg_layout->addWidget(annotation_widget_);
-    }
-
-    //deactivate annotations related ui if not supported by view
-    show_variables_box_->setVisible(var_view_->canShowAnnotations());
-    show_annotations_box_->setVisible(var_view_->canShowAnnotations());
-    annotation_widget_->setVisible(var_view_->canShowAnnotations());
 
     config_layout_ = new QVBoxLayout;
 
@@ -226,7 +192,7 @@ void VariableViewConfigWidget::configChanged()
 void VariableViewConfigWidget::updateSelectedVariables()
 {
     size_t n = var_view_->numVariables();
-    
+
     for (size_t i = 0; i < n; ++i)
         updateSelectedVariables(i);
 }
@@ -252,13 +218,6 @@ const dbContent::VariableSelectionWidget* VariableViewConfigWidget::variableSele
 
 /**
 */
-bool VariableViewConfigWidget::showsAnnotation() const
-{
-    return show_annotations_box_->isChecked();
-}
-
-/**
-*/
 void VariableViewConfigWidget::viewInfoJSON_impl(nlohmann::json& info) const
 {
     //variable related
@@ -272,65 +231,28 @@ void VariableViewConfigWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
         if (w->hasMetaVariable())
             info[ tag ] = "Meta - " + w->selectedMetaVariable().name();
-        else
+        else if (w->hasVariable())
             info[ tag ] = w->selectedVariable().dbContentName() + " - " + w->selectedVariable().name();
+        else
+            info[ tag ] = "";
     }
 
-    //eval result related
-    info[ "annotations_active"   ] = show_annotations_box_->isChecked();
-    info[ "annotation_group_idx" ] = annotation_widget_->currentGroupIdx();
-    info[ "annotation_idx"       ] = annotation_widget_->currentAnnotationIdx();
+    // Sourced from the view directly so the layer-panel annotations subtree
+    // and the previous radio/combo UI report identical state to view-info
+    // consumers (UI tests, view-info dumps).
+    info[ "annotations_active"   ] = var_view_->showsAnnotation();
+    info[ "annotation_group_idx" ] = var_view_->currentAnnotationGroupIdx();
+    info[ "annotation_idx"       ] = var_view_->currentAnnotationIdx();
 }
 
 /**
  */
 void VariableViewConfigWidget::updateConfig()
 {
-    bool has_annotations  = var_view_->hasAnnotations();
-    bool show_annotations = var_view_->showsAnnotation() && has_annotations;
-
-    show_annotations_box_->blockSignals(true);
-    show_annotations_box_->setChecked(show_annotations);
-    show_annotations_box_->blockSignals(false);
-
-    show_variables_box_->blockSignals(true);
-    show_variables_box_->setChecked(!show_annotations);
-    show_variables_box_->blockSignals(false);
-
-    traced_assert(annotation_widget_);
-    annotation_widget_->updateContent();
-
-    show_annotations_box_->setEnabled(has_annotations);
-
-    annotation_widget_->setEnabled(show_annotations);
-    variables_widget_->setEnabled(!show_annotations);
-}
-
-/**
- */
-void VariableViewConfigWidget::dataSourceToggled()
-{
-    //modify state in view based on selected radio button
-    bool show_anno = show_annotations_box_->isChecked();
-
-    if (show_anno)
-        var_view_->showAnnotation();
-    else
-        var_view_->showVariables();
-
-    //update ui
-    updateConfig();
-
-    //invoke derived class
+    // Hook for derived widgets to refresh annotation-mode-dependent UI
+    // (e.g. GridViewConfigWidget toggling its export button + value-type
+    // controls). The base class no longer owns annotation widgets.
     dataSourceChangedEvent();
-}
-
-/**
- */
-void VariableViewConfigWidget::annotationChanged()
-{
-    var_view_->setCurrentAnnotation(annotation_widget_->currentGroupIdx(),
-                                    annotation_widget_->currentAnnotationIdx());
 }
 
 /**
@@ -346,4 +268,3 @@ void VariableViewConfigWidget::switchVariables(int idx0, int idx1)
 {
     var_view_->switchVariables(idx0, idx1, true);
 }
-
