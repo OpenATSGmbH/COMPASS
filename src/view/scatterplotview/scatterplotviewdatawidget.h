@@ -159,5 +159,13 @@ private:
     // draw.
     bool prior_draw_had_content_{false};
 
+    // (group_idx, annotation_idx) of the annotation the chart was last drawn
+    // for. Used by updateVariableDisplay to detect annotation switches and
+    // reset the zoom on the new annotation's data range instead of carrying
+    // the previous annotation's axis ranges (which can hide parts of the new
+    // data outside that range).
+    int last_drawn_anno_group_idx_{-1};
+    int last_drawn_anno_idx_      {-1};
+
     std::set<std::string> hidden_series_;  // transient: remember unchecked series across reloads
 };

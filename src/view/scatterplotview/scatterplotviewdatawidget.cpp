@@ -288,11 +288,24 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
 {
     loginf;
 
+    // Detect an annotation switch: if we are in annotation mode and the
+    // currently-active annotation differs from the one the chart was last
+    // drawn for, do NOT preserve the previous zoom - the new annotation
+    // typically has a different data range, and reusing the old range would
+    // hide parts of it.
+    const bool in_anno_mode  = view_->showsAnnotation();
+    const int  cur_group_idx = view_->currentAnnotationGroupIdx();
+    const int  cur_anno_idx  = view_->currentAnnotationIdx();
+    const bool anno_switched = in_anno_mode &&
+                               (cur_group_idx != last_drawn_anno_group_idx_ ||
+                                cur_anno_idx  != last_drawn_anno_idx_);
+
     // Remember the current axis ranges so a redraw caused by e.g. a selection
     // change does not throw away the user's zoom. Only do this if the prior
     // render actually drew content - otherwise the "captured" range is the
     // meaningless default of an empty chart.
-    bool capture_zoom = prior_draw_had_content_ &&
+    bool capture_zoom = !anno_switched &&
+                        prior_draw_had_content_ &&
                         chart_view_ &&
                         chart_view_->chart() &&
                        !chart_view_->chart()->axes(Qt::Horizontal).empty() &&
@@ -325,6 +338,11 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
     }
 
     prior_draw_had_content_ = (draw_state == DrawState::DrawnContent);
+
+    // Remember which annotation this draw is for (or clear when leaving
+    // annotation mode) so the next call can detect a switch.
+    last_drawn_anno_group_idx_ = in_anno_mode ? cur_group_idx : -1;
+    last_drawn_anno_idx_       = in_anno_mode ? cur_anno_idx  : -1;
 
     return draw_state;
 }
