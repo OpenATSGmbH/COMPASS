@@ -91,6 +91,7 @@ private:
     std::string reconstruct_references_cfg_;
 
     std::string analyze_data_source_ds_type_;
+    std::string analyze_data_source_cfg_;
 
     bool load_data_ {false};
 

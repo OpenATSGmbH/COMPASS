@@ -294,6 +294,11 @@ void MainWindow::createUI()
     connect (&compass_.dbContentManager(), &DBContentManager::associationStatusChangedSignal,
             this, &MainWindow::updateMenus);
 
+    connect (&compass_.dbContextManager(), &context::DBContextManager::dataSourcesChangedSignal,
+            this, &MainWindow::updateMenus);
+    connect (&compass_.dbContextManager(), &context::DBContextManager::countsChangedSignal,
+            this, &MainWindow::updateMenus);
+
     connect(&compass_.licenseManager(), &LicenseManager::changed,
             this, &MainWindow::updateWindowTitle);
 
@@ -490,8 +495,8 @@ void MainWindow::createMenus ()
     connect(reconstruct_action, &QAction::triggered, this, &MainWindow::reconstructReferencesSlot);
     process_menu_->addAction(reconstruct_action);
 
-    QMenu* analyze_menu = process_menu_->addMenu("Analyze");
-    analyze_menu->setToolTipsVisible(true);
+    analyze_menu_ = process_menu_->addMenu("Analyze");
+    analyze_menu_->setToolTipsVisible(true);
 
     QAction* analyse_mlat_action = new QAction("MLAT");
     analyse_mlat_action->setToolTip(
@@ -499,7 +504,7 @@ void MainWindow::createMenus ()
         "(data items, sensor coverage / PD, position accuracy)");
     connect(analyse_mlat_action, &QAction::triggered,
             this, &MainWindow::analyseMLATDataSourceSlot);
-    analyze_menu->addAction(analyse_mlat_action);
+    analyze_menu_->addAction(analyse_mlat_action);
 
     QAction* eval_action = new QAction("Evaluate");
     eval_action->setToolTip("Evaluate test against reference data according to defined standards");
@@ -574,6 +579,29 @@ void MainWindow::updateMenus()
 
     import_menu_->setDisabled(!db_open || asterix_import_running || in_live);
     process_menu_->setDisabled(!db_open || asterix_import_running || in_live);
+
+    if (analyze_menu_)
+    {
+        bool has_ref_traj_with_data = false;
+        if (db_open)
+        {
+            auto& ctx = compass_.dbContextManager();
+            for (auto ds_id : compass_.taskManager().analyseDataSourceTask()
+                                  .referenceDataSourceCandidateIDs())
+            {
+                if (ctx.hasNumInserted(ds_id))
+                {
+                    has_ref_traj_with_data = true;
+                    break;
+                }
+            }
+        }
+        analyze_menu_->setEnabled(has_ref_traj_with_data);
+        analyze_menu_->menuAction()->setToolTip(
+            has_ref_traj_with_data
+                ? QString()
+                : "Analyse requires at least one Reference Trajectory data source with data");
+    }
 
     traced_assert(config_menu_);
     config_menu_->setDisabled(asterix_import_running || in_live);

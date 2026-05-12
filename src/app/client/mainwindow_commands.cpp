@@ -468,6 +468,16 @@ bool RTCommandAnalyzeDataSource::run_impl()
         return false;
     }
 
+    if (!config_.empty())
+    {
+        auto res = task.applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
+
     if (!task.canRun())
     {
         setResultMessage("Analyze data source task cannot be run "
@@ -487,12 +497,15 @@ void RTCommandAnalyzeDataSource::collectOptions_impl(OptionsDescription& options
 {
     ADD_RTCOMMAND_OPTIONS(options)
         ("ds_type,t", po::value<std::string>()->required(),
-         "DSType to analyse (mandatory), e.g. 'MLAT'");
+         "DSType to analyse (mandatory), e.g. 'MLAT'")
+        ("config,c", po::value<std::string>()->default_value(""),
+         "analyse data source configuration as json string");
 }
 
 void RTCommandAnalyzeDataSource::assignVariables_impl(const VariablesMap& variables)
 {
     RTCOMMAND_GET_VAR_OR_THROW(variables, "ds_type", std::string, ds_type_)
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
 }
 
 // load data

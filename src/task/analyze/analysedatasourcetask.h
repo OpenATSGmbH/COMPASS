@@ -43,6 +43,7 @@ class MLATCoverageInspectorSettings;
 #if USE_EXPERIMENTAL_SOURCE == true
 class MLATAccuracyInspectorSettings;
 class MLATRUCoverageInspectorSettings;
+class MLATRUEffectInspectorSettings;
 #endif
 
 namespace ResultReport { class Section; }
@@ -56,6 +57,13 @@ public:
     ~AnalyseDataSourceTask() override;
 
     void generateSubConfigurable(nlohmann::json& child_json) override;
+
+    /// Accept JSON-injected configuration. Extends the base behaviour with a
+    /// top-level `inspector_settings` key shaped as `{<InspectorClassName>:
+    /// {...params...}}`; each entry is forwarded to the matching inspector
+    /// settings via its own `applyJSONParameters()`. The remaining keys are
+    /// applied to the task's own registered parameters.
+    Result applyJSONParameters(const nlohmann::json& params_json) override;
 
     void initTask() override final;
     bool canRun() override;
@@ -150,6 +158,7 @@ public:
 #if USE_EXPERIMENTAL_SOURCE == true
     MLATAccuracyInspectorSettings&   accuracySettings()   const;
     MLATRUCoverageInspectorSettings& ruCoverageSettings() const;
+    MLATRUEffectInspectorSettings&   ruEffectSettings()   const;
 #endif
 
     /// True if the active license enables Professional features.
@@ -184,6 +193,7 @@ private:
 #if USE_EXPERIMENTAL_SOURCE == true
     std::unique_ptr<MLATAccuracyInspectorSettings>   accuracy_settings_;
     std::unique_ptr<MLATRUCoverageInspectorSettings> ru_coverage_settings_;
+    std::unique_ptr<MLATRUEffectInspectorSettings>   ru_effect_settings_;
 #endif
 
     std::vector<std::unique_ptr<DataSourceInspectorBase>> inspectors_;

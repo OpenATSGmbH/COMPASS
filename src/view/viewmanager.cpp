@@ -24,6 +24,8 @@
 #include "viewcontainer.h"
 #include "viewcontainerwidget.h"
 #include "viewpoint.h"
+#include "viewpointgenerator.h"
+#include "viewabledataconfig.h"
 #include "dbinterface.h"
 #include "viewpointswidget.h"
 #include "filtermanager.h"
@@ -391,10 +393,69 @@ void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
 
     emit showViewPointSignal(current_viewable_);
 
+    // After every view has consumed the viewpoint (and so registered any
+    // annotation), bring a compatible view to the front. Switching before
+    // the signal would make a not-yet-shown widget try to render mid-setup
+    // (the GridView duplicates its legend / skips the chart on that path).
+    activateCompatibleViewTabs(current_viewable_);
+
     if (load_blocking)
         compass_.dbContentManager().loadBlocking(LoadRequest::standard());
     else
         compass_.dbContentManager().load(LoadRequest::standard());
+}
+
+void ViewManager::activateCompatibleViewTabs(const ViewableDataConfig* viewable)
+{
+    if (!viewable)
+        return;
+
+    auto features = ViewPointGenVP::scanForFeatures(viewable->data());
+    if (features.empty())
+        return;
+
+    std::set<std::string> feature_types;
+    for (const auto& f : features)
+    {
+        if (f.feature_json.is_object()
+            && f.feature_json.contains(ViewPointGenFeature::FeatureTypeFieldType))
+        {
+            feature_types.insert(
+                f.feature_json[ViewPointGenFeature::FeatureTypeFieldType].get<std::string>());
+        }
+    }
+    if (feature_types.empty())
+        return;
+
+    auto supports = [&feature_types](View* v) {
+        if (!v)
+            return false;
+        auto accepted = v->acceptedAnnotationFeatureTypes();
+        for (const auto& t : feature_types)
+            if (accepted.count(t))
+                return true;
+        return false;
+    };
+
+    for (const auto& entry : containers_)
+    {
+        ViewContainer* container = entry.second;
+        if (!container)
+            continue;
+
+        View* current = container->currentView();
+        if (current && supports(current))
+            continue;
+
+        for (const auto& v : container->getViews())
+        {
+            if (supports(v.get()))
+            {
+                v->showInTabWidget();
+                break;
+            }
+        }
+    }
 }
 
 

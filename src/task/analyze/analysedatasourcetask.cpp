@@ -29,6 +29,7 @@
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "mlataccuracyinspector.h"
 #include "mlatrucoverageinspector.h"
+#include "mlatrueffectinspector.h"
 #endif
 
 #include "compass.h"
@@ -117,6 +118,12 @@ void AnalyseDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
         ru_coverage_settings_.reset(new MLATRUCoverageInspectorSettings(child_json, this));
         traced_assert(ru_coverage_settings_);
     }
+    else if (class_name == "MLATRUEffectInspectorSettings")
+    {
+        traced_assert(!ru_effect_settings_);
+        ru_effect_settings_.reset(new MLATRUEffectInspectorSettings(child_json, this));
+        traced_assert(ru_effect_settings_);
+    }
 #endif
     else
     {
@@ -147,12 +154,54 @@ void AnalyseDataSourceTask::checkSubConfigurables()
         generateSubConfigurableFromConfig("MLATRUCoverageInspectorSettings",
                                           "MLATRUCoverageInspectorSettings0");
     traced_assert(ru_coverage_settings_);
+
+    if (!ru_effect_settings_)
+        generateSubConfigurableFromConfig("MLATRUEffectInspectorSettings",
+                                          "MLATRUEffectInspectorSettings0");
+    traced_assert(ru_effect_settings_);
 #endif
 }
 
 void AnalyseDataSourceTask::initTask()
 {
     registerInspectors();
+}
+
+Result AnalyseDataSourceTask::applyJSONParameters(const nlohmann::json& params_json)
+{
+    static const std::string kInspectorSettingsKey = "inspector_settings";
+
+    if (!params_json.is_object())
+        return Configurable::applyJSONParameters(params_json);
+
+    if (!params_json.contains(kInspectorSettingsKey))
+        return Configurable::applyJSONParameters(params_json);
+
+    const auto& ins_json = params_json.at(kInspectorSettingsKey);
+    if (!ins_json.is_object())
+        return Result::failed("'" + kInspectorSettingsKey + "' must be a JSON object");
+
+    for (auto it = ins_json.begin(); it != ins_json.end(); ++it)
+    {
+        const std::string& inspector_class = it.key();
+        DataSourceInspectorBase* ins = inspector(inspector_class);
+        if (!ins)
+            return Result::failed("unknown inspector class '" + inspector_class + "'");
+        if (!it.value().is_object())
+            return Result::failed("'" + kInspectorSettingsKey + "['" + inspector_class
+                                  + "']' must be a JSON object");
+
+        auto res = ins->settings().applyJSONParameters(it.value());
+        if (!res.ok())
+            return Result::failed("inspector '" + inspector_class + "': " + res.error());
+    }
+
+    nlohmann::json rest = params_json;
+    rest.erase(kInspectorSettingsKey);
+    if (rest.empty())
+        return Result::succeeded();
+
+    return Configurable::applyJSONParameters(rest);
 }
 
 void AnalyseDataSourceTask::registerInspectors()
@@ -165,6 +214,7 @@ void AnalyseDataSourceTask::registerInspectors()
 #if USE_EXPERIMENTAL_SOURCE == true
     inspectors_.emplace_back(new MLATAccuracyInspector(*this, *accuracy_settings_));
     inspectors_.emplace_back(new MLATRUCoverageInspector(*this, *ru_coverage_settings_));
+    inspectors_.emplace_back(new MLATRUEffectInspector(*this, *ru_effect_settings_));
 #endif
 }
 
@@ -452,6 +502,12 @@ MLATRUCoverageInspectorSettings& AnalyseDataSourceTask::ruCoverageSettings() con
 {
     traced_assert(ru_coverage_settings_);
     return *ru_coverage_settings_;
+}
+
+MLATRUEffectInspectorSettings& AnalyseDataSourceTask::ruEffectSettings() const
+{
+    traced_assert(ru_effect_settings_);
+    return *ru_effect_settings_;
 }
 #endif
 

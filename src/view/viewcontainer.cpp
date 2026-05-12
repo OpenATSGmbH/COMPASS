@@ -141,6 +141,19 @@ void ViewContainer::showView(QWidget* widget)
     tab_widget_->setCurrentWidget(widget);
 }
 
+View* ViewContainer::currentView() const
+{
+    if (!tab_widget_)
+        return nullptr;
+    QWidget* current = tab_widget_->currentWidget();
+    if (!current)
+        return nullptr;
+    for (const auto& v : views_)
+        if (v && v->getCentralWidget() == current)
+            return v.get();
+    return nullptr;
+}
+
 // void ViewContainer::addTemplateView (std::string template_name)
 //{
 //    std::string view_name = template_name+intToString(ViewContainerWidget::getViewCount());

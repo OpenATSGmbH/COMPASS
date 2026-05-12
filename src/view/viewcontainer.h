@@ -60,6 +60,11 @@ class ViewContainer : public QObject, public Configurable
     void enableViewTab(QWidget* widget, bool value);
     void showView(QWidget* widget);
 
+    /// View whose central widget is the currently-selected tab in this
+    /// container; nullptr if the container is empty or the current tab does
+    /// not correspond to any owned view.
+    View* currentView() const;
+
     void resetToStartupConfiguration();
 
     time_t created() const { return creation_time_; }

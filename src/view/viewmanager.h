@@ -132,6 +132,14 @@ class ViewManager : public QObject, public Configurable
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
 
+    /// For each view container, if the currently-selected tab's view does
+    /// not accept any annotation feature type present in `viewable`, switch
+    /// the container to the first view (in container order) that does. No
+    /// switch occurs when the current view is already compatible, when no
+    /// container holds a compatible view, or when the viewable has no
+    /// annotation features.
+    void activateCompatibleViewTabs(const ViewableDataConfig* viewable);
+
     void selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix_time::ptime ts_max);
 
     void showMainViewContainerAddView();

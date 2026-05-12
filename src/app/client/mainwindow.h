@@ -184,6 +184,7 @@ protected:
 
     // process menu
     QMenu* process_menu_ {nullptr};
+    QMenu* analyze_menu_ {nullptr};
     //QAction* calculate_references_action_ {nullptr};
 
     // ui menu

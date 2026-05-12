@@ -110,6 +110,7 @@ struct RTCommandAnalyzeDataSource : public rtcommand::RTCommand
     RTCommandAnalyzeDataSource();
 
     std::string ds_type_;
+    std::string config_;
 
 protected:
     virtual bool run_impl() override;
