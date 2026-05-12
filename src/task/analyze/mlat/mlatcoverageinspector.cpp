@@ -16,6 +16,7 @@
  */
 
 #include "mlatcoverageinspector.h"
+#include "mlatcoveragehelpers.h"
 #include "analysedatasourcetask.h"
 #include "analysisdataset.h"
 #include "targetreport3dgrid.h"
@@ -152,6 +153,35 @@ std::string formatNumber(double v, int prec = 4)
     return os.str();
 }
 
+// Coordinates of the grid cell to attribute a counter to. `valid == false`
+// when `mappedRefPos()` could not interpolate the reference for the query
+// timestamp (no usable bracket within `d_max`).
+struct CellAttribution
+{
+    bool   valid  = false;
+    double lat    = 0.0;
+    double lon    = 0.0;
+    double alt_ft = 0.0;
+};
+
+// Look up the reference position for `(utn, t)` and unpack it into the
+// counter-attribution coordinates used by `TargetReport3DGrid`.
+CellAttribution refCellAt(AnalysisDataset& dataset,
+                          unsigned int utn,
+                          ptime t,
+                          time_duration d_max)
+{
+    CellAttribution out;
+    auto pos = dataset.mappedRefPos(utn, t, d_max);
+    if (!pos.has_value())
+        return out;
+    out.valid  = true;
+    out.lat    = pos->latitude_;
+    out.lon    = pos->longitude_;
+    out.alt_ft = pos->has_altitude_ ? static_cast<double>(pos->altitude_) : 0.0;
+    return out;
+}
+
 // Gather and sort all test timestamps for `utn` across the test dbcontents
 // present in the dataset.
 std::vector<ptime> gatherTestTimestamps(unsigned int utn,
@@ -206,12 +236,9 @@ void walkTargetTimeDifference(unsigned int utn,
         {
             ptime t_slot = addSeconds(period.begin,
                                       k * settings.update_interval_s_);
-            auto pos = dataset.mappedRefPos(utn, t_slot, d_max);
-            if (!pos.has_value())
-                continue;
-            double alt_ft = pos->has_altitude_
-                              ? static_cast<double>(pos->altitude_) : 0.0;
-            grid.addEUI(pos->latitude_, pos->longitude_, alt_ft);
+            auto ca = refCellAt(dataset, utn, t_slot, d_max);
+            if (ca.valid)
+                grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
         }
 
         // Test timestamps inside [period.begin, period.end].
@@ -248,17 +275,98 @@ void walkTargetTimeDifference(unsigned int utn,
                                           (m + 1) * settings.update_interval_s_);
                 if (t_miss >= gap_end)
                     break;
-                auto pos = dataset.mappedRefPos(utn, t_miss, d_max);
-                if (!pos.has_value())
-                    continue;
-                double alt_ft = pos->has_altitude_
-                                  ? static_cast<double>(pos->altitude_) : 0.0;
-                grid.addMUI(pos->latitude_, pos->longitude_, alt_ft);
+                auto ca = refCellAt(dataset, utn, t_miss, d_max);
+                if (ca.valid)
+                    grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
             }
         }
     }
 }
+}  // anonymous namespace
+
+namespace mlatcoverage_internal
+{
+std::vector<CycleEvent> evaluateCyclesInPeriod(
+    const EvaluationRequirement::PDHelpers::RefPeriod& period,
+    const std::vector<ptime>& cycles_sorted,
+    const std::vector<ptime>& tst_ts_sorted)
+{
+    std::vector<CycleEvent> out;
+
+    auto cyc_begin = std::lower_bound(cycles_sorted.begin(),
+                                      cycles_sorted.end(),
+                                      period.begin);
+    auto cyc_end   = std::upper_bound(cycles_sorted.begin(),
+                                      cycles_sorted.end(),
+                                      period.end);
+
+    out.reserve(static_cast<std::size_t>(std::distance(cyc_begin, cyc_end)));
+
+    for (auto it = cyc_begin; it != cyc_end; ++it)
+    {
+        ptime t_cycle = *it;
+        auto next_it = std::next(it);
+        ptime t_window_end =
+            (next_it != cyc_end) ? *next_it : period.end;
+
+        if (t_window_end <= t_cycle)
+            continue;
+
+        auto tst_lo = std::lower_bound(tst_ts_sorted.begin(),
+                                       tst_ts_sorted.end(),
+                                       t_cycle);
+        const bool has_test =
+            (tst_lo != tst_ts_sorted.end() && *tst_lo < t_window_end);
+
+        CycleEvent ev;
+        ev.t_cycle = t_cycle;
+        ev.is_miss = !has_test;
+        out.push_back(ev);
+    }
+
+    return out;
 }
+}  // namespace mlatcoverage_internal
+
+namespace
+{
+
+// Status-message walk per target.
+//
+// For each reference period and each cycle timestamp inside it, attribute
+// one #EUI to the cell of the reference position at the cycle timestamp;
+// if no test report falls in the cycle window `[t_cycle, t_next_cycle)`
+// for this target, also attribute one #MUI to the same cell.
+//
+// No miss test, no gap math -- the cycle stream defines the cadence
+// directly (readme_analysis_mlat_ru.md, "CAT019 period-based variant").
+void walkTargetStatusMessage(unsigned int utn,
+                             const std::vector<RefPeriod>& periods,
+                             const std::vector<ptime>& tst_ts_sorted,
+                             const std::vector<ptime>& cycles_sorted,
+                             AnalysisDataset& dataset,
+                             TargetReport3DGrid& grid,
+                             const Settings& /*settings*/)
+{
+    const time_duration d_max = boost::posix_time::seconds(60);
+
+    for (const auto& period : periods)
+    {
+        auto events = mlatcoverage_internal::evaluateCyclesInPeriod(
+            period, cycles_sorted, tst_ts_sorted);
+
+        for (const auto& ev : events)
+        {
+            auto ca = refCellAt(dataset, utn, ev.t_cycle, d_max);
+            if (!ca.valid)
+                continue;
+            grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
+            if (ev.is_miss)
+                grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
+        }
+    }
+}
+}  // anonymous namespace
 
 void MLATCoverageInspector::compute(AnalysisDataset* dataset)
 {
@@ -292,14 +400,20 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     grid_.reset(new TargetReport3DGrid(sizing.cell_size_m, sizing.cell_size_ft, ref_lat));
     auto& grid = *grid_;
 
-    // The status-message-based variant is not implemented yet; it falls back
-    // to time-difference here, as documented in readme_analysis_mlat_ru.md
-    // ("CAT019 period-based variant").
-    if (settings.pdMethod() ==
-        MLATCoverageInspectorSettings::PDMethod::StatusPeriodMessage)
+    const bool use_status_method =
+        settings.pdMethod() ==
+        MLATCoverageInspectorSettings::PDMethod::StatusPeriodMessage;
+
+    const auto& status_cycles = dataset->statusCycles();
+
+    if (use_status_method && status_cycles.empty())
     {
-        logwrn << "MLATCoverageInspector: Status-Period-Message PD method not"
-               << " implemented, falling back to Time-Difference";
+        result_.error =
+            "Status-Period-Message PD method selected, but no CAT019 "
+            "start-of-cycle messages were loaded. The DB has no usable "
+            "status content; switch to Time-Difference or import CAT019.";
+        logwrn << result_.error;
+        return;
     }
 
     const time_duration ref_max_gap =
@@ -344,8 +458,12 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
 
         ++targets_walked;
 
-        walkTargetTimeDifference(utn, periods, tst_ts_sorted,
-                                 *dataset, grid, settings);
+        if (use_status_method)
+            walkTargetStatusMessage(utn, periods, tst_ts_sorted,
+                                    status_cycles, *dataset, grid, settings);
+        else
+            walkTargetTimeDifference(utn, periods, tst_ts_sorted,
+                                     *dataset, grid, settings);
     }
 
     auto horizontal = grid.projectHorizontal();
@@ -474,7 +592,7 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
                           MLATCoverageInspectorSettings::PDMethod::TimeDifference
                       ? std::string("Time Difference")
                       : std::string("Status Period Message Based\n"
-                                    "(time-difference fallback)")});
+                                    "(CAT019 cycles)")});
     {
         std::ostringstream os;
         os << settings.update_interval_s_ << " s";
@@ -509,7 +627,10 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     if (!result_.valid)
     {
         auto& note = section.addText("Note");
-        note.addText("No data loaded; coverage analysis skipped.");
+        if (!result_.error.empty())
+            note.addText(result_.error);
+        else
+            note.addText("No data loaded; coverage analysis skipped.");
         return;
     }
 

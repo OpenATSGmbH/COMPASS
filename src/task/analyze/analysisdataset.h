@@ -26,6 +26,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
 class COMPASS;
 
@@ -136,10 +137,18 @@ public:
     double minAltitudeFt()    const { return min_alt_ft_; }
     double maxAltitudeFt()    const { return max_alt_ft_; }
 
+    /// Sorted, deduplicated start-of-update-cycle timestamps extracted from
+    /// status-bearing dbcontents loaded alongside the test data
+    /// (CAT019 in particular; see `DBContentStatusInfo`). Empty if no
+    /// status-bearing content was present in the DB or loadable.
+    const std::vector<boost::posix_time::ptime>& statusCycles() const
+    { return status_cycles_; }
+
 private:
     void buildChains(const std::set<unsigned int>& selected_ds_ids,
                      const std::set<unsigned int>& ref_ds_ids,
                      const std::set<std::string>& test_dbcontents);
+    void loadStatusCycles();
     void addToReferenceChain(unsigned int utn, boost::posix_time::ptime ts, unsigned int idx);
     void addToTestChain(unsigned int utn, const std::string& dbcontent,
                         boost::posix_time::ptime ts, unsigned int idx);
@@ -168,4 +177,6 @@ private:
 
     double min_alt_ft_ = 0.0, max_alt_ft_ = 0.0;
     bool   has_altitude_extent_ = false;
+
+    std::vector<boost::posix_time::ptime> status_cycles_;
 };

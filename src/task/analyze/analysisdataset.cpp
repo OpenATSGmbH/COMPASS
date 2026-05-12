@@ -23,11 +23,14 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentaccessor.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentstatusinfo.h"
 #include "targetposition.h"
 #include "idbvariableresolver.h"
 #include "loadrequest.h"
 #include "logger.h"
 #include "viewmanager.h"
+
+#include <algorithm>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -46,6 +49,57 @@ AnalysisDataset::AnalysisDataset(COMPASS& compass)
 }
 
 AnalysisDataset::~AnalysisDataset() = default;
+
+void AnalysisDataset::loadStatusCycles()
+{
+    status_cycles_.clear();
+
+    auto& dbcontent_man = compass_.dbContentManager();
+
+    const std::string status_content = "CAT019";
+
+    if (!dbcontent_man.existsDBContent(status_content))
+        return;
+    auto& dbcont = dbcontent_man.dbContent(status_content);
+    if (!dbcont.loadable() || !dbcont.containsStatusContent())
+        return;
+
+    dbContent::DBContentStatusInfo status_info(dbcontent_man);
+    dbContent::VariableSet status_rs = status_info.getReadSetFor(status_content);
+
+    LoadRequest req = LoadRequest::forContent(status_content, status_rs);
+    req.show_status_ = false;
+    req.cancellable_ = false;
+
+    auto& view_man = compass_.viewManager();
+
+    dbcontent_man.clearData();
+    view_man.disableDataDistribution(true);
+    dbcontent_man.loadBlocking(req);
+    view_man.disableDataDistribution(false);
+
+    auto status_buffers = dbcontent_man.loadedData();
+    if (!status_buffers.empty())
+    {
+        status_info.process(status_buffers);
+
+        for (const auto& ds : status_info.getInfo())
+            for (const auto& line : ds.second)
+                status_cycles_.insert(status_cycles_.end(),
+                                       line.second.begin(),
+                                       line.second.end());
+
+        std::sort(status_cycles_.begin(), status_cycles_.end());
+        status_cycles_.erase(std::unique(status_cycles_.begin(),
+                                          status_cycles_.end()),
+                              status_cycles_.end());
+    }
+
+    dbcontent_man.clearData();
+
+    loginf << "loaded " << status_cycles_.size()
+           << " " << status_content << " start-of-cycle timestamps";
+}
 
 bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
                            unsigned int line_id_tst,
@@ -136,6 +190,12 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
     // Clear local data (mirrors EvaluationManager::loadingDone). This also
     // emits the cleared loadedDataSignal that flushes any view state.
     dbcontent_man.clearData();
+
+    // Always load status-bearing dbcontents (CAT019 today) as a separate
+    // single-content request, with the status-specific read set. No source
+    // filter -- we want every status source the DB carries. Empty result is
+    // OK; consumers (status-message PD) check `statusCycles().empty()`.
+    loadStatusCycles();
 
     buildChains(selected_ds_ids, ref_ds_ids, test_dbcontents);
 

@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 
 class TargetReport3DGrid;
 
@@ -98,6 +99,7 @@ private:
     struct ComputeResult
     {
         bool   valid              = false;
+        std::string error;
         unsigned int targets_walked = 0;
         unsigned int targets_no_ref = 0;
         unsigned int targets_no_tst = 0;
