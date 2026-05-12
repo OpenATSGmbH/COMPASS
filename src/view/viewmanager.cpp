@@ -52,6 +52,7 @@
 #include <QEventLoop>
 #include <QScopedValueRollback>
 #include <QTabWidget>
+#include <QTimer>
 
 #include "traced_assert.h"
 
@@ -451,7 +452,23 @@ void ViewManager::activateCompatibleViewTabs(const ViewableDataConfig* viewable)
         {
             if (supports(v.get()))
             {
-                v->showInTabWidget();
+                View* view_to_show = v.get();
+                view_to_show->showInTabWidget();
+
+                // QtCharts occasionally leaves the chart unrendered on a
+                // tab's first show this session - the user then sees the
+                // legend stretched across the chart area and only a manual
+                // resize triggers a redraw. Forcing a geometry refresh after
+                // the show event has run does the same thing programmatically.
+                QWidget* central = view_to_show->getCentralWidget();
+                if (central)
+                {
+                    QTimer::singleShot(0, central, [central]()
+                    {
+                        central->updateGeometry();
+                        central->update();
+                    });
+                }
                 break;
             }
         }
