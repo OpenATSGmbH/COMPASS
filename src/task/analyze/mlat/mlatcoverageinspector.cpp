@@ -586,6 +586,35 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     auto& settings = static_cast<MLATCoverageInspectorSettings&>(settings_);
     auto& section  = root.addSubSection(name());
 
+    {
+        auto& intro = section.addText("About");
+        intro.addText(
+            "Probability of Detection (PD) of the selected MLAT sensors per "
+            "cell of a three-dimensional grid in latitude, longitude and "
+            "barometric flight level, using the Reference Trajectory as "
+            "ground truth. PD is the fraction of expected updates the sensor "
+            "actually delivered: each target's reference track contributes "
+            "expected updates at the configured cadence, and each gap in the "
+            "MLAT report stream long enough to swallow a cadence slot "
+            "contributes a missed update at the location where the report "
+            "was expected.\n"
+            "Cadence source is operator-selected. Time Difference uses a "
+            "fixed nominal Update Interval together with the EUROCAE ED-117 "
+            "miss tolerance. Status Period Message follows the MLAT system's "
+            "own start-of-cycle messages from CAT019 directly, with no "
+            "tolerance.\n"
+            "Three projections of the per-cell PD are rendered: a top-down "
+            "horizontal map and two vertical profiles (altitude over "
+            "longitude, altitude over latitude). The summary tabulates the "
+            "sector-aggregate PD and the per-cell distribution (median, 5th "
+            "percentile, worst cell). Cells with no expected updates are "
+            "blank.\n"
+            "Use the report to locate coverage holes against the published "
+            "service volume, to assess PD compliance with ED-117 / ED-116 "
+            "thresholds, and to compare the actual horizontal and vertical "
+            "coverage geometry against the system design.");
+    }
+
     auto& recap = section.addTable("Settings", 2, {"Setting", "Value"}, false);
     recap.addRow({"PD calculation method",
                   settings.pdMethod() ==

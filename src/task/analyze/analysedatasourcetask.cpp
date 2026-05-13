@@ -165,6 +165,12 @@ void AnalyseDataSourceTask::checkSubConfigurables()
 void AnalyseDataSourceTask::initTask()
 {
     registerInspectors();
+
+    // A new active context exposes a different data-source set, so any
+    // previously-saved custom report name will no longer match - drop it.
+    connect(&compass().dbContextManager(),
+            &context::DBContextManager::activeContextChangedSignal,
+            this, [this]() { resetCustomReportName(); });
 }
 
 Result AnalyseDataSourceTask::applyJSONParameters(const nlohmann::json& params_json)
@@ -228,7 +234,10 @@ bool AnalyseDataSourceTask::useDataSource(unsigned int ds_id) const
 
 void AnalyseDataSourceTask::useDataSource(unsigned int ds_id, bool value)
 {
+    bool changed = useDataSource(ds_id) != value;
     use_data_sources_[std::to_string(ds_id)] = value;
+    if (changed)
+        resetCustomReportName();
 }
 
 bool AnalyseDataSourceTask::useDataSourceLine(unsigned int ds_id, unsigned int line_id) const

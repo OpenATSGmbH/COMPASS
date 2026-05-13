@@ -315,6 +315,10 @@ QWidget* AnalyseDataSourceDialog::buildDataSourcesWidget()
         if (!ok)
             return;
         task_.useDataSource(ds_id, it->checkState() == Qt::Checked);
+        // task_.useDataSource resets the custom name on a real change; clear
+        // the dialog's edit flag too so updateSuggestedReportName actually
+        // pushes the new default into the line edit.
+        report_name_user_edited_ = task_.hasCustomReportName();
         refreshInspectorRows();
         updateSuggestedReportName();
         updateRunEnabled();

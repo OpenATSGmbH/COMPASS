@@ -64,6 +64,28 @@ void MLATDataItemInspector::writeReport(ResultReport::Section& root)
 {
     auto& section = root.addSubSection(name());
 
+    {
+        auto& intro = section.addText("About");
+        intro.addText(
+            "ASTERIX data-item usage per selected data source. For each "
+            "category in scope (CAT020 / CAT010 by default), one table "
+            "lists every item defined in the configured edition with the "
+            "number of records that carried it and the observed min / max "
+            "of its value. Records are counted cumulatively across every "
+            "import into the open database, not just the most recent file. "
+            "Items defined in the edition but never seen are listed with a "
+            "count of zero in red.\n"
+            "Three operational questions are answered: which optional items "
+            "the sensor populates, in what value ranges, and which defined "
+            "items go unused. Use the report for source-acceptance testing, "
+            "for conformance checks against a delivery specification, and "
+            "to identify items that are present in some recordings but "
+            "missing in others.\n"
+            "The per-file ASTERIX Import report covers a single decode; "
+            "this section aggregates over the entire database, restricted "
+            "to the data sources selected for this analysis.");
+    }
+
     auto& compass = task_.compass();
     auto& ctx     = compass.dbContextManager();
     const auto& info_map = ctx.asterixInfo();
