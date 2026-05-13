@@ -14,9 +14,9 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/variableselectionwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/variableeditdialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/variablecreatedialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variabledetailwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/metavariable.h"
         "${CMAKE_CURRENT_LIST_DIR}/metavariablewidget.h"
-        "${CMAKE_CURRENT_LIST_DIR}/metavariableconfigurationdialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/metavariabledetailwidget.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/variable.cpp"
@@ -27,9 +27,9 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/variableselectionwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/variableeditdialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/variablecreatedialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variabledetailwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/metavariable.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/metavariablewidget.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/metavariableconfigurationdialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/metavariabledetailwidget.cpp"
 )
 

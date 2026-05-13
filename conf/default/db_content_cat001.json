@@ -18,12 +18,13 @@
                 "db_column_name": "antenna",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.ANT\n\n0 Target report from antenna\n1 Target report from antenna 2",
+                "description": "0 Target report from antenna\n1 Target report from antenna 2",
                 "dimension": "",
                 "is_key": false,
                 "name": "Antenna",
                 "representation_str": "STANDARD",
                 "short_name": "ANT",
+                "source": "I001/020.ANT",
                 "unit": ""
             }
         },
@@ -35,12 +36,13 @@
                 "db_column_name": "ds1_ds2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.DS1/DS2\n\n0 Default\n1 Unlawful interference (code 7500)\n2 Radio-communication failure (code 7600)\n3 Emergency (code 7700)",
+                "description": "0 Default\n1 Unlawful interference (code 7500)\n2 Radio-communication failure (code 7600)\n3 Emergency (code 7700)",
                 "dimension": "",
                 "is_key": false,
                 "name": "DS1/DS2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/020.DS1/DS2",
                 "unit": ""
             }
         },
@@ -52,12 +54,13 @@
                 "db_column_name": "received_power",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 131.POWER\n\nDecimal logarithm of the power received in dBm.\n POWER = 0 for 0 dBm",
+                "description": "Decimal logarithm of the power received in dBm.\n POWER = 0 for 0 dBm",
                 "dimension": "",
                 "is_key": false,
                 "name": "Received Power",
                 "representation_str": "STANDARD",
                 "short_name": "Power",
+                "source": "I001/131.POWER",
                 "unit": ""
             }
         },
@@ -69,12 +72,13 @@
                 "db_column_name": "truncated_time_of_day",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 141.Truncated Time of Day",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Truncated Time of Day",
                 "representation_str": "STANDARD",
                 "short_name": "Trun ToD",
+                "source": "I001/141.Truncated Time of Day",
                 "unit": ""
             }
         },
@@ -86,12 +90,13 @@
                 "db_column_name": "rdp_chain",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.RDPC\n\nRadar Data Processing Chain\n0 RDP Chain 1\n1 RDP Chain 2",
+                "description": "Radar Data Processing Chain\n0 RDP Chain 1\n1 RDP Chain 2",
                 "dimension": "",
                 "is_key": false,
                 "name": "RDP Chain",
                 "representation_str": "STANDARD",
                 "short_name": "RDP",
+                "source": "I001/170.RDPC",
                 "unit": ""
             }
         },
@@ -103,12 +108,13 @@
                 "db_column_name": "track",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.TYP\n\n0 Plot\n1 Track",
+                "description": "0 Plot\n1 Track",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/020.TYP",
                 "unit": ""
             }
         },
@@ -120,12 +126,13 @@
                 "db_column_name": "w_e_value",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 030.Warning/Error Conditions.W/E Value\n\n0 no warning nor error condition;\n1 garbled reply;\n2 reflection;\n3 sidelobe reply;\n4 split plot;\n5 second time around reply;\n6 angels;\n7 terrestrial vehicles.\n64 possible wrong code in Mode-3/A;\n65 possible wrong altitude information, transmitted when the Code C credibility check fails together with the Mode-C code in binary notation;\n66 possible phantom MSSR plot;\n80 fixed PSR plot;\n81 slow PSR plot;\n82 low quality PSR plot.",
+                "description": "0 no warning nor error condition;\n1 garbled reply;\n2 reflection;\n3 sidelobe reply;\n4 split plot;\n5 second time around reply;\n6 angels;\n7 terrestrial vehicles.\n64 possible wrong code in Mode-3/A;\n65 possible wrong altitude information, transmitted when the Code C credibility check fails together with the Mode-C code in binary notation;\n66 possible phantom MSSR plot;\n80 fixed PSR plot;\n81 slow PSR plot;\n82 low quality PSR plot.",
                 "dimension": "",
                 "is_key": false,
                 "name": "W/E Value",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/030.Warning/Error Conditions.W/E Value",
                 "unit": ""
             }
         },
@@ -137,12 +144,13 @@
                 "db_column_name": "track_quality",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 210.Track Quality.Value\n\nQuality indicator\nActual bit signification is application dependent.",
+                "description": "Quality indicator\nActual bit signification is application dependent.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Quality",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/210.Track Quality.Value",
                 "unit": ""
             }
         },
@@ -154,12 +162,13 @@
                 "db_column_name": "plot_characteristics",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 130.Radar Plot Characteristics.Value\n\nThis Data Item may contain parameters such as plot runlength (primary and secondary), difference between primary and secondary derived azimuth, pulse amplitude, etc.",
+                "description": "This Data Item may contain parameters such as plot runlength (primary and secondary), difference between primary and secondary derived azimuth, pulse amplitude, etc.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Plot Characteristics",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/130.Radar Plot Characteristics.Value",
                 "unit": ""
             }
         },
@@ -171,12 +180,13 @@
                 "db_column_name": "x",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 042.X-Component\n\nMax. range = +/-256 NM",
+                "description": "Max. range = +/-256 NM",
                 "dimension": "Length",
                 "is_key": false,
                 "name": "X",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "I001/042.X-Component",
                 "unit": "Meter"
             }
         },
@@ -188,12 +198,13 @@
                 "db_column_name": "y",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 042.Y-Component\n\nMax. range = +/-256 NM",
+                "description": "Max. range = +/-256 NM",
                 "dimension": "Length",
                 "is_key": false,
                 "name": "Y",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "",
+                "source": "I001/042.Y-Component",
                 "unit": "Meter"
             }
         },
@@ -205,12 +216,13 @@
                 "db_column_name": "track_sensor_types",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.RAD\n\nType of Sensor(s) maintaining Track\n0 Combined Track\n1 PSR Track\n2 SSR/Mode S Track\n3 Invalid",
+                "description": "Type of Sensor(s) maintaining Track\n0 Combined Track\n1 PSR Track\n2 SSR/Mode S Track\n3 Invalid",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Sensor Types",
                 "representation_str": "STANDARD",
                 "short_name": "RAD",
+                "source": "I001/170.RAD",
                 "unit": ""
             }
         },
@@ -222,12 +234,13 @@
                 "db_column_name": "timestamp",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Epoch timestamp based on Time of Day",
+                "description": "Epoch timestamp computed from Time of Day plus the resolved calendar date (handles midnight wrap).",
                 "dimension": "",
                 "is_key": false,
                 "name": "Timestamp",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "Calculated from Time of Day, calendar date",
                 "unit": ""
             }
         },
@@ -239,12 +252,13 @@
                 "db_column_name": "utn",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Unique Target Number",
+                "description": "Unique Target Number, assigned by the reconstructor.",
                 "dimension": "",
                 "is_key": false,
                 "name": "UTN",
                 "representation_str": "STANDARD",
                 "short_name": "UTN",
+                "source": "Filled by the reconstructor",
                 "unit": ""
             }
         },
@@ -256,12 +270,13 @@
                 "db_column_name": "type",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.TYP\n\nFrom 020.SSR/PSR\n\nRadar detection in last antenna scan, as follows:\n0 No detection;\n1 Sole primary detection;\n2 Sole secondary detection;\n3 Combined primary and secondary detection.",
+                "description": "Radar detection in last antenna scan, as follows:\n0 No detection;\n1 Sole primary detection;\n2 Sole secondary detection;\n3 Combined primary and secondary detection.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Type",
                 "representation_str": "STANDARD",
                 "short_name": "TYP",
+                "source": "I001/020.TYP\nI001/020.SSR/PSR",
                 "unit": ""
             }
         },
@@ -273,12 +288,13 @@
                 "db_column_name": "ds_id",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From ds_id\n\nData Source ID",
+                "description": "Data Source Identifier (bit-packed SAC/SIC)",
                 "dimension": "",
                 "is_key": false,
                 "name": "DS ID",
                 "representation_str": "DATA_SRC_NAME",
                 "short_name": "",
+                "source": "Calculated from I001/010.SAC, I001/010.SIC",
                 "unit": ""
             }
         },
@@ -290,12 +306,13 @@
                 "db_column_name": "fft",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.RAB\n\n0 Report from aircraft transponder\n1 Report from field monitor(fixed transponder)",
+                "description": "0 Report from aircraft transponder\n1 Report from field monitor(fixed transponder)",
                 "dimension": "",
                 "is_key": false,
                 "name": "FFT",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/020.RAB",
                 "unit": ""
             }
         },
@@ -307,12 +324,13 @@
                 "db_column_name": "artas_hash",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From artas_md5\n\nARTAS MD5 Hash Code",
+                "description": "ARTAS MD5 Hash Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "ARTAS Hash",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "Internal: artas_md5 column",
                 "unit": ""
             }
         },
@@ -324,12 +342,13 @@
                 "db_column_name": "line_id",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "COMMUNICATION LINE ID determines the origin of the record, see table COMMS",
+                "description": "Communication line ID determining the origin of the record.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Line ID",
                 "representation_str": "LINE_NAME",
                 "short_name": "",
+                "source": "Internal: import line/source identifier",
                 "unit": ""
             }
         },
@@ -341,12 +360,13 @@
                 "db_column_name": "military_emergency",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.ME\n\n0 No military emergency \n1 Military emergency",
+                "description": "0 No military emergency \n1 Military emergency",
                 "dimension": "",
                 "is_key": false,
                 "name": "Military Emergency",
                 "representation_str": "STANDARD",
                 "short_name": "ME",
+                "source": "I001/020.ME",
                 "unit": ""
             }
         },
@@ -358,12 +378,13 @@
                 "db_column_name": "military_identification",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.MI\n\n0 No military identification\n1 Military identification",
+                "description": "0 No military identification\n1 Military identification",
                 "dimension": "",
                 "is_key": false,
                 "name": "Military Identification",
                 "representation_str": "STANDARD",
                 "short_name": "MI",
+                "source": "I001/020.MI",
                 "unit": ""
             }
         },
@@ -375,12 +396,13 @@
                 "db_column_name": "mode_3a_code",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.Mode-3/A reply\n\n070.Mode-3/A reply in decimal\nrepresentation",
+                "description": "070.Mode-3/A reply in decimal\nrepresentation",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Code",
                 "representation_str": "DEC_TO_OCTAL",
                 "short_name": "MA",
+                "source": "I001/070.Mode-3/A reply",
                 "unit": ""
             }
         },
@@ -392,12 +414,13 @@
                 "db_column_name": "mode_3a_garbled",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.G\n\n0 Default\n1 Garbled code",
+                "description": "0 Default\n1 Garbled code",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Garbled",
                 "representation_str": "STANDARD",
                 "short_name": "MA G",
+                "source": "I001/070.G",
                 "unit": ""
             }
         },
@@ -409,12 +432,13 @@
                 "db_column_name": "mode_3a_smoothed",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.L\n\n0 Mode-3/A code derived from the reply of the transponder\n1 Mode-3/A code not extracted during the last scan",
+                "description": "0 Mode-3/A code derived from the reply of the transponder\n1 Mode-3/A code not extracted during the last scan",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Smoothed",
                 "representation_str": "STANDARD",
                 "short_name": "MA S",
+                "source": "I001/070.L",
                 "unit": ""
             }
         },
@@ -426,12 +450,13 @@
                 "db_column_name": "mode_3a_valid",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.V\n\n0 Code not validated\n1 Code validated\n",
+                "description": "0 Code not validated\n1 Code validated",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A Valid",
                 "representation_str": "STANDARD",
                 "short_name": "MA V",
+                "source": "I001/070.V",
                 "unit": ""
             }
         },
@@ -443,12 +468,13 @@
                 "db_column_name": "mode_c_code",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 090.Mode-C HEIGHT\n\nFrom 090.Flight Level\n\nThis data item shall be sent when Mode C code or Mode S altitude code is present and decodable. It represents the flight level of the plot, even if associated\nwith a track.",
+                "description": "This data item shall be sent when Mode C code or Mode S altitude code is present and decodable. It represents the flight level of the plot, even if associated\nwith a track.",
                 "dimension": "Height",
                 "is_key": false,
                 "name": "Mode C Code",
                 "representation_str": "FLOAT_PREC2",
                 "short_name": "MC",
+                "source": "I001/090.Mode-C HEIGHT\nI001/090.Flight Level",
                 "unit": "Feet"
             }
         },
@@ -460,12 +486,13 @@
                 "db_column_name": "mode_c_garbled",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 090.G\n\n0 Default\n1 Garbled code",
+                "description": "0 Default\n1 Garbled code",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode C Garbled",
                 "representation_str": "STANDARD",
                 "short_name": "MC G",
+                "source": "I001/090.G",
                 "unit": ""
             }
         },
@@ -477,12 +504,13 @@
                 "db_column_name": "mode_c_valid",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 090.V\n\n0 Code not validated\n1 Code validated",
+                "description": "0 Code not validated\n1 Code validated",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode C Valid",
                 "representation_str": "STANDARD",
                 "short_name": "MC V",
+                "source": "I001/090.V",
                 "unit": ""
             }
         },
@@ -494,12 +522,13 @@
                 "db_column_name": "azimuth",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 040.THETA\n\nMeasured position of an aircraft in local polar co-ordinates",
+                "description": "Measured position of an aircraft in local polar co-ordinates",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Azimuth",
                 "representation_str": "STANDARD",
                 "short_name": "Azm",
+                "source": "I001/040.THETA",
                 "unit": "Degree"
             }
         },
@@ -511,12 +540,13 @@
                 "db_column_name": "latitude",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Calculated from 040.RHO/040.THETA \n\nPosition in WGS-84 Coordinates\nRange -90 <= latitude <= 90 deg.",
+                "description": "Position in WGS-84 Co-ordinates\nRange -90 <= latitude <= 90 deg.",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Latitude",
                 "representation_str": "STANDARD",
                 "short_name": "Lat",
+                "source": "Calculated from Range, Azimuth (radar polar->WGS-84 projection)",
                 "unit": "Degree"
             }
         },
@@ -528,12 +558,13 @@
                 "db_column_name": "longitude",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Calculated from 040.RHO/040.THETA \n\nPosition in WGS-84 Coordinates\nRange -90 <= latitude <= 90 deg.",
+                "description": "Position in WGS-84 Co-ordinates\nRange -180 <= longitude < 180 deg.",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Longitude",
                 "representation_str": "STANDARD",
                 "short_name": "Lon",
+                "source": "Calculated from Range, Azimuth (radar polar->WGS-84 projection)",
                 "unit": "Degree"
             }
         },
@@ -545,12 +576,13 @@
                 "db_column_name": "range",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 040.RHO\n\nMeasured position of an aircraft in local polar co-ordinates\n\nMax. range = 256 NM",
+                "description": "Measured position of an aircraft in local polar co-ordinates\n\nMax. range = 256 NM",
                 "dimension": "Length",
                 "is_key": false,
                 "name": "Range",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/040.RHO",
                 "unit": "Nautical Mile"
             }
         },
@@ -562,12 +594,13 @@
                 "db_column_name": "record_number",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Unique record id starting with 0 on every new recording",
+                "description": "Unique record id starting with 0 on every new recording.",
                 "dimension": "",
                 "is_key": true,
                 "name": "Record Number",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "Internal: ascending record number assigned at import",
                 "unit": ""
             }
         },
@@ -579,12 +612,13 @@
                 "db_column_name": "sac",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 010.SAC\n\nData Source Identifier System Area Code",
+                "description": "Data Source Identifier System Area Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SAC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/010.SAC",
                 "unit": ""
             }
         },
@@ -596,12 +630,13 @@
                 "db_column_name": "sic",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 010.SIC\n\nData Source Identifier System Identification Code",
+                "description": "Data Source Identifier System Identification Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SIC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/010.SIC",
                 "unit": ""
             }
         },
@@ -613,12 +648,13 @@
                 "db_column_name": "simulated",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.SIM\n\n0  Actual target report\n1 Simulated target report",
+                "description": "0  Actual target report\n1 Simulated target report",
                 "dimension": "",
                 "is_key": false,
                 "name": "Simulated",
                 "representation_str": "STANDARD",
                 "short_name": "SIM",
+                "source": "I001/020.SIM",
                 "unit": ""
             }
         },
@@ -630,12 +666,13 @@
                 "db_column_name": "spi",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.SPI\n\n0 Absence of SPI\n1 Special Position Identification",
+                "description": "0 Absence of SPI\n1 Special Position Identification",
                 "dimension": "",
                 "is_key": false,
                 "name": "SPI",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/020.SPI",
                 "unit": ""
             }
         },
@@ -647,12 +684,13 @@
                 "db_column_name": "test",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.TST\n\n0 Real target report\n1 Test target report",
+                "description": "0 Real target report\n1 Test target report",
                 "dimension": "",
                 "is_key": false,
                 "name": "Test",
                 "representation_str": "STANDARD",
                 "short_name": "TST",
+                "source": "I001/020.TST",
                 "unit": ""
             }
         },
@@ -664,12 +702,13 @@
                 "db_column_name": "time_of_day",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 140.Time-of-Day\n\nAbsolute time stamping expressed as Co-ordinated Universal Time (UTC)",
+                "description": "Absolute time stamping expressed as Co-ordinated Universal Time (UTC)",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Time of Day",
                 "representation_str": "SECONDS_TO_TIME",
                 "short_name": "ToD",
+                "source": "I001/140.Time-of-Day",
                 "unit": "Second"
             }
         },
@@ -681,12 +720,13 @@
                 "db_column_name": "track_confirmed",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.CON\n\nFrom 170.CNF\n\nConfirmed vs. Tentative Track\n0 Tentative Track\n1 Confirmed Track",
+                "description": "Confirmed vs. Tentative Track\n0 Tentative Track\n1 Confirmed Track",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Confirmed",
                 "representation_str": "STANDARD",
                 "short_name": "CNF",
+                "source": "I001/170.CON\nI001/170.CNF",
                 "unit": ""
             }
         },
@@ -698,12 +738,13 @@
                 "db_column_name": "track_doubtful",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.DOU\n\nSignals level of confidence in plot to track association process\n0 Normal confidence\n1 Low confidence in plot to track association.",
+                "description": "Signals level of confidence in plot to track association process\n0 Normal confidence\n1 Low confidence in plot to track association.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Doubtful",
                 "representation_str": "STANDARD",
                 "short_name": "DOU",
+                "source": "I001/170.DOU",
                 "unit": ""
             }
         },
@@ -715,12 +756,13 @@
                 "db_column_name": "track_end",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.TRE\n\nSignal for End_of_Track\n0 Track still alive\n1 End of track lifetime(last report for this track)",
+                "description": "Signal for End_of_Track\n0 Track still alive\n1 End of track lifetime(last report for this track)",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track End",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I001/170.TRE",
                 "unit": ""
             }
         },
@@ -732,12 +774,13 @@
                 "db_column_name": "track_ghost_target",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.GHO\n\nGhost vs. true target\n0 True target track.\n1 Ghost target track.",
+                "description": "Ghost vs. true target\n0 True target track.\n1 Ghost target track.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Ghost Target",
                 "representation_str": "STANDARD",
                 "short_name": "GHO",
+                "source": "I001/170.GHO",
                 "unit": ""
             }
         },
@@ -749,12 +792,13 @@
                 "db_column_name": "track_groundspeed",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 200.CALCULATED GROUNDSPEED\n\nCalculated track velocity expressed in polar co-ordinates.",
+                "description": "Calculated track velocity expressed in polar co-ordinates.",
                 "dimension": "Speed",
                 "is_key": false,
                 "name": "Track Groundspeed",
                 "representation_str": "FLOAT_PREC1",
                 "short_name": "GSpd",
+                "source": "I001/200.CALCULATED GROUNDSPEED",
                 "unit": "Knots"
             }
         },
@@ -766,12 +810,13 @@
                 "db_column_name": "track_angle",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 200.CALCULATED HEADING\n\nCalculated track velocity expressed in polar co-ordinates.\n\nWas called Track Heading previously, but renamed since it refers to  the direction of movement.",
+                "description": "Calculated track velocity expressed in polar co-ordinates.\n\nWas called Track Heading previously, but renamed since it refers to  the direction of movement.",
                 "dimension": "Angle",
                 "is_key": false,
                 "name": "Track Angle",
                 "representation_str": "FLOAT_PREC1",
                 "short_name": "Ang",
+                "source": "I001/200.CALCULATED HEADING",
                 "unit": "Degree"
             }
         },
@@ -783,12 +828,13 @@
                 "db_column_name": "track_horizontal_manoeuvre",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.MAN\n\nFrom 170.MAH\n\nManoeuvre detection in Horizontal Sense\n0 No horizontal man.sensed\n1 Horizontal man. sensed",
+                "description": "Manoeuvre detection in Horizontal Sense\n0 No horizontal man.sensed\n1 Horizontal man. sensed",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Horizontal Manoeuvre",
                 "representation_str": "STANDARD",
                 "short_name": "MAH",
+                "source": "I001/170.MAN\nI001/170.MAH",
                 "unit": ""
             }
         },
@@ -800,12 +846,13 @@
                 "db_column_name": "track_number",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 161.TRACK/PLOT NUMBER\n\nAn integer value representing a unique reference to a\ntrack/plot record within a particular track/plot file.",
+                "description": "An integer value representing a unique reference to a\ntrack/plot record within a particular track/plot file.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Number",
                 "representation_str": "STANDARD",
                 "short_name": "TN",
+                "source": "I001/161.TRACK/PLOT NUMBER",
                 "unit": ""
             }
         }

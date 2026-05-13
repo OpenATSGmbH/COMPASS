@@ -27,10 +27,7 @@ namespace dbContent
 class ViewWidget;
 class VariableView;
 
-class VariableViewAnnotationWidget;
-
 class QVBoxLayout;
-class QRadioButton;
 class QToolButton;
 class QWidget;
 
@@ -44,7 +41,7 @@ public slots:
     void selectedVariableChangedSlot(int idx);
 
 public:
-    VariableViewConfigWidget(ViewWidget* view_widget, 
+    VariableViewConfigWidget(ViewWidget* view_widget,
                              VariableView* view,
                              QWidget* parent = nullptr);
     virtual ~VariableViewConfigWidget();
@@ -60,7 +57,6 @@ protected:
     void showSwitch(int var0, bool ok);
 
     const dbContent::VariableSelectionWidget* variableSelection(size_t idx) const;
-    bool showsAnnotation() const;
 
     virtual void viewInfoJSON_impl(nlohmann::json& info) const override;
     virtual void configChanged_impl() {};
@@ -71,19 +67,10 @@ protected:
     QVBoxLayout* configLayout() { return config_layout_; }
 
 private:
-    void dataSourceToggled();
-    void annotationChanged();
-
     void switchVariables(int idx0, int idx1);
 
     VariableView* var_view_      = nullptr;
     QVBoxLayout*  config_layout_ = nullptr;
-
-    QRadioButton* show_variables_box_   = nullptr;
-    QRadioButton* show_annotations_box_ = nullptr;
-
-    QWidget*                      variables_widget_ = nullptr;
-    VariableViewAnnotationWidget* annotation_widget_   = nullptr;
 
     std::vector<dbContent::VariableSelectionWidget*> var_selection_widgets_;
     std::vector<QToolButton*> var_switches_;

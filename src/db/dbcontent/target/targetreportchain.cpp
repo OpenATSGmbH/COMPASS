@@ -27,6 +27,8 @@
 #include "util/timeconv.h"
 #include "global.h"
 
+#include "json.hpp"
+
 #include <algorithm>
 
 #include <boost/algorithm/string.hpp>
@@ -379,6 +381,37 @@ boost::optional<TargetPositionAccuracy> Chain::posAccuracy(const DataID& id) con
     unsigned int index_ext = index.idx_external;
 
     return getPositionAccuracy(accessor_, dbcontent_name_, index_ext);
+}
+
+boost::optional<std::vector<unsigned int>> Chain::contribRecv(const DataID& id) const
+{
+    if (!accessor_->hasVar<nlohmann::json>(dbcontent_name_,
+                                           dbcontent_vars::var_cat020_contrib_recv_))
+        return {};
+
+    auto index             = indexFromDataID(id);
+    unsigned int index_ext = index.idx_external;
+
+    NullableVector<nlohmann::json>& contrib_vec = accessor_->getVar<nlohmann::json>(
+        dbcontent_name_, dbcontent_vars::var_cat020_contrib_recv_);
+
+    if (contrib_vec.isNull(index_ext))
+        return {};
+
+    const nlohmann::json& arr = contrib_vec.get(index_ext);
+    if (!arr.is_array() || arr.empty())
+        return {};
+
+    std::vector<unsigned int> out;
+    out.reserve(arr.size());
+    for (const auto& v : arr)
+    {
+        if (v.is_number_unsigned() || v.is_number_integer())
+            out.push_back(v.get<unsigned int>());
+    }
+    if (out.empty())
+        return {};
+    return out;
 }
 
 boost::optional<dbContent::TargetVelocity> Chain::speed(const DataID& id) const

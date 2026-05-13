@@ -84,7 +84,7 @@ public:
     /// with max-hue-distance selection against `existing` (typically the base
     /// colors of other data sources of the same DSType).
     ///
-    /// ds_type may be empty — in that case the full hue wheel is used.
+    /// ds_type may be empty - in that case the full hue wheel is used.
     static QColor generateBaseColor(const std::vector<QColor>& existing, Band band,
                                     const std::string& ds_type = "");
 

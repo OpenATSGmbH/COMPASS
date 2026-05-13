@@ -4,15 +4,15 @@
 
 For view point and annotation format specifications, see the user manual:
 - **View Points UI**: `doc/user_manual/flightdeck/viewpoints/view_points.tex` (Section "View Points")
-- **View Point JSON Format**: `doc/user_manual/appendix/appendix_view_points.tex` (Appendix: View Points) — defines the JSON structure, version, annotation features, and format requirements
-- **Annotation Layers**: `doc/user_manual/geographicview/geo_layers_annotation_ops.tex` — Geographic View annotation layer operations
+- **View Point JSON Format**: `doc/user_manual/appendix/appendix_view_points.tex` (Appendix: View Points) - defines the JSON structure, version, annotation features, and format requirements
+- **Annotation Layers**: `doc/user_manual/geographicview/geo_layers_annotation_ops.tex` - Geographic View annotation layer operations
 
 ## Overview
 
 When a view point is set via the `set_view_point` runtime command, its JSON payload is consumed
 by multiple components (views, filters, etc.). Annotations in particular are parsed and rendered
-by the Geographic View. Bad or malformed JSON must be handled gracefully — never crashing the
-application — and all errors must be reported back through the command's reply.
+by the Geographic View. Bad or malformed JSON must be handled gracefully - never crashing the
+application - and all errors must be reported back through the command's reply.
 
 ## Architecture
 
@@ -73,7 +73,7 @@ All JSON validation in annotation and drawable code uses **exceptions** (`std::r
 The caller (viewpoint or internal) catches them and decides the policy:
 
 - **Viewpoint annotations**: catch, report via `reportViewPointError()`, continue with next annotation.
-- **Internal annotations**: catch, `traced_assert(false)` — internal annotations are our own code,
+- **Internal annotations**: catch, `traced_assert(false)` - internal annotations are our own code,
   so bad data is a programming error.
 
 ### What throws
@@ -101,19 +101,19 @@ The caller (viewpoint or internal) catches them and decides the policy:
 ### What does NOT throw
 
 Internal invariants that indicate programming errors remain as `traced_assert`:
-- `map_node_.valid()` — the map node must exist before any annotation work starts
+- `map_node_.valid()` - the map node must exist before any annotation work starts
 - Pointer validity checks in non-JSON code paths
 
 ### Catch sites
 
-**Viewpoint path** — `OSGAnnotationsRootTreeItemViewPoint::update()`:
+**Viewpoint path** - `OSGAnnotationsRootTreeItemViewPoint::update()`:
 - Outer try/catch around the entire annotation array processing (catches structural errors
   like "annotations is not an array").
 - Inner try/catch per annotation (catches per-annotation errors, allowing other annotations
   to still be processed).
 - Both report via `viewManager().reportViewPointError(getName(), ...)`.
 
-**Internal path** — `OSGAnnotationsRootTreeItemInternal::addAnnotation()`:
+**Internal path** - `OSGAnnotationsRootTreeItemInternal::addAnnotation()`:
 - Single try/catch around the entire method body.
 - On catch: logs the error and calls `traced_assert(false)` since internal annotation data
   is always produced by our own code.
@@ -131,7 +131,7 @@ All reported errors will appear in the command's reply JSON.
 
 ## Data Source Selection (`data_sources`)
 
-View points can restrict which data sources are loaded via the `"data_sources"` key. The value is a JSON array of `[ds_id, [line_ids]]` pairs (how nlohmann/json serializes `map<unsigned int, set<unsigned int>>`). An empty line array means **no lines** — `disableAllLines()` is called first, then only listed lines are enabled. To load all lines, list them explicitly (e.g. `[0, 1, 2, 3]`).
+View points can restrict which data sources are loaded via the `"data_sources"` key. The value is a JSON array of `[ds_id, [line_ids]]` pairs (how nlohmann/json serializes `map<unsigned int, set<unsigned int>>`). An empty line array means **no lines** - `disableAllLines()` is called first, then only listed lines are enabled. To load all lines, list them explicitly (e.g. `[0, 1, 2, 3]`).
 
 ```json
 {
@@ -144,17 +144,17 @@ View points can restrict which data sources are loaded via the `"data_sources"` 
 
 - When `data_sources` is present, only the listed sources are loaded (`DataSourceManager::setLoadOnlyDataSources`).
 - When absent, all data sources are loaded.
-- `data_source_types` (e.g. `["ADSB", "RefTraj"]`) is applied independently — it restricts which DS types are enabled.
+- `data_source_types` (e.g. `["ADSB", "RefTraj"]`) is applied independently - it restricts which DS types are enabled.
 - The read side uses `get<map<unsigned int, set<unsigned int>>>()` which also accepts a JSON object with string keys (`{"12750": [0, 1]}`), but the write side always produces array-of-pairs.
 
 **Key source files**:
-- Write: `FilterManager::getFilterState()` in `filtermanager.cpp` — serializes via `ViewPoint::VP_DS_KEY`
-- Read: `FilterManager::showViewPointSlot()` in `filtermanager.cpp` — deserializes and calls `setLoadOnlyDataSources`
+- Write: `FilterManager::getFilterState()` in `filtermanager.cpp` - serializes via `ViewPoint::VP_DS_KEY`
+- Read: `FilterManager::showViewPointSlot()` in `filtermanager.cpp` - deserializes and calls `setLoadOnlyDataSources`
 - Constant: `ViewPoint::VP_DS_KEY` = `"data_sources"` in `viewpoint.h`
 
 **Key source files**:
-- Write: `FilterManager::getFilterState()` in `filtermanager.cpp` — serializes via `ViewPoint::VP_DS_KEY`
-- Read: `FilterManager::showViewPointSlot()` in `filtermanager.cpp` — deserializes and calls `setLoadOnlyDataSources`
+- Write: `FilterManager::getFilterState()` in `filtermanager.cpp` - serializes via `ViewPoint::VP_DS_KEY`
+- Read: `FilterManager::showViewPointSlot()` in `filtermanager.cpp` - deserializes and calls `setLoadOnlyDataSources`
 - Constant: `ViewPoint::VP_DS_KEY` = `"data_sources"` in `viewpoint.h`
 
 ## Files

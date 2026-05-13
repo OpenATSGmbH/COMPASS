@@ -96,6 +96,9 @@ public:
     bool hasCurrentDataSource() const { return current_ds_ != nullptr; }
     unsigned int currentDataSourceId() const;
 
+    int currentTabIndex() const;
+    void setCurrentTabIndex(int idx);
+
     static const std::string TabMainName;
     static const std::string TabRadarRangesName;
     static const std::string TabRadarAccuraciesName;

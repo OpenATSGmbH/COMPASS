@@ -68,7 +68,7 @@ public slots:
     void livePauseResumeSlot();
     void liveStopSlot();
 
-    void configureMetaVariablesSlot();
+    void configureDBContentSlot();
 
     void importAsterixRecordingSlot();
     void importRecentAsterixRecordingSlot();
@@ -85,6 +85,7 @@ public slots:
     void calculateAssociationsARTASSlot();
     void reconstructReferencesSlot();
     void evaluateSlot();
+    void analyseMLATDataSourceSlot();
 
     void quitRequestedSlot();
     void showAddViewMenuSlot();
@@ -179,9 +180,11 @@ protected:
     QAction* dark_mode_action_ {nullptr};
     QAction* fullscreen_action_ {nullptr};
     QAction* auto_refresh_views_action_ {nullptr};
+    QAction* dbcontent_action_ {nullptr};
 
     // process menu
     QMenu* process_menu_ {nullptr};
+    QMenu* analyze_menu_ {nullptr};
     //QAction* calculate_references_action_ {nullptr};
 
     // ui menu

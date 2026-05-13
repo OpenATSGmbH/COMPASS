@@ -303,7 +303,7 @@ void EvaluationCalculator::checkSubConfigurables()
  */
 void EvaluationCalculator::updateDerivedParameters()
 {
-    //data sources — default-constructed json is null, only parse if object
+    //data sources - default-constructed json is null, only parse if object
     if (settings_.active_sources_ref_.is_object())
         data_sources_ref_ = settings_.active_sources_ref_.get<std::map<std::string, std::map<std::string, bool>>>();
     else

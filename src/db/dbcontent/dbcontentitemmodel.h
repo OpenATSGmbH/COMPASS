@@ -32,8 +32,8 @@ class QMenu;
  *
  * Each row represents one unique item ID (key in item_locations_).
  * Column 0 provides:
- *   - Qt::DisplayRole   — item name built from groupingToString() + item ID string
- *   - Qt::CheckStateRole — per-item visibility toggle
+ *   - Qt::DisplayRole   - item name built from groupingToString() + item ID string
+ *   - Qt::CheckStateRole - per-item visibility toggle
  *
  * Subclass and override the virtual hooks to react to visibility changes and
  * to populate custom context-menu entries.

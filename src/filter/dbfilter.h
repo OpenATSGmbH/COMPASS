@@ -113,7 +113,7 @@ protected:
 
     bool widget_visible_ {true};
 
-    std::string condition_logic_{"AND"}; // "AND" or "OR" — how conditions are joined
+    std::string condition_logic_{"AND"}; // "AND" or "OR" - how conditions are joined
 
     std::vector<std::unique_ptr<DBFilterCondition>> conditions_;
 

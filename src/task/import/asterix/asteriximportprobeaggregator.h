@@ -24,6 +24,7 @@
 #include <vector>
 
 class ASTERIXImportSource;
+struct ASTERIXImportFileInfo;
 
 namespace context { class DBContextManager; }
 
@@ -82,6 +83,12 @@ public:
     /// Safe to call when no probe has run yet (returns probe_available == false).
     static Result aggregate(const ASTERIXImportSource& source,
                             const context::DBContextManager& ctx_man);
+
+    /// Aggregate probe info for a single file (and its used sections, if any).
+    /// Returns a Result containing the per-(ds_id, cat) probe data for that file
+    /// only. Does not populate context_only/probe_only/both lists - those are
+    /// only meaningful at source level.
+    static Result aggregateFile(const ASTERIXImportFileInfo& file_info);
 
     /// True when `key` should be displayed as a data item.
     /// Drops jASTERIX bookkeeping ("index", "length") and FX extension bits

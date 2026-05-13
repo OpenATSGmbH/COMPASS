@@ -26,7 +26,7 @@ ASAN_MARKER=$BUILD_DIR/.asan_state
 if [[ -d "$BUILD_DIR" ]]; then
     PREV_ASAN=$(cat "$ASAN_MARKER" 2>/dev/null || echo "")
     if [[ "$PREV_ASAN" != "$ASAN" ]]; then
-        echo "ASAN state changed (prev='$PREV_ASAN' now='$ASAN') — forcing clean build"
+        echo "ASAN state changed (prev='$PREV_ASAN' now='$ASAN') - forcing clean build"
         CLEAN=1
     fi
 fi
@@ -37,7 +37,7 @@ fi
 
 CMAKE_EXTRA=()
 if [[ $ASAN -eq 1 ]]; then
-    # AddressSanitizer build — diagnostics for heap/memory corruption.
+    # AddressSanitizer build - diagnostics for heap/memory corruption.
     # -O1 keeps optimization low enough for readable stack traces without
     # making the build painfully slow. -fno-omit-frame-pointer ensures ASan
     # can walk the stack reliably.

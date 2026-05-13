@@ -129,7 +129,7 @@ public:
 
     MainWindow& mainWindow();
 
-    // View lookup facades — allow rtcommand helpers to navigate the view
+    // View lookup facades - allow rtcommand helpers to navigate the view
     // tree without including viewmanager.h (which would pull view-layer
     // Q_OBJECT headers into core).
     QWidget* viewContainerWidget(const std::string& name);

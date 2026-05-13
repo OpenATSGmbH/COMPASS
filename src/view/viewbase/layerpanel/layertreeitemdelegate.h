@@ -26,7 +26,7 @@
  *   - Checkbox visible only when item->canHide() is true.
  *   - Color icon only painted when the item has a valid color.
  *   - Clicking the checkbox toggles the item's hidden state.
- *   - Color icon is NOT clickable — colors cannot be edited from the tree.
+ *   - Color icon is NOT clickable - colors cannot be edited from the tree.
  *
  * Views that do not use per-layer colors can turn off the icon column with
  * setReserveIconColumn(false) so names sit directly after the checkbox.

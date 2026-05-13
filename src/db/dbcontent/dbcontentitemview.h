@@ -31,8 +31,8 @@ class QTreeView;
  * Widget combining a grouping selector and a flat item list for a DBContentItemModel.
  *
  * Layout (top → bottom):
- *   [ QComboBox  — grouping mode selector ]
- *   [ QTreeView  — flat item list with checkbox + context menu ]
+ *   [ QComboBox  - grouping mode selector ]
+ *   [ QTreeView  - flat item list with checkbox + context menu ]
  *
  * The combo is pre-populated with all DBContentItemProvider grouping modes and
  * wired to call provider().setGrouping() on change. The tree view is wired

@@ -309,7 +309,7 @@ void DBContextMergeDialog::addSection(const std::string& section_name,
             {
                 combo->setCurrentIndex(2); // Database (the "new" side)
                 mi.choice = UseDatabase;
-                item->setIcon(0, QIcon()); // no hint — pre-decided
+                item->setIcon(0, QIcon()); // no hint - pre-decided
             }
             else
             {
@@ -685,7 +685,7 @@ void DBContextMergeDialog::buildMergedContext()
 
         if (mi.diff->type == ItemDiff::Added)
         {
-            // exists only in DB — add it
+            // exists only in DB - add it
             if (mi.section == "sensors")
                 merged_.addOrReplaceDataSource(DataSource::fromJSON(mi.diff->item_b));
             else if (mi.section == "ffts")
@@ -703,7 +703,7 @@ void DBContextMergeDialog::buildMergedContext()
         }
         else if (mi.diff->type == ItemDiff::Removed)
         {
-            // only in config, user wants DB (doesn't have it) — remove
+            // only in config, user wants DB (doesn't have it) - remove
             if (mi.section == "sensors")
             {
                 unsigned int target_ds_id = 0;

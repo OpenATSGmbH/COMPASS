@@ -24,6 +24,8 @@
 #include "viewcontainer.h"
 #include "viewcontainerwidget.h"
 #include "viewpoint.h"
+#include "viewpointgenerator.h"
+#include "viewabledataconfig.h"
 #include "dbinterface.h"
 #include "viewpointswidget.h"
 #include "filtermanager.h"
@@ -50,6 +52,7 @@
 #include <QEventLoop>
 #include <QScopedValueRollback>
 #include <QTabWidget>
+#include <QTimer>
 
 #include "traced_assert.h"
 
@@ -64,8 +67,8 @@ namespace
     // Pump only the events that are safe during loading dispatch:
     //   paint / timer / WM-ping replies (so the WM does not flag us as unresponsive).
     // Excluded:
-    //   user input  — modal dialog already blocks it; double-belt against any non-modal load path.
-    //   sockets     — keeps RT command TCP from firing a second load mid-dispatch.
+    //   user input  - modal dialog already blocks it; double-belt against any non-modal load path.
+    //   sockets     - keeps RT command TCP from firing a second load mid-dispatch.
     inline void pumpLoadingEvents()
     {
         QCoreApplication::processEvents(
@@ -391,10 +394,85 @@ void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
 
     emit showViewPointSignal(current_viewable_);
 
+    // After every view has consumed the viewpoint (and so registered any
+    // annotation), bring a compatible view to the front. Switching before
+    // the signal would make a not-yet-shown widget try to render mid-setup
+    // (the GridView duplicates its legend / skips the chart on that path).
+    activateCompatibleViewTabs(current_viewable_);
+
     if (load_blocking)
         compass_.dbContentManager().loadBlocking(LoadRequest::standard());
     else
         compass_.dbContentManager().load(LoadRequest::standard());
+}
+
+void ViewManager::activateCompatibleViewTabs(const ViewableDataConfig* viewable)
+{
+    if (!viewable)
+        return;
+
+    auto features = ViewPointGenVP::scanForFeatures(viewable->data());
+    if (features.empty())
+        return;
+
+    std::set<std::string> feature_types;
+    for (const auto& f : features)
+    {
+        if (f.feature_json.is_object()
+            && f.feature_json.contains(ViewPointGenFeature::FeatureTypeFieldType))
+        {
+            feature_types.insert(
+                f.feature_json[ViewPointGenFeature::FeatureTypeFieldType].get<std::string>());
+        }
+    }
+    if (feature_types.empty())
+        return;
+
+    auto supports = [&feature_types](View* v) {
+        if (!v)
+            return false;
+        auto accepted = v->acceptedAnnotationFeatureTypes();
+        for (const auto& t : feature_types)
+            if (accepted.count(t))
+                return true;
+        return false;
+    };
+
+    for (const auto& entry : containers_)
+    {
+        ViewContainer* container = entry.second;
+        if (!container)
+            continue;
+
+        View* current = container->currentView();
+        if (current && supports(current))
+            continue;
+
+        for (const auto& v : container->getViews())
+        {
+            if (supports(v.get()))
+            {
+                View* view_to_show = v.get();
+                view_to_show->showInTabWidget();
+
+                // QtCharts occasionally leaves the chart unrendered on a
+                // tab's first show this session - the user then sees the
+                // legend stretched across the chart area and only a manual
+                // resize triggers a redraw. Forcing a geometry refresh after
+                // the show event has run does the same thing programmatically.
+                QWidget* central = view_to_show->getCentralWidget();
+                if (central)
+                {
+                    QTimer::singleShot(0, central, [central]()
+                    {
+                        central->updateGeometry();
+                        central->update();
+                    });
+                }
+                break;
+            }
+        }
+    }
 }
 
 
@@ -944,7 +1022,7 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
 
     // Threshold: only pump events between views once the loop has been running
     // for a while. Short loops (typical UI test loads, ~1-2 s total) finish
-    // before the threshold and never pump — this keeps queued RT commands from
+    // before the threshold and never pump - this keeps queued RT commands from
     // interleaving with view dispatch and breaking UI test injection. Long
     // loads (the original "WM unresponsive" case, 12+ s) cross the threshold
     // and start pumping, restoring responsiveness for the user.

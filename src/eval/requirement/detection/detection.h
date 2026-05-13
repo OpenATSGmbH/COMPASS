@@ -18,6 +18,7 @@
 #pragma once
 
 #include "eval/requirement/base/probabilitybase.h"
+#include "eval/requirement/detection/detection_pd_helpers.h"
 
 namespace EvaluationRequirement
 {
@@ -56,6 +57,8 @@ public:
   }
 
 protected:
+    PDHelpers::MissTestParams missTestParams() const;
+
     bool isMiss (float d_tod) const;
     unsigned int getNumMisses(float d_tod) const;
 

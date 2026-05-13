@@ -117,7 +117,7 @@ bool DBDataSourceWidget::needsRecreate()
             // simplified: check if content_labels_ needs rebuild
         }
 
-        // always rebuild if counts changed — simplified approach
+        // always rebuild if counts changed - simplified approach
         return true;
     }
 

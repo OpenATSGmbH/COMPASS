@@ -180,7 +180,7 @@ public:
     std::vector<nlohmann::json> loadTaskLogInfo();
     void saveTaskLogInfo(unsigned int msg_id, const nlohmann::json& info);
 
-    // db_context table — stores the active DBContext per DB
+    // db_context table - stores the active DBContext per DB
     bool existsDBContextTable();
     void createDBContextTable();
     void saveDBContextSection(const std::string& section, const std::string& json_str);
@@ -188,7 +188,7 @@ public:
     std::map<std::string, std::string> loadAllDBContextSections();
     void clearDBContextTable();
 
-    // db_info table — generic key-value metadata (runtime state, etc.)
+    // db_info table - generic key-value metadata (runtime state, etc.)
     bool existsDBInfoTable();
     void createDBInfoTable();
     void saveDBInfo(const std::string& name, const std::string& json_str);

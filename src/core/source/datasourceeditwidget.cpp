@@ -1298,6 +1298,18 @@ unsigned int DataSourceEditWidget::currentDataSourceId() const
     return current_ds_->id();
 }
 
+int DataSourceEditWidget::currentTabIndex() const
+{
+    return tab_widget_ ? tab_widget_->currentIndex() : -1;
+}
+
+void DataSourceEditWidget::setCurrentTabIndex(int idx)
+{
+    if (!tab_widget_ || idx < 0 || idx >= tab_widget_->count())
+        return;
+    tab_widget_->setCurrentIndex(idx);
+}
+
 void DataSourceEditWidget::updateContent()
 {
     detection_type_combo_->blockSignals(true);

@@ -31,7 +31,7 @@ namespace
 {
 
 /// Compare two JSON values for "less than" in a min/max sense. Only meaningful
-/// for matching numeric/string types — otherwise the existing value wins.
+/// for matching numeric/string types - otherwise the existing value wins.
 bool jsonLess(const json& a, const json& b)
 {
     if (a.is_number() && b.is_number())
@@ -224,6 +224,35 @@ std::string ASTERIXImportProbeAggregator::inferDsType(
     if (types.size() == 1)
         return *types.begin();
     return "Other";
+}
+
+ASTERIXImportProbeAggregator::Result
+ASTERIXImportProbeAggregator::aggregateFile(const ASTERIXImportFileInfo& file_info)
+{
+    Result result;
+
+    if (!file_info.used)
+        return result;
+
+    if (file_info.hasSections())
+    {
+        for (const auto& section : file_info.sections)
+        {
+            if (!section.used)
+                continue;
+            if (!section.error.analysis_info.is_object())
+                continue;
+            mergeAnalysisJSON(section.error.analysis_info, result);
+            result.probe_available = true;
+        }
+    }
+    else if (file_info.error.analysis_info.is_object())
+    {
+        mergeAnalysisJSON(file_info.error.analysis_info, result);
+        result.probe_available = true;
+    }
+
+    return result;
 }
 
 ASTERIXImportProbeAggregator::Result

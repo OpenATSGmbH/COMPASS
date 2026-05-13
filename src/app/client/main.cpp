@@ -47,7 +47,7 @@ using namespace std;
 static char crash_log_path[PATH_MAX] = {0};
 
 // Compute "<dirname(APPIMAGE)>/compass_crash_<pid>.log". Called once from
-// main() before any signal could fire — uses getenv/snprintf which are NOT
+// main() before any signal could fire - uses getenv/snprintf which are NOT
 // async-signal-safe and must not be reached from a handler.
 static void initCrashLogPath()
 {
@@ -68,7 +68,7 @@ static void initCrashLogPath()
 }
 
 // ---------------------------------------------------------------------------
-// Terminate handler — called by the runtime when an exception is uncaught
+// Terminate handler - called by the runtime when an exception is uncaught
 // (e.g. escaping a noexcept boundary or a worker thread).  Prints the
 // throw-site stacktrace captured by the __cxa_throw hook above, plus the
 // exception message if available.
@@ -116,7 +116,7 @@ void terminateHandler()
 // ---------------------------------------------------------------------------
 
 // async-signal-safe stacktrace for signals where allocation cannot be trusted
-// (e.g. SIGABRT from a glibc heap-corruption check — the allocator is exactly
+// (e.g. SIGABRT from a glibc heap-corruption check - the allocator is exactly
 // the subsystem that just failed). Writes to stderr and, when running as an
 // AppImage, to <dirname(APPIMAGE)>/compass_crash_<pid>.log so the trace is
 // preserved even if the stdout/stderr pipe is lost on process teardown.
@@ -129,7 +129,7 @@ void safeSignalHandler(int signum)
     const char msg[] = "\nCaught signal: ";
     const char nl[] = "\n";
 
-    // format signum as decimal digits (async-signal-safe — no printf)
+    // format signum as decimal digits (async-signal-safe - no printf)
     char buf[16];
     int pos = sizeof(buf);
     int val = signum < 0 ? -signum : signum;
@@ -200,8 +200,8 @@ int main(int argc, char** argv)
         signal(SIGSEGV, safeSignalHandler);  // stack likely corrupted
         signal(SIGBUS,  safeSignalHandler);  // stack likely corrupted
         signal(SIGFPE,  safeSignalHandler);  // arithmetic fault
-        signal(SIGABRT, safeSignalHandler);  // heap may be corrupted — allocator untrusted
-        signal(SIGTERM, signalHandler);      // external term — stack intact
+        signal(SIGABRT, safeSignalHandler);  // heap may be corrupted - allocator untrusted
+        signal(SIGTERM, signalHandler);      // external term - stack intact
         signal(SIGPIPE, SIG_IGN);           // prevent crash on broken socket
         
         const bool is_app_image = Utils::System::appDir() != nullptr;

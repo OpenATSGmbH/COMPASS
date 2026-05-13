@@ -83,7 +83,7 @@ TEST_CASE("TrackerTrackNumberFilter getConditionString", "[filter][trackertrackn
 TEST_CASE("TrackerTrackNumberFilter empty source does not crash", "[filter][trackertracknum][empty]")
 {
     // Two tracker sources are pushed; only one has a track-number value
-    // configured. The empty one must NOT produce "IN ()" — it must be
+    // configured. The empty one must NOT produce "IN ()" - it must be
     // skipped, and the other source must still emit a valid clause.
 
     auto mock = createStandardMock();
@@ -95,8 +95,8 @@ TEST_CASE("TrackerTrackNumberFilter empty source does not crash", "[filter][trac
     TrackerTrackNumberFilter filter(cfg, nullptr, mock);
 
     std::map<unsigned int, std::map<unsigned int, unsigned int>> tracker_lines;
-    tracker_lines[10][1] = 5;   // ds 10, line 1 — has data
-    tracker_lines[20][1] = 7;   // ds 20, line 1 — has data, no track num set
+    tracker_lines[10][1] = 5;   // ds 10, line 1 - has data
+    tracker_lines[20][1] = 7;   // ds 20, line 1 - has data, no track num set
     std::map<unsigned int, std::string> ds_names;
     ds_names[10] = "ARTAS";
     ds_names[20] = "Other";
@@ -137,7 +137,7 @@ TEST_CASE("TrackerTrackNumberFilter all sources empty yields no clause", "[filte
     ds_names[10] = "ARTAS";
     filter.updateTrackerDataSources(tracker_lines, ds_names);
 
-    // Don't set any track numbers — all entries remain "".
+    // Don't set any track numbers - all entries remain "".
 
     VariableSet read_set;
     bool first = true;

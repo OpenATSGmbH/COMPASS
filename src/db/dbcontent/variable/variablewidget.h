@@ -48,6 +48,8 @@ class VariableWidget : public QWidget
     void editNameSlot();
     /// @brief Changes DBCont info
     void editDescriptionSlot();
+    /// @brief Changes DBCont source
+    void editSourceSlot();
     //void editDataTypeSlot();
 
   public:
@@ -73,6 +75,8 @@ class VariableWidget : public QWidget
     QLineEdit* name_edit_{nullptr};
     /// @brief DBContVariable info
     QLineEdit* description_edit_{nullptr};
+    /// @brief DBContVariable source
+    QLineEdit* source_edit_{nullptr};
     VariableDataTypeComboBox* type_combo_{nullptr};
     StringRepresentationComboBox* representation_box_{nullptr};
     UnitSelectionWidget* unit_sel_{nullptr};

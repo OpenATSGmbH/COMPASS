@@ -29,7 +29,7 @@ target_sources(compass_core
 target_include_directories(compass_core PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 
 # db layer files merged into compass_core that depend on higher-level modules.
-# PRIVATE to avoid AUTOMOC duplication — these dirs contain Q_OBJECT headers
+# PRIVATE to avoid AUTOMOC duplication - these dirs contain Q_OBJECT headers
 # that are already MOC'd by their own targets.
 target_include_directories(compass_core PRIVATE
     "${CMAKE_SOURCE_DIR}/src/app/client"

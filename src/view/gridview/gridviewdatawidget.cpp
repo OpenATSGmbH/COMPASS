@@ -39,6 +39,8 @@
 
 #include "dbcontentlayer.h"
 #include "layertreemodel.h"
+#include "viewlayertreemodel.h"
+#include "annotationsrootitem.h"
 
 #include "logger.h"
 
@@ -82,6 +84,18 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
     y_axis_name_ = view_->variable(1).description();
 
     updateGridChart();
+
+    // Annotations subtree of the layer panel mirrors view_->annotations(); the
+    // panel is wired via attachLayerPanel and may not yet be present at
+    // construction time.
+    connect(view_, &VariableView::annotationsChangedSignal, this, [this]()
+    {
+        if (annotations_root_)
+            annotations_root_->update(view_->annotations(),
+                                      view_->currentAnnotationGroupIdx(),
+                                      view_->currentAnnotationIdx(),
+                                      view_);
+    });
 }
 
 /**
@@ -151,10 +165,11 @@ void GridViewDataWidget::resetStashDependentData()
 {
     resetGrid();
     resetGridLayers();
+    annotation_render_settings_.reset();
 
     // NOTE: payloads_ intentionally not cleared here. The layer tree's
     // DBContentLeafItems hold raw pointers into these payloads and outlive
-    // this reset — clearing would dangle the tree and crash on next click or
+    // this reset - clearing would dangle the tree and crash on next click or
     // render (itemData() / onEffectiveHiddenChanged dereference payload_).
     // Payload lifetime is managed by processStash(): on a non-toggle
     // recompute a fresh vector is built and swapped in, and the old one stays
@@ -178,7 +193,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
     y_axis_name_ = view_->variable(1).description();
     title_       = "";
 
-    // Build one payload per group (total count + # Null), unconditionally —
+    // Build one payload per group (total count + # Null), unconditionally -
     // the panel should show the full dataset breakdown regardless of which
     // layers are currently visible.
     size_t num_null_values = 0;
@@ -193,7 +208,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
         num_null_values += gds.nan_count;
 
         // Display name for the leaf row: the dbcontent token from the group
-        // key "<ds_type>:<ds_name>:L<n>:<dbcontent>" — fall back to the full
+        // key "<ds_type>:<ds_name>:L<n>:<dbcontent>" - fall back to the full
         // key if the scheme is not met.
         std::string leaf_name = group_key;
         {
@@ -214,7 +229,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
     // and stay alive until this function returns. rebuildLayerTree below
     // walks the current (NEW) payloads_ to build fresh tree entries, and
     // refreshSubtree inside it destroys the old DBContentLeafItems. Those
-    // old items held raw pointers into the OLD payloads — still valid here
+    // old items held raw pointers into the OLD payloads - still valid here
     // because new_payloads keeps them alive. After rebuildLayerTree returns,
     // new_payloads goes out of scope and the OLD payloads are finally freed.
     payloads_.swap(new_payloads);
@@ -332,9 +347,20 @@ void GridViewDataWidget::attachLayerPanel(DBContentRootItem* root,
     db_content_root_ = root;
     layer_model_     = layer_model;
 
+    if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
+        annotations_root_ = vlm->annotationsRootItem();
+
     // If payloads_ was already populated before the panel was attached, push
     // it into the tree now so the UI matches reality.
     rebuildLayerTree();
+
+    // Same for annotations: VariableView may have already populated them via
+    // a view point load that fired before attachLayerPanel.
+    if (annotations_root_)
+        annotations_root_->update(view_->annotations(),
+                                  view_->currentAnnotationGroupIdx(),
+                                  view_->currentAnnotationIdx(),
+                                  view_);
 }
 
 /**
@@ -351,7 +377,7 @@ void GridViewDataWidget::rebuildLayerTree()
     {
         const std::string& key = p->persistenceId();
 
-        // Parse "<ds_type>:<ds_name>:L<n>:<dbcontent>" — the group key format
+        // Parse "<ds_type>:<ds_name>:L<n>:<dbcontent>" - the group key format
         // produced when group_per_datasource is on. Malformed keys fall back
         // to a single leaf under an "<unknown>" branch.
         std::string ds_type, ds_name, line_tok, dbcontent;
@@ -410,6 +436,16 @@ void GridViewDataWidget::layersChangedSlot()
     if (in_layer_recompute_)
         return;
 
+    // Annotation mode: hiddenChangedSignal here originates from the
+    // annotations subtree's radio activation (AnnotationLeafItem). The
+    // activation already triggered a full redraw via setCurrentAnnotation ->
+    // onShowAnnotationChanged -> redrawData(true), which repopulated
+    // grid_layers_ from the new annotation. Running buildGridFromStash() now
+    // would wipe that grid by trying to rebuild from the (possibly empty)
+    // variable stash, leaving the chart blank.
+    if (view_->showsAnnotation())
+        return;
+
     in_layer_recompute_ = true;
 
     if (layer_model_)
@@ -418,7 +454,7 @@ void GridViewDataWidget::layersChangedSlot()
     loginf << "captured " << hidden_series_.size() << " hidden series";
 
     // Match the scatter plot pattern: a layer toggle only re-aggregates and
-    // re-renders. Do NOT call redrawData(true) — that resets the stash and
+    // re-renders. Do NOT call redrawData(true) - that resets the stash and
     // payloads_, which would dangle the tree items' payload_ pointers and
     // crash on the next cascadeEffectiveHidden(). The stash and layer tree
     // are untouched here; we only rebuild the Grid2D from the currently
@@ -489,6 +525,16 @@ bool GridViewDataWidget::updateFromAnnotations()
         grid_value_max_ = range->second;
 
         traced_assert(grid_value_min_.value() <= grid_value_max_.value());
+    }
+
+    annotation_render_settings_.reset();
+    if (feature.contains(ViewPointGenFeatureGrid::FeatureGridFieldNameRenderSettings))
+    {
+        Grid2DRenderSettings rs;
+        if (rs.fromJSON(feature[ ViewPointGenFeatureGrid::FeatureGridFieldNameRenderSettings ]))
+            annotation_render_settings_ = rs;
+        else
+            logwrn << "render_settings present but unparseable; ignored";
     }
 
     loginf << "done, generated " << grid_layers_.numLayers() << " layers";
@@ -706,9 +752,17 @@ void GridViewDataWidget::updateRendering()
         //combine data range with user override range
         std::pair<double, double> range(grid_value_min_.value(), grid_value_max_.value());
 
-        auto vmin = view_->getMinValue();
-        auto vmax = view_->getMaxValue();
-        
+        //annotation-provided min/max take priority over view UI min/max
+        boost::optional<double> ann_min, ann_max;
+        if (annotation_render_settings_.has_value())
+        {
+            ann_min = annotation_render_settings_->min_value;
+            ann_max = annotation_render_settings_->max_value;
+        }
+
+        auto vmin = ann_min.has_value() ? ann_min : view_->getMinValue();
+        auto vmax = ann_max.has_value() ? ann_max : view_->getMaxValue();
+
         if (vmin.has_value() || vmax.has_value())
         {
             if (vmin.has_value() && vmax.has_value() && vmin.value() <= vmax.value())
@@ -739,11 +793,27 @@ void GridViewDataWidget::updateRendering()
 
         auto dtype = view_->currentLegendDataType();
 
-        //derive suggested number of color steps from ui value
-        size_t num_steps = property_templates::suggestedNumColorSteps(dtype, 
-                                                                      range.first, 
-                                                                      range.second, 
-                                                                      settings.render_color_num_steps);
+        //colour scale: annotation override -> view setting
+        int active_color_scale = settings.render_color_scale;
+        if (annotation_render_settings_.has_value()
+            && annotation_render_settings_->color_map.valid())
+        {
+            active_color_scale = static_cast<int>(
+                annotation_render_settings_->color_map.colorScale());
+        }
+
+        //number of colour steps: annotation override -> derived from ui
+        size_t num_steps = 0;
+        if (annotation_render_settings_.has_value()
+            && annotation_render_settings_->color_map.valid())
+        {
+            num_steps = annotation_render_settings_->color_map.colorSteps();
+        }
+        else
+        {
+            num_steps = property_templates::suggestedNumColorSteps(
+                dtype, range.first, range.second, settings.render_color_num_steps);
+        }
 
         loginf << "suggested color steps = " << num_steps;
 
@@ -751,7 +821,7 @@ void GridViewDataWidget::updateRendering()
         if (num_steps == 1)
         {
             //single value
-            render_settings.color_map.create((colorscale::ColorScale)settings.render_color_scale,
+            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
                                             1,
                                             ColorMap::Type::LinearSamples,
                                             range);
@@ -759,7 +829,7 @@ void GridViewDataWidget::updateRendering()
         else if (num_steps == 2)
         {
             //binary
-            render_settings.color_map.create((colorscale::ColorScale)settings.render_color_scale,
+            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
                                             2,
                                             ColorMap::Type::Binary,
                                             range);
@@ -767,7 +837,7 @@ void GridViewDataWidget::updateRendering()
         else if (num_steps > 0)
         {
             //multi-value
-            render_settings.color_map.create((colorscale::ColorScale)settings.render_color_scale,
+            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
                                             num_steps,
                                             ColorMap::Type::LinearSamples,
                                             range);

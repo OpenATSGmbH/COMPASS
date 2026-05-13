@@ -174,6 +174,6 @@ TEST_CASE("ColorProvider generateBaseColor picks hue-distant candidate", "[color
     }
 
     // with N=32 candidates the sampler should almost never land in the clustered
-    // neighbourhood — fewer than 10% "near" samples is a generous bound
+    // neighbourhood - fewer than 10% "near" samples is a generous bound
     REQUIRE(near_count < samples / 5);
 }

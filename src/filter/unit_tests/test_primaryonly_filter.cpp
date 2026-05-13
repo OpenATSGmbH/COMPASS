@@ -83,7 +83,7 @@ TEST_CASE("PrimaryOnlyFilter inactive returns empty", "[filter][primaryonly]")
 
     VariableSet read_set;
     bool first = true;
-    // PrimaryOnlyFilter doesn't check active_ in getConditionString — it always generates
+    // PrimaryOnlyFilter doesn't check active_ in getConditionString - it always generates
     // But with active_=false, getActive() returns false so the caller won't call it
     // The filter itself always generates SQL when called
     std::string sql = filter.getConditionString("CAT048", read_set, first);
@@ -110,7 +110,7 @@ TEST_CASE("PrimaryOnlyFilter viewpoint save/load round-trip", "[filter][primaryo
     CHECK(vp_filters["Primary Only"].is_object());
     CHECK(vp_filters["Primary Only"].empty());
 
-    // Load into fresh filter — no state to change, just verify no crash
+    // Load into fresh filter - no state to change, just verify no crash
     auto cfg2 = makeFilterConfig("PrimaryOnlyFilter", "Primary Only", {
         {"active", true}
     });

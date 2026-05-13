@@ -26,6 +26,7 @@
 #include "radarplotpositioncalculatortask.h"
 #include "createartasassociationstask.h"
 #include "reconstructortask.h"
+#include "analysedatasourcetask.h"
 #include "viewmanager.h"
 #include "viewpointsreportgenerator.h"
 #include "viewpointsreportgeneratordialog.h"
@@ -77,6 +78,7 @@ REGISTER_RTCOMMAND(main_window::RTCommandImportSectorsJSON)
 REGISTER_RTCOMMAND(main_window::RTCommandCalculateRadarPlotPositions)
 REGISTER_RTCOMMAND(main_window::RTCommandCalculateARTASAssociations)
 REGISTER_RTCOMMAND(main_window::RTCommandReconstructReferences)
+REGISTER_RTCOMMAND(main_window::RTCommandAnalyzeDataSource)
 REGISTER_RTCOMMAND(main_window::RTCommandLoadData)
 REGISTER_RTCOMMAND(main_window::RTCommandExportViewPointsReport)
 REGISTER_RTCOMMAND(main_window::RTCommandExportReport)
@@ -115,6 +117,7 @@ void init_commands()
     main_window::RTCommandImportSectorsJSON::init();
     main_window::RTCommandCalculateRadarPlotPositions::init();
     main_window::RTCommandReconstructReferences::init();
+    main_window::RTCommandAnalyzeDataSource::init();
     main_window::RTCommandLoadData::init();
     main_window::RTCommandExportViewPointsReport::init();
     main_window::RTCommandExportReport::init();
@@ -427,6 +430,82 @@ void RTCommandReconstructReferences::assignVariables_impl(const VariablesMap& va
 {
     RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "disable_sensors", std::string, disabled_sensors_)
+}
+
+// analyze data source
+RTCommandAnalyzeDataSource::RTCommandAnalyzeDataSource()
+    : rtcommand::RTCommand()
+{
+    condition.setSignal("compass.taskmanager.analysedatasourcetask.doneSignal", -1);
+}
+
+bool RTCommandAnalyzeDataSource::run_impl()
+{
+    if (!compass_->dbOpened())
+    {
+        setResultMessage("Database not opened");
+        return false;
+    }
+
+    if (compass_->appMode() != AppMode::Offline)
+    {
+        setResultMessage("Wrong application mode " + compass_->appModeStr());
+        return false;
+    }
+
+    if (ds_type_.empty())
+    {
+        setResultMessage("Missing required option --ds_type");
+        return false;
+    }
+
+    AnalyseDataSourceTask& task = compass_->taskManager().analyseDataSourceTask();
+
+    if (task.dsType() != ds_type_)
+    {
+        setResultMessage("Configured DSType '" + task.dsType()
+                         + "' does not match requested '" + ds_type_ + "'");
+        return false;
+    }
+
+    if (!config_.empty())
+    {
+        auto res = task.applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
+
+    if (!task.canRun())
+    {
+        setResultMessage("Analyze data source task cannot be run "
+                         "(no selected data source / no enabled inspectors / "
+                         "unmet prerequisites)");
+        return false;
+    }
+
+    task.allowUserInteractions(false);
+    task.run();
+
+    return true;
+}
+
+void RTCommandAnalyzeDataSource::collectOptions_impl(OptionsDescription& options,
+                                                     PosOptionsDescription& positional)
+{
+    ADD_RTCOMMAND_OPTIONS(options)
+        ("ds_type,t", po::value<std::string>()->required(),
+         "DSType to analyse (mandatory), e.g. 'MLAT'")
+        ("config,c", po::value<std::string>()->default_value(""),
+         "analyse data source configuration as json string");
+}
+
+void RTCommandAnalyzeDataSource::assignVariables_impl(const VariablesMap& variables)
+{
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "ds_type", std::string, ds_type_)
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
 }
 
 // load data

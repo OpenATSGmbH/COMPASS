@@ -69,7 +69,7 @@ using namespace dbContent;
 
 namespace
 {
-    /// Sum aggregator for integer-valued custom columns — ignores invalid
+    /// Sum aggregator for integer-valued custom columns - ignores invalid
     /// entries and returns an invalid QVariant if no valid value was found.
     QVariant sumULongLong(const std::vector<QVariant>& vals)
     {
@@ -246,7 +246,7 @@ void GridViewConfigWidget::applyDefaultExpansionSlot()
         return;
 
     // Mirror the expansion the other views use. The grid view has no color
-    // mode of its own — pick the DBContent expansion so the user sees the
+    // mode of its own - pick the DBContent expansion so the user sees the
     // innermost rows.
     db_content_root_->applyDefaultExpansionForColorMode(
         layer_panel_->treeView(), /*DBContent*/ 1);
@@ -346,7 +346,7 @@ void GridViewConfigWidget::updateExport()
     bool enable_export = false;
     std::string tooltip;
 
-    if (showsAnnotation())
+    if (view_->showsAnnotation())
     {
         //annotation shown => allow export on users discretion
         enable_export = false;
@@ -517,7 +517,7 @@ void GridViewConfigWidget::updateVariableDataType()
 */
 void GridViewConfigWidget::updateUIFromSource()
 {
-    bool shows_anno = showsAnnotation();
+    bool shows_anno = view_->showsAnnotation();
 
     grid_resolution_box_->setVisible(!shows_anno);
     grid_resolution_placeh_label_->setVisible(shows_anno);

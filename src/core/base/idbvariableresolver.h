@@ -100,7 +100,7 @@ public:
 };
 
 // Well-known variable properties used across the application.
-// Canonical definitions — other layers may alias these (e.g. DBContent::meta_var_ds_id_).
+// Canonical definitions - other layers may alias these (e.g. DBContent::meta_var_ds_id_).
 namespace dbcontent_vars
 {
     // meta variables

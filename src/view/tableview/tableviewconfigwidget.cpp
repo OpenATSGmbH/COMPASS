@@ -95,7 +95,7 @@ TableViewConfigWidget::TableViewConfigWidget(TableViewWidget* view_widget, QWidg
         connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
                 this, &TableViewConfigWidget::colorModeChangedSlot);
 
-        // Layer panel — fills remaining vertical space below the checkboxes.
+        // Layer panel - fills remaining vertical space below the checkboxes.
         // No addStretch() anymore: the panel's tree view is the stretchy child.
         layer_panel_     = new ViewLayerPanelWidget({}, false, this);
         db_content_root_ = layer_panel_->model()->dbContentRootItem();

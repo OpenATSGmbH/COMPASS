@@ -199,6 +199,11 @@ public:
 
     boost::optional<TargetPositionAccuracy> posAccuracy(const DataID& id) const;
 
+    /// CAT020 I020/400 Contributing Receivers - list of 1-based RU indices
+    /// referring to the source's RemoteUnitDefinition. Empty optional when the
+    /// dbcontent does not carry the variable or the record is null.
+    boost::optional<std::vector<unsigned int>> contribRecv(const DataID& id) const;
+
     boost::optional<TargetVelocity> speed(const DataID& id) const;
     // estimate ref baro alt at tod,index TODO should be replaced by real altitude reconstructor
 

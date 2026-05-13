@@ -65,7 +65,7 @@ protected:
 };
 
 /**
- * Invisible root item — holds the top-level groups.
+ * Invisible root item - holds the top-level groups.
  */
 class RootItem : public DBContextEditTreeItem
 {

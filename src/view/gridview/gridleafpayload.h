@@ -25,7 +25,7 @@
  * DBContentLeafPayload adapter for a GridView series.
  *
  * Grid view aggregates rows into bins, so there is no live per-series data
- * object to toggle — the payload only carries counts for the panel. The data
+ * object to toggle - the payload only carries counts for the panel. The data
  * widget reads the panel's hidden set at recompute time to decide which stash
  * groups contribute to the grid.
  *

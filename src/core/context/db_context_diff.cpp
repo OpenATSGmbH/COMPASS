@@ -214,7 +214,7 @@ DBContextDiff DBContextDiff::compute(const DBContext& a, const DBContext& b)
 {
     DBContextDiff result;
 
-    // sensors — keyed by sac/sic, display includes name. dataSources() is a
+    // sensors - keyed by sac/sic, display includes name. dataSources() is a
     // map<ds_id, DataSource>; diffSection needs random-access containers, so
     // copy values into vectors here (one-shot, used only for diff display).
     auto map_to_vec = [](const std::map<unsigned int, DataSource>& m)
@@ -235,21 +235,21 @@ DBContextDiff DBContextDiff::compute(const DBContext& a, const DBContext& b)
         [](const DataSource& ds) { return ds.name() + " " + to_string(ds.sac()) + "/" + to_string(ds.sic()); }
     );
 
-    // ffts — keyed by name
+    // ffts - keyed by name
     result.fft_diffs = diffSection(
         a.ffts(), b.ffts(),
         [](const FFT& fft) { return fft.name(); },
         [](const FFT& fft) { return fft.toJSON(); }
     );
 
-    // asterix decoding — keyed by category
+    // asterix decoding - keyed by category
     result.asterix_diffs = diffSection(
         a.asterixDecoding(), b.asterixDecoding(),
         [](const ASTERIXDecodingConfig& c) { return to_string(c.category()); },
         [](const ASTERIXDecodingConfig& c) { return c.toJSON(); }
     );
 
-    // sectors — keyed by id, display includes name
+    // sectors - keyed by id, display includes name
     result.sector_diffs = diffSection(
         a.sectors(), b.sectors(),
         [](const shared_ptr<Sector>& s) { return to_string(s->id()); },
@@ -257,7 +257,7 @@ DBContextDiff DBContextDiff::compute(const DBContext& a, const DBContext& b)
         [](const shared_ptr<Sector>& s) { return s->name(); }
     );
 
-    // colors — preference + per-key entries in both palettes
+    // colors - preference + per-key entries in both palettes
     diffJSON(a.colors().toJSON(), b.colors().toJSON(), "colors", result.color_diffs);
 
     return result;

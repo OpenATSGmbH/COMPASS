@@ -47,7 +47,7 @@ public:
     /// or with ConfigurationManager as a root configurable.
     Configurable(nlohmann::json& config_json, Configurable* parent);
 
-    /// Default constructor — leaves the object in transient (uninitialized) state.
+    /// Default constructor - leaves the object in transient (uninitialized) state.
     Configurable() = default;
 
     Configurable(const Configurable&) = delete;

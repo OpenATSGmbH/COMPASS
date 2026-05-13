@@ -55,7 +55,7 @@ void DataSourcesToolWidget::createUI()
 
     ds_widget_ = new DataSourcesWidget(true, ctx_man_);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
-    // Flight-Deck panel doesn't use row selection — silence the blue
+    // Flight-Deck panel doesn't use row selection - silence the blue
     // highlight and current-item marker.
     ds_widget_->disableSelection();
 
@@ -248,7 +248,7 @@ void DataSourcesToolWidget::colorModeChangedSlot(int index)
     if (index < 0)
         return;
 
-    // combo index != mode value — the UI order diverges from the enum order
+    // combo index != mode value - the UI order diverges from the enum order
     const unsigned int mode = color_mode_combo_->itemData(index).toUInt();
     loginf << "color mode " << mode;
 

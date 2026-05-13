@@ -414,7 +414,7 @@ std::function<nlohmann::json(unsigned int)> DBContentItemProvider::createGroupFu
             return nlohmann::json(utn.value());
         };
     }
-    else // Grouping::None — all rows share a single null key (one group per ds/line)
+    else // Grouping::None - all rows share a single null key (one group per ds/line)
     {
         func = [ &accessor ] (unsigned int idx)
         {
@@ -439,7 +439,7 @@ void DBContentItemProvider::dataChanged(unsigned int dbc_id)
 {
     auto dbc_name = data_store_.dbcManager().dbContentWithId(dbc_id);
 
-    // queued signal may arrive after data store was reset — nothing to do
+    // queued signal may arrive after data store was reset - nothing to do
     if (!data_store_.indices().count(dbc_id))
         return;
 

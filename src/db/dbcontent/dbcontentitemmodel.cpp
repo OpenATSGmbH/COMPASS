@@ -290,7 +290,11 @@ void DBContentItemModel::showItemColorsChangedSlot()
  */
 void DBContentItemModel::groupingChangedSlot()
 {
+    // item_ids_ still holds entries from the previous grouping; clear them so
+    // the view does not query itemName() with an old-shaped item_id against
+    // the new grouping_ (the queued dataRefreshedSlot will rebuild later).
     beginResetModel();
+    item_ids_.clear();
     endResetModel();
 }
 

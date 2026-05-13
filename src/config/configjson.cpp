@@ -186,7 +186,7 @@ void ConfigJSON::resolveSubConfigFiles(nlohmann::json& json,
         // Convert old nested sub_configs format in the loaded child
         Configuration::convertSubConfigsFormat(child_json);
 
-        // class_name and instance_name come from the file itself — no override needed
+        // class_name and instance_name come from the file itself - no override needed
         auto class_name    = Configuration::getClassName(child_json);
         auto instance_name = Configuration::getInstanceName(child_json);
 
@@ -411,7 +411,7 @@ void ConfigJSON::saveToFile(const nlohmann::json& json,
                    << json[Configuration::SubConfigSection].type_name();
     }
 
-    // Log output summary — dump truncated content
+    // Log output summary - dump truncated content
     {
         std::string dumped = output.dump(2);
         const size_t max_dump = 2000;

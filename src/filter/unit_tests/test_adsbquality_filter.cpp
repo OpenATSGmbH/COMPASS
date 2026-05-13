@@ -178,7 +178,7 @@ TEST_CASE("ADSBQualityFilter all version flags off does not emit empty IN()", "[
 TEST_CASE("ADSBQualityFilter all versions off but min check on", "[filter][adsbquality][empty]")
 {
     // No version flags but a min/max check is enabled. Must skip the
-    // version IN clause entirely and emit only the min/max clause —
+    // version IN clause entirely and emit only the min/max clause -
     // without a leading dangling " AND".
     auto mock = createStandardMock();
     auto cfg = makeFilterConfig("ADSBQualityFilter", "ADSBQualityFilter", {

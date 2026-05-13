@@ -625,7 +625,7 @@ void ASTERIXImportTaskWidget::updateFramingControls()
 
     // Network and PCAP decoders force "raw/netto" (no framing) via requiredASTERIXFraming();
     // when forced, the combo and edit reflect that and are disabled. The persisted
-    // current_file_framing_ is preserved in settings — only the override is active.
+    // current_file_framing_ is preserved in settings - only the override is active.
     const bool forced = task_.requiresFixedFraming();
 
     QSignalBlocker block(framing_combo_);

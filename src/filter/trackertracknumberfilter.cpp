@@ -76,7 +76,7 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
         {
             for (auto& line_it : ds_it.second)
             {
-                // Skip lines without configured track numbers — emitting
+                // Skip lines without configured track numbers - emitting
                 // "IN ()" would produce invalid SQL and crash the query.
                 if (String::trim(line_it.second).empty())
                     continue;

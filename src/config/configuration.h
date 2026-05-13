@@ -106,7 +106,7 @@ public:
 
     bool hasParameter(const std::string& parameter_id) const;
     /// Returns true if a value for parameter_id exists either in the original JSON config
-    /// or as a registered parameter — unlike hasParameter which only checks registered ones.
+    /// or as a registered parameter - unlike hasParameter which only checks registered ones.
     bool hasParameterConfigValue(const std::string& parameter_id) const;
 
     template <typename T>
@@ -121,7 +121,7 @@ public:
     /// Appends this config as a sub_configs array element in parent_json.
     void writeJSON(nlohmann::json& parent_json, JSONExportType export_type) const;
     /// Builds a standalone JSON object with class_name, instance_name, parameters, and sub_configs.
-    /// Sub_configs are shallow copies — call Configurable::writeBackConfigRecursive() first
+    /// Sub_configs are shallow copies - call Configurable::writeBackConfigRecursive() first
     /// to ensure nested sub_configs are complete.
     void generateJSON(nlohmann::json& target, JSONExportType export_type) const;
 
@@ -273,7 +273,7 @@ private:
                                                                   bool run_precheck);
     /// Reference to the json node that owns this config (e.g. an element of a parent's
     /// sub_configs array, or a root ConfigJSON). At runtime only parameters, class_name, and
-    /// instance_name live here — sub_configs are moved to sub_config_storage_ at construction
+    /// instance_name live here - sub_configs are moved to sub_config_storage_ at construction
     /// and rebuilt into this node on save via rebuildSubConfigsToJson().
     nlohmann::json& backing_json_;
 

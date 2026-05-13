@@ -86,6 +86,9 @@ class Variable : public QObject, public Property, public Configurable
     const std::string& description() const { return description_; }
     void description(const std::string& description) { description_ = description; }
 
+    const std::string& source() const { return source_; }
+    void source(const std::string& source) { source_ = source; }
+
     std::string info() const;
 
     std::string dbColumnName() const;
@@ -213,7 +216,7 @@ class Variable : public QObject, public Property, public Configurable
     /// For STANDARD (and any non-JSON-aware mode) returns value.dump().
     /// For MLAT_RUS expects value to be an array of integer RU indices and
     /// resolves each through ctx_man.remoteUnitName(ds_id, idx); returns a
-    /// "[name1, name2, ...]" string. ctx_man may be null and ds_id 0 — in
+    /// "[name1, name2, ...]" string. ctx_man may be null and ds_id 0 - in
     /// which case the index is rendered as a number.
     std::string getAsJSONRepresentationString(const nlohmann::json& value,
                                               const context::DBContextManager* ctx_man,
@@ -248,7 +251,8 @@ private:
     Representation representation_;
 
     std::string description_;
-    
+    std::string source_;
+
     std::string db_column_name_;
     bool is_key_ {false};
 

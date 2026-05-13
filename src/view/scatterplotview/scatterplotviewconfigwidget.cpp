@@ -45,7 +45,7 @@ using namespace dbContent;
 
 namespace
 {
-    /// Sum aggregator for integer-valued custom columns — ignores invalid
+    /// Sum aggregator for integer-valued custom columns - ignores invalid
     /// entries and returns an invalid QVariant if no valid value was found.
     QVariant sumULongLong(const std::vector<QVariant>& vals)
     {

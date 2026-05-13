@@ -50,7 +50,7 @@ public:
     void preselectDBContents(const std::set<std::string>& names);
 
     /// If non-empty, restrict the dialog's output to the listed DBContents
-    /// only — both the top-check "delete everywhere" and the per-DS step.
+    /// only - both the top-check "delete everywhere" and the per-DS step.
     /// Intended for scoped deletes where the caller wants to confine the
     /// dialog to a single DBContent (e.g. from a DBContent row click).
     void setRestrictedDBContents(const std::set<std::string>& names);

@@ -78,7 +78,7 @@ target_link_libraries(compass_filter
         compass_gui
 )
 
-# filtermanager.cpp includes viewpoint.h — circular with compass_view, include-only
+# filtermanager.cpp includes viewpoint.h - circular with compass_view, include-only
 target_include_directories(compass_filter PRIVATE
     "${CMAKE_SOURCE_DIR}/src/view/points"
 )

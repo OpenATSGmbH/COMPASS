@@ -61,7 +61,7 @@ struct ContextColors
  * Groups sensor definitions, FFTs, ASTERIX decoding configs, and sectors
  * into a single named configuration context.
  *
- * Does NOT inherit from Configurable — uses its own file-based persistence
+ * Does NOT inherit from Configurable - uses its own file-based persistence
  * at ~/.compass/data_contexts/<name>/.
  */
 class DBContext

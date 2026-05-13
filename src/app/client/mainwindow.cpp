@@ -28,7 +28,7 @@
 #include "dbcontent/target/targetlistwidget.h"
 #include "datasourcestoolwidget.h"
 #include "datasourcesstatustoolwidget.h"
-#include "dbcontent/variable/metavariableconfigurationdialog.h"
+#include "dbcontent/db_content_edit_dialog.h"
 #include "files.h"
 #include "filtermanager.h"
 #include "filtermanagerwidget.h"
@@ -64,6 +64,7 @@
 #include "createartasassociationstaskdialog.h"
 #include "reconstructortask.h"
 #include "reconstructortaskdialog.h"
+#include "analysedatasourcetask.h"
 #include "util/async.h"
 #include "util/system.h"
 #include "util/stringconv.h"
@@ -293,6 +294,11 @@ void MainWindow::createUI()
     connect (&compass_.dbContentManager(), &DBContentManager::associationStatusChangedSignal,
             this, &MainWindow::updateMenus);
 
+    connect (&compass_.dbContextManager(), &context::DBContextManager::dataSourcesChangedSignal,
+            this, &MainWindow::updateMenus);
+    connect (&compass_.dbContextManager(), &context::DBContextManager::countsChangedSignal,
+            this, &MainWindow::updateMenus);
+
     connect(&compass_.licenseManager(), &LicenseManager::changed,
             this, &MainWindow::updateWindowTitle);
 
@@ -380,7 +386,7 @@ void MainWindow::createMenus ()
     connect(quit_act, &QAction::triggered, this, &MainWindow::quitSlot);
     file_menu->addAction(quit_act);
 
-    // context menu — shows current context name as menu title
+    // context menu - shows current context name as menu title
     createContextMenu();
 
     // import menu
@@ -428,15 +434,15 @@ void MainWindow::createMenus ()
     config_menu_->setToolTipsVisible(true);
 
             // configure operations
-    QAction* meta_action = new QAction("Meta Variables");
+    dbcontent_action_ = new QAction("DBContent");
 
     if (expert_mode)
-        meta_action->setToolTip("Configure Meta Variables");
+        dbcontent_action_->setToolTip("Configure DBContent");
     else
-        meta_action->setToolTip("Show Meta Variables");
+        dbcontent_action_->setToolTip("Show DBContent");
 
-    connect(meta_action, &QAction::triggered, this, &MainWindow::configureMetaVariablesSlot);
-    config_menu_->addAction(meta_action);
+    connect(dbcontent_action_, &QAction::triggered, this, &MainWindow::configureDBContentSlot);
+    config_menu_->addAction(dbcontent_action_);
 
 #if USE_EXPERIMENTAL_SOURCE == true
     config_menu_->addSeparator();
@@ -488,6 +494,17 @@ void MainWindow::createMenus ()
     reconstruct_action->setToolTip("Associate Unique Targets andd reconstruct Reference Trajectories");
     connect(reconstruct_action, &QAction::triggered, this, &MainWindow::reconstructReferencesSlot);
     process_menu_->addAction(reconstruct_action);
+
+    analyze_menu_ = process_menu_->addMenu("Analyze");
+    analyze_menu_->setToolTipsVisible(true);
+
+    QAction* analyse_mlat_action = new QAction("MLAT");
+    analyse_mlat_action->setToolTip(
+        "Analyse one or more MLAT (CAT020 / CAT010) data sources from multiple angles "
+        "(data items, sensor coverage / PD, position accuracy)");
+    connect(analyse_mlat_action, &QAction::triggered,
+            this, &MainWindow::analyseMLATDataSourceSlot);
+    analyze_menu_->addAction(analyse_mlat_action);
 
     QAction* eval_action = new QAction("Evaluate");
     eval_action->setToolTip("Evaluate test against reference data according to defined standards");
@@ -563,6 +580,29 @@ void MainWindow::updateMenus()
     import_menu_->setDisabled(!db_open || asterix_import_running || in_live);
     process_menu_->setDisabled(!db_open || asterix_import_running || in_live);
 
+    if (analyze_menu_)
+    {
+        bool has_ref_traj_with_data = false;
+        if (db_open)
+        {
+            auto& ctx = compass_.dbContextManager();
+            for (auto ds_id : compass_.taskManager().analyseDataSourceTask()
+                                  .referenceDataSourceCandidateIDs())
+            {
+                if (ctx.hasNumInserted(ds_id))
+                {
+                    has_ref_traj_with_data = true;
+                    break;
+                }
+            }
+        }
+        analyze_menu_->setEnabled(has_ref_traj_with_data);
+        analyze_menu_->menuAction()->setToolTip(
+            has_ref_traj_with_data
+                ? QString()
+                : "Analyse requires at least one Reference Trajectory data source with data");
+    }
+
     traced_assert(config_menu_);
     config_menu_->setDisabled(asterix_import_running || in_live);
 
@@ -570,9 +610,10 @@ void MainWindow::updateMenus()
         a->setEnabled(a == license_action_
                       || a == auto_refresh_views_action_
                               || a == dark_mode_action_
-                              || a == fullscreen_action_ ? true : db_open);
+                              || a == fullscreen_action_
+                              || a == dbcontent_action_ ? true : db_open);
 
-    // context-state gating always wins — applied after DB/live-state logic above
+    // context-state gating always wins - applied after DB/live-state logic above
     updateMenuEnabledState();
 }
 
@@ -598,11 +639,11 @@ void MainWindow::updateMenuEnabledState()
         if (save_config_action_)
             save_config_action_->setDisabled(true);
 
-        // Import / Configuration / Process / UI: entire menus disabled.
+        // Import / Process / UI: entire menus disabled.
+        // Configuration menu stays enabled so DBContent / Dark Mode / Fullscreen /
+        // Refresh-Views-Automatically remain reachable without an open DB.
         if (import_menu_)
             import_menu_->menuAction()->setEnabled(false);
-        if (config_menu_)
-            config_menu_->menuAction()->setEnabled(false);
         if (process_menu_)
             process_menu_->menuAction()->setEnabled(false);
         if (ui_menu_)
@@ -627,8 +668,6 @@ void MainWindow::updateMenuEnabledState()
         // managed by updateMenus() / updateContextMenuTitle().
         if (import_menu_)
             import_menu_->menuAction()->setEnabled(true);
-        if (config_menu_)
-            config_menu_->menuAction()->setEnabled(true);
         if (process_menu_)
             process_menu_->menuAction()->setEnabled(true);
         if (ui_menu_)
@@ -639,7 +678,7 @@ void MainWindow::updateMenuEnabledState()
         if (context_copy_action_)
             context_copy_action_->setEnabled(true);
         // context_delete_action_ / context_switch_menu_ enabled state is
-        // managed by updateContextMenuTitle() — leave as-is.
+        // managed by updateContextMenuTitle() - leave as-is.
         // context_compare_action_ stays disabled (deferred feature).
     }
 }
@@ -1075,6 +1114,13 @@ void MainWindow::reconstructReferencesSlot()
     compass_.taskManager().reconstructReferencesTask().showDialog();
 }
 
+void MainWindow::analyseMLATDataSourceSlot()
+{
+    loginf;
+
+    compass_.taskManager().analyseDataSourceTask().showDialog();
+}
+
 void MainWindow::evaluateSlot()
 {
     loginf;
@@ -1082,11 +1128,11 @@ void MainWindow::evaluateSlot()
     compass_.evaluationManager().evaluate(true);
 }
 
-void MainWindow::configureMetaVariablesSlot()
+void MainWindow::configureDBContentSlot()
 {
     loginf;
 
-    compass_.dbContentManager().metaVariableConfigdialog()->show();
+    compass_.dbContentManager().dbContentEditDialog()->show();
 }
 
 void MainWindow::quitRequestedSlot()
@@ -1132,7 +1178,7 @@ void MainWindow::resetViewsMenuSlot()
         // reset stuff
         compass_.dbContentManager().resetToStartupConfiguration();
 
-        // context reset handled by DBContextManager — loading state is per-session
+        // context reset handled by DBContextManager - loading state is per-session
 
         compass_.filterManager().resetToStartupConfiguration();
 

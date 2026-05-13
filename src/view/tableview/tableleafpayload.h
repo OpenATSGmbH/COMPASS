@@ -26,7 +26,7 @@
 /**
  * DBContentLeafPayload adapter for Table View.
  *
- * Unlike scatter, table view has no per-layer data object — layers are
+ * Unlike scatter, table view has no per-layer data object - layers are
  * derived by scanning buffers at rebuild time. A payload holds just the
  * layer identity, its row count, and its chart color. Visibility flips are
  * tracked on the payload itself; the data widget reacts to the model's

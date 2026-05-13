@@ -114,6 +114,8 @@ void LayerTreeModel::refreshSubtree(LayerTreeItem* parent,
             parent->appendChild(std::move(c));
         endInsertRows();
     }
+
+    emit subtreeRefreshedSignal(parent);
 }
 
 void LayerTreeModel::traverse(const std::function<void(const QModelIndex&, LayerTreeItem*)>& fn,
@@ -171,7 +173,7 @@ QVariant LayerTreeModel::data(const QModelIndex& index, int role) const
 
         if (col == 1)
         {
-            // built-in Count — sum over descendants' own col-1 values
+            // built-in Count - sum over descendants' own col-1 values
             std::vector<QVariant> vals;
             collectChildValues(item, 1, vals);
             unsigned long long sum = 0;

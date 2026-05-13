@@ -18,12 +18,13 @@
                 "db_column_name": "message_type",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 000.Message Type\n\n1 SDPS Status,\n2 End of Batch,\n3 Service Status Report.",
+                "description": "1 SDPS Status,\n2 End of Batch,\n3 Service Status Report.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Message Type",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I065/000.Message Type",
                 "unit": ""
             }
         },
@@ -35,12 +36,13 @@
                 "db_column_name": "tsv",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 040.TSV\n\n0 Default\n1 Invalid Time Source",
+                "description": "0 Default\n1 Invalid Time Source",
                 "dimension": "",
                 "is_key": false,
                 "name": "TSV",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I065/040.TSV",
                 "unit": ""
             }
         },
@@ -52,12 +54,13 @@
                 "db_column_name": "report",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 050.REPORT\n\n1: service degradation\n2: service degradation ended\n3: main radar out of service\n4: service interrupted by the operator\n5: service interrupted due to contingency\n6: ready for service restart after contingency\n7: service ended by the operator\n8: failure of user main radar\n9: service restarted by the operator\n10: main radar becoming operational\n11: main radar becoming degraded\n12: service continuity interrupted due to disconnection with adjacent unit\n13: service continuity restarted\n14: service synchronised on backup radar\n15: service synchronised on main radar\n16: main and backup radar, if any, failed",
+                "description": "1: service degradation\n2: service degradation ended\n3: main radar out of service\n4: service interrupted by the operator\n5: service interrupted due to contingency\n6: ready for service restart after contingency\n7: service ended by the operator\n8: failure of user main radar\n9: service restarted by the operator\n10: main radar becoming operational\n11: main radar becoming degraded\n12: service continuity interrupted due to disconnection with adjacent unit\n13: service continuity restarted\n14: service synchronised on backup radar\n15: service synchronised on main radar\n16: main and backup radar, if any, failed",
                 "dimension": "",
                 "is_key": false,
                 "name": "Report",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I065/050.REPORT",
                 "unit": ""
             }
         },
@@ -69,12 +72,13 @@
                 "db_column_name": "sac",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 010.SAC\n\nSystem Area Code",
+                "description": "System Area Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SAC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I065/010.SAC",
                 "unit": ""
             }
         },
@@ -86,12 +90,13 @@
                 "db_column_name": "sic",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 010.SIC\n\nSystem Identification Code",
+                "description": "System Identification Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SIC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I065/010.SIC",
                 "unit": ""
             }
         },
@@ -103,12 +108,13 @@
                 "db_column_name": "service_identification",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 015.Service Identification",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Service Identification",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I065/015.Service Identification",
                 "unit": ""
             }
         },
@@ -120,12 +126,13 @@
                 "db_column_name": "batch_number",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.Batch Number",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Batch Number",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I065/020.Batch Number",
                 "unit": ""
             }
         },
@@ -137,12 +144,13 @@
                 "db_column_name": "time_of_message",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 030.Time of Message",
+                "description": "",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Time of Message",
                 "representation_str": "SECONDS_TO_TIME",
                 "short_name": "",
+                "source": "I065/030.Time of Message",
                 "unit": "Second"
             }
         },
@@ -154,12 +162,13 @@
                 "db_column_name": "nogo",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 040.NOGO\n\n0 operational\n1 degraded\n2 not currently connected\n3 unknown",
+                "description": "0 operational\n1 degraded\n2 not currently connected\n3 unknown",
                 "dimension": "",
                 "is_key": false,
                 "name": "NOGO",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I065/040.NOGO",
                 "unit": ""
             }
         },
@@ -171,12 +180,13 @@
                 "db_column_name": "ovl",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 040.OVL\n\n0 Default\n1 Overload",
+                "description": "0 Default\n1 Overload",
                 "dimension": "",
                 "is_key": false,
                 "name": "OVL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I065/040.OVL",
                 "unit": ""
             }
         },
@@ -188,12 +198,13 @@
                 "db_column_name": "pss",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 040.PSS\n\nProcessing System Status\n0 not applicable\n1 SDPS-1 selected\n2 SDPS-2 selected\n3 SDPS-3 selected",
+                "description": "Processing System Status\n0 not applicable\n1 SDPS-1 selected\n2 SDPS-2 selected\n3 SDPS-3 selected",
                 "dimension": "",
                 "is_key": false,
                 "name": "PSS",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I065/040.PSS",
                 "unit": ""
             }
         },
@@ -205,12 +216,13 @@
                 "db_column_name": "timestamp",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Epoch timestamp based on Time of Day",
+                "description": "Epoch timestamp computed from Time of Day plus the resolved calendar date (handles midnight wrap).",
                 "dimension": "",
                 "is_key": false,
                 "name": "Timestamp",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "Calculated from Time of Day, calendar date",
                 "unit": ""
             }
         },
@@ -222,12 +234,13 @@
                 "db_column_name": "ds_id",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From ds_id\n\nData Source ID",
+                "description": "Data Source Identifier (bit-packed SAC/SIC)",
                 "dimension": "",
                 "is_key": false,
                 "name": "DS ID",
                 "representation_str": "DATA_SRC_NAME",
                 "short_name": "",
+                "source": "Calculated from I065/010.SAC, I065/010.SIC",
                 "unit": ""
             }
         },
@@ -239,12 +252,13 @@
                 "db_column_name": "line_id",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "COMMUNICATION LINE ID determines the origin of the record",
+                "description": "Communication line ID determining the origin of the record.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Line ID",
                 "representation_str": "LINE_NAME",
                 "short_name": "",
+                "source": "Internal: import line/source identifier",
                 "unit": ""
             }
         },
@@ -256,12 +270,13 @@
                 "db_column_name": "record_number",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Unique record id starting with 0 on every new recording",
+                "description": "Unique record id starting with 0 on every new recording.",
                 "dimension": "",
                 "is_key": true,
                 "name": "Record Number",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "Internal: ascending record number assigned at import",
                 "unit": ""
             }
         }

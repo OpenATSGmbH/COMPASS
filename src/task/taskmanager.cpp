@@ -26,6 +26,7 @@
 #include "gpstrailimporttask.h"
 //#include "gpsimportcsvtask.h"
 #include "reconstructortask.h"
+#include "analysedatasourcetask.h"
 #include "mainwindow.h"
 #include "viewabledataconfig.h"
 #include "viewmanager.h"
@@ -144,6 +145,13 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(reconstruct_references_task_);
         addTask(class_name, reconstruct_references_task_.get());
     }
+    else if (class_name == "AnalyseDataSourceTask")
+    {
+        traced_assert(!analyse_data_source_task_);
+        analyse_data_source_task_.reset(new AnalyseDataSourceTask(child_json, this));
+        traced_assert(analyse_data_source_task_);
+        addTask(class_name, analyse_data_source_task_.get());
+    }
     else if (class_name == "ReportExport")
     {
         traced_assert(!report_export_);
@@ -219,6 +227,12 @@ void TaskManager::checkSubConfigurables()
         traced_assert(reconstruct_references_task_);
     }
 
+    if (!analyse_data_source_task_)
+    {
+        generateSubConfigurableFromConfig("AnalyseDataSourceTask", "AnalyseDataSourceTask0");
+        traced_assert(analyse_data_source_task_);
+    }
+
     if (!report_export_)
     {
         generateSubConfigurableFromConfig("ReportExport", "ReportExport0");
@@ -262,6 +276,7 @@ void TaskManager::shutdown()
     radar_plot_position_calculator_task_ = nullptr;
     create_artas_associations_task_ = nullptr;
     reconstruct_references_task_ = nullptr;
+    analyse_data_source_task_ = nullptr;
 }
 
 /**
@@ -342,6 +357,14 @@ ReconstructorTask& TaskManager::reconstructReferencesTask() const
 
 /**
  */
+AnalyseDataSourceTask& TaskManager::analyseDataSourceTask() const
+{
+    traced_assert(analyse_data_source_task_);
+    return *analyse_data_source_task_;
+}
+
+/**
+ */
 TaskResultsWidget* TaskManager::widget()
 {
     if (!widget_)
@@ -374,7 +397,8 @@ std::shared_ptr<TaskResult> TaskManager::createResult(unsigned int id,
 /**
  */
 void TaskManager::beginTaskResultWriting(const std::string& name,
-                                         task::TaskResultType type)
+                                         task::TaskResultType type,
+                                         bool clear_existing)
 {
     if (widget_)
         widget_->setDisabled(true);
@@ -386,19 +410,29 @@ void TaskManager::beginTaskResultWriting(const std::string& name,
     traced_assert(!current_result_);
     current_result_ = getOrCreateResult(name, type);
 
-    //prepare result for new content
-    auto res = current_result_->prepareResult();
-    if (!res.ok())
-        logerr << "result could not be initialized: " << res.error();
+    //prepare result for new content (clears the report) - opt out for results
+    //that accumulate across runs (e.g. ASTERIX Import)
+    if (clear_existing)
+    {
+        auto res = current_result_->prepareResult();
+        if (!res.ok())
+            logerr << "result could not be initialized: " << res.error();
+
+        traced_assert(res.ok());
+    }
 
     loginf << "beginning result id " << current_result_->id()
-           << " name " << current_result_->name();
-    
-    traced_assert(res.ok());
+           << " name " << current_result_->name()
+           << " clear_existing " << clear_existing;
 }
 
 /**
  */
+bool TaskManager::hasCurrentResult() const
+{
+    return current_result_ != nullptr;
+}
+
 std::shared_ptr<TaskResult>& TaskManager::currentResult()
 {
     traced_assert(current_result_);

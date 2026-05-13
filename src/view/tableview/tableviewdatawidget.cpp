@@ -409,7 +409,7 @@ void TableViewDataWidget::rebuildLayerTree()
                            new_payloads.back().get()});
     }
 
-    // Scoped subtree refresh — keeps the header widths untouched.
+    // Scoped subtree refresh - keeps the header widths untouched.
     layer_model_->refreshSubtree(db_content_root_, [&]() {
         payloads_ = std::move(new_payloads);
         return db_content_root_->buildChildrenFrom(entries);

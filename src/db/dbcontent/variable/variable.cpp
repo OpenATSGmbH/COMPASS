@@ -88,6 +88,7 @@ Variable::Variable(nlohmann::json& config, DBContent* parent,
     registerParameter("name", &name_, std::string());
     registerParameter("short_name", &short_name_, std::string());
     registerParameter("description", &description_, std::string());
+    registerParameter("source", &source_, std::string());
 
     registerParameter("db_column_name", &db_column_name_, std::string());
     registerParameter("is_key", &is_key_, false);
@@ -239,6 +240,8 @@ std::string Variable::info() const
         ss << "Short Name: " << shortName() << endl;
 
     ss << "Description: " << description() << endl;
+    if (source_.size())
+        ss << "Source: " << source_ << endl;
     ss << "Data Type: " << dataTypeString() << endl;
     ss << "Unit: " << dimensionUnitStr() << endl;
 

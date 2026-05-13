@@ -33,6 +33,7 @@ class ScatterPlotViewDataSource;
 class Buffer;
 class DBContentRootItem;
 class LayerTreeModel;
+class AnnotationsRootItem;
 class ScatterLeafPayload;
 
 namespace QtCharts 
@@ -143,8 +144,9 @@ private:
     bool x_axis_is_datetime_ = false;
     bool y_axis_is_datetime_ = false;
 
-    DBContentRootItem* db_content_root_{nullptr};   // owned by layer panel model
-    LayerTreeModel*    layer_model_    {nullptr};   // owned by LayerPanelWidget
+    DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
+    LayerTreeModel*      layer_model_      {nullptr};   // owned by LayerPanelWidget
+    AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
 
     std::vector<std::unique_ptr<ScatterLeafPayload>> payloads_;
 
@@ -152,10 +154,18 @@ private:
 
     // True iff the last updateChart() drew real content (i.e. axes reflect
     // real data bounds). Gates zoom preservation in updateVariableDisplay() so
-    // the initial render — where the prior "chart" has no data and axes are
-    // default/empty — does not carry a meaningless range into the first real
+    // the initial render - where the prior "chart" has no data and axes are
+    // default/empty - does not carry a meaningless range into the first real
     // draw.
     bool prior_draw_had_content_{false};
+
+    // (group_idx, annotation_idx) of the annotation the chart was last drawn
+    // for. Used by updateVariableDisplay to detect annotation switches and
+    // reset the zoom on the new annotation's data range instead of carrying
+    // the previous annotation's axis ranges (which can hide parts of the new
+    // data outside that range).
+    int last_drawn_anno_group_idx_{-1};
+    int last_drawn_anno_idx_      {-1};
 
     std::set<std::string> hidden_series_;  // transient: remember unchecked series across reloads
 };

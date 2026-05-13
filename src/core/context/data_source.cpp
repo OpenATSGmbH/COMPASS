@@ -72,7 +72,12 @@ void DataSource::latitude(double value) { info_[position_key][latitude_key] = va
 double DataSource::longitude() const { return info_.at(position_key).at(longitude_key); }
 void DataSource::longitude(double value) { info_[position_key][longitude_key] = value; }
 
-double DataSource::altitude() const { return info_.at(position_key).at(altitude_key); }
+double DataSource::altitude() const
+{
+    if (!info_.contains(position_key) || !info_.at(position_key).contains(altitude_key))
+        return 0.0;
+    return info_.at(position_key).at(altitude_key);
+}
 void DataSource::altitude(double value) { info_[position_key][altitude_key] = value; }
 
 bool DataSource::groundOnly() const

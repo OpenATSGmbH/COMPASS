@@ -90,6 +90,9 @@ private:
     bool reconstruct_references_ {false};
     std::string reconstruct_references_cfg_;
 
+    std::string analyze_data_source_ds_type_;
+    std::string analyze_data_source_cfg_;
+
     bool load_data_ {false};
 
     std::string export_view_points_report_filename_;

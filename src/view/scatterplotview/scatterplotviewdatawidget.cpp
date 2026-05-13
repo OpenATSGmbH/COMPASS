@@ -34,6 +34,8 @@
 #include "scatterleafpayload.h"
 #include "dbcontentlayer.h"
 #include "layertreemodel.h"
+#include "viewlayertreemodel.h"
+#include "annotationsrootitem.h"
 #include "logger.h"
 #include "property_templates.h"
 #include "timeconv.h"
@@ -102,6 +104,18 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
     // attachLayerPanel(); color-mode redraw is connected here independently.
     connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
             this, [this](unsigned int /*mode*/) { redrawData(true); });
+
+    // Annotations subtree of the layer panel mirrors view_->annotations(); the
+    // panel is wired via attachLayerPanel and may not yet be present at
+    // construction time.
+    connect(view_, &VariableView::annotationsChangedSignal, this, [this]()
+    {
+        if (annotations_root_)
+            annotations_root_->update(view_->annotations(),
+                                      view_->currentAnnotationGroupIdx(),
+                                      view_->currentAnnotationIdx(),
+                                      view_);
+    });
 }
 
 /**
@@ -137,9 +151,20 @@ void ScatterPlotViewDataWidget::attachLayerPanel(DBContentRootItem* root,
     db_content_root_ = root;
     layer_model_     = layer_model;
 
+    if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
+        annotations_root_ = vlm->annotationsRootItem();
+
     // If scatter_series_ was already populated before the panel was attached,
     // push it into the tree now so the UI matches reality.
     rebuildLayerTree();
+
+    // Same for annotations: VariableView may have already populated them via
+    // a view point load that fired before attachLayerPanel.
+    if (annotations_root_)
+        annotations_root_->update(view_->annotations(),
+                                  view_->currentAnnotationGroupIdx(),
+                                  view_->currentAnnotationIdx(),
+                                  view_);
 }
 
 /**
@@ -151,7 +176,7 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
 
     // Build new payloads from scatter_series_, parsing the "<ds_type>:<ds_name>
     // :L<n>:<dbcontent>" key convention. The pooled "Selected" overlay series
-    // does not fit that scheme — it is kept aside and injected as a dedicated
+    // does not fit that scheme - it is kept aside and injected as a dedicated
     // top-level leaf after the DBContent subtree is built.
     std::vector<std::unique_ptr<ScatterLeafPayload>> new_payloads;
     std::vector<DBContentRootItem::LeafEntry>        entries;
@@ -194,7 +219,7 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
             }
             else
             {
-                // malformed key fallback — collapse to a single leaf under an
+                // malformed key fallback - collapse to a single leaf under an
                 // "<unknown>" branch so it's still visible.
                 ds_type   = "<unknown>";
                 ds_name   = full_key;
@@ -263,11 +288,24 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
 {
     loginf;
 
+    // Detect an annotation switch: if we are in annotation mode and the
+    // currently-active annotation differs from the one the chart was last
+    // drawn for, do NOT preserve the previous zoom - the new annotation
+    // typically has a different data range, and reusing the old range would
+    // hide parts of it.
+    const bool in_anno_mode  = view_->showsAnnotation();
+    const int  cur_group_idx = view_->currentAnnotationGroupIdx();
+    const int  cur_anno_idx  = view_->currentAnnotationIdx();
+    const bool anno_switched = in_anno_mode &&
+                               (cur_group_idx != last_drawn_anno_group_idx_ ||
+                                cur_anno_idx  != last_drawn_anno_idx_);
+
     // Remember the current axis ranges so a redraw caused by e.g. a selection
     // change does not throw away the user's zoom. Only do this if the prior
-    // render actually drew content — otherwise the "captured" range is the
+    // render actually drew content - otherwise the "captured" range is the
     // meaningless default of an empty chart.
-    bool capture_zoom = prior_draw_had_content_ &&
+    bool capture_zoom = !anno_switched &&
+                        prior_draw_had_content_ &&
                         chart_view_ &&
                         chart_view_->chart() &&
                        !chart_view_->chart()->axes(Qt::Horizontal).empty() &&
@@ -300,6 +338,11 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
     }
 
     prior_draw_had_content_ = (draw_state == DrawState::DrawnContent);
+
+    // Remember which annotation this draw is for (or clear when leaving
+    // annotation mode) so the next call can detect a switch.
+    last_drawn_anno_group_idx_ = in_anno_mode ? cur_group_idx : -1;
+    last_drawn_anno_idx_       = in_anno_mode ? cur_anno_idx  : -1;
 
     return draw_state;
 }

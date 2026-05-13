@@ -127,7 +127,7 @@ bool LayerTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* /*mod
         }
     }
 
-    // Color icon is intentionally not clickable — colors are owned by the
+    // Color icon is intentionally not clickable - colors are owned by the
     // data context and cannot be edited from the tree.
 
     return true;

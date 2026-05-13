@@ -33,6 +33,15 @@ class ViewableDataConfig;
 */
 class VariableView : public View
 {
+    Q_OBJECT
+
+signals:
+    /// Emitted whenever annotations_ is repopulated or cleared. Subscribers
+    /// (e.g. data widgets) refresh the annotations subtree of their layer
+    /// panel from annotations() / currentAnnotationGroupIdx() /
+    /// currentAnnotationIdx().
+    void annotationsChangedSignal();
+
 public:
     struct Annotation
     {
@@ -115,11 +124,11 @@ private:
 
     void clearAnnotations();
     void scanViewPointForAnnotations();
-    void onShowAnnotationChanged(bool update_config_widget);
+    void onShowAnnotationChanged();
     void onEvalResultsChanged();
 
-    void showVariables(bool force, bool update_config);
-    void showAnnotation(bool force, bool update_config);
+    void showVariables(bool force);
+    void showAnnotation(bool force);
 
     std::vector<std::unique_ptr<ViewVariable>> variables_;
 

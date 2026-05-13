@@ -41,9 +41,9 @@ class DBContentDeleteDBJob;
 class DBContentInsertDBJob;
 class DBContentDataStore;
 
-namespace dbContent 
+namespace dbContent
 {
-    class MetaVariableConfigurationDialog;
+    class DBContentEditDialog;
     class Variable;
     class MetaVariable;
     class VariableSet;
@@ -63,7 +63,7 @@ public slots:
 
     void deleteJobDoneSlot();
 
-    void metaDialogOKSlot();
+    void dbContentEditDialogOKSlot();
 
     void processLiveModeSlot();
 
@@ -116,7 +116,7 @@ public:
     const std::map<std::string, std::unique_ptr<dbContent::MetaVariable>>& metaVariables() const { return meta_variables_; }
 
     bool usedInMetaVariable(const dbContent::Variable& variable);
-    dbContent::MetaVariableConfigurationDialog* metaVariableConfigdialog();
+    dbContent::DBContentEditDialog* dbContentEditDialog();
 
     void load(const LoadRequest& req);
     void loadBlocking(const LoadRequest& req, unsigned int sleep_msecs = 1u);
@@ -305,7 +305,7 @@ protected:
 
     std::unique_ptr<DBContentManagerWidget> widget_;
 
-    std::unique_ptr<dbContent::MetaVariableConfigurationDialog> meta_cfg_dialog_;
+    std::unique_ptr<dbContent::DBContentEditDialog> db_content_edit_dialog_;
 
     std::shared_ptr<DBContentDeleteDBJob> delete_job_{nullptr};
     nlohmann::json delete_info_;

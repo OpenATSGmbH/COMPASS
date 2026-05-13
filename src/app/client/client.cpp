@@ -238,6 +238,10 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
          "reconstruct references from sensor and tracker data")
         ("reconstruct_references_cfg", po::value<std::string>(&reconstruct_references_cfg_),
          "reconstructor configuration as JSON string, e.g. ''{\"current_reconstructor_str\": \"Scoring + UMKalman\"}''")
+        ("analyze_data_source", po::value<std::string>(&analyze_data_source_ds_type_),
+         "analyse data sources of the given DSType, e.g. 'MLAT'")
+        ("analyze_parameters", po::value<std::string>(&analyze_data_source_cfg_),
+         "analyse data source parameters as JSON string, e.g. ''{\"line_id_tst\": 0, \"cell_size_m\": 50.0, \"inspector_settings\": {\"MLATCoverageInspector\": {\"pd_method_int\": 1}}}'' (including one pair of single quotes)")
         ("load_data", po::bool_switch(&load_data_), "load data after start")
         ("export_view_points_report", po::value<std::string>(&export_view_points_report_filename_),
          "export view points report after start with given filename, e.g. '/data/db2/report.tex")
@@ -689,6 +693,14 @@ bool Client::run ()
             if (!evaluation_parameters_.empty())
                 cmd += " --config='" + jsonParam2RTCommandString(evaluation_parameters_) + "'";
 
+            rt_man.addCommandFromConsole(cmd);
+        }
+
+        if (!analyze_data_source_ds_type_.empty())
+        {
+            string cmd = "analyze_data_source --ds_type " + analyze_data_source_ds_type_;
+            if (!analyze_data_source_cfg_.empty())
+                cmd += " --config='" + jsonParam2RTCommandString(analyze_data_source_cfg_) + "'";
             rt_man.addCommandFromConsole(cmd);
         }
 

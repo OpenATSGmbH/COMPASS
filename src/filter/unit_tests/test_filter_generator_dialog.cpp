@@ -25,7 +25,7 @@ using namespace dbContent;
 
 // Tests for the filter edit round-trip:
 // Build a DBFilter with conditions from JSON config, then verify that all condition
-// properties are accessible via getConditions() — the same path that
+// properties are accessible via getConditions() - the same path that
 // FilterGeneratorDialog::loadConditionsFromFilter() uses.
 
 TEST_CASE("Filter edit round-trip: single condition", "[filter][dialog]")
@@ -57,7 +57,7 @@ TEST_CASE("Filter edit round-trip: single condition", "[filter][dialog]")
 
     REQUIRE(filter.getNumConditions() == 1);
 
-    // Verify condition properties — same fields loadConditionsFromFilter() reads
+    // Verify condition properties - same fields loadConditionsFromFilter() reads
     const auto& cond = filter.getConditions().at(0);
     CHECK(cond->getVariableName() == "Ground Bit");
     CHECK(cond->getVariableDBContentName() == "Meta");

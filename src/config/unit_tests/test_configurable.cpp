@@ -132,7 +132,7 @@ TEST_CASE("Configurable construction", "[configurable]")
         REQUIRE(tc.name_ == "default");
     }
 
-    SECTION("partial parameters — present values read, missing use defaults")
+    SECTION("partial parameters - present values read, missing use defaults")
     {
         json cfg = makeConfig("TestConfigurable", "TC0", {{"threshold", 99.9}});
         TestConfigurable tc(cfg);
@@ -305,7 +305,7 @@ TEST_CASE("notifyModifications propagation", "[configurable]")
 
         TrackingParent parent(cfg_parent);
 
-        // Construct child with parent — parent_ is set in the constructor
+        // Construct child with parent - parent_ is set in the constructor
         TestConfigurable child(cfg_child, &parent);
 
         child.setParam(child.threshold_, 20.0);
@@ -314,7 +314,7 @@ TEST_CASE("notifyModifications propagation", "[configurable]")
         child.setParam(child.threshold_, 30.0);
         REQUIRE(parent.modify_count_ == 2);
 
-        // Same value — no notification
+        // Same value - no notification
         child.setParam(child.threshold_, 30.0);
         REQUIRE(parent.modify_count_ == 2);
     }

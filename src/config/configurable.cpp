@@ -32,7 +32,7 @@ using namespace Utils;
 
 const char Configurable::ConfigurablePathSeparator = '.';
 
-// Legacy constructor removed — all Configurables must now use the json-backed constructor.
+// Legacy constructor removed - all Configurables must now use the json-backed constructor.
 // Configurable::Configurable(const std::string& class_name,
 //                            const std::string& instance_name,
 //                            Configurable* parent,
@@ -98,7 +98,7 @@ Configurable::~Configurable()
     // is torn down, so this in-memory removal does not affect on-disk persistence.
     if (parent_ && !tmp_disable_remove_config_on_delete_)
     {
-        // parent_ must still have a live Configuration at this point — if not, a child is
+        // parent_ must still have a live Configuration at this point - if not, a child is
         // outliving its parent's base ~Configurable, which is a destruction-order bug.
         traced_assert(parent_->configuration_);
 
@@ -114,7 +114,7 @@ Configurable::~Configurable()
             // the entry before the partially-constructed child's destructor runs.
             logdbg << "no sub-config entry for " << class_name_ << "/" << instance_name_
                    << " in parent " << parent_->className() << "/" << parent_->instanceName()
-                   << " — already removed";
+                   << " - already removed";
         }
     }
     else if (parent_ && tmp_disable_remove_config_on_delete_)
@@ -342,7 +342,7 @@ void Configurable::checkSubConfigurables()
 {
 }
 
-// Old 2-param version removed — use the json-backed 3-param version
+// Old 2-param version removed - use the json-backed 3-param version
 // void Configurable::generateSubConfigurable(const std::string& class_name,
 //                                            const std::string& instance_name)
 // {

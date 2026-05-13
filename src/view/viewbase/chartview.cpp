@@ -85,7 +85,7 @@ void ChartView::changeEvent(QEvent* event)
 /**
  * Applies QApplication::palette()-derived colors to the chart chrome
  * (background, axes, grid, legend, title) so charts follow the dark/light
- * palette automatically. Series colors are not touched — callers keep their
+ * palette automatically. Series colors are not touched - callers keep their
  * explicit per-data-source coloring.
  *
  * Re-runs on QEvent::PaletteChange (delivered to all widgets when

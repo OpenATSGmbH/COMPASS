@@ -175,7 +175,7 @@ std::vector<std::unique_ptr<LayerTreeItem>> DBContentRootItem::buildChildrenFrom
     // Assemble the subtree on a detached scratch parent, then move its
     // children out. The caller passes this list to refreshSubtree which
     // reattaches them to the real DBContentRootItem inside scoped
-    // begin/endInsertRows — avoids the full modelReset that would make
+    // begin/endInsertRows - avoids the full modelReset that would make
     // QHeaderView drop its section widths.
     auto scratch = std::make_unique<DBContentGroupItem>("<scratch>", DBContentLayerLevel::Root);
 

@@ -200,7 +200,7 @@ Configuration::Configuration(nlohmann::json& backing_json)
         logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                << "' populated " << sub_config_storage_.size() << " class buckets in sub_config_storage_";
 
-        // Remove sub_configs from backing json — now owned by sub_config_storage_
+        // Remove sub_configs from backing json - now owned by sub_config_storage_
         backing_json.erase(SubConfigSection);
     }
 
@@ -553,7 +553,7 @@ void Configuration::writeJSON(nlohmann::json& parent_json,
  * Generates the full json config.
  * Parameters come from the cache; sub_configs come from sub_config_storage_.
  *
- * Important: sub_config entries are shallow copies — nested sub_configs within children
+ * Important: sub_config entries are shallow copies - nested sub_configs within children
  * are only present if Configurable::writeBackConfigRecursive() was called bottom-up first.
  * Callers must ensure writeBackConfigRecursive() is called before generateJSON() whenever
  * the Configurable tree has runtime-created descendants (e.g. EvaluationStandard requirement groups).

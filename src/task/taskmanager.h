@@ -39,6 +39,7 @@ class ASTERIXImportTask;
 class ViewPointsImportTask;
 class RadarPlotPositionCalculatorTask;
 class ReconstructorTask;
+class AnalyseDataSourceTask;
 class MainWindow;
 class TaskResult;
 class ViewableDataConfig;
@@ -99,11 +100,14 @@ public:
     RadarPlotPositionCalculatorTask& radarPlotPositionCalculatorTask() const;
     CreateARTASAssociationsTask& createArtasAssociationsTask() const;
     ReconstructorTask& reconstructReferencesTask() const;
+    AnalyseDataSourceTask& analyseDataSourceTask() const;
 
     TaskResultsWidget* widget();
 
     void beginTaskResultWriting(const std::string& name,
-                                task::TaskResultType type);
+                                task::TaskResultType type,
+                                bool clear_existing = true);
+    bool hasCurrentResult() const;
     std::shared_ptr<TaskResult>& currentResult();
     std::shared_ptr<ResultReport::Report>& currentReport();
     void endTaskResultWriting(bool store_result,
@@ -163,6 +167,7 @@ protected:
     std::unique_ptr<RadarPlotPositionCalculatorTask> radar_plot_position_calculator_task_;
     std::unique_ptr<CreateARTASAssociationsTask> create_artas_associations_task_;
     std::unique_ptr<ReconstructorTask> reconstruct_references_task_;
+    std::unique_ptr<AnalyseDataSourceTask> analyse_data_source_task_;
 
     std::map<std::string, Task*> tasks_;
 

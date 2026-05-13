@@ -219,7 +219,7 @@ Result ReportExporterDocx::exportFigure_impl(SectionContentFigure& figure,
         // look up the registered entry for actual dimensions
         // (addImageFile may have computed them from the actual image)
         // The simplest approach: re-read. But addImageFile caches, so use that.
-        // We need access to the entry — for now use defaults from addImageFile.
+        // We need access to the entry - for now use defaults from addImageFile.
         // DocxDocument stores entries internally; the section just needs rel_id + dims.
         // Let's get them from a second call (cached, returns same rId).
         // Actually, let's just pass through addImageFile which already computed dims.

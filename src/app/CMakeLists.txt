@@ -42,7 +42,7 @@ target_link_libraries(compass_app
 )
 
 if(EXPERIMENTAL_SRC)
-    # No experimental libraries are linked here — only by compass_client.
+    # No experimental libraries are linked here - only by compass_client.
     # Linking them would propagate their PUBLIC include dirs into compass_app,
     # causing AUTOMOC to discover Q_OBJECT headers and generate duplicate moc
     # symbols (already defined in the component libraries).

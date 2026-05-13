@@ -27,7 +27,7 @@
 /**
  * Spec for a custom column. Custom columns start at index 2 (Name=0, Count=1).
  *
- * group_aggregator: optional — when a group row has no own value for this
+ * group_aggregator: optional - when a group row has no own value for this
  * column (itemData returns invalid), the model collects valid values from the
  * full descendant subtree and passes them to this callback. Without an
  * aggregator the group row stays empty.

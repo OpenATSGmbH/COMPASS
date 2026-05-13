@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
     QApplication app(argc, argv);
 
     // Force C locale *after* QApplication ctor (which may reset it from env)
-    // — matches what Client/MainWindow do in the real application.
+    // - matches what Client/MainWindow do in the real application.
     std::setlocale(LC_ALL, "C");
     QLocale::setDefault(QLocale::c());
 

@@ -29,7 +29,7 @@ target_link_libraries(compass_view
         compass_eval
 )
 
-# view sources include headers from report and app — circular deps
+# view sources include headers from report and app - circular deps
 target_include_directories(compass_view PRIVATE
     "${CMAKE_SOURCE_DIR}/src/report"
     "${CMAKE_SOURCE_DIR}/src/report/latex"

@@ -281,7 +281,13 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
             this, [this]() { rebuildTree(); });
 }
 
-DBContextEditDialog::~DBContextEditDialog() = default;
+DBContextEditDialog::~DBContextEditDialog()
+{
+    // notify listeners (e.g. geographic view RU layer) that data source contents
+    // may have changed during the dialog lifetime. emitted once on close rather
+    // than per edit to batch refreshes.
+    emit manager_.dataSourcesChangedSignal();
+}
 
 void DBContextEditDialog::rebuildContextCombo()
 {
@@ -318,8 +324,12 @@ void DBContextEditDialog::rebuildTree()
     // drop the current_* pointer and the slot's trailing update would fall
     // through to a disabled / empty state.
     boost::optional<unsigned int> shown_ds_id;
+    int shown_ds_tab = -1;
     if (ds_edit_widget_->hasCurrentDataSource())
+    {
         shown_ds_id = ds_edit_widget_->currentDataSourceId();
+        shown_ds_tab = ds_edit_widget_->currentTabIndex();
+    }
     boost::optional<unsigned int> shown_sector_id;
     if (sector_edit_widget_->hasCurrentSector())
         shown_sector_id = sector_edit_widget_->currentSectorId();
@@ -339,7 +349,11 @@ void DBContextEditDialog::rebuildTree()
     if (shown_ds_id)
     {
         if (auto* ds = manager_.dataSource(*shown_ds_id))
+        {
             ds_edit_widget_->show(*ds, manager_.compass().lastUsedPath());
+            if (shown_ds_tab >= 0)
+                ds_edit_widget_->setCurrentTabIndex(shown_ds_tab);
+        }
     }
     if (shown_sector_id)
     {
@@ -1030,7 +1044,7 @@ void DBContextEditDialog::importZipSlot()
         return;
 
     // peek at the zip to find the context name (first directory component)
-    // by attempting the import — but first check if a context of that name exists
+    // by attempting the import - but first check if a context of that name exists
     // We need to read the name from the zip before extracting.
     // Use a temporary extraction to read the name, then confirm overwrite.
 

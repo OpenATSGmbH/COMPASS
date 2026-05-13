@@ -6,13 +6,13 @@ This document describes the radar error model used in COMPASS for position accur
 
 A radar measures target position in polar coordinates relative to its antenna:
 
-- **Azimuth** θ [deg] — horizontal bearing from north
-- **Slant range** ρ [m] — distance from antenna to target
+- **Azimuth** θ [deg] - horizontal bearing from north
+- **Slant range** ρ [m] - distance from antenna to target
 
 These measurements are subject to two types of errors:
 
-1. **Random errors** (noise) — zero-mean Gaussian, characterized by standard deviations
-2. **Systematic errors** (biases) — constant offsets that can be estimated and corrected
+1. **Random errors** (noise) - zero-mean Gaussian, characterized by standard deviations
+2. **Systematic errors** (biases) - constant offsets that can be estimated and corrected
 
 ## Parameters stored per data source
 
@@ -29,7 +29,7 @@ Per detection channel (PSR, SSR, Mode S):
 | Azimuth stddev | `mode_s_azimuth_stddev` | deg | 0.02 | Mode S azimuth measurement noise |
 | Range stddev | `mode_s_range_stddev` | m | 50 | Mode S range measurement noise |
 
-Azimuth stddev is angular — it naturally produces larger position errors at greater range. Range stddev is a fixed distance — radar range accuracy depends on pulse width, not distance.
+Azimuth stddev is angular - it naturally produces larger position errors at greater range. Range stddev is a fixed distance - radar range accuracy depends on pulse width, not distance.
 
 Global defaults (used when no per-source values are configured) are in `SensorConfig` in `DBContextManager`.
 
@@ -194,5 +194,5 @@ For combined detection types (SSR+PSR, Mode S+PSR), both select the channel with
 
 - [EUROCONTROL Surveillance Standard Document for Radar Surveillance in En-Route Airspace and Major Terminal Areas](https://www.eurocontrol.int/sites/default/files/publication/files/surveillance-standard-document-for-radar-surveillance-in-en-route-airspace-and-major-terminal-areas199703.pdf)
 - [Complete Systematic Error Model of SSR for Sensor Registration in ATC Surveillance Networks (PMC)](https://pmc.ncbi.nlm.nih.gov/articles/PMC5677430/)
-- [Radartutorial — Accuracy of Measurement](https://www.radartutorial.eu/01.basics/Radars%20Accuracy.en.html)
+- [Radartutorial - Accuracy of Measurement](https://www.radartutorial.eu/01.basics/Radars%20Accuracy.en.html)
 - [EUROCONTROL ASTERIX CAT048 Specification](https://www.eurocontrol.int/sites/default/files/2019-05/cat048pt4ed122.pdf)

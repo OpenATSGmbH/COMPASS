@@ -11,6 +11,8 @@ set_target_properties(compass_tests PROPERTIES AUTOMOC OFF)
 include("${CMAKE_SOURCE_DIR}/src/config/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/core/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/core/context/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/eval/requirement/detection/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/task/analyze/mlat/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/filter/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/gui/unit_tests/CMakeLists.txt")
 
@@ -25,7 +27,7 @@ target_link_libraries(compass_tests PRIVATE
     compass_config compass_core compass_reconstruction
     compass_gui compass_filter compass_task
     compass_eval compass_view compass_report
-    # Repeated: static archive link order — COMPASS:: methods in compass_app
+    # Repeated: static archive link order - COMPASS:: methods in compass_app
     # and compass_core symbols are needed by libs listed above (eval, view, task, etc.)
     compass_app compass_core
     ${jASTERIX_LIBRARIES}

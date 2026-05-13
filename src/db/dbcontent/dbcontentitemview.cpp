@@ -40,7 +40,7 @@ DBContentItemView::DBContentItemView(DBContentItemModel& model, QWidget* parent)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(2);
 
-    // Grouping combo — populated before connecting to avoid spurious setGrouping() calls
+    // Grouping combo - populated before connecting to avoid spurious setGrouping() calls
     QHBoxLayout* grouping_layout = new QHBoxLayout();
 
     QLabel* grouping_label = new QLabel("Item Mode", this);

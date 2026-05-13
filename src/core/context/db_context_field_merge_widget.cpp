@@ -65,7 +65,7 @@ static const int MaxDepth = 5;
 
 /// Recursively collect field diffs, descending into sub-objects when the
 /// dump size exceeds MaxDumpLength. One-sided values (only in config or db)
-/// are never split — shown as a single row regardless of size.
+/// are never split - shown as a single row regardless of size.
 void collectDiffs(const json& config_j, const json& db_j,
                   const std::string& prefix,
                   std::vector<std::tuple<std::string, json, json>>& out,
@@ -97,7 +97,7 @@ void collectDiffs(const json& config_j, const json& db_j,
             continue;
         }
 
-        // both sides exist and differ — check if we should recurse
+        // both sides exist and differ - check if we should recurse
         bool both_objects = cv.is_object() && dv.is_object();
         bool too_large = cv.dump().size() > MaxDumpLength || dv.dump().size() > MaxDumpLength;
 
@@ -236,7 +236,7 @@ void FieldMergeWidget::addRow(int row, const std::string& path,
                        db_val.is_object() || db_val.is_array());
     fr.is_multiline = is_complex;
 
-    // field name — spans all columns, italic
+    // field name - spans all columns, italic
     auto* name_label = new QLabel(QString::fromStdString(path));
     QFont italic_font = name_label->font();
     italic_font.setItalic(true);
@@ -358,7 +358,7 @@ void FieldMergeWidget::addRow(int row, const std::string& path,
     }
     fr.edit_widget = edit_widget;
 
-    // connect edit signals — update color + emit signal
+    // connect edit signals - update color + emit signal
     size_t row_idx = rows_.size(); // index this row will have after push_back
     if (is_complex)
     {
@@ -445,11 +445,11 @@ void FieldMergeWidget::updateResultColor(FieldRow& row)
 
         QString bg;
         if (current_text == row.config_text)
-            bg = "background-color: rgb(200, 255, 200);"; // green — matches config
+            bg = "background-color: rgb(200, 255, 200);"; // green - matches config
         else if (current_text == row.db_text)
-            bg = "background-color: rgb(200, 220, 255);"; // blue — matches db
+            bg = "background-color: rgb(200, 220, 255);"; // blue - matches db
         else
-            bg = "background-color: rgb(255, 210, 210);"; // red — custom
+            bg = "background-color: rgb(255, 210, 210);"; // red - custom
 
         row.edit_widget->setStyleSheet(bg);
         return;
@@ -464,9 +464,9 @@ void FieldMergeWidget::updateResultColor(FieldRow& row)
     QStringList config_lines = row.config_text.split('\n');
     QStringList db_lines = row.db_text.split('\n');
 
-    QColor config_color(200, 255, 200); // green — matches config
-    QColor db_color(200, 220, 255);     // blue — matches db
-    QColor custom_color(255, 210, 210); // red — matches neither
+    QColor config_color(200, 255, 200); // green - matches config
+    QColor db_color(200, 220, 255);     // blue - matches db
+    QColor custom_color(255, 210, 210); // red - matches neither
 
     QList<QTextEdit::ExtraSelection> sels;
 
@@ -475,7 +475,7 @@ void FieldMergeWidget::updateResultColor(FieldRow& row)
         QString cl = i < config_lines.size() ? config_lines[i] : QString();
         QString dl = i < db_lines.size() ? db_lines[i] : QString();
 
-        // skip lines that are identical on both sides — not a conflict
+        // skip lines that are identical on both sides - not a conflict
         if (cl == dl)
             continue;
 
@@ -586,7 +586,7 @@ bool FieldMergeWidget::jsonEqual(const json& a, const json& b)
 
 json FieldMergeWidget::mergedJSON() const
 {
-    // We don't have the full base JSON here — the caller should start from
+    // We don't have the full base JSON here - the caller should start from
     // one side and apply field overrides. Return a map of path -> edited value.
     json result = json::object();
 

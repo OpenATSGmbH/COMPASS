@@ -226,7 +226,7 @@ bool BaseBufferTableModel::setData(const QModelIndex& index, const QVariant& val
         else
         {
             // Tell the view the prefix-column cells on this row need a
-            // refresh — other prefix columns (e.g. selection-yellow icon)
+            // refresh - other prefix columns (e.g. selection-yellow icon)
             // depend on the checkbox state.
             const int prefix_last = (int)prefixColumnCount() - 1;
             if (prefix_last > 0)

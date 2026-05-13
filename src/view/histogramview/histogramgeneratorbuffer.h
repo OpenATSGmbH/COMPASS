@@ -48,7 +48,7 @@ public:
     /// Per-row layer id lookup. Returns the layer id
     /// ("<ds_type>:<ds_name>:L<n>:<dbcontent>") that a given row belongs to,
     /// or an empty string for unmappable rows (no ds_id/line_id). When set,
-    /// the generator groups its per-layer result buckets by this id — one bar
+    /// the generator groups its per-layer result buckets by this id - one bar
     /// set per visible layer, stacked in the chart. Without it, the generator
     /// falls back to per-dbcontent grouping.
     typedef std::function<std::string(const std::string&, unsigned int)> RowLayerLookup;
@@ -174,7 +174,7 @@ protected:
         if (!scanned_contents.empty())
             label_variable_ = currentVariable(scanned_contents.front());
 
-        //enumerate the group keys that will contribute data — one bucket per
+        //enumerate the group keys that will contribute data - one bucket per
         //visible layer (when a row-layer lookup is installed) or per scanned
         //dbcontent (legacy fallback). Each bucket gets its own histogram copy
         //so zoom_impl and per-bucket bin counts can proceed independently.
@@ -260,14 +260,14 @@ protected:
         const auto& bin_lookup = histograms_.begin()->second;
 
         //variable not mapped to this dbcontent (normal for meta-vars that
-        //don't apply to every dbcontent) — skip, not an error.
+        //don't apply to every dbcontent) - skip, not an error.
         auto variable = currentVariable(db_content);
         if (!variable)
             return true;
 
         std::string current_var_name = variable->name();
 
-        //buffer genuinely missing the column — same treatment (skip).
+        //buffer genuinely missing the column - same treatment (skip).
         if (!buffer.has<T>(current_var_name))
             return true;
 

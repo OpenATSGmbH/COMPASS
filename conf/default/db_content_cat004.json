@@ -18,12 +18,13 @@
                 "db_column_name": "message_type",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 000.Message Type\n\n1 Alive Message\n2 Route Adherence Monitor Longitudinal Deviation\n3 Route Adherence Monitor Heading Deviation\n4 Minimum Safe Altitude Warning\n5 Area Proximity Warning\n6 Clearance Level Adherence Monitor\n7 Short Term Conflict Alert\n8 Approach Funnel Deviation Alert\n9 RIMCAS Arrival / Landing Monitor (ALM)\n10 RIMCAS Arrival / Departure Wrong Runway Alert (WRA)\n11 RIMCAS Arrival / Departure Opposite Traffic Alert (OTA)\n12 RIMCAS Departure Monitor (RDM)\n13 RIMCAS Runway / Taxiway Crossing Monitor (RCM)\n14 RIMCAS Taxiway Separation Monitor (TSM)\n15 RIMCAS Unauthorized Taxiway Movement Monitor(UTMM)\n16 RIMCAS Stop Bar Overrun Alert (SBOA)\n17 End Of Conflict (EOC)",
+                "description": "1 Alive Message\n2 Route Adherence Monitor Longitudinal Deviation\n3 Route Adherence Monitor Heading Deviation\n4 Minimum Safe Altitude Warning\n5 Area Proximity Warning\n6 Clearance Level Adherence Monitor\n7 Short Term Conflict Alert\n8 Approach Funnel Deviation Alert\n9 RIMCAS Arrival / Landing Monitor (ALM)\n10 RIMCAS Arrival / Departure Wrong Runway Alert (WRA)\n11 RIMCAS Arrival / Departure Opposite Traffic Alert (OTA)\n12 RIMCAS Departure Monitor (RDM)\n13 RIMCAS Runway / Taxiway Crossing Monitor (RCM)\n14 RIMCAS Taxiway Separation Monitor (TSM)\n15 RIMCAS Unauthorized Taxiway Movement Monitor(UTMM)\n16 RIMCAS Stop Bar Overrun Alert (SBOA)\n17 End Of Conflict (EOC)",
                 "dimension": "",
                 "is_key": false,
                 "name": "Message Type",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/000.Message Type",
                 "unit": ""
             }
         },
@@ -35,12 +36,13 @@
                 "db_column_name": "alert_status",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 045.Alert status\n\nStatus of the alert",
+                "description": "Status of the alert",
                 "dimension": "",
                 "is_key": false,
                 "name": "Alert Status",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/045.Alert status",
                 "unit": ""
             }
         },
@@ -52,12 +54,13 @@
                 "db_column_name": "afda_func",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.AFDA\n\n0 Default\n1 AFDA function",
+                "description": "0 Default\n1 AFDA function",
                 "dimension": "",
                 "is_key": false,
                 "name": "AFDA Func",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.AFDA",
                 "unit": ""
             }
         },
@@ -69,12 +72,13 @@
                 "db_column_name": "apw_func",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.APW\n\n0 Default\n1 APW function",
+                "description": "0 Default\n1 APW function",
                 "dimension": "",
                 "is_key": false,
                 "name": "APW Func",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.APW",
                 "unit": ""
             }
         },
@@ -86,12 +90,13 @@
                 "db_column_name": "clam_func",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.CLAM\n\n0 Default\n1 CLAM function",
+                "description": "0 Default\n1 CLAM function",
                 "dimension": "",
                 "is_key": false,
                 "name": "CLAM Func",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.CLAM",
                 "unit": ""
             }
         },
@@ -103,12 +108,13 @@
                 "db_column_name": "mrva_func",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.MRVA\n\n0 Default\n1 MRVA function",
+                "description": "0 Default\n1 MRVA function",
                 "dimension": "",
                 "is_key": false,
                 "name": "MRVA Func",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.MRVA",
                 "unit": ""
             }
         },
@@ -120,12 +126,13 @@
                 "db_column_name": "msaw_func",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.MSAW\n\n0 Default\n1 MSAW function",
+                "description": "0 Default\n1 MSAW function",
                 "dimension": "",
                 "is_key": false,
                 "name": "MSAW Func",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.MSAW",
                 "unit": ""
             }
         },
@@ -137,12 +144,13 @@
                 "db_column_name": "of",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.OF\n\n0 Default\n1 Overflow error",
+                "description": "0 Default\n1 Overflow error",
                 "dimension": "",
                 "is_key": false,
                 "name": "OF",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.OF",
                 "unit": ""
             }
         },
@@ -154,12 +162,13 @@
                 "db_column_name": "ol",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.OL\n\n0 Default\n1 Overload error",
+                "description": "0 Default\n1 Overload error",
                 "dimension": "",
                 "is_key": false,
                 "name": "OL",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.OL",
                 "unit": ""
             }
         },
@@ -171,12 +180,13 @@
                 "db_column_name": "ramhd_func",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.RAMHD\n\n0 Default\n1 RAMHD function",
+                "description": "0 Default\n1 RAMHD function",
                 "dimension": "",
                 "is_key": false,
                 "name": "RAMHD Func",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.RAMHD",
                 "unit": ""
             }
         },
@@ -188,12 +198,13 @@
                 "db_column_name": "ramld_func",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.RAMLD\n\n0 Default\n1 RAMLD function",
+                "description": "0 Default\n1 RAMLD function",
                 "dimension": "",
                 "is_key": false,
                 "name": "RAMLD Func",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.RAMLD",
                 "unit": ""
             }
         },
@@ -205,12 +216,13 @@
                 "db_column_name": "sac",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 010.SAC\n\nSystem Area Code",
+                "description": "System Area Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SAC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/010.SAC",
                 "unit": ""
             }
         },
@@ -222,12 +234,13 @@
                 "db_column_name": "rimca_func",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.RIMCA\n\n0 Default\n1 RIMCA function",
+                "description": "0 Default\n1 RIMCA function",
                 "dimension": "",
                 "is_key": false,
                 "name": "RIMCA Func",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.RIMCA",
                 "unit": ""
             }
         },
@@ -239,12 +252,13 @@
                 "db_column_name": "stca_func",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 060.STCA\n\n0 Default\n1 STCA function",
+                "description": "0 Default\n1 STCA function",
                 "dimension": "",
                 "is_key": false,
                 "name": "STCA Func",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/060.STCA",
                 "unit": ""
             }
         },
@@ -256,12 +270,13 @@
                 "db_column_name": "time_to_conflict",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.TC.TIME TO CONFLICT",
+                "description": "",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Time to Conflict",
                 "representation_str": "SECONDS_TO_TIME",
                 "short_name": "",
+                "source": "I004/070.TC.TIME TO CONFLICT",
                 "unit": "Second"
             }
         },
@@ -273,12 +288,13 @@
                 "db_column_name": "time_to_closest_approach",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.TCA.TIME TO CLOSEST APPROACH",
+                "description": "",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Time to Closest Approach",
                 "representation_str": "SECONDS_TO_TIME",
                 "short_name": "",
+                "source": "I004/070.TCA.TIME TO CLOSEST APPROACH",
                 "unit": "Second"
             }
         },
@@ -290,12 +306,13 @@
                 "db_column_name": "current_horizontal_separation",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.CHS.Current Horizontal Separation\n\nunit: metres",
+                "description": "unit: metres",
                 "dimension": "",
                 "is_key": false,
                 "name": "Current Horizontal Separation",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/070.CHS.Current Horizontal Separation",
                 "unit": ""
             }
         },
@@ -307,12 +324,13 @@
                 "db_column_name": "estimated_min__horizontal_separation",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.MHS.Estimated minimum horizontal separation\n\nunit: metres",
+                "description": "unit: metres",
                 "dimension": "",
                 "is_key": false,
                 "name": "Estimated Min. Horizontal Separation",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/070.MHS.Estimated minimum horizontal separation",
                 "unit": ""
             }
         },
@@ -324,12 +342,13 @@
                 "db_column_name": "current_vertical_separation",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.CVS.Current Vertical Separation\n\nunit: feet",
+                "description": "unit: feet",
                 "dimension": "",
                 "is_key": false,
                 "name": "Current Vertical Separation",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/070.CVS.Current Vertical Separation",
                 "unit": ""
             }
         },
@@ -341,12 +360,13 @@
                 "db_column_name": "estimated_min__vertical_separation",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 070.MVS.Estimated minimum vertical separation\n\nunit: feet",
+                "description": "unit: feet",
                 "dimension": "",
                 "is_key": false,
                 "name": "Estimated Min. Vertical Separation",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/070.MVS.Estimated minimum vertical separation",
                 "unit": ""
             }
         },
@@ -358,12 +378,13 @@
                 "db_column_name": "longitudinal_deviation",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 074.Longitudinal deviation\n\nunit: metres",
+                "description": "unit: metres",
                 "dimension": "",
                 "is_key": false,
                 "name": "Longitudinal Deviation",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/074.Longitudinal deviation",
                 "unit": ""
             }
         },
@@ -375,12 +396,13 @@
                 "db_column_name": "transversal_distance_deviation",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 075.Transversal Distance Deviation\n\nunit: metres",
+                "description": "unit: metres",
                 "dimension": "",
                 "is_key": false,
                 "name": "Transversal Distance Deviation",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/075.Transversal Distance Deviation",
                 "unit": ""
             }
         },
@@ -392,12 +414,13 @@
                 "db_column_name": "sic",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 010.SIC\n\nSystem Identification Code",
+                "description": "System Identification Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SIC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/010.SIC",
                 "unit": ""
             }
         },
@@ -409,12 +432,13 @@
                 "db_column_name": "vertical_deviation",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 076.Vertical deviation\n\nunit: feet",
+                "description": "unit: feet",
                 "dimension": "",
                 "is_key": false,
                 "name": "Vertical Deviation",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/076.Vertical deviation",
                 "unit": ""
             }
         },
@@ -426,12 +450,13 @@
                 "db_column_name": "area_name",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 100.AN.Area Name",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Area Name",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/100.AN.Area Name",
                 "unit": ""
             }
         },
@@ -443,12 +468,13 @@
                 "db_column_name": "crossing_area_name",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 100.CAN.Crossing Area Name",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Crossing Area Name",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/100.CAN.Crossing Area Name",
                 "unit": ""
             }
         },
@@ -460,12 +486,13 @@
                 "db_column_name": "gate_designator",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 100.G.Gate Designator",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Gate Designator",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/100.G.Gate Designator",
                 "unit": ""
             }
         },
@@ -477,12 +504,13 @@
                 "db_column_name": "rwy_twy_designator_1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 100.RT1.Runway/Taxiway Designator 1",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "RWY/TWY Designator 1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/100.RT1.Runway/Taxiway Designator 1",
                 "unit": ""
             }
         },
@@ -494,12 +522,13 @@
                 "db_column_name": "rwy_twy_designator_2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 100.RT2.Runway/Taxiway Designator 2",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "RWY/TWY Designator 2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/100.RT2.Runway/Taxiway Designator 2",
                 "unit": ""
             }
         },
@@ -511,12 +540,13 @@
                 "db_column_name": "stop_bar_designator",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 100.SB.Stop Bar Designator",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Stop Bar Designator",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/100.SB.Stop Bar Designator",
                 "unit": ""
             }
         },
@@ -528,12 +558,13 @@
                 "db_column_name": "fdps_centre",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 110.FDPS Sector Control Identification.Centre\n\nCentre identification code",
+                "description": "Centre identification code",
                 "dimension": "",
                 "is_key": false,
                 "name": "FDPS Centre",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/110.FDPS Sector Control Identification.Centre",
                 "unit": ""
             }
         },
@@ -545,12 +576,13 @@
                 "db_column_name": "fdps_position",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 110.FDPS Sector Control Identification.Position\n\nControl position identification code",
+                "description": "Control position identification code",
                 "dimension": "",
                 "is_key": false,
                 "name": "FDPS Position",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/110.FDPS Sector Control Identification.Position",
                 "unit": ""
             }
         },
@@ -562,12 +594,13 @@
                 "db_column_name": "table_id",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CC.Table Id\n\nIdentification of conflict categories definition table\n\nFor STCA, Table Id = 0000:\n001 major separation infringement and not (crossed and diverging)\n010 minor separation infringement and not (crossed and diverging)\n011 major separation infringement and (crossed and diverging)\n100 minor separation infringement and (crossed and diverging)\n\nFor STCA, Table Id = 0001:\nbits-4  (LPF)  Linear Prediction Filter:  0 Filter not set, 1 Filter set\nbits-3 (CPF)  Current Proximity Filter:  0 Filter not set, 1 Filter set\nbits-2 (MHF) Manoeuvre Hazard Filter:  0 Filter not set, 1 Filter set\n\nFor RIMCAS, Table Id = 0010 defines the following alert stages:\nbits-4  (RAS) RIMCAS Alert Stage: 0 Stage One Alert, 1 Stage Two Alert\n\n",
+                "description": "Identification of conflict categories definition table\n\nFor STCA, Table Id = 0000:\n001 major separation infringement and not (crossed and diverging)\n010 minor separation infringement and not (crossed and diverging)\n011 major separation infringement and (crossed and diverging)\n100 minor separation infringement and (crossed and diverging)\n\nFor STCA, Table Id = 0001:\nbits-4  (LPF)  Linear Prediction Filter:  0 Filter not set, 1 Filter set\nbits-3 (CPF)  Current Proximity Filter:  0 Filter not set, 1 Filter set\nbits-2 (MHF) Manoeuvre Hazard Filter:  0 Filter not set, 1 Filter set\n\nFor RIMCAS, Table Id = 0010 defines the following alert stages:\nbits-4  (RAS) RIMCAS Alert Stage: 0 Stage One Alert, 1 Stage Two Alert",
                 "dimension": "",
                 "is_key": false,
                 "name": "Table Id",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CC.Table Id",
                 "unit": ""
             }
         },
@@ -579,12 +612,13 @@
                 "db_column_name": "sdps_sac",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 015.SDPS Identifier.SAC\n\nSystem Area Code",
+                "description": "System Area Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SDPS SAC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/015.SDPS Identifier.SAC",
                 "unit": ""
             }
         },
@@ -596,12 +630,13 @@
                 "db_column_name": "severity_class",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CC.Severity Class\n\nConflict Severity Class",
+                "description": "Conflict Severity Class",
                 "dimension": "",
                 "is_key": false,
                 "name": "Severity Class",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CC.Severity Class",
                 "unit": ""
             }
         },
@@ -613,12 +648,13 @@
                 "db_column_name": "conflict_severity",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CC.CS\n\nConflict Severity\n0 LOW\n1 HIGH",
+                "description": "Conflict Severity\n0 LOW\n1 HIGH",
                 "dimension": "",
                 "is_key": false,
                 "name": "Conflict Severity",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CC.CS",
                 "unit": ""
             }
         },
@@ -630,12 +666,13 @@
                 "db_column_name": "conflict_probability",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CP.Probability\n\nConflict probability (%)",
+                "description": "Conflict probability (%)",
                 "dimension": "",
                 "is_key": false,
                 "name": "Conflict Probability",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CP.Probability",
                 "unit": ""
             }
         },
@@ -647,12 +684,13 @@
                 "db_column_name": "conflict_duration",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CD.Duration\n\nThe duration of the conflict is the elapsed time since the declaration of the conflict",
+                "description": "The duration of the conflict is the elapsed time since the declaration of the conflict",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Conflict Duration",
                 "representation_str": "SECONDS_TO_TIME",
                 "short_name": "",
+                "source": "I004/120.CD.Duration",
                 "unit": "Second"
             }
         },
@@ -664,12 +702,13 @@
                 "db_column_name": "cas",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CN.CAS\n\nConflict location in civil airspace\n0 conflict not predicted to occur in civil airspace\n1 conflict predicted to occur in civil airspace",
+                "description": "Conflict location in civil airspace\n0 conflict not predicted to occur in civil airspace\n1 conflict predicted to occur in civil airspace",
                 "dimension": "",
                 "is_key": false,
                 "name": "CAS",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CN.CAS",
                 "unit": ""
             }
         },
@@ -681,12 +720,13 @@
                 "db_column_name": "cross",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CN.Cross\n\nCrossing test\n0 Aircraft have not crossed at starting time of conflict\n1 Aircraft have crossed at starting time of conflict",
+                "description": "Crossing test\n0 Aircraft have not crossed at starting time of conflict\n1 Aircraft have crossed at starting time of conflict",
                 "dimension": "",
                 "is_key": false,
                 "name": "Cross",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CN.Cross",
                 "unit": ""
             }
         },
@@ -698,12 +738,13 @@
                 "db_column_name": "div",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CN.Div\n\nDivergence test\n0 Aircraft are not diverging at starting time of conflict\n1 Aircraft are diverging at starting time of conflict",
+                "description": "Divergence test\n0 Aircraft are not diverging at starting time of conflict\n1 Aircraft are diverging at starting time of conflict",
                 "dimension": "",
                 "is_key": false,
                 "name": "Div",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CN.Div",
                 "unit": ""
             }
         },
@@ -715,12 +756,13 @@
                 "db_column_name": "fld",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CN.FLD\n\nFast lateral divergence\n0 Aircraft are not fast diverging laterally at current time\n1 Aircraft are fast diverging laterally at current time",
+                "description": "Fast lateral divergence\n0 Aircraft are not fast diverging laterally at current time\n1 Aircraft are fast diverging laterally at current time",
                 "dimension": "",
                 "is_key": false,
                 "name": "FLD",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CN.FLD",
                 "unit": ""
             }
         },
@@ -732,12 +774,13 @@
                 "db_column_name": "fvd",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CN.FVD\n\nFast vertical divergence\n0 Aircraft are not fast diverging vertically at current time\n1 Aircraft are fast diverging vertically at current time",
+                "description": "Fast vertical divergence\n0 Aircraft are not fast diverging vertically at current time\n1 Aircraft are fast diverging vertically at current time",
                 "dimension": "",
                 "is_key": false,
                 "name": "FVD",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CN.FVD",
                 "unit": ""
             }
         },
@@ -749,12 +792,13 @@
                 "db_column_name": "mas",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CN.MAS\n\nConflict location in military airspace\n0 conflict not predicted to occur in military airspace\n1 conflict predicted to occur in military airspace",
+                "description": "Conflict location in military airspace\n0 conflict not predicted to occur in military airspace\n1 conflict predicted to occur in military airspace",
                 "dimension": "",
                 "is_key": false,
                 "name": "MAS",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CN.MAS",
                 "unit": ""
             }
         },
@@ -766,12 +810,13 @@
                 "db_column_name": "sdps_sic",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 015.SDPS Identifier.SIC\n\nSystem Identification Code",
+                "description": "System Identification Code",
                 "dimension": "",
                 "is_key": false,
                 "name": "SDPS SIC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/015.SDPS Identifier.SIC",
                 "unit": ""
             }
         },
@@ -783,12 +828,13 @@
                 "db_column_name": "mrva",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CN.MRVA\n\n0 Default\n1 Msg Type 4 (MSAW) indicates MRVA",
+                "description": "0 Default\n1 Msg Type 4 (MSAW) indicates MRVA",
                 "dimension": "",
                 "is_key": false,
                 "name": "MRVA",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CN.MRVA",
                 "unit": ""
             }
         },
@@ -800,12 +846,13 @@
                 "db_column_name": "rrc",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CN.RRC\n\nRunway/Runway crossing in RIMCAS\n0 Default\n1 Runway/Runway Crossing",
+                "description": "Runway/Runway crossing in RIMCAS\n0 Default\n1 Runway/Runway Crossing",
                 "dimension": "",
                 "is_key": false,
                 "name": "RRC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CN.RRC",
                 "unit": ""
             }
         },
@@ -817,12 +864,13 @@
                 "db_column_name": "rtc",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CN.RTC\n\nRunway/Taxiway Crossing in RIMCAS\n0 Default\n1 Runway/Taxiway Crossing",
+                "description": "Runway/Taxiway Crossing in RIMCAS\n0 Default\n1 Runway/Taxiway Crossing",
                 "dimension": "",
                 "is_key": false,
                 "name": "RTC",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CN.RTC",
                 "unit": ""
             }
         },
@@ -834,12 +882,13 @@
                 "db_column_name": "type",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 120.CN.Type\n\nType of separation infringement\n0 Minor separation infringement\n1 Major separation infringement",
+                "description": "Type of separation infringement\n0 Minor separation infringement\n1 Major separation infringement",
                 "dimension": "",
                 "is_key": false,
                 "name": "Type",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/120.CN.Type",
                 "unit": ""
             }
         },
@@ -851,12 +900,13 @@
                 "db_column_name": "aircraft_identifier_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.AI1.Aircraft Identifier #1",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Aircraft Identifier AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.AI1.Aircraft Identifier #1",
                 "unit": ""
             }
         },
@@ -868,12 +918,13 @@
                 "db_column_name": "mode_3_a_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.M31.Mode-3/A reply #1",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A AC1",
                 "representation_str": "DEC_TO_OCTAL",
                 "short_name": "",
+                "source": "I004/170.M31.Mode-3/A reply #1",
                 "unit": ""
             }
         },
@@ -885,12 +936,13 @@
                 "db_column_name": "predicted_conflict_latitude_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.CPW.Latitude #1\n\nIn WGS.84 in two’s complement. Range -90 <= latitude <= 90 deg.",
+                "description": "In WGS.84 in two’s complement. Range -90 <= latitude <= 90 deg.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Latitude AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.CPW.Latitude #1",
                 "unit": ""
             }
         },
@@ -902,12 +954,13 @@
                 "db_column_name": "predicted_conflict_longitude_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.CPW.Longitude #1\n\nIn WGS.84 in two’s complement. Range -180 <= longitude < 180 deg.",
+                "description": "In WGS.84 in two’s complement. Range -180 <= longitude < 180 deg.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Longitude AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.CPW.Longitude #1",
                 "unit": ""
             }
         },
@@ -919,12 +972,13 @@
                 "db_column_name": "predicted_conflict_pos__x_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.CPC.X-position #1\n\nStarting X-Position of Conflict. unit: metres",
+                "description": "Starting X-Position of Conflict. unit: metres",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Pos. X AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.CPC.X-position #1",
                 "unit": ""
             }
         },
@@ -936,12 +990,13 @@
                 "db_column_name": "predicted_conflict_pos__y_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.CPC.Y-Position #1\n\nStarting Y-Position of Conflict. unit: metres",
+                "description": "Starting Y-Position of Conflict. unit: metres",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Pos. Y AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.CPC.Y-Position #1",
                 "unit": ""
             }
         },
@@ -953,12 +1008,13 @@
                 "db_column_name": "time_of_message",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 020.TIME OF MESSAGE",
+                "description": "",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Time of Message",
                 "representation_str": "SECONDS_TO_TIME",
                 "short_name": "",
+                "source": "I004/020.TIME OF MESSAGE",
                 "unit": "Second"
             }
         },
@@ -970,12 +1026,13 @@
                 "db_column_name": "predicted_conflict_pos__z_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.CPC.Z-Position #1\n\nStarting Z-Position of Conflict. unit: feet",
+                "description": "Starting Z-Position of Conflict. unit: feet",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Pos. Z AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.CPC.Z-Position #1",
                 "unit": ""
             }
         },
@@ -987,12 +1044,13 @@
                 "db_column_name": "time_to_threshold_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.TT1.TIME TO THRESHOLD #1\n\nTime to runway threshold for first approaching aircraft in a RIMCA",
+                "description": "Time to runway threshold for first approaching aircraft in a RIMCA",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Time to Threshold AC1",
                 "representation_str": "SECONDS_TO_TIME",
                 "short_name": "",
+                "source": "I004/170.TT1.TIME TO THRESHOLD #1",
                 "unit": "Second"
             }
         },
@@ -1004,12 +1062,13 @@
                 "db_column_name": "distance_to_threshold_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.DT1.Distance to Threshold #1\n\nDistance from threshold for Aircraft 1 involved in a RIMCA. unit: metres",
+                "description": "Distance from threshold for Aircraft 1 involved in a RIMCA. unit: metres",
                 "dimension": "",
                 "is_key": false,
                 "name": "Distance to Threshold AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.DT1.Distance to Threshold #1",
                 "unit": ""
             }
         },
@@ -1021,12 +1080,13 @@
                 "db_column_name": "gat_oat_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.AC1.GAT/OAT #1\n\n00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
+                "description": "00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
                 "dimension": "",
                 "is_key": false,
                 "name": "GAT/OAT AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.AC1.GAT/OAT #1",
                 "unit": ""
             }
         },
@@ -1038,12 +1098,13 @@
                 "db_column_name": "fr1_fr2_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.AC1.FR1/FR2 #1\n\n00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
+                "description": "00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
                 "dimension": "",
                 "is_key": false,
                 "name": "FR1/FR2 AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.AC1.FR1/FR2 #1",
                 "unit": ""
             }
         },
@@ -1055,12 +1116,13 @@
                 "db_column_name": "rvsm_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.AC1.RVSM #1\n\n00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
+                "description": "00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
                 "dimension": "",
                 "is_key": false,
                 "name": "RVSM AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.AC1.RVSM #1",
                 "unit": ""
             }
         },
@@ -1072,12 +1134,13 @@
                 "db_column_name": "hpr_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.AC1.HPR #1\n\n0 Normal Priority Flight\n1 High Priority Flight",
+                "description": "0 Normal Priority Flight\n1 High Priority Flight",
                 "dimension": "",
                 "is_key": false,
                 "name": "HPR AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.AC1.HPR #1",
                 "unit": ""
             }
         },
@@ -1089,12 +1152,13 @@
                 "db_column_name": "cdm_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.AC1.CDM #1\n\nClimbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
+                "description": "Climbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
                 "dimension": "",
                 "is_key": false,
                 "name": "CDM AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.AC1.CDM #1",
                 "unit": ""
             }
         },
@@ -1106,12 +1170,13 @@
                 "db_column_name": "pri_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.AC1.PRI #1\n\n0 Non primary target\n1 Primary target",
+                "description": "0 Non primary target\n1 Primary target",
                 "dimension": "",
                 "is_key": false,
                 "name": "PRI AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.AC1.PRI #1",
                 "unit": ""
             }
         },
@@ -1123,12 +1188,13 @@
                 "db_column_name": "gv_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.AC1.GV #1\n\n0 Default\n1 Ground Vehicle",
+                "description": "0 Default\n1 Ground Vehicle",
                 "dimension": "",
                 "is_key": false,
                 "name": "GV AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.AC1.GV #1",
                 "unit": ""
             }
         },
@@ -1140,12 +1206,13 @@
                 "db_column_name": "track_number_1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 030.Track Number 1\n\nrange: 0 to 65535",
+                "description": "range: 0 to 65535",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Number 1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/030.Track Number 1",
                 "unit": ""
             }
         },
@@ -1157,12 +1224,13 @@
                 "db_column_name": "mode_s_identifier_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.MS1.Mode S Identifier Aircraft #1",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode S Identifier AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.MS1.Mode S Identifier Aircraft #1",
                 "unit": ""
             }
         },
@@ -1174,12 +1242,13 @@
                 "db_column_name": "fpl_number_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.FP1.NBR #1\n\nNumber from 0 to 99 999 999",
+                "description": "Number from 0 to 99 999 999",
                 "dimension": "",
                 "is_key": false,
                 "name": "FPL Number AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.FP1.NBR #1",
                 "unit": ""
             }
         },
@@ -1191,12 +1260,13 @@
                 "db_column_name": "cfl_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.CF1.CFL #1\n\nCleared Flight Level for Aircraft 1 Involved in the Conflict. unit: FL",
+                "description": "Cleared Flight Level for Aircraft 1 Involved in the Conflict. unit: FL",
                 "dimension": "",
                 "is_key": false,
                 "name": "CFL AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.CF1.CFL #1",
                 "unit": ""
             }
         },
@@ -1208,12 +1278,13 @@
                 "db_column_name": "predicted_conflict_altitude_ac1",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 170.CPW.Altitude #1\n\nAltitude of predicted conflict in two’s complement. Range -15FL <= Altitude <= 1500FL",
+                "description": "Altitude of predicted conflict in two’s complement. Range -15FL <= Altitude <= 1500FL",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Altitude AC1",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/170.CPW.Altitude #1",
                 "unit": ""
             }
         },
@@ -1225,12 +1296,13 @@
                 "db_column_name": "cdm_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.AC2.CDM #2\n\nClimbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
+                "description": "Climbing/Descending mode\n00 Maintaining\n01 Climbing\n10 Descending\n11 Invalid",
                 "dimension": "",
                 "is_key": false,
                 "name": "CDM AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.AC2.CDM #2",
                 "unit": ""
             }
         },
@@ -1242,12 +1314,13 @@
                 "db_column_name": "fr1_fr2_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.AC2.FR1/FR2 #2\n\n00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
+                "description": "00 Instrument Flight Rules\n01 Visual Flight rules\n10 Not applicable\n11 Controlled Visual Flight Rules",
                 "dimension": "",
                 "is_key": false,
                 "name": "FR1/FR2 AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.AC2.FR1/FR2 #2",
                 "unit": ""
             }
         },
@@ -1259,12 +1332,13 @@
                 "db_column_name": "gat_oat_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.AC2.GAT/OAT #2\n\n00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
+                "description": "00 Unknown\n01 General Air Traffic\n10 Operational Air Traffic\n11 Not applicable",
                 "dimension": "",
                 "is_key": false,
                 "name": "GAT/OAT AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.AC2.GAT/OAT #2",
                 "unit": ""
             }
         },
@@ -1276,12 +1350,13 @@
                 "db_column_name": "gv_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.AC2.GV #2\n\n0 Default\n1 Ground Vehicle",
+                "description": "0 Default\n1 Ground Vehicle",
                 "dimension": "",
                 "is_key": false,
                 "name": "GV AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.AC2.GV #2",
                 "unit": ""
             }
         },
@@ -1293,12 +1368,13 @@
                 "db_column_name": "hpr_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.AC2.HPR #2\n\n0 Normal Priority Flight\n1 High Priority Flight",
+                "description": "0 Normal Priority Flight\n1 High Priority Flight",
                 "dimension": "",
                 "is_key": false,
                 "name": "HPR AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.AC2.HPR #2",
                 "unit": ""
             }
         },
@@ -1310,12 +1386,13 @@
                 "db_column_name": "pri_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.AC2.PRI #2\n\n0 Non primary target\n1 Primary target",
+                "description": "0 Non primary target\n1 Primary target",
                 "dimension": "",
                 "is_key": false,
                 "name": "PRI AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.AC2.PRI #2",
                 "unit": ""
             }
         },
@@ -1327,12 +1404,13 @@
                 "db_column_name": "track_number_2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 035.Track Number 2\n\nrange: 0 to 65535",
+                "description": "range: 0 to 65535",
                 "dimension": "",
                 "is_key": false,
                 "name": "Track Number 2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/035.Track Number 2",
                 "unit": ""
             }
         },
@@ -1344,12 +1422,13 @@
                 "db_column_name": "rvsm_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.AC2.RVSM #2\n\n00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
+                "description": "00 Unknown\n01 Approved\n10 Exempt\n11 Not Approved",
                 "dimension": "",
                 "is_key": false,
                 "name": "RVSM AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.AC2.RVSM #2",
                 "unit": ""
             }
         },
@@ -1361,12 +1440,13 @@
                 "db_column_name": "aircraft_identifier_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.AI2.Aircraft Identifier #2",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Aircraft Identifier AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.AI2.Aircraft Identifier #2",
                 "unit": ""
             }
         },
@@ -1378,12 +1458,13 @@
                 "db_column_name": "cfl_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.CF2.CFL #2\n\nCleared Flight Level for Aircraft 2 Involved in the Conflict. unit: FL",
+                "description": "Cleared Flight Level for Aircraft 2 Involved in the Conflict. unit: FL",
                 "dimension": "",
                 "is_key": false,
                 "name": "CFL AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.CF2.CFL #2",
                 "unit": ""
             }
         },
@@ -1395,12 +1476,13 @@
                 "db_column_name": "predicted_conflict_pos__x_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.CPC.X-position #2\n\nStarting X-Position of Conflict. unit: metres",
+                "description": "Starting X-Position of Conflict. unit: metres",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Pos. X AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.CPC.X-position #2",
                 "unit": ""
             }
         },
@@ -1412,12 +1494,13 @@
                 "db_column_name": "predicted_conflict_pos__y_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.CPC.Y-Position #2\n\nStarting Y-Position of Conflict. unit: metres",
+                "description": "Starting Y-Position of Conflict. unit: metres",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Pos. Y AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.CPC.Y-Position #2",
                 "unit": ""
             }
         },
@@ -1429,12 +1512,13 @@
                 "db_column_name": "predicted_conflict_pos__z_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.CPC.Z-Position #2\n\nStarting Z-Position of Conflict. unit: feet",
+                "description": "Starting Z-Position of Conflict. unit: feet",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Pos. Z AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.CPC.Z-Position #2",
                 "unit": ""
             }
         },
@@ -1446,12 +1530,13 @@
                 "db_column_name": "predicted_conflict_altitude_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.CPW.Altitude #2\n\nAltitude of predicted conflict in two’s complement. Range -15FL <= Altitude <= 1500FL",
+                "description": "Altitude of predicted conflict in two’s complement. Range -15FL <= Altitude <= 1500FL",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Altitude AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.CPW.Altitude #2",
                 "unit": ""
             }
         },
@@ -1463,12 +1548,13 @@
                 "db_column_name": "predicted_conflict_latitude_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.CPW.Latitude #2\n\nIn WGS.84 in two’s complement. Range -90 <= latitude <= 90 deg.",
+                "description": "In WGS.84 in two’s complement. Range -90 <= latitude <= 90 deg.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Latitude AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.CPW.Latitude #2",
                 "unit": ""
             }
         },
@@ -1480,12 +1566,13 @@
                 "db_column_name": "predicted_conflict_longitude_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.CPW.Longitude #2\n\nIn WGS.84 in two’s complement. Range -180 <= longitude < 180 deg.",
+                "description": "In WGS.84 in two’s complement. Range -180 <= longitude < 180 deg.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Predicted Conflict Longitude AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.CPW.Longitude #2",
                 "unit": ""
             }
         },
@@ -1497,12 +1584,13 @@
                 "db_column_name": "distance_to_threshold_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.DT2.Distance to Threshold #2\n\nDistance from threshold for Aircraft 2 involved in a RIMCA. unit: metres",
+                "description": "Distance from threshold for Aircraft 2 involved in a RIMCA. unit: metres",
                 "dimension": "",
                 "is_key": false,
                 "name": "Distance to Threshold AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.DT2.Distance to Threshold #2",
                 "unit": ""
             }
         },
@@ -1514,12 +1602,13 @@
                 "db_column_name": "alert_identifier",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 040.Alert Identifier\n\nrange: 0 to 65535",
+                "description": "range: 0 to 65535",
                 "dimension": "",
                 "is_key": false,
                 "name": "Alert Identifier",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/040.Alert Identifier",
                 "unit": ""
             }
         },
@@ -1531,12 +1620,13 @@
                 "db_column_name": "fpl_number_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.FP2.NBR #2\n\nNumber from 0 to 99 999 999",
+                "description": "Number from 0 to 99 999 999",
                 "dimension": "",
                 "is_key": false,
                 "name": "FPL Number AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.FP2.NBR #2",
                 "unit": ""
             }
         },
@@ -1548,12 +1638,13 @@
                 "db_column_name": "mode_3_a_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.M32.Mode-3/A reply #2",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode 3/A AC2",
                 "representation_str": "DEC_TO_OCTAL",
                 "short_name": "",
+                "source": "I004/171.M32.Mode-3/A reply #2",
                 "unit": ""
             }
         },
@@ -1565,12 +1656,13 @@
                 "db_column_name": "mode_s_identifier_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.MS2.Mode S Identifier Aircraft #2",
+                "description": "",
                 "dimension": "",
                 "is_key": false,
                 "name": "Mode S Identifier AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.MS2.Mode S Identifier Aircraft #2",
                 "unit": ""
             }
         },
@@ -1582,12 +1674,13 @@
                 "db_column_name": "time_to_threshold_ac2",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From 171.TT2.TIME TO THRESHOLD #2\n\nTime to runway threshold for first approaching aircraft in a RIMCA",
+                "description": "Time to runway threshold for first approaching aircraft in a RIMCA",
                 "dimension": "",
                 "is_key": false,
                 "name": "Time to Threshold AC2",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "I004/171.TT2.TIME TO THRESHOLD #2",
                 "unit": ""
             }
         },
@@ -1599,12 +1692,13 @@
                 "db_column_name": "timestamp",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Epoch timestamp based on Time of Day",
+                "description": "Epoch timestamp computed from Time of Day plus the resolved calendar date (handles midnight wrap).",
                 "dimension": "",
                 "is_key": false,
                 "name": "Timestamp",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "Calculated from Time of Day, calendar date",
                 "unit": ""
             }
         },
@@ -1616,12 +1710,13 @@
                 "db_column_name": "ds_id",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "From ds_id\n\nData Source ID",
+                "description": "Data Source Identifier (bit-packed SAC/SIC)",
                 "dimension": "",
                 "is_key": false,
                 "name": "DS ID",
                 "representation_str": "DATA_SRC_NAME",
                 "short_name": "",
+                "source": "Calculated from I004/010.SAC, I004/010.SIC",
                 "unit": ""
             }
         },
@@ -1633,12 +1728,13 @@
                 "db_column_name": "line_id",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "COMMUNICATION LINE ID determines the origin of the record",
+                "description": "Communication line ID determining the origin of the record.",
                 "dimension": "",
                 "is_key": false,
                 "name": "Line ID",
                 "representation_str": "LINE_NAME",
                 "short_name": "",
+                "source": "Internal: import line/source identifier",
                 "unit": ""
             }
         },
@@ -1650,12 +1746,13 @@
                 "db_column_name": "record_number",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Unique record id starting with 0 on every new recording",
+                "description": "Unique record id starting with 0 on every new recording.",
                 "dimension": "",
                 "is_key": true,
                 "name": "Record Number",
                 "representation_str": "STANDARD",
                 "short_name": "",
+                "source": "Internal: ascending record number assigned at import",
                 "unit": ""
             }
         }

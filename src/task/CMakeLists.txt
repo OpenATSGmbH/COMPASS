@@ -1,6 +1,7 @@
 add_library(compass_task "")
 
 include("${CMAKE_SOURCE_DIR}/src/import/CMakeLists.txt")
+include("${CMAKE_CURRENT_LIST_DIR}/analyze/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/assoc/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/calc/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/import/CMakeLists.txt")
@@ -33,7 +34,7 @@ target_link_libraries(compass_task
         ${jASTERIX_LIBRARIES}
 )
 
-# task sources include headers from app, report, view, eval — circular deps
+# task sources include headers from app, report, view, eval - circular deps
 target_include_directories(compass_task PRIVATE
     "${CMAKE_SOURCE_DIR}/src/app/client"
     "${CMAKE_SOURCE_DIR}/src/report"

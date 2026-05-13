@@ -34,7 +34,7 @@
 class Unit : public Configurable
 {
   public:
-    // Legacy constructor removed — use json-backed constructor below
+    // Legacy constructor removed - use json-backed constructor below
     // Unit(const std::string& class_name, const std::string& instance_name, Dimension& parent)
     //     : Configurable(class_name, instance_name, &parent) { ... }
 

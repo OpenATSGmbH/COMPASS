@@ -296,7 +296,7 @@ void DBContextManager::setActiveContext(const string& name)
 
     invalidateDataSourceCache();
 
-    // switching context while a DB with imported data is open is not allowed —
+    // switching context while a DB with imported data is open is not allowed -
     // callers (GUI, RT commands) must prevent this
     traced_assert(!compass_.dbOpened() || !hasInsertedData());
 
@@ -360,7 +360,7 @@ void DBContextManager::ensureDataSourceCache() const
     if (hasActiveContext())
     {
         // ds_id lookup is served directly by activeContext().dataSources() (a
-        // std::map) — no by-id cache needed. Only the RU-name cache is built
+        // std::map) - no by-id cache needed. Only the RU-name cache is built
         // here, since it requires JSON parsing per-DS.
         for (const auto& [ds_id, ds] : activeContext().dataSources())
         {
@@ -476,7 +476,7 @@ void DBContextManager::autoAssignColors(DataSource& ds) const
 
     ColorProvider::Band band = ColorProvider::Band::Light;
 
-    std::vector<QColor> existing; // only same-DSType neighbours — cross-type
+    std::vector<QColor> existing; // only same-DSType neighbours - cross-type
                                   // spacing is handled by the per-DSType hue range.
     if (hasActiveContext())
     {
@@ -615,7 +615,7 @@ void DBContextManager::setLoadOnlyDataSources(map<unsigned int, set<unsigned int
     {
         ds_loading_wanted_[ds_id] = true;
 
-        // Also enable the DSType of this DS — otherwise an inconsistent
+        // Also enable the DSType of this DS - otherwise an inconsistent
         // viewpoint (lists this DS but not its DSType) or a stale per-DSType
         // filter would silently override the explicit per-DS request and
         // skip loading data for DBContents whose DS lives in another DSType.
@@ -1116,6 +1116,230 @@ bool DBContextManager::hasInsertedData() const
 }
 
 // ============================================================
+// ASTERIX info (cumulative per-DS / per-CAT / per-item probe stats)
+// ============================================================
+
+namespace
+{
+    // The probe emits min/max as raw JSON values in the item's native type
+    // (number / string). For min/max merging only matching numeric or string
+    // values are meaningful; otherwise the existing value wins.
+    bool jsonLess(const nlohmann::json& a, const nlohmann::json& b)
+    {
+        if (a.is_number() && b.is_number())
+            return a.get<double>() < b.get<double>();
+        if (a.is_string() && b.is_string())
+            return a.get<std::string>() < b.get<std::string>();
+        return false;
+    }
+
+    void mergeMin(nlohmann::json& dst, const nlohmann::json& src)
+    {
+        if (src.is_null())
+            return;
+        if (dst.is_null() || jsonLess(src, dst))
+            dst = src;
+    }
+
+    void mergeMax(nlohmann::json& dst, const nlohmann::json& src)
+    {
+        if (src.is_null())
+            return;
+        if (dst.is_null() || jsonLess(dst, src))
+            dst = src;
+    }
+
+    std::size_t readSizeT(const nlohmann::json& v)
+    {
+        if (v.is_number_unsigned())
+            return v.get<std::size_t>();
+        if (v.is_number_integer())
+            return static_cast<std::size_t>(v.get<long long>());
+        return 0;
+    }
+}
+
+static const string DBInfoKeyAsterixInfo = "asterix_info";
+
+bool DBContextManager::hasAsterixInfo(unsigned int ds_id) const
+{
+    return asterix_info_.count(ds_id) > 0;
+}
+
+bool DBContextManager::hasAnyAsterixInfo() const
+{
+    return !asterix_info_.empty();
+}
+
+void DBContextManager::mergeAsterixInfoInto(AsterixInfoMap& dst,
+                                            const AsterixInfoMap& delta)
+{
+    for (const auto& [ds_id, cat_map] : delta)
+    {
+        if (ds_id == 0) // unknown SAC/SIC bucket - skip
+            continue;
+
+        for (const auto& [cat, cat_stats] : cat_map)
+        {
+            auto& dst_cat = dst[ds_id][cat];
+            dst_cat.total_count += cat_stats.total_count;
+
+            for (const auto& [item_name, item_stats] : cat_stats.items)
+            {
+                auto& dst_item = dst_cat.items[item_name];
+                dst_item.count += item_stats.count;
+                mergeMin(dst_item.min, item_stats.min);
+                mergeMax(dst_item.max, item_stats.max);
+            }
+        }
+    }
+}
+
+void DBContextManager::mergeAsterixInfo(const AsterixInfoMap& delta)
+{
+    const std::size_t before = asterix_info_.size();
+    mergeAsterixInfoInto(asterix_info_, delta);
+
+    // Only emit when delta actually contained applicable entries (skipping
+    // ds_id == 0). If size didn't grow and delta had no usable rows we still
+    // emit defensively when there were entries beyond the unknown bucket.
+    bool delta_had_entries = false;
+    for (const auto& [ds_id, _] : delta)
+        if (ds_id != 0) { delta_had_entries = true; break; }
+
+    if (delta_had_entries || before != asterix_info_.size())
+        emit asterixInfoChangedSignal();
+}
+
+nlohmann::json DBContextManager::asterixInfoToJSON(const AsterixInfoMap& src)
+{
+    json j = json::object();
+
+    for (const auto& [ds_id, cat_map] : src)
+    {
+        json& ds_node = j[std::to_string(ds_id)];
+
+        for (const auto& [cat, cat_stats] : cat_map)
+        {
+            json& cat_node = ds_node[std::to_string(cat)];
+            cat_node["total_count"] = cat_stats.total_count;
+
+            json items_node = json::object();
+            for (const auto& [item_name, item_stats] : cat_stats.items)
+            {
+                json item_node = json::object();
+                item_node["count"] = item_stats.count;
+                if (!item_stats.min.is_null())
+                    item_node["min"] = item_stats.min;
+                if (!item_stats.max.is_null())
+                    item_node["max"] = item_stats.max;
+                items_node[item_name] = std::move(item_node);
+            }
+            cat_node["items"] = std::move(items_node);
+        }
+    }
+
+    return j;
+}
+
+DBContextManager::AsterixInfoMap
+DBContextManager::asterixInfoFromJSON(const nlohmann::json& j)
+{
+    AsterixInfoMap result;
+
+    if (!j.is_object())
+        return result;
+
+    for (auto& [ds_id_str, cat_obj] : j.items())
+    {
+        unsigned int ds_id = 0;
+        try { ds_id = std::stoul(ds_id_str); } catch (...) { continue; }
+        if (!cat_obj.is_object())
+            continue;
+
+        auto& dst_ds = result[ds_id];
+
+        for (auto& [cat_str, cat_node] : cat_obj.items())
+        {
+            unsigned int cat = 0;
+            try { cat = std::stoul(cat_str); } catch (...) { continue; }
+            if (!cat_node.is_object())
+                continue;
+
+            auto& dst_cat = dst_ds[cat];
+
+            if (cat_node.contains("total_count"))
+                dst_cat.total_count = readSizeT(cat_node.at("total_count"));
+
+            if (cat_node.contains("items") && cat_node.at("items").is_object())
+            {
+                for (auto& [item_name, item_node] : cat_node.at("items").items())
+                {
+                    if (!item_node.is_object())
+                        continue;
+
+                    auto& st = dst_cat.items[item_name];
+                    if (item_node.contains("count"))
+                        st.count = readSizeT(item_node.at("count"));
+                    if (item_node.contains("min"))
+                        st.min = item_node.at("min");
+                    if (item_node.contains("max"))
+                        st.max = item_node.at("max");
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+void DBContextManager::saveAsterixInfoToDB()
+{
+    assert (compass_.dbOpened());
+    loginf << "saving " << asterix_info_.size() << " data sources";
+
+    json j = asterixInfoToJSON(asterix_info_);
+
+    compass_.dbInterface().saveDBInfo(DBInfoKeyAsterixInfo, j.dump());
+
+    loginf << "saved asterix_info to db_info";
+}
+
+void DBContextManager::loadAsterixInfoFromDB()
+{
+    asterix_info_.clear();
+
+    if (!compass_.dbOpened())
+    {
+        loginf << "db not opened, skipping";
+        return;
+    }
+
+    string json_str = compass_.dbInterface().loadDBInfo(DBInfoKeyAsterixInfo);
+
+    if (json_str.empty())
+    {
+        loginf << "no asterix_info in db_info";
+        return;
+    }
+
+    json j;
+    try
+    {
+        j = json::parse(json_str);
+    }
+    catch (const std::exception& ex)
+    {
+        logerr << "failed to parse asterix_info: " << ex.what();
+        return;
+    }
+
+    asterix_info_ = asterixInfoFromJSON(j);
+
+    loginf << "loaded asterix_info from db_info (" << asterix_info_.size() << " data sources)";
+}
+
+// ============================================================
 // Network lines
 // ============================================================
 
@@ -1136,7 +1360,7 @@ map<unsigned int, map<string, json>> DBContextManager::getNetworkLines() const
 
 void DBContextManager::createNetworkDBDataSources()
 {
-    // TODO: implement when wiring network import — create data sources from network config
+    // TODO: implement when wiring network import - create data sources from network config
     loginf << "createNetworkDBDataSources not yet implemented";
 }
 
@@ -1492,16 +1716,16 @@ void DBContextManager::databaseOpenedSlot()
     {
         if (!db.existsDBContextTable())
         {
-            // no active context and DB has no stored context (legacy or new empty DB) — stay in "None" state
-            logwrn << "no active context and DB has no stored context — remaining in 'None' state";
+            // no active context and DB has no stored context (legacy or new empty DB) - stay in "None" state
+            logwrn << "no active context and DB has no stored context - remaining in 'None' state";
             return;
         }
 
-        // no active context, but the DB carries one — adopt it silently
+        // no active context, but the DB carries one - adopt it silently
         DBContext db_ctx = readContextFromDB();
         const string db_name = db_ctx.name();
 
-        loginf << "no active context — adopting DB context '" << db_name << "'";
+        loginf << "no active context - adopting DB context '" << db_name << "'";
 
         if (!hasContext(db_name))
         {
@@ -1513,17 +1737,20 @@ void DBContextManager::databaseOpenedSlot()
 
         setActiveContext(db_name);
         loadCountsFromDB();
+        loadAsterixInfoFromDB();
 
         emit countsChangedSignal();
+        emit asterixInfoChangedSignal();
         return;
     }
 
     if (!db.existsDBContextTable())
     {
-        // new DB — write the active context
-        loginf << "no db_context table — writing active context to DB";
+        // new DB - write the active context
+        loginf << "no db_context table - writing active context to DB";
         writeContextToDB();
         loadCountsFromDB();
+        loadAsterixInfoFromDB();
     }
     else
     {
@@ -1531,13 +1758,13 @@ void DBContextManager::databaseOpenedSlot()
 
         if (db_ctx.name() != activeContext().name())
         {
-            // DB was saved with a different context — align to it before loading counts
+            // DB was saved with a different context - align to it before loading counts
             loginf << "DB context '" << db_ctx.name() << "' differs from active '"
-                   << activeContext().name() << "' — switching to DB context";
+                   << activeContext().name() << "' - switching to DB context";
 
             if (!hasContext(db_ctx.name()))
             {
-                // context doesn't exist on disk — create from DB data
+                // context doesn't exist on disk - create from DB data
                 loginf << "context '" << db_ctx.name() << "' not found on disk, creating from DB";
                 db_ctx.modified(DBContext::currentTimestamp());
                 DBContextSerializer::save(db_ctx, basePath());
@@ -1546,11 +1773,13 @@ void DBContextManager::databaseOpenedSlot()
 
             setActiveContext(db_ctx.name());
             loadCountsFromDB();
+            loadAsterixInfoFromDB();
         }
         else
         {
             // counts needed for conflict dialog (sensors with DB data)
             loadCountsFromDB();
+            loadAsterixInfoFromDB();
 
             auto d = DBContextDiff::compute(activeContext(), db_ctx);
 
@@ -1625,7 +1854,7 @@ void DBContextManager::databaseOpenedSlot()
             }
             else
             {
-                loginf << "context matches DB — no action needed";
+                loginf << "context matches DB - no action needed";
             }
         }
     }
@@ -1634,20 +1863,23 @@ void DBContextManager::databaseOpenedSlot()
 
     emit activeContextChangedSignal();
     emit countsChangedSignal();
+    emit asterixInfoChangedSignal();
 }
 
 void DBContextManager::databaseClosedSlot()
 {
     loginf << "database closed";
 
-    // counts already saved in COMPASS::closeDBInternal() before DB was closed
+    // counts and asterix_info already saved in COMPASS::closeDBInternal() before DB was closed
 
     inserted_counts_.clear();
     loaded_counts_.clear();
+    asterix_info_.clear();
 
     loginf << "emitting countsChangedSignal";
 
     emit countsChangedSignal();
+    emit asterixInfoChangedSignal();
 }
 
 // ============================================================

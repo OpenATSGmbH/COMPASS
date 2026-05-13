@@ -207,7 +207,7 @@ TEST_CASE("NullableVector<int> getRef returns const ref", "[nullablevector][int]
     nv.set(0, 5);
     const int& ref = nv.getRef(0);
     REQUIRE(ref == 5);
-    REQUIRE(&ref == &nv.getRef(0)); // same address — true reference
+    REQUIRE(&ref == &nv.getRef(0)); // same address - true reference
 }
 
 // ============================================================================
