@@ -57,7 +57,7 @@ void ColorsEditWidget::buildUI()
     // ==== Preference ====
     {
         auto* box = new QGroupBox("Preference");
-        auto* row = new QHBoxLayout(box);
+        auto* row = new QHBoxLayout();
 
         light_radio_ = new QRadioButton("Light");
         dark_radio_ = new QRadioButton("Dark");

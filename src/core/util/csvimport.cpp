@@ -62,9 +62,19 @@ bool CSVImport::parseCsvLine(QStringList& fields, const QString& line, const QCh
     }
 
     fields << field;
-    
+
     //quote count must be even
-    return num_quotes % 2 == 0;
+    bool ok = num_quotes % 2 == 0;
+
+    if (!ok)
+    {
+        logerr << "parseCsvLine failed: odd quote count " << num_quotes
+               << " line '" << line.toStdString() << "'";
+        for (int i = 0; i < fields.size(); ++i)
+            logerr << "parseCsvLine failed: field[" << i << "] '" << fields[i].toStdString() << "'";
+    }
+
+    return ok;
 }
 
 /**
@@ -110,14 +120,23 @@ ResultT<nlohmann::json> CSVImport::parse(const std::string& fn,
                 continue;
 
             if (!parseCsvLine(fields, line, separator))
+            {
+                logerr << "could not parse line " << (lines.size() + 1)
+                       << " content '" << line.toStdString() << "'";
                 return ResultT<nlohmann::json>::failed("could not parse line " + std::to_string(lines.size() + 1));
+            }
 
             size_t n = (size_t)fields.size();
-            
+
             if (!num_cols.has_value())
                 num_cols = n;
             else if (num_cols.value() != n)
+            {
+                logerr << "unmatched field count in line " << (lines.size() + 1)
+                       << " expected " << num_cols.value() << " got " << n
+                       << " content '" << line.toStdString() << "'";
                 return ResultT<nlohmann::json>::failed("unmatched field count in line " + std::to_string(lines.size() + 1));
+            }
 
             auto j_fields = nlohmann::json::array();
             double num;
