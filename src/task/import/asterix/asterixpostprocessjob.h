@@ -62,6 +62,19 @@ private:
     static boost::mutex acid_map_mutex_;
     static tbb::concurrent_unordered_map<std::string, std::string> obfuscate_acid_map_;
 
+public:
+    /// Load obfuscation maps from /tmp/compass_obfuscation.json if present
+    /// and parseable; otherwise leaves the in-memory maps untouched (the
+    /// conspicuity-code identity seeds are always applied first). Safe to
+    /// call multiple times; subsequent calls are no-ops once a successful
+    /// load has occurred in this process.
+    static void loadObfuscationMaps();
+
+    /// Persist the current in-memory obfuscation maps to
+    /// /tmp/compass_obfuscation.json. /tmp clears on reboot so mappings
+    /// don't become permanently anchored.
+    static void saveObfuscationMaps();
+
     void doRadarPlotPositionCalculations();
     void doXYPositionCalculations();
     void doADSBPositionProcessing();

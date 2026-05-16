@@ -227,6 +227,16 @@ bool RTCommandImportASTERIXFile::run_impl()
     ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
     unsigned int file_line {0};
 
+    if (!config_.empty())
+    {
+        auto res = import_task.applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
+
     try
     {
         if (framing_.size())
@@ -321,6 +331,9 @@ void RTCommandImportASTERIXFile::collectOptions_impl(OptionsDescription& options
     ("time_offset,t", po::value<std::string>()->default_value(""),
      "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("config,c", po::value<std::string>()->default_value(""),
+     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -333,6 +346,7 @@ void RTCommandImportASTERIXFile::assignVariables_impl(const VariablesMap& variab
         RTCOMMAND_GET_VAR_OR_THROW(variables, "date", std::string, date_str_)
         RTCOMMAND_GET_VAR_OR_THROW(variables, "time_offset", std::string, time_offset_str_)
         RTCOMMAND_CHECK_VAR(variables, "ignore_time_jumps", ignore_time_jumps_)
+        RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
     }
 
 // import asterix files
@@ -425,6 +439,16 @@ bool RTCommandImportASTERIXFiles::run_impl()
     ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
 
     unsigned int file_line {0};
+
+    if (!config_.empty())
+    {
+        auto res = import_task.applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
 
     try
     {
@@ -533,6 +557,9 @@ void RTCommandImportASTERIXFiles::collectOptions_impl(OptionsDescription& option
     ("time_offset,t", po::value<std::string>()->default_value(""),
      "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("config,c", po::value<std::string>()->default_value(""),
+     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filenames") // give position
 }
@@ -554,6 +581,7 @@ void RTCommandImportASTERIXFiles::assignVariables_impl(const VariablesMap& varia
     RTCOMMAND_GET_VAR_OR_THROW(variables, "date", std::string, date_str_)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "time_offset", std::string, time_offset_str_)
     RTCOMMAND_CHECK_VAR(variables, "ignore_time_jumps", ignore_time_jumps_)
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
 }
 
 // import asterix pcap file
@@ -622,6 +650,16 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
 
     ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
     unsigned int file_line {0};
+
+    if (!config_.empty())
+    {
+        auto res = import_task.applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
 
     try
     {
@@ -706,6 +744,9 @@ void RTCommandImportASTERIXPCAPFile::collectOptions_impl(OptionsDescription& opt
     ("time_offset,t", po::value<std::string>()->default_value(""),
      "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("config,c", po::value<std::string>()->default_value(""),
+     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -717,6 +758,7 @@ void RTCommandImportASTERIXPCAPFile::assignVariables_impl(const VariablesMap& va
         RTCOMMAND_GET_VAR_OR_THROW(variables, "date", std::string, date_str_)
         RTCOMMAND_GET_VAR_OR_THROW(variables, "time_offset", std::string, time_offset_str_)
         RTCOMMAND_CHECK_VAR(variables, "ignore_time_jumps", ignore_time_jumps_)
+        RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
     }
 
 // import asterix files
@@ -791,6 +833,16 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
     ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
 
     unsigned int file_line {0};
+
+    if (!config_.empty())
+    {
+        auto res = import_task.applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
 
     try
     {
@@ -881,6 +933,9 @@ void RTCommandImportASTERIXPCAPFiles::collectOptions_impl(OptionsDescription& op
     ("time_offset,t", po::value<std::string>()->default_value(""),
      "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("config,c", po::value<std::string>()->default_value(""),
+     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filenames") // give position
 }
@@ -901,6 +956,7 @@ void RTCommandImportASTERIXPCAPFiles::assignVariables_impl(const VariablesMap& v
     RTCOMMAND_GET_VAR_OR_THROW(variables, "date", std::string, date_str_)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "time_offset", std::string, time_offset_str_)
     RTCOMMAND_CHECK_VAR(variables, "ignore_time_jumps", ignore_time_jumps_)
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
 }
 
 // import asterix network
@@ -952,6 +1008,16 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
     }
 
     ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+
+    if (!config_.empty())
+    {
+        auto res = import_task.applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
 
     try
     {
@@ -1012,6 +1078,10 @@ void RTCommandImportASTERIXNetworkStart::collectOptions_impl(OptionsDescription&
      "maximum number of lines per data source during ASTERIX network import, 1..4");
 
     ADD_RTCOMMAND_OPTIONS(options)("ignore_future_ts,i", "ignore future timestamps");
+
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("config,c", po::value<std::string>()->default_value(""),
+     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
 }
 
 void RTCommandImportASTERIXNetworkStart::assignVariables_impl(const VariablesMap& variables)
@@ -1019,6 +1089,7 @@ void RTCommandImportASTERIXNetworkStart::assignVariables_impl(const VariablesMap
         RTCOMMAND_GET_VAR_OR_THROW(variables, "time_offset", std::string, time_offset_str_)
         RTCOMMAND_GET_VAR_OR_THROW(variables, "max_lines", int, max_lines_)
         RTCOMMAND_CHECK_VAR(variables, "ignore_future_ts", ignore_future_ts_)
+        RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
     }
 
 // import asterix network stop

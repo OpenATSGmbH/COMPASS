@@ -47,6 +47,7 @@ struct RTCommandImportASTERIXFile : public rtcommand::RTCommand
     std::string date_str_;
     std::string time_offset_str_;
     bool        ignore_time_jumps_ {false};
+    std::string config_;
 
     virtual rtcommand::IsValid valid() const override;
 
@@ -71,6 +72,7 @@ struct RTCommandImportASTERIXFiles : public rtcommand::RTCommand
     std::string date_str_;
     std::string time_offset_str_;
     bool ignore_time_jumps_ {false};
+    std::string config_;
 
     virtual rtcommand::IsValid valid() const override;
 
@@ -93,6 +95,7 @@ struct RTCommandImportASTERIXPCAPFile : public rtcommand::RTCommand
     std::string date_str_;
     std::string time_offset_str_;
     bool ignore_time_jumps_ {false};
+    std::string config_;
 
     virtual rtcommand::IsValid valid() const override;
 
@@ -116,6 +119,7 @@ struct RTCommandImportASTERIXPCAPFiles : public rtcommand::RTCommand
     std::string date_str_;
     std::string time_offset_str_;
     bool ignore_time_jumps_ {false};
+    std::string config_;
 
     virtual rtcommand::IsValid valid() const override;
 
@@ -136,6 +140,7 @@ struct RTCommandImportASTERIXNetworkStart : public rtcommand::RTCommand
     std::string time_offset_str_;
     int max_lines_ {-1};
     bool ignore_future_ts_ {false};
+    std::string config_;
 
     virtual rtcommand::IsValid valid() const override;
 
