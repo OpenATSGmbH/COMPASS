@@ -975,160 +975,242 @@ namespace
 inline bool isAsciiLetter(char c) { return std::isalpha(static_cast<unsigned char>(c)); }
 inline bool isAsciiDigit (char c) { return std::isdigit(static_cast<unsigned char>(c)); }
 
-// Strip trailing whitespace, common in space-padded ACID fields.
-std::string rtrim(const std::string& s)
+// Strip trailing whitespace; uppercase ASCII. Used to canonicalise the
+// lookup key so that "XY100", "XY100   " and "xy100" all collapse to one
+// entry.
+std::string normaliseAcid(const std::string& s)
 {
     auto end = s.find_last_not_of(" \t\r\n");
-    return end == std::string::npos ? std::string() : s.substr(0, end + 1);
+    if (end == std::string::npos)
+        return std::string();
+    std::string out = s.substr(0, end + 1);
+    for (auto& c : out)
+        c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    return out;
 }
 
-// Try to split a callsign into <L leading letters><D trailing digits>.
-// On success returns {true, L, D} and the input covers exactly L + D chars.
-// On structures that don't fit (mixed-in-middle, lower-case, etc.) returns
-// {false, 0, 0} and the caller falls back to the hash-based scheme.
-struct AcidShape { bool ok; std::size_t letters; std::size_t digits; };
-AcidShape detectAcidShape(const std::string& s)
+// One contiguous run of input characters of the same class (letter / digit
+// / other). Captures the original length and characters; "other" runs are
+// passed through unchanged.
+struct AcidRun
 {
-    if (s.empty())
-        return {false, 0, 0};
+    enum class Kind { Letter, Digit, Other };
+    Kind        kind;
+    std::string text; // original characters, only meaningful for Other
+};
+
+std::vector<AcidRun> splitIntoRuns(const std::string& s)
+{
+    std::vector<AcidRun> runs;
     std::size_t i = 0;
-    while (i < s.size() && isAsciiLetter(s[i])) ++i;
-    std::size_t letters = i;
-    while (i < s.size() && isAsciiDigit(s[i])) ++i;
-    std::size_t digits = i - letters;
-    if (i != s.size())
-        return {false, 0, 0};
-    if (letters == 0 && digits == 0)
-        return {false, 0, 0};
-    return {true, letters, digits};
+    while (i < s.size())
+    {
+        AcidRun::Kind kind = isAsciiLetter(s[i]) ? AcidRun::Kind::Letter
+                          : isAsciiDigit (s[i]) ? AcidRun::Kind::Digit
+                                               : AcidRun::Kind::Other;
+        std::size_t j = i;
+        while (j < s.size())
+        {
+            AcidRun::Kind k = isAsciiLetter(s[j]) ? AcidRun::Kind::Letter
+                            : isAsciiDigit (s[j]) ? AcidRun::Kind::Digit
+                                                 : AcidRun::Kind::Other;
+            if (k != kind) break;
+            ++j;
+        }
+        AcidRun r;
+        r.kind = kind;
+        r.text = s.substr(i, j - i);
+        runs.push_back(std::move(r));
+        i = j;
+    }
+    return runs;
 }
 
-// Hash-based fallback (legacy behaviour) for callsigns that don't fit the
-// <letters><digits> shape (mixed-in-middle, all-digit, etc.).
-std::string hashBasedAcid(const std::string& value,
-                          const tbb::concurrent_unordered_map<std::string, std::string>& used)
+// Leading slice of a ship name at index `ship_idx` (wrapping). If the ship
+// is shorter than `len`, pad with random A-Z. Subsequent letter runs in
+// the same callsign should pass a different `ship_idx` (caller advances)
+// so the output reads as multiple ship prefixes rather than one repeated.
+std::string letterRunLeading(std::size_t ship_idx, std::size_t len, std::mt19937& rng)
 {
-    const std::string trimmed = value.substr(0, 8);
-    const std::size_t max_len = 8;
+    if (len == 0)
+        return std::string();
+    const std::string& name = ship_names[ship_idx % ship_names.size()];
+    if (name.size() >= len)
+        return name.substr(0, len);
+    std::uniform_int_distribution<int> letter_pick(0, 25);
+    std::string out = name;
+    while (out.size() < len)
+        out += static_cast<char>('A' + letter_pick(rng));
+    return out;
+}
 
-    std::size_t hash_value = 0;
-    for (char c : trimmed)
-        hash_value = hash_value * 31 + static_cast<std::size_t>(c);
+// 10^n with overflow guard - clamped so callsigns with absurdly long digit
+// runs don't blow up the integer space we use for the increment counter.
+std::uint64_t pow10Clamped(std::size_t n)
+{
+    std::uint64_t v = 1;
+    for (std::size_t i = 0; i < n && i < 18; ++i)
+        v *= 10;
+    return v;
+}
 
-    std::string prefix = ship_names[hash_value % ship_names.size()];
-    if (prefix.size() > max_len - 1)
-        prefix = prefix.substr(0, max_len - 1);
-    std::size_t digit_len = max_len - prefix.size();
+// Total number of digit characters across all digit runs - the digit slots
+// are filled from a single zero-padded counter, so an increment by 1
+// monotonically walks the joint digit space.
+std::size_t totalDigitSlots(const std::vector<AcidRun>& runs)
+{
+    std::size_t n = 0;
+    for (const auto& r : runs)
+        if (r.kind == AcidRun::Kind::Digit)
+            n += r.text.size();
+    return n;
+}
 
-    static std::map<std::string, std::size_t> counters;
-    for (int guard = 0; guard < 10000; ++guard)
+// Materialise a candidate: letter runs use leading slices of ship_names
+// starting at `ship_idx` (each successive letter run advances by one);
+// digit runs are filled from `digit_value` rendered as a zero-padded
+// string of length `totalDigitSlots(runs)`, split across the digit runs.
+std::string generateLeadingAcid(const std::vector<AcidRun>& runs,
+                                std::size_t ship_idx,
+                                std::uint64_t digit_value,
+                                std::mt19937& rng)
+{
+    const std::size_t total_digits = totalDigitSlots(runs);
+    std::string digit_str;
+    if (total_digits > 0)
     {
-        std::size_t n = counters[prefix]++;
-        n = n % static_cast<std::size_t>(std::pow(10, digit_len));
-        std::string digits = std::to_string(n);
-        if (digits.size() < digit_len)
-            digits = std::string(digit_len - digits.size(), '0') + digits;
-        std::string candidate = prefix + digits;
-        bool collision = false;
-        for (const auto& kv : used)
-            if (kv.second == candidate) { collision = true; break; }
-        if (!collision)
-            return candidate;
+        const std::uint64_t mod = pow10Clamped(total_digits);
+        if (mod > 0)
+            digit_value %= mod;
+        digit_str = std::to_string(digit_value);
+        if (digit_str.size() < total_digits)
+            digit_str = std::string(total_digits - digit_str.size(), '0') + digit_str;
+        else if (digit_str.size() > total_digits)
+            digit_str = digit_str.substr(digit_str.size() - total_digits);
     }
-    return prefix + std::string(digit_len, '0');
+
+    std::string out;
+    out.reserve(8);
+    std::size_t digit_cursor = 0;
+    std::size_t letter_run_idx = 0;
+    for (const auto& r : runs)
+    {
+        switch (r.kind)
+        {
+        case AcidRun::Kind::Letter:
+            out += letterRunLeading(ship_idx + letter_run_idx, r.text.size(), rng);
+            ++letter_run_idx;
+            break;
+        case AcidRun::Kind::Digit:
+            out.append(digit_str, digit_cursor, r.text.size());
+            digit_cursor += r.text.size();
+            break;
+        case AcidRun::Kind::Other:
+            out += r.text;
+            break;
+        }
+    }
+    return out;
+}
+
+// Pad `s` with trailing spaces up to `target_len`. If `s` is already that
+// long or longer, returned unchanged.
+std::string padTo(const std::string& s, std::size_t target_len)
+{
+    if (s.size() >= target_len)
+        return s;
+    return s + std::string(target_len - s.size(), ' ');
 }
 }
 
 void ASTERIXPostprocessJob::obfuscateACID (std::string& value)
 {
-    if (auto it = obfuscate_acid_map_.find(value); it != obfuscate_acid_map_.end())
+    const std::size_t original_len = value.size();
+    const std::string key = normaliseAcid(value);
+
+    // Empty / all-whitespace input: nothing meaningful to obfuscate.
+    if (key.empty())
     {
-        value = it->second;
+        value = std::string(original_len, ' ');
         return;
     }
 
-    const std::string trimmed = rtrim(value);
-    const AcidShape shape = detectAcidShape(trimmed);
-
-    std::string obfuscated;
-
-    if (shape.ok && shape.letters > 0)
+    if (auto it = obfuscate_acid_map_.find(key); it != obfuscate_acid_map_.end())
     {
-        // Build candidate prefixes of the right letter length, deduped.
-        std::vector<std::string> candidates;
-        candidates.reserve(ship_names.size());
-        std::set<std::string> seen;
-        for (const auto& name : ship_names)
-        {
-            if (name.size() < shape.letters)
-                continue;
-            std::string prefix = name.substr(0, shape.letters);
-            if (seen.insert(prefix).second)
-                candidates.push_back(std::move(prefix));
-        }
-        if (candidates.empty())
-        {
-            // Letter length exceeds every name in the pool; fall back.
-            obfuscated = hashBasedAcid(value, obfuscate_acid_map_);
-        }
-        else
-        {
-            auto& rng = obfuscateRng();
-            std::uniform_int_distribution<std::size_t> prefix_pick(0, candidates.size() - 1);
-            std::uniform_int_distribution<int> digit_pick(0, 9);
-
-            for (int guard = 0; guard < 10000; ++guard)
-            {
-                std::string prefix = candidates[prefix_pick(rng)];
-                std::string digits;
-                digits.reserve(shape.digits);
-                for (std::size_t i = 0; i < shape.digits; ++i)
-                    digits += static_cast<char>('0' + digit_pick(rng));
-                std::string candidate = prefix + digits;
-
-                bool collision = false;
-                for (const auto& kv : obfuscate_acid_map_)
-                    if (kv.second == candidate) { collision = true; break; }
-                if (!collision)
-                {
-                    obfuscated = std::move(candidate);
-                    break;
-                }
-            }
-            if (obfuscated.empty())
-                obfuscated = candidates.front() + std::string(shape.digits, '0');
-        }
+        value = padTo(it->second, original_len);
+        return;
     }
-    else if (shape.ok && shape.letters == 0)
+
+    const auto runs = splitIntoRuns(key);
+    auto& rng = obfuscateRng();
+
+    const std::size_t total_digits = totalDigitSlots(runs);
+    const std::uint64_t digit_mod  = pow10Clamped(total_digits);
+    const std::size_t pool_size    = ship_names.size();
+
+    // Initial picks. The ship_idx selects a starting ship for the first
+    // letter run; on collision we keep the ship_idx and increment the
+    // composite digit value, so the readable "ship prefix" stays stable.
+    // Only when the digit space is exhausted do we step to the next ship.
+    std::uniform_int_distribution<std::size_t> ship_dist(0, pool_size - 1);
+    std::size_t ship_idx = ship_dist(rng);
+    std::uint64_t digit_value = total_digits > 0
+        ? (std::uniform_int_distribution<std::uint64_t>(0, digit_mod - 1))(rng)
+        : 0;
+
+    std::string candidate;
+    std::uint64_t digit_attempts = 0;
+    std::size_t  ship_attempts   = 0;
+    const std::uint64_t digit_budget = total_digits > 0 ? digit_mod : 1;
+
+    while (ship_attempts < pool_size)
     {
-        // All-digit callsign: just random digits of the same length.
-        auto& rng = obfuscateRng();
-        std::uniform_int_distribution<int> digit_pick(0, 9);
-        for (int guard = 0; guard < 10000; ++guard)
+        candidate = generateLeadingAcid(runs, ship_idx, digit_value, rng);
+
+        bool collision = (candidate == key);
+        if (!collision)
         {
-            std::string digits;
-            digits.reserve(shape.digits);
-            for (std::size_t i = 0; i < shape.digits; ++i)
-                digits += static_cast<char>('0' + digit_pick(rng));
-            bool collision = false;
             for (const auto& kv : obfuscate_acid_map_)
-                if (kv.second == digits) { collision = true; break; }
-            if (!collision)
-            {
-                obfuscated = std::move(digits);
-                break;
-            }
+                if (kv.second == candidate) { collision = true; break; }
         }
-        if (obfuscated.empty())
-            obfuscated = std::string(shape.digits, '0');
-    }
-    else
-    {
-        obfuscated = hashBasedAcid(value, obfuscate_acid_map_);
+        if (!collision)
+            break;
+
+        ++digit_attempts;
+        if (total_digits > 0 && digit_attempts < digit_budget)
+        {
+            digit_value = (digit_value + 1) % digit_mod;
+            continue;
+        }
+        // Digit space exhausted (or none) - advance to the next ship and
+        // pick a fresh starting digit value.
+        ++ship_attempts;
+        ship_idx = (ship_idx + 1) % pool_size;
+        digit_attempts = 0;
+        if (total_digits > 0)
+            digit_value = (std::uniform_int_distribution<std::uint64_t>(0, digit_mod - 1))(rng);
     }
 
-    obfuscate_acid_map_[value] = obfuscated;
-    value = obfuscated;
+    if (ship_attempts >= pool_size)
+    {
+        // Pathological saturation - extremely unlikely. Fall back to a
+        // random-letters / random-digits rendering, accepting that it may
+        // not be a recognisable ship prefix.
+        std::uniform_int_distribution<int> letter_pick(0, 25);
+        std::uniform_int_distribution<int> digit_pick(0, 9);
+        std::string fallback;
+        fallback.reserve(key.size());
+        for (char c : key)
+        {
+            if (isAsciiLetter(c))      fallback += static_cast<char>('A' + letter_pick(rng));
+            else if (isAsciiDigit(c))  fallback += static_cast<char>('0' + digit_pick(rng));
+            else                       fallback += c;
+        }
+        candidate = std::move(fallback);
+    }
+
+    obfuscate_acid_map_[key] = candidate;
+    value = padTo(candidate, original_len);
 }
 
 void ASTERIXPostprocessJob::loadObfuscationMaps()
