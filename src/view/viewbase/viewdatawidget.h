@@ -94,6 +94,9 @@ public:
 
     virtual QImage renderData();
 
+    // called before renderData() so subclasses can settle async resources
+    virtual void prepareForRender() {}
+
     QColor colorForGroupName(const std::string& group_name); // creates new one of required
     const std::map<std::string, QColor>& dbContentColors() const;
 

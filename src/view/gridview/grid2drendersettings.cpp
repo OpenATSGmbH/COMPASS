@@ -18,6 +18,8 @@
 
 #include "logger.h"
 
+#include <QColor>
+
 /**
  * Converts the Grid2DRenderSettings to a JSON object.
  *
@@ -38,6 +40,17 @@ nlohmann::json Grid2DRenderSettings::toJSON() const
     {
         obj["color_scale"] = static_cast<int>(color_map.colorScale());
         obj["color_steps"] = static_cast<int>(color_map.colorSteps());
+
+        // Emit the resolved color stops so non-Qt consumers (compass_web)
+        // don't have to recreate a ColorMap to colour their renderings.
+        // Hex form (#RRGGBB) is straight Plotly-compatible; alpha is dropped
+        // because Grid2DLayerRenderer's RGBA blending doesn't carry across
+        // wire formats consistently (selection / null colours travel as
+        // separate fields below).
+        nlohmann::json colors = nlohmann::json::array();
+        for (std::size_t i = 0; i < color_map.numColors(); ++i)
+            colors.push_back(color_map.getColor(i).name(QColor::HexRgb).toStdString());
+        obj["colors"] = std::move(colors);
     }
 
     obj["pixels_per_cell"] = pixels_per_cell;

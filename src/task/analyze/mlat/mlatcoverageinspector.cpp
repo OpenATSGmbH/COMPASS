@@ -569,6 +569,13 @@ void attachPDFigure(ResultReport::Section& section,
             legend.addEntry(it->first, it->second);
 
         anno->addFeature(new ViewPointGenFeatureGeoImage(rendered.first, rendered.second, legend));
+
+        // Frame the Geographic View on the populated region of the rendered
+        // raster instead of falling back to the full loaded-data extent.
+        QRectF vp_roi = Grid2DLayerRenderer::geoROIOfOpaquePixels(
+            rendered.first, rendered.second);
+        if (!vp_roi.isEmpty())
+            vp->setROI(vp_roi);
     }
     else
     {

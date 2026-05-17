@@ -436,7 +436,7 @@ void RTCommandReconstructReferences::assignVariables_impl(const VariablesMap& va
 RTCommandAnalyzeDataSource::RTCommandAnalyzeDataSource()
     : rtcommand::RTCommand()
 {
-    condition.setSignal("compass.taskmanager.analysedatasourcetask.doneSignal", -1);
+    condition.setSignal("compass.taskmanager.analyzedatasourcetask.doneSignal", -1);
 }
 
 bool RTCommandAnalyzeDataSource::run_impl()
