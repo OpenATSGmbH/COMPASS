@@ -51,7 +51,7 @@ public:
 
     std::string dsType() const;
 
-    bool cancelled() const;
+    bool canceled() const;
 
 protected:
     context::DBContextManager& ctx_man_;

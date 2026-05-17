@@ -96,7 +96,7 @@ public:
     void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
 
 signals:
-    void exportDoneSignal(bool cancelled);
+    void exportDoneSignal(bool canceled);
 
     /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
     /// The config widget uses this to re-apply default expansion.
@@ -104,7 +104,7 @@ signals:
 
 public slots:
     void exportDataSlot(bool overwrite);
-    void exportDoneSlot(bool cancelled);
+    void exportDoneSlot(bool canceled);
 
     void resetZoomSlot();
 

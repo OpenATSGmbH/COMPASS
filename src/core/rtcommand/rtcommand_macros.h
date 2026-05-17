@@ -55,7 +55,7 @@ private:                                                                        
     bool Class::is_registered_ = rtcommand::RTCommandRegistry::instance().registerCommand(Class::staticName(), Class::staticDescription(), [] () { return new Class; });
 
 /**
- * Overrides the abstract option related methods with empty behaviour. 
+ * Overrides the abstract option related methods with empty behavior. 
  * Add preferably at end of command class declaration.
  * 
  * struct RTCommandExample : public RTCommand

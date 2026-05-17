@@ -162,7 +162,7 @@ std::string DataSourceCreateDialog::dsType() const
     return ds_type_;
 }
 
-bool DataSourceCreateDialog::cancelled() const
+bool DataSourceCreateDialog::canceled() const
 {
     return cancelled_;
 }

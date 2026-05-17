@@ -121,7 +121,7 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
     if (!dbcontent_man.hasAssociations())
     {
         error_out = "No reconstruction associations are present; "
-                    "run reconstruction before analysing the data source.";
+                    "run reconstruction before analyzing the data source.";
         return false;
     }
 
@@ -352,7 +352,7 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
     }
 
     if (has_position_extent_)
-        centre_lat_deg_ = 0.5 * (min_lat_ + max_lat_);
+        center_lat_deg_ = 0.5 * (min_lat_ + max_lat_);
 }
 
 void AnalysisDataset::addToReferenceChain(unsigned int utn, ptime ts, unsigned int idx)

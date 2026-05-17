@@ -431,7 +431,7 @@ boost::optional<std::pair<double, double>> VariableViewStashDataWidget::getVaria
 */
 boost::optional<QRectF> VariableViewStashDataWidget::getViewBounds() const
 {
-    //meaningful default behaviour for most views
+    //meaningful default behavior for most views
     return getPlanarVariableBounds(0, 1, false, true);
 }
 

@@ -166,7 +166,7 @@ protected:
     void setResultMessage(const std::string& m) const;
     void setJSONReply(const nlohmann::json& json_reply, const std::string& reply_as_string = "") const;
 
-    //implements command specific behaviour
+    //implements command specific behavior
     virtual bool run_impl() = 0;
     virtual bool checkResult_impl() { return true; }
     virtual void collectOptions_impl(OptionsDescription& options, 

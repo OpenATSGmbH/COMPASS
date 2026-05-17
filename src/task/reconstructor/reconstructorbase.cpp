@@ -650,7 +650,7 @@ void ReconstructorBase::init()
     //not needed at the moment
     //initChainPredictors();
 
-    //invoke derived behaviour
+    //invoke derived behavior
     init_impl();
 
     current_slice_begin_ = timestamp_min_;

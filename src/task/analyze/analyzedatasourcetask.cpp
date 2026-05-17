@@ -15,8 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "analysedatasourcetask.h"
-#include "analysedatasourcedialog.h"
+#include "analyzedatasourcetask.h"
+#include "analyzedatasourcedialog.h"
+#include "analyze_commands.h"
 #include "analysisdataset.h"
 #include "datasourceinspectorbase.h"
 #include "inspectorsettingsbase.h"
@@ -64,10 +65,10 @@
 #include <chrono>
 #include <future>
 
-AnalyseDataSourceTask::AnalyseDataSourceTask(nlohmann::json& config, TaskManager* parent)
+AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent)
     : Task(*parent), Configurable(config, parent)
 {
-    setObjectName("AnalyseDataSourceTask");
+    setObjectName("AnalyzeDataSourceTask");
 
     registerParameter("ds_type", &ds_type_, std::string("MLAT"));
     registerParameter("use_data_sources",           &use_data_sources_,           nlohmann::json::object());
@@ -81,15 +82,17 @@ AnalyseDataSourceTask::AnalyseDataSourceTask(nlohmann::json& config, TaskManager
     registerParameter("cell_size_ft",               &cell_size_ft_,               cell_size_ft_);
     registerParameter("max_cells_per_axis",         &max_cells_per_axis_,         max_cells_per_axis_);
 
-    tooltip_ = "Analyse a chosen data source from multiple angles "
+    tooltip_ = "Analyze a chosen data source from multiple angles "
                "(data items, sensor coverage / PD, position accuracy).";
 
     createSubConfigurables();
+
+    init_analyze_commands(compass());
 }
 
-AnalyseDataSourceTask::~AnalyseDataSourceTask() = default;
+AnalyzeDataSourceTask::~AnalyzeDataSourceTask() = default;
 
-void AnalyseDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
+void AnalyzeDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -127,12 +130,12 @@ void AnalyseDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
 #endif
     else
     {
-        throw std::runtime_error("AnalyseDataSourceTask: generateSubConfigurable: "
+        throw std::runtime_error("AnalyzeDataSourceTask: generateSubConfigurable: "
                                  "unknown class_name " + class_name);
     }
 }
 
-void AnalyseDataSourceTask::checkSubConfigurables()
+void AnalyzeDataSourceTask::checkSubConfigurables()
 {
     if (!data_item_settings_)
         generateSubConfigurableFromConfig("MLATDataItemInspectorSettings",
@@ -162,7 +165,7 @@ void AnalyseDataSourceTask::checkSubConfigurables()
 #endif
 }
 
-void AnalyseDataSourceTask::initTask()
+void AnalyzeDataSourceTask::initTask()
 {
     registerInspectors();
 
@@ -173,7 +176,7 @@ void AnalyseDataSourceTask::initTask()
             this, [this]() { resetCustomReportName(); });
 }
 
-Result AnalyseDataSourceTask::applyJSONParameters(const nlohmann::json& params_json)
+Result AnalyzeDataSourceTask::applyJSONParameters(const nlohmann::json& params_json)
 {
     static const std::string kInspectorSettingsKey = "inspector_settings";
 
@@ -210,7 +213,7 @@ Result AnalyseDataSourceTask::applyJSONParameters(const nlohmann::json& params_j
     return Configurable::applyJSONParameters(rest);
 }
 
-void AnalyseDataSourceTask::registerInspectors()
+void AnalyzeDataSourceTask::registerInspectors()
 {
     inspectors_.clear();
 
@@ -224,7 +227,7 @@ void AnalyseDataSourceTask::registerInspectors()
 #endif
 }
 
-bool AnalyseDataSourceTask::useDataSource(unsigned int ds_id) const
+bool AnalyzeDataSourceTask::useDataSource(unsigned int ds_id) const
 {
     auto key = std::to_string(ds_id);
     if (use_data_sources_.contains(key))
@@ -232,7 +235,7 @@ bool AnalyseDataSourceTask::useDataSource(unsigned int ds_id) const
     return true;
 }
 
-void AnalyseDataSourceTask::useDataSource(unsigned int ds_id, bool value)
+void AnalyzeDataSourceTask::useDataSource(unsigned int ds_id, bool value)
 {
     bool changed = useDataSource(ds_id) != value;
     use_data_sources_[std::to_string(ds_id)] = value;
@@ -240,7 +243,7 @@ void AnalyseDataSourceTask::useDataSource(unsigned int ds_id, bool value)
         resetCustomReportName();
 }
 
-bool AnalyseDataSourceTask::useDataSourceLine(unsigned int ds_id, unsigned int line_id) const
+bool AnalyzeDataSourceTask::useDataSourceLine(unsigned int ds_id, unsigned int line_id) const
 {
     auto ds_key   = std::to_string(ds_id);
     auto line_key = std::to_string(line_id);
@@ -250,12 +253,12 @@ bool AnalyseDataSourceTask::useDataSourceLine(unsigned int ds_id, unsigned int l
     return true;
 }
 
-void AnalyseDataSourceTask::useDataSourceLine(unsigned int ds_id, unsigned int line_id, bool value)
+void AnalyzeDataSourceTask::useDataSourceLine(unsigned int ds_id, unsigned int line_id, bool value)
 {
     use_data_sources_lines_[std::to_string(ds_id)][std::to_string(line_id)] = value;
 }
 
-std::set<unsigned int> AnalyseDataSourceTask::selectedDataSourceIDs() const
+std::set<unsigned int> AnalyzeDataSourceTask::selectedDataSourceIDs() const
 {
     std::set<unsigned int> ids;
     auto& ctx = compass().dbContextManager();
@@ -273,17 +276,17 @@ std::set<unsigned int> AnalyseDataSourceTask::selectedDataSourceIDs() const
     return ids;
 }
 
-void AnalyseDataSourceTask::setLineIDTst(unsigned int line_id)
+void AnalyzeDataSourceTask::setLineIDTst(unsigned int line_id)
 {
     line_id_tst_ = line_id;
 }
 
-void AnalyseDataSourceTask::setLineIDRef(unsigned int line_id)
+void AnalyzeDataSourceTask::setLineIDRef(unsigned int line_id)
 {
     line_id_ref_ = line_id;
 }
 
-bool AnalyseDataSourceTask::useReferenceDataSource(unsigned int ds_id) const
+bool AnalyzeDataSourceTask::useReferenceDataSource(unsigned int ds_id) const
 {
     auto key = std::to_string(ds_id);
     if (use_reference_data_sources_.contains(key))
@@ -291,12 +294,12 @@ bool AnalyseDataSourceTask::useReferenceDataSource(unsigned int ds_id) const
     return true;
 }
 
-void AnalyseDataSourceTask::useReferenceDataSource(unsigned int ds_id, bool value)
+void AnalyzeDataSourceTask::useReferenceDataSource(unsigned int ds_id, bool value)
 {
     use_reference_data_sources_[std::to_string(ds_id)] = value;
 }
 
-std::set<unsigned int> AnalyseDataSourceTask::selectedReferenceDataSourceIDs() const
+std::set<unsigned int> AnalyzeDataSourceTask::selectedReferenceDataSourceIDs() const
 {
     std::set<unsigned int> ids;
     for (auto ds_id : referenceDataSourceCandidateIDs())
@@ -307,7 +310,7 @@ std::set<unsigned int> AnalyseDataSourceTask::selectedReferenceDataSourceIDs() c
     return ids;
 }
 
-std::set<unsigned int> AnalyseDataSourceTask::referenceDataSourceCandidateIDs() const
+std::set<unsigned int> AnalyzeDataSourceTask::referenceDataSourceCandidateIDs() const
 {
     std::set<unsigned int> ids;
     auto& ctx = compass().dbContextManager();
@@ -322,18 +325,18 @@ std::set<unsigned int> AnalyseDataSourceTask::referenceDataSourceCandidateIDs() 
     return ids;
 }
 
-std::string AnalyseDataSourceTask::reportName() const
+std::string AnalyzeDataSourceTask::reportName() const
 {
     if (!custom_report_name_.empty())
         return custom_report_name_;
     return suggestReportName();
 }
 
-std::string AnalyseDataSourceTask::suggestReportName() const
+std::string AnalyzeDataSourceTask::suggestReportName() const
 {
     auto ids = selectedDataSourceIDs();
     if (ids.empty())
-        return "Analyse " + ds_type_ + " Data Source";
+        return "Analyze " + ds_type_ + " Data Source";
 
     auto& ctx = compass().dbContextManager();
     const auto* ds = ctx.dataSource(*ids.begin());
@@ -342,29 +345,29 @@ std::string AnalyseDataSourceTask::suggestReportName() const
     return name + " L" + std::to_string(line_id_tst_ + 1) + " Analysis";
 }
 
-void AnalyseDataSourceTask::setCustomReportName(const std::string& name)
+void AnalyzeDataSourceTask::setCustomReportName(const std::string& name)
 {
     custom_report_name_ = name;
 }
 
-void AnalyseDataSourceTask::resetCustomReportName()
+void AnalyzeDataSourceTask::resetCustomReportName()
 {
     custom_report_name_.clear();
 }
 
-void AnalyseDataSourceTask::setCellSizeMeters(float v)
+void AnalyzeDataSourceTask::setCellSizeMeters(float v)
 {
     if (v > 0.0f)
         cell_size_m_ = v;
 }
 
-void AnalyseDataSourceTask::setCellSizeFeet(float v)
+void AnalyzeDataSourceTask::setCellSizeFeet(float v)
 {
     if (v > 0.0f)
         cell_size_ft_ = v;
 }
 
-void AnalyseDataSourceTask::setMaxCellsPerAxis(unsigned int v)
+void AnalyzeDataSourceTask::setMaxCellsPerAxis(unsigned int v)
 {
     if (v >= 10 && v <= 2000)
         max_cells_per_axis_ = v;
@@ -406,8 +409,8 @@ unsigned int axisMultiplier(double extent, double base_cell, unsigned int max_ce
 }
 }
 
-AnalyseDataSourceTask::CellSizing
-AnalyseDataSourceTask::clampedCellSizes(const AnalysisDataset& dataset) const
+AnalyzeDataSourceTask::CellSizing
+AnalyzeDataSourceTask::clampedCellSizes(const AnalysisDataset& dataset) const
 {
     CellSizing out{};
     out.cell_size_m            = cell_size_m_;
@@ -417,14 +420,14 @@ AnalyseDataSourceTask::clampedCellSizes(const AnalysisDataset& dataset) const
     out.horizontal_clamped     = false;
     out.vertical_clamped       = false;
 
-    // Horizontal extent: use the larger of the lat/lon extents (in metres).
+    // Horizontal extent: use the larger of the lat/lon extents (in meters).
     double horizontal_extent_m = 0.0;
     if (dataset.minLatitudeDeg() != dataset.maxLatitudeDeg()
         || dataset.minLongitudeDeg() != dataset.maxLongitudeDeg())
     {
         const double dlat_deg = dataset.maxLatitudeDeg() - dataset.minLatitudeDeg();
         const double dlon_deg = dataset.maxLongitudeDeg() - dataset.minLongitudeDeg();
-        const double ref_lat  = dataset.centreLatitudeDeg();
+        const double ref_lat  = dataset.centerLatitudeDeg();
         const double cos_lat  = std::cos(ref_lat * M_PI / 180.0);
         const double safe_cos = (std::abs(cos_lat) > 1e-6) ? cos_lat : 1.0;
         const double lat_m = dlat_deg * (M_PI / 180.0) * kEarthRadiusM;
@@ -452,7 +455,7 @@ AnalyseDataSourceTask::clampedCellSizes(const AnalysisDataset& dataset) const
     return out;
 }
 
-bool AnalyseDataSourceTask::selectionContainsCAT020() const
+bool AnalyzeDataSourceTask::selectionContainsCAT020() const
 {
     auto& ctx = compass().dbContextManager();
     const auto& info_map = ctx.asterixInfo();
@@ -468,19 +471,19 @@ bool AnalyseDataSourceTask::selectionContainsCAT020() const
     return false;
 }
 
-bool AnalyseDataSourceTask::inspectorEnabled(const std::string& inspector_class) const
+bool AnalyzeDataSourceTask::inspectorEnabled(const std::string& inspector_class) const
 {
     if (inspector_enabled_.contains(inspector_class))
         return inspector_enabled_.at(inspector_class).get<bool>();
     return true;
 }
 
-void AnalyseDataSourceTask::inspectorEnabled(const std::string& inspector_class, bool value)
+void AnalyzeDataSourceTask::inspectorEnabled(const std::string& inspector_class, bool value)
 {
     inspector_enabled_[inspector_class] = value;
 }
 
-DataSourceInspectorBase* AnalyseDataSourceTask::inspector(const std::string& class_name) const
+DataSourceInspectorBase* AnalyzeDataSourceTask::inspector(const std::string& class_name) const
 {
     for (const auto& ins : inspectors_)
         if (ins->className() == class_name)
@@ -488,58 +491,58 @@ DataSourceInspectorBase* AnalyseDataSourceTask::inspector(const std::string& cla
     return nullptr;
 }
 
-MLATDataItemInspectorSettings& AnalyseDataSourceTask::dataItemSettings() const
+MLATDataItemInspectorSettings& AnalyzeDataSourceTask::dataItemSettings() const
 {
     traced_assert(data_item_settings_);
     return *data_item_settings_;
 }
 
-MLATCoverageInspectorSettings& AnalyseDataSourceTask::coverageSettings() const
+MLATCoverageInspectorSettings& AnalyzeDataSourceTask::coverageSettings() const
 {
     traced_assert(coverage_settings_);
     return *coverage_settings_;
 }
 
 #if USE_EXPERIMENTAL_SOURCE == true
-MLATAccuracyInspectorSettings& AnalyseDataSourceTask::accuracySettings() const
+MLATAccuracyInspectorSettings& AnalyzeDataSourceTask::accuracySettings() const
 {
     traced_assert(accuracy_settings_);
     return *accuracy_settings_;
 }
 
-MLATRUCoverageInspectorSettings& AnalyseDataSourceTask::ruCoverageSettings() const
+MLATRUCoverageInspectorSettings& AnalyzeDataSourceTask::ruCoverageSettings() const
 {
     traced_assert(ru_coverage_settings_);
     return *ru_coverage_settings_;
 }
 
-MLATRUEffectInspectorSettings& AnalyseDataSourceTask::ruEffectSettings() const
+MLATRUEffectInspectorSettings& AnalyzeDataSourceTask::ruEffectSettings() const
 {
     traced_assert(ru_effect_settings_);
     return *ru_effect_settings_;
 }
 #endif
 
-bool AnalyseDataSourceTask::professionalLicenseEnabled() const
+bool AnalyzeDataSourceTask::professionalLicenseEnabled() const
 {
     return compass().licenseManager().componentEnabled(
         license::License::Component::ComponentProbIMMReconstructor);
 }
 
-COMPASS& AnalyseDataSourceTask::compass() const
+COMPASS& AnalyzeDataSourceTask::compass() const
 {
     return task_manager_.compass();
 }
 
-void AnalyseDataSourceTask::showDialog()
+void AnalyzeDataSourceTask::showDialog()
 {
-    AnalyseDataSourceDialog dlg(*this, QApplication::activeWindow());
+    AnalyzeDataSourceDialog dlg(*this, QApplication::activeWindow());
     if (dlg.exec() == QDialog::Rejected)
         return;
 
     if (!canRun())
     {
-        QMessageBox::warning(QApplication::activeWindow(), "Analyse Data Source",
+        QMessageBox::warning(QApplication::activeWindow(), "Analyze Data Source",
                              "The task cannot run with the current selection.");
         return;
     }
@@ -547,7 +550,7 @@ void AnalyseDataSourceTask::showDialog()
     run();
 }
 
-bool AnalyseDataSourceTask::canRun()
+bool AnalyzeDataSourceTask::canRun()
 {
     if (selectedDataSourceIDs().empty())
     {
@@ -586,14 +589,14 @@ bool AnalyseDataSourceTask::canRun()
     return any_enabled;
 }
 
-void AnalyseDataSourceTask::run()
+void AnalyzeDataSourceTask::run()
 {
     loginf << "running with ds_type " << ds_type_
            << " selected " << selectedDataSourceIDs().size() << " data sources";
 
     auto& tm = compass().taskManager();
 
-    const std::string window_title = "Analyse " + ds_type_ + " Data Source";
+    const std::string window_title = "Analyze " + ds_type_ + " Data Source";
     const std::string result_name  = reportName();
 
     // Determine which inspectors will actually run, and what test dbcontents they need.
@@ -676,7 +679,7 @@ void AnalyseDataSourceTask::run()
 
     setStatus("Preparing result...");
 
-    tm.beginTaskResultWriting(result_name, task::TaskResultType::Generic);
+    tm.beginTaskResultWriting(result_name, task::TaskResultType::DataSourceAnalysis);
 
     auto& report = tm.currentReport();
     auto& root   = *report->rootSection();
@@ -732,7 +735,7 @@ void AnalyseDataSourceTask::run()
                            selectedReferenceDataSourceIDs(), line_id_ref_,
                            tst_dbcontents, error))
         {
-            logwrn << "AnalyseDataSourceTask: dataset load failed: " << error;
+            logwrn << "AnalyzeDataSourceTask: dataset load failed: " << error;
 
             auto& warn_section = root.addSubSection("Dataset");
             auto& note = warn_section.addText("Note");

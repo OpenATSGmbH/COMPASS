@@ -1,12 +1,12 @@
-# Analyse Data Source
+# Analyze Data Source
 
 ## Summary
 
-Analyse Data Source is a standalone COMPASS task for examining a chosen data source from multiple angles. Analyses are organised by **DSType** (currently only **MLAT** = CAT020 / CAT010) and within each DSType by a set of **Inspectors** - focused components that each produce one section of the result report.
+Analyze Data Source is a standalone COMPASS task for examining a chosen data source from multiple angles. Analyzes are organized by **DSType** (currently only **MLAT** = CAT020 / CAT010) and within each DSType by a set of **Inspectors** - focused components that each produce one section of the result report.
 
 Two inspectors are **always present** (free, in the main source tree); the remaining ones live in `experimental_src/analysis/` and require the **Professional license** to run. Pro / experimental inspectors are **always visible in the dialog** when their source is compiled in (`USE_EXPERIMENTAL_SRC` set, which is the case for the AppImage distribution); without a Professional license their row is greyed out with the licensing reason in a tooltip, so users can see at a glance which inspectors a license unlocks. Source builds without `USE_EXPERIMENTAL_SRC` (developer-only) do not see the pro inspectors at all.
 
-Entry point: Task Manager - Analyse Data Source
+Entry point: Task Manager - Analyze Data Source
 
 **Task-wide prerequisites** (always required, regardless of which inspectors are run):
 - Imported data of the bound DSType.
@@ -32,7 +32,7 @@ Beyond those, inspectors carry only their own additional prerequisites (Professi
 
 1. Import data of a supported DSType (currently CAT020 / CAT010 for MLAT).
 2. Run reconstruction to produce the Reference Trajectory (always required - the task does not launch otherwise).
-3. From the main menu, open the task entry for the DSType to be analysed (for Main Menu -> Analyze -> MLAT). The dialog opens with the DSType pre-bound; the user selects one or more data sources of that DSType and ticks the inspectors to run. Inspectors whose prerequisites are not met (no professional license; CAT020-only inspector with no CAT020 source selected; etc.) are greyed out with a tooltip giving the reason. Each inspector's settings widget appears on the right when its row is highlighted; the data source selection has its own configuration page on the right too.
+3. From the main menu, open the task entry for the DSType to be analyzed (for Main Menu -> Analyze -> MLAT). The dialog opens with the DSType pre-bound; the user selects one or more data sources of that DSType and ticks the inspectors to run. Inspectors whose prerequisites are not met (no professional license; CAT020-only inspector with no CAT020 source selected; etc.) are greyed out with a tooltip giving the reason. Each inspector's settings widget appears on the right when its row is highlighted; the data source selection has its own configuration page on the right too.
 4. Click Run. **All selected data sources are folded into one combined dataset**, like in the Evaluation for test sources, before any inspector runs - there is no per-data-source analysis. Each ticked inspector consumes the combined dataset and contributes one section to the result report.
 5. Browse results in the result report.
 
@@ -40,13 +40,13 @@ Beyond those, inspectors carry only their own additional prerequisites (Professi
 
 ## Configuration Dialog
 
-The configuration dialog is opened from the main menu entry corresponding to the DSType ("Tasks - Analyse MLAT Data Source" for the MLAT entry). The DSType is therefore implicit and is not selected inside the dialog.
+The configuration dialog is opened from the main menu entry corresponding to the DSType ("Tasks - Analyze MLAT Data Source" for the MLAT entry). The DSType is therefore implicit and is not selected inside the dialog.
 
 The dialog is a two-pane layout: a tree on the left holds the Data Source node and one node per registered inspector; the right pane is a stacked widget showing the configuration view for the currently highlighted node. A Run button and a Cancel button sit at the bottom. The pattern follows `ReconstructorTaskDialog` plus the per-reconstructor widget tree (`SimpleReconstructorWidget`, [src/task/reconstructor/simplereconstructorwidget.cpp:49-103](src/task/reconstructor/simplereconstructorwidget.cpp#L49-L103)).
 
 ```
 +----------------------------------------------------------------------------+
-| Analyse MLAT Data Source                                              [x]  |
+| Analyze MLAT Data Source                                              [x]  |
 +----------------------------------------------------------------------------+
 |  Tree                                | Configuration                       |
 |                                      |                                     |
@@ -63,7 +63,7 @@ The dialog is a two-pane layout: a tree on the left holds the Data Source node a
 +----------------------------------------------------------------------------+
 ```
 
-Tree behaviour:
+Tree behavior:
 - The Data Source node is always present and always visible. Selecting it shows the data source selection widget on the right (reuses the existing `DataSourcesUseWidget` filtered to data sources of the bound DSType, with per-line selection consistent with the reconstructor task).
 - Each inspector appears as a child node of the Data Source node. The first column shows an active checkbox per inspector; the second column shows the inspector name; an optional badge such as `[pro]` marks pro / experimental inspectors. Selecting an inspector node shows that inspector's configuration widget on the right (drawn from its `InspectorSettingsBase`-derived sub-config).
 - Inspectors whose `prerequisitesMet(...)` returns false are greyed out with the failure reason as the row tooltip. Failure reasons include: missing professional license (for pro inspectors), Reference Trajectory not present (for inspectors that need it), no data source selected of the required CAT (for example RU Coverage requires CAT020).
@@ -77,7 +77,7 @@ Run validation: clicking Run is rejected if no data source is selected, if no in
 All selected data sources are folded into one combined dataset before any inspector runs; the report does not split by data source.
 
 ```
-Analyse MLAT Data Source                          << result root
+Analyze MLAT Data Source                          << result root
 |
 +-- Overview
 |     Run configuration recap (DSType, selected data sources,
@@ -288,7 +288,7 @@ CAT020 only - uses I020/400 contributing receivers.
 
 ## MLAT inspectors - 3D Grid Infrastructure
 
-All grid-based analyses share a common 3D grid populated once on load.
+All grid-based analyzes share a common 3D grid populated once on load.
 
 **Cell dimensions (configurable):**
 - Horizontal: single cell size in meters (square cells at reference latitude)
@@ -402,7 +402,7 @@ I020/110 (local Cartesian) and I010/091 (local airport frame) are deliberately n
 | `GridView` | `src/view/gridview/gridview.h` | Renders all 2D projections |
 | `Grid2DLayerRenderer` | `src/view/gridview/grid2dlayerrenderer.h` | `render()` produces `QImage` from a layer |
 | `ResultReport::Section` | `src/task/result/report/section.h` | Report tree |
-| `TaskResult` | `src/task/result/taskresult.h` | Base for `AnalyseDataSourceResult` |
+| `TaskResult` | `src/task/result/taskresult.h` | Base for `AnalyzeDataSourceResult` |
 | Detection requirement gap/miss machinery | `src/eval/requirement/detection/detection.cpp` | Reference-period construction, gap walking, miss test |
 | Contributing receivers column | `var_cat020_contrib_recv_` | I020/400 - **CAT020 only** |
 | `RemoteUnitDefinition` / `DataSourceRemoteUnit` | `src/core/source/datasourceremoteunit.h` | RU index → name, lat, lon, alt |
@@ -421,11 +421,11 @@ Inspector components use the **`...Inspector`** suffix - distinct from the exist
 | `DataSourceInspectorBase` | `src/task/analyze/datasourceinspectorbase.h/.cpp` | Abstract base for all inspectors. Pure virtuals: `dsType()`, `name()`, `prerequisitesMet(...)`, `run(...)`, `generateReportSections(...)`. Holds a reference to its `InspectorSettingsBase`-derived settings sub-config. |
 | `InspectorSettingsBase` | `src/task/analyze/inspectorsettingsbase.h/.cpp` | Abstract base `Configurable` for per-inspector settings. Each concrete inspector defines a `<Name>InspectorSettings : InspectorSettingsBase` sub-config; the task owns these as Configurable sub-configs and looks them up by inspector name. |
 | `TargetReport3DGrid` | `src/task/analyze/targetreport3dgrid.h/.cpp` | Reusable 3D grid for any target-report-based inspector (any DSType). #EUI/#MUI counters per cell + count-only counters; produces 2D projections. Used by `MLATCoverageInspector` and the pro MLAT inspectors; intended to be reused by future DSType inspectors. |
-| `AnalyseDataSourceTask` | `src/task/analyze/analysedatasourcetask.h/.cpp` | Task entry point - bound to a DSType at construction (one Task subclass / instance per DSType menu entry). Owns settings, the registered inspector list, and the `InspectorSettingsBase` sub-configs. Triggers dialog, launches job, holds result. |
-| `AnalyseDataSourceSettings` | `src/task/analyze/analysedatasourcesettings.h` | Top-level task config: list of `selected_data_source_ids` (multi), per-inspector enabled flag, common cross-inspector params (e.g. shared `TargetReport3DGrid` resolution and bounds). Per-inspector params live in their own `<Name>InspectorSettings` sub-config (see `InspectorSettingsBase`). |
-| `AnalyseDataSourceDialog` | `src/task/analyze/analysedatasourcedialog.h/.cpp` | Pre-run dialog. Tree on the left listing the Data Source node and one node per registered inspector (active checkbox per inspector); right pane is a `QStackedWidget` of configuration widgets, one per tree node. Inspectors whose `prerequisitesMet(...)` returns false (missing license, missing RefTraj, DSType / CAT mismatch with selected sources) are greyed out with a tooltip giving the reason. |
-| `AnalyseDataSourceJob` | `src/task/analyze/analysedatasourcejob.h/.cpp` | Background job. Folds all selected data sources into one combined dataset, then iterates over the ticked inspectors and calls `run()` on each. |
-| `AnalyseDataSourceResult` | `src/task/analyze/analysedatasourceresult.h/.cpp` | Result container; holds an Overview section plus one section per executed inspector. |
+| `AnalyzeDataSourceTask` | `src/task/analyze/analyzedatasourcetask.h/.cpp` | Task entry point - bound to a DSType at construction (one Task subclass / instance per DSType menu entry). Owns settings, the registered inspector list, and the `InspectorSettingsBase` sub-configs. Triggers dialog, launches job, holds result. |
+| `AnalyzeDataSourceSettings` | `src/task/analyze/analyzedatasourcesettings.h` | Top-level task config: list of `selected_data_source_ids` (multi), per-inspector enabled flag, common cross-inspector params (e.g. shared `TargetReport3DGrid` resolution and bounds). Per-inspector params live in their own `<Name>InspectorSettings` sub-config (see `InspectorSettingsBase`). |
+| `AnalyzeDataSourceDialog` | `src/task/analyze/analyzedatasourcedialog.h/.cpp` | Pre-run dialog. Tree on the left listing the Data Source node and one node per registered inspector (active checkbox per inspector); right pane is a `QStackedWidget` of configuration widgets, one per tree node. Inspectors whose `prerequisitesMet(...)` returns false (missing license, missing RefTraj, DSType / CAT mismatch with selected sources) are greyed out with a tooltip giving the reason. |
+| `AnalyzeDataSourceJob` | `src/task/analyze/analyzedatasourcejob.h/.cpp` | Background job. Folds all selected data sources into one combined dataset, then iterates over the ticked inspectors and calls `run()` on each. |
+| `AnalyzeDataSourceResult` | `src/task/analyze/analyzedatasourceresult.h/.cpp` | Result container; holds an Overview section plus one section per executed inspector. |
 
 **MLAT free inspectors (in `src/task/analyze/mlat/`):**
 
@@ -490,11 +490,11 @@ Goal: runnable (but empty) task visible in Task Manager, with a working inspecto
 - [ ] Create `experimental_src/analysis/` and `experimental_src/analysis/mlat/` with `CMakeLists.txt` files; gate inclusion on `USE_EXPERIMENTAL_SRC`
 - [ ] Implement `InspectorSettingsBase` - abstract `Configurable` base for per-inspector settings sub-configs.
 - [ ] Implement `DataSourceInspectorBase` - abstract base, pure virtuals (`dsType()`, `name()`, `prerequisitesMet(...)`, `run(...)`, `generateReportSections(...)`); holds a reference to its `InspectorSettingsBase`-derived settings sub-config.
-- [ ] Implement `AnalyseDataSourceSettings` - top-level: `selected_data_source_ids` (multi), per-inspector enabled flag, shared cross-inspector params (`TargetReport3DGrid` resolution / bounds). Per-inspector `<Name>InspectorSettings` sub-configs are owned by the task as Configurable sub-configs and looked up by name when the inspector is constructed.
-- [ ] Implement `AnalyseDataSourceTask` - inherits `Task` + `Configurable`, registers with `TaskManager`; one task instance per DSType (separate menu entry per DSType). Owns the inspector registry + the per-inspector settings sub-configs. Always registers the free MLAT inspectors. Pro / experimental inspectors are also registered whenever `USE_EXPERIMENTAL_SRC` is compiled in (regardless of license); the license check is consulted by the dialog to decide whether to grey the row, not by the registry to decide whether to add it.
-- [ ] Implement `AnalyseDataSourceDialog` - tree on the left (Data Source node, then one node per registered inspector, each with active checkbox), `QStackedWidget` configuration pane on the right showing the configuration widget of the currently highlighted tree node. Greyed inspector rows show their failure reason in a tooltip.
-- [ ] Implement `AnalyseDataSourceJob` skeleton - folds all selected data sources into one combined dataset, then iterates over the ticked inspectors and calls `run()`.
-- [ ] Implement `AnalyseDataSourceResult` skeleton - empty report with the Overview section + one placeholder section per ticked inspector.
+- [ ] Implement `AnalyzeDataSourceSettings` - top-level: `selected_data_source_ids` (multi), per-inspector enabled flag, shared cross-inspector params (`TargetReport3DGrid` resolution / bounds). Per-inspector `<Name>InspectorSettings` sub-configs are owned by the task as Configurable sub-configs and looked up by name when the inspector is constructed.
+- [ ] Implement `AnalyzeDataSourceTask` - inherits `Task` + `Configurable`, registers with `TaskManager`; one task instance per DSType (separate menu entry per DSType). Owns the inspector registry + the per-inspector settings sub-configs. Always registers the free MLAT inspectors. Pro / experimental inspectors are also registered whenever `USE_EXPERIMENTAL_SRC` is compiled in (regardless of license); the license check is consulted by the dialog to decide whether to gray the row, not by the registry to decide whether to add it.
+- [ ] Implement `AnalyzeDataSourceDialog` - tree on the left (Data Source node, then one node per registered inspector, each with active checkbox), `QStackedWidget` configuration pane on the right showing the configuration widget of the currently highlighted tree node. Greyed inspector rows show their failure reason in a tooltip.
+- [ ] Implement `AnalyzeDataSourceJob` skeleton - folds all selected data sources into one combined dataset, then iterates over the ticked inspectors and calls `run()`.
+- [ ] Implement `AnalyzeDataSourceResult` skeleton - empty report with the Overview section + one placeholder section per ticked inspector.
 - [ ] Add `include("${CMAKE_CURRENT_LIST_DIR}/analyze/CMakeLists.txt")` to `src/task/CMakeLists.txt`
 - [ ] Register task in `TaskManager` constructor
 - [ ] Verify: task appears in UI; dialog opens with all five inspectors visible (free ones enabled, pro ones greyed out without a license, enabled with one); job runs and produces an empty report.
@@ -507,7 +507,7 @@ Goal: report-only inspector populated from `DBContextManager::asterixInfo()`. No
   - For each configured data source, read its per-CAT item summary from `DBContextManager::asterixInfo()`
   - Restrict to MLAT-relevant CATs (CAT020 / CAT010 and, when CAT019 cadence is enabled, the associated CAT019)
   - Emit one sub-section per data source, one table per CAT (Item, Count, Min, Max, Description; count-0 rows for unseen items)
-- [ ] Implement Data Item Analysis report sections in `AnalyseDataSourceResult`
+- [ ] Implement Data Item Analysis report sections in `AnalyzeDataSourceResult`
 - [ ] Verify: report appears with cumulative item counts; tables match what the ASTERIX Import report shows when a single file is the only import
 
 ### Phase 3 - 3D Grid Infrastructure
@@ -530,7 +530,7 @@ Goal: the shared data structure that all inspectors build on.
   - Walk each period in UI steps, attribute #EUI to `cell_of(RefTraj at t_slot)`
   - For each gap that passes the miss test, attribute `floor(adj_gap/UI)` #MUI by walking the gap in UI steps
   - Add sector outline layers
-- [ ] Implement PD report sections in `AnalyseDataSourceResult`
+- [ ] Implement PD report sections in `AnalyzeDataSourceResult`
 - [ ] Optional: CAT019 cadence source (otherwise leave behind a TODO + UI option disabled)
 - [ ] Verify per-target totals match a plain detection requirement run on the same data
 
@@ -555,7 +555,7 @@ Goal: the shared data structure that all inspectors build on.
   - Per associated MLAT target report: compute `distance_m` to the interpolated reference position; read `tr_std_dev` from I020/500 (x/y std dev), REF Position Accuracy (x/y std dev), or I010/500 (x/y std dev); track legacy I020/500 and REF Position Accuracy as separate quantities for CAT020.
   - Bucket per cell on `TargetReport3DGrid`; per cell keep mean / median / P95 of `distance_m`, mean of `tr_std_dev`, mean of `distance_m / tr_std_dev`.
   - Render three views (Reported Position Accuracy, Horizontal Position Offset, Reported Accuracy Consistency) each as three projections; for CAT020 with both reported sources, render Reported Position Accuracy and Reported Accuracy Consistency once per source.
-- [ ] Implement Position Accuracy report sections in `AnalyseDataSourceResult`.
+- [ ] Implement Position Accuracy report sections in `AnalyzeDataSourceResult`.
 - [ ] Verify the folded-across-data-sources overall median offset / P95 offset match a baseline scripted computation on the same data.
 
 ### Phase 8 - Feature 5: RU Offset and Combination Analysis
@@ -570,4 +570,4 @@ CAT020 only - uses I020/400 contributing receivers.
   - Per group: count, mean / median error, stddev, P5/P25/P75/P95
   - Discard groups below `min_sample_count` (default 50); rank by effect size vs. global baseline
   - Build the RU-pair matrix (cell `(i, j)` = mean error when RUs `i` and `j` both contributed)
-- [ ] Implement RU offset + combination report sections in `AnalyseDataSourceResult`
+- [ ] Implement RU offset + combination report sections in `AnalyzeDataSourceResult`

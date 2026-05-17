@@ -48,17 +48,17 @@ class MLATRUEffectInspectorSettings;
 
 namespace ResultReport { class Section; }
 
-class AnalyseDataSourceTask : public Task, public Configurable
+class AnalyzeDataSourceTask : public Task, public Configurable
 {
     Q_OBJECT
 
 public:
-    AnalyseDataSourceTask(nlohmann::json& config, TaskManager* parent);
-    ~AnalyseDataSourceTask() override;
+    AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent);
+    ~AnalyzeDataSourceTask() override;
 
     void generateSubConfigurable(nlohmann::json& child_json) override;
 
-    /// Accept JSON-injected configuration. Extends the base behaviour with a
+    /// Accept JSON-injected configuration. Extends the base behavior with a
     /// top-level `inspector_settings` key shaped as `{<InspectorClassName>:
     /// {...params...}}`; each entry is forwarded to the matching inspector
     /// settings via its own `applyJSONParameters()`. The remaining keys are
@@ -71,7 +71,7 @@ public:
 
     void showDialog();
 
-    /// DSType this task analyses (currently always "MLAT").
+    /// DSType this task analyzes (currently always "MLAT").
     const std::string& dsType() const { return ds_type_; }
 
     /// Per-data-source enable flags (test side).

@@ -179,7 +179,7 @@ private:
 
     /// Render settings declared inside the currently shown annotation's
     /// `render_settings` block. When present they override the view's own
-    /// min/max/colour-scale settings for the duration of the annotation.
+    /// min/max/color-scale settings for the duration of the annotation.
     boost::optional<Grid2DRenderSettings> annotation_render_settings_;
 
     DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model

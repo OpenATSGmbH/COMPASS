@@ -1841,7 +1841,7 @@ void ASTERIXImportTask::runDialog(QWidget* parent)
     //show dialog
     ASTERIXImportTaskDialog dlg(*this, parent);
 
-    //cancelled?
+    //canceled?
     if (dlg.exec() != QDialog::Accepted)
         return;
 

@@ -25,14 +25,14 @@ namespace ResultReport
 class Section;
 }
 
-class AnalyseDataSourceTask;
+class AnalyzeDataSourceTask;
 class AnalysisDataset;
 class InspectorSettingsBase;
 
 class DataSourceInspectorBase
 {
 public:
-    DataSourceInspectorBase(AnalyseDataSourceTask& task,
+    DataSourceInspectorBase(AnalyzeDataSourceTask& task,
                             InspectorSettingsBase& settings);
     virtual ~DataSourceInspectorBase() = default;
 
@@ -85,10 +85,10 @@ public:
     /// thread, after `compute()` returns.
     virtual void writeReport(ResultReport::Section& root) = 0;
 
-    AnalyseDataSourceTask&  task()     const { return task_; }
+    AnalyzeDataSourceTask&  task()     const { return task_; }
     InspectorSettingsBase&  settings() const { return settings_; }
 
 protected:
-    AnalyseDataSourceTask&  task_;
+    AnalyzeDataSourceTask&  task_;
     InspectorSettingsBase&  settings_;
 };

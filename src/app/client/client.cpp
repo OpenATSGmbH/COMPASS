@@ -239,9 +239,9 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("reconstruct_references_cfg", po::value<std::string>(&reconstruct_references_cfg_),
          "reconstructor configuration as JSON string, e.g. ''{\"current_reconstructor_str\": \"Scoring + UMKalman\"}''")
         ("analyze_data_source", po::value<std::string>(&analyze_data_source_ds_type_),
-         "analyse data sources of the given DSType, e.g. 'MLAT'")
+         "analyze data sources of the given DSType, e.g. 'MLAT'")
         ("analyze_parameters", po::value<std::string>(&analyze_data_source_cfg_),
-         "analyse data source parameters as JSON string, e.g. ''{\"line_id_tst\": 0, \"cell_size_m\": 50.0, \"inspector_settings\": {\"MLATCoverageInspector\": {\"pd_method_int\": 1}}}'' (including one pair of single quotes)")
+         "analyze data source parameters as JSON string, e.g. ''{\"line_id_tst\": 0, \"cell_size_m\": 50.0, \"inspector_settings\": {\"MLATCoverageInspector\": {\"pd_method_int\": 1}}}'' (including one pair of single quotes)")
         ("load_data", po::bool_switch(&load_data_), "load data after start")
         ("export_view_points_report", po::value<std::string>(&export_view_points_report_filename_),
          "export view points report after start with given filename, e.g. '/data/db2/report.tex")

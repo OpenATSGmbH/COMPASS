@@ -66,16 +66,16 @@ TEST_CASE("Dimension construction", "[interior][dimension]")
     {
         json cfg = makeConfig("Dimension", "Length");
         cfg["sub_configs"] = {{"Unit", {
-            {"Metre",     {{"parameters", {{"definition", "base unit"}, {"factor", 1.0}}}}},
+            {"Meter",     {{"parameters", {{"definition", "base unit"}, {"factor", 1.0}}}}},
             {"Kilometre", {{"parameters", {{"definition", ""},          {"factor", 0.001}}}}}
         }}};
 
         Dimension dim(cfg, nullptr);
 
         REQUIRE(dim.units().size() == 2);
-        REQUIRE(dim.hasUnit("Metre"));
+        REQUIRE(dim.hasUnit("Meter"));
         REQUIRE(dim.hasUnit("Kilometre"));
-        REQUIRE(dim.units().at("Metre")->factor() == Approx(1.0));
+        REQUIRE(dim.units().at("Meter")->factor() == Approx(1.0));
         REQUIRE(dim.units().at("Kilometre")->factor() == Approx(0.001));
     }
 
@@ -96,14 +96,14 @@ TEST_CASE("Dimension construction", "[interior][dimension]")
     {
         json cfg = makeConfig("Dimension", "Length");
         cfg["sub_configs"] = {{"Unit", {
-            {"Metre", {{"parameters", {{"factor", 1.0}}}}},
+            {"Meter", {{"parameters", {{"factor", 1.0}}}}},
             {"Foot",  {{"parameters", {{"factor", 0.3048}}}}}
         }}};
 
         Dimension dim(cfg, nullptr);
 
-        // 1 Metre = 1/0.3048 Feet ≈ 3.28084
-        double factor = dim.getFactor("Metre", "Foot");
+        // 1 Meter = 1/0.3048 Feet ≈ 3.28084
+        double factor = dim.getFactor("Meter", "Foot");
         REQUIRE(factor == Approx(0.3048));
     }
 
@@ -119,7 +119,7 @@ TEST_CASE("Dimension construction", "[interior][dimension]")
     {
         json cfg = makeConfig("Dimension", "Length");
         cfg["sub_configs"] = {{"Unit", {
-            {"Metre", {{"parameters", {{"definition", "base"}, {"factor", 1.0}}}}}
+            {"Meter", {{"parameters", {{"definition", "base"}, {"factor", 1.0}}}}}
         }}};
 
         Dimension dim(cfg, nullptr);
@@ -132,10 +132,10 @@ TEST_CASE("Dimension construction", "[interior][dimension]")
         json output;
         dim.generateJSON(output, Configuration::JSONExportType::General);
 
-        auto* metre = Configuration::findSubConfigEntry(output, "Unit", "Metre");
-        REQUIRE(metre != nullptr);
-        REQUIRE((*metre)["parameters"]["factor"].get<double>() == Approx(1.0));
-        REQUIRE((*metre)["parameters"]["definition"].get<std::string>() == "base");
+        auto* meter = Configuration::findSubConfigEntry(output, "Unit", "Meter");
+        REQUIRE(meter != nullptr);
+        REQUIRE((*meter)["parameters"]["factor"].get<double>() == Approx(1.0));
+        REQUIRE((*meter)["parameters"]["definition"].get<std::string>() == "base");
     }
 }
 
@@ -227,7 +227,7 @@ TEST_CASE("generateJSON produces complete nested output", "[interior][generatejs
     {
         json cfg = makeConfig("Dimension", "Length");
         cfg["sub_configs"] = {{"Unit", {
-            {"Metre",     {{"parameters", {{"definition", "base unit"}, {"factor", 1.0}}}}},
+            {"Meter",     {{"parameters", {{"definition", "base unit"}, {"factor", 1.0}}}}},
             {"Kilometre", {{"parameters", {{"definition", ""},          {"factor", 0.001}}}}}
         }}};
 
@@ -243,11 +243,11 @@ TEST_CASE("generateJSON produces complete nested output", "[interior][generatejs
         REQUIRE(output["sub_configs"].is_array());
         REQUIRE(output["sub_configs"].size() == 2);
 
-        auto* metre = Configuration::findSubConfigEntry(output, "Unit", "Metre");
+        auto* meter = Configuration::findSubConfigEntry(output, "Unit", "Meter");
         auto* km    = Configuration::findSubConfigEntry(output, "Unit", "Kilometre");
-        REQUIRE(metre != nullptr);
+        REQUIRE(meter != nullptr);
         REQUIRE(km != nullptr);
-        REQUIRE((*metre)["parameters"]["factor"].get<double>() == Approx(1.0));
+        REQUIRE((*meter)["parameters"]["factor"].get<double>() == Approx(1.0));
         REQUIRE((*km)["parameters"]["factor"].get<double>() == Approx(0.001));
     }
 

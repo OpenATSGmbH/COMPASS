@@ -198,9 +198,9 @@ void TableViewDataWidget::exportDataSlot()
     all_buffer_table_widget_->exportSlot();
 }
 
-void TableViewDataWidget::exportDoneSlot(bool cancelled)
+void TableViewDataWidget::exportDoneSlot(bool canceled)
 {
-    emit exportDoneSignal(cancelled);
+    emit exportDoneSignal(canceled);
 }
 
 void TableViewDataWidget::updateToSettingsChange()

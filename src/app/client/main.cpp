@@ -143,7 +143,7 @@ void safeSignalHandler(int signum)
     void* frames[128];
     int count = backtrace(frames, 128);
 
-    // --- stderr (existing behaviour) ---
+    // --- stderr (existing behavior) ---
     write(STDERR_FILENO, msg, sizeof(msg) - 1);
     write(STDERR_FILENO, buf + pos, sizeof(buf) - pos);
     write(STDERR_FILENO, nl, 1);

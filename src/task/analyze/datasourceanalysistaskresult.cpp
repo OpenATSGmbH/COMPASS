@@ -15,18 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "datasourceinspectorbase.h"
-#include "analyzedatasourcetask.h"
-#include "inspectorsettingsbase.h"
+#include "datasourceanalysistaskresult.h"
 
-DataSourceInspectorBase::DataSourceInspectorBase(AnalyzeDataSourceTask& task,
-                                                 InspectorSettingsBase& settings)
-    : task_(task), settings_(settings)
+DataSourceAnalysisTaskResult::DataSourceAnalysisTaskResult(unsigned int id, TaskManager& task_man)
+    : TaskResult(id, task_man)
 {
-}
-
-bool DataSourceInspectorBase::prerequisitesMet(std::string& reason_out) const
-{
-    reason_out.clear();
-    return true;
 }

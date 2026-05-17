@@ -298,7 +298,7 @@ TargetReport3DGrid::projectionLayer(Projection projection,
     const std::size_t nx = static_cast<std::size_t>(x_max_bin - x_min_bin + 1);
     const std::size_t ny = static_cast<std::size_t>(y_max_bin - y_min_bin + 1);
 
-    // 4. Build a Grid2D, deposit one value per occupied cell at its centre.
+    // 4. Build a Grid2D, deposit one value per occupied cell at its center.
     Grid2D grid;
     QRectF roi(out.x_min, out.y_min, out.x_max - out.x_min, out.y_max - out.y_min);
     if (!grid.create(roi,

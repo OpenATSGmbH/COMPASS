@@ -63,7 +63,7 @@ TEST_CASE("Unit construction", "[leaf][unit]")
     SECTION("reads parameters from json")
     {
         json cfg = makeConfig("Unit", "millimetre0",
-                              {{"definition", "metres"}, {"factor", 0.001}});
+                              {{"definition", "meters"}, {"factor", 0.001}});
         Unit u(cfg, nullptr);
 
         REQUIRE(u.factor() == Approx(0.001));

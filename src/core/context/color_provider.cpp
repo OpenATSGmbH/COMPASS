@@ -68,7 +68,7 @@ const std::map<std::string, QColor>& ColorProvider::defaultDSTypeColors()
         {"Radar",   QColor(Qt::green)},
         {"ADSB",    QColor(Qt::blue)},
         {"MLAT",    QColor(Qt::red)},
-        {"Tracker", QColor(QStringLiteral("#DDDDDD"))}, // light grey (avoid pure white)
+        {"Tracker", QColor(QStringLiteral("#DDDDDD"))}, // light gray (avoid pure white)
         {"RefTraj", QColor(QStringLiteral("#FFA500"))}, // orange
         {"Other",   QColor(QStringLiteral("#800080"))}, // purple
     };
@@ -211,7 +211,7 @@ DSTypeSamplingRange rangeFor(const std::string& ds_type)
     }
     else if (ds_type == "Tracker")
     {
-        // light grey + very light pastel tints - very low saturation, cap value
+        // light gray + very light pastel tints - very low saturation, cap value
         // below 1.0 so generated base colors can't land on pure white
         r.hue_center = 0.0; r.hue_half_window = 180.0;
         r.s_min = 0.00; r.s_max = 0.18;

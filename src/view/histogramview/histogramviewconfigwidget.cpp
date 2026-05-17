@@ -188,13 +188,13 @@ void HistogramViewConfigWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
 /**
  */
-//void HistogramViewConfigWidget::exportDoneSlot(bool cancelled)
+//void HistogramViewConfigWidget::exportDoneSlot(bool canceled)
 //{
 //    traced_assert(export_button_);
 
 //    export_button_->setDisabled(false);
 
-//    if (!cancelled)
+//    if (!canceled)
 //    {
 //        QMessageBox msgBox;
 //        msgBox.setText("Export complete.");

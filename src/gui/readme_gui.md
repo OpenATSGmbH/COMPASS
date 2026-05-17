@@ -1,6 +1,6 @@
 # GUI Conventions
 
-Rules for building task / configuration dialogs and the result reports they produce in COMPASS. Distilled from the existing reconstructor, evaluation, and analyse-data-source dialogs and their reports. Apply these rules to every new dialog and every new section of a result report so the look, behaviour, and wording stay consistent.
+Rules for building task / configuration dialogs and the result reports they produce in COMPASS. Distilled from the existing reconstructor, evaluation, and analyze-data-source dialogs and their reports. Apply these rules to every new dialog and every new section of a result report so the look, behavior, and wording stay consistent.
 
 These rules supersede ad-hoc styling. When existing code violates them and you are touching it, fix the violation while you are there; do not introduce new violations.
 
@@ -14,10 +14,10 @@ Before you add a widget, decide which surface of the app it lives on. The Main W
 
 - **Main Menubar** at the top. The entry point for actions: opening / closing the database, importing data, configuring application-wide settings, launching processing tasks, resetting the UI. Actions that produce a result (a dialog, a task run, an info window) belong here.
 - **Flight Deck** on the left. A collapsible sidebar holding tools the user inspects or interacts with throughout a session (Data Sources, Filters, Targets, Sensor Status, Reports, View Points, Task Log). Things the user "lives with" go here; transient configuration does not.
-- **Main Viewbar** in the centre. A tab bar of Views (TableView, GeographicView, ...). New visualisations are Views; not GUI scaffolding.
+- **Main Viewbar** in the center. A tab bar of Views (TableView, GeographicView, ...). New visualizations are Views; not GUI scaffolding.
 - **Main Statusbar** at the bottom. Database indicator, application mode, and the global Load button. Reserved for status; do not pile widgets onto it.
 
-Modal configuration dialogs (Reconstruct, Evaluate, Analyse, Import) are triggered from menu actions and disappear once the task is submitted. Use this pattern for "configure a one-shot run" surfaces.
+Modal configuration dialogs (Reconstruct, Evaluate, Analyze, Import) are triggered from menu actions and disappear once the task is submitted. Use this pattern for "configure a one-shot run" surfaces.
 
 If your widget does not fit any of these surfaces, ask before introducing a new one.
 
@@ -38,7 +38,7 @@ Add new actions to the menu they fit, not to a new top-level menu. If your actio
 ### Action wording
 
 - **Title Case**, no trailing punctuation. Examples: "Calculate Radar Plot Positions", "Reconstruct References", "Reset Views".
-- Use the **standard term**: "Reconstruct", "Evaluate", "Analyse" (British spelling, matching the existing menu). Never invent project synonyms.
+- Use the **standard term**: "Reconstruct", "Evaluate", "Analyze" (matching the existing menu). Never invent project synonyms.
 - **Accelerator marker `&`** on a distinct letter of the action: `&New`, `&Open`, `&ASTERIX Recording`. Pick a letter not already used inside that menu.
 - **Every action has a `setToolTip(...)`**. Sentence-cased, no trailing period, describes the effect ("Open an existing database"). The menu sets `setToolTipsVisible(true)` so tooltips render.
 
@@ -69,7 +69,7 @@ When to add a tool to the Flight Deck:
 - The user interacts with it across many task / view operations during one session (filtering, inspecting unique targets, browsing reports).
 - It does **not** belong as a Flight Deck tool when:
   - It is a one-shot configuration dialog (use a menu action instead).
-  - It is a visualisation of the loaded dataset (use a View instead).
+  - It is a visualization of the loaded dataset (use a View instead).
   - It only matters in one specific mode (Live, Evaluation, ...) — embed it in that surface instead of the global deck.
 
 If you need to register a new tool, follow the existing widget classes in `src/core/source/datasourcestoolwidget.*`, `src/view/points/viewpointstoolwidget.*`, etc. — they show the exact pattern.
@@ -78,7 +78,7 @@ If you need to register a new tool, follow the existing widget classes in `src/c
 
 ## 1. Dialog shell
 
-- **Window title**: short, in Title Case, no trailing punctuation. Names what the dialog configures or what action it submits (e.g. "Reconstruct Reference Trajectories", "Evaluate", "Analyse MLAT Data Source").
+- **Window title**: short, in Title Case, no trailing punctuation. Names what the dialog configures or what action it submits (e.g. "Reconstruct Reference Trajectories", "Evaluate", "Analyze MLAT Data Source").
 - **Minimum size**: at least `900 x 720`. Reports, threshold tables, and lists with long names need both the height and the width.
 - **Multi-page dialogs use a two-pane layout**: navigation on the left (`QTreeWidget`), `QStackedWidget` on the right, separated by a horizontal `QSplitter`.
   - `tree_->setHeaderHidden(true)` unless a header label adds information.
@@ -174,7 +174,7 @@ If you need to register a new tool, follow the existing widget classes in `src/c
 - **Title Case** for window titles, page titles, group-box titles, button text, action links, and headings. ("All Days", "Scan Now", "Reference Data".)
 - **No editorial / explanatory comments embedded in the UI.** If the user needs more context than a label and a tooltip provide, document it in the user manual or in a tooltip — not as inline copy in the form.
 - **No colored buttons.** See [Section 5 - Action buttons](#5-action-buttons). Buttons are plain text; colors do not encode meaning.
-- **Be consistent with the entry point.** A dialog launched from `Process > Analyze > MLAT` is titled "Analyse MLAT Data Source", and the verb "Analyse" appears in its Run-button effect, its result name, and its user-manual section. Do not switch to a synonym between the menu action, the dialog, the report, and the docs.
+- **Be consistent with the entry point.** A dialog launched from `Process > Analyze > MLAT` is titled "Analyze MLAT Data Source", and the verb "Analyze" appears in its Run-button effect, its result name, and its user-manual section. Do not switch to a synonym between the menu action, the dialog, the report, and the docs.
 
 ## 7. Threshold and color settings
 
@@ -228,12 +228,12 @@ If you need to register a new tool, follow the existing widget classes in `src/c
 
 ## 10. Views
 
-A View is a tab in the Main Viewbar showing one visualisation of the loaded dataset. Existing views: TableView, ScatterPlotView, HistogramView, GridView, ViewPoints, GeographicView (closed-source). The framework lives in [src/view/viewbase/](../view/viewbase/); the concrete views live in `src/view/<name>/` and `experimental_src/view/geographicview/`.
+A View is a tab in the Main Viewbar showing one visualization of the loaded dataset. Existing views: TableView, ScatterPlotView, HistogramView, GridView, ViewPoints, GeographicView (closed-source). The framework lives in [src/view/viewbase/](../view/viewbase/); the concrete views live in `src/view/<name>/` and `experimental_src/view/geographicview/`.
 
 A View is the right surface when:
-- The output is a visualisation of the **loaded dataset** (the in-memory cross-DBContent buffers), refreshed on Load.
-- The user wants the visualisation alongside other visualisations, switchable via tabs and replicable in additional windows.
-- The visualisation is interactive (cursor readout, selection, zoom) or has cross-View linkage (selecting in one View highlights in another).
+- The output is a visualization of the **loaded dataset** (the in-memory cross-DBContent buffers), refreshed on Load.
+- The user wants the visualization alongside other visualizations, switchable via tabs and replicable in additional windows.
+- The visualization is interactive (cursor readout, selection, zoom) or has cross-View linkage (selecting in one View highlights in another).
 
 It is **not** the right surface for a one-shot configuration dialog (use a modal task dialog), a persistent inspection panel (use a Flight Deck tool), or a report figure (the report system already has its own renderers).
 
@@ -247,7 +247,7 @@ Every View widget extends `ViewWidget` ([viewwidget.h:40-74](../view/viewbase/vi
 +--------------------------------------------+-------------+
 |                                            |             |
 |              ViewDataWidget                |  ViewConfig |
-|         (the visualisation itself)         |   Widget    |
+|         (the visualization itself)         |   Widget    |
 |                                            |  (settings) |
 |                                            |             |
 +--------------------------------------------+-------------+
@@ -309,7 +309,7 @@ Recurring components inside the config widget:
 - **Annotation switching** (if the View supports view-point annotations) lives in the layer panel's `Annotations` subtree, not in the config widget. See Section 10.7.
 - **Export button**: a single `QPushButton "Export"` triggering an async export; do not put export under a sub-menu.
 
-**Behaviour**:
+**Behavior**:
 
 - Changes apply **immediately** through Qt signals. No Apply / OK / Cancel buttons. The config widget shares state with the live `View` (a `Configurable`); persistence is automatic on shutdown.
 - Disable controls that don't apply to the current state instead of hiding them; only hide widgets that are conditional on a feature flag or DBContent shape.
@@ -350,7 +350,7 @@ A View opts into annotations by extending `VariableView` and constructing its `V
 - The annotation subtree is radio-style single-select: when annotations are present, exactly one is always shown. Clicking another leaf swaps the active annotation; the active leaf cannot be unchecked. There is no "show variables instead" escape hatch in the UI - on view-point unshow, the framework reverts to variable display automatically.
 - The flat 2-level structure (group -> annotation) is built by `AnnotationsRootItem::update(...)` ([annotationsrootitem.h](../view/viewbase/layerpanel/annotationsrootitem.h)) from `VariableView::annotations()`. Data widgets connect to `VariableView::annotationsChangedSignal` and call `annotationsRootItem()->update(...)` on every change. See [scatterplotviewdatawidget.cpp](../view/scatterplotview/scatterplotviewdatawidget.cpp), [histogramviewdatawidget.cpp](../view/histogramview/histogramviewdatawidget.cpp), [gridviewdatawidget.cpp](../view/gridview/gridviewdatawidget.cpp) for the wiring.
 - A View that does not support annotations returns `false` from `canShowAnnotations()`. The `Annotations` subtree is then never created. Do not silently accept annotation calls and ignore them.
-- **Saving** the current visualisation as a view point is not a per-View action. The Flight Deck's `View Points` tool ([viewpointswidget.h:34-101](../view/points/viewpointswidget.h#L34-L101)) handles export / import / management.
+- **Saving** the current visualization as a view point is not a per-View action. The Flight Deck's `View Points` tool ([viewpointswidget.h:34-101](../view/points/viewpointswidget.h#L34-L101)) handles export / import / management.
 
 ### 10.8 Wording inside Views
 
@@ -383,8 +383,8 @@ When adding a new View:
 
 - The moment the same rendering, the same population logic, or the same form pattern appears in two places, extract a helper. Keep the helper framework-agnostic so each caller can adapt its native data structure to the helper's view type.
 - Existing examples worth following:
-  - `ASTERIXReportHelpers::renderDataItemTablesForDS(...)` ([asterixreporthelpers.h](../task/import/asterix/asterixreporthelpers.h)) — shared between the ASTERIX Import report and the Analyse-Data-Source data-item inspector. Both build a small `CategoryView` map and hand it to the helper.
-  - `populateDSList(...)` in `analysedatasourcedialog.cpp` — used by the Reference and Test panes to populate their checkbox lists from a set of IDs and a "checked?" predicate.
+  - `ASTERIXReportHelpers::renderDataItemTablesForDS(...)` ([asterixreporthelpers.h](../task/import/asterix/asterixreporthelpers.h)) — shared between the ASTERIX Import report and the Analyze-Data-Source data-item inspector. Both build a small `CategoryView` map and hand it to the helper.
+  - `populateDSList(...)` in `analyzedatasourcedialog.cpp` — used by the Reference and Test panes to populate their checkbox lists from a set of IDs and a "checked?" predicate.
 
 ---
 
@@ -394,7 +394,7 @@ When adding a new View:
 
 - [ ] One-shot configuration → modal dialog launched from a menu action.
 - [ ] Session-long inspection / filtering tool → Flight Deck tool.
-- [ ] New visualisation → View in the Main Viewbar.
+- [ ] New visualization → View in the Main Viewbar.
 - [ ] Application-wide setting → action under `&Configuration`.
 - [ ] None of the above? Ask before adding a new top-level surface.
 

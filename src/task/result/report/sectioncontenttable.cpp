@@ -1141,7 +1141,7 @@ bool SectionContentTable::clicked(unsigned int row)
             // }
 
             //show viewable (will now recompute internally if needed)
-            //              (might get cancelled if the figure is locked)
+            //              (might get canceled if the figure is locked)
             QApplication::setOverrideCursor(Qt::WaitCursor);
             {
                 reload_triggered = figure->view(BlockedReload);

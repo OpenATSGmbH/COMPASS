@@ -81,7 +81,7 @@ public:
      * @param cell_size_m   horizontal cell side length in meters.
      * @param cell_size_ft  vertical cell side length in feet.
      * @param ref_lat_deg   reference latitude used to convert meters to degrees
-     *                      longitude. Pass the centre of the area of interest.
+     *                      longitude. Pass the center of the area of interest.
      */
     TargetReport3DGrid(double cell_size_m, double cell_size_ft, double ref_lat_deg);
 

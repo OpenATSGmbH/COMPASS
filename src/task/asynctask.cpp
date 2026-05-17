@@ -411,14 +411,14 @@ void AsyncTaskDialog::updateState()
     
     if (state.isAborting())
     {
-        //set cancelling and update ui
+        //set canceling and update ui
         msg_label_->setText("Cancelling task...");
         setProgressBusy();
         setButtonCancelling();
     }
     else if (state.isAborted())
     {
-        msg_label_->setText("Task cancelled");
+        msg_label_->setText("Task canceled");
         setProgressMax();
 
         //always close dialog

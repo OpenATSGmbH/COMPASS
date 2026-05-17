@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "analysedatasourcedialog.h"
-#include "analysedatasourcetask.h"
+#include "analyzedatasourcedialog.h"
+#include "analyzedatasourcetask.h"
 #include "datasourceinspectorbase.h"
 #include "mlatdataiteminspector.h"
 #include "mlatcoverageinspector.h"
@@ -49,10 +49,10 @@
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
 
-AnalyseDataSourceDialog::AnalyseDataSourceDialog(AnalyseDataSourceTask& task, QWidget* parent)
+AnalyzeDataSourceDialog::AnalyzeDataSourceDialog(AnalyzeDataSourceTask& task, QWidget* parent)
     : QDialog(parent), task_(task)
 {
-    setWindowTitle(QString::fromStdString("Analyse " + task_.dsType() + " Data Source"));
+    setWindowTitle(QString::fromStdString("Analyze " + task_.dsType() + " Data Source"));
     setMinimumSize(900, 720);
 
     auto* main_layout = new QVBoxLayout(this);
@@ -92,7 +92,7 @@ AnalyseDataSourceDialog::AnalyseDataSourceDialog(AnalyseDataSourceTask& task, QW
     run_button_ = new QPushButton("Run", this);
     run_button_->setIcon(QIcon());
     run_button_->setToolTip("Run the analysis with the current selection");
-    connect(run_button_, &QPushButton::clicked, this, &AnalyseDataSourceDialog::runSlot);
+    connect(run_button_, &QPushButton::clicked, this, &AnalyzeDataSourceDialog::runSlot);
     button_row->addWidget(run_button_);
 
     main_layout->addLayout(button_row);
@@ -100,9 +100,9 @@ AnalyseDataSourceDialog::AnalyseDataSourceDialog(AnalyseDataSourceTask& task, QW
     buildTree();
 
     connect(tree_, &QTreeWidget::itemSelectionChanged,
-            this, &AnalyseDataSourceDialog::treeSelectionChangedSlot);
+            this, &AnalyzeDataSourceDialog::treeSelectionChangedSlot);
     connect(tree_, &QTreeWidget::itemChanged,
-            this, &AnalyseDataSourceDialog::treeItemChangedSlot);
+            this, &AnalyzeDataSourceDialog::treeItemChangedSlot);
 
     if (ds_item_)
         ds_item_->setSelected(true);
@@ -122,7 +122,7 @@ QWidget* wrapInScroll(QWidget* content)
 }
 }
 
-void AnalyseDataSourceDialog::buildTree()
+void AnalyzeDataSourceDialog::buildTree()
 {
     updating_ui_ = true;
 
@@ -211,7 +211,7 @@ void populateDSList(QListWidget* list,
 
 }
 
-QWidget* AnalyseDataSourceDialog::buildDataSourcesWidget()
+QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
 {
     auto* w = new QWidget();
     auto* outer = new QVBoxLayout(w);
@@ -365,7 +365,7 @@ QWidget* AnalyseDataSourceDialog::buildDataSourcesWidget()
     return w;
 }
 
-QWidget* AnalyseDataSourceDialog::buildReportWidget()
+QWidget* AnalyzeDataSourceDialog::buildReportWidget()
 {
     auto* w = new QWidget();
     auto* form = new QFormLayout(w);
@@ -420,7 +420,7 @@ QWidget* AnalyseDataSourceDialog::buildReportWidget()
     return w;
 }
 
-void AnalyseDataSourceDialog::updateSuggestedReportName()
+void AnalyzeDataSourceDialog::updateSuggestedReportName()
 {
     if (report_name_user_edited_ || !report_name_edit_)
         return;
@@ -445,7 +445,7 @@ QDoubleSpinBox* makeFloatSpin(double min, double max, double step, int decimals,
 }
 
 void buildDataItemSettings(QFormLayout* form,
-                           AnalyseDataSourceTask& task,
+                           AnalyzeDataSourceTask& task,
                            MLATDataItemInspectorSettings& s)
 {
     auto* group = new QGroupBox("Categories to Include");
@@ -583,7 +583,7 @@ void buildAccuracySettings(QFormLayout* form,
 
 }
 
-QWidget* AnalyseDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* inspector)
+QWidget* AnalyzeDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* inspector)
 {
     auto* w = new QWidget();
     auto* layout = new QVBoxLayout(w);
@@ -612,7 +612,7 @@ QWidget* AnalyseDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* 
     return w;
 }
 
-void AnalyseDataSourceDialog::refreshInspectorRows()
+void AnalyzeDataSourceDialog::refreshInspectorRows()
 {
     updating_ui_ = true;
     for (auto& row : inspector_rows_)
@@ -629,7 +629,7 @@ void AnalyseDataSourceDialog::refreshInspectorRows()
     updating_ui_ = false;
 }
 
-void AnalyseDataSourceDialog::treeSelectionChangedSlot()
+void AnalyzeDataSourceDialog::treeSelectionChangedSlot()
 {
     auto items = tree_->selectedItems();
     if (items.isEmpty())
@@ -665,7 +665,7 @@ void AnalyseDataSourceDialog::treeSelectionChangedSlot()
     }
 }
 
-void AnalyseDataSourceDialog::treeItemChangedSlot(QTreeWidgetItem* item, int column)
+void AnalyzeDataSourceDialog::treeItemChangedSlot(QTreeWidgetItem* item, int column)
 {
     if (updating_ui_ || column != 0)
         return;
@@ -681,7 +681,7 @@ void AnalyseDataSourceDialog::treeItemChangedSlot(QTreeWidgetItem* item, int col
     }
 }
 
-void AnalyseDataSourceDialog::updateRunEnabled()
+void AnalyzeDataSourceDialog::updateRunEnabled()
 {
     if (!run_button_)
         return;
@@ -707,7 +707,7 @@ void AnalyseDataSourceDialog::updateRunEnabled()
     run_button_->setEnabled(can_run);
 }
 
-void AnalyseDataSourceDialog::runSlot()
+void AnalyzeDataSourceDialog::runSlot()
 {
     accept();
 }

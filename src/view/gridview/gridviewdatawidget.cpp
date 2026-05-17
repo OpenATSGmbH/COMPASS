@@ -793,7 +793,7 @@ void GridViewDataWidget::updateRendering()
 
         auto dtype = view_->currentLegendDataType();
 
-        //colour scale: annotation override -> view setting
+        //color scale: annotation override -> view setting
         int active_color_scale = settings.render_color_scale;
         if (annotation_render_settings_.has_value()
             && annotation_render_settings_->color_map.valid())
@@ -802,7 +802,7 @@ void GridViewDataWidget::updateRendering()
                 annotation_render_settings_->color_map.colorScale());
         }
 
-        //number of colour steps: annotation override -> derived from ui
+        //number of color steps: annotation override -> derived from ui
         size_t num_steps = 0;
         if (annotation_render_settings_.has_value()
             && annotation_render_settings_->color_map.valid())

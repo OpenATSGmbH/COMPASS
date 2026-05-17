@@ -1,6 +1,6 @@
 # DBContent and database representation
 
-This document describes how ASTERIX surveillance data lives inside COMPASS *after* it has been decoded - i.e. what the in-memory and on-disk representation looks like, how variables are organised, and what the JSON configuration in `conf/default/` actually configures. The upstream side (wire format, jASTERIX, JSON-to-Variable mapping, the import pipeline) is documented separately in [readme_asterix.md](../../task/import/asterix/readme_asterix.md); the read path (DB → Buffer for views and tasks) is in [readme_loading.md](readme_loading.md).
+This document describes how ASTERIX surveillance data lives inside COMPASS *after* it has been decoded - i.e. what the in-memory and on-disk representation looks like, how variables are organized, and what the JSON configuration in `conf/default/` actually configures. The upstream side (wire format, jASTERIX, JSON-to-Variable mapping, the import pipeline) is documented separately in [readme_asterix.md](../../task/import/asterix/readme_asterix.md); the read path (DB → Buffer for views and tasks) is in [readme_loading.md](readme_loading.md).
 
 ## End-to-end flow
 
@@ -265,7 +265,7 @@ Targets are *created and updated by the reconstructor*, not by the importer (see
 
 ## Time of Day handling
 
-ToD is the most error-prone field in real recordings. ASTERIX encodes it as a 24 h truncated value (3 octets, LSB 1/128 s in CAT048/020/010/021, and `Time of Track Information` in CAT062 with the same wrap behaviour); recordings routinely cross midnight; sensor clocks drift; CAT021 splits time into per-item *applicabilities* (positions, velocities, reception, transmission).
+ToD is the most error-prone field in real recordings. ASTERIX encodes it as a 24 h truncated value (3 octets, LSB 1/128 s in CAT048/020/010/021, and `Time of Track Information` in CAT062 with the same wrap behavior); recordings routinely cross midnight; sensor clocks drift; CAT021 splits time into per-item *applicabilities* (positions, velocities, reception, transmission).
 
 - [`asterixtimestampcalculator.h`](../../task/import/asterix/asterixtimestampcalculator.h) / `.cpp` - per-file pass that tracks first/last ToD, detects midnight wrap (`had_late_time_`), assigns the calendar date, and increments it across wraps. Multiple wraps within one file are handled.
 - `override_tod_offset` (in `task_import_asterix.json`) - additive offset applied before wrap accounting. Used to correct sensor clock skew that has been characterised in QA.
@@ -274,7 +274,7 @@ ToD is the most error-prone field in real recordings. ASTERIX encodes it as a 24
 - CAT021 fine-grained time items (`I021/071..077`) are mapped to separate Variables - `Time of Applicability for Position`, `Time of Applicability for Velocity`, `Time of Message Reception for Position`, `Time of ASTERIX Report Transmission` - because for ADS-B they are not the same instant.
 - The unified MetaVariable `Time of Day` resolves to the appropriate per-category variable (CAT021 uses the position-applicability time).
 
-If `tod` is wrong, *everything* downstream - association, evaluation requirements, reconstruction, view selection - is wrong. This is the first thing to check when diagnosing weird import behaviour.
+If `tod` is wrong, *everything* downstream - association, evaluation requirements, reconstruction, view selection - is wrong. This is the first thing to check when diagnosing weird import behavior.
 
 ## SAC/SIC and DataSources
 

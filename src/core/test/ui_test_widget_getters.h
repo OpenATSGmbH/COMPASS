@@ -167,7 +167,7 @@ namespace ui_test
     template<>
     inline boost::optional<QString> getUIElementValue(QAbstractButton* widget, const QString& what)
     {
-        //standard behaviour for buttons: return check state
+        //standard behavior for buttons: return check state
         return conversions::stringFromValue<bool>(widget->isChecked());
     }
     template<>
@@ -299,7 +299,7 @@ namespace ui_test
     template<>
     inline nlohmann::json getUIElementValueJSON(QAbstractButton* widget, const QString& what)
     {
-        //standard behaviour for buttons: return check state
+        //standard behavior for buttons: return check state
         return value2JSON(widget->isChecked());
     }
     template<>

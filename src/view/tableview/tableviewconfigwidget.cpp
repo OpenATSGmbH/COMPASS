@@ -155,13 +155,13 @@ void TableViewConfigWidget::exportSlot()
     emit exportSignal();
 }
 
-void TableViewConfigWidget::exportDoneSlot(bool cancelled)
+void TableViewConfigWidget::exportDoneSlot(bool canceled)
 {
     traced_assert(export_button_);
 
     export_button_->setDisabled(false);
 
-    if (!cancelled)
+    if (!canceled)
     {
         QMessageBox msgBox(this);
         msgBox.setText("Export complete.");

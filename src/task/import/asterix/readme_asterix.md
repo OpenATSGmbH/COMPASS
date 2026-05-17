@@ -2,7 +2,7 @@
 
 ## What ASTERIX is
 
-**ASTERIX** = **All Purpose STructured EUROCONTROL SuRveillance Information eXchange**. It is a binary data format standard maintained by EUROCONTROL for the exchange of air traffic surveillance information between sensors, processing systems, and ATC centres. It is the lingua franca of European ATC surveillance: every radar, MLAT, ADS-B ground station and most ATC tracker systems output ASTERIX.
+**ASTERIX** = **All Purpose STructured EUROCONTROL SuRveillance Information eXchange**. It is a binary data format standard maintained by EUROCONTROL for the exchange of air traffic surveillance information between sensors, processing systems, and ATC centers. It is the lingua franca of European ATC surveillance: every radar, MLAT, ADS-B ground station and most ATC tracker systems output ASTERIX.
 
 The standard is split into **Categories** (CAT000-CAT255), each governing a specific kind of information (one radar's target reports, ground tracks, status messages, etc.). Each category is published in successive **Editions** (versioned PDFs), and inside a category the message layout is defined by a **UAP** (User Application Profile) that lists the data items, plus optional **REF** (Reserved Expansion Field) and **SPF** (Special Purpose Field) for vendor extensions.
 
@@ -71,7 +71,7 @@ For any radar-derived report, polar is the *measured* form and Cartesian/WGS-84 
 
 #### Position accuracy information
 
-Each category expresses position uncertainty differently - from "not transmitted at all" (CAT048) through compound standard-deviation items (CAT010, CAT020, CAT062) up to a multi-extension catalogue of integrity/accuracy categories (CAT021). The latest editions in `data/jasterix_definitions/` are summarised below; item references are to the most recent editions in the spec folder (see "Reference documents").
+Each category expresses position uncertainty differently - from "not transmitted at all" (CAT048) through compound standard-deviation items (CAT010, CAT020, CAT062) up to a multi-extension catalogue of integrity/accuracy categories (CAT021). The latest editions in `data/jasterix_definitions/` are summarized below; item references are to the most recent editions in the spec folder (see "Reference documents").
 
 **CAT048 - monoradar (ed 1.28)**
 
@@ -315,7 +315,7 @@ What happens *after* the buffers reach DuckDB - the DBContent / Variable / MetaV
 
 ## Import result report
 
-Every successful ASTERIX import appends to a **single, persistent `TaskResult`** named `"ASTERIX Import"` (type `Generic`), stored in the task results browser and exportable to DOCX/LaTeX/JSON. Cancelled or errored imports leave the result untouched (the task manager is opened with `clear_existing=false` only inside the success branch of `checkAllDone()`). One `"ASTERIX Import"` result lives per DB; opening another DB loads its own result from `db_info`-adjacent storage.
+Every successful ASTERIX import appends to a **single, persistent `TaskResult`** named `"ASTERIX Import"` (type `Generic`), stored in the task results browser and exportable to DOCX/LaTeX/JSON. Canceled or errored imports leave the result untouched (the task manager is opened with `clear_existing=false` only inside the success branch of `checkAllDone()`). One `"ASTERIX Import"` result lives per DB; opening another DB loads its own result from `db_info`-adjacent storage.
 
 Structure:
 
@@ -330,7 +330,7 @@ The cumulative cross-import per-(DS, CAT, item) summary persists separately in `
 
 ## Reference documents
 
-The original EUROCONTROL specification PDFs are kept locally under `~/Nextcloud/documents/asterix/`, organised by category. The most recent editions present (and used as the basis for the per-category descriptions above) are:
+The original EUROCONTROL specification PDFs are kept locally under `~/Nextcloud/documents/asterix/`, organized by category. The most recent editions present (and used as the basis for the per-category descriptions above) are:
 
 | CAT | Latest edition on disk | File |
 |---|---|---|

@@ -117,7 +117,7 @@ void BaseBufferTableWidget::exportSlot()
     }
 }
 
-void BaseBufferTableWidget::exportDoneSlot(bool cancelled) { emit exportDoneSignal(cancelled); }
+void BaseBufferTableWidget::exportDoneSlot(bool canceled) { emit exportDoneSignal(canceled); }
 
 void BaseBufferTableWidget::updateToSettingsChange()
 {
