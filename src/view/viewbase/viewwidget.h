@@ -84,7 +84,7 @@ ViewPresetWidget: Widget for selecting and editing view presets. No need to deri
 ViewToolWidget: A toolbar located above the ViewDataWidget, holding the view's needed tool buttons and actions.
 This is a generic class which doesn't need to be derived, but is rather filled in the derived ViewWidget's constructor and
 provided with all needed callbacks. Interacts with the ViewDataWidget to switch the view's active tool and handles tool
-interaction like activating, deactivating and cancelling tools.
+interaction like activating, deactivating and canceling tools.
 
 ViewLoadStateWidget: A widget located below the configuration area. Provides state information for the view
 and means to update the view manually. Interacts with the ViewWidget and the ViewDataWidget to e.g.issue reloads and redraws,

@@ -776,7 +776,7 @@ void ASTERIXImportDataSourcesWidget::populateItemsTable(unsigned int ds_id,
                 items_table_->item(row, c)->setToolTip(tt);
         }
 
-        // grey out items that exist in the edition but were not probed
+        // gray out items that exist in the edition but were not probed
         if (!stats)
         {
             const QColor faded = palette().color(QPalette::Disabled, QPalette::Text);

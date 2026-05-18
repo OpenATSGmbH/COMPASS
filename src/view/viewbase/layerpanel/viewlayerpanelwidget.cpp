@@ -43,7 +43,7 @@ ViewLayerPanelWidget::ViewLayerPanelWidget(const std::vector<LayerColumnSpec>& c
     // Auto-expand the Annotations subtree when it's rebuilt so newly added
     // group + leaf rows are visible immediately. Restricted to the
     // AnnotationsRootItem subtree to avoid fighting the DBContent root's
-    // colour-mode-driven default expansion (handled by the view's config
+    // color-mode-driven default expansion (handled by the view's config
     // widget on layerTreeRebuiltSignal).
     connect(model(), &LayerTreeModel::subtreeRefreshedSignal,
             this, [this](LayerTreeItem* parent)

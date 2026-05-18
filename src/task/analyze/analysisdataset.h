@@ -37,7 +37,7 @@ class DBContentAccessor;
 
 /**
  * @brief Combined dataset folded across all selected data sources for an
- *        Analyse-Data-Source run, like the Evaluation builds for test sources.
+ *        Analyze-Data-Source run, like the Evaluation builds for test sources.
  *
  * Configures load filters (selected DS / lines), blocks the load through
  * `DBContentManager::loadBlocking`, and packages the loaded buffers into
@@ -115,12 +115,12 @@ public:
                      boost::posix_time::ptime timestamp,
                      boost::posix_time::time_duration d_max) const;
 
-    /// Approximate centre latitude of the loaded reference data (used for
-    /// degree/metre conversion in the 3D grid). 0.0 if unknown.
-    double centreLatitudeDeg() const { return centre_lat_deg_; }
+    /// Approximate center latitude of the loaded reference data (used for
+    /// degree/meter conversion in the 3D grid). 0.0 if unknown.
+    double centerLatitudeDeg() const { return center_lat_deg_; }
 
     /// True when at least one reference position was loaded, i.e. the
-    /// lat/lon/centre values are derived from real data.
+    /// lat/lon/center values are derived from real data.
     bool hasPositionExtent() const { return has_position_extent_; }
 
     /// Bounds of the loaded data (latitude / longitude). Both default-constructed
@@ -170,7 +170,7 @@ private:
     unsigned int num_ref_records_total_ = 0;
     unsigned int num_tst_records_total_ = 0;
 
-    double centre_lat_deg_ = 0.0;
+    double center_lat_deg_ = 0.0;
     double min_lat_ = 0.0, max_lat_ = 0.0;
     double min_lon_ = 0.0, max_lon_ = 0.0;
     bool   has_position_extent_ = false;

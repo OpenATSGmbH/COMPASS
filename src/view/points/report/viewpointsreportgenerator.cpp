@@ -227,7 +227,7 @@ void ViewPointsReportGenerator::run ()
         if (cancel_)
         {
             dialog_->setProgress(0, vp_size, 0);
-            dialog_->setStatus("Writing view points cancelled");
+            dialog_->setStatus("Writing view points canceled");
             dialog_->setRemainingTime(String::timeStringFromDouble(0, false));
 
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -339,7 +339,7 @@ void ViewPointsReportGenerator::run ()
         {
             QMessageBox msgBox(QApplication::activeWindow());
             if (cancel_)
-                msgBox.setText("Export View Points as PDF Cancelled");
+                msgBox.setText("Export View Points as PDF Canceled");
             else
                 msgBox.setText("Export View Points as PDF Done");
 

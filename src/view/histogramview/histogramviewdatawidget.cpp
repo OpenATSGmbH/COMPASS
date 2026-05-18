@@ -711,9 +711,9 @@ void HistogramViewDataWidget::exportDataSlot(bool overwrite)
 
 /**
  */
-void HistogramViewDataWidget::exportDoneSlot(bool cancelled)
+void HistogramViewDataWidget::exportDoneSlot(bool canceled)
 {
-    emit exportDoneSignal(cancelled);
+    emit exportDoneSignal(canceled);
 }
 
 /**

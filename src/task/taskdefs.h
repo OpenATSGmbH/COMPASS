@@ -22,7 +22,8 @@ namespace task
     enum TaskResultType
     {
         Generic = 0,
-        Evaluation
+        Evaluation,
+        DataSourceAnalysis
     };
 
     enum UpdateState

@@ -864,6 +864,13 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 
     traced_assert(canRun());
 
+    // If obfuscation is requested, restore the per-session mapping from
+    // /tmp before any postprocess job starts. Load is gated to a single
+    // successful invocation per process, so repeated imports reuse the
+    // in-memory state without touching the file again.
+    if (settings_.obfuscate_secondary_info_)
+        ASTERIXPostprocessJob::loadObfuscationMaps();
+
     // re-push chunk sizes in case the RAM tier was changed after construction
     jASTERIX::frame_chunk_size      = settings_.chunk_size_jasterix;
     jASTERIX::data_block_chunk_size = settings_.chunk_size_jasterix;
@@ -1728,6 +1735,12 @@ void ASTERIXImportTask::checkAllDone()
             compass_.taskManager().endTaskResultWriting(true, allow_user_interactions_);
         }
 
+        // Persist the obfuscation maps so the next import (this run or the
+        // next compass session before reboot) reuses the same mappings.
+        // Skip on cancel/error to avoid serialising a partial state.
+        if (settings_.obfuscate_secondary_info_ && !stopped_ && !error_)
+            ASTERIXPostprocessJob::saveObfuscationMaps();
+
         emit doneSignal();
     }
 
@@ -1808,6 +1821,16 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
 */
 void ASTERIXImportTask::onConfigurationChanged(const std::vector<std::string>& changed_params)
 {
+    // date_ is a derived value computed from date_str_ at construction; mirror that here
+    // so runtime reconfiguration via applyJSONParameters takes effect
+    if (std::find(changed_params.begin(), changed_params.end(), "date_str") != changed_params.end())
+    {
+        if (settings_.date_str_.size())
+            settings_.date_ = Time::fromDateString(settings_.date_str_);
+        if (settings_.date_.is_not_a_date_time())
+            settings_.date_ = boost::posix_time::ptime(boost::gregorian::day_clock::universal_day());
+    }
+
     emit configChanged();
 }
 
@@ -1818,7 +1841,7 @@ void ASTERIXImportTask::runDialog(QWidget* parent)
     //show dialog
     ASTERIXImportTaskDialog dlg(*this, parent);
 
-    //cancelled?
+    //canceled?
     if (dlg.exec() != QDialog::Accepted)
         return;
 

@@ -1,6 +1,6 @@
 {
-    "class_name": "AnalyseDataSourceTask",
-    "instance_name": "AnalyseDataSourceTask0",
+    "class_name": "AnalyzeDataSourceTask",
+    "instance_name": "AnalyzeDataSourceTask0",
     "parameters": {
         "ds_type": "MLAT",
         "use_data_sources": {},

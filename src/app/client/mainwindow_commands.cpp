@@ -26,7 +26,7 @@
 #include "radarplotpositioncalculatortask.h"
 #include "createartasassociationstask.h"
 #include "reconstructortask.h"
-#include "analysedatasourcetask.h"
+#include "analyzedatasourcetask.h"
 #include "viewmanager.h"
 #include "viewpointsreportgenerator.h"
 #include "viewpointsreportgeneratordialog.h"
@@ -436,7 +436,7 @@ void RTCommandReconstructReferences::assignVariables_impl(const VariablesMap& va
 RTCommandAnalyzeDataSource::RTCommandAnalyzeDataSource()
     : rtcommand::RTCommand()
 {
-    condition.setSignal("compass.taskmanager.analysedatasourcetask.doneSignal", -1);
+    condition.setSignal("compass.taskmanager.analyzedatasourcetask.doneSignal", -1);
 }
 
 bool RTCommandAnalyzeDataSource::run_impl()
@@ -459,7 +459,7 @@ bool RTCommandAnalyzeDataSource::run_impl()
         return false;
     }
 
-    AnalyseDataSourceTask& task = compass_->taskManager().analyseDataSourceTask();
+    AnalyzeDataSourceTask& task = compass_->taskManager().analyzeDataSourceTask();
 
     if (task.dsType() != ds_type_)
     {
@@ -497,9 +497,9 @@ void RTCommandAnalyzeDataSource::collectOptions_impl(OptionsDescription& options
 {
     ADD_RTCOMMAND_OPTIONS(options)
         ("ds_type,t", po::value<std::string>()->required(),
-         "DSType to analyse (mandatory), e.g. 'MLAT'")
+         "DSType to analyze (mandatory), e.g. 'MLAT'")
         ("config,c", po::value<std::string>()->default_value(""),
-         "analyse data source configuration as json string");
+         "analyze data source configuration as json string");
 }
 
 void RTCommandAnalyzeDataSource::assignVariables_impl(const VariablesMap& variables)

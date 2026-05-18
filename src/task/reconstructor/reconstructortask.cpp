@@ -581,7 +581,7 @@ void ReconstructorTask::deleteAssociationsDoneSlot()
 {
     loginf;
 
-    // enable cancelling
+    // enable canceling
 
     traced_assert(progress_dialog_);
     progress_dialog_->setCancelButton(new QPushButton("Cancel"));
@@ -1294,7 +1294,7 @@ void ReconstructorTask::runCancelledSlot()
     manager().compass().viewManager().disableDataDistribution(false);
     manager().compass().dbContentManager().enableDataDistribution(true);
 
-    manager().compass().logInfo("Reconstructor") << "cancelled by user";
+    manager().compass().logInfo("Reconstructor") << "canceled by user";
 
     currentReconstructor()->reset();
 

@@ -17,7 +17,7 @@
 
 #include "mlatcoverageinspector.h"
 #include "mlatcoveragehelpers.h"
-#include "analysedatasourcetask.h"
+#include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
 #include "targetreport3dgrid.h"
 
@@ -72,7 +72,7 @@ MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& con
     registerParameter("pd_unacceptable_below", &pd_unacceptable_below_, pd_unacceptable_below_);
 }
 
-MLATCoverageInspector::MLATCoverageInspector(AnalyseDataSourceTask& task,
+MLATCoverageInspector::MLATCoverageInspector(AnalyzeDataSourceTask& task,
                                              MLATCoverageInspectorSettings& settings)
     : DataSourceInspectorBase(task, settings)
 {
@@ -384,7 +384,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         return;
     }
 
-    double ref_lat = dataset->centreLatitudeDeg();
+    double ref_lat = dataset->centerLatitudeDeg();
 
     auto sizing = task_.clampedCellSizes(*dataset);
     if (sizing.horizontal_clamped || sizing.vertical_clamped)
@@ -530,9 +530,9 @@ void attachPDFigure(ResultReport::Section& section,
     if (!proj.valid || !proj.layer)
         return;
 
-    // Three discrete colour bands so unacceptable / orange-between /
-    // acceptable map directly to the three render colours. The explicit value
-    // range on the colour map is required for colorLegend() to emit entries.
+    // Three discrete color bands so unacceptable / orange-between /
+    // acceptable map directly to the three render colors. The explicit value
+    // range on the color map is required for colorLegend() to emit entries.
     const std::pair<double, double> range(settings.pd_unacceptable_below_,
                                           settings.pd_acceptable_above_);
 
@@ -557,7 +557,7 @@ void attachPDFigure(ResultReport::Section& section,
     {
         auto rendered = Grid2DLayerRenderer::render(*proj.layer, rs);
 
-        // Reverse so the colour-map's "good" end (green for PD) ends up at the
+        // Reverse so the color-map's "good" end (green for PD) ends up at the
         // top of the legend tree, matching operator expectation.
         auto raw = rs.color_map.colorLegend(
             /*add_sel_color=*/false,
@@ -569,6 +569,13 @@ void attachPDFigure(ResultReport::Section& section,
             legend.addEntry(it->first, it->second);
 
         anno->addFeature(new ViewPointGenFeatureGeoImage(rendered.first, rendered.second, legend));
+
+        // Frame the Geographic View on the populated region of the rendered
+        // raster instead of falling back to the full loaded-data extent.
+        QRectF vp_roi = Grid2DLayerRenderer::geoROIOfOpaquePixels(
+            rendered.first, rendered.second);
+        if (!vp_roi.isEmpty())
+            vp->setROI(vp_roi);
     }
     else
     {

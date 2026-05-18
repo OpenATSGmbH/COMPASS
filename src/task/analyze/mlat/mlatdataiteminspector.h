@@ -40,7 +40,7 @@ public:
 class MLATDataItemInspector : public DataSourceInspectorBase
 {
 public:
-    MLATDataItemInspector(AnalyseDataSourceTask& task, MLATDataItemInspectorSettings& settings);
+    MLATDataItemInspector(AnalyzeDataSourceTask& task, MLATDataItemInspectorSettings& settings);
     ~MLATDataItemInspector() override = default;
 
     std::string className() const override { return "MLATDataItemInspector"; }

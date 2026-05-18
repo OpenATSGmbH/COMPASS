@@ -20,13 +20,21 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "buffer.h"
 #include "compass.h"
+#include "files.h"
+#include "logger.h"
 #include "projectionmanager.h"
 #include "util/stringconv.h"
 #include "global.h"
+#include "json.hpp"
 
 #include <osgEarth/GeoMath>
 
 #include <QThread>
+
+#include <cctype>
+#include <fstream>
+#include <random>
+#include <set>
 
 using namespace std;
 using namespace nlohmann;
@@ -39,6 +47,36 @@ tbb::concurrent_unordered_map<unsigned int, unsigned int> ASTERIXPostprocessJob:
 boost::mutex ASTERIXPostprocessJob::acid_map_mutex_;
 tbb::concurrent_unordered_map<std::string, std::string> ASTERIXPostprocessJob::obfuscate_acid_map_;
 
+namespace
+{
+// Conspicuity / reserved Mode 3/A codes (octal display -> decimal storage as
+// 12-bit value with 3 bits per octal digit). Pass through obfuscation
+// unchanged, and excluded from the random pool for newly-generated values.
+//   0     -> 0      (no code)
+//   01000 -> 512
+//   02000 -> 1024
+//   07500 -> 3904   (hijack)
+//   07600 -> 3968   (radio failure)
+//   07700 -> 4032   (general emergency)
+//   07776 -> 4094   (reserved)
+//   07777 -> 4095   (reserved / military intercept)
+const std::set<unsigned int>& m3aConspicuityCodes()
+{
+    static const std::set<unsigned int> codes = {
+        0, 512, 1024, 3904, 3968, 4032, 4094, 4095
+    };
+    return codes;
+}
+
+std::mt19937& obfuscateRng()
+{
+    static std::mt19937 rng{std::random_device{}()};
+    return rng;
+}
+
+static const char* kObfuscationFile = "/tmp/compass_obfuscation.json";
+}
+
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(
     map<string, shared_ptr<Buffer>> buffers,
     ASTERIXImportTaskSettings settings,
@@ -48,12 +86,6 @@ ASTERIXPostprocessJob::ASTERIXPostprocessJob(
     settings_(settings),
     compass_(compass)
 {
-    obfuscate_m3a_map_[512] = 512; // 1000
-    obfuscate_m3a_map_[1024] = 1024; // 2000
-    obfuscate_m3a_map_[3584] = 3584; // 7000
-    obfuscate_m3a_map_[4094] = 4094; // 7776
-    obfuscate_m3a_map_[4095] = 4095; // 7777
-
 }
 
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(map<string, shared_ptr<Buffer>> buffers,
@@ -843,221 +875,450 @@ void ASTERIXPostprocessJob::doObfuscate()
 
 void ASTERIXPostprocessJob::obfuscateM3A (unsigned int& value)
 {
-    if (!obfuscate_m3a_map_.count(value))
+    // Conspicuity codes pass through unchanged - their operational meaning is
+    // part of the data, not the privacy concern.
+    const auto& conspicuity = m3aConspicuityCodes();
+    if (conspicuity.count(value))
     {
-        // generate new value
-
-        unsigned int obfuscated_val = obfuscate_m3a_map_.size();
-        while (std::find_if(obfuscate_m3a_map_.begin(), obfuscate_m3a_map_.end(),
-                            [obfuscated_val](const std::pair<const unsigned int, unsigned int>& mo)
-                            {return mo.second == obfuscated_val; })
-               != obfuscate_m3a_map_.end())
-        {
-            ++obfuscated_val;
-        }
-
-        traced_assert(obfuscated_val <= 4095);
-        obfuscate_m3a_map_[value] = obfuscated_val;
+        obfuscate_m3a_map_[value] = value;
+        return;
     }
 
-    value = obfuscate_m3a_map_.at(value);
-}
-
-void ASTERIXPostprocessJob::obfuscateACAD (unsigned int& value)
-{
-    if (!obfuscate_acad_map_.count(value))
+    if (auto it = obfuscate_m3a_map_.find(value); it != obfuscate_m3a_map_.end())
     {
-        // generate new value
-
-        unsigned int obfuscated_val = obfuscate_acad_map_.size()+1;
-
-        while (std::find_if(obfuscate_acad_map_.begin(), obfuscate_acad_map_.end(),
-                            [obfuscated_val](const std::pair<const unsigned int, unsigned int>& mo)
-                            {return mo.second == obfuscated_val; })
-               != obfuscate_acad_map_.end())
-        {
-            ++obfuscated_val;
-        }
-
-        obfuscate_acad_map_[value] = obfuscated_val;
-    }
-
-    value = obfuscate_acad_map_.at(value);
-}
-
-// List of Starfleet ship names (prefixes)
-static const std::vector<std::string> ship_names = {
-    "ENTE",  // Enterprise
-    "VOYA",  // Voyager
-    "DEFI",  // Defiant
-    "DISC",  // Discovery
-    "RELI",  // Reliant
-    "EXCE",  // Excelsior
-    "EQUI",  // Equinox
-    "INTR",  // Intrepid
-    "TITA",  // Titan
-    "ODYS",  // Odyssey
-    "CONS",  // Constellation
-    "STAR",  // Stargazer
-    "GRIS",  // Grissom
-    "SARA",  // Saratoga
-    "COCH",  // Cochrane
-    "KIRK",  // Kirk (NX-01 refit named after him)
-    "PICA",  // Picard
-    "JANE",  // Janeway
-    "SULU",  // Sulu
-    "SHEN",  // Shenzhou
-    "YORK",  // Yorktown
-    "BURA",  // Buran
-    "THUN",  // Thunderchild
-    "FRAN",  // Franklin
-    "VENG",  // Vengeance
-    "SHRA",  // Shran
-    "LEXI",  // Lexington
-    "POTE",  // Potemkin
-    "ENDE",  // Endeavour
-    "COLU",  // Columbia
-    "KELV",  // Kelvin
-    "ANTA",  // Antares
-    "DAED",  // Daedalus
-    "ARES",  // Ares
-    "NEBU",  // Nebula
-    "AKIR",  // Akira
-    "PROM",  // Prometheus
-    "LUNA",  // Luna
-    "NORW",  // Norway
-    "STEA",  // Steamrunner
-    "EXET",  // Exeter
-    "HOOD",  // Hood
-    "MIRA",  // Miranda
-    "SOVE",  // Sovereign
-    "AVEN",  // Avenger
-    "EAGL",  // Eagle
-    "FARR",  // Farragut
-    "BOZE",  // Bozeman
-    "CAIR",  // Cairo
-    "EXCA",  // Excalibur
-    "GALX",  // Galaxy
-    "HATH",  // Hathaway
-    "MAGL",  // Magellan
-    "YAMA",  // Yamaguchi
-    "ADVE",  // Adventure
-    "BLAC",  // Blackwell
-    "CHAL",  // Challenger
-    "CHAR",  // Charleston
-    "CHER",  // Cherokee
-    "CONC",  // Concord
-    "COPE",  // Copernicus
-    "DERB",  // Derbyshire
-    "DRAK",  // Drake
-    "EDIS",  // Edison
-    "EDMU",  // Edmund
-    "GAGA",  // Gagarin
-    "GRIF",  // Griffin
-    "HANS",  // Hansen
-    "MARY",  // Maryland
-    "OBER",  // Oberth
-    "OLIV",  // Oliver
-    "ORIO",  // Orion
-    "PEGA",  // Pegasus
-    "SAGA",  // Sagan
-    "ZHEN",  // Zheng He
-    "NIAG",  // Niagara
-    "NIMI",  // Nimitz
-    "GETT",  // Gettysburg
-    "CHAN",  // Chang
-    "KONG",  // Kongo
-    "TURK",  // Turkey
-    "KURA",  // Kurak
-    "SARE",  // Sarek
-    "TPAU",  // T'Pau
-    "SOVA",  // Soval
-    "SURA",  // Surak
-    "ARCH",  // Archer
-    "DALL",  // Dallas
-    "LOND",  // London
-    "PARI",  // Paris
-    "BERL",  // Berlin
-    "MINS",  // Minsk
-    "ROCI",   // Rocinante
-    "DONN",   // Donnager
-    "NAVA",   // Navoo
-    "TYNA",   // Tynan
-    "AGAT",   // Agatha King
-    "BEHE",   // Behemoth
-    "CONT",   // Contorta (Pinus Contorta)
-    "PELL",   // Pella
-    "SCOP",   // Scopuli
-    "BARB",   // Barbapiccola
-    "RAWE",   // Raweside
-    "HYGE",   // Hygiea
-    "ARBO"    // Arboghast
-};
-
-// Function to obfuscate value string
-//std::string obfuscate_input(const std::string& value)
-void ASTERIXPostprocessJob::obfuscateACID (std::string& value)
-{
-
-    // Static map to store input-output pairings
-    //static std::map<std::string, std::string> obfuscate_acid_map_;
-
-    // Check if the input has already been mapped
-    auto it = obfuscate_acid_map_.find(value);
-    if (it != obfuscate_acid_map_.end()) {
-        // Return the previously stored output
         value = it->second;
         return;
     }
 
-    // Ensure input length is between 0 and 8 characters
-    std::string trimmed_input = value.substr(0, 8);
+    // Collect already-used target values to avoid collisions.
+    std::set<unsigned int> used;
+    for (const auto& kv : obfuscate_m3a_map_)
+        used.insert(kv.second);
 
-    // Maximum output length
-    const size_t max_output_length = 8;
+    std::uniform_int_distribution<unsigned int> dist(0, 4095);
+    auto& rng = obfuscateRng();
 
-    // Compute a consistent hash value from the input string
-    // Using a simple custom hash function for consistency across runs
-    size_t hash_value = 0;
-    for (char c : trimmed_input) {
-        hash_value = hash_value * 31 + static_cast<size_t>(c);
+    unsigned int candidate = 0;
+    for (int attempts = 0; attempts < 10000; ++attempts)
+    {
+        candidate = dist(rng);
+        if (!conspicuity.count(candidate) && !used.count(candidate))
+            break;
     }
 
-    // Select a ship name based on the hash value
-    size_t ship_index = hash_value % ship_names.size();
-    std::string ship_prefix = ship_names[ship_index];
+    obfuscate_m3a_map_[value] = candidate;
+    value = candidate;
+}
 
-    // Determine the maximum length for the count number
-    size_t max_count_length = max_output_length - ship_prefix.length();
-    if (max_count_length == 0) {
-        // If there's no space for count number, truncate the ship prefix
-        ship_prefix = ship_prefix.substr(0, max_output_length - 1);
-        max_count_length = 1;
+void ASTERIXPostprocessJob::obfuscateACAD (unsigned int& value)
+{
+    if (auto it = obfuscate_acad_map_.find(value); it != obfuscate_acad_map_.end())
+    {
+        value = it->second;
+        return;
     }
 
-    // Compute a count number to ensure uniqueness
-    // Use a static counter for each ship prefix
-    static std::map<std::string, size_t> ship_counters;
-    size_t count_number = ship_counters[ship_prefix]++;
-    count_number = count_number % static_cast<size_t>(std::pow(10, max_count_length));
+    std::set<unsigned int> used;
+    for (const auto& kv : obfuscate_acad_map_)
+        used.insert(kv.second);
 
-    // Format the count number with leading zeros if necessary
-    std::string count_str = std::to_string(count_number);
-    if (count_str.length() < max_count_length) {
-        count_str = std::string(max_count_length - count_str.length(), '0') + count_str;
+    // 24-bit ICAO aircraft address: 0x000001 .. 0xFFFFFF (0 is reserved).
+    std::uniform_int_distribution<unsigned int> dist(1, 0xFFFFFF);
+    auto& rng = obfuscateRng();
+
+    unsigned int candidate = 0;
+    for (int attempts = 0; attempts < 10000; ++attempts)
+    {
+        candidate = dist(rng);
+        if (!used.count(candidate))
+            break;
     }
 
-    // Combine ship prefix and count number
-    std::string obfuscated_val = ship_prefix + count_str;
+    obfuscate_acad_map_[value] = candidate;
+    value = candidate;
+}
 
-    // Ensure the output does not exceed the maximum length
-    if (obfuscated_val.length() > max_output_length) {
-        obfuscated_val = obfuscated_val.substr(0, max_output_length);
+// Pool of fictional starship names from Star Trek, Star Wars and The Expanse.
+// Stored as full uppercase strings; the obfuscator slices each to the
+// letter-count of the callsign being replaced. Long names (>= 8 chars)
+// guarantee coverage for any plausible ACID letter prefix.
+static const std::vector<std::string> ship_names = {
+    // Star Trek
+    "ENTERPRISE", "VOYAGER", "DEFIANT", "DISCOVERY", "RELIANT", "EXCELSIOR",
+    "EQUINOX", "INTREPID", "TITAN", "ODYSSEY", "CONSTELLATION", "STARGAZER",
+    "GRISSOM", "SARATOGA", "COCHRANE", "PICARD", "JANEWAY", "SHENZHOU",
+    "YORKTOWN", "BURAN", "THUNDERCHILD", "FRANKLIN", "VENGEANCE", "SHRAN",
+    "LEXINGTON", "POTEMKIN", "ENDEAVOUR", "COLUMBIA", "KELVIN", "ANTARES",
+    "DAEDALUS", "NEBULA", "AKIRA", "PROMETHEUS", "NORWAY", "STEAMRUNNER",
+    "EXETER", "MIRANDA", "SOVEREIGN", "AVENGER", "FARRAGUT", "BOZEMAN",
+    "CAIRO", "EXCALIBUR", "GALAXY", "HATHAWAY", "MAGELLAN", "YAMAGUCHI",
+    "BLACKWELL", "CHALLENGER", "CHARLESTON", "CHEROKEE", "CONCORD",
+    "COPERNICUS", "DERBYSHIRE", "DRAKE", "EDISON", "GAGARIN", "GRIFFIN",
+    "HANSEN", "MARYLAND", "OBERTH", "OLIVER", "ORION", "PEGASUS",
+    "SAGAN", "NIAGARA", "NIMITZ", "GETTYSBURG", "KONGO", "SAREK",
+    // Star Wars
+    "FALCON", "TANTIVE", "RAZORCREST", "GHOST", "PHANTOM", "EXECUTOR",
+    "ECLIPSE", "INTERCEPTOR", "MALEVOLENCE", "INDEPENDENCE", "LIBERTY",
+    "PROFUNDITY", "RADDUS", "SUPREMACY", "FINALIZER", "CHIMAERA",
+    "ARMAGEDDON", "DEVASTATOR", "INVINCIBLE", "ACCUSER", "RAVAGER",
+    "RESOLUTE", "VENATOR", "ACCLAMATOR", "STARDESTROYER", "INVISIBLE",
+    // The Expanse
+    "ROCINANTE", "TACHI", "DONNAGER", "NAUVOO", "TYNAN", "AGATHAKING",
+    "BEHEMOTH", "CONTORTA", "PELLA", "SCOPULI", "BARBAPICCOLA", "RAWESIDE",
+    "HYGIEA", "ARBOGHAST", "RAZORBACK", "CHETZEMOKA", "CANTERBURY", "TYCHO",
+    "DEWALT", "MAELSTROM", "MEDINA", "MORRIGAN", "BLUEFALCON", "OKIMBO",
+    "SCIROCCO", "GUANSHIYIN", "SEUNGUN"
+};
+
+namespace
+{
+inline bool isAsciiLetter(char c) { return std::isalpha(static_cast<unsigned char>(c)); }
+inline bool isAsciiDigit (char c) { return std::isdigit(static_cast<unsigned char>(c)); }
+
+// Strip trailing whitespace; uppercase ASCII. Used to canonicalise the
+// lookup key so that "XY100", "XY100   " and "xy100" all collapse to one
+// entry.
+std::string normaliseAcid(const std::string& s)
+{
+    auto end = s.find_last_not_of(" \t\r\n");
+    if (end == std::string::npos)
+        return std::string();
+    std::string out = s.substr(0, end + 1);
+    for (auto& c : out)
+        c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    return out;
+}
+
+// One contiguous run of input characters of the same class (letter / digit
+// / other). Captures the original length and characters; "other" runs are
+// passed through unchanged.
+struct AcidRun
+{
+    enum class Kind { Letter, Digit, Other };
+    Kind        kind;
+    std::string text; // original characters, only meaningful for Other
+};
+
+std::vector<AcidRun> splitIntoRuns(const std::string& s)
+{
+    std::vector<AcidRun> runs;
+    std::size_t i = 0;
+    while (i < s.size())
+    {
+        AcidRun::Kind kind = isAsciiLetter(s[i]) ? AcidRun::Kind::Letter
+                          : isAsciiDigit (s[i]) ? AcidRun::Kind::Digit
+                                               : AcidRun::Kind::Other;
+        std::size_t j = i;
+        while (j < s.size())
+        {
+            AcidRun::Kind k = isAsciiLetter(s[j]) ? AcidRun::Kind::Letter
+                            : isAsciiDigit (s[j]) ? AcidRun::Kind::Digit
+                                                 : AcidRun::Kind::Other;
+            if (k != kind) break;
+            ++j;
+        }
+        AcidRun r;
+        r.kind = kind;
+        r.text = s.substr(i, j - i);
+        runs.push_back(std::move(r));
+        i = j;
+    }
+    return runs;
+}
+
+// Leading slice of a ship name at index `ship_idx` (wrapping). If the ship
+// is shorter than `len`, pad with random A-Z. Subsequent letter runs in
+// the same callsign should pass a different `ship_idx` (caller advances)
+// so the output reads as multiple ship prefixes rather than one repeated.
+std::string letterRunLeading(std::size_t ship_idx, std::size_t len, std::mt19937& rng)
+{
+    if (len == 0)
+        return std::string();
+    const std::string& name = ship_names[ship_idx % ship_names.size()];
+    if (name.size() >= len)
+        return name.substr(0, len);
+    std::uniform_int_distribution<int> letter_pick(0, 25);
+    std::string out = name;
+    while (out.size() < len)
+        out += static_cast<char>('A' + letter_pick(rng));
+    return out;
+}
+
+// 10^n with overflow guard - clamped so callsigns with absurdly long digit
+// runs don't blow up the integer space we use for the increment counter.
+std::uint64_t pow10Clamped(std::size_t n)
+{
+    std::uint64_t v = 1;
+    for (std::size_t i = 0; i < n && i < 18; ++i)
+        v *= 10;
+    return v;
+}
+
+// Total number of digit characters across all digit runs - the digit slots
+// are filled from a single zero-padded counter, so an increment by 1
+// monotonically walks the joint digit space.
+std::size_t totalDigitSlots(const std::vector<AcidRun>& runs)
+{
+    std::size_t n = 0;
+    for (const auto& r : runs)
+        if (r.kind == AcidRun::Kind::Digit)
+            n += r.text.size();
+    return n;
+}
+
+// Materialise a candidate: letter runs use leading slices of ship_names
+// starting at `ship_idx` (each successive letter run advances by one);
+// digit runs are filled from `digit_value` rendered as a zero-padded
+// string of length `totalDigitSlots(runs)`, split across the digit runs.
+std::string generateLeadingAcid(const std::vector<AcidRun>& runs,
+                                std::size_t ship_idx,
+                                std::uint64_t digit_value,
+                                std::mt19937& rng)
+{
+    const std::size_t total_digits = totalDigitSlots(runs);
+    std::string digit_str;
+    if (total_digits > 0)
+    {
+        const std::uint64_t mod = pow10Clamped(total_digits);
+        if (mod > 0)
+            digit_value %= mod;
+        digit_str = std::to_string(digit_value);
+        if (digit_str.size() < total_digits)
+            digit_str = std::string(total_digits - digit_str.size(), '0') + digit_str;
+        else if (digit_str.size() > total_digits)
+            digit_str = digit_str.substr(digit_str.size() - total_digits);
     }
 
-    // Store the new input-output mapping
-    obfuscate_acid_map_[value] = obfuscated_val;
+    std::string out;
+    out.reserve(8);
+    std::size_t digit_cursor = 0;
+    std::size_t letter_run_idx = 0;
+    for (const auto& r : runs)
+    {
+        switch (r.kind)
+        {
+        case AcidRun::Kind::Letter:
+            out += letterRunLeading(ship_idx + letter_run_idx, r.text.size(), rng);
+            ++letter_run_idx;
+            break;
+        case AcidRun::Kind::Digit:
+            out.append(digit_str, digit_cursor, r.text.size());
+            digit_cursor += r.text.size();
+            break;
+        case AcidRun::Kind::Other:
+            out += r.text;
+            break;
+        }
+    }
+    return out;
+}
 
-    value = obfuscated_val;
+// Pad `s` with trailing spaces up to `target_len`. If `s` is already that
+// long or longer, returned unchanged.
+std::string padTo(const std::string& s, std::size_t target_len)
+{
+    if (s.size() >= target_len)
+        return s;
+    return s + std::string(target_len - s.size(), ' ');
+}
+}
+
+void ASTERIXPostprocessJob::obfuscateACID (std::string& value)
+{
+    const std::size_t original_len = value.size();
+    const std::string key = normaliseAcid(value);
+
+    // Empty / all-whitespace input: nothing meaningful to obfuscate.
+    if (key.empty())
+    {
+        value = std::string(original_len, ' ');
+        return;
+    }
+
+    if (auto it = obfuscate_acid_map_.find(key); it != obfuscate_acid_map_.end())
+    {
+        value = padTo(it->second, original_len);
+        return;
+    }
+
+    const auto runs = splitIntoRuns(key);
+    auto& rng = obfuscateRng();
+
+    const std::size_t total_digits = totalDigitSlots(runs);
+    const std::uint64_t digit_mod  = pow10Clamped(total_digits);
+    const std::size_t pool_size    = ship_names.size();
+
+    // Initial picks. The ship_idx selects a starting ship for the first
+    // letter run; on collision we keep the ship_idx and increment the
+    // composite digit value, so the readable "ship prefix" stays stable.
+    // Only when the digit space is exhausted do we step to the next ship.
+    std::uniform_int_distribution<std::size_t> ship_dist(0, pool_size - 1);
+    std::size_t ship_idx = ship_dist(rng);
+    std::uint64_t digit_value = total_digits > 0
+        ? (std::uniform_int_distribution<std::uint64_t>(0, digit_mod - 1))(rng)
+        : 0;
+
+    std::string candidate;
+    std::uint64_t digit_attempts = 0;
+    std::size_t  ship_attempts   = 0;
+    const std::uint64_t digit_budget = total_digits > 0 ? digit_mod : 1;
+
+    while (ship_attempts < pool_size)
+    {
+        candidate = generateLeadingAcid(runs, ship_idx, digit_value, rng);
+
+        bool collision = (candidate == key);
+        if (!collision)
+        {
+            for (const auto& kv : obfuscate_acid_map_)
+                if (kv.second == candidate) { collision = true; break; }
+        }
+        if (!collision)
+            break;
+
+        ++digit_attempts;
+        if (total_digits > 0 && digit_attempts < digit_budget)
+        {
+            digit_value = (digit_value + 1) % digit_mod;
+            continue;
+        }
+        // Digit space exhausted (or none) - advance to the next ship and
+        // pick a fresh starting digit value.
+        ++ship_attempts;
+        ship_idx = (ship_idx + 1) % pool_size;
+        digit_attempts = 0;
+        if (total_digits > 0)
+            digit_value = (std::uniform_int_distribution<std::uint64_t>(0, digit_mod - 1))(rng);
+    }
+
+    if (ship_attempts >= pool_size)
+    {
+        // Pathological saturation - extremely unlikely. Fall back to a
+        // random-letters / random-digits rendering, accepting that it may
+        // not be a recognisable ship prefix.
+        std::uniform_int_distribution<int> letter_pick(0, 25);
+        std::uniform_int_distribution<int> digit_pick(0, 9);
+        std::string fallback;
+        fallback.reserve(key.size());
+        for (char c : key)
+        {
+            if (isAsciiLetter(c))      fallback += static_cast<char>('A' + letter_pick(rng));
+            else if (isAsciiDigit(c))  fallback += static_cast<char>('0' + digit_pick(rng));
+            else                       fallback += c;
+        }
+        candidate = std::move(fallback);
+    }
+
+    obfuscate_acid_map_[key] = candidate;
+    value = padTo(candidate, original_len);
+}
+
+void ASTERIXPostprocessJob::loadObfuscationMaps()
+{
+    static bool loaded = false;
+    if (loaded)
+        return;
+
+    if (!Utils::Files::fileExists(kObfuscationFile))
+    {
+        loaded = true;
+        return;
+    }
+
+    nlohmann::json j;
+    try
+    {
+        std::ifstream in(kObfuscationFile);
+        in >> j;
+    }
+    catch (const std::exception& e)
+    {
+        logwrn << "could not parse " << kObfuscationFile << ": " << e.what();
+        return; // do not flip 'loaded'; allow a retry next time
+    }
+
+    if (!j.is_object())
+    {
+        logwrn << kObfuscationFile << " is not a JSON object, ignoring";
+        loaded = true;
+        return;
+    }
+
+    if (j.contains("m3a") && j.at("m3a").is_object())
+    {
+        boost::mutex::scoped_lock locker(m3a_map_mutex_);
+        for (auto& kv : j.at("m3a").items())
+        {
+            try
+            {
+                obfuscate_m3a_map_[static_cast<unsigned int>(std::stoul(kv.key()))]
+                    = kv.value().get<unsigned int>();
+            }
+            catch (...) { /* skip malformed entry */ }
+        }
+    }
+    if (j.contains("acad") && j.at("acad").is_object())
+    {
+        boost::mutex::scoped_lock locker(acad_map_mutex_);
+        for (auto& kv : j.at("acad").items())
+        {
+            try
+            {
+                obfuscate_acad_map_[static_cast<unsigned int>(std::stoul(kv.key()))]
+                    = kv.value().get<unsigned int>();
+            }
+            catch (...) {}
+        }
+    }
+    if (j.contains("acid") && j.at("acid").is_object())
+    {
+        boost::mutex::scoped_lock locker(acid_map_mutex_);
+        for (auto& kv : j.at("acid").items())
+        {
+            try
+            {
+                obfuscate_acid_map_[kv.key()] = kv.value().get<std::string>();
+            }
+            catch (...) {}
+        }
+    }
+
+    loginf << "loaded obfuscation maps from " << kObfuscationFile
+           << ": m3a " << obfuscate_m3a_map_.size()
+           << " acad " << obfuscate_acad_map_.size()
+           << " acid " << obfuscate_acid_map_.size();
+    loaded = true;
+}
+
+void ASTERIXPostprocessJob::saveObfuscationMaps()
+{
+    nlohmann::json j;
+    j["m3a"]  = nlohmann::json::object();
+    j["acad"] = nlohmann::json::object();
+    j["acid"] = nlohmann::json::object();
+    {
+        boost::mutex::scoped_lock locker(m3a_map_mutex_);
+        for (const auto& kv : obfuscate_m3a_map_)
+            j["m3a"][std::to_string(kv.first)] = kv.second;
+    }
+    {
+        boost::mutex::scoped_lock locker(acad_map_mutex_);
+        for (const auto& kv : obfuscate_acad_map_)
+            j["acad"][std::to_string(kv.first)] = kv.second;
+    }
+    {
+        boost::mutex::scoped_lock locker(acid_map_mutex_);
+        for (const auto& kv : obfuscate_acid_map_)
+            j["acid"][kv.first] = kv.second;
+    }
+    try
+    {
+        std::ofstream out(kObfuscationFile);
+        out << j.dump(2);
+    }
+    catch (const std::exception& e)
+    {
+        logwrn << "could not write " << kObfuscationFile << ": " << e.what();
+    }
 }
 

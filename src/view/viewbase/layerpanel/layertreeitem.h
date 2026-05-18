@@ -111,7 +111,7 @@ public:
     /// Virtual so subclasses can replace the toggle with custom semantics
     /// (e.g. radio-style single-select). Subclasses overriding this method
     /// should call the base via `LayerTreeItem::setHidden(...)` for any path
-    /// that should retain the default behaviour.
+    /// that should retain the default behavior.
     virtual void setHidden(bool value, bool emit_signal = true);
 
     /// Flip all descendants hidden (includes self). Emits once at end.

@@ -29,11 +29,11 @@ class BaseBufferTableWidget : public QWidget
     Q_OBJECT
 
   signals:
-    void exportDoneSignal(bool cancelled);
+    void exportDoneSignal(bool canceled);
 
   public slots:
     void exportSlot();
-    void exportDoneSlot(bool cancelled);
+    void exportDoneSlot(bool canceled);
 
   public:
     BaseBufferTableWidget(TableView& view, TableViewDataSource& data_source,

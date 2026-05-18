@@ -267,7 +267,7 @@ TEST_CASE("estimateRangeBiasGain single point", "[number][bias]")
 
 // --- End-to-end: bias estimation + position correction ---
 
-// Haversine great-circle distance in metres
+// Haversine great-circle distance in meters
 static double haversineDistance(double lat1_deg, double lon1_deg,
                                 double lat2_deg, double lon2_deg)
 {

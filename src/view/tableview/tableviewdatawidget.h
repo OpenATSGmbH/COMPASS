@@ -39,7 +39,7 @@ class TableViewDataWidget : public ViewDataWidget
     Q_OBJECT
 
 signals:
-    void exportDoneSignal(bool cancelled);
+    void exportDoneSignal(bool canceled);
 
     /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
     /// The config widget uses this to re-apply default expansion.
@@ -47,7 +47,7 @@ signals:
 
 public slots:
     void exportDataSlot();
-    void exportDoneSlot(bool cancelled);
+    void exportDoneSlot(bool canceled);
 
 public:
     TableViewDataWidget(TableViewWidget* view_widget,

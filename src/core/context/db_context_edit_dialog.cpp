@@ -534,7 +534,7 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
         connect(&dialog, &DataSourceCreateDialog::doneSignal, &dialog, &QDialog::close);
         dialog.exec();
 
-        if (dialog.cancelled())
+        if (dialog.canceled())
             return;
 
         auto& ds = manager_.createDataSource(dialog.sac(), dialog.sic(), "", dialog.dsType());

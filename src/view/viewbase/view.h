@@ -118,6 +118,8 @@ public:
     QImage renderData() const;
     QImage renderView() const;
 
+    void prepareForRender();
+
     void setExporting(bool ok);
     bool hasScreenshotContent() const;
 

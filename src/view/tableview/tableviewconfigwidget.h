@@ -53,7 +53,7 @@ public slots:
     void toggleUsePresentation();
     void toggleIgnoreNonTargetReports();
     void exportSlot();
-    void exportDoneSlot(bool cancelled);
+    void exportDoneSlot(bool canceled);
 
     void colorModeChangedSlot(unsigned int mode);
 

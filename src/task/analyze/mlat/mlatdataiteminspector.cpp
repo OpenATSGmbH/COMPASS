@@ -16,7 +16,7 @@
  */
 
 #include "mlatdataiteminspector.h"
-#include "analysedatasourcetask.h"
+#include "analyzedatasourcetask.h"
 #include "asterixreporthelpers.h"
 #include "asteriximporttask.h"
 
@@ -54,7 +54,7 @@ void MLATDataItemInspectorSettings::setCatIncluded(unsigned int cat, bool value)
     included_cats_[std::to_string(cat)] = value;
 }
 
-MLATDataItemInspector::MLATDataItemInspector(AnalyseDataSourceTask& task,
+MLATDataItemInspector::MLATDataItemInspector(AnalyzeDataSourceTask& task,
                                              MLATDataItemInspectorSettings& settings)
     : DataSourceInspectorBase(task, settings)
 {

@@ -963,7 +963,7 @@
                                 },
                                 {
                                     "name": "DOP-xy",
-                                    "comment": "\u03c1(X,Y)",
+                                    "comment": "rho(X,Y)",
                                     "type": "fixed_bytes",
                                     "length": 2,
                                     "data_type": "uint",

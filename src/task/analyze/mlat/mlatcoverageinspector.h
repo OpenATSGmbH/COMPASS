@@ -70,7 +70,7 @@ public:
 class MLATCoverageInspector : public DataSourceInspectorBase
 {
 public:
-    MLATCoverageInspector(AnalyseDataSourceTask& task, MLATCoverageInspectorSettings& settings);
+    MLATCoverageInspector(AnalyzeDataSourceTask& task, MLATCoverageInspectorSettings& settings);
 
     std::string className() const override { return "MLATCoverageInspector"; }
     std::string name()      const override { return "Sensor Coverage"; }

@@ -64,7 +64,7 @@
 #include "createartasassociationstaskdialog.h"
 #include "reconstructortask.h"
 #include "reconstructortaskdialog.h"
-#include "analysedatasourcetask.h"
+#include "analyzedatasourcetask.h"
 #include "util/async.h"
 #include "util/system.h"
 #include "util/stringconv.h"
@@ -498,13 +498,13 @@ void MainWindow::createMenus ()
     analyze_menu_ = process_menu_->addMenu("Analyze");
     analyze_menu_->setToolTipsVisible(true);
 
-    QAction* analyse_mlat_action = new QAction("MLAT");
-    analyse_mlat_action->setToolTip(
-        "Analyse one or more MLAT (CAT020 / CAT010) data sources from multiple angles "
+    QAction* analyze_mlat_action = new QAction("MLAT");
+    analyze_mlat_action->setToolTip(
+        "Analyze one or more MLAT (CAT020 / CAT010) data sources from multiple angles "
         "(data items, sensor coverage / PD, position accuracy)");
-    connect(analyse_mlat_action, &QAction::triggered,
-            this, &MainWindow::analyseMLATDataSourceSlot);
-    analyze_menu_->addAction(analyse_mlat_action);
+    connect(analyze_mlat_action, &QAction::triggered,
+            this, &MainWindow::analyzeMLATDataSourceSlot);
+    analyze_menu_->addAction(analyze_mlat_action);
 
     QAction* eval_action = new QAction("Evaluate");
     eval_action->setToolTip("Evaluate test against reference data according to defined standards");
@@ -586,7 +586,7 @@ void MainWindow::updateMenus()
         if (db_open)
         {
             auto& ctx = compass_.dbContextManager();
-            for (auto ds_id : compass_.taskManager().analyseDataSourceTask()
+            for (auto ds_id : compass_.taskManager().analyzeDataSourceTask()
                                   .referenceDataSourceCandidateIDs())
             {
                 if (ctx.hasNumInserted(ds_id))
@@ -600,7 +600,7 @@ void MainWindow::updateMenus()
         analyze_menu_->menuAction()->setToolTip(
             has_ref_traj_with_data
                 ? QString()
-                : "Analyse requires at least one Reference Trajectory data source with data");
+                : "Analyze requires at least one Reference Trajectory data source with data");
     }
 
     traced_assert(config_menu_);
@@ -1114,11 +1114,11 @@ void MainWindow::reconstructReferencesSlot()
     compass_.taskManager().reconstructReferencesTask().showDialog();
 }
 
-void MainWindow::analyseMLATDataSourceSlot()
+void MainWindow::analyzeMLATDataSourceSlot()
 {
     loginf;
 
-    compass_.taskManager().analyseDataSourceTask().showDialog();
+    compass_.taskManager().analyzeDataSourceTask().showDialog();
 }
 
 void MainWindow::evaluateSlot()

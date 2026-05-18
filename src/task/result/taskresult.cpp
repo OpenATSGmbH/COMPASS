@@ -881,12 +881,22 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
     //wait a little for e.g. geoimages to warp and render correctly in geographic view
     figure.executeRenderDelay();
 
+    //let views settle any async resources (geo view waits for map tile + osgEarth job pipeline)
+    for (auto& view_it : view_man.getViews())
+    {
+        if (view_it.second->className() == "TableView")
+            continue;
+
+        if (view_it.second->hasScreenshotContent())
+            view_it.second->prepareForRender();
+    }
+
     for (auto& view_it : view_man.getViews())
     {
         //skip table views
         if (view_it.second->className() == "TableView")
             continue;
-        
+
         //skip views which show no content
         if (view_it.second->hasScreenshotContent())
         {

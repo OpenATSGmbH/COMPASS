@@ -48,7 +48,7 @@ Default-constructed `LoadRequest{}` loads nothing - the `{"*"}` sentinel must be
 
 After the loop the manager emits **`loadingStartedSignal()`**. If no jobs were created, `finishLoading()` is invoked immediately.
 
-**4. Job execution (`DBContentReadDBJob::run_impl`, DB worker thread)** - `prepareRead` → loop `readDataChunk` accumulating into `cached_buffer_` via `seizeBuffer` → on `last_buffer` break out → `finalizeReadStatement` → `done_ = true`. If cancelled mid-loop, `cached_buffer_` is nulled. JobManager then fires the base-class `doneSignal()` on the GUI thread.
+**4. Job execution (`DBContentReadDBJob::run_impl`, DB worker thread)** - `prepareRead` → loop `readDataChunk` accumulating into `cached_buffer_` via `seizeBuffer` → on `last_buffer` break out → `finalizeReadStatement` → `done_ = true`. If canceled mid-loop, `cached_buffer_` is nulled. JobManager then fires the base-class `doneSignal()` on the GUI thread.
 
 **5. `DBContent::readJobDoneSlot`** (GUI thread). Calls `read_job_->takeBuffer()` to retrieve the accumulated buffer; if non-empty, verifies the read-list properties, runs `buffer_utils::transformVariables` (renames DB columns to variable names), adds the `selected_` bool property, and hands the buffer to `DBContentManager::addLoadedData({{name, buffer}})`. Then `read_job_ = nullptr; dbcont_manager_.loadingDone(*this)`.
 

@@ -18,6 +18,8 @@
 
 #include <utility>
 
+#include <QRectF>
+
 class Grid2DLayer;
 struct Grid2DRenderSettings;
 struct RasterReference;
@@ -31,4 +33,16 @@ class Grid2DLayerRenderer
 public:
     static std::pair<QImage,RasterReference> render(const Grid2DLayer& layer,
                                                     const Grid2DRenderSettings& settings);
+
+    // Geographic bbox of the opaque pixels of `img`, in the
+    // (lat, lon, lat_extent, lon_extent) convention expected by
+    // ViewPointGenVP::setROI (see ViewPointGenVP::toJSON). Null QRectF if no
+    // opaque pixels exist. `ref` must be geographic (x is longitude, y is
+    // latitude); the raster's `is_north_up` flag is honored.
+    //
+    // Used by analysis inspectors that emit a ViewPointGenFeatureGeoImage to
+    // frame the Geographic View on the populated region of the rendered
+    // raster instead of falling back to the full loaded-data extent.
+    static QRectF geoROIOfOpaquePixels(const QImage& img,
+                                       const RasterReference& ref);
 };

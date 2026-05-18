@@ -388,9 +388,17 @@ QImage View::renderView() const
 
 /**
  */
+void View::prepareForRender()
+{
+    traced_assert(widget_ && widget_->getViewDataWidget());
+    widget_->getViewDataWidget()->prepareForRender();
+}
+
+/**
+ */
 void View::setExporting(bool ok)
 {
-    traced_assert(widget_ && widget_->getViewDataWidget());  
+    traced_assert(widget_ && widget_->getViewDataWidget());
     return widget_->getViewDataWidget()->isExporting(ok);
 }
 

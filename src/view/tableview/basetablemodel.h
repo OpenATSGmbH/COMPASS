@@ -38,7 +38,7 @@ class BaseBufferTableModel : public QAbstractTableModel
     Q_OBJECT
 
   signals:
-    void exportDoneSignal(bool cancelled);
+    void exportDoneSignal(bool canceled);
 
   public slots:
     virtual void setChangedSlot();

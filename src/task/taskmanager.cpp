@@ -26,7 +26,7 @@
 #include "gpstrailimporttask.h"
 //#include "gpsimportcsvtask.h"
 #include "reconstructortask.h"
-#include "analysedatasourcetask.h"
+#include "analyzedatasourcetask.h"
 #include "mainwindow.h"
 #include "viewabledataconfig.h"
 #include "viewmanager.h"
@@ -43,6 +43,7 @@
 #include "reportexportdialog.h"
 
 #include "evaluationtaskresult.h"
+#include "datasourceanalysistaskresult.h"
 
 #include "traced_assert.h"
 
@@ -145,12 +146,12 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(reconstruct_references_task_);
         addTask(class_name, reconstruct_references_task_.get());
     }
-    else if (class_name == "AnalyseDataSourceTask")
+    else if (class_name == "AnalyzeDataSourceTask")
     {
-        traced_assert(!analyse_data_source_task_);
-        analyse_data_source_task_.reset(new AnalyseDataSourceTask(child_json, this));
-        traced_assert(analyse_data_source_task_);
-        addTask(class_name, analyse_data_source_task_.get());
+        traced_assert(!analyze_data_source_task_);
+        analyze_data_source_task_.reset(new AnalyzeDataSourceTask(child_json, this));
+        traced_assert(analyze_data_source_task_);
+        addTask(class_name, analyze_data_source_task_.get());
     }
     else if (class_name == "ReportExport")
     {
@@ -227,10 +228,10 @@ void TaskManager::checkSubConfigurables()
         traced_assert(reconstruct_references_task_);
     }
 
-    if (!analyse_data_source_task_)
+    if (!analyze_data_source_task_)
     {
-        generateSubConfigurableFromConfig("AnalyseDataSourceTask", "AnalyseDataSourceTask0");
-        traced_assert(analyse_data_source_task_);
+        generateSubConfigurableFromConfig("AnalyzeDataSourceTask", "AnalyzeDataSourceTask0");
+        traced_assert(analyze_data_source_task_);
     }
 
     if (!report_export_)
@@ -276,7 +277,7 @@ void TaskManager::shutdown()
     radar_plot_position_calculator_task_ = nullptr;
     create_artas_associations_task_ = nullptr;
     reconstruct_references_task_ = nullptr;
-    analyse_data_source_task_ = nullptr;
+    analyze_data_source_task_ = nullptr;
 }
 
 /**
@@ -357,10 +358,10 @@ ReconstructorTask& TaskManager::reconstructReferencesTask() const
 
 /**
  */
-AnalyseDataSourceTask& TaskManager::analyseDataSourceTask() const
+AnalyzeDataSourceTask& TaskManager::analyzeDataSourceTask() const
 {
-    traced_assert(analyse_data_source_task_);
-    return *analyse_data_source_task_;
+    traced_assert(analyze_data_source_task_);
+    return *analyze_data_source_task_;
 }
 
 /**
@@ -390,7 +391,11 @@ std::shared_ptr<TaskResult> TaskManager::createResult(unsigned int id,
     {
         result.reset(new EvaluationTaskResult(id, *this, compass_));
     }
-    
+    else if (type == task::TaskResultType::DataSourceAnalysis)
+    {
+        result.reset(new DataSourceAnalysisTaskResult(id, *this));
+    }
+
     return result;
 }
 

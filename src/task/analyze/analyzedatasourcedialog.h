@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-class AnalyseDataSourceTask;
+class AnalyzeDataSourceTask;
 class DataSourceInspectorBase;
 
 class QTreeWidget;
@@ -34,13 +34,13 @@ class QPushButton;
 class QLineEdit;
 class QComboBox;
 
-class AnalyseDataSourceDialog : public QDialog
+class AnalyzeDataSourceDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    AnalyseDataSourceDialog(AnalyseDataSourceTask& task, QWidget* parent = nullptr);
-    ~AnalyseDataSourceDialog() override = default;
+    AnalyzeDataSourceDialog(AnalyzeDataSourceTask& task, QWidget* parent = nullptr);
+    ~AnalyzeDataSourceDialog() override = default;
 
 private slots:
     void treeSelectionChangedSlot();
@@ -56,7 +56,7 @@ private:
     void updateRunEnabled();
     void updateSuggestedReportName();
 
-    AnalyseDataSourceTask&  task_;
+    AnalyzeDataSourceTask&  task_;
 
     QTreeWidget*    tree_         = nullptr;
     QStackedWidget* stack_        = nullptr;

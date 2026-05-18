@@ -423,7 +423,7 @@ void ChartView::updateRubberBand(const QRectF& region)
 
 /**
  * Reacts on tool changes.
- * Override for more specific behaviour.
+ * Override for more specific behavior.
  */
 void ChartView::onToolChanged()
 {

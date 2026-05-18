@@ -361,7 +361,7 @@ method (§2.2). Notable specifics worth knowing:
   as it is dense enough to define continuous time periods.
 - **No per-report association.** A test report is not paired against an
   individual reference report. Misses are inferred from gaps; matched
-  detections are not labelled (only "no miss in this gap").
+  detections are not labeled (only "no miss in this gap").
 - **Min/Max gap length filtering.** These are practical filters not
   always present in textbook formulations - they let the user exclude
   short transients (small gaps) and structural exits/re-entries (large
