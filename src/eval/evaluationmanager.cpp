@@ -599,7 +599,7 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator,
 
     //!do not distribute this reload to views!
     compass_.viewManager().disableDataDistribution(true);
-    //compass_.dbContentManager().enableDataDistribution(false);
+    compass_.dbContentManager().enableDataDistribution(false);
 
     //add variables needed by evaluation
     needs_additional_variables_ = true;
@@ -715,7 +715,7 @@ void EvaluationManager::loadingDone()
 
     //!reenable distribution to views!
     compass_.viewManager().disableDataDistribution(false);
-    //compass_.dbContentManager().enableDataDistribution(true);
+    compass_.dbContentManager().enableDataDistribution(true);
 
     traced_assert(!raw_data_available_);
 
