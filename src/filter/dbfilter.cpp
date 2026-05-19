@@ -22,6 +22,7 @@
 #include "filtermanager.h"
 #include "idbvariableresolver.h"
 #include "logger.h"
+#include "timeofdayfilterwidget.h"
 
 #include <QVBoxLayout>
 
@@ -213,6 +214,9 @@ void DBFilter::generateSubConfigurable(nlohmann::json& child_json)
 
 DBFilterWidget* DBFilter::createWidget()
 {
+    if (name_ == "Time of Day")
+        return new TimeOfDayFilterWidget(*this);
+
     return new DBFilterWidget(*this);
 }
 

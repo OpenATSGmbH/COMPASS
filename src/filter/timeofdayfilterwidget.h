@@ -15,44 +15,32 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include "dbfilterwidget.h"
-#include "timestampfilter.h"
 
-#include <vector>
 #include <utility>
+#include <vector>
 
-class QDateTimeEdit;
+class DBFilter;
 class QPushButton;
 
 /**
  */
-class TimestampFilterWidget : public DBFilterWidget
+class TimeOfDayFilterWidget : public DBFilterWidget
 {
     Q_OBJECT
 
-public slots:
-    void minDateTimeChanged(const QDateTime& datetime);
-    void maxDateTimeChanged(const QDateTime& datetime);
-
 public:
-    TimestampFilterWidget(TimestampFilter& filter);
-    virtual ~TimestampFilterWidget();
+    TimeOfDayFilterWidget(DBFilter& filter);
+    virtual ~TimeOfDayFilterWidget();
 
-    virtual void update();
+    virtual void update() override;
 
 private:
-    void updateStepButtons();
-
-protected:
-    TimestampFilter& filter_;
-
-    QDateTimeEdit* min_edit_ {nullptr};
-    QDateTimeEdit* max_edit_ {nullptr};
+    void shiftWindow(int minutes);
+    void updateButtons();
+    std::pair<int, int> effectiveBoundsSecs() const;
 
     std::vector<std::pair<int, QPushButton*>> step_buttons_;
-
-    bool update_active_ {false};
 };

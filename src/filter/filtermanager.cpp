@@ -480,6 +480,9 @@ void FilterManager::databaseOpenedSlot()
     {
         getFilter("Timestamp")->reset();
     }
+
+    if (hasFilter("Time of Day"))
+        getFilter("Time of Day")->widget()->update();
 }
 
 void FilterManager::databaseClosedSlot()

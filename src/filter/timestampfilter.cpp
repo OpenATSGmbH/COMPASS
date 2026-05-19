@@ -17,6 +17,8 @@
 
 #include "timestampfilter.h"
 #include "timestampfilterwidget.h"
+#include "filtermanager.h"
+#include "dbcontent/dbcontentmanager.h"
 #include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
 #include "util/timeconv.h"
@@ -168,4 +170,50 @@ void TimestampFilter::maxValue(boost::posix_time::ptime max_value, bool update_w
 
     if (widget_ && update_widget)
         widget_->update();
+}
+
+void TimestampFilter::shiftWindow(int minutes)
+{
+    boost::posix_time::time_duration delta = boost::posix_time::minutes(minutes);
+
+    boost::posix_time::ptime new_min = min_value_ + delta;
+    boost::posix_time::ptime new_max = max_value_ + delta;
+
+    auto& dbcont_man = filter_manager_->dbContentManager();
+    if (dbcont_man.hasMinMaxTimestamp())
+    {
+        auto minmax = dbcont_man.minMaxTimestamp();
+
+        if (new_min < minmax.first)
+            new_min = minmax.first;
+        if (new_max > minmax.second)
+            new_max = minmax.second;
+    }
+
+    min_value_ = new_min;
+    max_value_ = new_max;
+
+    min_value_str_ = Time::toString(min_value_);
+    max_value_str_ = Time::toString(max_value_);
+
+    loginf << "shifted by " << minutes << " min, new min " << min_value_str_
+           << " max " << max_value_str_;
+
+    if (widget_)
+        widget_->update();
+}
+
+bool TimestampFilter::canShiftWindow(int minutes) const
+{
+    auto& dbcont_man = filter_manager_->dbContentManager();
+
+    if (!dbcont_man.hasMinMaxTimestamp())
+        return true;
+
+    auto minmax = dbcont_man.minMaxTimestamp();
+
+    if (minutes > 0)
+        return max_value_ < minmax.second;
+    else
+        return min_value_ > minmax.first;
 }
