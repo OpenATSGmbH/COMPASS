@@ -1,5 +1,7 @@
 # Analyze Data Source
 
+**Status (2026-05-19): Phases 1-7 shipped; Phase 8 shipped in a revised form (single `MLATRUEffectInspector`); Phase B/C deferred.** This document has been reconciled against the actual implementation in `src/task/analyze/` and `experimental_src/analysis/`; the original design is preserved where it still matches the code, and divergences are called out inline.
+
 ## Summary
 
 Analyze Data Source is a standalone COMPASS task for examining a chosen data source from multiple angles. Analyzes are organized by **DSType** (currently only **MLAT** = CAT020 / CAT010) and within each DSType by a set of **Inspectors** - focused components that each produce one section of the result report.
@@ -248,39 +250,25 @@ Report output:
 
 ---
 
-### Feature 5: RU Offset and Combination Analysis (MLAT, CAT020 only, pro + experimental)
+### Feature 5: RU Effect Analysis (MLAT, CAT020 only, pro + experimental)
 
-Built on the same 3D grid as Feature 3, broken down by contributing RU.
+Implemented as a single inspector `MLATRUEffectInspector` (the originally planned Feature 5a / 5b split was merged during implementation). Built on the same 3D grid as Feature 3, broken down by contributing RU.
 
-**5a. Average Position Error Heat-Map per RU**
+**Shipped sub-analyses:**
 
-For each RU: a 2D heatmap (horizontal projection) where each cell value is the mean (or median) position error of all TRs in that cell where that RU contributed.
-
-Useful derived views:
-- Overall error map: all RUs combined - baseline reference
-- Delta map: error difference between two selected RUs
+1. **Marginal effect table** - per RU, the error statistics of all reports **with** that RU contributing vs. **without** it. Surfaces RUs whose presence systematically improves (or worsens) accuracy.
+2. **Redundancy curve** - error statistics aggregated by **number of contributing RUs**. Tells the operator how much accuracy is gained by going from N to N+1 contributors, and when adding further contributors stops paying off.
+3. **Per-RU drill-down** - for any RU selected from the table, a dual-histogram view (with vs. without that RU) plus a per-cell error heat-map of the reports where the RU contributed.
 
 Report output:
-- Per-RU error heatmap images
-- Overall system error map image
-- Table: RU name, overall mean error, 95th percentile error, worst-area cell location
+- Marginal effect table (RU name, count with, count without, mean / median error with, mean / median error without, delta, p-value).
+- Redundancy curve image (error vs. number of contributors).
+- Per-RU drill-down images on demand.
 
-**5b. RU Combination Analysis**
-
-Answers: which specific sets of contributing RUs produce the best and worst position accuracy?
-
-Algorithm sketch:
-1. Group TRs by contributing RU subset (exact match or fixed-size subsets - pairs, triples - to avoid combinatorial explosion with 20+ RUs)
-2. Compute statistics per group: count, mean/median error, stddev, P5/P25/P75/P95
-3. Discard groups below minimum sample count (default: 50)
-4. Rank groups by effect size vs. global baseline (median delta or Cohen's d)
-5. Report top-N best (lowest error) and worst (highest error) combinations
-6. RU pair matrix: cell (i,j) = average error when both RU i and RU j contributed - reveals geometric weaknesses (high GDOP pairs)
-
-Report output:
-- Top/bottom 10 combinations table (RU set, count, mean error, median, P95)
-- RU pair matrix image (green = low error pairs, red = high error pairs)
-- Minimum RU count analysis: "reports with >=N RUs have avg error X" for N = 2, 3, 4, 5
+**Deferred to a later release (Phase B/C, tracked in `mlatrueffectinspector.h`):**
+- Exact-subset RU grouping with top/bottom combinations table.
+- RU-pair matrix (cell (i,j) = average error when RUs i and j both contributed).
+- Minimum-RU-count analysis ("reports with >= N RUs have avg error X" for N = 2, 3, 4, 5).
 
 CAT020 only - uses I020/400 contributing receivers.
 
@@ -402,7 +390,7 @@ I020/110 (local Cartesian) and I010/091 (local airport frame) are deliberately n
 | `GridView` | `src/view/gridview/gridview.h` | Renders all 2D projections |
 | `Grid2DLayerRenderer` | `src/view/gridview/grid2dlayerrenderer.h` | `render()` produces `QImage` from a layer |
 | `ResultReport::Section` | `src/task/result/report/section.h` | Report tree |
-| `TaskResult` | `src/task/result/taskresult.h` | Base for `AnalyzeDataSourceResult` |
+| `TaskResult` | `src/task/result/taskresult.h` | Base for `DataSourceAnalysisTaskResult` |
 | Detection requirement gap/miss machinery | `src/eval/requirement/detection/detection.cpp` | Reference-period construction, gap walking, miss test |
 | Contributing receivers column | `var_cat020_contrib_recv_` | I020/400 - **CAT020 only** |
 | `RemoteUnitDefinition` / `DataSourceRemoteUnit` | `src/core/source/datasourceremoteunit.h` | RU index → name, lat, lon, alt |
@@ -421,11 +409,9 @@ Inspector components use the **`...Inspector`** suffix - distinct from the exist
 | `DataSourceInspectorBase` | `src/task/analyze/datasourceinspectorbase.h/.cpp` | Abstract base for all inspectors. Pure virtuals: `dsType()`, `name()`, `prerequisitesMet(...)`, `run(...)`, `generateReportSections(...)`. Holds a reference to its `InspectorSettingsBase`-derived settings sub-config. |
 | `InspectorSettingsBase` | `src/task/analyze/inspectorsettingsbase.h/.cpp` | Abstract base `Configurable` for per-inspector settings. Each concrete inspector defines a `<Name>InspectorSettings : InspectorSettingsBase` sub-config; the task owns these as Configurable sub-configs and looks them up by inspector name. |
 | `TargetReport3DGrid` | `src/task/analyze/targetreport3dgrid.h/.cpp` | Reusable 3D grid for any target-report-based inspector (any DSType). #EUI/#MUI counters per cell + count-only counters; produces 2D projections. Used by `MLATCoverageInspector` and the pro MLAT inspectors; intended to be reused by future DSType inspectors. |
-| `AnalyzeDataSourceTask` | `src/task/analyze/analyzedatasourcetask.h/.cpp` | Task entry point - bound to a DSType at construction (one Task subclass / instance per DSType menu entry). Owns settings, the registered inspector list, and the `InspectorSettingsBase` sub-configs. Triggers dialog, launches job, holds result. |
-| `AnalyzeDataSourceSettings` | `src/task/analyze/analyzedatasourcesettings.h` | Top-level task config: list of `selected_data_source_ids` (multi), per-inspector enabled flag, common cross-inspector params (e.g. shared `TargetReport3DGrid` resolution and bounds). Per-inspector params live in their own `<Name>InspectorSettings` sub-config (see `InspectorSettingsBase`). |
+| `AnalyzeDataSourceTask` | `src/task/analyze/analyzedatasourcetask.h/.cpp` | Task entry point - bound to a DSType at construction (one Task subclass / instance per DSType menu entry). Owns settings, the registered inspector list, and the `InspectorSettingsBase` sub-configs. Triggers dialog, runs the analysis inline (no separate Job class), holds result. Settings are handled inline in this class (no separate `AnalyzeDataSourceSettings` class). |
 | `AnalyzeDataSourceDialog` | `src/task/analyze/analyzedatasourcedialog.h/.cpp` | Pre-run dialog. Tree on the left listing the Data Source node and one node per registered inspector (active checkbox per inspector); right pane is a `QStackedWidget` of configuration widgets, one per tree node. Inspectors whose `prerequisitesMet(...)` returns false (missing license, missing RefTraj, DSType / CAT mismatch with selected sources) are greyed out with a tooltip giving the reason. |
-| `AnalyzeDataSourceJob` | `src/task/analyze/analyzedatasourcejob.h/.cpp` | Background job. Folds all selected data sources into one combined dataset, then iterates over the ticked inspectors and calls `run()` on each. |
-| `AnalyzeDataSourceResult` | `src/task/analyze/analyzedatasourceresult.h/.cpp` | Result container; holds an Overview section plus one section per executed inspector. |
+| `DataSourceAnalysisTaskResult` | `src/task/analyze/datasourceanalysistaskresult.h/.cpp` | Result container; holds an Overview section plus one section per executed inspector. (Renamed during implementation from the originally planned `AnalyzeDataSourceResult`.) |
 
 **MLAT free inspectors (in `src/task/analyze/mlat/`):**
 
@@ -440,8 +426,7 @@ Inspector components use the **`...Inspector`** suffix - distinct from the exist
 |---|---|---|
 | `MLATRUCoverageInspector` (+ `...Settings`) | `experimental_src/analysis/mlat/mlatrucoverageinspector.h/.cpp` | Feature 4: per-RU contribution layers + dominant-RU layer (CAT020 only) |
 | `MLATAccuracyInspector` (+ `...Settings`) | `experimental_src/analysis/mlat/mlataccuracyinspector.h/.cpp` | Feature 3: three per-cell views on `TargetReport3DGrid` (Reported Position Accuracy, Horizontal Position Offset, Reported Accuracy Consistency) |
-| `MLATRUOffsetInspector` (+ `...Settings`) | `experimental_src/analysis/mlat/mlatruoffsetinspector.h/.cpp` | Feature 5a: per-RU mean position-error heat-map (CAT020) |
-| `MLATCombinationInspector` (+ `...Settings`) | `experimental_src/analysis/mlat/mlatcombinationinspector.h/.cpp` | Feature 5b: RU-subset error grouping + RU-pair matrix (CAT020) |
+| `MLATRUEffectInspector` (+ `...Settings`) | `experimental_src/analysis/mlat/mlatrueffectinspector.h/.cpp` | Feature 5: per-RU marginal effect table, redundancy curve, per-RU drill-down (CAT020 only). Replaces the planned `MLATRUOffsetInspector` + `MLATCombinationInspector` split; exact-subset combination grouping and RU-pair matrix deferred to Phase B/C |
 
 ### Data Flow
 
@@ -473,9 +458,8 @@ CAT020 / CAT010 TRs                RefTraj from reconstruction
             per TR: increment cell.count for each contributing RU index
             project to per-RU horizontal layers + dominant-RU layer
 
-         MLATAccuracyInspector      [Feature 3, later]
-         MLATRUOffsetInspector      [Feature 5a, later]
-         MLATCombinationInspector   [Feature 5b, later]
+         MLATAccuracyInspector      [Feature 3]
+         MLATRUEffectInspector      [Feature 5, CAT020 only - replaces the planned 5a + 5b split]
 ```
 
 ---
@@ -490,11 +474,9 @@ Goal: runnable (but empty) task visible in Task Manager, with a working inspecto
 - [ ] Create `experimental_src/analysis/` and `experimental_src/analysis/mlat/` with `CMakeLists.txt` files; gate inclusion on `USE_EXPERIMENTAL_SRC`
 - [ ] Implement `InspectorSettingsBase` - abstract `Configurable` base for per-inspector settings sub-configs.
 - [ ] Implement `DataSourceInspectorBase` - abstract base, pure virtuals (`dsType()`, `name()`, `prerequisitesMet(...)`, `run(...)`, `generateReportSections(...)`); holds a reference to its `InspectorSettingsBase`-derived settings sub-config.
-- [ ] Implement `AnalyzeDataSourceSettings` - top-level: `selected_data_source_ids` (multi), per-inspector enabled flag, shared cross-inspector params (`TargetReport3DGrid` resolution / bounds). Per-inspector `<Name>InspectorSettings` sub-configs are owned by the task as Configurable sub-configs and looked up by name when the inspector is constructed.
-- [ ] Implement `AnalyzeDataSourceTask` - inherits `Task` + `Configurable`, registers with `TaskManager`; one task instance per DSType (separate menu entry per DSType). Owns the inspector registry + the per-inspector settings sub-configs. Always registers the free MLAT inspectors. Pro / experimental inspectors are also registered whenever `USE_EXPERIMENTAL_SRC` is compiled in (regardless of license); the license check is consulted by the dialog to decide whether to gray the row, not by the registry to decide whether to add it.
+- [ ] Implement `AnalyzeDataSourceTask` - inherits `Task` + `Configurable`, registers with `TaskManager`; one task instance per DSType (separate menu entry per DSType). Owns the inspector registry and the per-inspector `InspectorSettingsBase` sub-configs. Top-level settings (`selected_data_source_ids` (multi), per-inspector enabled flag, shared cross-inspector params such as `TargetReport3DGrid` resolution / bounds) are handled inline on this class - there is no separate `AnalyzeDataSourceSettings` class. Always registers the free MLAT inspectors. Pro / experimental inspectors are also registered whenever `USE_EXPERIMENTAL_SRC` is compiled in (regardless of license); the license check is consulted by the dialog to decide whether to gray the row, not by the registry to decide whether to add it. The task runs the analysis inline in `run()` (no separate `AnalyzeDataSourceJob` class): it folds all selected data sources into one combined dataset, then iterates over the ticked inspectors and calls `run()` on each.
 - [ ] Implement `AnalyzeDataSourceDialog` - tree on the left (Data Source node, then one node per registered inspector, each with active checkbox), `QStackedWidget` configuration pane on the right showing the configuration widget of the currently highlighted tree node. Greyed inspector rows show their failure reason in a tooltip.
-- [ ] Implement `AnalyzeDataSourceJob` skeleton - folds all selected data sources into one combined dataset, then iterates over the ticked inspectors and calls `run()`.
-- [ ] Implement `AnalyzeDataSourceResult` skeleton - empty report with the Overview section + one placeholder section per ticked inspector.
+- [ ] Implement `DataSourceAnalysisTaskResult` skeleton - empty report with the Overview section + one placeholder section per ticked inspector. (Renamed from `AnalyzeDataSourceResult` during implementation.)
 - [ ] Add `include("${CMAKE_CURRENT_LIST_DIR}/analyze/CMakeLists.txt")` to `src/task/CMakeLists.txt`
 - [ ] Register task in `TaskManager` constructor
 - [ ] Verify: task appears in UI; dialog opens with all five inspectors visible (free ones enabled, pro ones greyed out without a license, enabled with one); job runs and produces an empty report.
@@ -507,7 +489,7 @@ Goal: report-only inspector populated from `DBContextManager::asterixInfo()`. No
   - For each configured data source, read its per-CAT item summary from `DBContextManager::asterixInfo()`
   - Restrict to MLAT-relevant CATs (CAT020 / CAT010 and, when CAT019 cadence is enabled, the associated CAT019)
   - Emit one sub-section per data source, one table per CAT (Item, Count, Min, Max, Description; count-0 rows for unseen items)
-- [ ] Implement Data Item Analysis report sections in `AnalyzeDataSourceResult`
+- [ ] Implement Data Item Analysis report sections in `DataSourceAnalysisTaskResult`
 - [ ] Verify: report appears with cumulative item counts; tables match what the ASTERIX Import report shows when a single file is the only import
 
 ### Phase 3 - 3D Grid Infrastructure
@@ -530,7 +512,7 @@ Goal: the shared data structure that all inspectors build on.
   - Walk each period in UI steps, attribute #EUI to `cell_of(RefTraj at t_slot)`
   - For each gap that passes the miss test, attribute `floor(adj_gap/UI)` #MUI by walking the gap in UI steps
   - Add sector outline layers
-- [ ] Implement PD report sections in `AnalyzeDataSourceResult`
+- [ ] Implement PD report sections in `DataSourceAnalysisTaskResult`
 - [ ] Optional: CAT019 cadence source (otherwise leave behind a TODO + UI option disabled)
 - [ ] Verify per-target totals match a plain detection requirement run on the same data
 
@@ -555,19 +537,27 @@ Goal: the shared data structure that all inspectors build on.
   - Per associated MLAT target report: compute `distance_m` to the interpolated reference position; read `tr_std_dev` from I020/500 (x/y std dev), REF Position Accuracy (x/y std dev), or I010/500 (x/y std dev); track legacy I020/500 and REF Position Accuracy as separate quantities for CAT020.
   - Bucket per cell on `TargetReport3DGrid`; per cell keep mean / median / P95 of `distance_m`, mean of `tr_std_dev`, mean of `distance_m / tr_std_dev`.
   - Render three views (Reported Position Accuracy, Horizontal Position Offset, Reported Accuracy Consistency) each as three projections; for CAT020 with both reported sources, render Reported Position Accuracy and Reported Accuracy Consistency once per source.
-- [ ] Implement Position Accuracy report sections in `AnalyzeDataSourceResult`.
+- [ ] Implement Position Accuracy report sections in `DataSourceAnalysisTaskResult`.
 - [ ] Verify the folded-across-data-sources overall median offset / P95 offset match a baseline scripted computation on the same data.
 
-### Phase 8 - Feature 5: RU Offset and Combination Analysis
+### Phase 8 - Feature 5: RU Effect Analysis (as shipped)
 
-CAT020 only - uses I020/400 contributing receivers.
+CAT020 only - uses I020/400 contributing receivers. Implemented as a single inspector `MLATRUEffectInspector` (the originally planned `MLATRUOffsetInspector` + `MLATCombinationInspector` split was merged during implementation).
 
-- [ ] Implement `MLATRUOffsetInspector::run()` (Feature 5a, in `experimental_src/analysis/mlat/`):
-  - Per CAT020 TR: parse I020/400; for each contributing RU, attribute the TR's `distance_m` to that RU's per-cell error layer
-  - Render per-RU horizontal error heat-maps; render an overall (all-RUs combined) baseline map; offer a delta-map view between two user-selected RUs
-- [ ] Implement `MLATCombinationInspector::run()` (Feature 5b, in `experimental_src/analysis/mlat/`):
-  - Group TRs by contributing RU subset (exact match, then optionally pairs / triples)
-  - Per group: count, mean / median error, stddev, P5/P25/P75/P95
-  - Discard groups below `min_sample_count` (default 50); rank by effect size vs. global baseline
-  - Build the RU-pair matrix (cell `(i, j)` = mean error when RUs `i` and `j` both contributed)
-- [ ] Implement RU offset + combination report sections in `AnalyzeDataSourceResult`
+Shipped:
+
+- [x] Implement `MLATRUEffectInspector::run()` in `experimental_src/analysis/mlat/`:
+  - Per CAT020 TR: parse I020/400; for each contributing RU, attribute the TR's `distance_m` to the RU's per-cell error layer.
+  - Marginal effect table: for each RU, compute error statistics of reports with vs. without that RU.
+  - Redundancy curve: error statistics aggregated by the number of contributing RUs.
+  - Per-RU drill-down: dual-histogram (with vs. without) + per-cell error heatmap for a user-selected RU.
+- [x] RU Effect report sections in `DataSourceAnalysisTaskResult`.
+
+### Phase B/C - Deferred RU combination work
+
+Tracked separately in `mlatrueffectinspector.h:78`. **Not in the current release.**
+
+- [ ] Exact-subset RU error grouping (count, mean/median, stddev, P5/P25/P75/P95 per subset).
+- [ ] Top/bottom combinations ranking by effect size vs. global baseline.
+- [ ] RU-pair matrix (cell `(i, j)` = mean error when RUs `i` and `j` both contributed).
+- [ ] Minimum-RU-count analysis ("reports with >= N RUs have avg error X").

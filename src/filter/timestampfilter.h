@@ -43,6 +43,9 @@ public:
     boost::posix_time::ptime maxValue() const;
     void maxValue(boost::posix_time::ptime max_value, bool update_widget=false);
 
+    void shiftWindow(int minutes);
+    bool canShiftWindow(int minutes) const;
+
 protected:
     boost::posix_time::ptime min_value_;
     std::string min_value_str_;

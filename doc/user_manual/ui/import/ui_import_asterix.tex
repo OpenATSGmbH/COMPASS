@@ -10,15 +10,18 @@ This task allows importing ASTERIX data recording files into the opened database
   \caption{Import ASTERIX data}
 \end{figure}
 
-There exist four tabs:
+There exist 5 tabs:
 
 \begin{itemize}
-\item Main: File label(s) and status, input line
+\item Main: File label(s) and per-file decoding status, input line
 \item Decoder: jASTERIX decoder settings
 \item Override / Filter: Data override settings
+\item Data Sources: Probing results aggregated per data source and ASTERIX category
 \item Mappings: Definition of created database content based on decoded data
 \end{itemize}
 \ \\
+
+Please \textbf{note} that the 'Data Sources' tab carries a hint icon when probing reports any warnings, e.g. when a Radar data source has no position configured, when sensors are detected that are not yet present in the active Data Context, or when records lack a usable SAC/SIC. \\
 
 Please \textbf{note} that one or several files can be selected. Since all of the settings are general configuration, please only import several files if they can be imported with the same settings, and do separate imports for non-matching files. \\
 
@@ -58,15 +61,43 @@ Please \textbf{note} that the following ASTERIX categories, editions, reserved e
 
 Please \textbf{note} that only the categories marked with 'X' are used, i.e. inserted into the database. Decoding of ASTERIX CAT002 is recommended if CAT001 data is imported, since the timestamps are derived from it (if not available in CAT001).
 
-\subsubsection{Main Tab}
+\subsubsection{Probing}
+\label{sec:ui_import_asterix_probing}
 
-At the top, the recording files to be imported are shown, with the following items existing for each:
+Once recording files have been selected, the dialog performs an automatic probing pass that decodes the files in test mode and aggregates the result without writing anything to the database. Probing is re-run whenever the framing, the per-category enable check boxes or the edition / REF / SPF selectors are changed. During probing, a 'Testing Decoding' progress dialog is shown. \\
+
+The probing pass feeds two parts of the import dialog:
+
 \begin{itemize}
-\item Checkbox: Checkbox to indicate if the file(s) should be imported
-\item Name: Path and filename
-\item Decoding and Error: Indicating possible decoder issues
+\item The file tree on the 'Main' tab, which reports per-file decoding status and per-category record counts
+\item The 'Data Sources' tab, which aggregates the probed records per data source and ASTERIX category and joins them with the active Data Context (see \nameref{sec:ui_import_asterix_data_sources_tab})
 \end{itemize}
 \ \\
+
+The result is read-only; the user proceeds with the import as before. \\
+
+\subsubsection{Main Tab}
+
+At the top, the recording files to be imported are shown in a tree. The tree has the following columns:
+
+\begin{itemize}
+\item Checkbox: Indicates whether the file (or section) should be imported
+\item Name: Path and filename; for PCAP / network recordings, child rows show the contained sections
+\item Decoding: Per-file decoding status from probing
+\end{itemize}
+\ \\
+
+The 'Decoding' column reports one of the following status values:
+
+\begin{itemize}
+\item '?': Not yet tested
+\item 'OK': File decoded successfully
+\item 'Warning': Decoding succeeded with warnings; the warning text is appended after the colon
+\item 'Error': Decoding failed; the error text is appended after the colon
+\end{itemize}
+\ \\
+
+Hovering the 'Name' column shows a tooltip with the per-category record counts found in the file (e.g. 'CAT001: 12345', 'CAT048: 67890') as well as a 'Total: <N> records' line. \\
 
 Below, the following items exist:
 \begin{itemize}
@@ -152,8 +183,16 @@ These features should only be used in very specific circumstances.
 \begin{itemize}
 \item Time Correction
 \begin{itemize}
-\item Override Time of Day: Set offset, which will be added to the 'Time of Day'  item, to correct for unwanted time-shifts
-\item Time of Day Offset: Positive or negative offset to be added, in seconds. If the resulting value is out of bounds, it is adjusted to the [0, 86400] interval.
+\item Override Time of Day: Checkbox enabling the Time of Day offset to be added, to correct for unwanted time-shifts
+\item Offset [s]: Positive or negative offset to be added, in seconds. Range -86400 to +86400 with up to 5 decimals. If the resulting value is out of bounds, it is adjusted to the [0, 86400] interval.
+\item From ReSURF Log...: Calculates the offset from ReSURF log output. Opens a paste dialog that accepts lines of the form
+
+\begin{lstlisting}
+File input=...: first frame time set to HH:MM:SS.ss
+File input=...: rendez-vous time set to HH:MM:SS.ss
+\end{lstlisting}
+
+and auto-fills the offset accordingly.
 \end{itemize}
 \item Filters
 \begin{itemize}
@@ -175,7 +214,67 @@ Please \textbf{note} that the filtering is applied after the (optional) 'Time of
 
 Please also \textbf{note} that the obfuscation function currently only overrides the main DBContent variables, i.e. the one used for labels. Other additional secondary values could still be set in the database, therefore this function exists mainly for presentation purposes, not to safeguard against all use cases. Also, to create a time-shift in the data, it is recommended to set a wrong 'UTC Day' as well as to add a random 'Time of Day' override offset.
 
+\subsubsection{Data Sources Tab}
+\label{sec:ui_import_asterix_data_sources_tab}
 
+This tab aggregates the probing pass per data source and per ASTERIX category, and joins the result with the data sources defined in the active Data Context. The tab is split into a tree on the left and a detail area on the right. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: 'Data Sources' tab of the ASTERIX Import dialog, showing the DSType-grouped tree on the left, a CAT row selected, and the per-item statistics table on the right]}}\vspace{1.5cm}}}
+  \caption{ASTERIX Import: Data Sources tab}
+\end{figure}
+
+The tab applies to file imports only. Until the probing pass has produced data, or when no Data Context is active, the detail area shows a placeholder text:
+
+\begin{itemize}
+\item 'No active context - open or create a context to see data sources.': No Data Context is active
+\item 'Data Sources tab applies to file imports only.': The current import source is a network feed
+\item 'Run the decoding check to populate data source information.': Probing has not yet produced any results
+\item 'Select a data source or category to see details.': Normal state, no tree row selected
+\end{itemize}
+\ \\
+
+\paragraph{Tree}
+
+The tree has 3 columns: 'Source', 'SAC/SIC' and 'Records'. Top-level entries are DSType groups (Radar, MLAT, ADS-B, Tracker, RefTraj, Other) in canonical order. Each group lists its data sources, each data source lists the ASTERIX categories observed during probing. \\
+
+\begin{itemize}
+\item DSType group row: Name of the DSType. Carries a hint icon when one of its data sources has a warning.
+\item Data source row: Source name (or 'DS <id>' if unnamed), SAC/SIC formatted as '(sac/sic)', and the total record count across all categories. A hint icon is shown when a warning applies (e.g. a Radar without configured position, an 'Other' DSType, or a probe-only data source).
+\item Category row: 'CAT<NNN>' (zero-padded) in the 'Source' column and the per-category record count in the 'Records' column.
+\end{itemize}
+\ \\
+
+Two special top-level groups may appear:
+
+\begin{itemize}
+\item 'Detected (not in context)': Sensors that were found in the probed data but are not yet defined in the active Data Context. The group carries the tooltip 'These sensors were detected in the probed data but are not yet defined in the active context.'. Each child row is labeled 'Unknown sensor' and shows the probed SAC/SIC.
+\item 'Unknown SAC/SIC': Aggregates records that lack a usable SAC/SIC (typically CAT001 / CAT002 records with a missing CAT010 SAI item).
+\end{itemize}
+\ \\
+
+\paragraph{Data Source Detail}
+
+Selecting a data source row in the tree shows the data source detail widget on the right, identical to the one used in the Data Context dialog (see \nameref{sec:ui_configure_data_sources}). \\
+
+If the selected entry is a probe-only data source (detected but not in the context), a banner is shown above the editor with the text 'This sensor was detected in the probed data but is not yet in the active context.', along with an 'Add to Context' button (tooltip 'Create this data source in the active context using the values entered below.'). Confirming the button creates the data source in the active Data Context using the values currently entered in the editor. \\
+
+\paragraph{Category Detail}
+
+Selecting a 'CAT<NNN>' row shows the per-item statistics table on the right, with a header label of the form 'CAT<NNN> - <count> records' (or 'CAT<NNN> - no records' when no record was observed). \\
+
+The table has the following columns:
+
+\begin{itemize}
+\item Item: Dotted ASTERIX data item name (e.g. '010', '050', '070.Mode3A')
+\item Count: Number of probed records carrying the item, followed by the percentage relative to the category total (e.g. '1234 (99.7\%)'); '-' if the item was not seen
+\item Min: Minimum value observed during probing, or '-' if not seen
+\item Max: Maximum value observed during probing, or '-' if not seen
+\end{itemize}
+\ \\
+
+Items that are defined in the selected jASTERIX edition but were not observed during probing are listed in disabled text color. The table can be sorted by clicking the column headers. \\
 
 \subsubsection{Mappings Tab}
 
@@ -231,8 +330,17 @@ Using the 'Import' button, the import task can be performed. During import a sta
   \caption{Import ASTERIX data status}
 \end{figure}
 
-If a decoding error occurs, an error is indicated in the status dialog, and a Task log error is created. 
+If a decoding error occurs, an error is indicated in the status dialog. Errors encountered during import - failed records, decoding errors and missing definitions - are aggregated into the notes of the import report shown after the run completes, rather than only being written to the log. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: import report notes section listing aggregated decoding errors after an import run with failures]}}\vspace{1.5cm}}}
+  \caption{ASTERIX Import: aggregated error report}
+\end{figure}
+
 Please make sure that the correct framing and edition versions are selected, or contact the author for support if this does not resolve the issue. \\
+
+Please \textbf{note} that jASTERIX 'flat mode' is auto-enabled internally based on the JSON structure produced by the decoder. This is an internal performance improvement, no user-facing control exists. \\
 
 \paragraph{Comments}
 The time needed for the import strongly depends on the available CPU performance (multithreading being very beneficial), but an import of 5 million target reports takes about 3:30 minutes on the author's hardware. \\

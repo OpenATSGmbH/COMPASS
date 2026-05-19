@@ -1,0 +1,19 @@
+\section{Workflow}
+\label{sec:analyze_workflow}
+
+The typical workflow is:
+
+\begin{itemize}
+\item Open the database and ensure the imported data covers the period of interest
+\item Run the Reconstructor task to produce the Reference Trajectory
+\item Open the 'Analyze' menu and pick the entry matching the DSType to be analyzed (currently only 'Analyze MLAT Data Source')
+\item In the dialog, select the Data Source(s) of the bound DSType to be analyzed
+\item Enable the inspectors of interest by checking their tree-node checkbox
+\item Adjust per-inspector settings as needed in the right-side widget
+\item Press 'Run' to execute
+\end{itemize}
+\ \\
+
+Please \textbf{note} that all selected Data Sources are folded into one combined dataset before any inspector runs - the inspectors do not operate per source. This is intentional so that combined multi-source effects are visible in the same result. \\
+
+On 'Run', the dialog validates that the chosen prerequisites (Reference Trajectory present, CAT020 data present where required, license present where required) are still satisfied; failed validation is reported back without starting the task. \\

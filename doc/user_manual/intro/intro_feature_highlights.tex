@@ -7,16 +7,18 @@
 \end{itemize}
 
 \subsection{Import}
-\begin{itemize}  
+\begin{itemize}
     \item Support of DuckDB database system
+    \item Data Context: named surveillance context grouping data sources, sectors, FFTs, ASTERIX decoding and colors
     \item Dynamic ASTERIX import
-    \begin{itemize}  
+    \begin{itemize}
         \item File recordings, PCAP, JSON
-    \end{itemize}    
+        \item Inline probing summary, per-source Data Source info, aggregated decoding error report
+    \end{itemize}
     \item Import of (D)GPS trails from NMEA files
     \item Import of polygons from GML, KML, ESRI Shapefiles, GeoJSON
     \item Supported data source types
-    \begin{itemize}  
+    \begin{itemize}
         \item Radar
         \item MLAT \& WAM
         \item ADS-B
@@ -24,22 +26,25 @@
         \item Reference Trajectory
     \end{itemize}
     \item Sensor / System Tracker status messages
-    \item 24h+ import using EPOCH timestamps    
+    \item 24h+ import using EPOCH timestamps
 \end{itemize}
 
 \subsection{Analysis}
-\begin{itemize}  
+\begin{itemize}
     \item High performance processing, low memory footprint
     \item Filtering for detailed analysis
     \item Simple custom filter generation
     \item ARTAS track association (TRI) analysis
+    \item Per-DSType Analyze Data Source task
 \end{itemize}
 
 \subsection{Visualization}
-\begin{itemize}  
+\begin{itemize}
+    \item Global Color Mode: consistent coloring of all Views by DSType, DBContent, Data Source or Data Source + Line ID
+    \item Shared cross-View Layers Tree, controlling per-DBContent / per-Data-Source / per-line visibility
     \item Textual data inspection using Table View
-    \begin{itemize}  
-        \item Display of data as text tables
+    \begin{itemize}
+        \item Single unified table with sortable columns
         \item Configurable loading of data of interest
         \item Export of data as CSV
     \end{itemize}
@@ -72,13 +77,14 @@
     \item Persistent view points for efficient inspection
 \end{itemize}
 
-\subsection{MLAT / WAM Contributing Receivers Analysis}    
-\begin{itemize}  
+\subsection{MLAT / WAM Contributing Receivers Analysis}
+\begin{itemize}
     \item Processing of I020/400 Contributing Receivers
-    \item Definition of contributing receivers in name, position, ..
+    \item Definition of contributing receivers per MLAT Data Source (name, position, comment), with CSV import
+    \item 'MLAT RUs' filter with 'Require Match All', accepting RU names or indexes
     \item Display of contributing receivers names in Table View
     \item Display of contributing receivers in Geographic View
-    \begin{itemize}  
+    \begin{itemize}
         \item In position, connection lines per target report
     \end{itemize}
 \end{itemize}
@@ -97,13 +103,14 @@
             \item Position estimation using Linear Uniform Motion Kalman filter
         \end{itemize}  
         \item Advanced: Probabilistic + IMM
-        \begin{itemize}  
+        \begin{itemize}
             \item Requires commercial professional license
             \item Association based on secondary attributes and self-adaptive probabilistic thresholds
             \item Uses Radar bias estimation \& correction, ADS-B geometric altitude for slant range correction, accuracy reestimation and scaling, ADS-B verification, ...
+            \item Automatic radar bias estimation persisted in the Data Context and reused on subsequent runs
             \item Position estimation using Interacting Multiple Models (IMM) filter, with a Rauch-Tung-Striebel (RTS) smoother
-        \end{itemize}          
-    \end{itemize}  
+        \end{itemize}
+    \end{itemize}
 \end{itemize}
 
 \subsection{Evaluation}    
@@ -118,11 +125,13 @@
     \item Investigation/display of results at several levels of detail
     \item Automatic removal of targets (short tracks, VFR, …) possible
     \item Manual removal of specific targets possible
-    \item Export of results as report PDF or JSON
+    \item Export of results as report PDF, DocX or JSON
 \end{itemize}
 
-\subsection{Semi-automated Processing}    
-\begin{itemize}  
+\subsection{Semi-automated Processing}
+\begin{itemize}
     \item Command line options for common processing features
+    \item Runtime Command interface (TCP, JSON) for driving COMPASS from external tools, with command families for Data Context and Analyze
+    \item Browser-based read interface via the separate COMPASS Portal companion application
 \end{itemize}
 

@@ -1,29 +1,34 @@
 \subsection{Layers Tab}
 
-In the 'Layers' tab, a tree view is given to configure the display of the existing elements. 
+The 'Layers' tab is a vertical splitter. The top half hosts the shared Layers Tree (see \nameref{sec:layers_tree}) augmented with Geographic-View-specific layer groups; the bottom half hosts the Item Mode panel (see \nameref{sec:geo_item_mode}).
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=9cm,frame]{figures/geoview_config_panel.png}
-  \caption{Geographic View layers tab}
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Geographic View Layers tab showing the vertical splitter, layer tree on top and Item Mode panel below]}}\vspace{1.5cm}}}
+  \caption{Geographic View: Layers tab splitter}
 \end{figure}
 
-The following main tree elements are:\\
+The layer tree has the following top-level groups: \\
 
 \begin{itemize}
- \item Geometry: Shows currently loaded DBContent
- \item Annotations: Annotations shown in the view
- \item Measurements: Shows the current distance measurements
- \item Radars: Shows the existing radars 
- \item Sectors: Shows the existing sectors
- \item Map: Shows current map layers
-\end{itemize} 
+ \item Data: Currently loaded DBContent, structured as in the shared Layers Tree
+ \item Annotations: View annotations
+ \item Measurements: Current distance measurements
+ \item Context: Geographic content of the active Data Context (see \nameref{sec:configure_data_context})
+ \begin{itemize}
+  \item Radars
+  \item FFTs
+  \item MLAT Remote Units: one subgroup per MLAT Data Source (see \nameref{sec:ui_configure_ds_mlat_rus})
+  \item Sectors
+ \end{itemize}
+ \item Map: Current map layers
+\end{itemize}
  \ \\
 
 How the geometry is layered is defined by the Layer mode in the Style tab, please refer to \nameref{sec:layer_mode} for details. \\
- 
+
 \includegraphics[width=0.5cm]{../../data/icons/hint.png} For all geometry layers, a second column is shown, giving the count of number of target reports in the (sub-) layer (as were loaded from the database). \\
- 
+
 In the Layers widget, a number of operations are possible for each tree item.
 
 \begin{table}[H]

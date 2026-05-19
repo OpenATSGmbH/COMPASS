@@ -93,10 +93,11 @@ How the position accuracy ellipses are generated is defined in \nameref{sec:algo
 \label{sec:others_mlat_contributing_rus}
 
 \begin{itemize}
- \item Show MLAT Contributing RUs: Defines if MLAT Contributing RUs should be shown automatically for all MLAT data.
+ \item Show MLAT Contributing RUs: Global toggle that enables or disables MLAT connection lines for all MLAT data. See \nameref{sec:geo_mlat_connection_lines} for the full description, including per-target-report and per-layer toggles.
 \end{itemize}
+\ \\
 
-For specific target reports, MLAT Contributing RUs can be shown using \nameref{sec:geometry_operations}:
+For specific target reports, MLAT Contributing RUs can also be shown using \nameref{sec:geometry_operations}:
 
 \begin{figure}[H]
     \includegraphics[width=16cm,frame]{figures/geoview_mlat_rus.png}
@@ -105,9 +106,30 @@ For specific target reports, MLAT Contributing RUs can be shown using \nameref{s
 
 \subsubsection{Extra Lines Opacity}
 
-The slider changes the line opacity for the following items:
+The slider at the bottom of the 'Other' tab changes the line opacity for all optional informative lines uniformly:
 \begin{itemize}
  \item Ground speed vectors
  \item Position accuracy ellipses
+ \item ARTAS target report usages
  \item MLAT Contributing RUs connection lines
 \end{itemize}
+\ \\
+
+Typical use:
+\begin{itemize}
+\item High opacity: brings fine details forward when only a few lines are visible
+\item Low opacity: reveals density patterns in busy regions
+\end{itemize}
+\ \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: dense MLAT connections view with the Extra Lines Opacity slider near maximum]}}\vspace{1.5cm}}}
+  \caption{Geographic View: Extra Lines Opacity at maximum}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: same view with the Extra Lines Opacity slider near minimum revealing density patterns]}}\vspace{1.5cm}}}
+  \caption{Geographic View: Extra Lines Opacity at minimum}
+\end{figure}

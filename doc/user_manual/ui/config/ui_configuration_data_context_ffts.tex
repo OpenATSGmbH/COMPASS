@@ -1,0 +1,58 @@
+\subsubsection{FFTs}
+\label{sec:ui_configure_ffts}
+
+The 'FFTs' group lists all Fixed Field Transponders (FFTs) of the active Data Context by name. Selecting an FFT in the tree opens the FFT edit widget on the right. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: an FFT selected in the tree with the FFT edit widget visible on the right]}}\vspace{1.5cm}}}
+  \caption{Data Context: FFT detail widget}
+\end{figure}
+
+The defined FFTs are used for:
+\begin{itemize}
+\item Display in the Geographic View
+\item Usage of correct altitude information for Radar slant range correction during ASTERIX import
+\end{itemize}
+\ \\
+
+All FFTs are always stored in the active Data Context, which means they are persistent and can be used across all databases that share the same context. It is useful to define all existing FFTs up front, since they are immediately picked up during import of data. \\
+
+\paragraph{FFT Edit Widget}
+\label{sec:configure_ffts_table_content}
+
+The detail widget on the right exposes the editable attributes of the selected FFT:
+
+\begin{itemize}
+\item Name: Name of the FFT
+\item Latitude: WGS-84 latitude in degrees
+\item Longitude: WGS-84 longitude in degrees
+\item Altitude [ft]: Altitude above MSL, in feet
+\item Mode S Address (hexadecimal): Optional
+\item Mode 3/A Code (octal): Optional
+\item Mode C Code [ft]: Optional
+\end{itemize}
+\ \\
+
+Each change is stored immediately. \\
+
+\paragraph{FFTs Tree Actions}
+
+Right-clicking the 'FFTs' group offers:
+
+\begin{itemize}
+\item Add FFT...: Prompts for a unique name and creates a new FFT
+\item Import...: Imports FFTs from a JSON file
+\item Export...: Exports all FFTs of the active context as JSON file
+\item Delete All: Removes all FFTs from the active context after a confirmation prompt
+\end{itemize}
+\ \\
+
+Right-clicking an individual FFT offers a 'Delete' action that removes the FFT after a confirmation prompt. \\
+
+\paragraph{Import/Export of FFTs}
+\label{sec:config_fft_export}
+
+The 'Import...' and 'Export...' actions on the 'FFTs' group's context menu read and write the FFTs of the active context to and from a JSON file. \\
+
+Using these actions, the FFTs of one Data Context can be carried over to another, e.g. for sensor context switches or before a COMPASS version upgrade.

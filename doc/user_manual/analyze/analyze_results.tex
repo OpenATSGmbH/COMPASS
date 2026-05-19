@@ -1,0 +1,33 @@
+\section{Result Report}
+\label{sec:analyze_results}
+
+When a run completes, the Analyze task produces a result report similar in shape to the Evaluation report (see \nameref{sec:eval}). The report appears in the Flight Deck 'Reports' panel and can be exported from there. \\
+
+The result tree is structured as:
+
+\begin{itemize}
+\item Overview: combined dataset summary, selected Data Sources, RefTraj reference, license tier
+\item One top-level section per executed inspector
+\begin{itemize}
+\item Data Item Inspection: per-DS, per-CAT cumulative tables
+\item Sensor Coverage and PD: the three projections plus a numeric summary
+\item Position Accuracy: reported / offset / consistency subsections, plus per-source repeats where applicable
+\item RU Coverage: per-RU and Dominant RU subsections
+\item RU Effect: marginal effect table, redundancy curve and per-RU drill-down subsections
+\end{itemize}
+\end{itemize}
+\ \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Analyze result tree with all five inspector sections expanded]}}\vspace{1.5cm}}}
+  \caption{Analyze result report tree}
+\end{figure}
+
+The task can also be triggered without using the GUI:
+
+\begin{itemize}
+\item From the command line via '--analyze\_data\_source' and '--analyze\_parameters', see \nameref{sec:command_line}
+\item Via the runtime command interface, see \nameref{sec:rt_commands}
+\end{itemize}
+\ \\

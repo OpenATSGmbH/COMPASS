@@ -31,11 +31,11 @@ Clicking the button opens the following menu.
 
 \begin{itemize}
   \item Add New Filter: Can be used to add a custom filter, see \nameref{sec:filter_add}
-  \item Delete Filter: Can be used to delete custom filters, if present
+  \item Delete Filter: Can be used to delete custom filter. Only present if at least one custom filter exists.
   \item Expand All: Expands all filters, showing their configuration elements
   \item Collapse All: Collapses all filters, hiding their configuration elements
   \item Collapse Unused: Collapses all deselected filters, hiding their configuration elements
- \end{itemize} 
+ \end{itemize}
  \  \\
 
 Please \textbf{note} that the filter configuration will be saved at program shutdown, which is also true for new filters. At startup, all filters from the configuration are generated and restored to their previous state. \\
@@ -220,6 +220,16 @@ When active, this filter forces loading of RefTraj data with a lower Square-Root
 
 When active, this filter forces loading of data with the Time of Day inside the given thresholds (in HH:MM:SS.SSS).
 
+\paragraph{Step Buttons}
+
+A 'Step' row of buttons shifts the active Time of Day window forwards or backwards without re-entering the times manually. Eight buttons are available: '-60m', '-45m', '-30m', '-15m' on the left and '+15m', '+30m', '+45m', '+60m' on the right. When the resulting window would fall outside the Time of Day range covered by the database, the corresponding button is disabled to indicate the out-of-bounds state. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Time of Day filter Step row with the eight buttons -60m / -45m / -30m / -15m / +15m / +30m / +45m / +60m]}}\vspace{1.5cm}}}
+  \caption{Time of Day filter: Step buttons}
+\end{figure}
+
 \subsubsection{Timestamp Filter}
 
 \begin{figure}[H]
@@ -229,6 +239,22 @@ When active, this filter forces loading of data with the Time of Day inside the 
 \end{figure}
 
 When active, this filter forces loading of data with the EPOCH timestamp inside the given thresholds (in YYYY-mm-DD HH:MM:SS.SSS).
+
+\paragraph{Step Buttons}
+
+A 'Step' row of buttons shifts the active time window forwards or backwards without re-entering the timestamps manually. Eight buttons are available: '-60m', '-45m', '-30m', '-15m' on the left and '+15m', '+30m', '+45m', '+60m' on the right. When the resulting window would fall outside the timestamp range covered by the database, the corresponding button is disabled to indicate the out-of-bounds state. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Timestamp filter Step row with the eight buttons -60m / -45m / -30m / -15m / +15m / +30m / +45m / +60m]}}\vspace{1.5cm}}}
+  \caption{Timestamp filter: Step buttons}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: same Step row with one or more buttons disabled in the out-of-bounds state]}}\vspace{1.5cm}}}
+  \caption{Timestamp filter: out-of-bounds indication}
+\end{figure}
 
 
 \subsubsection{Track Number Filter}
@@ -268,10 +294,10 @@ This filter is only available if target report associations have been generated 
 
 When active, this filter forces loading of data with the given unique target numbers (UTNs), so it is possible to give multiple values (separated by commas). E.g. '1' is possible, or '1,2,3'. Target reports without an associated UTN will not be loaded. \\
 
-\subsection{Adding a New Filter}
+\subsection{Adding and Editing Custom Filters}
 \label{sec:filter_add}
 
-A new filter can be added by clicking the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button in the filter tab.
+A new custom filter can be added by clicking the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button in the filter tab and selecting 'Add New Filter'. The same dialog is reused for editing an existing custom filter; the editor pre-populates with the filter's current conditions. \\
 
 \begin{figure}[H]
   \center
@@ -282,6 +308,30 @@ A new filter can be added by clicking the \includegraphics[width=0.5cm,frame]{..
 First, one has to give the filter a new (unique) name. Then, conditions have to be defined and added. A condition consists of a DBContent variable, an operator, a value, and a reset value. \\
 
 When the triangular button is clicked, a sub-menu is opened, where one can choose a DBContent variable. The selected variable restricts data of all DBContents if it is of type 'Meta', or just data from one DBContent if it is not. Additionally, the mathematical operator 'ABS' can be selected. If so, not the value of the variable but the absolute value of the variable is used: 'ABS(var)>value' is equivalent to 'var>value OR var<-value'. \\
+
+\paragraph{Operator and value restrictions}
+
+Available operators are now restricted by the data type of the selected variable - operators that do not apply to the chosen variable type are hidden. In addition, the possible values shown in the value editor are restricted by the chosen operator (e.g. an 'IS NULL' / 'IS NOT NULL' operator hides the value input entirely). This keeps invalid combinations out of the filter definition. \\
+
+\paragraph{OR conditions}
+
+Custom filters can combine conditions with both AND and OR. When adding a new condition, the desired connector can be selected before confirming the condition. Within a single custom filter, AND and OR conditions can be mixed; across filters, the existing global AND behavior continues to apply. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: custom filter editor showing an OR condition between two clauses]}}\vspace{1.5cm}}}
+  \caption{Custom filter with OR condition}
+\end{figure}
+
+\paragraph{Deleting custom filters}
+
+Custom filters are deleted via the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button's 'Delete Filter' submenu. Each existing custom filter is listed as a child action; selecting one deletes that filter. There is no separate delete button on the filter row itself. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: filter context menu open showing the 'Delete Filter' submenu with two custom filters listed]}}\vspace{1.5cm}}}
+  \caption{Delete Filter submenu}
+\end{figure}
 
 An operator can be chosen with the drop-down menu, the supplied operators are common SQL operators.
 
