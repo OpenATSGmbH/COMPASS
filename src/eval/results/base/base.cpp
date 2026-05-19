@@ -292,7 +292,7 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
     if (info.viewable_type == ViewableType::Overview)
     {
         //overview => set region of interest
-        if (!info.bounds.isEmpty())
+        if (!info.bounds.isEmpty() && !info.bounds.isNull())
         {
             (*viewable_ptr)[ViewPoint::VP_POS_LAT_KEY] = info.bounds.center().x();
             (*viewable_ptr)[ViewPoint::VP_POS_LON_KEY] = info.bounds.center().y();
@@ -313,10 +313,13 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
     else
     {
         //detail => set position of interest
-        (*viewable_ptr)[ViewPoint::VP_POS_LAT_KEY    ] = info.bounds.x();
-        (*viewable_ptr)[ViewPoint::VP_POS_LON_KEY    ] = info.bounds.y();
-        (*viewable_ptr)[ViewPoint::VP_POS_WIN_LAT_KEY] = calculator_.settings().result_detail_zoom_;
-        (*viewable_ptr)[ViewPoint::VP_POS_WIN_LON_KEY] = calculator_.settings().result_detail_zoom_;
+        if (!info.bounds.isNull())
+        {
+            (*viewable_ptr)[ViewPoint::VP_POS_LAT_KEY    ] = info.bounds.x();
+            (*viewable_ptr)[ViewPoint::VP_POS_LON_KEY    ] = info.bounds.y();
+            (*viewable_ptr)[ViewPoint::VP_POS_WIN_LAT_KEY] = calculator_.settings().result_detail_zoom_;
+            (*viewable_ptr)[ViewPoint::VP_POS_WIN_LON_KEY] = calculator_.settings().result_detail_zoom_;
+        }
         (*viewable_ptr)[ViewPoint::VP_TIMESTAMP_KEY  ] = Utils::Time::toString(info.timestamp);
     }
 
