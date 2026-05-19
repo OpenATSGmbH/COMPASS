@@ -20,6 +20,43 @@ In the 'Labels' tab, several elements exist:
 
 When the auto-label feature is active and one or more data sources are selected for labeling, automatic labels are generated in the Geographic View according to the content and label filter settings. \\
 
+\subsubsection{Label Interaction}
+
+Labels in the map respond to mouse interaction as follows:
+
+\begin{itemize}
+\item Single left click on a label: expands the label to the '3x3 view' showing the most relevant fields around the clicked item
+\item Double left click on a label: maximizes the label to the full field set
+\item Right click on a label: opens a context menu with a 'Copy' action that copies the clicked field's value to the clipboard
+\end{itemize}
+\ \\
+
+The existing label decluttering behavior is preserved by the auto-LoD selection described below.
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: label in its default compact state]}}\vspace{1.5cm}}}
+  \caption{Geographic View label: default state}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: label expanded to the 3x3 view after a single left click]}}\vspace{1.5cm}}}
+  \caption{Geographic View label: 3x3 view}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: label maximized to the full field set after a double left click]}}\vspace{1.5cm}}}
+  \caption{Geographic View label: maximized}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: right-click context menu on a label with the 'Copy' action highlighted]}}\vspace{1.5cm}}}
+  \caption{Geographic View label: Copy context menu}
+\end{figure}
+
 \subsubsection{Label Menu}
 
 This menu allows showing all nor no data source labels, or to edit label contents.

@@ -2,7 +2,7 @@
 
 Source: `doc/user_manual/` - LaTeX memoir-class document.  
 Root file: `user_manual.tex` (includes all chapters via `\subfile{}`).  
-Current version: **0.9.2** ("Charismatic Capybara").  
+Current version: **1.0.0** ("Defiant Dodo").  
 Authors: Helmut Puhr & Philipp Wagner.
 
 ---
@@ -40,10 +40,13 @@ ui/
     ui_import_view_points.tex
   config/
     ui_configuration.tex
-    ui_configuration_data_sources.tex
-    ui_configuration_ffts.tex
-    ui_configuration_metavars.tex
-    ui_configuration_sectors.tex
+    ui_configuration_data_context.tex
+    ui_configuration_data_context_data_sources.tex
+    ui_configuration_data_context_asterix.tex
+    ui_configuration_data_context_sectors.tex
+    ui_configuration_data_context_ffts.tex
+    ui_configuration_data_context_colors.tex
+    ui_configuration_show_content.tex
     ui_configuration_licenses.tex
   process/
     ui_process.tex
@@ -87,6 +90,7 @@ scripting/
   scripting.tex               Chapter: Scripting
   commandline/command_line.tex
   rtcommands/rtcommands.tex
+portal/portal.tex             Chapter: COMPASS Portal
 issues/issues.tex             Chapter: Troubleshooting
 appendix/
   appendix.tex                Chapter: Appendix (subfiles only)
@@ -167,7 +171,7 @@ Then includes subfiles for each section in detail. Dark mode appendix at end of 
 
 **ui_import/\***: Per-import-type dialogs - ASTERIX (framing, edition, decoder config, time offset, date handling), PCAP, network UDP streams, JSON, GPS NMEA, View Points JSON.
 
-**ui_configuration/\***: Per-configuration dialogs - Data Sources (name, SAC/SIC, DSType, network lines), FFTs (Fixed Field Transponders), Meta Variables (read-only display), Sectors (import from GML/KML/SHP/GeoJSON, altitude limits, sector layers), Licenses (enter/verify pro license key).
+**ui_configuration/\***: Data Context dialog and program-wide options. The Data Context dialog (opened from the 'Context' menu, not 'Configuration') folds the per-entity editors into one place: Data Sources (name, SAC/SIC, DSType, network lines, radar ranges/accuracies, MLAT Remote Units), Sector Layers (import from SHP/GeoJSON/GML, altitude limits, exclude sectors), FFTs (Fixed Field Transponders), ASTERIX Configuration (per-CAT edition/REF/SPF), Colors (per-DSType, per-DBContent, per-data-source palettes). The 'Configuration' menu itself only carries DBContent (Meta Variables / DBContent read-only display), Licenses (enter/verify pro license key), Dark Mode, Fullscreen and Refresh Views Automatically.
 
 **ui_process/\***: Per-process-task dialogs - Radar plot position calculation, ARTAS TRI association, Reconstruct References (links to Reconstructor chapter), Evaluate (links to Evaluation chapter).
 
@@ -385,9 +389,16 @@ The manual is written for the same audience that reads EUROCAE / EUROCONTROL / I
 
 ### Capitalization of Domain Concepts
 Once a domain noun is introduced as a COMPASS concept, keep it capitalized:
-- **Capitalized**: Views, Data Sources, DSType, DBContent, UTN, Meta Variables, Flight Deck, Main Menubar, Main Window, View Points, View Presets, Live mode names ('Offline', 'Live: Running', 'Live: Paused').
+- **Capitalized**: Views, Data Sources, DSType, DBContent, UTN, Meta Variables, Flight Deck, Main Menubar, Main Window, View Points, View Presets, Data Context, Live mode names ('Offline', 'Live: Running', 'Live: Paused').
 - **Lowercase**: when used generically rather than as the COMPASS concept - "multiple data sources contribute" vs. "the 'Data Sources' tool".
 - **Specific casing - do not normalize**: Mode 3/A, Mode A, Mode C, Mode S, DS ID, ToD, CAT048, CAT062, ED-116, ED-117/A, JPDA, IMM, RTS, NUCp, NACp, NIC.
+
+### Data Context vs. Configuration
+**Data Context** and **Configuration** are two distinct concepts. Never call a Data Context a "configuration", a "configuration container", or similar.
+- **Configuration**: the program-wide state of COMPASS components stored under `~/.compass/<version>/` (Views that exist, filter definitions, per-widget options, etc.), read at startup and written at shutdown. Covers what the program looks like and which components exist.
+- **Data Context**: a named *surveillance context* that groups the entities describing the recorded surveillance environment - data sources, sectors, FFTs, ASTERIX decoding settings, and coloring. Stored under `~/.compass/data_contexts/<name>/`. At most one is active at a time.
+
+When describing Data Context in prose, prefer phrases like "named surveillance context grouping ...", "active Data Context", "stored in the Data Context". Do **not** use "configuration container", "configuration set", "configuration grouping".
 
 ### Section Opening Convention
 Every `\section`, `\subsection`, `\subsubsection` opens with a single short sentence (10-25 words) describing what the surface is for, ends with `\\`, then jumps to the big-picture figure (if any), then itemize / further detail.
@@ -429,6 +440,8 @@ Use itemize (never enumerate) for workflow steps unless ordering is strictly man
 Item punctuation is intentionally inconsistent - very short label-description items omit a trailing period; full-sentence items keep one. Match the surrounding section.
 
 Spacing after a list: close with `\end{itemize}` then `\ \\` (or `\  \\`) on its own line to leave breathing room before the next paragraph.
+
+When adding content, respect the level of detail and approximate length of existing text in the same section. Items within one list must stay at a similar level of detail - do not write one long bullet next to short sibling bullets. If an item genuinely has more to say, push the extra information into nested sub-items (`\begin{itemize}` inside the item) when feasible, otherwise shorten the text.
 
 ### Lists, Subsections, Paragraphs
 - `\subsection{Title}` - numbered, appears in TOC.

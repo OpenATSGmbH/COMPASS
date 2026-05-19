@@ -347,6 +347,72 @@ data\_sources \dots Data sources JSON definition \\
 view\_point \dots View point JSON definition \\
 See section \nameref{sec:appendix_view_points} for how the JSON definition has to be structured. \\
 
+\subsubsection{Data Context Commands}
+
+The following commands manage the active Data Context and its content. The corresponding GUI is documented in \nameref{sec:configure_data_context}. \\
+
+\textbf{create\_context} \\
+\textit{creates a new Data Context} \\
+name \dots name of the new context \\
+
+\textbf{set\_context} \\
+\textit{switches the active Data Context} \\
+name \dots name of the context to activate \\
+
+\textbf{delete\_context} \\
+\textit{deletes the named Data Context} \\
+name \dots name of the context to delete \\
+
+\textbf{list\_contexts} \\
+\textit{returns the list of available Data Context names} \\
+
+\textbf{get\_context\_info} \\
+\textit{returns active context metadata} \\
+
+\textbf{get\_context} \\
+\textit{returns the full named context as JSON} \\
+name \dots name of the context to retrieve \\
+
+\textbf{import\_ffts\_json} \\
+\textit{imports FFTs from a JSON file into the active context} \\
+filename \dots given filename, e.g. "/data/ffts.json" \\
+
+\textbf{delete\_all\_ffts} \\
+\textit{clears all FFTs from the active context} \\
+
+\textbf{import\_sectors\_gdal} \\
+\textit{imports sectors from a GDAL-supported file (SHP, GeoJSON, KML)} \\
+filename \dots input file, e.g. "/data/sectors.shp" \\
+layer \dots optional layer name within the input file \\
+color \dots optional hex color, e.g. "\#ff8000" \\
+exclude \dots optional flag, marks the imported sectors as exclude sectors \\
+
+\textbf{export\_sectors\_json} \\
+\textit{exports the sectors of the active context to JSON} \\
+filename \dots target filename, e.g. "/data/sectors.json" \\
+
+\textbf{delete\_all\_sectors} \\
+\textit{clears all sectors from the active context} \\
+
+\textbf{export\_data\_sources\_json} \\
+\textit{exports the data sources of the active context to JSON} \\
+filename \dots target filename, e.g. "/data/ds.json" \\
+
+\subsubsection{Analyze Commands}
+
+The following commands drive the Analyze Data Source task. See \nameref{chap:analyze} for the GUI counterpart. \\
+
+\textbf{analyze\_data\_source} \\
+\textit{runs the Analyze Data Source task for the given DSType} \\
+ds\_type \dots DSType to analyze, e.g. "MLAT" \\
+config \dots Analyze parameters as JSON string (analogous to the evaluate command's config) \\
+
+\textcolor{red}{\textbf{[TODO: confirm the analyze\_data\_source JSON payload shape against the most recent Portal schema in compass\_web/doc/analyses.md before release]}}
+
+\textbf{get\_analyze\_inspectors} \\
+\textit{returns the list of available inspectors for the given DSType, used to populate a configuration UI} \\
+ds\_type \dots DSType to query, e.g. "MLAT" \\
+
 %load_data
 %   load data
 

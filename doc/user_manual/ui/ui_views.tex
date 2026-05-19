@@ -194,3 +194,67 @@ At the moment the following Views support the concept of Plots:
   \item Scatterplot View
   \item Grid View
  \end{itemize} \ \\
+
+\section{Color Mode}
+\label{sec:color_mode}
+
+All Views color the displayed data by a chosen level of the data-source hierarchy. The Color Mode is set globally and applies consistently to every View. \\\\
+
+The active Color Mode is selected via the Color Mode selector in the 'Data Sources' tool of the Flight Deck (see \nameref{sec:color_mode_selector}). The colors used for each level are configured in the active Data Context (see \nameref{sec:configure_data_context}). \\
+
+\begin{itemize}
+\item Available modes
+\begin{itemize}
+\item 'DSType': one color per DSType (Radar, MLAT, ADS-B, Tracker, RefTraj, Other)
+\item 'DBContent': one color per DBContent type (CAT048, CAT062, ...)
+\item 'Data Source': per-source base color
+\item 'Data Source + Line': per-source base color combined with the per-line (L1-L4) variant
+\end{itemize}
+\item Set globally for the whole application
+\begin{itemize}
+\item Applies to all open Views consistently
+\end{itemize}
+\item Each View's Configuration Panel shows the current Color Mode as a read-only label
+\item Persisted in the active Data Context
+\begin{itemize}
+\item Survives restarts and data reloads
+\end{itemize}
+\end{itemize} \ \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: the same dataset displayed in Table, Histogram, Scatter, Grid and Geographic View, colored identically according to the active Color Mode]}}\vspace{1.5cm}}}
+  \caption{Consistent coloring across Views}
+\end{figure}
+
+Please \textbf{note} that the 'Item Mode' panel in the Geographic View (see \nameref{sec:geo_item_mode}) is a separate per-target-report item browser with its own grouping selector, and is not an additional Color Mode level.
+
+\section{Layers Tree}
+\label{sec:layers_tree}
+
+The Layers Tree is a shared cross-View widget in the Configuration Panel that exposes the data-source hierarchy and the available view annotations as a single tree. \\\\
+
+It replaces the per-View tree widgets that previously existed (notably in the Geographic View 'Layers' tab) with a unified model. View-specific extras remain documented in the respective View chapter. \\
+
+\begin{itemize}
+\item Two top-level groups
+\begin{itemize}
+\item 'Data': data-source hierarchy, organized as DSType $\rightarrow$ data source $\rightarrow$ line $\rightarrow$ DBContent
+\item 'Annotations': all View annotations exposed in a shared place, replacing previously per-View annotation tabs
+\end{itemize}
+\item Each row carries
+\begin{itemize}
+\item A visibility checkbox toggling whether the corresponding data is shown
+\item The color of its level, when the active Color Mode applies to that level
+\end{itemize}
+\item Per-group expand/collapse
+\begin{itemize}
+\item Default expansion depth follows the active Color Mode
+\end{itemize}
+\end{itemize} \ \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: shared Layers Tree expanded, showing the 'Data' branch (DSType / data source / line / DBContent) and the 'Annotations' branch side by side]}}\vspace{1.5cm}}}
+  \caption{Shared Layers Tree}
+\end{figure}

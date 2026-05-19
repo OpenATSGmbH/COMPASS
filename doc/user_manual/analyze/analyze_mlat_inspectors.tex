@@ -1,0 +1,123 @@
+\section{MLAT Inspectors}
+\label{sec:analyze_mlat_inspectors}
+
+This section documents the inspectors shipped for the MLAT entry point. \\
+
+\subsection{Data Item Inspection}
+
+This inspector produces per-Data-Source, per-CAT cumulative item tables built from the ASTERIX content information collected by the Data Context. Output is report-only and contains no map; it gives a structured overview of which ASTERIX data items are present, how often, and from which source. \\
+
+\subsection{Sensor Coverage and Probability of Detection}
+
+This inspector computes per-cell Probability of Detection (PD) on a 3D grid using the Reference Trajectory as truth. Cells where the RefTraj passes through are checked for matching MLAT updates within the expected cadence. \\
+
+Two cadence sources can be used:
+
+\begin{itemize}
+\item Time-difference (default): expected update interval derived from consecutive MLAT updates
+\item Period-based: expected interval taken from the CAT019 sensor-status messages of the same source
+\end{itemize}
+\ \\
+
+The result is rendered as three projections of the same 3D grid:
+
+\begin{itemize}
+\item Horizontal projection (lon/lat)
+\item Altitude / longitude projection
+\item Altitude / latitude projection
+\end{itemize}
+\ \\
+
+Default color scales match the bands used by EUROCAE ED-117 and ESASSP for visual comparability. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: PD result, horizontal projection]}}\vspace{1.5cm}}}
+  \caption{Sensor Coverage and PD: horizontal projection}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: PD result, altitude / longitude projection]}}\vspace{1.5cm}}}
+  \caption{Sensor Coverage and PD: altitude / longitude projection}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: PD result, altitude / latitude projection]}}\vspace{1.5cm}}}
+  \caption{Sensor Coverage and PD: altitude / latitude projection}
+\end{figure}
+
+\subsection{Position Accuracy [Pro]}
+
+Requires a Professional license. Provides three complementary views: \\
+
+\begin{itemize}
+\item Reported Position Accuracy: maps the position-accuracy values reported by the MLAT source
+\item Horizontal Position Offset: maps the offset of MLAT positions relative to the RefTraj
+\item Reported Accuracy Consistency: compares the reported accuracy against the observed offset
+\end{itemize}
+\ \\
+
+For CAT020 sources that provide both I020/500 and a REF Position Accuracy item, the two reported views are produced once per source so each can be inspected independently. \\
+
+Default color scales:
+
+\begin{itemize}
+\item Position-accuracy / offset views: green below 12 m, yellow and orange in between, red above 60 m
+\item Consistency view: green near a ratio of 1.0, red diverging in either direction
+\end{itemize}
+\ \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Position Accuracy - Reported Accuracy Consistency view]}}\vspace{1.5cm}}}
+  \caption{Position Accuracy: Reported Accuracy Consistency}
+\end{figure}
+
+\subsection{RU Coverage [Pro]}
+
+Requires a Professional license and at least one CAT020 source with contributing-receiver information. Produces a per-RU coverage map plus a Dominant RU map indicating which RU contributed most often per cell. \\
+
+Optionally, a contested-areas variant of the map highlights cells in which multiple RUs contribute close-to-equal shares. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: per-RU coverage map]}}\vspace{1.5cm}}}
+  \caption{RU Coverage: per-RU map}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Dominant RU map]}}\vspace{1.5cm}}}
+  \caption{RU Coverage: Dominant RU}
+\end{figure}
+
+\subsection{RU Effect [Pro]}
+
+Requires a Professional license and at least one CAT020 source with contributing-receiver information. Quantifies how individual RUs contribute to the overall MLAT solution.
+
+\begin{itemize}
+\item Marginal effect table: per-RU error statistics with and without that RU's contribution
+\item Redundancy curve: error statistics grouped by the number of contributing RUs
+\item Per-RU drill-down: a dual histogram of the error distribution combined with a per-cell error heatmap, focused on the selected RU
+\end{itemize}
+\ \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: per-RU marginal effect table]}}\vspace{1.5cm}}}
+  \caption{RU Effect: marginal effect table}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: redundancy curve plot]}}\vspace{1.5cm}}}
+  \caption{RU Effect: redundancy curve}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: per-RU drill-down view with dual histogram and per-cell error heatmap]}}\vspace{1.5cm}}}
+  \caption{RU Effect: per-RU drill-down}
+\end{figure}

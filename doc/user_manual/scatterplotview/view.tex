@@ -30,8 +30,9 @@ To load the data the mechanism described in section \nameref{sec:ui_overview} or
 The values of the selected variables are used for positioning on the x-axis and y-axis. For each value pair a data point is generated. 
 In the current example the WGS-84 meta-variables 'Longitude' and 'Latitude' are used, showing a similar view as the Geographic View. \\
 
-Data points are grouped and colored by the data source and line ID they belong to. 
-The data points belonging to a certain line ID of a data source thus form an individual scatter data item with an assigned unique color.
+Data points are colored according to the global Color Mode (see \nameref{sec:color_mode}); the legend reflects the chosen coloring level (DSType, DBContent, Data Source, or Data Source + Line). \\
+
+Colors come from the active Data Context's palette, so the same Data Source / DSType keeps the same color across reloads and across all Views. Series visibility also persists across reloads; this is driven entirely by the shared mechanism, no per-view persistence control exists.
 
 %TODO_V7 i think here it would be immensely important to tell the user why he might not see any data at all when selecting variables from two different DBContents!
 
@@ -73,16 +74,16 @@ The others provide general actions by which the view can be modified.
 
 \subsection{Config Tab}
 
-The selection controls on the top define which data variables are used to generate data points for the x/y-axis. 
+The selection controls on the top define which data variables are used to generate data points for the x/y-axis.
 Such a variable can be any numerical variable. A reload operation might be required for the selection to take effect. \\
 
-If available, plottable scatter data of active View Points can be visualized by checking the 'Show Annotations' box. 
-If multiple scatter annotations are present in a View Point, these individual plots can be selected using the 'Plot' combo box.
-Plottable annotations might further be grouped into so-called plot groups, which are listed under 'Plot Group'.
-The plot group can be switched in case multiple plot groups are available. \\
+The Config Tab includes the shared Layers Tree (see \nameref{sec:layers_tree}), which controls per-DBContent / per-Data-Source / per-line visibility for the scatter data items. The dedicated per-view annotation tab that existed in earlier releases has been removed; plottable scatter annotations of active View Points are now exposed under the 'Annotations' group of the Layers Tree. When multiple scatter annotations are present, the 'Plot' and (if available) 'Plot Group' combo boxes are used to choose between them. \\
 
-Below the variable selection, there is a list of all currently displayed scatter data items, shown with their respective color, name and data count.
-Individual data items can be shown or hidden by using the check boxes. All items can be hidden simultaneously by pressing the 'Deselect All' button. \\
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Scatter Plot View Configuration Panel with the shared Layers Tree visible]}}\vspace{1.5cm}}}
+  \caption{Scatter Plot View: shared Layers Tree in the Config Tab}
+\end{figure}
 
 Scatter data items can be drawn with their data points connected by lines by checking the 'Use Connection Lines' box.
 \textbf{Note} that on a reload, if the total number of drawn data points exceeds 100000, connections lines will be deactivated automatically

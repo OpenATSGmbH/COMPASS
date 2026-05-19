@@ -1,0 +1,20 @@
+\section{Overview}
+\label{sec:analyze_overview}
+
+The 'Analyze Data Source' task examines a chosen Data Source from multiple angles using the calculated Reference Trajectory (RefTraj) as ground truth. It is a separate activity from the requirement-based evaluation (see \nameref{sec:eval}) and is meant to characterize a sensor's behavior in the recorded environment rather than to assess its compliance with a standard. \\\\
+
+The task is bound to a specific DSType. Each DSType-specific entry point opens the same dialog, pre-configured for that DSType. In the current release only the MLAT entry is shipped; the menu and dialog layout are designed so further DSTypes (Radar, ADS-B, Tracker) can be added later without changing the user-facing model. \\
+
+Inspectors come in two tiers:
+
+\begin{itemize}
+\item Free: always available with any installation
+\item \textbf{[Pro]}: requires a Professional license; rows for Pro inspectors are visible but greyed out when no license is active
+\end{itemize}
+\ \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: 'Analyze' menu open showing the 'Analyze MLAT Data Source' entry]}}\vspace{1.5cm}}}
+  \caption{Analyze menu}
+\end{figure}

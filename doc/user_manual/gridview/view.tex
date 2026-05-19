@@ -106,26 +106,43 @@ The 'X' and 'Y' variables are used to determine the overall grid and the locatio
 the 'Distributed Variable' represents the values sorted into the grid cells.
 In all three cases such a variable can be any numerical variable. A reload operation might be required for the selection to take effect. \\
 
-If available, plottable grid data of active View Points can be visualized by checking the 'Show Annotations' box.
-If multiple grid annotations are present in a View Point, these individual plots can be selected using the 'Plot' combo box.
-Plottable annotations might further be grouped into so-called plot groups, which are listed under 'Plot Group'.
-The plot group can be switched in case multiple plot groups are available. \\
+The Config Tab includes the shared Layers Tree (see \nameref{sec:layers_tree}), which controls per-DBContent / per-Data-Source / per-line visibility for the grid input data. The dedicated per-view annotation tab that existed in earlier releases has been removed; plottable grid annotations of active View Points are now exposed under the 'Annotations' group of the Layers Tree. When multiple grid annotations are present, the 'Plot' and (if available) 'Plot Group' combo boxes are used to choose between them. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Grid View Configuration Panel with the shared Layers Tree visible]}}\vspace{1.5cm}}}
+  \caption{Grid View: shared Layers Tree in the Config Tab}
+\end{figure}
 
 Below the variable selection, several parameters can be used to further configure the displayed grid.
 
 \begin{itemize}
     \item \textbf{Value Type}: The statistical grid cell value to be displayed.
-    \item \textbf{Grid Resolution}: The number of grid cells displayed, both in X- and Y-direction. 
-    \item \textbf{Color Scale}: The color scheme used for colorization of grid cells.
+    \item \textbf{Grid Resolution}: The number of grid cells displayed, both in X- and Y-direction.
+    \item \textbf{Color Scale}: The color scheme used for colorization of grid cells. The following scales are available: 'Green2Red', 'Red2Green', 'Blue2Green2Red', 'Parula', 'Heat', 'Jet', 'Turbo', 'Hot', 'Monochrome Gray', 'Magma', 'Inferno', 'Plasma', 'Viridis', 'Cividis', 'Github', 'Monochrome Red', 'Monochrome Green', 'Monochrome Blue', 'Cubehelix', 'HSV' and 'Custom'.
     \item \textbf{Color Steps}: Number of discrete colors used for colorization of grid cells.
-    \item \textbf{Color Min. Value}: The value the lower end of the color scale is assigned to. 
+    \item \textbf{Color Min. Value}: The value the lower end of the color scale is assigned to.
         If not set, the minimum of all distributed values will be chosen.
-        If empty, a clue about the needed value format is shown (e.g. DOUBLE). 
-    \item \textbf{Color Max. Value}: The value the upper end of the color scale is assigned to. 
+        If empty, a clue about the needed value format is shown (e.g. DOUBLE).
+    \item \textbf{Color Max. Value}: The value the upper end of the color scale is assigned to.
         If not set, the maximum of all distributed values will be chosen.
-        If empty, a clue about the needed value format is shown (e.g. DOUBLE). 
+        If empty, a clue about the needed value format is shown (e.g. DOUBLE).
    \end{itemize}
    \ \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: 'Color Scale' combo box expanded showing the full list of available colormaps]}}\vspace{1.5cm}}}
+  \caption{Grid View: Color Scale combo box}
+\end{figure}
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: a grid rendered with the new 'Red2Green' colormap]}}\vspace{1.5cm}}}
+  \caption{Grid View: Red2Green colormap}
+\end{figure}
+
+Please \textbf{note} that the Grid View's Color Scale maps the distributed Z variable and takes priority over the global Color Mode (see \nameref{sec:color_mode}) for the rendered grid cells. The Color Mode still drives the per-layer color used in the Layers Tree and outside of the gridded area. \\
 
 \textbf{Note} that the 'Value Type' selection may be locked and set to 'Count' in case the empty variable is selected 
 as the distributed variable. \\

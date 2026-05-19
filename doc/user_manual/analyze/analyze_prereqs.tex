@@ -1,0 +1,14 @@
+\section{Prerequisites}
+\label{sec:analyze_prereqs}
+
+Before the task can be run, the following preconditions must be satisfied: \\
+
+\begin{itemize}
+\item Imported data of the DSType bound to the chosen entry point. For 'Analyze MLAT Data Source', this means MLAT data (CAT020) imported into the active database.
+\item A Reference Trajectory must exist for the time window of interest. The RefTraj is produced by the Reconstructor task; see \nameref{sec:reconst}.
+\item For the Pro inspectors (Position Accuracy, RU Coverage, RU Effect), a valid Professional license must be active. Without it the corresponding rows are visible in the dialog but greyed out.
+\item The 'RU Coverage' and 'RU Effect' inspectors additionally require at least one CAT020 (MLAT) Data Source with contributing-receiver information. They are greyed out otherwise.
+\end{itemize}
+\ \\
+
+Sectors defined in the active Data Context (see \nameref{sec:configure_data_context}) are optional but can be used to constrain the analysis area and to overlay sector boundaries on the result maps. \\

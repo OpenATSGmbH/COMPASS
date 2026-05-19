@@ -55,6 +55,8 @@ Allowed options:
   --evaluate                            run evaluation
   --evaluation_parameters arg           evaluation parameters as JSON string, e.g. ''{"current_standard": "test", "dbcontent_name_ref": "CAT062", "dbcontent_name_tst": "CAT020"}'' (including one pair of single quotes)
   --evaluate_run_filter                 run evaluation filter before evaluation
+  --analyze_data_source arg             run the Analyze Data Source task for the given DSType, e.g. 'MLAT'
+  --analyze_parameters arg              Analyze task parameters as JSON string, analogous to --evaluation_parameters
   --export_report arg                   report name to export, e.g. 'EUROCAE 
                                         ED-87E Evaluation', PDF per default
   --export_report_directory arg         export directory, e.g. '/data/report2/'
@@ -270,6 +272,16 @@ After a database with imported content exists, target report association can be 
 
 After a database with imported content exists, reconstruct reference trajectories using the task described in \nameref{sec:reconst}.
 
+\subsubsection{-{}-reconstruct\_references\_cfg 'str'}
+
+Overrides the reconstructor configuration with a JSON snippet, e.g. to switch the reconstructor or change a parameter for one batch run without altering the GUI configuration.
+
+\begin{lstlisting}
+./COMPASS-release_x86_64.AppImage --open_db /data/file.db \
+  --reconstruct_references_cfg '{"current_reconstructor_str": "Scoring + UMKalman"}' \
+  --reconstruct_references --quit
+\end{lstlisting}
+
 \subsubsection{-{}-load\_data}
 
 Triggers a load process after opening the database.
@@ -331,6 +343,18 @@ The configuration of such parameters is rather complex, and it is recommended to
 
 When an Evaluation task is started an automatic filtering of targets is performed, as configured using the 'Filter UTNs' dialog defined in \nameref{sec:ui_target_filtering}.
 
+\subsubsection{-{}-analyze\_data\_source 'dstype'}
+
+Triggers the Analyze Data Source task for the given DSType. In the current release only 'MLAT' is accepted; see \nameref{chap:analyze}.
+
+\begin{lstlisting}
+./COMPASS-release_x86_64.AppImage --open_db /data/file.db --analyze_data_source MLAT --quit
+\end{lstlisting}
+
+\subsubsection{-{}-analyze\_parameters 'str'}
+
+Provides a JSON parameter block for the Analyze task, analogous to \nameref{sec:command_line}'s '--evaluation\_parameters' for the Evaluation task. The exact JSON schema depends on the chosen DSType and is documented alongside \nameref{chap:analyze}.
+
 
 \subsubsection{-{}-export\_report 'str'}
 
@@ -349,6 +373,10 @@ Sets the report export type to the given value (i.e. 'JSON','Latex','PDF') when 
 \subsubsection{-{}-no\_cfg\_save}
 
 When quitting the application later, no configuration changes are saved.
+
+\subsubsection{-{}-expert\_mode}
+
+Enables expert mode for the session. This grants edit access to the Show Content dialog (see \nameref{sec:configure_show_content}) and a few other gated controls. The same setting can be made persistent by setting \texttt{"expert\_mode": true} in \texttt{\textasciitilde/.compass/<version>/task.json}.
 
 \subsubsection{-{}-no\_highdpi}
 

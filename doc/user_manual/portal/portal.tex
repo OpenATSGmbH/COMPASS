@@ -1,0 +1,32 @@
+\chapter{COMPASS Portal}
+\label{chap:compass_portal}
+
+COMPASS Portal is a companion web application that provides browser-based intranet access to already processed COMPASS data and a job manager for driving COMPASS itself from a web UI. \\\\
+
+Please \textbf{note} that COMPASS Portal is a separate project with its own documentation and deployment. It is not part of the COMPASS AppImage and is not described in detail here; this chapter is intended to give the reader a high-level picture of what the Portal does and how it interacts with COMPASS. \\
+
+\subsection{Capabilities}
+
+\begin{itemize}
+\item Browser-based dashboard with KPI trend charts across processed days
+\item Target search and per-target detail pages
+\item Map view showing target trajectories on OpenStreetMap tiles
+\item Report viewer for PDF and DocX exports produced by COMPASS
+\item Job manager to queue, run, monitor and cancel ASTERIX import, reconstruction, evaluation and report export
+\item Pre-configured Analyze runs replayed on every processed day-folder (between reconstruction and evaluation), driven by the runtime command interface, one configured analysis entry per DSType
+\end{itemize}
+\ \\
+
+\textcolor{red}{\textbf{[TODO: ask maintainer whether to embed a single COMPASS Portal dashboard screenshot here; until then this section stays text-only]}}
+
+\subsection{Integration with COMPASS}
+
+COMPASS Portal does not read data through a running COMPASS process - finalized per-day databases are opened directly by the Portal. For tasks that need a COMPASS process (import, reconstruction, evaluation, analyze, export), job execution is delegated to a host-side runner that owns one COMPASS instance and forwards commands to it. \\
+
+The runner drives that COMPASS instance through the Runtime Command Interface (see \nameref{sec:rtcommand_interface}). At any time at most one COMPASS process is active per host, and runtime commands are serialized through the runner. \\
+
+The 'Analyze Data Source' task (see \nameref{chap:analyze}) is the primary task exposed through the Portal job pipeline; one analysis entry per DSType is configured in the Portal and replayed automatically on each new processed day. \\
+
+\subsection{Documentation Pointer}
+
+For installation, deployment and configuration of COMPASS Portal please refer to the COMPASS Portal project documentation. \\

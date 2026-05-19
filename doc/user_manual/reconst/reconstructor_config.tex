@@ -1,4 +1,5 @@
 \section{Configuration}
+\label{sec:reconst_config}
 
 \subsection{Common}
 
@@ -83,8 +84,9 @@ In this tab, the reference calculation parameters can be set, i.e. the Kalman an
     Resample Process Stddev (Ground) & Process noise applied specifically during the resampling phase for ground targets. & Advanced & 2.0 m & $>0$ m \\ \hline
     Resample Process Stddev (Air) & Process noise applied specifically during the resampling phase for airborne targets. & Advanced & 5.0 m & $>0$ m \\ \hline
     Resample Process Stddev (Unknown) & Process noise applied during resampling for unknown state targets. & Advanced & 3.0 m & $>0$ m \\ \hline
-    Filter Result References & Enable filtering of the final reference trajectory based on estimated accuracy (Standard Deviation). & Intermediate & True & True/False \\ \hline
-    Max. Stddev & Maximum allowed position standard deviation for a point to be included in the final reference. & Intermediate & 100.0 m & $>0$ m \\ \hline
+    Filter Result References & Enable filtering of the final reference trajectory based on estimated accuracy (Standard Deviation). When disabled, the two limits below are disabled. & Intermediate & True & True/False \\ \hline
+    Max. Stddev Air [m] & Maximum allowed position standard deviation for an airborne point to be included in the final reference. Drops reference trajectory points whose airborne accuracy stddev exceeds this. & Intermediate & 250.0 m & $>0$ m \\ \hline
+    Max. Stddev Ground [m] & Maximum allowed position standard deviation for a ground point to be included in the final reference. Drops reference trajectory points whose ground accuracy stddev exceeds this. & Intermediate & 50.0 m & $>0$ m \\ \hline
     \end{tabular}
     \caption{Reference Calculation parameters}
     \label{tab:reconst_params}
@@ -344,3 +346,5 @@ the command line or the reconstruction report. \\
 
 Please \textbf{note} that a detailed discussion of the given parameters is out of scope for this user manual. 
 %For users with a professional license, a dedicated reconstructor user manual appendix is provided.
+
+
