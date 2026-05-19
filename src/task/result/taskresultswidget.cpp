@@ -195,9 +195,9 @@ void TaskResultsWidget::setReport(const std::string name)
     std::string default_section = ResultReport::SectionID::reportResultOverviewID();
 
     if (!result->startSection().empty())
-        report_widget_->selectId(result->startSection(), false, {});
+        report_widget_->selectID(result->startSection(), false, {});
     else if (report->hasSection(default_section))
-        report_widget_->selectId(default_section, false, {});
+        report_widget_->selectID(default_section, false, {});
 
     report_widget_->setDisabled(false);
 
@@ -443,7 +443,7 @@ std::string TaskResultsWidget::currentReportName() const
  */
 void TaskResultsWidget::selectID(const std::string id, bool show_figure)
 {
-    report_widget_->selectId(id, show_figure, {});
+    report_widget_->selectID(id, show_figure, {});
 }
 
 /**
@@ -479,8 +479,7 @@ void TaskResultsWidget::restoreBackupSection()
     if (current_section_name_backup_.empty())
         return;
 
-    report_widget_->selectId(current_section_name_backup_, false, current_section_config_backup_);
+    report_widget_->selectID(current_section_name_backup_, false, current_section_config_backup_);
     
     loginf << "restored section '" << current_section_name_backup_ << "'";
 }
-

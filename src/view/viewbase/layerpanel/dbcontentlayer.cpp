@@ -84,7 +84,7 @@ void DBContentGroupItem::buildContextMenu(QMenu& menu)
             return;
     }
 
-    add("Select All Children",
+    add("Show All Children",
         "Show every direct child of this entry (this entry and grandchildren untouched)",
         [this]{
             for (int i = 0; i < childCount(); ++i)
@@ -92,7 +92,7 @@ void DBContentGroupItem::buildContextMenu(QMenu& menu)
             if (model())
                 emit model()->hiddenChangedSignal();
         });
-    add("Deselect All Children",
+    add("Hide All Children",
         "Hide every direct child of this entry (this entry and grandchildren untouched)",
         [this]{
             for (int i = 0; i < childCount(); ++i)

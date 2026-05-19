@@ -74,6 +74,21 @@ TEST_CASE("dsId encoding/decoding", "[number]")
     ds_id = dsIdFrom(1, 254);
     REQUIRE(sacFromDsId(ds_id) == 1);
     REQUIRE(sicFromDsId(ds_id) == 254);
+
+    // regression: base-256 encoding must be exact (base-255 would give 12763)
+    REQUIRE(dsIdFrom(50, 13) == 12813);
+
+    // regression: SIC=255 must not collide with the next SAC's SIC=0
+    REQUIRE(dsIdFrom(0, 255) != dsIdFrom(1, 0));
+
+    // regression: SIC=255 must round-trip (base-255 decoded this as 256/0)
+    ds_id = dsIdFrom(255, 255);
+    REQUIRE(sacFromDsId(ds_id) == 255);
+    REQUIRE(sicFromDsId(ds_id) == 255);
+
+    ds_id = dsIdFrom(7, 255);
+    REQUIRE(sacFromDsId(ds_id) == 7);
+    REQUIRE(sicFromDsId(ds_id) == 255);
 }
 
 TEST_CASE("bearing2Vec and vec2Bearing", "[number]")

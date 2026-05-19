@@ -107,7 +107,7 @@ Sequence ([dbcontentmanager.cpp:1288](dbcontentmanager.cpp#L1288)):
 5. **Distribute** - `data_store_->reset()`; if `data_.size()` then `data_store_->update()`, else `viewManager().clearDataInViews()`.
 6. `updateNumLoadedCounts()`; update `max_latency_`.
 
-Step 5 fires **only** Path B: `data_store_->update()` triggers `dataChangedSignal(dbc_id)` per content and then `dataRefreshedSignal()` - providers rebuild item groups and views consuming the data store (currently the Geographic View via `GeometryItemProvider` → `GeometryProviderRootNode::onLayersChanged` → `rebuildTree()`) refresh.
+Step 5 fires **only** Path B: `data_store_->update()` triggers `dataChangedSignal(dbc_id)` per content and then `dataRefreshedSignal()` - providers rebuild item groups and views consuming the data store (currently the Geographic View via `GeometryItemProvider`) refresh.
 
 `loadingStartedSignal` / `loadedDataSignal` / `loadingDoneSignal` are **not** emitted (the old `emit loadedDataSignal(data_, true)` is intentionally retired, see commit `ad038381`). Consequence: in live mode `ViewManager::loaded*Slot` / `loading*Slot` never run, and *anything* a view does in `loadingStarted()` / `loadedData(data, reset)` / `loadingDone()` is bypassed.
 
