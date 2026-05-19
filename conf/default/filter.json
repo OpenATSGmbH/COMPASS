@@ -3,7 +3,7 @@
     "instance_name": "FilterManager0",
     "parameters": {
         "db_id": "",
-        "use_filters": true
+        "use_filters": false
     },
     "sub_configs": [
         {
@@ -96,7 +96,7 @@
             "class_name": "DBFilter",
             "instance_name": "DBFilter1",
             "parameters": {
-                "active": true,
+                "active": false,
                 "is_custom": true,
                 "name": "Ground Bit",
                 "visible": false,

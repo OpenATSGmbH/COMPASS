@@ -14,7 +14,6 @@ In this section, the main GUI components are described, to give an overview and 
 Databases can be created, opened and closed using the 'File' menu.
 
 \begin{figure}[H]
-  \center
     \includegraphics[width=6cm,frame]{figures/ui_file_menu.png}
   \caption{File Menu}
 \end{figure}
@@ -39,8 +38,7 @@ After a database was created or opened, the 'Context' and 'Import' menus become 
 The Context menu manages the active Data Context. It sits between the 'File' and 'Import' menus. The menu title in the menu bar is the name of the active Data Context, or 'No Context' when none is active.
 
 \begin{figure}[H]
-  \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Context menu open with Edit..., Switch submenu, Compare..., New..., Copy... and Delete... entries visible]}}\vspace{1.5cm}}}
+    \includegraphics[width=8cm,frame]{figures/ui_context_menu.png}
   \caption{Context Menu}
 \end{figure}
 
@@ -66,7 +64,7 @@ Data can be imported into the database using the 'Import' menu. This menu is onl
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=6cm,frame]{figures/ui_import_menu.png}
+    \includegraphics[width=8cm,frame]{figures/ui_import_menu.png}
   \caption{Import Menu}
 \end{figure}
 
@@ -104,8 +102,7 @@ Data can be imported into the database using the 'Import' menu. This menu is onl
 The 'Configuration' menu exposes program-wide options. The active Data Context (data sources, sector layers, FFTs, ASTERIX configuration and colors) is managed through the 'Context' menu, see \nameref{sec:ui_overview_context_menu}.
 
 \begin{figure}[H]
-  \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: 'Configuration' menu open showing DBContent, Licenses, Dark Mode, Fullscreen and Refresh Views Automatically entries]}}\vspace{1.5cm}}}
+    \includegraphics[width=8cm,frame]{figures/ui_configuration_menu.png}
   \caption{Configuration Menu}
 \end{figure}
 
@@ -128,7 +125,7 @@ Post-processing tasks can be performed using the 'Process' menu. This menu is on
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=5cm,frame]{figures/ui_process_menu.png}
+    \includegraphics[width=10cm,frame]{figures/ui_process_menu.png}
   \caption{Process Menu}
 \end{figure}
 
@@ -138,7 +135,7 @@ Post-processing tasks can be performed using the 'Process' menu. This menu is on
  \item \nameref{sec:ui_proc_reconst_references}: Find unique targets, associate target reports and calculate reference trajectories
  \item Analyze: Submenu providing per-DSType data-source analysis tasks
   \begin{itemize}
-   \item MLAT: Analyze one or more MLAT (CAT020 / CAT010) data sources from multiple angles (data items, sensor coverage / PD, position accuracy); see \nameref{chap:analyze}
+   \item MLAT: Analyze one or more MLAT data sources (data items, sensor coverage / PD, position accuracy); see \nameref{chap:analyze}
   \end{itemize}
  \item \nameref{sec:ui_proc_evaluate}: Run a new Evaluation
 \end{itemize}
