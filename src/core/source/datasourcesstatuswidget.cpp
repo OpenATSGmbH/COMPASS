@@ -26,6 +26,7 @@
 #include "compass.h"
 
 #include "timeconv.h"
+#include "number.h"
 
 #include <QLabel>
 
@@ -586,7 +587,8 @@ void DataSourcesStatusWidget::dataLoaded()
 
             sensor_status::TrackerKey key(ds_id, line_id);
 
-            unsigned int sensor_id = (unsigned int)sen_sac_vec.get(i) * 255 + sen_sic_vec.get(i);
+            unsigned int sensor_id = Utils::Number::dsIdFrom(
+                (unsigned int)sen_sac_vec.get(i), (unsigned int)sen_sic_vec.get(i));
 
             bool first_tracker_state = tracker_states_.count(key) == 0;
 

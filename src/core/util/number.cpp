@@ -291,16 +291,18 @@ double interpolateBearing(double x0, double y0,
 
 unsigned int dsIdFrom (unsigned int sac, unsigned int sic)
 {
-    return sac * 255 + sic;
+    // SAC and SIC are 8-bit fields (0-255); base 256 keeps the encoding bijective
+    return sac * 256 + sic;
 }
 
 unsigned int sacFromDsId (unsigned int ds_id)
 {
-    return ds_id / 255;
+    return ds_id / 256;
 }
+
 unsigned int sicFromDsId (unsigned int ds_id)
 {
-    return ds_id % 255;
+    return ds_id % 256;
 }
 
 double knots2MPS(double knots)
