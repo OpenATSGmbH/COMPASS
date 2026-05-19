@@ -31,6 +31,7 @@
 #include <vector>
 
 class LayerTreeItem;
+class QMenu;
 
 /**
  * QAbstractItemModel over a LayerTreeItem tree.
@@ -107,6 +108,18 @@ public:
     /// Walk every item depth-first. max_depth < 0 means unlimited.
     void traverse(const std::function<void(const QModelIndex&, LayerTreeItem*)>& fn,
                   int max_depth = -1) const;
+
+    // ---- context menu -----------------------------------------------------
+
+    /// Optional model-level context-menu extension. Lets a view-specific
+    /// model subclass append custom actions for `item` (e.g. geometry node
+    /// actions) without subclassing the tree items. Invoked by
+    /// LayerPanelWidget after item->buildContextMenu(). Default: no-op.
+    virtual void buildCustomItemContextMenu(QMenu& menu, LayerTreeItem* item)
+    {
+        (void)menu;
+        (void)item;
+    }
 
     // ---- QAbstractItemModel -----------------------------------------------
 

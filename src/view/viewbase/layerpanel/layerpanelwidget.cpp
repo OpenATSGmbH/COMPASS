@@ -112,12 +112,15 @@ void LayerPanelWidget::onContextMenuRequested(const QPoint& pos)
     menu.setToolTipsVisible(true);
 
     if (item)
+    {
         item->buildContextMenu(menu);
+        model_->buildCustomItemContextMenu(menu, item);
+    }
 
     // --- Global section (always appended) ---
     menu.addSection("All");
 
-    QAction* sel_all = menu.addAction("Select All");
+    QAction* sel_all = menu.addAction("Show All");
     sel_all->setToolTip("Show every entry");
     connect(sel_all, &QAction::triggered, this, [this]{
         model_->traverse([](const QModelIndex&, LayerTreeItem* it){
@@ -126,7 +129,7 @@ void LayerPanelWidget::onContextMenuRequested(const QPoint& pos)
         emit model_->hiddenChangedSignal();
     });
 
-    QAction* desel_all = menu.addAction("Deselect All");
+    QAction* desel_all = menu.addAction("Hide All");
     desel_all->setToolTip("Hide every entry");
     connect(desel_all, &QAction::triggered, this, [this]{
         model_->traverse([](const QModelIndex&, LayerTreeItem* it){
