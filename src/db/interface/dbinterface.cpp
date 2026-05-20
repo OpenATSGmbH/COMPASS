@@ -606,27 +606,10 @@ Result DBInterface::cleanupDBInternal()
     }
     else
     {
-        //offline
-        // auto res = execute("CHECKPOINT");
-
-        // if (!res.ok())
-        // {
-        //     logerr << "'CHECKPOINT' failed: " << res.error();
-        //     throw runtime_error("DBInterface: cleanupDBInternal: 'CHECKPOINT' failed: " + res.error());
-        // }
-
-        // res = execute("VACUUM");
-
-        // if (!res.ok())
-        // {
-        //     logerr << "'VACUUM' failed: " << res.error();
-        //     throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
-        // }
-        auto res = db_instance_->reconnect(true);
-
+        auto res = db_instance_->cleanupDB();
         if (!res.ok())
         {
-            logerr << "'reconnect failed: '" << res.error() << "'";
+            logerr << "'cleanup failed: '" << res.error() << "'";
         }
     }
 

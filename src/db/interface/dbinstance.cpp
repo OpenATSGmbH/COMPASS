@@ -282,6 +282,15 @@ Result DBInstance::cleanupDB(const std::string& db_fn)
 
 /**
  */
+Result DBInstance::cleanupDB()
+{
+    traced_assert(dbOpen());
+
+    return cleanupDB_impl();
+}
+
+/**
+ */
 Result DBInstance::cleanupDBInMem()
 {
     traced_assert(dbOpen());
@@ -293,6 +302,14 @@ Result DBInstance::cleanupDBInMem()
 /**
  */
 Result DBInstance::cleanupDB_impl(const std::string& db_fn)
+{
+    //derive if some special action is needed
+    return Result::succeeded();
+}
+
+/**
+ */
+Result DBInstance::cleanupDB_impl()
 {
     //derive if some special action is needed
     return Result::succeeded();
