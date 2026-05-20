@@ -225,12 +225,6 @@ When active, this filter forces loading of data with the Time of Day inside the 
 
 A 'Step' row of buttons shifts the active Time of Day window forwards or backwards without re-entering the times manually. Eight buttons are available: '-60m', '-45m', '-30m', '-15m' on the left and '+15m', '+30m', '+45m', '+60m' on the right. When the resulting window would fall outside the Time of Day range covered by the database, the corresponding button is disabled to indicate the out-of-bounds state. \\
 
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Time of Day filter Step row with the eight buttons -60m / -45m / -30m / -15m / +15m / +30m / +45m / +60m]}}\vspace{1.5cm}}}
-  \caption{Time of Day filter: Step buttons}
-\end{figure}
-
 \subsubsection{Timestamp Filter}
 
 \begin{figure}[H]
@@ -244,19 +238,6 @@ When active, this filter forces loading of data with the EPOCH timestamp inside 
 \paragraph{Step Buttons}
 
 A 'Step' row of buttons shifts the active time window forwards or backwards without re-entering the timestamps manually. Eight buttons are available: '-60m', '-45m', '-30m', '-15m' on the left and '+15m', '+30m', '+45m', '+60m' on the right. When the resulting window would fall outside the timestamp range covered by the database, the corresponding button is disabled to indicate the out-of-bounds state. \\
-
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Timestamp filter Step row with the eight buttons -60m / -45m / -30m / -15m / +15m / +30m / +45m / +60m]}}\vspace{1.5cm}}}
-  \caption{Timestamp filter: Step buttons}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: same Step row with one or more buttons disabled in the out-of-bounds state]}}\vspace{1.5cm}}}
-  \caption{Timestamp filter: out-of-bounds indication}
-\end{figure}
-
 
 \subsubsection{Track Number Filter}
 
@@ -302,7 +283,8 @@ A new custom filter can be added by clicking the \includegraphics[width=0.5cm,fr
 
 \begin{figure}[H]
   \centering
-    \includegraphics[width=14cm,frame]{figures/filter_add.png}
+    \hspace*{-1.5cm}
+    \includegraphics[width=17cm]{figures/filter_add.png}
   \caption{Adding a filter}
 \end{figure}
 
@@ -322,18 +304,9 @@ Custom filters can combine conditions with both AND and OR. When adding a new co
 
 \begin{figure}[H]
   \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: custom filter editor showing an OR condition between two clauses]}}\vspace{1.5cm}}}
+    \hspace*{-1.5cm}
+    \includegraphics[width=17cm]{figures/filter_add_or.png}
   \caption{Custom filter with OR condition}
-\end{figure}
-
-\paragraph{Deleting custom filters}
-
-Custom filters are deleted via the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button's 'Delete Filter' submenu. Each existing custom filter is listed as a child action; selecting one deletes that filter. There is no separate delete button on the filter row itself. \\
-
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: filter context menu open showing the 'Delete Filter' submenu with two custom filters listed]}}\vspace{1.5cm}}}
-  \caption{Delete Filter submenu}
 \end{figure}
 
 An operator can be chosen with the drop-down menu, the supplied operators are common SQL operators.
@@ -358,13 +331,18 @@ An operator can be chosen with the drop-down menu, the supplied operators are co
   \caption{SQL operators}
 \end{table}
 
-A reset value also has to be supplied, which can be the chosen value or a minimum/maximum value set from the database.  Whenever a database different from the previous one is opened, all filters are reset, since previous values may have become invalid.\\
+A value must be supplied. The value is typed in directly (a single value for most operators, or Min/Max values for BETWEEN). When a new database is opened, the Timestamp filter is reset to the database's min/max timestamps; other filters retain their previous values, which may need to be adjusted manually if they no longer apply.\\
 
 After a condition is defined, it has to be added using the 'Add condition' button. Existing conditions are shown in the 'Current conditions' list. Please note that for now added conditions cannot be removed. \\\\
 Now the described process can be repeated until a usable filter emerges, which is added using the 'Add'
 button. The process of adding a new filter can be canceled by using the 'Cancel' button, which discards all
 settings. When added, a new filter shows up immediately in the filter list and is saved to the configuration
 for persistence.
+
+\paragraph{Deleting custom filters}
+
+Custom filters are deleted via the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button's 'Delete Filter' submenu. Each existing custom filter is listed as a child action; selecting one deletes that filter. There is no separate delete button on the filter row itself. \\
+
 
 
  
