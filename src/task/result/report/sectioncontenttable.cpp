@@ -48,6 +48,7 @@
 #include <QInputDialog>
 #include <QThread>
 #include <QScrollBar>
+#include <QShortcut>
 #include <QToolBar>
 
 #include "traced_assert.h"
@@ -1227,13 +1228,9 @@ void SectionContentTable::toggleShowUnused()
     showUnused(!show_unused_);
 }
 
-/**
- */
-void SectionContentTable::copyContent()
+namespace
 {
-    loginf;
-
-    auto quoteCSV = [](const std::string& val) -> std::string
+    std::string quoteCSV(const std::string& val)
     {
         if (val.find('"') != std::string::npos ||
             val.find(';') != std::string::npos ||
@@ -1250,6 +1247,13 @@ void SectionContentTable::copyContent()
         }
         return val;
     };
+}
+
+/**
+ */
+void SectionContentTable::copyContent()
+{
+    loginf;
 
     std::stringstream ss;
 
@@ -1288,6 +1292,64 @@ void SectionContentTable::copyContent()
         }
         ss << "\n";
     }
+
+    QApplication::clipboard()->setText(ss.str().c_str());
+}
+
+/**
+ */
+void SectionContentTable::copySelectedRow(bool export_headings)
+{
+    loginf;
+
+    auto w = tableWidget();
+    if (!w || !w->tableView())
+        return;
+
+    auto selection_model = w->tableView()->selectionModel();
+    if (!selection_model)
+        return;
+
+    auto selected_rows = selection_model->selectedRows();
+    if (selected_rows.isEmpty())
+        return;
+
+    int proxy_row = selected_rows.first().row();
+    if (proxy_row < 0 || (unsigned int)proxy_row >= numProxyRows())
+        return;
+
+    std::stringstream ss;
+
+    auto proxy_headings = proxyHeadings();
+    unsigned int num_cols = proxy_headings.size();
+
+    if (export_headings)
+    {
+        for (unsigned int cnt = 0; cnt < num_cols; ++cnt)
+        {
+            if (cnt == 0)
+                ss << quoteCSV(proxy_headings.at(cnt));
+            else
+                ss << ";" << quoteCSV(proxy_headings.at(cnt));
+        }
+        ss << "\n";
+    }
+
+    nlohmann::json row_data = exportProxyContent((unsigned int)proxy_row, ReportExportMode::CSV);
+    traced_assert(row_data.is_array());
+    traced_assert(row_data.size() == num_cols);
+
+    for (unsigned int cnt = 0; cnt < num_cols; ++cnt)
+    {
+        const auto& d = row_data.at(cnt);
+        traced_assert(d.is_string());
+
+        if (cnt == 0)
+            ss << quoteCSV(d.get<std::string>());
+        else
+            ss << ";" << quoteCSV(d.get<std::string>());
+    }
+    ss << "\n";
 
     QApplication::clipboard()->setText(ss.str().c_str());
 }
@@ -2083,6 +2145,11 @@ SectionContentTableWidget::SectionContentTableWidget(SectionContentTable* conten
             this, &SectionContentTableWidget::updateScrollBarV);
     connect(table_view_->horizontalScrollBar(), &QScrollBar::rangeChanged,
             this, &SectionContentTableWidget::updateScrollBarH);
+
+    auto copy_row_shortcut = new QShortcut(QKeySequence::Copy, table_view_);
+    copy_row_shortcut->setContext(Qt::WidgetShortcut);
+    connect(copy_row_shortcut, &QShortcut::activated,
+            this, [this]() { content_table_->copySelectedRow(false); });
     
     //    if (num_columns_ > 5)
     //        table_view_->horizontalHeader()->setMaximumSectionSize(150);
