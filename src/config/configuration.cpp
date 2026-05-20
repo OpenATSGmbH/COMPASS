@@ -390,6 +390,8 @@ T Configuration::getParameterConfigValue(const std::string& parameter_id) const
         return parameterValueFromConfig<T>(parameter_id);
     }
 
+    if (!has_param)
+        loginf << "parameter '" << parameter_id << "' not found";
     traced_assert(has_param);
 
     //get stored parameter as type
@@ -1036,7 +1038,11 @@ std::pair<bool,std::vector<std::string>> Configuration::reconfigure_internal(con
                 missing_param_keys->push_back(MissingKey(Key(class_name, key), creation_failed ? MissingKeyType::CreationFailed :
                                                                                                MissingKeyType::Missing));
             if (assert_on_error)
+            {
+                if (!has_param)
+                    loginf << "parameter '" << key << "' not found";
                 traced_assert(has_param);
+            }
 
             return;
         }

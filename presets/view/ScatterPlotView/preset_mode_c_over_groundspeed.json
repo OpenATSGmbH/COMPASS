@@ -9,9 +9,9 @@
     "view": "ScatterPlotView",
     "view_config": {
         "parameters": {
-            "data_var_x_dbo": "Meta",
+            "data_var_x_dbcont": "Meta",
             "data_var_x_name": "Track Groundspeed",
-            "data_var_y_dbo": "Meta",
+            "data_var_y_dbcont": "Meta",
             "data_var_y_name": "Mode C Code"
         },
         "sub_configs": [
@@ -28,11 +28,6 @@
                         }
                     }
                 ]
-            },
-            {
-                "class_name": "ScatterPlotViewWidget",
-                "instance_name": "ScatterPlotViewWidget0",
-                "parameters": {}
             }
         ]
     }

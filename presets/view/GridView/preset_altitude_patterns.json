@@ -9,11 +9,11 @@
     "view": "GridView",
     "view_config": {
         "parameters": {
-            "data_var_x_dbo": "Meta",
+            "data_var_x_dbcont": "Meta",
             "data_var_x_name": "Time of Day",
-            "data_var_y_dbo": "Meta",
+            "data_var_y_dbcont": "Meta",
             "data_var_y_name": "Mode C Code",
-            "data_var_z_dbo": "Meta",
+            "data_var_z_dbcont": "Meta",
             "data_var_z_name": "Time of Day",
             "grid_resolution": 100,
             "render_color_num_steps": 20,
@@ -22,12 +22,6 @@
             "render_color_value_min": "",
             "value_type": 0
         },
-        "sub_configs": [
-            {
-                "class_name": "GridViewWidget",
-                "instance_name": "GridViewWidget0",
-                "parameters": {}
-            }
-        ]
+        "sub_configs": []
     }
 }
