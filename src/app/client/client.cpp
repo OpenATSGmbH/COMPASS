@@ -46,6 +46,7 @@
 
 #include <QMessageBox>
 #include <QMetaEnum>
+#include <QPainter>
 #include <QSurfaceFormat>
 #include <QSplashScreen>
 #include <QStyleFactory>
@@ -397,7 +398,17 @@ bool Client::run ()
     // checkbox/radio/slider indicators correctly under the dark palette.
     QApplication::setStyle(QStyleFactory::create("Fusion"));
 
-    QPixmap pixmap(Files::getImageFilepath("logo.png").c_str());
+    QPixmap logo_pixmap(Files::getImageFilepath("compass_client.png").c_str());
+    logo_pixmap = logo_pixmap.scaledToWidth(500, Qt::SmoothTransformation);
+    const int padding = 12;
+    QPixmap pixmap(logo_pixmap.width() + 2 * padding, logo_pixmap.height() + 2 * padding);
+    pixmap.fill(Qt::white);
+    {
+        QPainter painter(&pixmap);
+        painter.drawPixmap(padding, padding, logo_pixmap);
+        painter.setPen(QPen(QColor(120, 120, 120), 1));
+        painter.drawRect(0, 0, pixmap.width() - 1, pixmap.height() - 1);
+    }
     QSplashScreen splash(pixmap);
     splash.show();
 

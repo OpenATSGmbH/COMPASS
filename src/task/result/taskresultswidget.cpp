@@ -111,7 +111,7 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
         license::License::Component::ComponentProbIMMReconstructor);
 
     auto action_export_docx  = export_menu->addAction(
-        pro_license ? "Export as DocX" : "Export as DocX (Pro)");
+        pro_license ? "Export as DocX" : "Export as DocX [pro]");
     auto action_export_json  = export_menu->addAction("Export as JSON");
     auto action_export_latex = export_menu->addAction("Export as Latex");
     auto action_export_pdf   = export_menu->addAction("Export as PDF");

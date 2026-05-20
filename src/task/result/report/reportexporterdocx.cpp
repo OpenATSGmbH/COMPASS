@@ -39,47 +39,7 @@
 #include <boost/filesystem.hpp>
 
 #include <QDesktopServices>
-#include <QImage>
 #include <QUrl>
-
-namespace
-{
-    // crop logo to match LaTeX trim={0.01cm 0.12cm 0.01cm 0.01cm} (left, bottom, right, top)
-    // removes the bottom text from the logo image
-    std::string cropLogoImage(const std::string& logo_path, const std::string& output_dir)
-    {
-        QImage img(QString::fromStdString(logo_path));
-        if (img.isNull())
-            return logo_path;
-
-        double dpi = img.dotsPerMeterX() > 0 ? img.dotsPerMeterX() / 39.3701 : 96.0;
-        double px_per_cm = dpi / 2.54;
-
-        int crop_left   = (int)(0.01 * px_per_cm);
-        int crop_bottom = (int)(0.12 * px_per_cm);
-        int crop_right  = (int)(0.01 * px_per_cm);
-        int crop_top    = (int)(0.01 * px_per_cm);
-
-        if (crop_left < 1) crop_left = 1;
-        if (crop_bottom < 1) crop_bottom = 1;
-        if (crop_right < 1) crop_right = 1;
-        if (crop_top < 1) crop_top = 1;
-
-        int new_w = img.width() - crop_left - crop_right;
-        int new_h = img.height() - crop_top - crop_bottom;
-
-        if (new_w <= 0 || new_h <= 0)
-            return logo_path;
-
-        QImage cropped = img.copy(crop_left, crop_top, new_w, new_h);
-
-        std::string cropped_path = (boost::filesystem::path(output_dir) / "logo_cropped.png").string();
-        if (!cropped.save(QString::fromStdString(cropped_path)))
-            return logo_path;
-
-        return cropped_path;
-    }
-}
 
 namespace ResultReport
 {
@@ -123,9 +83,9 @@ Result ReportExporterDocx::initExport_impl(TaskResult& result)
     if (!licensee.empty())
         docx_doc_->footerLeft(licensee);
 
-    auto logo_path = Utils::Files::getImageFilepath("logo.png");
+    auto logo_path = Utils::Files::getImageFilepath("openats.png");
     if (boost::filesystem::exists(logo_path))
-        docx_doc_->setLogo(cropLogoImage(logo_path, exportResourceDir()));
+        docx_doc_->setLogo(logo_path);
 
     return Result::succeeded();
 }

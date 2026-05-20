@@ -5,8 +5,8 @@ A Table View displays DBContent data as text in tables to allow textual data ins
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/table_start.png}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/table_start.png}
   \caption{Table View startup}
   \label{fig:table_start}
 \end{figure}
@@ -15,7 +15,8 @@ A Table View displays DBContent data as text in tables to allow textual data ins
 
 On the left side, the Table View shows a single unified table. Which DBContents, Data Sources and lines are displayed is controlled by the shared Layers Tree in the Configuration Panel (see \nameref{sec:layers_tree}). \\
 
-On the right side resides the Configuration Panel, which contains the Layers Tree, view-specific options and the variable selection.
+On the right side resides the Configuration Panel, which contains the variable selection, view-specific options and the Layers Tree.
+
 The \includegraphics[width=0.5cm,frame]{../../data/icons/refresh.png} 'Reload' button on the bottom can be used to trigger a reload of the view's data. \\
 
 Both areas can be resized and hidden if wanted. \\
@@ -28,8 +29,8 @@ To load the data the 'Reload' button or the mechanism described in section \name
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/table_loaded.png}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/table_loaded.png}
   \caption{Table View after loading}
 \end{figure}
 
@@ -37,13 +38,8 @@ Once updated, the table is filled with text representing the values of the chose
 
 \begin{figure}[H]
   \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: unified Table View with the shared Layers Tree visible on the right and several DBContents enabled, showing interleaved rows]}}\vspace{1.5cm}}}
-  \caption{Table View: unified table with multiple layers}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: same Table View with only one layer active in the Layers Tree]}}\vspace{1.5cm}}}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/table_single.png}
   \caption{Table View: single layer active}
 \end{figure}
 
@@ -55,11 +51,12 @@ Each column header can be left-clicked to sort the table by that column. Clickin
 
 \begin{figure}[H]
   \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: close-up of a column header showing the Qt sort indicator arrow]}}\vspace{1.5cm}}}
-  \caption{Table View: column sort indicator}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/table_sort.png}
+  \caption{Table View: Mode 3/A sorted}
 \end{figure}
 
-By default, the table is sorted by Timestamp ascending. \\
+By default, the table is sorted by Timestamp descending. \\
 
 \section{Color Mode and Annotations}
 
@@ -125,15 +122,10 @@ In particular, with Use Presentation enabled, the CAT020 'Contributing Receivers
 
 \begin{figure}[H]
   \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Table View with Use Presentation enabled, showing the Contributing Receivers column with RU names instead of indexes]}}\vspace{1.5cm}}}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/table_mlat_contrib.png}
   \caption{Table View: MLAT Contributing Receivers with names}
 \end{figure}
-
-%TODO Now solved via a metavariable, maybe remove in the future
-%\subsection{Show Associations}
-%When this checkbox is checked, the associated UTNs are shown for each target report. If no UTN is shown, this target reports was never associated to an UTN, 
-%if several are shown (e.g. '1,2,4') this target report was used in several UTNs. \\
-%This checkbox can only be used if association information is present in the database.
 
 \subsection{Exporting}
 \label{sec:exporting}

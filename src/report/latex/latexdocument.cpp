@@ -40,8 +40,8 @@ namespace
      */
     std::string getLogoImage(double height_cm)
     {
-        auto footer_img_fn = Utils::Files::getImageFilepath("logo.png");
-        return "\\includegraphics[trim={0.01cm 0.12cm 0.01cm 0.01cm},clip,height=" + std::to_string(height_cm) + "cm]{" + footer_img_fn + "}";
+        auto footer_img_fn = Utils::Files::getImageFilepath("openats.png");
+        return "\\includegraphics[height=" + std::to_string(height_cm) + "cm]{" + footer_img_fn + "}";
     }
 }
 

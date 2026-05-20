@@ -1,123 +1,156 @@
 \section{MLAT Inspectors}
 \label{sec:analyze_mlat_inspectors}
 
-This section documents the inspectors shipped for the MLAT entry point. \\
+Inspectors shipped for the MLAT entry point. \\
 
 \subsection{Data Item Inspection}
 
-This inspector produces per-Data-Source, per-CAT cumulative item tables built from the ASTERIX content information collected by the Data Context. Output is report-only and contains no map; it gives a structured overview of which ASTERIX data items are present, how often, and from which source. \\
-
-\subsection{Sensor Coverage and Probability of Detection}
-
-This inspector computes per-cell Probability of Detection (PD) on a 3D grid using the Reference Trajectory as truth. Cells where the RefTraj passes through are checked for matching MLAT updates within the expected cadence. \\
-
-Two cadence sources can be used:
-
-\begin{itemize}
-\item Time-difference (default): expected update interval derived from consecutive MLAT updates
-\item Period-based: expected interval taken from the CAT019 sensor-status messages of the same source
-\end{itemize}
-\ \\
-
-The result is rendered as three projections of the same 3D grid:
-
-\begin{itemize}
-\item Horizontal projection (lon/lat)
-\item Altitude / longitude projection
-\item Altitude / latitude projection
-\end{itemize}
-\ \\
-
-Default color scales match the bands used by EUROCAE ED-117 and ESASSP for visual comparability. \\
+Per-Data-Source, per-CAT cumulative item tables drawn from the Data Context's ASTERIX info. Report-only, no map. \\
 
 \begin{figure}[H]
   \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: PD result, horizontal projection]}}\vspace{1.5cm}}}
+  \hspace*{-1.0cm}
+    \includegraphics[width=17cm]{figures/analyze_mlat_dataitem_settings.png}
+  \caption{Analyze MLAT Data Item Inspection inspector settings}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{7cm}|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Default} & \textbf{Range} \\ \hline
+    Categories to Include & Per-CAT checkbox & all enabled & True/False \\ \hline
+    \end{tabular}
+    \caption{Data Item Inspection settings}
+\end{table}
+\ \\
+
+\subsection{Sensor Coverage and Probability of Detection}
+
+Per-cell Probability of Detection (PD) on a 3D grid. Rendered as horizontal, altitude/longitude and altitude/latitude projections. \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-1.0cm}
+    \includegraphics[width=17cm]{figures/analyze_mlat_senscov_settings.png}
+  \caption{Analyze MLAT Sensor Coverage inspector settings}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{7cm}|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Default} & \textbf{Range} \\ \hline
+    PD Calculation Method & 'Time Difference' uses 'Update Interval'; 'Status Period Message Based' uses CAT019 system-status cycles. & Time Difference &  \\ \hline
+    Update Interval & Nominal expected update interval (Time Difference only). & 1.0 s & 0.05 -- 60 s \\ \hline
+    Use Miss Tolerance & Apply miss tolerance to detected gaps. & True & True/False \\ \hline
+    Miss Tolerance & Subtracted from each gap before counting missed slots. & 0.1 s & 0 -- 60 s \\ \hline
+    Value Acceptable (green) & PD at or above which a cell is green. & 0.95 & 0 -- 1 \\ \hline
+    Value Unacceptable (red) & PD at or below which a cell is red; values in between are yellow/orange. & 0.70 & 0 -- 1 \\ \hline
+    \end{tabular}
+    \caption{Sensor Coverage and Probability of Detection settings}
+\end{table}
+\ \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_senscov_res.png}
   \caption{Sensor Coverage and PD: horizontal projection}
 \end{figure}
 
 \begin{figure}[H]
   \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: PD result, altitude / longitude projection]}}\vspace{1.5cm}}}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_senscov_res2.png}
   \caption{Sensor Coverage and PD: altitude / longitude projection}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: PD result, altitude / latitude projection]}}\vspace{1.5cm}}}
-  \caption{Sensor Coverage and PD: altitude / latitude projection}
 \end{figure}
 
 \subsection{Position Accuracy [Pro]}
 
-Requires a Professional license. Provides three complementary views: \\
+Requires a Professional license. Three views, each rendered as the three standard projections:
 
 \begin{itemize}
-\item Reported Position Accuracy: maps the position-accuracy values reported by the MLAT source
-\item Horizontal Position Offset: maps the offset of MLAT positions relative to the RefTraj
-\item Reported Accuracy Consistency: compares the reported accuracy against the observed offset
+\item Reported Position Accuracy: position-accuracy reported by the MLAT source
+\item Horizontal Position Offset: offset of MLAT positions vs. RefTraj
+\item Reported Accuracy Consistency: ratio reported / observed (ideal 1.0)
 \end{itemize}
 \ \\
 
-For CAT020 sources that provide both I020/500 and a REF Position Accuracy item, the two reported views are produced once per source so each can be inspected independently. \\
+For CAT020 sources providing both I020/500 and a REF Position Accuracy item, the reported views are rendered once per source. \\
 
-Default color scales:
+\begin{figure}[H]
+  \centering
+  \hspace*{-1.0cm}
+    \includegraphics[width=17cm]{figures/analyze_mlat_accuracy_settings.png}
+  \caption{Analyze MLAT Position Accuracy inspector settings}
+\end{figure}
 
-\begin{itemize}
-\item Position-accuracy / offset views: green below 12 m, yellow and orange in between, red above 60 m
-\item Consistency view: green near a ratio of 1.0, red diverging in either direction
-\end{itemize}
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{7cm}|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Default} & \textbf{Range} \\ \hline
+    Position Accuracy Acceptable (green) & Reported accuracy / observed offset at or below which a cell is green. & 12.0 m & 0 -- 10000 m \\ \hline
+    Position Accuracy Unacceptable (red) & Value at or above which a cell is red; values in between are yellow/orange. & 60.0 m & 0 -- 10000 m \\ \hline
+    Consistency Lower Acceptable (green) & Lower band: ratio at or above this is green. & 0.8 & 0 -- 10 \\ \hline
+    Consistency Lower Unacceptable (red) & Lower band: ratio at or below this is red (sensor over-cautious). & 0.5 & 0 -- 10 \\ \hline
+    Consistency Upper Acceptable (green) & Upper band: ratio at or below this is green. & 1.25 & 0 -- 100 \\ \hline
+    Consistency Upper Unacceptable (red) & Upper band: ratio at or above this is red (sensor over-confident). & 2.0 & 0 -- 100 \\ \hline
+    \end{tabular}
+    \caption{Position Accuracy settings}
+\end{table}
 \ \\
 
 \begin{figure}[H]
   \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Position Accuracy - Reported Accuracy Consistency view]}}\vspace{1.5cm}}}
-  \caption{Position Accuracy: Reported Accuracy Consistency}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_posacc_res.png}
+  \caption{Position Accuracy: horizontal projection}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_posacc_res2.png}
+  \caption{Position Accuracy: altitude projection}
 \end{figure}
 
 \subsection{RU Coverage [Pro]}
 
-Requires a Professional license and at least one CAT020 source with contributing-receiver information. Produces a per-RU coverage map plus a Dominant RU map indicating which RU contributed most often per cell. \\
+Requires a Professional license and at least one CAT020 source with contributing-receiver information. Per-RU coverage map plus a Dominant RU map; optional contested-areas variant for cells with close-to-equal RU shares. \\
 
-Optionally, a contested-areas variant of the map highlights cells in which multiple RUs contribute close-to-equal shares. \\
+No per-inspector settings; uses the shared grid resolution and data source selection. \\
 
 \begin{figure}[H]
   \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: per-RU coverage map]}}\vspace{1.5cm}}}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_ru_cov.png}
   \caption{RU Coverage: per-RU map}
 \end{figure}
 
 \begin{figure}[H]
   \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Dominant RU map]}}\vspace{1.5cm}}}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_ru_dom.png}
   \caption{RU Coverage: Dominant RU}
 \end{figure}
 
 \subsection{RU Effect [Pro]}
 
-Requires a Professional license and at least one CAT020 source with contributing-receiver information. Quantifies how individual RUs contribute to the overall MLAT solution.
+Requires a Professional license and at least one CAT020 source with contributing-receiver information. Quantifies per-RU contribution to MLAT accuracy:
 
 \begin{itemize}
-\item Marginal effect table: per-RU error statistics with and without that RU's contribution
-\item Redundancy curve: error statistics grouped by the number of contributing RUs
-\item Per-RU drill-down: a dual histogram of the error distribution combined with a per-cell error heatmap, focused on the selected RU
+\item Marginal effect table: per-RU error statistics with vs. without that RU
+\item Redundancy curve: error vs. number of contributing RUs
+\item Per-RU drill-down: dual histogram plus per-cell error heatmap for the selected RU
 \end{itemize}
 \ \\
 
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: per-RU marginal effect table]}}\vspace{1.5cm}}}
-  \caption{RU Effect: marginal effect table}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: redundancy curve plot]}}\vspace{1.5cm}}}
-  \caption{RU Effect: redundancy curve}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: per-RU drill-down view with dual histogram and per-cell error heatmap]}}\vspace{1.5cm}}}
-  \caption{RU Effect: per-RU drill-down}
-\end{figure}
+No per-inspector settings; uses the shared grid resolution and data source selection. \\
