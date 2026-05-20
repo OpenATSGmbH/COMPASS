@@ -2083,6 +2083,13 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
         if (!existsReportContentsTable())
             createReportContentsTable();
         
+        // Materialize all section contents BEFORE the old rows are deleted.
+        // For accumulating results (e.g. ASTERIX Import, clear_existing=false)
+        // the report carries lazily-loaded contents whose content_ids point
+        // at rows deleteResult is about to wipe; loading them after deletion
+        // would fail the assert in Section::loadOrGetContent.
+        auto report_contents = result.report()->reportContents(true);
+
         //remove any old result with the same id/name
         bool result_deleted = false;
         auto del_result = deleteResult(result, false, &result_deleted);
@@ -2112,7 +2119,6 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
         }
 
         //write contents
-        auto report_contents = result.report()->reportContents(true);
         {
             size_t chunk_size_bytes = 1e09;
             size_t current_bytes    = 0;
