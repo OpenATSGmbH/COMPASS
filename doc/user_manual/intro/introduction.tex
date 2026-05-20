@@ -14,30 +14,31 @@ OpenATS COMPASS is publicly available and free for anyone to use (including comm
 
 \section{User Manual}
 
-This document has its focus on interaction and working procedures required to make use of the existing
-functionality. In this introduction, feature highlights and acknowledgements are listed, followed by a brief summary of important aspects of  COMPASS in \nameref{sec:key_concepts}. \\
+This document has its focus on interaction and working procedures required to make use of the existing functionality. In this introduction, feature highlights, general aspects, and acknowledgements are listed, followed by a brief summary of important terms and ideas in \nameref{sec:key_concepts}. \\
 
-In the section \nameref{sec:installation}, prerequisites are listed and installation instructions are given. \\
+In \nameref{sec:installation}, prerequisites are listed and installation instructions are given. \\
 
-In the larger section \nameref{sec:ui_overview}, the steps are described to run the application, create a database or access an existing one, import, process data, as well as load data into Views. \\
+In \nameref{sec:ui_overview}, the main window layout and the top-level menus are described, covering how the application is started, how a database is created or opened, and how data is imported, processed, and loaded into Views. \\
 
-The filtering mechanism is described in detail in \nameref{sec:filters}. \\
+In \nameref{chap:flight_deck}, the central interactive panel is documented. It groups the per-session controls into tabs for Data Sources, Filters, Targets, Sensor Status, Reports, View Points, and Task Log. The filtering mechanism is described in detail in \nameref{sec:filters}, and revisiting saved points of interest using View Points is described in \nameref{sec:view_points}. \\
 
-Based on Traffic of Opportunity reference trajectories can be calculated, the reconstructor feature is presented in the section \nameref{sec:reconst}. \\
+Based on Traffic of Opportunity, Reference Trajectories can be calculated. The reconstructor feature is presented in \nameref{sec:reconst}. \\
 
-The evaluation feature is presented in the section \nameref{sec:eval}, describing how requirement-based standards can be adapted/defined and compliance to said standards can be assessed. \\
+Per-DSType inspection of imported data is described in \nameref{chap:analyze}. In the current release, this covers MLAT data sources; further DSType-specific entries may be added in future releases. \\
 
-Revisiting saved points of interest is described in section \nameref{sec:view_points}. Inspection of loaded data using the existing Views is described in the sections \nameref{sec:table_view}, \nameref{sec:histo_view}, \nameref{sec:geo_view}, \nameref{sec:scatter_view} and \nameref{sec:grid_view}. \\
+The evaluation feature is presented in \nameref{sec:eval}, describing how requirement-based standards can be adapted or defined, and how compliance to said standards can be assessed. \\
+
+Inspection of loaded data using the existing Views is described in \nameref{sec:table_view}, \nameref{sec:histo_view}, \nameref{sec:geo_view}, \nameref{sec:scatter_view}, and \nameref{sec:grid_view}. \\
 
 The application commonly uses the 'Offline' mode. When ASTERIX data is imported from the network, the application switches into 'Live' mode, which is described in \nameref{sec:live_mode}. \\
 
-The automated execution of configured tasks is described in \nameref{sec:scripting}, both via the command line interface and also the runtime command interface. \\
+The automated execution of configured tasks is described in \nameref{sec:scripting}, both via the command line interface and the runtime command interface. \\
 
-In the section \nameref{sec:troubleshooting} details about reported issues are collected. It also contains instructions on how to report new issues. \\
+The web companion to COMPASS is introduced in \nameref{chap:compass_portal}. It exposes processed surveillance data over the intranet, drives the desktop backend through scheduled jobs, and aggregates results across weeks of recordings into KPI trend dashboards. \\
 
-In the last section \nameref{sec:appendix} additional details are listed. 
-The section \nameref{sec:appendix_utils} explains how data can be manually imported into COMPASS. 
-In \nameref{sec:appendix_licensing} information is given about under which conditions COMPASS can be used, and what libraries with what licenses are used in the background.
+In \nameref{sec:troubleshooting}, details about reported issues are collected. Instructions on how to report new issues are also given. \\
+
+In the last chapter, \nameref{sec:appendix}, additional details are listed. \nameref{sec:appendix_utils} explains how data can be manually imported into COMPASS. In \nameref{sec:appendix_licensing}, information is given about under which conditions COMPASS can be used, and what libraries with what licenses are used in the background.
 
 \pagebreak
 

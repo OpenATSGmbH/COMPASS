@@ -2,19 +2,23 @@
 
 \subsection{Operating System}
 
-The binary will currently only be provided for (somewhat current) Linux 64-bit operating systems. For the following distributions, the AppImage was reported to be working correctly:
+The binary will currently only be provided for (somewhat current) Linux 64-bit operating systems. The AppImage is built on Debian 10 and links against glibc 2.28, so any distribution shipping glibc 2.28 or newer should work. \\
+For the following distributions, the AppImage was reported to be working correctly or is expected to be compatible:
 
-\begin{itemize}  
-\item Debian 9 and later
-\item Ubuntu 18.04 and later
-\item Linux Mint 18.3 and later
+\begin{itemize}
+\item Debian 10 or later
+\item Ubuntu/Mint 20.04 or later
+\item RHEL, CentOS Stream, AlmaLinux or Rocky Linux 8 or later
+\item Fedora 29 or later
 \end{itemize}
 \ \\
 
-For the following distributions, the AppImage was reported to have issues:
+For the following distributions, the AppImage was reported to have issues (glibc versions too old):
 
-\begin{itemize}  
-\item CentOS 6.*: Unfortunately the operating system's glibc versions are too old.
+\begin{itemize}
+\item CentOS 6
+\item RHEL / CentOS 7
+\item Ubuntu 18.04 / Linux Mint 19.x
 \end{itemize}
 \ \\
 
@@ -33,15 +37,15 @@ The required hardware strongly depends on the use cases, for simple visual inspe
 \end{itemize}
 \ \\
 
-Depending on the loaded data size, more RAM or a better graphics card might be of advantage. \\
+Depending on the loaded data size a better CPU, more RAM or a better graphics card are definitely of advantage. \\
 
-\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that other graphics cards (Intel, Matrox) will in all probability also work, but are not supported. \\\\
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that other graphics cards (Intel, Matrox) will in all probability also work, but are not officially supported. \\\\
 
 An optimal setup could be similar to:
 
 \begin{itemize}  
 \item Intel i5 or better (at least 2 physical cores)
-\item Decent NVidia or ATI graphics card, e.g.
+\item Decent ATI or NVidia graphics card, e.g.
 \begin{itemize}  
 \item Nvidia Quattro, GT 740 or later, GTX 660 or later
 \item Or equivalent ATI GPU models
@@ -98,10 +102,10 @@ OpenGL ES profile extensions:
 
 This reveals several important points:
 
-\begin{itemize}  
+\begin{itemize}
 \item OpenGL vendor string: This is the graphics card driver. Only NVidia or ATI ones are supported.
-\item OpenGL version string: This is the OpenGL version, 3.0 or later is recommended.
-\item OpenGL shading language version string: This is the OpenGL shader version, 3.0 or later is recommended.
+\item OpenGL core profile version string: This is the OpenGL version, 3.3 (Core Profile) or later is required.
+\item OpenGL core profile shading language version string: This is the GLSL version, 3.30 or later is required.
 \end{itemize}
 
 \paragraph{Unsupported Graphics Cards or Drivers}
@@ -121,24 +125,6 @@ OpenGL context flags: (none)
 OpenGL extensions:
 \end{lstlisting}
 
-Or this:
-
-\begin{lstlisting}
-OpenGL vendor string: Intel Open Source Technology Center
-OpenGL renderer string: Mesa DRI Intel(R) Ivybridge Desktop 
-OpenGL core profile version string: 3.3 (Core Profile) Mesa 11.0.6
-OpenGL core profile shading language version string: 3.30
-OpenGL core profile context flags: (none)
-OpenGL core profile profile mask: core profile
-OpenGL core profile extensions:
-OpenGL version string: 3.0 Mesa 11.0.6
-OpenGL shading language version string: 1.30
-OpenGL context flags: (none)
-OpenGL extensions:
-OpenGL ES profile version string: OpenGL ES 3.0 Mesa 11.0.6
-OpenGL ES profile shading language version string: OpenGL ES GLSL ES 3.00
-OpenGL ES profile extensions:
-\end{lstlisting}
 
 In such cases, the following issues can be expected and will currently not be addressed:
 

@@ -4,9 +4,8 @@
 This task allows importing ASTERIX data recording files into the opened database. \\
 
 \begin{figure}[H]
-  \center
-    \hspace*{-0.5cm}
-    \includegraphics[width=17cm,frame]{figures/asterix_import_data.png}
+    \hspace*{-1.5cm}
+    \includegraphics[width=18cm]{figures/asterix_import_data.png}
   \caption{Import ASTERIX data}
 \end{figure}
 
@@ -16,7 +15,7 @@ There exist 5 tabs:
 \item Main: File label(s) and per-file decoding status, input line
 \item Decoder: jASTERIX decoder settings
 \item Override / Filter: Data override settings
-\item Data Sources: Probing results aggregated per data source and ASTERIX category
+\item Data Sources: Decode probing results listing data sources and ASTERIX contents
 \item Mappings: Definition of created database content based on decoded data
 \end{itemize}
 \ \\
@@ -51,7 +50,7 @@ Please \textbf{note} that the following ASTERIX categories, editions, reserved e
   030 & 7.0 & & & \\ \hline
   034 & 1.26 & & &  \\ \hline
   048 & 1.15, 1.23 & 1.9 & & X \\ \hline
-  062 & 1.12, 1.16, 1.18 & 1.2 & ARTAS TRIs & X \\ \hline
+  062 & 1.12, 1.16, 1.18, 1.21 & 1.2, 1.4 & ARTAS TRIs & X \\ \hline
   063 & 1.0, 1.1 & & & X \\ \hline
   065 & 1.2, 1.3 & & & X \\ \hline
   247 & 1.2 & & & \\ \hline
@@ -109,25 +108,58 @@ Below, the following items exist:
 \end{itemize}
 \ \\
 
-ASTERIX information (broadly speaking) does not include useful date information, only 'Time of Day' (ToD), which represents seconds since midnight. Thus, the date information must be derived from the ToD, e.g., by detecting a date rollover when a high time close to 23:59 resets to 00:00. \\
+\subsubsection{Timestamp Calculation}
 
-Since ASTERIX ToDs do not always appear sequentially, this algorithm is not completely straightforward, but allows for stable detection of 24h time jumps (unless disabled using checkbox). \\
+ASTERIX information does not include useful date information, only \textbf{T}ime \textbf{o}f \textbf{D}ay (\textbf{ToD}), which represents seconds since midnight UTC. The full timestamp is therefore derived from the configured 'UTC Day' plus the ToD, with an automatic 24h rollover detection that advances the day when ToDs near 23:59 reset to values close to 00:00. \\
 
-This works well when importing data from a single data source, e.g.:
+Since ASTERIX ToDs do not always appear strictly sequentially, the detection allows for a small vicinity around the 24h boundary and only triggers once both late and early values are observed within that window. \\
+
+Three controls in the Main tab influence the timestamp calculation:
+
 \begin{itemize}
-\item PSR Day 1 00:01 - Day 1 23:59 \textbf{or}
-\item PSR Day 1 22:00 - Day 2 02:00 \textbf{or}
-\item File 1 PSR Day 1 00:01 - Day 1 06:00 \textbf{followed by} \\{} File 2 PSR Day 1 06:01 - Day 1 12:00
+\item UTC Day: base date for the first ToD of the import
+\item Reset Date Between Files: re-anchors each file to 'UTC Day' as start day; use when the next file restarts at 00:00 of the same day rather than continuing the previous file's time line
+\item Ignore 24h Time Jumps: disables rollover detection entirely - all ToDs are mapped to the configured 'UTC Day'
 \end{itemize}
 \ \\
 
-However, it does not work well when importing 'mixed days' from different data sources, e.g. 
+\paragraph{Configuration Examples}
+
+The following examples show recommended settings for common file layouts:
+
 \begin{itemize}
-\item File 1 SMR Day 1 00:01 - Day 1 23:59 \textbf{followed by} \\{} File 2 MLAT Day 1 00:01 - Day 1 23:59
+\item Single file, single data source, single day (e.g. SMR Day 1 00:01 - Day 1 23:59)
+  \begin{itemize}
+  \item UTC Day: Day 1
+  \item Reset Date Between Files: \textbf{off}
+  \item Ignore 24h Time Jumps: \textbf{off}
+  \end{itemize}
+\item Single file spanning midnight (e.g. PSR Day 1 22:00 - Day 2 02:00)
+  \begin{itemize}
+  \item UTC Day: Day 1
+  \item Reset Date Between Files: \textbf{off}
+  \item Ignore 24h Time Jumps: \textbf{off} (rollover is auto-detected)
+  \end{itemize}
+\item Multiple sequential files from the same source on one continuous day (e.g. File 1 PSR Day 1 00:01 - 06:00, File 2 PSR Day 1 06:01 - 12:00)
+  \begin{itemize}
+  \item UTC Day: Day 1
+  \item Reset Date Between Files: \textbf{off}
+  \item Ignore 24h Time Jumps: \textbf{off}
+  \end{itemize}
+\item Multiple files from different sensors, each starting again at 00:00 of the same day (e.g. File 1 SMR Day 1 00:01 - 23:59, File 2 MLAT Day 1 00:01 - 23:59)
+  \begin{itemize}
+  \item UTC Day: Day 1
+  \item Reset Date Between Files: \textbf{on} (without it, the second file would be misdated to Day 2)
+  \item Ignore 24h Time Jumps: \textbf{off}
+  \end{itemize}
+\item Recording with non-sequential ToDs where any auto-rollover would be wrong (e.g. tracker output with re-ordered messages, all within one day)
+  \begin{itemize}
+  \item UTC Day: Day 1
+  \item Reset Date Between Files: \textbf{off}
+  \item Ignore 24h Time Jumps: \textbf{on}
+  \end{itemize}
 \end{itemize}
 \ \\
-
- In this case, a time-jump would be detected and MLAT would erroneously be imported as during Day 2. For this reason, the 'Reset Date Between Files' option was added, to force a reset to the specified UTC Day as start day for each file. \\
 
 
 \subsubsection{Decoder}
@@ -136,9 +168,8 @@ In this tab, all decoder settings can be configured. Please \textbf{note} that c
 therefore changing the information displayed in the main tab.
 
 \begin{figure}[H]
-  \center
-    \hspace*{-0.5cm}
-    \includegraphics[width=17cm,frame]{figures/asterix_import_data_decoder.png}
+    \hspace*{-1.5cm}
+    \includegraphics[width=18cm]{figures/asterix_import_data_decoder.png}
   \caption{Import ASTERIX data Decoder}
 \end{figure}
 
@@ -168,14 +199,76 @@ Using the 'Edit Categories' button, the ASTERIX definitions file is opened in a 
 
 Using the 'Refresh' button, all of the jASTERIX definitions are reloaded from the hard disk (e.g. to update after file changes were made). \\
 
+\subsubsection{Data Sources Tab}
+\label{sec:ui_import_asterix_data_sources_tab}
+
+This tab aggregates the probing pass per data source and per ASTERIX category, and joins the result with the data sources defined in the active Data Context. The tab is split into a tree on the left and a detail area on the right. \\
+
+\begin{figure}[H]
+    \hspace*{-1.5cm}
+    \includegraphics[width=18cm]{figures/asterix_import_data_sources.png}
+  \caption{ASTERIX Import: Data Sources tab}
+\end{figure}
+
+The tab applies to file imports only. Until the probing pass has produced data, the detail area shows a placeholder text:
+
+\begin{itemize}
+\item 'Data Sources tab applies to file imports only.': The current import source is a network feed
+\item 'Run the decoding check to populate data source information.': Probing has not yet produced any results
+\item 'Select a data source or category to see details.': Normal state, no tree row selected
+\end{itemize}
+\ \\
+
+\paragraph{Tree}
+
+The tree has 3 columns: 'Source', 'SAC/SIC' and 'Records'. Top-level entries are DSType groups (Radar, MLAT, ADS-B, Tracker, RefTraj, Other) in canonical order. Each group lists its data sources, each data source lists the ASTERIX categories observed during probing. \\
+
+\begin{itemize}
+\item DSType group row: Name of the DSType. Carries a hint icon when one of its data sources has a warning.
+\item Data source row: Source name (or 'DS ID' if unnamed), SAC/SIC and the total record count across all categories. A hint icon is shown when a warning applies (e.g. a Radar without configured position, an 'Other' DSType, or a probe-only data source).
+\item Category row: 'CATXXX' in the 'Source' column and the per-category record count in the 'Records' column.
+\end{itemize}
+\ \\
+
+Two special top-level groups may appear:
+
+\begin{itemize}
+\item 'Detected (not in context)': Sensors that were found in the probed data but are not yet defined in the active Data Context. The group carries the tooltip 'These sensors were detected in the probed data but are not yet defined in the active context.'. Each child row is labeled 'Unknown sensor' and shows the probed SAC/SIC.
+\item 'Unknown SAC/SIC': Aggregates records that lack a usable SAC/SIC (typically CAT001 / CAT002 records with a missing I010 item).
+\end{itemize}
+\ \\
+
+\paragraph{Data Source Detail}
+
+Selecting a data source row in the tree shows the data source detail widget on the right, identical to the one used in the Data Context dialog (see \nameref{sec:ui_configure_data_sources}). \\
+
+If the selected entry is a probe-only data source (detected but not in the context), a banner is shown above the editor with the text 'This sensor was detected in the probed data but is not yet in the active context.', along with an 'Add to Context' button (tooltip 'Create this data source in the active context using the values entered below.'). Confirming the button creates the data source in the active Data Context using the values currently entered in the editor. \\
+
+\paragraph{Category Detail}
+
+Selecting a 'CATXXX' row shows the per-item statistics table on the right, with a header label of the form 'CATXXX - <count> records' (or 'CATXXX - no records' when no record was observed). \\
+
+The table has the following columns:
+
+\begin{itemize}
+\item Item: Dotted ASTERIX data item name (e.g. '010', '050', '070.Mode3A')
+\item Count: Number of probed records carrying the item, followed by the percentage relative to the category total (e.g. '1234 (99.7\%)'); '-' if the item was not seen
+\item Min: Minimum value observed during probing, or '-' if not seen
+\item Max: Maximum value observed during probing, or '-' if not seen
+\end{itemize}
+\ \\
+
+Items that are defined in the selected jASTERIX edition but were not observed during probing are listed in disabled text color. The table can be sorted by clicking the column headers. \\
+
+
 \subsubsection{Override / Filter Tab}
 \label{sec:task_import_asterix_override}
 
 \begin{figure}[H]
   \center
-    \hspace*{-0.5cm}
-    \includegraphics[width=17cm,frame]{figures/asterix_import_data_override.png}
-  \caption{Task: Import ASTERIX Data Override / Filter}
+    \hspace*{-1.5cm}
+    \includegraphics[width=18cm]{figures/asterix_import_data_override.png}
+  \caption{ASTERIX Import Data Override / Filter}
 \end{figure}
 
 These features should only be used in very specific circumstances.
@@ -201,10 +294,11 @@ and auto-fills the offset accordingly.
 \item Filter Position Circle: Use center position latitude and longitude and range in nautical miles
 \item Filter Mode C: Use minimum / maximum rectangle in Mode C. Target reports without Mode C will not be filtered.
 \end{itemize}
-\item Obfuscate Secondary Information: Obfuscates main secondary information
+\item Obfuscate Secondary Information: Replaces secondary-identification values with deterministic random surrogates - the same input value always maps to the same output within the session
 \begin{itemize}
-\item Randomizes Mode 3/A code, except for conspicuity codes and '7777'
-\item Mode S address, identification: Random values
+\item Mode 3/A: random 12-bit replacement, except for conspicuity codes (octal 0000, 1000, 2000, 7500, 7600, 7700, 7776, 7777) which pass through unchanged.
+\item Mode S Aircraft Address (ACAD): random 24-bit ICAO address (range 1 to 0xFFFFFF)
+\item Mode S Aircraft Identification (ACID): replaced with a starship-name-derived string of the same letter length
 \end{itemize}
 \end{itemize}
 \ \\
@@ -214,75 +308,14 @@ Please \textbf{note} that the filtering is applied after the (optional) 'Time of
 
 Please also \textbf{note} that the obfuscation function currently only overrides the main DBContent variables, i.e. the one used for labels. Other additional secondary values could still be set in the database, therefore this function exists mainly for presentation purposes, not to safeguard against all use cases. Also, to create a time-shift in the data, it is recommended to set a wrong 'UTC Day' as well as to add a random 'Time of Day' override offset.
 
-\subsubsection{Data Sources Tab}
-\label{sec:ui_import_asterix_data_sources_tab}
-
-This tab aggregates the probing pass per data source and per ASTERIX category, and joins the result with the data sources defined in the active Data Context. The tab is split into a tree on the left and a detail area on the right. \\
-
-\begin{figure}[H]
-  \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: 'Data Sources' tab of the ASTERIX Import dialog, showing the DSType-grouped tree on the left, a CAT row selected, and the per-item statistics table on the right]}}\vspace{1.5cm}}}
-  \caption{ASTERIX Import: Data Sources tab}
-\end{figure}
-
-The tab applies to file imports only. Until the probing pass has produced data, or when no Data Context is active, the detail area shows a placeholder text:
-
-\begin{itemize}
-\item 'No active context - open or create a context to see data sources.': No Data Context is active
-\item 'Data Sources tab applies to file imports only.': The current import source is a network feed
-\item 'Run the decoding check to populate data source information.': Probing has not yet produced any results
-\item 'Select a data source or category to see details.': Normal state, no tree row selected
-\end{itemize}
-\ \\
-
-\paragraph{Tree}
-
-The tree has 3 columns: 'Source', 'SAC/SIC' and 'Records'. Top-level entries are DSType groups (Radar, MLAT, ADS-B, Tracker, RefTraj, Other) in canonical order. Each group lists its data sources, each data source lists the ASTERIX categories observed during probing. \\
-
-\begin{itemize}
-\item DSType group row: Name of the DSType. Carries a hint icon when one of its data sources has a warning.
-\item Data source row: Source name (or 'DS <id>' if unnamed), SAC/SIC formatted as '(sac/sic)', and the total record count across all categories. A hint icon is shown when a warning applies (e.g. a Radar without configured position, an 'Other' DSType, or a probe-only data source).
-\item Category row: 'CAT<NNN>' (zero-padded) in the 'Source' column and the per-category record count in the 'Records' column.
-\end{itemize}
-\ \\
-
-Two special top-level groups may appear:
-
-\begin{itemize}
-\item 'Detected (not in context)': Sensors that were found in the probed data but are not yet defined in the active Data Context. The group carries the tooltip 'These sensors were detected in the probed data but are not yet defined in the active context.'. Each child row is labeled 'Unknown sensor' and shows the probed SAC/SIC.
-\item 'Unknown SAC/SIC': Aggregates records that lack a usable SAC/SIC (typically CAT001 / CAT002 records with a missing CAT010 SAI item).
-\end{itemize}
-\ \\
-
-\paragraph{Data Source Detail}
-
-Selecting a data source row in the tree shows the data source detail widget on the right, identical to the one used in the Data Context dialog (see \nameref{sec:ui_configure_data_sources}). \\
-
-If the selected entry is a probe-only data source (detected but not in the context), a banner is shown above the editor with the text 'This sensor was detected in the probed data but is not yet in the active context.', along with an 'Add to Context' button (tooltip 'Create this data source in the active context using the values entered below.'). Confirming the button creates the data source in the active Data Context using the values currently entered in the editor. \\
-
-\paragraph{Category Detail}
-
-Selecting a 'CAT<NNN>' row shows the per-item statistics table on the right, with a header label of the form 'CAT<NNN> - <count> records' (or 'CAT<NNN> - no records' when no record was observed). \\
-
-The table has the following columns:
-
-\begin{itemize}
-\item Item: Dotted ASTERIX data item name (e.g. '010', '050', '070.Mode3A')
-\item Count: Number of probed records carrying the item, followed by the percentage relative to the category total (e.g. '1234 (99.7\%)'); '-' if the item was not seen
-\item Min: Minimum value observed during probing, or '-' if not seen
-\item Max: Maximum value observed during probing, or '-' if not seen
-\end{itemize}
-\ \\
-
-Items that are defined in the selected jASTERIX edition but were not observed during probing are listed in disabled text color. The table can be sorted by clicking the column headers. \\
 
 \subsubsection{Mappings Tab}
 
 \begin{figure}[H]
   \center
-    \hspace*{-0.5cm}
-    \includegraphics[width=17cm,frame]{figures/asterix_import_data_mappings.png}
-  \caption{Task: Import ASTERIX data mappings}
+    \hspace*{-1.5cm}
+    \includegraphics[width=18cm]{figures/asterix_import_data_mappings.png}
+  \caption{ASTERIX Import Data Mappings}
 \end{figure}
 
 At the top, the GUI elements can be used to show/add/remove ASTERIX JSON parsers. Below, the currently selected ASTERIX JSON parser is shown and can be configured. \\
@@ -290,7 +323,7 @@ At the top, the GUI elements can be used to show/add/remove ASTERIX JSON parsers
 An ASTERIX JSON parser in this context is the function that parses the JSON content created by the jASTERIX parser, and creates DBContent from it. 
 For each ASTERIX category a dedicated parser defines the mapping from JSON to a DBContent. \\
 
-For the common user, interaction is normally not recommended, but sometimes it might be interesting to know what DBContent is created from which ASTERIX data.
+For the common user, interaction is normally not recommended, but i can be used to understand what DBContent is created from what ASTERIX data.
 
 \paragraph{Top Elements}
 

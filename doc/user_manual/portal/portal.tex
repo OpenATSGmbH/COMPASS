@@ -1,32 +1,36 @@
 \chapter{COMPASS Portal}
 \label{chap:compass_portal}
 
-COMPASS Portal is a companion web application that provides browser-based intranet access to already processed COMPASS data and a job manager for driving COMPASS itself from a web UI. \\\\
+COMPASS Portal is the web companion to COMPASS. It exposes processed surveillance data over the intranet, drives the desktop backend through scheduled jobs, and aggregates results across weeks of recordings into trend dashboards. It is intended for operations, engineering and quality teams that need shared access to analysis results without running the desktop client per user. \\
 
-Please \textbf{note} that COMPASS Portal is a separate project with its own documentation and deployment. It is not part of the COMPASS AppImage and is not described in detail here; this chapter is intended to give the reader a high-level picture of what the Portal does and how it interacts with COMPASS. \\
-
-\subsection{Capabilities}
-
-\begin{itemize}
-\item Browser-based dashboard with KPI trend charts across processed days
-\item Target search and per-target detail pages
-\item Map view showing target trajectories on OpenStreetMap tiles
-\item Report viewer for PDF and DocX exports produced by COMPASS
-\item Job manager to queue, run, monitor and cancel ASTERIX import, reconstruction, evaluation and report export
-\item Pre-configured Analyze runs replayed on every processed day-folder (between reconstruction and evaluation), driven by the runtime command interface, one configured analysis entry per DSType
-\end{itemize}
-\ \\
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that COMPASS Portal is a separate project with its own documentation and deployment. It is not part of the COMPASS AppImage. This chapter only summarizes its capabilities; for installation, deployment, configuration and detailed usage, please refer to the COMPASS Portal project documentation. \\
 
 \textcolor{red}{\textbf{[TODO: ask maintainer whether to embed a single COMPASS Portal dashboard screenshot here; until then this section stays text-only]}}
 
-\subsection{Integration with COMPASS}
+\section{Feature Summary}
 
-COMPASS Portal does not read data through a running COMPASS process - finalized per-day databases are opened directly by the Portal. For tasks that need a COMPASS process (import, reconstruction, evaluation, analyze, export), job execution is delegated to a host-side runner that owns one COMPASS instance and forwards commands to it. \\
+The following capabilities are provided:
+\begin{itemize}
+\item Job Orchestration: queued, running, finished, failed and cancelled states for ASTERIX import, reconstruction, evaluation, analyze and report export, with one COMPASS job at a time and live progress
+\item Per-Day Database: self-contained DuckDB file per processed day produced by COMPASS, immutable once finalized, read directly by the Portal
+\item Days, Targets and Reports: browse the rolling archive with day summaries, target search by callsign, Mode S and Mode 3/A, per-target trajectories on OpenStreetMap tiles, and a report viewer for PDF and DOCX exports including tables, figures and geographic annotations
+\item Pre-configured Evaluations: define an evaluation once (reference data, test data, standard, sector layers) and apply it to every processed day with no further configuration
+\item KPI Trends: configurable extraction of metrics from report tables into per-data-series history, with cascading-filter dashboard, threshold lines, pass/fail markers and per-report summaries
+\item Multi-Site: one deployment hosts several independent operator contexts, each with its own archive, indices, evaluations and KPI history; a single shared backend process
+\item Integration API: the same JSON endpoints serve the browser frontend and external clients, with auto-generated OpenAPI specification for 3rd-party integration
+\end{itemize}
+\ \\
 
-The runner drives that COMPASS instance through the Runtime Command Interface (see \nameref{sec:rtcommand_interface}). At any time at most one COMPASS process is active per host, and runtime commands are serialized through the runner. \\
+Typical use cases include intranet-wide browsing of processed recordings and reports, scheduled nightly processing of new ASTERIX recordings, long-term KPI tracking of sensor and tracker performance, compliance trend reviews across days, weeks and months, and 3rd-party integration of analysis results via the JSON API. \\
 
-The 'Analyze Data Source' task (see \nameref{chap:analyze}) is the primary task exposed through the Portal job pipeline; one analysis entry per DSType is configured in the Portal and replayed automatically on each new processed day. \\
+\section{Integration with COMPASS}
 
-\subsection{Documentation Pointer}
+COMPASS Portal does not read data through a running COMPASS process. Finalized per-day databases are opened directly by the Portal. For tasks that require a COMPASS process (import, reconstruction, evaluation, analyze, export), job execution is delegated to a host-side runner that owns one COMPASS instance and forwards commands to it through the Runtime Command Interface (see \nameref{sec:rtcommand_interface}). \\
 
-For installation, deployment and configuration of COMPASS Portal please refer to the COMPASS Portal project documentation. \\
+At any time, at most one COMPASS process is active per host, and runtime commands are serialized through the runner. The 'Analyze Data Source' task (see \nameref{chap:analyze}) is the primary task exposed through the Portal job pipeline; one analysis entry per DSType is configured in the Portal and replayed automatically on each new processed day. \\
+
+\section{Distribution and Further Documentation}
+
+COMPASS Portal is delivered as an open-source Docker stack for a single Linux workstation. It is free for basic use including commercial; advanced features are part of the professional license. \\
+
+For installation, deployment, configuration and detailed usage, please refer to the COMPASS Portal project documentation. \\

@@ -104,38 +104,33 @@ void DataSourcesToolWidget::createUI()
         mode_layout->addWidget(color_mode_combo_);
         mode_layout->addStretch();
 
+        // Reference-trajectory / UTN-association status on the right end of
+        // the Color Mode row.
+        associations_label_ = new QLabel("No References Calculated");
+        mode_layout->addWidget(associations_label_);
+
         main_layout->addLayout(mode_layout);
     }
 
-    QHBoxLayout* assoc_layout = new QHBoxLayout();
+    QHBoxLayout* ts_layout = new QHBoxLayout();
 
-    // time
     QLabel* ts_label = new QLabel("Timestamps");
     ts_label->setFont(font_bold);
-    assoc_layout->addWidget(ts_label);
+    ts_layout->addWidget(ts_label);
 
-    assoc_layout->addWidget(new QLabel("Min"));
+    ts_layout->addWidget(new QLabel("Min"));
 
     ts_min_label_ = new QLabel("None");
-    assoc_layout->addWidget(ts_min_label_);
+    ts_layout->addWidget(ts_min_label_);
 
-    assoc_layout->addWidget(new QLabel("Max"));
+    ts_layout->addStretch();
+
+    ts_layout->addWidget(new QLabel("Max"));
 
     ts_max_label_ = new QLabel("None");
-    assoc_layout->addWidget(ts_max_label_);
+    ts_layout->addWidget(ts_max_label_);
 
-    assoc_layout->addStretch();
-
-    // assoc
-    QLabel* assoc_label = new QLabel("Associations");
-    assoc_label->setFont(font_bold);
-    assoc_layout->addWidget(assoc_label);
-
-    associations_label_ = new QLabel("None");
-    assoc_layout->addWidget(associations_label_);
-
-    assoc_layout->addStretch();
-    main_layout->addLayout(assoc_layout);
+    main_layout->addLayout(ts_layout);
 }
 
 /**
@@ -233,14 +228,9 @@ void DataSourcesToolWidget::updateAdditionalInfo()
 
     traced_assert(associations_label_);
     if (dbcont_man.hasAssociations())
-    {
-        std::string tmp = "From " + dbcont_man.associationsID();
-        associations_label_->setText(tmp.c_str());
-    }
+        associations_label_->setText("References Calculated");
     else
-    {
-        associations_label_->setText("None");
-    }
+        associations_label_->setText("No References Calculated");
 }
 
 void DataSourcesToolWidget::colorModeChangedSlot(int index)
