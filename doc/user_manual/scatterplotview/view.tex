@@ -4,6 +4,7 @@
 A ScatterPlot View displays the distribution of two numerical variables as points. When started, it presents itself in the following manner.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/scatter_start.png}
   \caption{ScatterPlot View startup}
@@ -22,6 +23,7 @@ Both areas can be resized and hidden if desired.
 To load the data the mechanism described in section \nameref{sec:ui_overview} or the 'Reload' button can be used. To filter the dataset, the mechanism described in section \nameref{sec:filters} can be used. \\
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/scatter_loaded.png}
   \caption{ScatterPlot View after loading data}
@@ -80,7 +82,7 @@ Such a variable can be any numerical variable. A reload operation might be requi
 The Config Tab includes the shared Layers Tree (see \nameref{sec:layers_tree}), which controls per-DBContent / per-Data-Source / per-line visibility for the scatter data items. The dedicated per-view annotation tab that existed in earlier releases has been removed; plottable scatter annotations of active View Points are now exposed under the 'Annotations' group of the Layers Tree. When multiple scatter annotations are present, the 'Plot' and (if available) 'Plot Group' combo boxes are used to choose between them. \\
 
 \begin{figure}[H]
-  \center
+  \centering
     \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Scatter Plot View Configuration Panel with the shared Layers Tree visible]}}\vspace{1.5cm}}}
   \caption{Scatter Plot View: shared Layers Tree in the Config Tab}
 \end{figure}
@@ -96,6 +98,7 @@ in order to prevent performance issues. After the reload the connection lines ca
 If the 'Select' tool is active, data can be selected. Using the left mouse-button a red selection rectangle can be spanned across all data points that should be selected.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/scatter_select.png}
   \caption{ScatterPlot View data selection}
@@ -104,6 +107,7 @@ If the 'Select' tool is active, data can be selected. Using the left mouse-butto
 The selected data is then presented in an extra 'Selected' item in the scatter data list.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/scatter_selected.png}
   \caption{ScatterPlot View data selected}

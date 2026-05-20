@@ -6,7 +6,7 @@ This task allows target report association based on ARTAS tracks and the TRI inf
 Please note that if no ARTAS TRI SPF information exists in the database, these steps cannot be performed successfully.\\
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=16cm]{figures/artas_association_config.png}
   \caption{Calculate ARTAS Target Report Usage Configuration}
 \end{figure}
@@ -41,7 +41,7 @@ Consider the following figure: In a timeline, a system track update exists at ti
 
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=8cm]{figures/artas_assoc_timeline.png}
 \end{figure}
 
@@ -51,14 +51,14 @@ The time window defined by [\textit{Association Time Past, Association Time Futu
 In this example, 1 and 2 are considered, while 3 is disregarded. Since 1 is closer in time to the system track update, the association between (0,1) is made.
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=8cm]{figures/artas_assoc_window.png}
 \end{figure}
 
 The time defined by \textit{Dubious Association Distant Time} is used to mark associations which are older than the defined time as dubious. The associations are still created, but counted as dubious. Since 2 is still in the association time window, the association (0,2) is made but counted as dubious.
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=8cm]{figures/artas_assoc_dubious_distant_window.png}
 \end{figure}
 
@@ -66,7 +66,7 @@ The time defined by \textit{Dubious Association Distant Time} is used to mark as
 The time window defined by [\textit{Dubious Association Close Time Past, Dubious Association Close Time Future}] defines when associations are counted as dubious if multiple referenced sensor target reports exist in it. In this case, 1 and 2 are considered for association, and since 1 is closer in time to the system track update, the association between (0,1) is made. But, since 2 also falls into this time window, the association of (0,1) is counted as dubious association.
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=8cm]{figures/artas_assoc_dubious_close_window.png}
 \end{figure}
 

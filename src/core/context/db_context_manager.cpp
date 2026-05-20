@@ -2035,6 +2035,57 @@ void DBContextManager::deleteSector(shared_ptr<Sector> sector)
     emit sectorsChangedSignal();
 }
 
+void DBContextManager::deleteSectors(const vector<shared_ptr<Sector>>& sectors)
+{
+    traced_assert(sectors_loaded_);
+
+    if (sectors.empty())
+        return;
+
+    auto& ctx_sectors = activeContext().sectors();
+
+    for (const auto& sector : sectors)
+    {
+        traced_assert(sector);
+        auto iter = find_if(ctx_sectors.begin(), ctx_sectors.end(),
+                            [&sector](const shared_ptr<Sector>& x) { return x->id() == sector->id(); });
+        if (iter != ctx_sectors.end())
+            ctx_sectors.erase(iter);
+    }
+
+    saveContext(activeContextName());
+    if (compass_.dbOpened())
+        writeContextToDB();
+
+    rebuildSectorLayers();
+
+    emit sectorsChangedSignal();
+}
+
+void DBContextManager::deleteSectorLayer(const std::string& layer_name)
+{
+    traced_assert(sectors_loaded_);
+
+    auto& ctx_sectors = activeContext().sectors();
+
+    auto new_end = std::remove_if(ctx_sectors.begin(), ctx_sectors.end(),
+                                  [&layer_name](const shared_ptr<Sector>& s)
+                                  { return s->layerName() == layer_name; });
+
+    if (new_end == ctx_sectors.end())
+        return;
+
+    ctx_sectors.erase(new_end, ctx_sectors.end());
+
+    saveContext(activeContextName());
+    if (compass_.dbOpened())
+        writeContextToDB();
+
+    rebuildSectorLayers();
+
+    emit sectorsChangedSignal();
+}
+
 void DBContextManager::deleteAllSectors()
 {
     traced_assert(sectors_loaded_);

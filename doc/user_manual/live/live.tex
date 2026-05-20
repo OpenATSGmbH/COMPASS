@@ -12,7 +12,7 @@ There exist 3 application modes:
 \ \\
 
 \begin{figure}[H]
- \center
+ \centering
     \includegraphics[width=8cm]{figures/modes.png}
   \caption{Application Modes}
 \end{figure}
@@ -25,6 +25,7 @@ Please note that the data sources have to be correctly set up for reading networ
 When that Live mode is enabled and the correct network lines are setup (and active) the main window is shown as follows. 
 
 \begin{figure}[H]
+  \centering
   \hspace*{-2.5cm}
     \includegraphics[width=19cm]{figures/live_mode.png} 
   \caption{Main Window in Live Mode}
@@ -54,7 +55,7 @@ Please \textbf{note} that currently only the Geographic View displays data in li
 \label{sec:sensor_status_live_mode}
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=10cm,frame]{figures/sensor_status_overview.png}
   \caption{Sensor Status Overview}
 \end{figure}
@@ -89,7 +90,7 @@ This period can be specified by opening the tool's configuration menu \includegr
 For each listed sensor, the time of day of the sensor's last received update can be displayed by selecting \textit{Show Last Update ToD} in the configuration menu. \\
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=12cm,frame]{figures/sensor_status_detail.png}
   \caption{Sensor Status: Show Last Update ToD}
 \end{figure}
@@ -105,7 +106,7 @@ Below the sensor list, two items are displayed:
 At the bottom, a text box lists all important updates and status changes of the selected tracker line.
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=14cm,frame]{figures/sensor_status_log.png}
   \caption{Sensor Status: Sensor Status Log}
 \end{figure}
@@ -120,6 +121,7 @@ Time of Day | Sensor Name | Old State $\rightarrow$ New State
 In Live mode, the Geographic View automatically shows the same elements as with the time filter, and the main components are the same as in Offline mode (although some are deactivated).
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geo_live_mode.png}
   \caption{Geographic View in Live Mode}
@@ -136,6 +138,7 @@ When clicking the \includegraphics[width=0.5cm,frame]{../../data/icons/right.png
 To indicate if the displayed data is the currently most recent or from a previous point in time, the Geographic View can display colored text (by default "Online" or "Offline"). After creation of the OSView and closing the application, this feature can be enabled using the configuration options listed in \nameref{sec:live_online_offline}.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geoview_offline_status.png}
   \caption{Geographic View Overload Message}
@@ -151,6 +154,7 @@ The ASTERIX Import task as well as the Geographic View can detect and handle ove
 If such a latency is larger than 3 seconds, existing Geographic Views skip drawing until re-synchronization is possible (display latency $<$ 3s). During such an overload, the Geographic Views show a red overload message on the bottom right, with the display latency in seconds. After such an overload, no loss of data occurred and all data is displayed. \\
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geoview_overload.png}
   \caption{Geographic View Overload Message}

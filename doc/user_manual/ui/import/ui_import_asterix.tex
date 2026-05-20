@@ -4,6 +4,7 @@
 This task allows importing ASTERIX data recording files into the opened database. \\
 
 \begin{figure}[H]
+    \centering
     \hspace*{-1.5cm}
     \includegraphics[width=18cm]{figures/asterix_import_data.png}
   \caption{Import ASTERIX data}
@@ -168,6 +169,7 @@ In this tab, all decoder settings can be configured. Please \textbf{note} that c
 therefore changing the information displayed in the main tab.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-1.5cm}
     \includegraphics[width=18cm]{figures/asterix_import_data_decoder.png}
   \caption{Import ASTERIX data Decoder}
@@ -205,6 +207,7 @@ Using the 'Refresh' button, all of the jASTERIX definitions are reloaded from th
 This tab aggregates the probing pass per data source and per ASTERIX category, and joins the result with the data sources defined in the active Data Context. The tab is split into a tree on the left and a detail area on the right. \\
 
 \begin{figure}[H]
+    \centering
     \hspace*{-1.5cm}
     \includegraphics[width=18cm]{figures/asterix_import_data_sources.png}
   \caption{ASTERIX Import: Data Sources tab}
@@ -265,7 +268,7 @@ Items that are defined in the selected jASTERIX edition but were not observed du
 \label{sec:task_import_asterix_override}
 
 \begin{figure}[H]
-  \center
+  \centering
     \hspace*{-1.5cm}
     \includegraphics[width=18cm]{figures/asterix_import_data_override.png}
   \caption{ASTERIX Import Data Override / Filter}
@@ -312,7 +315,7 @@ Please also \textbf{note} that the obfuscation function currently only overrides
 \subsubsection{Mappings Tab}
 
 \begin{figure}[H]
-  \center
+  \centering
     \hspace*{-1.5cm}
     \includegraphics[width=18cm]{figures/asterix_import_data_mappings.png}
   \caption{ASTERIX Import Data Mappings}
@@ -346,7 +349,7 @@ Whenever a mapping is selected, the details are shown on the right side, providi
 Using the 'Show DBContent Variable' button the variable can be inspected in detail.
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=7cm]{figures/asterix_import_data_dbcont_var_details.png}
   \caption{Task: Import ASTERIX Data DBContent Variable Details}
 \end{figure}
@@ -358,25 +361,24 @@ The 'Cancel' button aborts the import.  The 'Import' button triggers the import 
 Using the 'Import' button, the import task can be performed. During import a status indication will be shown. \\
 
 \begin{figure}[H]
-  \center
-    \includegraphics[width=14cm,frame]{figures/asterix_import_data_status.png}
+    \centering
+    \hspace*{-1.5cm}
+    \includegraphics[width=18cm]{figures/asterix_import_data_status.png}
   \caption{Import ASTERIX data status}
 \end{figure}
 
-If a decoding error occurs, an error is indicated in the status dialog. Errors encountered during import - failed records, decoding errors and missing definitions - are aggregated into the notes of the import report shown after the run completes, rather than only being written to the log. \\
+If a decoding error occurs even if the ASTERIX probing did not previously detect any, an error is indicated in the status dialog. Errors encountered during import - failed records, decoding errors and missing definitions - are aggregated into the notes of the import report shown after the run completes, rather than only being written to the log. \\
 
-\begin{figure}[H]
-  \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: import report notes section listing aggregated decoding errors after an import run with failures]}}\vspace{1.5cm}}}
-  \caption{ASTERIX Import: aggregated error report}
-\end{figure}
+%\begin{figure}[H]
+%  \center
+%    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: import report notes section listing aggregated decoding errors after an import run with failures]}}\vspace{1.5cm}}}
+%  \caption{ASTERIX Import: aggregated error report}
+%\end{figure}
 
 Please make sure that the correct framing and edition versions are selected, or contact the author for support if this does not resolve the issue. \\
 
-Please \textbf{note} that jASTERIX 'flat mode' is auto-enabled internally based on the JSON structure produced by the decoder. This is an internal performance improvement, no user-facing control exists. \\
-
 \paragraph{Comments}
-The time needed for the import strongly depends on the available CPU performance (multithreading being very beneficial), but an import of 5 million target reports takes about 3:30 minutes on the author's hardware. \\
+The time needed for the import strongly depends on the available CPU performance (multithreading being very beneficial), but an import of 5 million target reports takes about 2 minutes on the author's hardware. \\
 
 The (truncated) timestamps of CAT001 are calculated in a simple algorithm based on the CAT002 messages from the same sensor, so their timestamp data is a bit unreliable, but exact enough for e.g. time window filtering. \\
 
