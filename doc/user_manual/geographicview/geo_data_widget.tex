@@ -17,7 +17,7 @@ The following operations exist, if no tool is used (from the toolbar):
   \begin{tabular}{ | l | l | l | l |}
     \hline
     \textbf{Mouse Action} & \textbf{Clicked element} &\textbf{Key Action} &  \textbf{Description} \\ \hline
-    LMB click & Geometry & Label & Toggle label \\ \hline
+    LMB click & Data & Label & Toggle label \\ \hline
     LMB click and hold & Label & Label & Maximize label \\ \hline
     LMB click \& drag & & - & Traverse map \\ \hline
     LMB double click & & - & Zoom to clicked location \\ \hline
@@ -25,7 +25,8 @@ The following operations exist, if no tool is used (from the toolbar):
     MMB click \& drag & & - & Rotate map \\ \hline
     MMB scroll \& drag & & - & Zoom map \\ \hline
     RMB click & & Quick menu & Clear labels/selection/measurements \\ \hline
-    RMB click & Geometry & Geometry menu & Various actions \\ \hline
+    RMB click & Data & Data menu & Various actions \\ \hline
+    RMB click & Label & Label menu & Copy label cell, toggle, layer actions \\ \hline
     RMB click \& drag & & - & Zoom map \\ \hline
     - & & Space bar & Return to home position \\ \hline
   \end{tabular}
@@ -68,7 +69,7 @@ Please note that if automatic labeling is active, manually created labels are cl
 
 \subsubsection{Maximized Label}
 
-Existing labels can be maximized to show all (currently available) information about a target report. Simply do a LMB click on a existing label and hold the LMB.
+Existing labels can be maximized to show all (currently available) information about a target report. Simply do a LMB double click on a existing label.
 
 \begin{figure}[H]
     \centering
@@ -77,9 +78,35 @@ Existing labels can be maximized to show all (currently available) information a
   \caption{Geographic View maximized label}
 \end{figure}
 
-The maximized label information is shown until the LMB is released.
+The maximized label information is shown until another left click is made.
 
-\subsubsection{Geometry Menu}
+\subsubsection{Label Menu}
+
+A RMB click on a label opens the label context menu.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10cm,frame]{figures/geoview_label_menu.png}
+  \caption{Geographic View label context menu}
+\end{figure}
+
+The following entries exist:
+
+\begin{itemize}
+ \item Copy '\textit{text}': Copies the clicked label cell's text to the clipboard. Only shown when the click hits a non-header cell.
+ \item Toggle Label: Hide the label.
+ \item Target Report: Submenu with per-report actions. Enabled only for layers that support them:
+    \begin{itemize}
+     \item Show/Clear ARTAS Target Report Usage: ARTAS tracker layers
+     \item Show/Clear MLAT Contributing RUs: CAT020 MLAT layers
+    \end{itemize}
+ \item Group: Same operations as on the item group's layer menu
+ \item Parents: Same operations as on the item's parent layer menu (DBContent, Line, DataSource, DSType)
+\end{itemize}
+
+Below the Copy and Target Report entries, the menu duplicates the actions of the Data Menu (see \nameref{sec:data_operations} for details).
+
+\subsubsection{Data Menu}
 
 Several data-related operations can be performed in the data widget by a RMB click on a target report symbol.
 
@@ -87,7 +114,7 @@ Several data-related operations can be performed in the data widget by a RMB cli
     \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geoview_data_operations.png}
-  \caption{Geographic View geometry operations}
+  \caption{Geographic View data operations}
 \end{figure}
 
 The data context menu allows the following operations:
@@ -98,12 +125,12 @@ The data context menu allows the following operations:
  \item Parents: Same operations as on the item's parent layer menu
 \end{itemize}
 
-Depending on the grouping mode in the 'Config' tab, different parent layer items are shown. For each of these parents the same menu entries exist as if they were clicked in the 'Layers' tab. Please refer to \nameref{sec:geometry_operations} for details.
+Depending on the grouping mode in the 'Config' tab, different parent layer items are shown. For each of these parents the same menu entries exist as if they were clicked in the 'Layers' tab. Please refer to \nameref{sec:data_operations} for details.
 
 
 \subsubsection{Quick Menu}
 
-Several operations can be performed by a RMB click on the background map (no geometry).
+Several operations can be performed by a RMB click on the background map (no data).
 
 \begin{figure}[H]
     \centering
@@ -120,7 +147,7 @@ Several operations can be performed by a RMB click on the background map (no geo
 
 %\subsubsection{Show Associations}
 
-%Of special interest is of the case when association information is present and a 'UTN' group mode is used. Using the Geometry Menu of a layer item which generated the associations (e.g. ARTAS Tracker), the association information can be shown for each target report of the layer.
+%Of special interest is of the case when association information is present and a 'UTN' group mode is used. Using the Data Menu of a layer item which generated the associations (e.g. ARTAS Tracker), the association information can be shown for each target report of the layer.
 % 
 % \begin{figure}[H]
 %     \hspace*{-2.5cm}
@@ -284,7 +311,7 @@ Please \textbf{note} that the time filter is automatically deactivated if a re-l
   \caption{Geographic View depth check}
 \end{figure}
 
-Please note that if the display check is activated for geometry without height display, bad rendering can occur. For this reason, this mode is only recommended for geometry display with height and is disabled in 2D display mode.
+Please note that if the display check is activated for data without height display, bad rendering can occur. For this reason, this mode is only recommended for data display with height and is disabled in 2D display mode.
 
 \subsubsection{Save View Point}
 

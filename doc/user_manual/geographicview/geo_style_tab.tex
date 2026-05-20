@@ -10,118 +10,18 @@
 In the 'Style' tab, several elements exist:
 
 \begin{itemize}
- \item Layer Mode: Defines how layers are generated. Please refer to section \nameref{sec:layer_mode} for details.
  \item Connect Last Layer: Whether grouped target reports in the last layer should be connected using lines
  \item Connect None Height: If groups are connected, whether target reports with no height information should be connected
  \item Blend Mode: Defines the drawing blend mode, allowing clearer symbols (contour) or colors (src-over).
- \item Style: Defines how geometry is styled. Please refer to section \nameref{sec:style} for details.
+ \item Style: Defines how data is styled. Please refer to section \nameref{sec:style} for details.
  \item Render Order: Defines the drawing order of DBContents. To bottom one is drawn first, the top one last (over all others)
-\end{itemize} 
-
-\subsubsection{Layer Mode}
-\label{sec:layer_mode}
-
-In this selection the way layers are generated can be changed. \\\\
-
-The following items can be present in the list:\\
-
-\begin{itemize}
- \item DBContent: DBContent type, e.g. Radar, MLAT, ...
- \item DS ID: Data source identifier, e.g Radar1, Radar2, ARTAS
- \item Aircraft Identification: Mode S Target Identification
- \item Aircraft Address: Mode S Target Address
- \item Track Number: Track number (local or system)
- \item Mode 3/A Code: Mode 3/A code
- \item Line ID: Line ID from import
- \item UTN: Unique Target Number, only available if association information is present
 \end{itemize}
-\ \\
-
-The layer mode defines what layers are generated, e.g. for 'A' only layers for all values of 'A' are created, for 'A:B' layers for all values of 'A' are created, each with sub-layers for all values of 'B'. In this case, 'A' is the parent, 'B' is the child. \\\\
-
-If no values exist in the data for a layer, this data is grouped in the layer 'None'.\\\\
-
-The following modes exist: \\
-
-\begin{itemize}
-\item DBContent:DS ID
-\item DBContent:DS ID:Line ID
-\item DBContent:DS ID:Line ID:Aircraft Address
-\item DBContent:DS ID:Line ID:Track Number
-\item DBContent:DS ID:Aircraft Identification
-\item DBContent:DS ID:Aircraft Address
-\item DBContent:DS ID:Track Number
-\item DBContent:DS ID:Mode 3/A Code
-\item UTN:DBContent:DS ID
-\item UTN:DBContent:DS ID:Line ID
-\item UTN:DBContent:DS ID:Aircraft Identification
-\item UTN:DBContent:DS ID:Aircraft Address
-\item UTN:DBContent:DS ID:Track Number
-\item UTN:DBContent:DS ID:Mode 3/A Code
-\item Aircraft Identification:DBContent:DS ID
-\item Mode 3/A Code:DBContent:DS ID
-\item Aircraft Address:DBContent:DS ID
-\item Aircraft Address:DBContent:DS ID:Line ID
-\end{itemize}
-\  \\
-
-Please note that the UTN layer modes only exist when association information is present. \\
-
-Please also note that after a change in the Layer mode a redraw has to be triggered before the changes take effect. \\
-
-As examples, a few values for the Layer mode are listed. \\
-
-\paragraph{DBContent:DS ID}
-
-In this layer mode the DBContent name is used to create the first layer, with sub-layers for each data source.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=8cm,frame]{figures/geoview_group_dbcont_ds.png}
-  \caption{Geographic View layer mode DBContent:DS ID}
-\end{figure}
-
-\paragraph{Mode 3/A Code:DBContent:DS ID}
-
-In this layer mode the Mode 3/A code is used to create the first layer, with sub-layers for each DBContent and data source.
-
-\begin{figure}[H]
-\centering
-    \includegraphics[width=8cm,frame]{figures/geoview_group_ma_dbcont.png}
-  \caption{Geographic View layer mode Mode 3/A Code:DBContent:DS ID}
-\end{figure}
-
-\paragraph{UTN:DBContent:DS ID}
-
-In this layer mode the UTN is used to create the first layer, with sub-layers for each DBContent. All target reports without a UTN (not used by ARTAS) are grouped into layer 'None'.  \\
-
-An example of this mode is shown in the styling section.
-
 
 \subsubsection{Connect Last Layer \& Connect None Height}
 
 If the 'Connect Last Layer' checkbox is set, connection lines between all target reports in the last layer are drawn, except for the 'None' layer. \\
 
 Please note that connection lines for target reports with a time-of-day difference larger than 5 minutes will be omitted. \\
-
-\includegraphics[width=0.5cm]{../../data/icons/hint.png} If this is activated for a Layer mode in which the last layer is not target-specific, this will lead to a sub-optimal representation. \\
-
-This mode (normally) makes sense in one of the following Layer modes:
-
-\begin{itemize}
-\item DBContent:DS ID:Line ID:Aircraft Address
-\item DBContent:DS ID:Line ID:Track Number
-\item DBContent:DS ID:Aircraft Identification
-\item DBContent:DS ID:Aircraft Address
-\item DBContent:DS ID:Track Number
-\item UTN:DBContent:DS ID:Aircraft Identification
-\item UTN:DBContent:DS ID:Aircraft Address
-\item UTN:DBContent:DS ID:Track Number
-\item Aircraft Identification:DBContent:DS ID
-\item Aircraft Address:DBContent:DS ID
-\item Aircraft Address:DBContent:DS ID:Line ID
-\end{itemize}
-\  \\
 
 \begin{figure}[H]
     \centering
@@ -178,7 +78,7 @@ The following layer-based style presets exist:
 
 Please note that after changing the style to one of these value a redraw has to be triggered. \\
 
-\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please also note that for such presets the data from which the style is derived has to be present in the Layer mode, otherwise the layer is styled with a common base style.
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please also note that for such presets the data from which the style is derived has to be present, otherwise the layer is styled with a common base style.
 
 \paragraph{Target Report based Style Presets}
 The following Target report based style presets exist:
@@ -198,11 +98,11 @@ Please note that after changing the style to one of these value a reload has to 
 
 \subsubsection{Customized Styling}
 
-While the presets come with (mostly) reasonable default values, adaptation can be performed by clicking on the value that should be changed, either in the Default Style or the Generated rules. Any changes are applied immediately to the geometry.
+While the presets come with (mostly) reasonable default values, adaptation can be performed by clicking on the value that should be changed, either in the Default Style or the Generated rules. Any changes are applied immediately to the data.
 
 \subsubsection{Style Examples}
 
-To give a few examples, some interesting Layer modes and Style preset combinations are given:
+To give a few examples, some interesting Style presets are shown:
 
 \begin{figure}[H]
     \centering
@@ -305,7 +205,7 @@ Please note, in this style one can set the following parameters (by clicking the
 
 \subsubsection{Render Order}
 
-In the render order widget, the drawing order of the drawn geometry is specified. The one at the top is drawn last (over all others), so it is useful to move the most important DBContent (for the current inspection) to the top.
+In the render order widget, the drawing order of the drawn data is specified. The one at the top is drawn last (over all others), so it is useful to move the most important DBContent (for the current inspection) to the top.
 
 \begin{figure}[H]
     \centering
