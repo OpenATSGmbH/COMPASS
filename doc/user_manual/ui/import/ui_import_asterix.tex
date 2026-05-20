@@ -369,13 +369,28 @@ Using the 'Import' button, the import task can be performed. During import a sta
 
 If a decoding error occurs even if the ASTERIX probing did not previously detect any, an error is indicated in the status dialog. Errors encountered during import - failed records, decoding errors and missing definitions - are aggregated into the notes of the import report shown after the run completes, rather than only being written to the log. \\
 
-%\begin{figure}[H]
-%  \center
-%    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: import report notes section listing aggregated decoding errors after an import run with failures]}}\vspace{1.5cm}}}
-%  \caption{ASTERIX Import: aggregated error report}
-%\end{figure}
 
 Please make sure that the correct framing and edition versions are selected, or contact the author for support if this does not resolve the issue. \\
+
+\subsubsection{Report}
+
+After an import run completes, a task report named 'ASTERIX Import' is generated and shown in the Reports tool of the Flight Deck (see \nameref{sec:reports}). The report is appended to across runs: each subsequent ASTERIX import adds new rows and sections rather than overwriting the previous ones. \\
+
+The report is organized as follows:
+
+\begin{itemize}
+\item Overview: 'Imported Files' table with one row per imported file, containing the columns '\#', 'Begin', 'Elapsed', 'File', 'Size', 'Source', 'Framing', 'Errors', 'Warnings'. Each row links to the corresponding per-file section.
+\item Files: One sub-section per imported file, containing:
+  \begin{itemize}
+  \item Info: Filename, path, size, content info, source, framing, import timestamp, elapsed time, number of PCAP sections (if any).
+  \item Records per Data Source: For each detected data source, the DS Type and the per-DBContent record counts; each row links to the corresponding data source detail sub-section.
+  \item One sub-section per DSType, with one sub-section per Data Source, with one table per ASTERIX category. Each table lists the data items observed during probing ('Item', 'Count', 'Min', 'Max', 'Description'); items defined in the active edition but not seen during probing are listed with count 0 and highlighted in red.
+  \item Errors / Warnings: Text block listing probe-time errors and warnings of the file and its sections, when present.
+  \end{itemize}
+\end{itemize}
+\ \\
+
+Please \textbf{note} that the per-data-item statistics in the report are derived from the probing pass (see \nameref{sec:ui_import_asterix_probing}), which reads only the beginning of each file. Counts, minima and maxima are therefore sample-side estimates and do not necessarily reflect the full file. Errors encountered during the actual import are aggregated separately into the report's notes. \\
 
 \paragraph{Comments}
 The time needed for the import strongly depends on the available CPU performance (multithreading being very beneficial), but an import of 5 million target reports takes about 2 minutes on the author's hardware. \\

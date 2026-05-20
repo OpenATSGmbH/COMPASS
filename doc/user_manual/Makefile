@@ -11,6 +11,10 @@ PDFLATEX := pdflatex
 
 PDFLATEX_FLAGS := -interaction=nonstopmode -file-line-error -synctex=1
 
+# Pick up the local texmf.cnf (raised memory limits for this large document).
+# The trailing :: keeps the system texmf.cnf in the search path.
+export TEXMFCNF := $(CURDIR)::
+
 .PHONY: draft quality clean help
 
 help:
