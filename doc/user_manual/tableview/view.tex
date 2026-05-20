@@ -4,6 +4,7 @@
 A Table View displays DBContent data as text in tables to allow textual data inspection. When started, it presents itself in the following manner.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/table_start.png}
   \caption{Table View startup}
@@ -26,6 +27,7 @@ Please \textbf{note} that the earlier per-DBContent tabs and the separate 'All' 
 To load the data the 'Reload' button or the mechanism described in section \nameref{sec:ui_overview} can be used. To filter the dataset, the mechanism described in section \nameref{sec:filters} can be used. \\
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/table_loaded.png}
   \caption{Table View after loading}
@@ -34,13 +36,13 @@ To load the data the 'Reload' button or the mechanism described in section \name
 Once updated, the table is filled with text representing the values of the chosen DBContent variables. If a value is undefined its cell remains empty. Target reports from multiple DBContents appear interleaved in the same sorted table, allowing cross-comparison workflows that were not possible with the previous per-tab layout. \\
 
 \begin{figure}[H]
-  \center
+  \centering
     \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: unified Table View with the shared Layers Tree visible on the right and several DBContents enabled, showing interleaved rows]}}\vspace{1.5cm}}}
   \caption{Table View: unified table with multiple layers}
 \end{figure}
 
 \begin{figure}[H]
-  \center
+  \centering
     \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: same Table View with only one layer active in the Layers Tree]}}\vspace{1.5cm}}}
   \caption{Table View: single layer active}
 \end{figure}
@@ -52,7 +54,7 @@ Please \textbf{note} that since a specific variable might only exist in certain 
 Each column header can be left-clicked to sort the table by that column. Clicking the same header again toggles the sort direction; clicking a different header switches the sort to that column. Only a single column is sorted at a time. \\
 
 \begin{figure}[H]
-  \center
+  \centering
     \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: close-up of a column header showing the Qt sort indicator arrow]}}\vspace{1.5cm}}}
   \caption{Table View: column sort indicator}
 \end{figure}
@@ -100,6 +102,7 @@ When pressing the 'Remove' button, a selected variable is removed. Pressing the 
 If Meta variables are used, they are displayed for all DBContents they exist in. If a DBContent variable is used, it is only displayed in its native content.
 
 \begin{figure}[H]
+    \centering
     \includegraphics[width=16cm,frame]{figures/table_add.png}
   \caption{Table View adding of variables}
 \end{figure}
@@ -121,7 +124,7 @@ When the 'Use Presentation' checkbox is not checked, the original database value
 In particular, with Use Presentation enabled, the CAT020 'Contributing Receivers' column shows RU names (multi-line if needed) instead of numerical indexes, provided RU names are defined on the parent MLAT data source (see \nameref{sec:ui_configure_ds_mlat_rus}). When no RU names are defined, indexes remain. \\
 
 \begin{figure}[H]
-  \center
+  \centering
     \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Table View with Use Presentation enabled, showing the Contributing Receivers column with RU names instead of indexes]}}\vspace{1.5cm}}}
   \caption{Table View: MLAT Contributing Receivers with names}
 \end{figure}
@@ -144,6 +147,7 @@ To copy to the clipboard, select data to be copied in the table using the Shift 
 To export the complete loaded dataset, click the 'Export' button, so that a dialog is opened.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/table_export.png}
   \caption{Table View export}
@@ -156,6 +160,7 @@ After export, a dialog is shown indicating that the export was completed. \\
 The exported file can be opened in any editor, or for example imported into LibreOffice Calc.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm]{figures/table_exported_calc.png}
   \caption{Table View export in LibreOffice Calc}

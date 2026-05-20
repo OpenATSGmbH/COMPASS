@@ -304,6 +304,8 @@ public:
                                           bool exclude, QColor color,
                                           std::vector<std::pair<double,double>> points);
     void deleteSector(std::shared_ptr<Sector> sector);
+    void deleteSectors(const std::vector<std::shared_ptr<Sector>>& sectors);
+    void deleteSectorLayer(const std::string& layer_name);
     void deleteAllSectors();
     void saveSector(unsigned int id);
     void saveSector(std::shared_ptr<Sector> sector);

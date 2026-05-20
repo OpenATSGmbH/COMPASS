@@ -5,7 +5,8 @@ The 'Data Sources' group lists all data sources of the active Data Context, grou
 
 \begin{figure}[H]
   \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: data source selected in the tree with the Main tab visible on the right]}}\vspace{1.5cm}}}
+  \hspace*{-1cm}
+    \includegraphics[width=17cm]{figures/data_context_edit_ds.png}
   \caption{Data Context: Data Source detail widget}
 \end{figure}
 
@@ -71,7 +72,7 @@ A detection type can be given for any data source; 'Unknown' is set as default. 
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=8cm,frame]{figures/configure_ds_dettyp.png}
+    \includegraphics[width=10cm,frame]{figures/configure_ds_dettyp.png}
   \caption{Data Source: Detection Type combo box}
 \end{figure}
 
@@ -85,7 +86,7 @@ For primary-only data sources, additional JPDA settings can be provided for the 
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=8cm,frame]{figures/configure_ds_jpda.png}
+    \includegraphics[width=10cm,frame]{figures/configure_ds_jpda.png}
   \caption{Data Source: JPDA fields}
 \end{figure}
 
@@ -96,7 +97,7 @@ The 'Network Lines' tab defines up to 4 network lines (L1 to L4) per data source
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=8cm,frame]{figures/configure_network.png}
+    \includegraphics[width=14cm,frame]{figures/configure_network.png}
   \caption{Data Source: Network Lines tab}
 \end{figure}
 
@@ -122,7 +123,8 @@ For DSType 'Radar', detection ranges can be configured per sensor type:
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=8cm,frame]{figures/configure_radar_ranges.png}
+  \hspace*{-1cm}
+    \includegraphics[width=17cm]{figures/data_context_edit_rad_range.png}  
   \caption{Data Source: Radar Ranges tab}
 \end{figure}
 
@@ -138,13 +140,16 @@ For DSType 'Radar', detection ranges can be configured per sensor type:
 
 \paragraph{Radar Accuracies Tab}
 
-For DSType 'Radar', sensor accuracies can be configured per sensor type:
+For DSType 'Radar', per-channel measurement accuracies (standard deviations) and, optionally, systematic radar errors (biases) can be configured: \\
 
 \begin{figure}[H]
   \center
-    \includegraphics[width=8cm,frame]{figures/configure_radar_accuracies.png}
+  \hspace*{-1cm}
+    \includegraphics[width=17cm]{figures/configure_radar_accuracies.png}
   \caption{Data Source: Radar Accuracies tab}
 \end{figure}
+
+The 'Radar Accuracies' group defines the random measurement noise of the antenna per detection channel (PSR, SSR, Mode S):
 
 \begin{itemize}
 \item PSR Azimuth StdDev: PSR azimuth standard deviation, in degrees
@@ -156,6 +161,24 @@ For DSType 'Radar', sensor accuracies can be configured per sensor type:
 \end{itemize}
 \ \\
 
+These values are used as a fall-back position accuracy for radar target reports without a reported accuracy, by projecting the polar standard deviations into a Cartesian covariance at the reported range and azimuth. They are consumed by both reconstructors during reference trajectory calculation, see \nameref{sec:reconst}. \\
+
+In addition, systematic radar errors (biases) can be configured. The 'Radar Bias' group is hidden by default and shown after pressing the 'Add Radar Biases' button below the accuracies, which initializes all bias fields to zero:
+
+\begin{itemize}
+\item Range Bias [m]: Additive range offset, in meters
+\item Range Bias StdDev [m]: Estimated uncertainty of the range bias, in meters
+\item Range Gain: Multiplicative range scale error (unitless, e.g. 0.001 for a 0.1\% range stretch)
+\item Range Gain StdDev: Estimated uncertainty of the range gain (unitless)
+\item Azimuth Bias [deg]: Additive azimuth offset, in degrees
+\item Azimuth Bias StdDev [deg]: Estimated uncertainty of the azimuth bias, in degrees
+\end{itemize}
+\ \\
+
+If defined, these biases are applied during projection from polar radar measurements to Cartesian coordinates by both reconstructors when the 'Correct Radar Biases' option is enabled, see \nameref{sec:reconst}. \\
+
+When the Probabilistic + IMM reconstructor is used, the biases are additionally estimated per radar Data Source from the available reference trajectory and written back into the active Data Context, so that the values shown in this tab reflect the latest estimate after each reconstructor run, see \nameref{sec:reconst_radar_bias_estimation}. \\
+
 \paragraph{MLAT Remote Units Tab}
 \label{sec:ui_configure_ds_mlat_rus}
 
@@ -165,13 +188,7 @@ When no RUs are defined yet, the tab shows an empty-state placeholder with a ded
 
 \begin{figure}[H]
   \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: MLAT Remote Units tab in the empty state with the 'Add Remote Units' placeholder button]}}\vspace{1.5cm}}}
-  \caption{Data Source: MLAT Remote Units empty state}
-\end{figure}
-
-\begin{figure}[H]
-  \center
-    \includegraphics[width=8cm,frame]{figures/configure_mlat_rus.png}
+    \includegraphics[width=12cm,frame]{figures/configure_mlat_rus.png}
   \caption{Data Source: MLAT Remote Units populated}
 \end{figure}
 
@@ -220,7 +237,7 @@ The CSV file must have the following format:
 \item Separator: ';'
 \item Decimal point: '.'
 \item Strings may be quoted with double quotes
-\item Indices must be unique and 1-based
+\item Indices must be unique and \textbf{1-based}
 \end{itemize}
 \ \\
 

@@ -4,12 +4,13 @@
 This dialog manages the active Data Context and all surveillance entities stored inside it. It is opened from the 'Context' menu via \textit{Context} $\rightarrow$ \textit{Edit...} (see \nameref{sec:ui_overview_context_menu}). \\
 
 \begin{figure}[H]
-  \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: full Data Context dialog with the tree expanded on the left and a data source detail widget on the right]}}\vspace{1.5cm}}}
-  \caption{Data Context Dialog}
+  \centering
+  \hspace*{-1cm}
+    \includegraphics[width=17cm]{figures/data_context_edit.png}
+    \caption{Data Context Dialog}
 \end{figure}
 
-A Data Context is a named surveillance context grouping all entities describing the recorded surveillance environment: data sources, sectors, FFTs, ASTERIX decoding settings and display colors. The dialog allows editing of these entities, as well as switching between contexts and copying, renaming, deleting, importing or exporting whole contexts. \\
+A Data Context is a named surveillance context grouping all entities describing the recorded surveillance environment: data sources, sectors, FFTs, ASTERIX decoding settings and data sources display colors. The dialog allows editing of these entities, as well as switching between contexts and copying, renaming, deleting, importing or exporting whole contexts. \\
 
 The dialog is split into 3 areas:
 
@@ -29,7 +30,7 @@ The top bar offers the following controls:
 \item Copy: Duplicates the active context under a new name
 \item Rename: Renames the active context
 \item Delete: Removes one or more contexts (disabled if only one context remains)
-\item Export as ZIP: Exports the active context as a single ZIP archive for transport
+\item Export as ZIP: Exports the active context as a single ZIP archive bundle
 \item Import from ZIP: Imports a previously exported context bundle
 \end{itemize}
 \ \\
@@ -66,12 +67,6 @@ Selecting an entry in the tree opens the matching detail widget on the right. Ri
 \subsubsection{No Context State}
 
 When no Data Context is available (e.g. after deleting the last one), the application runs in the 'No Context' state, in which parts of the main menu are disabled. A new context has to be created or imported to return to normal operation. See also \nameref{sec:key_concepts}. \\
-
-\begin{figure}[H]
-  \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: main menu state with no active Data Context, highlighting the reduced menu availability]}}\vspace{1.5cm}}}
-  \caption{No Context state}
-\end{figure}
 
 \subsubsection{Persistence}
 

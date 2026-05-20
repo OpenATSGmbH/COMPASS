@@ -2,6 +2,7 @@
 \label{sec:filters} 
 
 \begin{figure}[H]
+  \centering
   \includegraphics[width=14cm,frame]{figures/ui_filters.png}
 \caption{Filters Overview}
 \end{figure}
@@ -13,7 +14,7 @@ independent of any individually activated filters. Enabling/disabling of filteri
 If filtering is active, this will be indicated by an additional check sign in the 'Filter' tool's icon. \\
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=14cm,frame]{figures/filter_active.png}
   \caption{Filtering enabled}
 \end{figure}
@@ -24,7 +25,7 @@ The \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button in the
 Clicking the button opens the following menu.
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=3.5cm,frame]{figures/filter_config.png}
   %\caption{Data Sources Overview}
 \end{figure}
@@ -51,7 +52,7 @@ The 'Mode 3/A Codes' filter restricts to a list of (comma-separated) Mode 3/A co
 \subsubsection{ADSB Quality Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_adsb_quality.png}
   \caption{ADSB quality filter}
 \end{figure}
@@ -61,7 +62,7 @@ When active, this filter restricts the loaded ADS-B data based on the transponde
 \subsubsection{ADSB MOPS Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_adsb_mops.png}
   \caption{ADSB quality filter}
 \end{figure}
@@ -71,7 +72,7 @@ When active, this filter restricts the loaded ADS-B data based on the transponde
 \subsubsection{Aircraft Address Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_acad.png}
   \caption{Target Address filter}
 \end{figure}
@@ -82,7 +83,7 @@ Target reports without a given Mode S address will not be loaded unless the valu
 \subsubsection{Aircraft Identification Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_acid.png}
   \caption{Aircraft identification filter}
 \end{figure}
@@ -92,7 +93,7 @@ When active, this filter forces loading of data only from aircraft identificatio
 \subsubsection{Detection Type Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_detection_type.png}
   \caption{Detection Type filter}
 \end{figure}
@@ -116,7 +117,7 @@ Please note that for CAT062 data the detection type reflects the most recent det
 \subsubsection{Excluded Time Windows Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_excl_time_windows.png}
   \caption{Excluded Time Windows filter}
 \end{figure}
@@ -126,7 +127,7 @@ When active, this filter removes time windows, defined by begin/end timestamp an
 \subsubsection{Ground Bit Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_ground_bit.png}
   \caption{Ground bit filter}
 \end{figure}
@@ -136,7 +137,7 @@ When active, this filter restricts the loaded data based on the ground bit.
 \subsubsection{MLAT RUs Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_mlatrus.png}
   \caption{MLAT RUs filter}
 \end{figure}
@@ -152,7 +153,7 @@ When active, this filter forces loading of MLAT data where the given RUs partici
 Additionally, the value 'null' or 'NULL' can be used to load target reports where no contributing RUs are set. Also, if the respective MLAT data sources have remote unit names defined (see \nameref{sec:ui_configure_ds_mlat_rus}), the textual names can be used instead (or in combination) with the numerical indexes.
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_mlatrus2.png}
   \caption{MLAT RUs filter example}
 \end{figure}
@@ -161,7 +162,7 @@ Additionally, the value 'null' or 'NULL' can be used to load target reports wher
 \subsubsection{Mode 3/A Codes Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_mode3a.png}
   \caption{Mode 3/A Codes filter}
 \end{figure}
@@ -173,7 +174,7 @@ Please note that ADS-B target reports can also contain Mode 3/A code information
 \subsubsection{Mode C Codes Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_modec.png}
   \caption{Mode C Codes filter}
 \end{figure}
@@ -183,7 +184,7 @@ When active, this filter forces loading of data with a barometric altitude insid
 \subsubsection{Position Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_position.png}
   \caption{Position filter}
 \end{figure}
@@ -193,7 +194,7 @@ When active, this filter forces loading of data with latitude/longitude inside t
 \subsubsection{Primary Only}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_primary_only.png}
   \caption{Primary Only filter}
 \end{figure}
@@ -203,7 +204,7 @@ When active, this filter forces loading of data without any secondary attributes
 \subsubsection{RefTraj Accuracy}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_reftrajacc.png}
   \caption{Timestamp filter}
 \end{figure}
@@ -213,7 +214,7 @@ When active, this filter forces loading of RefTraj data with a lower Square-Root
 \subsubsection{Time of Day Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_tod.png}
   \caption{Time of Day filter}
 \end{figure}
@@ -225,7 +226,7 @@ When active, this filter forces loading of data with the Time of Day inside the 
 A 'Step' row of buttons shifts the active Time of Day window forwards or backwards without re-entering the times manually. Eight buttons are available: '-60m', '-45m', '-30m', '-15m' on the left and '+15m', '+30m', '+45m', '+60m' on the right. When the resulting window would fall outside the Time of Day range covered by the database, the corresponding button is disabled to indicate the out-of-bounds state. \\
 
 \begin{figure}[H]
-  \center
+  \centering
     \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Time of Day filter Step row with the eight buttons -60m / -45m / -30m / -15m / +15m / +30m / +45m / +60m]}}\vspace{1.5cm}}}
   \caption{Time of Day filter: Step buttons}
 \end{figure}
@@ -233,7 +234,7 @@ A 'Step' row of buttons shifts the active Time of Day window forwards or backwar
 \subsubsection{Timestamp Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_timestamp.png}
   \caption{Timestamp filter}
 \end{figure}
@@ -245,13 +246,13 @@ When active, this filter forces loading of data with the EPOCH timestamp inside 
 A 'Step' row of buttons shifts the active time window forwards or backwards without re-entering the timestamps manually. Eight buttons are available: '-60m', '-45m', '-30m', '-15m' on the left and '+15m', '+30m', '+45m', '+60m' on the right. When the resulting window would fall outside the timestamp range covered by the database, the corresponding button is disabled to indicate the out-of-bounds state. \\
 
 \begin{figure}[H]
-  \center
+  \centering
     \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Timestamp filter Step row with the eight buttons -60m / -45m / -30m / -15m / +15m / +30m / +45m / +60m]}}\vspace{1.5cm}}}
   \caption{Timestamp filter: Step buttons}
 \end{figure}
 
 \begin{figure}[H]
-  \center
+  \centering
     \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: same Step row with one or more buttons disabled in the out-of-bounds state]}}\vspace{1.5cm}}}
   \caption{Timestamp filter: out-of-bounds indication}
 \end{figure}
@@ -260,7 +261,7 @@ A 'Step' row of buttons shifts the active time window forwards or backwards with
 \subsubsection{Track Number Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_tracknum.png}
   \caption{Track Number filter}
 \end{figure}
@@ -273,7 +274,7 @@ Please note that ADS-B target reports can also contain a track number in ASTERIX
 \subsubsection{Tracker Track Number Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_trackertracknum.png}
   \caption{Tracker Track Number filter}
 \end{figure}
@@ -285,7 +286,7 @@ It can be used when e.g. several Tracker runs were added in different lines, so 
 \subsubsection{UTNs Filter}
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=12cm,frame]{figures/filter_utn.png}
   \caption{UTN filter}
 \end{figure}
@@ -300,7 +301,7 @@ When active, this filter forces loading of data with the given unique target num
 A new custom filter can be added by clicking the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button in the filter tab and selecting 'Add New Filter'. The same dialog is reused for editing an existing custom filter; the editor pre-populates with the filter's current conditions. \\
 
 \begin{figure}[H]
-  \center
+  \centering
     \includegraphics[width=14cm,frame]{figures/filter_add.png}
   \caption{Adding a filter}
 \end{figure}
@@ -313,12 +314,14 @@ When the triangular button is clicked, a sub-menu is opened, where one can choos
 
 Available operators are now restricted by the data type of the selected variable - operators that do not apply to the chosen variable type are hidden. In addition, the possible values shown in the value editor are restricted by the chosen operator (e.g. an 'IS NULL' / 'IS NOT NULL' operator hides the value input entirely). This keeps invalid combinations out of the filter definition. \\
 
+In addition to the dedicated 'IS NULL' / 'IS NOT NULL' operators, the literal value 'NULL' (case-insensitive) can also be included as one of the values for an ordinary operator such as '=' or 'IN'. In that case, target reports where the variable has no value are loaded in addition to those matching the listed values. For example, value '1,2,NULL' with the 'IN' operator loads target reports where the variable equals 1 or 2, as well as those where the variable is not set. \\
+
 \paragraph{OR conditions}
 
 Custom filters can combine conditions with both AND and OR. When adding a new condition, the desired connector can be selected before confirming the condition. Within a single custom filter, AND and OR conditions can be mixed; across filters, the existing global AND behavior continues to apply. \\
 
 \begin{figure}[H]
-  \center
+  \centering
     \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: custom filter editor showing an OR condition between two clauses]}}\vspace{1.5cm}}}
   \caption{Custom filter with OR condition}
 \end{figure}
@@ -328,7 +331,7 @@ Custom filters can combine conditions with both AND and OR. When adding a new co
 Custom filters are deleted via the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button's 'Delete Filter' submenu. Each existing custom filter is listed as a child action; selecting one deletes that filter. There is no separate delete button on the filter row itself. \\
 
 \begin{figure}[H]
-  \center
+  \centering
     \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: filter context menu open showing the 'Delete Filter' submenu with two custom filters listed]}}\vspace{1.5cm}}}
   \caption{Delete Filter submenu}
 \end{figure}

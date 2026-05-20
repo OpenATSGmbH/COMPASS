@@ -4,8 +4,9 @@
 The 'Sector Layers' group lists all sector layers of the active Data Context, with the individual sectors of each layer listed underneath. Selecting a sector in the tree opens the sector edit widget on the right. \\
 
 \begin{figure}[H]
-  \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: a sector selected in the tree with the sector edit widget visible on the right]}}\vspace{1.5cm}}}
+  \centering
+  \hspace*{-1cm}
+    \includegraphics[width=17cm]{figures/data_context_edit_sectors.png}
   \caption{Data Context: Sector detail widget}
 \end{figure}
 
@@ -39,7 +40,7 @@ Right-clicking the 'Sector Layers' group offers:
 
 \begin{itemize}
 \item Import from File...: Imports sectors from a GIS file (see below)
-\item Import Air Space...: Imports sectors from a Pro-license Air Space JSON file (only available outside of the AppImage build)
+\item Import Air Space...: Imports sectors from a Air Space JSON file
 \item Import JSON...: Imports a previously exported sector JSON file
 \item Export JSON...: Exports all sectors of the active context as JSON file
 \item Delete All: Removes all sectors from the active context after a confirmation prompt
@@ -75,8 +76,8 @@ Please \textbf{note} that only polygonal information is added, and all informati
 After selecting a file, all encapsulated polygons or multi-polygons are parsed and the 'Import Sector' dialog is shown:
 
 \begin{figure}[H]
-  \center
-    \includegraphics[width=6cm,frame]{figures/configure_sectors_import_dialog.png}
+  \centering
+    \includegraphics[width=6cm]{figures/configure_sectors_import_dialog.png}
   \caption{Import Sector Dialog}
 \end{figure}
 
@@ -92,11 +93,11 @@ After confirming the dialog, the sectors are added to the active context and bec
 
 \paragraph{Import Air Space}
 
-When available, the 'Import Air Space...' action opens a dedicated dialog that parses an Air Space JSON file and shows all contained sectors in a checkable list:
+When available, the 'Import Air Space...' action opens a dedicated dialog that parses an Air Space JSON file (file format described in \nameref{sec:appendix_airspace}) and shows all contained sectors in a checkable list:
 
 \begin{figure}[H]
-  \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Import Air Space dialog with the layer name field on top and the sector tree (checkbox, Sector, \#Points, Altitude min, Altitude max) below]}}\vspace{1.5cm}}}
+  \centering
+        \includegraphics[width=12cm]{figures/data_context_edit_airspace.png}
   \caption{Import Air Space Dialog}
 \end{figure}
 

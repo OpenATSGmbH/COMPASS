@@ -115,7 +115,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
     loginf << "opening edit dialog";
 
     setWindowTitle("Edit Data Contexts");
-    setMinimumSize(1000, 600);
+    setMinimumSize(1100, 600);
     setModal(true);
 
     auto* main_layout = new QVBoxLayout();
@@ -258,7 +258,8 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
 
     // initial empty placeholder
     auto* empty_label = new QLabel("Select an item to view details.");
-    empty_label->setAlignment(Qt::AlignCenter);
+    empty_label->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
+    empty_label->setContentsMargins(0, 20, 0, 0);
     detail_stack_->addWidget(empty_label);
     detail_stack_->setCurrentWidget(empty_label);
 
@@ -475,7 +476,8 @@ void DBContextEditDialog::showDetailWidget(QWidget* widget)
 QWidget* DBContextEditDialog::createPlaceholderLabel(const QString& text)
 {
     auto* label = new QLabel(text);
-    label->setAlignment(Qt::AlignCenter);
+    label->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
+    label->setContentsMargins(0, 20, 0, 0);
     label->setWordWrap(true);
     return label;
 }
@@ -664,14 +666,12 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
         rebuildTree();
     });
 
-    if (!manager_.compass().isAppImage())
-    {
-        menu.addAction("Import Air Space...", [this]()
-        {
-            importAirSpace();
-            rebuildTree();
-        });
-    }
+    menu.addAction("Import Air Space...",
+                   [this]()
+                   {
+                       importAirSpace();
+                       rebuildTree();
+                   });
 
     menu.addSeparator();
 
@@ -718,15 +718,7 @@ void DBContextEditDialog::showSectorLayerMenu(const std::string& layer_name)
                 "Delete all sectors in layer '" + QString::fromStdString(layer_name) + "'?"))
             return;
 
-        auto layer = manager_.sectorLayer(layer_name);
-        if (!layer)
-            return;
-
-        // delete all sectors in this layer (copy vector since deletion modifies it)
-        auto sectors_copy = layer->sectors();
-        for (const auto& sector : sectors_copy)
-            manager_.deleteSector(sector);
-
+        manager_.deleteSectorLayer(layer_name);
         rebuildTree();
     });
 

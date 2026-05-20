@@ -314,14 +314,6 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
         return;
     }
 
-    if (task_.source().isNetworkType())
-    {
-        placeholder_->setText("Data Sources tab applies to file imports only.");
-        showDetailWidget(placeholder_);
-        report_warnings(false);
-        return;
-    }
-
     if (!last_result_.probe_available)
     {
         placeholder_->setText("Run the decoding check to populate data source information.");

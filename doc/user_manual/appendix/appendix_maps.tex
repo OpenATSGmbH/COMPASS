@@ -4,6 +4,7 @@
 As with all configuration, a local version is kept in the home folder of the user. The map files are loaded from the hidden folder '\textasciitilde/.compass/yourversion/data/maps' ('\textasciitilde' is the user's home directory, like /home/user).
 
 \begin{figure}[H]
+    \centering
     \includegraphics[width=10cm,frame]{figures/geoview_maps_config.png}
   \caption{Maps Folder}
 \end{figure}
@@ -194,6 +195,7 @@ Using this tool, OpenStreetMap tiles can be downloaded and saved in a number of 
 In this example description, QGIS 3.22 was used. First, QGIS is started in an environment with internet access. Then, OpenStreetMap is selected as background layer by double-clicking on XYZ Tiles $\rightarrow$ OpenStreetMap).
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/qgis_osm1.png}
 \end{figure}
@@ -205,6 +207,7 @@ If the menu entry is missing, it has to be activated once using the menu bar 'Pl
 After this step, input 'xyz tiles' in the Processing toolbox search window.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/qgis_osm2.png}
 \end{figure}
@@ -212,6 +215,7 @@ After this step, input 'xyz tiles' in the Processing toolbox search window.
 Double-click the entry 'Generate XYZ Tiles (MBTiles)' to start the following dialog.
 
 \begin{figure}[H]
+    \centering
     \includegraphics[width=12cm,frame]{figures/qgis_osm3.png}
 \end{figure}
 
@@ -228,6 +232,7 @@ The following (important) options can be set:
 Please note that for higher level of details, the application crashed with a SQLite locked error message. This can be mitigated (might not be required in newer versions of QGIS) using the menu bar 'Settings' $\rightarrow$ 'Options' dialog. In the top left search bar 'threads' can be entered to then change the 'Max Threads' variable to '1'. \\
 
 \begin{figure}[H]
+    \centering
     \includegraphics[width=14cm,frame]{figures/qgis_osm4.png}
 \end{figure}
  
@@ -256,6 +261,7 @@ After successful completion of this task, the resulting MBTiles file has to be c
 Then such a map is selected in the Geographic View, only in the selected QGIS extent map data is available.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geoview_qgis_osm1.png}
 \end{figure}
@@ -363,6 +369,7 @@ Such a map could be enhanced by combining it with the minimal\_2d.earth map, to 
 \end{lstlisting}
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geoview_qgis_osm2.png}
 \end{figure}
