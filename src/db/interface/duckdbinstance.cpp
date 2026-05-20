@@ -212,6 +212,23 @@ Result DuckDBInstance::cleanupDB_impl(const std::string& db_fn)
 
 /**
  */
+Result DuckDBInstance::cleanupDB_impl()
+{
+    loginf << "executing CHECKPOINT";
+    auto res = defaultConnection().execute("CHECKPOINT");
+    if (!res.ok())
+        return res;
+
+    loginf << "executing VACUUM";
+    res = defaultConnection().execute("VACUUM");
+    if (!res.ok())
+        return res;
+
+    return Result::succeeded();
+}
+
+/**
+ */
 // Result DuckDBInstance::cleanupDBInMem_impl()
 // {
 //     loginf;
@@ -237,6 +254,8 @@ Result DuckDBInstance::cleanupDB_impl(const std::string& db_fn)
 //     return Result::succeeded();
 // }
 
+/**
+ */
 Result DuckDBInstance::cleanupDBInMem_impl()
 {
     loginf;
