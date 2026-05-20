@@ -11,8 +11,6 @@
         "parameters": {
             "auto_label": false,
             "auto_lod": true,
-            "blend_mode_name": "contour",
-            "connect_height_none": true,
             "connect_last_layer": true,
             "current_lod": 2.9994983673095703,
             "declutter_labels": true,
@@ -31,6 +29,7 @@
             "groundspeed_period": 2,
             "height_offset_factor": 0.0,
             "height_scale_factor": 2.0,
+            "item_grouping": "Aircraft Address",
             "label_bg_color": "#000000",
             "label_config": {
                 "CAT001": {
@@ -110,7 +109,6 @@
             "label_opacity": 0.8999999761581421,
             "label_placement_forcedir": 2,
             "label_placement_method": 1,
-            "layer_mode": "DBContent:DS ID:Line ID:Aircraft Address",
             "map_name": "minimal_2d.earth",
             "map_opacity": 0.4000000059604645,
             "max_declutter_labels": 200,
@@ -124,18 +122,6 @@
             "overlay_text_color_invert": false,
             "overload_text_color_str": "#FF0000",
             "position_accuracy_vars_scale": 2.0,
-            "radar_layer_config": {
-                "show_fft": {},
-                "show_labels": true,
-                "show_layer": true,
-                "show_radars": {},
-                "show_range_ring": true,
-                "show_range_rings": true
-            },
-            "sector_layer_config": {
-                "show_layer": false,
-                "show_layers": {}
-            },
             "selection_color": "#FFFF00",
             "status_message_font_size": 24,
             "text_background_color_str": "rgba(0,0,0,150)",
@@ -156,7 +142,7 @@
                 "instance_name": "GeometryStyleFactory0",
                 "parameters": {
                     "current_sorting_variable": "DBContent",
-                    "current_style_preset": "Color by DBContent"
+                    "current_style_preset": "Global Color Mode"
                 },
                 "sub_configs": []
             },
@@ -226,11 +212,6 @@
                         }
                     }
                 ]
-            },
-            {
-                "class_name": "GeographicViewWidget",
-                "instance_name": "GeographicViewWidget0",
-                "parameters": {}
             }
         ]
     }

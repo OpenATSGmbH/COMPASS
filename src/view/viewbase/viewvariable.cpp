@@ -29,9 +29,9 @@
 #include "viewmanager.h"
 #include "logger.h"
 
-const std::string ViewVariable::ParamDataVar     = "data_var";
-const std::string ViewVariable::ParamDataVarName = "name";
-const std::string ViewVariable::ParamDataVarDBCont  = "dbcont";
+const std::string ViewVariable::ParamDataVar       = "data_var";
+const std::string ViewVariable::ParamDataVarName   = "name";
+const std::string ViewVariable::ParamDataVarDBCont = "dbcont";
 
 /**
  */
