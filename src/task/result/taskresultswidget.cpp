@@ -28,6 +28,8 @@
 #include "asynctask.h"
 #include "compass.h"
 #include "reportdefs.h"
+#include "license/licensemanager.h"
+#include "license/license.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -102,13 +104,21 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     export_result_button_->setToolTip("Export Report");
 
     QMenu* export_menu = new QMenu(export_result_button_);
+    export_menu->setToolTipsVisible(true);
 
     bool pdflatex_found = task_man_.compass().pdflatexFound();
+    bool pro_license = task_man_.compass().licenseManager().componentEnabled(
+        license::License::Component::ComponentProbIMMReconstructor);
 
-    auto action_export_docx  = export_menu->addAction("Export as DocX");
+    auto action_export_docx  = export_menu->addAction(
+        pro_license ? "Export as DocX" : "Export as DocX (Pro)");
     auto action_export_json  = export_menu->addAction("Export as JSON");
     auto action_export_latex = export_menu->addAction("Export as Latex");
     auto action_export_pdf   = export_menu->addAction("Export as PDF");
+
+    action_export_docx->setEnabled(pro_license);
+    action_export_docx->setToolTip(pro_license ? "" :
+        "Only available with active Professional license");
 
     action_export_pdf->setEnabled(pdflatex_found);
     action_export_pdf->setToolTip(pdflatex_found ? "" : "pdflatex not installed");
