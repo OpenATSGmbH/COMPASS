@@ -50,11 +50,10 @@ const std::string DataSourceEditWidget::TabRadarAccuraciesName = "Accuracies";
 const std::string DataSourceEditWidget::TabMLATRemoteUnitsName = "MLAT Remote Units";
 const std::string DataSourceEditWidget::TabNetworkLinesName    = "Network";
 
-DataSourceEditWidget::DataSourceEditWidget(bool show_network_lines,
+DataSourceEditWidget::DataSourceEditWidget(
     std::function<void(unsigned int)> update_ds_func, std::function<void(unsigned int)> delete_ds_func,
     context::DBContextManager* ctx_man)
-    : show_network_lines_(show_network_lines),
-    update_ds_func_(update_ds_func), delete_ds_func_(delete_ds_func),
+    : update_ds_func_(update_ds_func), delete_ds_func_(delete_ds_func),
     ctx_man_(ctx_man)
 {
     //setMaximumWidth(400);
@@ -1312,6 +1311,15 @@ void DataSourceEditWidget::setCurrentTabIndex(int idx)
 
 void DataSourceEditWidget::updateContent()
 {
+    // Tab visibility is gated by DSType relevance, NOT by whether the data
+    // happens to be present. Each update<Section>() unconditionally shows its
+    // tab(s) and internally toggles between the populated form and a "+ add"
+    // button, so the user can add radar ranges to a Radar with no ranges yet,
+    // network lines to a sensor with none, etc.
+    //   - Radar Ranges / Accuracies -> Radars only
+    //   - MLAT Remote Units         -> MLATs only
+    //   - Network                   -> every sensor (any DSType can be fed
+    //                                  over the network)
     detection_type_combo_->blockSignals(true);
 
     auto* ds = current_ds_;
@@ -1335,10 +1343,7 @@ void DataSourceEditWidget::updateContent()
         else
             enableMLAT(false);
 
-        if (show_network_lines_)
-            updateNetwork(ds);
-        else
-            enableNetwork(false);
+        updateNetwork(ds);
     }
 
     if (read_only_ && ds)

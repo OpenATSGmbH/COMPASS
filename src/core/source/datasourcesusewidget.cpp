@@ -60,7 +60,7 @@ DataSourcesUseWidget::DataSourcesUseWidget(context::DBContextManager& ctx_man,
     { this->updateContent(true); };
 
     assert (top_layout_);
-    edit_widget_ = new DataSourceEditWidget (false, update_ds_func, delete_ds_func);
+    edit_widget_ = new DataSourceEditWidget (update_ds_func, delete_ds_func);
     edit_widget_->setContentsMargins(0, 0, 0, 0);
     
     top_layout_->addWidget(edit_widget_);    

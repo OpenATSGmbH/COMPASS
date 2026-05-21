@@ -129,7 +129,7 @@ void DBContextMergeDialog::build(const DBContextDiff& diff,
     scroll->setWidget(detail_stack_);
 
     // create read-only edit widgets
-    ds_widget_ = new DataSourceEditWidget(false, {}, {});
+    ds_widget_ = new DataSourceEditWidget({}, {});
     ds_widget_->setReadOnly(true);
     detail_stack_->addWidget(ds_widget_);
 

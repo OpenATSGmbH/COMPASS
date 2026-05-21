@@ -301,7 +301,7 @@ QColor DataSourceTypeItem::effectiveColor() const
     if (mode == 0)
     {
         QColor c = context::resolveSeriesColor(ds_type_, "", 0, "", ctx_man.compass());
-        loginf << "ds_type '" << ds_type_ << "' mode 0 (direct) -> "
+        logdbg << "ds_type '" << ds_type_ << "' mode 0 (direct) -> "
                << c.name().toStdString() << " valid " << c.isValid();
         return c;
     }
@@ -338,7 +338,7 @@ QColor DataSourceTypeItem::effectiveColor() const
             break;
         }
     }
-    loginf << "ds_type '" << ds_type_ << "' mode " << mode << " (data-driven) -> "
+    logdbg << "ds_type '" << ds_type_ << "' mode " << mode << " (data-driven) -> "
            << common.name().toStdString() << " valid " << common.isValid();
     return common;
 }
@@ -573,7 +573,7 @@ QColor DataSourceCountItem::effectiveColor() const
     // line_index is unused for DSType / DBContent / DataSource modes.
     QColor c = context::resolveSeriesColor(
         ds->dsType(), ds->name(), /*line_index=*/0, dbc_name_, ctx_man.compass());
-    loginf << "count ds '" << ds->name() << "' dbc '" << dbc_name_
+    logdbg << "count ds '" << ds->name() << "' dbc '" << dbc_name_
            << "' mode " << ctx_man.compass().colorMode()
            << " -> " << c.name().toStdString() << " valid " << c.isValid();
     return c;

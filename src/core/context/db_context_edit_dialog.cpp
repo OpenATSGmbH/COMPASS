@@ -217,7 +217,6 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
 
     // create data source edit widget
     ds_edit_widget_ = new DataSourceEditWidget(
-        false,
         [this](unsigned int) { manager_.saveContext(manager_.activeContextName()); rebuildTree(); },
         [this](unsigned int id) { manager_.deleteDataSource(id); rebuildTree(); },
         &manager_);

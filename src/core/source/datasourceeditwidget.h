@@ -82,8 +82,7 @@ public slots:
     void deleteSlot();
 
 public:
-    DataSourceEditWidget(bool show_network_lines,
-                         std::function<void(unsigned int)> update_ds_func,
+    DataSourceEditWidget(std::function<void(unsigned int)> update_ds_func,
                          std::function<void(unsigned int)> delete_ds_func,
                          context::DBContextManager* ctx_man = nullptr);
 
@@ -106,8 +105,6 @@ public:
     static const std::string TabNetworkLinesName;
 
 protected:
-    bool show_network_lines_;
-
     std::function<void(unsigned int)> update_ds_func_;
     std::function<void(unsigned int)> delete_ds_func_;
 

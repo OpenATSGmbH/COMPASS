@@ -213,7 +213,6 @@ void ASTERIXImportDataSourcesWidget::buildUI()
 
     // page 1: data source edit widget (reused from the context edit dialog)
     ds_edit_widget_ = new DataSourceEditWidget(
-        /*show_network_lines=*/false,
         [this](unsigned int /*ds_id*/) {
             // suppressed while editing a transient (not-yet-in-context) DS:
             // saving the context now would do nothing useful and rebuilding
