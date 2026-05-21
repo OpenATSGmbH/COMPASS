@@ -1,7 +1,15 @@
 \chapter{COMPASS Portal}
 \label{chap:compass_portal}
 
-COMPASS Portal is the web companion to COMPASS - currently in a prototype stage. It exposes processed surveillance data over the intranet, drives the desktop backend through scheduled jobs, and aggregates results across weeks of recordings into trend dashboards. It is intended for operations, engineering and quality teams that need shared access to analysis results without running the desktop client per user. \\
+COMPASS Portal is the web companion to COMPASS - currently in a prototype stage. It exposes processed surveillance data over the intranet, drives the desktop backend through scheduled jobs, and aggregates results across weeks of recordings into trend dashboards. \\
+
+It is also intended for non-technical staff that need shared access to analysis results conveniently via browser, from almost any device, without running the desktop client per user. \\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=12cm]{figures/portal_architecture.png}
+  \caption{Portal Server \& many clients}
+\end{figure}
 
 \includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that COMPASS Portal will be a separate project with its own documentation and deployment. It is not part of the COMPASS Client. This chapter only summarizes its capabilities; for installation, deployment, configuration and detailed usage, please refer to the COMPASS Portal project documentation. \\
 
@@ -38,13 +46,7 @@ Typical use cases include intranet-wide browsing of processed recordings and rep
 
 \section{Integration with COMPASS}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=14cm]{figures/portal_architecture.png}
-  \caption{Portal architecture}
-\end{figure}
-
-COMPASS Portal does not read data through a running COMPASS process. Finalized per-day databases are opened directly by the Portal middleware. For tasks that require a COMPASS process (configuration, import, reconstruction, evaluation, analyze, export), job execution is delegated to a host-side runner that owns one COMPASS instance and forwards commands to it through the Runtime Command Interface (see \nameref{sec:rtcommand_interface}). \\
+COMPASS Portal does not read data through a running COMPASS Client process. Finalized per-day databases are opened directly by the Portal middleware. For tasks that require a COMPASS process (configuration, import, reconstruction, evaluation, analyze, export), job execution is delegated to a host-side runner that owns one COMPASS instance and forwards commands to it through the Runtime Command Interface (see \nameref{sec:rtcommand_interface}). \\
 
 At any time, at most one COMPASS process is active per host, and runtime commands are serialized through the runner.
 
