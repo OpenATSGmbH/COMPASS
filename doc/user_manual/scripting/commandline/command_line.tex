@@ -60,7 +60,7 @@ Allowed options:
   --export_report arg                   report name to export, e.g. 'EUROCAE 
                                         ED-87E Evaluation', PDF per default
   --export_report_directory arg         export directory, e.g. '/data/report2/'
-  --export_report_mode arg              export mode, i.e. 'JSON','Latex','PDF'
+  --export_report_mode arg              export mode, i.e. 'DocX','JSON','Latex','PDF'
   --no_cfg_save                         do not save configuration upon quitting
   --open_rt_cmd_port                    open runtime command port (default at 27960)
   --enable_event_log                    collect warnings and errors in the event log
@@ -72,6 +72,18 @@ Allowed options:
 If additional command line options are wanted please contact the author.
 
 \subsection{Options}
+
+\subsubsection{-{}-reset}
+
+Triggers a reset of the user configuration and data. The bundled factory configuration and data are copied into the per-version subfolder of \texttt{\textasciitilde/.compass/}, replacing any user customizations. The short form \texttt{-r} is also accepted.
+
+\subsubsection{-{}-override\_cfg\_path arg}
+
+Overrides the 'default' configuration subfolder name with the given value. Configuration is then read from and written to \texttt{\textasciitilde/.compass/<version>/<arg>/} instead of \texttt{\textasciitilde/.compass/<version>/default/}, which allows separate configuration sets to coexist (e.g. 'org' for organization-specific settings).
+
+\begin{lstlisting}
+./COMPASS-release_x86_64.AppImage --override_cfg_path org
+\end{lstlisting}
 
 \subsubsection{-{}-list\_contexts}
 
@@ -129,6 +141,14 @@ If an import using the task described in \nameref{sec:ui_import_asterix} is star
 
 If an import using the task described in \nameref{sec:ui_import_asterix} is started, it will use the import date in YYYY-mm-DD format.
 
+\subsubsection{-{}-import\_asterix\_file\_time\_offset arg}
+
+If an import using the task described in \nameref{sec:ui_import_asterix} is started, the given Time of Day override offset will be applied to all decoded target reports. The argument is in HH:MM:SS.ZZZ format.
+
+\subsubsection{-{}-import\_asterix\_ignore\_time\_jumps}
+
+If an import using the task described in \nameref{sec:ui_import_asterix} is started, 24 hour Time of Day wrap-arounds detected during decoding will be ignored. By default such jumps trigger a day rollover.
+
 \subsubsection{-{}-import\_asterix\_network}
 
 After a database was opened, an import using the task described in \nameref{sec:ui_import_asterix_network} is started.
@@ -141,12 +161,16 @@ If an import using the task described in \nameref{sec:ui_import_asterix_network}
 
 If an import using the task described in \nameref{sec:ui_import_asterix_network} is started, it will use the given maximum number of input lines (and deactivate the others).
 
+\subsubsection{-{}-import\_asterix\_network\_ignore\_future\_ts}
+
+If an import using the task described in \nameref{sec:ui_import_asterix_network} is started, target reports with timestamps in the future relative to the current system time will be silently dropped instead of being kept.
+
 \subsubsection{-{}-asterix\_framing framing}
 
 When an Import ASTERIX Task is started the given framing is used, the following options exist:
 
 \begin{itemize}
-\item none:  Raw, netto, unframed ASTERIX data blocks, equivalent to the 'empty' value in the GUI
+\item none:  Raw, netto, unframed ASTERIX data blocks, equivalent to the 'raw/netto' value in the GUI
 \item ioss:  IOSS Final Format
 \item ioss\_seq: IOSS Final Format with sequence numbers
 \item rff: Comsoft RFF format
@@ -220,7 +244,7 @@ Please note that the parameter naming must be exactly as in the 'task\_import\_a
 \ \\
 
 
-\subsubsection{-{}-import\_json\_file filename}
+\subsubsection{-{}-import\_json filename}
 
 After a database was opened, adds the supplied filename and starts an import using the task described in \nameref{sec:ui_import_json}.
 
@@ -263,6 +287,10 @@ Please \textbf{note} that both 'mode\_3a\_code' and 'target\_address' must be gi
 \subsubsection{-{}-import\_sectors\_json  filename}
 
 After a database was opened, adds the sectors defined in supplied filename using the task described in \nameref{sec:ui_configure_sectors_manage}.
+
+\subsubsection{-{}-calculate\_radar\_plot\_positions}
+
+After a database with imported content exists, radar plot positions are calculated using the task described in \nameref{sec:ui_proc_radar_plot_pos}.
 
 \subsubsection{-{}-calculate\_artas\_tr\_usage}
 
@@ -368,11 +396,19 @@ Sets the report directory to the given value when exporting a report as describe
 
 \subsubsection{-{}-export\_report\_mode 'str'}
 
-Sets the report export type to the given value (i.e. 'JSON','Latex','PDF') when exporting a report as described in the section \nameref{sec:report_export}.
+Sets the report export type to the given value (i.e. 'DocX', 'JSON', 'Latex', 'PDF') when exporting a report as described in the section \nameref{sec:report_export}.
 
 \subsubsection{-{}-no\_cfg\_save}
 
 When quitting the application later, no configuration changes are saved.
+
+\subsubsection{-{}-open\_rt\_cmd\_port}
+
+Opens the runtime command TCP port (default 27960) so that the running instance can be controlled from external tools, as described in \nameref{sec:rtcommand_interface}.
+
+\subsubsection{-{}-enable\_event\_log}
+
+Enables collection of warnings and errors emitted during the session into an in-memory event log. The event log can then be queried via the 'get\_events' runtime command, as described in \nameref{sec:rtcommand_interface}.
 
 \subsubsection{-{}-expert\_mode}
 

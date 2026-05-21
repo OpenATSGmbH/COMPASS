@@ -1,11 +1,17 @@
 \chapter{COMPASS Portal}
 \label{chap:compass_portal}
 
-COMPASS Portal is the web companion to COMPASS. It exposes processed surveillance data over the intranet, drives the desktop backend through scheduled jobs, and aggregates results across weeks of recordings into trend dashboards. It is intended for operations, engineering and quality teams that need shared access to analysis results without running the desktop client per user. \\
+COMPASS Portal is the web companion to COMPASS - currently in a prototype stage. It exposes processed surveillance data over the intranet, drives the desktop backend through scheduled jobs, and aggregates results across weeks of recordings into trend dashboards. It is intended for operations, engineering and quality teams that need shared access to analysis results without running the desktop client per user. \\
 
-\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that COMPASS Portal is a separate project with its own documentation and deployment. It is not part of the COMPASS AppImage. This chapter only summarizes its capabilities; for installation, deployment, configuration and detailed usage, please refer to the COMPASS Portal project documentation. \\
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that COMPASS Portal will be a separate project with its own documentation and deployment. It is not part of the COMPASS Client. This chapter only summarizes its capabilities; for installation, deployment, configuration and detailed usage, please refer to the COMPASS Portal project documentation. \\
 
-\textcolor{red}{\textbf{[TODO: ask maintainer whether to embed a single COMPASS Portal dashboard screenshot here; until then this section stays text-only]}}
+\begin{figure}[H]
+    \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm]{figures/portal_overview.png}
+  \caption{Portal overview}
+\end{figure}
+
 
 \section{Feature Summary}
 
@@ -23,14 +29,27 @@ The following capabilities are provided:
 
 Typical use cases include intranet-wide browsing of processed recordings and reports, scheduled nightly processing of new ASTERIX recordings, long-term KPI tracking of sensor and tracker performance, compliance trend reviews across days, weeks and months, and 3rd-party integration of analysis results via the JSON API. \\
 
+\begin{figure}[H]
+    \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm]{figures/portal_trends.png}
+  \caption{Portal trends}
+\end{figure}
+
 \section{Integration with COMPASS}
 
-COMPASS Portal does not read data through a running COMPASS process. Finalized per-day databases are opened directly by the Portal. For tasks that require a COMPASS process (import, reconstruction, evaluation, analyze, export), job execution is delegated to a host-side runner that owns one COMPASS instance and forwards commands to it through the Runtime Command Interface (see \nameref{sec:rtcommand_interface}). \\
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=14cm]{figures/portal_architecture.png}
+  \caption{Portal architecture}
+\end{figure}
 
-At any time, at most one COMPASS process is active per host, and runtime commands are serialized through the runner. The 'Analyze Data Source' task (see \nameref{chap:analyze}) is the primary task exposed through the Portal job pipeline; one analysis entry per DSType is configured in the Portal and replayed automatically on each new processed day. \\
+COMPASS Portal does not read data through a running COMPASS process. Finalized per-day databases are opened directly by the Portal middleware. For tasks that require a COMPASS process (configuration, import, reconstruction, evaluation, analyze, export), job execution is delegated to a host-side runner that owns one COMPASS instance and forwards commands to it through the Runtime Command Interface (see \nameref{sec:rtcommand_interface}). \\
+
+At any time, at most one COMPASS process is active per host, and runtime commands are serialized through the runner.
 
 \section{Distribution and Further Documentation}
 
-COMPASS Portal is delivered as an open-source Docker stack for a single Linux workstation. It is free for basic use including commercial; advanced features are part of the professional license. \\
+COMPASS Portal will commonly be usable in an Docker stack for a single Linux workstation. While its pricing and licensing is still to be defined, it will very likely require the professional license. \\
 
-For installation, deployment, configuration and detailed usage, please refer to the COMPASS Portal project documentation. \\
+
