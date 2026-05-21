@@ -869,10 +869,13 @@ bool injectSpinBoxEvent(QWidget* root,
     //clear line edit
     if (!injectKeyCmdEvent(obj.second, "", Qt::Key_A, Qt::ControlModifier, delay))
         return false;
- 
+
     //fill with new content
     if (!injectKeysEvent(obj.second, "", txt, PageBreakMode::Forbidden, delay))
         return false;
+
+    //commit (required for spinboxes with setKeyboardTracking(false))
+    QTest::keyClick(obj.second, Qt::Key_Return, Qt::NoModifier, delay);
 
     return (obj.second->value() == value);
 }
@@ -899,10 +902,13 @@ bool injectDoubleSpinBoxEvent(QWidget* root,
     //clear line edit
     if (!injectKeyCmdEvent(obj.second, "", Qt::Key_A, Qt::ControlModifier, delay))
         return false;
- 
+
     //fill with new content
     if (!injectKeysEvent(obj.second, "", txt, PageBreakMode::Forbidden, delay))
         return false;
+
+    //commit (required for spinboxes with setKeyboardTracking(false))
+    QTest::keyClick(obj.second, Qt::Key_Return, Qt::NoModifier, delay);
 
     return (obj.second->value() == value_trunc);
 }
