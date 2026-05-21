@@ -49,6 +49,7 @@
 #include <QPainter>
 #include <QSurfaceFormat>
 #include <QSplashScreen>
+#include <QStyle>
 #include <QStyleFactory>
 #include <QThreadPool>
 #include <QFontDatabase>
@@ -812,23 +813,27 @@ COMPASS& Client::compass()
 
 void Client::applyDarkMode(bool dark)
 {
-    static bool baseline_captured = false;
-    static QPalette light_palette;
-    static QString light_stylesheet;
-
-    if (!baseline_captured)
-    {
-        light_palette = QApplication::palette();
-        light_stylesheet = qApp->styleSheet();
-        baseline_captured = true;
-    }
-
     Utils::Files::IconProvider::setDarkMode(dark);
 
     if (!dark)
     {
-        QApplication::setPalette(light_palette);
-        qApp->setStyleSheet(light_stylesheet);
+        // Restore the Fusion light palette via standardPalette() rather than
+        // a runtime capture. QApplication::setPalette() only propagates the
+        // roles set in the incoming palette's resolveMask; a captured startup
+        // palette has a sparse mask (only the roles Fusion happens to
+        // initialize explicitly), so the rest of the dark roles set on the
+        // toggle-on path leak through and "switch back to light" does
+        // nothing for those widgets. standardPalette() returns a fully
+        // resolved light palette, so every role flips back. Repro requires
+        // the AppImage's bundled Qt - the system Qt used in local builds
+        // resolves more of the startup palette by default.
+        QStyle* fusion = QStyleFactory::create("Fusion");
+        if (fusion)
+        {
+            QApplication::setPalette(fusion->standardPalette());
+            delete fusion;
+        }
+        qApp->setStyleSheet(QString());
         return;
     }
 

@@ -24,8 +24,8 @@ To load the data the mechanism described in section \nameref{sec:ui_overview} or
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/grid_loaded.png}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/grid_loaded.png}
   \caption{Grid View after loading data}
 \end{figure}
 
@@ -61,13 +61,6 @@ For the distributed variable it is also possible to select the empty variable in
 In this case, each data item with a valid X- and Y-variable will be sorted into the grid, 
 and only the grid counts will be visualized. This mode can e.g. be used to visualize traffic patterns.
 
-\begin{figure}[H]
-  \centering
-  \hspace*{-2cm}
-  \includegraphics[width=18cm,frame]{figures/grid_loaded_emptyvar.png}
-\caption{Grid View with empty variable selected}
-\end{figure}
-
 \section{Usage}
 
 \subsection{Toolbar}
@@ -81,8 +74,7 @@ Note that an active tool can always be ended by pressing the 'Escape' key.
   \begin{tabular}{ | l | l | l | l |}
     \hline
     \textbf{Icon} & \textbf{Shortcut} & \textbf{Text} &  \textbf{Description} \\ \hline
-    %\includegraphics[width=0.5cm,frame]{../../data/icons/select_action.png} & S & Select & Allows data selection \& de-selection \\ \hline
-    \includegraphics[width=0.5cm,frame]{../../data/icons/zoom_select_action.png} & R & Zoom to Rectangle & Allows zooming to the selected rectangle \\ \hline
+        \includegraphics[width=0.5cm,frame]{../../data/icons/zoom_select_action.png} & R & Zoom to Rectangle & Allows zooming to the selected rectangle \\ \hline
 
   \end{tabular}
   \caption{Toolbar: Available tools}
@@ -95,8 +87,6 @@ The others provide general actions by which the view can be modified.
   \begin{tabular}{ | l | l | l | l |}
     \hline
     \textbf{Icon} & \textbf{Shortcut} &\textbf{Text} &  \textbf{Description} \\ \hline
-    %\includegraphics[width=0.5cm,frame]{../../data/icons/select_invert.png} & & Invert Selection & Selects all de-selected \& vice versa \\ \hline
-    %\includegraphics[width=0.5cm,frame]{../../data/icons/select_delete.png} & & Delete Selection & De-selects all target reports \\ \hline
     \includegraphics[width=0.5cm,frame]{../../data/icons/zoom_home.png} & Space & Zoom to Home & Pans/zooms to show all existing data \\ \hline
   \end{tabular}
   \caption{Toolbar: Available actions}
@@ -110,12 +100,6 @@ the 'Distributed Variable' represents the values sorted into the grid cells.
 In all three cases such a variable can be any numerical variable. A reload operation might be required for the selection to take effect. \\
 
 The Config Tab includes the shared Layers Tree (see \nameref{sec:layers_tree}), which controls per-DBContent / per-Data-Source / per-line visibility for the grid input data. The dedicated per-view annotation tab that existed in earlier releases has been removed; plottable grid annotations of active View Points are now exposed under the 'Annotations' group of the Layers Tree. When multiple grid annotations are present, the 'Plot' and (if available) 'Plot Group' combo boxes are used to choose between them. \\
-
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Grid View Configuration Panel with the shared Layers Tree visible]}}\vspace{1.5cm}}}
-  \caption{Grid View: shared Layers Tree in the Config Tab}
-\end{figure}
 
 Below the variable selection, several parameters can be used to further configure the displayed grid.
 
@@ -135,14 +119,9 @@ Below the variable selection, several parameters can be used to further configur
 
 \begin{figure}[H]
   \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: 'Color Scale' combo box expanded showing the full list of available colormaps]}}\vspace{1.5cm}}}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/grid_colorbox.png}
   \caption{Grid View: Color Scale combo box}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: a grid rendered with the new 'Red2Green' colormap]}}\vspace{1.5cm}}}
-  \caption{Grid View: Red2Green colormap}
 \end{figure}
 
 Please \textbf{note} that the Grid View's Color Scale maps the distributed Z variable and takes priority over the global Color Mode (see \nameref{sec:color_mode}) for the rendered grid cells. The Color Mode still drives the per-layer color used in the Layers Tree and outside of the gridded area. \\
