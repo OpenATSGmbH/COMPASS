@@ -153,8 +153,11 @@ protected:
     std::vector<std::unique_ptr<dbContent::ItemGroup>>& itemGroups() { return item_groups_; }
 
 private:
-    void dataChanged(unsigned int dbc_id);
-    void dataRefreshed();
+    void doReset();
+    void rebuildContent(unsigned int dbc_id);
+    void doRefreshed();
+
+    void dataChanged(const std::vector<unsigned int>& dbc_ids, bool reset, bool last);
 
     void setGroupIDNames(dbContent::ItemGroup& group) const;
 

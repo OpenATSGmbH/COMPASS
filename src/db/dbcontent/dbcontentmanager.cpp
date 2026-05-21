@@ -754,9 +754,11 @@ void DBContentManager::addLoadedData(std::map<std::string, std::shared_ptr<Buffe
         updateNumLoadedCounts();
         restoreSelectedRecNums();
 
-        //update all changed dbcontents in data store
+        //update all changed dbcontents in data store; pass last=false so the
+        //provider does not run heavy finalize work per-arrival - the
+        //loadingDoneSignal -> finalize() hook runs it once at end-of-load.
         if (distribute_data_)
-            data_store_->update(changed_dbc_contents);
+            data_store_->update(changed_dbc_contents, /*last=*/false);
 
         logdbg << "emitting signal";
 
@@ -1039,7 +1041,10 @@ void DBContentManager::clearData()
 {
     loginf;
 
-    data_store_->reset();
+    // wipe + finalize so providers actually settle in empty state; if a load
+    // follows, loadingDoneSignal -> finalize() will finalize again after the
+    // last per-content arrival.
+    data_store_->reset(/*last=*/true);
 
     data_.clear();
 
@@ -1459,8 +1464,11 @@ void DBContentManager::processLiveModeSlot()
 
         if (data_.size())
         {
-            // Path B: rebuild geometry/items via providers (DBContentDataStore::update()
-            // resets the store internally before repopulating).
+            // Path B: rebuild geometry/items via providers. update() emits ONE
+            // queued dataChangedSignal(all_ids, reset=true, last=true) - the
+            // provider then runs reset + per-content rebuild + finalize inside a
+            // single event-loop turn, so OSG cannot paint the empty intermediate
+            // state between the wipe and the rebuild.
             if (distribute_data_)
                 data_store_->update();
 
@@ -1471,7 +1479,8 @@ void DBContentManager::processLiveModeSlot()
         }
         else if (had_data)
         {
-            data_store_->reset();
+            // reset(last=true): atomic wipe + finalize in providers.
+            data_store_->reset(/*last=*/true);
             compass_.viewManager().clearDataInViews();
         }
 

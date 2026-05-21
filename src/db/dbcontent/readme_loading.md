@@ -54,7 +54,7 @@ After the loop the manager emits **`loadingStartedSignal()`**. If no jobs were c
 
 `readJobObsoleteSlot` is declared but never reached today (JobManager only emits `doneSignal`).
 
-**6. `DBContentManager::addLoadedData`** seizes the buffer into `data_[name]`, updates `inserted/loaded` counts, restores selection, calls `data_store_->update(changed_dbc_contents)` (incremental, per-content), emits **`loadedDataSignal(data, false)`**, and advances the progress dialog by one tick. Two observers fan out from this point - see *Two parallel observers* below.
+**6. `DBContentManager::addLoadedData`** seizes the buffer into `data_[name]`, updates `inserted/loaded` counts, restores selection, calls `data_store_->update(changed_dbc_contents, /*last=*/false)` (incremental, per-arrival - finalize is deferred to the `loadingDoneSignal → finalize()` hook), emits **`loadedDataSignal(data, false)`**, and advances the progress dialog by one tick. Two observers fan out from this point - see *Two parallel observers* below.
 
 **7. `DBContentManager::loadingDone(object)`** polls every DBContent; if any `isLoading()`, returns. Otherwise calls `finishLoading()`.
 
@@ -78,21 +78,28 @@ After step 6 there are **two** distribution paths that fan out from the same dat
 
 **Path A - manager-signal path → `ViewManager` → `View`s.** `ViewManager` is connected to `loadingStartedSignal` / `loadedDataSignal` / `loadingDoneSignal` and dispatches `View::loadingStarted()` / `View::loadedData(data, reset)` / `View::loadingDone()` to every registered view (see *View distribution* below).
 
-**Path B - data-store path → `DBContentItemProvider` subclasses.** `DBContentManager` owns a `DBContentDataStore` ([dbcontentdatastore.h](dbcontentdatastore.h)) holding the buffer map plus a precomputed `dbc_id → ds_id → line_id → buffer indices` index. It exposes three signals:
+**Path B - data-store path → `DBContentItemProvider` subclasses.** `DBContentManager` owns a `DBContentDataStore` ([dbcontentdatastore.h](dbcontentdatastore.h)) holding the buffer map plus a precomputed `dbc_id → ds_id → line_id → buffer indices` index. It exposes **one** signal:
 
-| Signal | Emitted by | Meaning |
+| Signal | Payload | Meaning |
 |---|---|---|
-| `dataResetSignal()` | `DBContentDataStore::reset()` | Store cleared. |
-| `dataChangedSignal(dbc_id)` | `DBContentDataStore::update(name, buf, true)` | One content's buffer + index rebuilt. |
-| `dataRefreshedSignal()` | `DBContentDataStore::update()` *and* (queued) on `DBContentManager::loadingDoneSignal` | Refresh complete. |
+| `dataChangedSignal(dbc_ids, reset, last)` | `vector<unsigned int>`, `bool`, `bool` | Buffers/indices for `dbc_ids` have been rebuilt. If `reset` is true, listeners must also drop state for any contents NOT in `dbc_ids` (full dataset replacement). If `last` is true, this is the final event of a logical batch - listeners run finalize work (heavy: provider `dataRefreshed_impl`, downstream visual refresh). |
 
-Subclasses of `DBContentItemProvider` (e.g. `GeometryItemProvider` for the Geographic View) connect to all three with `Qt::QueuedConnection` when constructed with `auto_update=true`. `dataChanged(dbc_id)` walks the data-store indices and (re)builds per-(dbc, ds, line) `ItemGroup`s; `dataRefreshed()` finalises them. From there, downstream signals (e.g. `layersResetSignal` / `layersChangedSignal` in the Geographic View) drive the visual rebuild - independent of `View::loadedData()`.
+The signal is emitted by:
+
+| Caller | Emits |
+|---|---|
+| `DBContentDataStore::update()` (no-args, full rebuild) | `(all_ids, reset=true, last=true)` |
+| `DBContentDataStore::update(dbc_names, last)` (incremental) | `(those_ids, reset=false, last)` |
+| `DBContentDataStore::reset(last)` | `({}, reset=true, last)` |
+| `DBContentDataStore::finalize()` - wired to `DBContentManager::loadingDoneSignal` (queued) | `({}, reset=false, last=true)` (synthetic finalize for empty/cancelled loads) |
+
+Subclasses of `DBContentItemProvider` (e.g. `GeometryItemProvider` for the Geographic View) connect to this signal with `Qt::QueuedConnection` when constructed with `auto_update=true`. The slot performs `doReset()` (if `reset`) → `rebuildContent(id)` for each id → `doRefreshed()` (if `last`) inside a single event-loop turn, so listeners that paint independently (e.g. OSG) cannot observe the empty intermediate state between the wipe and the rebuild. From there, downstream signals (e.g. `layersResetSignal` / `layersChangedSignal` in the Geographic View) drive the visual rebuild - independent of `View::loadedData()`.
 
 In a normal load both paths fire concurrently:
-- step 6 calls `data_store_->update(changed_dbc_contents)` → Path B, then emits `loadedDataSignal` → Path A;
-- step 8 emits `loadingDoneSignal` → Path A, and the data store's queued connection re-emits it as `dataRefreshedSignal` → Path B.
+- step 6 calls `data_store_->update(changed_dbc_contents, last=false)` → Path B (per-arrival incremental rebuild, no finalize); also emits `loadedDataSignal` → Path A;
+- step 8 emits `loadingDoneSignal` → Path A, and the data store's queued connection runs `finalize()` which emits `dataChangedSignal({}, false, true)` → Path B (provider runs finalize work).
 
-In the live-mode update only Path B fires - see next section.
+In live-mode Path B fires once per tick as a single atomic event - see next section.
 
 ## Live-mode update (`processLiveModeSlot`)
 
@@ -104,26 +111,25 @@ Sequence ([dbcontentmanager.cpp:1288](dbcontentmanager.cpp#L1288)):
 2. `deleteDBContentData(old_time)` - drop rows older than the live cache window.
 3. `addInsertedDataToChache()` - move freshly inserted buffers into `data_`.
 4. `cutCachedData()`, `filterDataSources()`, optional `filterManager().filterBuffers(data_)`.
-5. **Distribute** - `data_store_->reset()`; if `data_.size()` then `data_store_->update()`, else `viewManager().clearDataInViews()`.
+5. **Distribute** -
+   - if `data_.size()`: `data_store_->update()` (Path B, single atomic event) **and** `emit loadedDataSignal(data_, true)` (Path A);
+   - else if `had_data`: `data_store_->reset(last=true)` (Path B atomic wipe+finalize) and `viewManager().clearDataInViews()` (Path A widget cache clear).
 6. `updateNumLoadedCounts()`; update `max_latency_`.
 
-Step 5 fires **only** Path B: `data_store_->update()` triggers `dataChangedSignal(dbc_id)` per content and then `dataRefreshedSignal()` - providers rebuild item groups and views consuming the data store (currently the Geographic View via `GeometryItemProvider`) refresh.
+Step 5 fires **both** paths.
 
-`loadingStartedSignal` / `loadedDataSignal` / `loadingDoneSignal` are **not** emitted (the old `emit loadedDataSignal(data_, true)` is intentionally retired, see commit `ad038381`). Consequence: in live mode `ViewManager::loaded*Slot` / `loading*Slot` never run, and *anything* a view does in `loadingStarted()` / `loadedData(data, reset)` / `loadingDone()` is bypassed.
+Path B is the critical part of the tick. `data_store_->update()` clears its internal state then repopulates from `data_` and emits a single `dataChangedSignal(all_ids, reset=true, last=true)` (queued). The provider processes wipe + per-content rebuild + finalize inside one event-loop turn - OSG cannot paint the empty intermediate state between the wipe and the rebuild.
 
-### What the live path does not do today
+Path A drives the surrounding view chrome - `loadedDataSignal(data_, /*reset=*/true)` is dispatched by `ViewManager::loadedDataSlot` to every view's `loadedData(data, requires_reset)`. For the Geographic View this runs `GeographicViewDataWidget::updateData_impl` ([geographicviewdatawidget.cpp:571](../../../experimental_src/view/geographicview/geographicviewdatawidget.cpp#L571)) - `TimeFilterWidget::updateMinMaxTime`, `timestamp_drawn_*` recompute, first-tick `zoomToLoadedData()`, `updateInfoText`, `updateStatusMessage`, `drawSlot()`, overload detection.
 
-For the Geographic View specifically, `GeographicView::loadedData(...)` ([geographicview.cpp:376](../../../experimental_src/view/geographicview/geographicview.cpp#L376)) is the home of:
-- overload detection - `num_packets_in_processing` and `maxLatency()` thresholds, sets/clears `overload_detected_` and the overlay text;
-- `View::loadedData` → `GeographicViewDataWidget::updateData_impl` - `TimeFilterWidget::updateMinMaxTime`, `timestamp_drawn_*` recompute, first-load `zoomToLoadedData()`, `updateInfoText`, `updateStatusMessage`, `drawSlot()`;
-- `label_generator_.updateAvailableLabelLines()` after each tick.
+The `loadingStartedSignal` / `loadingDoneSignal` bookends of the live cycle are emitted once per cycle, not per tick: `DBContentManager::appModeSwitchSlot` ([dbcontentmanager.cpp:1307](dbcontentmanager.cpp#L1307)) emits `loadingStartedSignal()` on `LiveRunning` entry and `loadingDoneSignal()` on exit, so Path A consumers (`ViewManager::loading*Slot`) see live entry/exit as a single `started → loadedData × ticks → done` cycle.
 
-None of this runs in live mode now. The geometry tree IS rebuilt (Path B does that), but the surrounding view chrome - time-window scrubber, overload overlay, info/status panels, per-tick draw kick - does not refresh on the 1 Hz tick. New layers can also sit unrendered until something else fires `drawSlot`.
+### Layer churn in the per-tick rebuild
+
+Path B's wipe + rebuild is now atomic, but `GeometryItemProvider::reset_impl()` still destroys every `GeometryItemGroupLayer` and `dataChanged_impl()` reconstructs a new one. The `backupLayer` / `restoreLayer` JSON round-trip preserves logical label state, but each `GeometryItemGroupPointLabel` is torn down and re-registered with the overlay registry per tick - visible label flicker. The deeper fix is to keep existing `(dbc, ds, line)` layers alive across ticks and refresh buffer/index references in place, destroying only vanished keys.
 
 ### Other rough edges in the live path
 
-- **Double reset.** Step 5 calls `data_store_->reset()` unconditionally; if data exists, `data_store_->update()` then calls `reset()` again as its first step. `dataResetSignal` is emitted twice and `DBContentItemProvider::reset` (with subclass `reset_impl()`, e.g. clearing `group_layers_`) runs twice per tick.
-- **No `dataRefreshedSignal` from `loadingDoneSignal`** - that connection in `DBContentDataStore` only fires for `load()`-driven refreshes. Live mode relies on the explicit emit at the end of `update()`.
 - **Stale code in `GeographicViewDataWidget::updateData_impl`** (lines 581-604) - commented-out `osg_layer_model_->processBuffers(...)` references `OSGLayerModel`, which is no longer the live geometry path; the active type is `GeographicViewLayerModel` driven by `GeometryItemProvider`. Dead block, safe to delete.
 
 ## Progress granularity

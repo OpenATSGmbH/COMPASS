@@ -53,9 +53,18 @@ class DBContentDataStore : public QObject
     Q_OBJECT
 
 signals:
-    void dataResetSignal();               // emitted when the data store has been reset
-    void dataChangedSignal(unsigned int); // emitted when the data for a certain dbcontent has changed
-    void dataRefreshedSignal();           // emitted when refreshing the data store finished
+    // Emitted when buffers/indices have changed.
+    // dbc_ids = ids of contents just rebuilt (may be empty).
+    // reset   = if true, the listener must drop ALL prior state (including for
+    //           contents NOT in dbc_ids) before processing dbc_ids - full
+    //           dataset replacement semantics. The reset + rebuild happen in a
+    //           single event-loop turn, so a queued listener sees them atomically
+    //           with no visible empty intermediate state.
+    // last    = if true, this is the final event of a logical batch (e.g. last
+    //           content arrival of an offline load, or the single event of a
+    //           live tick). Listeners should run heavy finalize work (e.g.
+    //           rebuilding payloads, downstream visual refresh) only on last.
+    void dataChangedSignal(const std::vector<unsigned int>& dbc_ids, bool reset, bool last);
 
 public:
     typedef std::vector<unsigned int>                              BufferIndices;
@@ -82,14 +91,34 @@ public:
     std::shared_ptr<Buffer> buffer(unsigned int dbc_id) const;
     std::shared_ptr<dbContent::TargetReportAccessor> targetReportAccessor(unsigned int dbc_id) const;
 
-    void reset();
-    void update(const std::vector<std::string>& dbc_names);
+    // Drops all internal state. Emits dataChangedSignal({}, true, last).
+    // Pass last=true for standalone wipes (e.g. live "data went empty"); pass
+    // last=false at the start of an offline load that will be followed by
+    // per-content arrivals.
+    void reset(bool last = true);
+
+    // Incremental rebuild of the listed contents (drops their prior entries and
+    // re-adds from manager.data()). Emits dataChangedSignal(those_ids, false, last).
+    // The caller passes last=true for the final per-content arrival of an
+    // offline load (so providers can finalize), false otherwise.
+    void update(const std::vector<std::string>& dbc_names, bool last);
+
+    // Full atomic rebuild from manager.data(). Drops all prior state, repopulates
+    // for every content currently in the manager, emits ONE
+    // dataChangedSignal(all_ids, true, true). Used by the live tick - the single
+    // queued event ensures providers reset+rebuild+finalize in one event-loop
+    // turn with no visible empty intermediate state.
     void update();
 
+    // Synthetic finalize: emits dataChangedSignal({}, false, true). Used by the
+    // loadingDoneSignal hook so providers finalize even when a load arrived no
+    // new content (empty or cancelled offline load).
+    void finalize();
+
 private:
-    void update(const std::string& dbc_name, 
-                const std::shared_ptr<Buffer>& buffer,
-                bool notify);
+    void clearState();
+    void rebuildContent(const std::string& dbc_name,
+                        const std::shared_ptr<Buffer>& buffer);
     
     DBContentManager& dbc_manager_;
 

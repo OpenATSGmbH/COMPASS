@@ -30,8 +30,11 @@ DBContentDataStore::DBContentDataStore(DBContentManager& dbc_manager)
 :   dbc_manager_(dbc_manager)
 ,   accessor_   (new dbContent::DBContentAccessor(dbc_manager))
 {
-    //if the dbc manager is done loading we are done updating too
-    connect(&dbc_manager_, &DBContentManager::loadingDoneSignal, this, &DBContentDataStore::dataRefreshedSignal, Qt::ConnectionType::QueuedConnection);
+    //if the dbc manager is done loading, emit a synthetic finalize event so
+    //providers run their dataRefreshed work even when no new content arrived
+    //(e.g. empty/cancelled offline load).
+    connect(&dbc_manager_, &DBContentManager::loadingDoneSignal,
+            this, &DBContentDataStore::finalize, Qt::ConnectionType::QueuedConnection);
 }
 
 /**
@@ -135,59 +138,91 @@ DBContentDataStore::BufferIndices DBContentDataStore::indicesForDSID(unsigned in
 }
 
 /**
- * Full rebuild: resets the store then updates every DBContent type currently
- * held by the manager. Emits dataChanged() once when done.
+ * Full atomic rebuild from manager.data(). Drops all prior state, repopulates
+ * for every content currently in the manager, then emits ONE
+ * dataChangedSignal(all_ids, reset=true, last=true). Used by the live tick:
+ * the single queued event ensures the listener processes reset + rebuild +
+ * finalize in one event-loop turn, with no visible empty intermediate state.
  */
 void DBContentDataStore::update()
 {
-    reset();
+    clearState();
+
+    std::vector<unsigned int> rebuilt_ids;
+    rebuilt_ids.reserve(dbc_manager_.data().size());
 
     for (const auto& data_it : dbc_manager_.data())
-        update(data_it.first, data_it.second, true);
+    {
+        rebuildContent(data_it.first, data_it.second);
+        rebuilt_ids.push_back(dbc_manager_.dbContentId(data_it.first));
+    }
 
-    emit dataRefreshedSignal();
+    emit dataChangedSignal(rebuilt_ids, /*reset=*/true, /*last=*/true);
 }
 
 /**
- * Clears all buffers, indices, and the accessor, returning the store to an
- * empty state. Emits dataReset().
+ * Drops all buffers, indices, and accessor entries. Emits
+ * dataChangedSignal({}, true, last).
  */
-void DBContentDataStore::reset()
+void DBContentDataStore::reset(bool last)
 {
-    buffers_.clear();
-    indices_.clear();
-    accessor_->clear();
+    clearState();
 
-    emit dataResetSignal();
+    emit dataChangedSignal({}, /*reset=*/true, last);
 }
 
 /**
  * Incrementally refreshes a subset of DBContent types from the manager's
- * current data. Calls the single-dbc update with notify=true for each name,
- * so dataChanged(dbc_id) is emitted per entry.
+ * current data, then emits ONE dataChangedSignal(those_ids, false, last).
+ * Caller passes last=true on the final per-content arrival of an offline load
+ * (so providers finalize), false otherwise.
  */
-void DBContentDataStore::update(const std::vector<std::string>& dbc_names)
+void DBContentDataStore::update(const std::vector<std::string>& dbc_names, bool last)
 {
     const auto& data = dbc_manager_.data();
+
+    std::vector<unsigned int> rebuilt_ids;
+    rebuilt_ids.reserve(dbc_names.size());
 
     for (const auto& dbc_name : dbc_names)
     {
         traced_assert(data.count(dbc_name));
-        const auto& buffer = data.at(dbc_name);
-
-        update(dbc_name, buffer, true);
+        rebuildContent(dbc_name, data.at(dbc_name));
+        rebuilt_ids.push_back(dbc_manager_.dbContentId(dbc_name));
     }
+
+    emit dataChangedSignal(rebuilt_ids, /*reset=*/false, last);
+}
+
+/**
+ * Synthetic finalize: emits dataChangedSignal({}, false, true). Wired to the
+ * manager's loadingDoneSignal so providers run their finalize work even when
+ * an offline load arrived no new content (empty or cancelled).
+ */
+void DBContentDataStore::finalize()
+{
+    emit dataChangedSignal({}, /*reset=*/false, /*last=*/true);
+}
+
+/**
+ * Clears all internal containers. No signal emitted.
+ */
+void DBContentDataStore::clearState()
+{
+    buffers_.clear();
+    indices_.clear();
+    accessor_->clear();
 }
 
 /**
  * Replaces the stored data for a single DBContent type: removes any existing
  * buffer, accessor entry, and index entries for dbc_name, then registers the
  * new buffer, rebuilds the accessor lookup, and repopulates the ds_id/line_id
- * index from scratch. If notify is true, emits dataChanged(dbc_id) when done.
+ * index from scratch. Emits no signals; the calling update*() method batches
+ * a single dataChangedSignal after rebuilding all requested contents.
  */
-void DBContentDataStore::update(const std::string& dbc_name,
-                                const std::shared_ptr<Buffer>& buffer,
-                                bool notify)
+void DBContentDataStore::rebuildContent(const std::string& dbc_name,
+                                        const std::shared_ptr<Buffer>& buffer)
 {
     traced_assert(buffer);
 
@@ -221,7 +256,4 @@ void DBContentDataStore::update(const std::string& dbc_name,
 
         idx_ptr->push_back(i);
     }
-
-    if (notify)
-        emit dataChangedSignal(dbc_id);
 }

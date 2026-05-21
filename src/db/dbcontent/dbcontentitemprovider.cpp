@@ -53,9 +53,7 @@ DBContentItemProvider::DBContentItemProvider(DBContentDataStore& data_store,
 {
     if (auto_update)
     {
-        connect(&data_store_, &DBContentDataStore::dataResetSignal, this, &DBContentItemProvider::reset, Qt::QueuedConnection);
         connect(&data_store_, &DBContentDataStore::dataChangedSignal, this, &DBContentItemProvider::dataChanged, Qt::QueuedConnection);
-        connect(&data_store_, &DBContentDataStore::dataRefreshedSignal, this, &DBContentItemProvider::dataRefreshed, Qt::QueuedConnection);
     }
 }
 
@@ -199,10 +197,19 @@ bool DBContentItemProvider::groupingIsTargetSpecific() const
 }
 
 /**
- * Clears all item groups and notifies subclasses via reset_impl().
- * Called when the data store signals a full data reset.
+ * Public synchronous reset hook (called by views' clearData_impl() etc.).
  */
 void DBContentItemProvider::reset()
+{
+    doReset();
+}
+
+/**
+ * Internal reset: wipes provider state and notifies subclasses + observers.
+ * Used both by the public reset() and by dataChanged(ids, reset=true) so the
+ * reset + per-content rebuild can run atomically in one event-loop turn.
+ */
+void DBContentItemProvider::doReset()
 {
     emit dataAboutToBeResetSignal();
 
@@ -428,6 +435,28 @@ std::function<nlohmann::json(unsigned int)> DBContentItemProvider::createGroupFu
 }
 
 /**
+ * Unified data-changed slot. Performs (optional reset) -> rebuild each id in
+ * dbc_ids -> (optional finalize) inside a single event-loop turn, so listeners
+ * that paint (e.g. OSG) cannot observe the empty intermediate state between
+ * the wipe and the rebuild.
+ *
+ *   reset = drop all prior provider state first (full dataset replacement)
+ *   last  = run finalize work (heavy: dataRefreshed_impl, downstream signal)
+ *           after rebuilding. Live tick events always pass last=true.
+ */
+void DBContentItemProvider::dataChanged(const std::vector<unsigned int>& dbc_ids, bool reset, bool last)
+{
+    if (reset)
+        doReset();
+
+    for (auto dbc_id : dbc_ids)
+        rebuildContent(dbc_id);
+
+    if (last)
+        doRefreshed();
+}
+
+/**
  * Rebuilds item groups for the given DBContent type after its data has changed.
  * Notifies subclasses before and after the rebuild via dataToBeChanged_impl() and
  * dataChanged_impl(), passing the range of newly appended groups in item_groups_.
@@ -435,7 +464,7 @@ std::function<nlohmann::json(unsigned int)> DBContentItemProvider::createGroupFu
  * grouping key extracted via createGroupFunc(). The resulting item groups are
  * appended to item_groups_.
  */
-void DBContentItemProvider::dataChanged(unsigned int dbc_id)
+void DBContentItemProvider::rebuildContent(unsigned int dbc_id)
 {
     auto dbc_name = data_store_.dbcManager().dbContentWithId(dbc_id);
 
@@ -551,16 +580,16 @@ void DBContentItemProvider::setGroupIDNames(dbContent::ItemGroup& group) const
 }
 
 /**
- * Called when the data store signals that data has finished refreshing.
- * Delegates to dataRefreshed_impl() so subclasses can react to the refresh completion.
+ * Internal finalize: runs the subclass dataRefreshed_impl() hook and emits the
+ * provider-level dataRefreshedSignal for downstream consumers (e.g.
+ * DBContentItemModel). Called from dataChanged() when last=true so reset +
+ * rebuild + finalize complete atomically in one event-loop turn.
  */
-void DBContentItemProvider::dataRefreshed()
+void DBContentItemProvider::doRefreshed()
 {
-    // react on data finishing refreshing in the data store
-
     dataRefreshed_impl();
 
-    loginf << groupingAsString(); //toString();
+    loginf << groupingAsString();
 
     emit dataRefreshedSignal();
 }
@@ -571,15 +600,12 @@ void DBContentItemProvider::dataRefreshed()
  */
 void DBContentItemProvider::update()
 {
-    //reset
-    reset();
+    doReset();
 
-    //update all dbcontents
     for (const auto& it : data_store_.buffers())
-        dataChanged(it.first);
+        rebuildContent(it.first);
 
-    //invoke final refreshed hook
-    dataRefreshed();
+    doRefreshed();
 }
 
 /**

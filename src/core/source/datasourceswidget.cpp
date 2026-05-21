@@ -443,7 +443,7 @@ QColor DataSourceItem::effectiveColor() const
     if (mode == 1)
     {
         QColor c = commonInsertedDBContentColor(ctx_man, ds_id_, ds->dsType(), ds->name());
-        loginf << "ds '" << ds->name() << "' mode 1 (data-driven) -> "
+        logdbg << "ds '" << ds->name() << "' mode 1 (data-driven) -> "
                << c.name().toStdString() << " valid " << c.isValid();
         return c;
     }
@@ -452,7 +452,7 @@ QColor DataSourceItem::effectiveColor() const
     // works even when count rows are hidden).
     QColor c = context::resolveSeriesColor(
         ds->dsType(), ds->name(), /*line_index=*/0, /*dbcontent=*/"", ctx_man.compass());
-    loginf << "ds '" << ds->name() << "' type '" << ds->dsType() << "' mode " << mode
+    logdbg << "ds '" << ds->name() << "' type '" << ds->dsType() << "' mode " << mode
            << " (direct) -> " << c.name().toStdString() << " valid " << c.isValid();
     return c;
 }
