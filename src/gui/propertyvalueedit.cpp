@@ -17,6 +17,8 @@
 
 #include "propertyvalueedit.h"
 
+#include "ui_test_common.h"
+
 #include <QLineEdit>
 #include <QHBoxLayout>
 #include <QValidator>
@@ -37,6 +39,7 @@ PropertyValueEdit::PropertyValueEdit(PropertyDataType dtype,
     layout->setContentsMargins(0, 0, 0, 0);
 
     edit_ = new QLineEdit;
+    UI_TEST_OBJ_NAME(edit_, "edit");
     layout->addWidget(edit_);
 
     connect(edit_, &QLineEdit::textEdited, this, &PropertyValueEdit::onValueChanged);
