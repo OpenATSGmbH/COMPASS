@@ -7,19 +7,19 @@
   \caption{Geographic View Style tab}
 \end{figure}
 
-In the 'Style' tab, several elements exist:
+The 'Style' tab contains:
 
 \begin{itemize}
- \item Connect Last Layer: Whether grouped target reports in the last layer should be connected using lines
- \item Connect None Height: If groups are connected, whether target reports with no height information should be connected
- \item Blend Mode: Defines the drawing blend mode, allowing clearer symbols (contour) or colors (src-over).
- \item Style: Defines how data is styled. Please refer to section \nameref{sec:style} for details.
- \item Render Order: Defines the drawing order of DBContents. To bottom one is drawn first, the top one last (over all others)
+ \item Item Connection Lines: Connection-lines checkbox (see \nameref{sec:item_connection_lines})
+ \item Style Preset: Preset selection and per-preset configuration (see \nameref{sec:style})
+ \item Render Order: Drawing order of DBContents (see \nameref{sec:render_order})
 \end{itemize}
+\ \\
 
-\subsubsection{Connect Last Layer \& Connect None Height}
+\subsubsection{Item Connection Lines}
+\label{sec:item_connection_lines}
 
-If the 'Connect Last Layer' checkbox is set, connection lines between all target reports in the last layer are drawn, except for the 'None' layer. \\
+If the 'Item Connection Lines' checkbox is set, connection lines between all target reports in the last layer are drawn, except for the 'None' layer. \\
 
 Please note that connection lines for target reports with a time-of-day difference larger than 5 minutes will be omitted. \\
 
@@ -30,121 +30,39 @@ Please note that connection lines for target reports with a time-of-day differen
   \caption{Geographic View Data with lines}
 \end{figure}
 
-If the height information is used (3D view) and if target reports without height information are connected, the lines clutter the display. The 'Connect None Height' checkbox allows to set the behavior. \\
+Please \textbf{note} that changing this value requires a redraw.
 
-Please \textbf{note} that changing both these values requires a manual redraw using the 'Redraw' button.
-
-\subsubsection{Style}
+\subsubsection{Style Preset}
 \label{sec:style}
 
-There exist 3 main elements for styling:
+This section contains the 'Style Preset' combo box, the preset configuration area, and a 'Reset Styles' button that clears all style presets to their default values. \\
+
+The following presets exist (default 'Color by Speed'):
+
 \begin{itemize}
- \item Preset drop-down menu: Selects currently active style
- \item Style configuration area: Area below the preset menu, allows configuration of the current style
- \item Reset Styles button: Clears all style presets to their default values
+ \item Global Color Mode: Uses the global color mode setting from the main application
+ \item Color by Item: Colors target reports by the item color assigned in the Item Mode panel (see \nameref{sec:geo_item_mode}). One color per grouped item (e.g. per UTN, per Aircraft Address, per Mode 3/A Code), depending on the current Item Mode grouping. Replaces the previous 'Layer Color per ...' presets.
+ \item Color by ADSB MOPS: V0 / V1 / V2 colors for CAT021 ADS-B target reports
+ \item Color by ADSB Position Quality: NUCp / NACp colors for CAT021 ADS-B target reports
+ \item Color by Detection Type: Radar detection type (PSR, SSR, PSR+SSR, Mode S, ...)
+ \item Color by Flight Level: Gradient by Mode C flight level, per DBContent
+ \item Color by Line ID: Color per line ID (L1-L4), with the symbol still driven by DBContent
+ \item Color by Num Contributing Sensors: Number of contributing sensors of a CAT062 target report (sum of REF.CSN.REP and REF.CST.REP)
+ \item Color by Speed: Gradient by ground speed
+ \item Color by Track Age: Color by track age, with 4 intervals plus 'None'
+ \item Color by Track Angle: Color by direction of movement (N / E / S / W gradient)
 \end{itemize}
-\  \\
+\ \\
 
-Each style can be composed of 3 elements:
-\begin{itemize}
- \item Default Style: Base style which sets the basic styling for all data
- \item Rule Generator: Generated e.g. layer-specific rules
- \item Generated Rules: Rules which override the Default Style
-\end{itemize}
-\  \\
+Per-preset parameters (e.g. colors per interval, time interval used, variable used) can be adapted in the configuration tree below the combo box. Changes are applied immediately to the data. \\
 
-\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please note that some style presets (e.g. layer style per ACID, ACAD, Track Number, Mode 3/A Code) generate lots of different (persistent) styling rules, which decreases startup speed. After using such styles it is possible to reset the styles using the 'Reset Styles' button to increase application startup speed. \\
+Please note that after changing the active preset a redraw or reload may be triggered automatically. \\
 
-There are two types of style presets:
-\begin{itemize}
- \item Layer-based presets: Perform styling per layer
- \item Target report based presets: Set symbol color per data variable value
-\end{itemize}
-\  \\
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please also note that for presets relying on a specific data variable (e.g. flight level, ADS-B quality, contributing sensors), the corresponding data has to be present in the loaded target reports; otherwise the affected target reports are styled with the 'None' color.
 
-\paragraph{Layer-based Style Presets}
-The following layer-based style presets exist:
-\begin{itemize}
- \item Default: All data is shown in the same style
- \item Layer Color per DBContent: Style is defined by DBContent type
- \item Layer Color per UTN: Style is defined by UTN value
- \item Layer Color per ACID: Style is defined by Mode S Target Identification value
- \item Layer Color per DS ID: Style is defined by data source
- \item Layer Color per Mode 3/A Code: Style is defined by Mode 3/A code
- \item Layer Color per ACAD: Style is defined by Mode S Target Address
- \item Layer Color per Track Number: Style is defined by track number
-\end{itemize}
-\  \\
+\subsubsection{Style Example}
 
-Please note that after changing the style to one of these value a redraw has to be triggered. \\
-
-\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please also note that for such presets the data from which the style is derived has to be present, otherwise the layer is styled with a common base style.
-
-\paragraph{Target Report based Style Presets}
-The following Target report based style presets exist:
-\begin{itemize}
- \item Color by ADS-B MOPS: Color is defined by the ADS-B MOPS version of the transponder
- \item Color by ADS-B Position Quality: Color is defined by the ADS-B NUCp/NACp value of the target report
- \item Color by Detection Type: Color is defined by Radar detection type (PSR, SSR, PSR+SSR, ...)
- \item Color by Flight Level: Color is defined by the Mode C code/Flight level
- \item Color by Num Contributing Sensors: Color is defined by the number of sensors contributing to a CAT062 target report (the number of contributing sensors being defined as the sum of CAT062 REF.CSN.REP and REF.CST.REP items)
- \item Color by Speed: Color is defined by groundspeed value
- \item Color by Track Angle: Color is defined by direction of movement value
- \item Color by Track Age Type: Color is defined by track age of variable
-\end{itemize}
-\  \\
-
-Please note that after changing the style to one of these value a reload has to be triggered. \\
-
-\subsubsection{Customized Styling}
-
-While the presets come with (mostly) reasonable default values, adaptation can be performed by clicking on the value that should be changed, either in the Default Style or the Generated rules. Any changes are applied immediately to the data.
-
-\subsubsection{Style Examples}
-
-To give a few examples, some interesting Style presets are shown:
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_style_ds_id.png}
-  \caption{Geographic View Layer color per DS ID}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_style_mode3a_code.png}
-  \caption{Geographic View Layer color per Mode 3/A Code}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_style_track_num.png}
-  \caption{Geographic View Layer color per Track Number}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_style_utn.png}
-  \caption{Geographic View Layer color per UTN}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_style_adsb_mops.png}
-  \caption{Geographic View Color by ADS-B MOPS version}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_style_adsb_position_qual.png}
-  \caption{Geographic View Color by ADS-B position quality}
-\end{figure}
+As an example, the 'Color by Flight Level' preset applied to a mixed dataset:
 
 \begin{figure}[H]
     \centering
@@ -153,57 +71,8 @@ To give a few examples, some interesting Style presets are shown:
   \caption{Geographic View Color by Flight Level}
 \end{figure}
 
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_style_detection_type.png}
-  \caption{Geographic View Color by Detection type}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_style_speed.png}
-  \caption{Geographic View Color by Speed}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_style_track_angle.png}
-  \caption{Geographic View Color by track angle}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-1.5cm}
-    \includegraphics[width=17cm,frame]{figures/geoview_style_track_m3a_age.png}
-  \caption{Geographic View Color by track Mode 3/A age}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_style_track_mlt_age.png}
-  \caption{Geographic View Color by track MLAT age}
-\end{figure}
-
-Please note, in this style one can set the following parameters (by clicking the respective value):
-
-\begin{itemize}
- \item Variable used (naming as in ASTERIX)
- \item Time Interval used
- \item Colors for the 4 intervals (+ None = not set color)
-\end{itemize}
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-1.5cm}
-    \includegraphics[width=17cm,frame]{figures/geoview_style_track_ages.png}
-  \caption{Geographic View Color by track ages}
-\end{figure}
-
 \subsubsection{Render Order}
+\label{sec:render_order}
 
 In the render order widget, the drawing order of the drawn data is specified. The one at the top is drawn last (over all others), so it is useful to move the most important DBContent (for the current inspection) to the top.
 
@@ -213,7 +82,8 @@ In the render order widget, the drawing order of the drawn data is specified. Th
   \caption{Geographic View render order}
 \end{figure}
 
-Using the 'Order By' checkbox, the drawing order can be defined based on:
+Using the 'Render Order by' combo, the drawing order can be defined based on:
+
 \begin{itemize}
  \item DBContent: Data source type (e.g. Tracker, Radar, ...)
  \item DS ID: Data source (e.g. Tracker1, Tracker2, Radar3, ...)
@@ -223,9 +93,12 @@ Using the 'Order By' checkbox, the drawing order can be defined based on:
 
 To change the drawing order click on the item to move and use the buttons on the right side. Please note that no redraw is required and that the drawing order is persisted in the configuration. \\
 
- \begin{itemize}
+\begin{itemize}
  \item \includegraphics[width=0.5cm]{../../data/icons/top.png} Move to Top: Move item to top position
  \item \includegraphics[width=0.5cm]{../../data/icons/up.png} Move Up: Move item one position up
  \item \includegraphics[width=0.5cm]{../../data/icons/down.png} Move Down: Move item one position down
  \item \includegraphics[width=0.5cm]{../../data/icons/bottom.png} Move to Bottom: Move item to the bottom position
 \end{itemize}
+\ \\
+
+The 'Reset Order' button below the list resets the current render order to its default.

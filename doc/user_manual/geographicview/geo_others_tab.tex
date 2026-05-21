@@ -94,13 +94,26 @@ How the position accuracy ellipses are generated is defined in \nameref{sec:algo
 
 \subsubsection{MLAT Contributing RUs}
 \label{sec:others_mlat_contributing_rus}
+\label{sec:geo_mlat_connection_lines}
+
+For MLAT target reports, the Geographic View can draw connection lines from each report to its contributing Remote Units. The lines are only available where the source data contains contributing receiver information and where the parent MLAT Data Source has Remote Units defined (see \nameref{sec:ui_configure_ds_mlat_rus}). \\
+
+The 'Others' tab provides the global toggle:
 
 \begin{itemize}
- \item Show MLAT Contributing RUs: Global toggle that enables or disables MLAT connection lines for all MLAT data. See \nameref{sec:geo_mlat_connection_lines} for the full description, including per-target-report and per-layer toggles.
+ \item Show MLAT Contributing RUs: Enables or disables MLAT connection lines for the entire view
 \end{itemize}
 \ \\
 
-For specific target reports, MLAT Contributing RUs can also be shown using \nameref{sec:data_operations}:
+The connection lines can additionally be toggled per target report or per layer / data item via the right-click context menus (see \nameref{sec:data_operations}):
+
+\begin{itemize}
+\item Per target report: 'Show MLAT Contributing RUs' / 'Clear MLAT Contributing RUs'
+\item Per layer or data item (Parent UTN, Parent DBContent CAT020, Parent Root): same actions
+\end{itemize}
+\ \\
+
+The context-menu actions only appear on items whose underlying data contains contributing receivers.
 
 \begin{figure}[H]
     \centering
@@ -126,14 +139,4 @@ Typical use:
 \end{itemize}
 \ \\
 
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: dense MLAT connections view with the Extra Lines Opacity slider near maximum]}}\vspace{1.5cm}}}
-  \caption{Geographic View: Extra Lines Opacity at maximum}
-\end{figure}
 
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: same view with the Extra Lines Opacity slider near minimum revealing density patterns]}}\vspace{1.5cm}}}
-  \caption{Geographic View: Extra Lines Opacity at minimum}
-\end{figure}
