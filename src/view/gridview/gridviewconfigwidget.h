@@ -21,6 +21,8 @@
 #include "grid2d_defs.h"
 #include "property.h"
 
+#include <QString>
+
 class GridViewWidget;
 class GridView;
 
@@ -51,6 +53,8 @@ public slots:
     /// Re-apply the default expansion to the DBContent subtree. Connected to
     /// the data widget's layerTreeRebuiltSignal.
     void applyDefaultExpansionSlot();
+
+    void colorModeChangedSlot(unsigned int mode);
 
 public:
     GridViewConfigWidget(GridViewWidget* view_widget,
@@ -104,6 +108,9 @@ protected:
     QPushButton*         export_button_                = nullptr;
     QLabel*              range_info_label_             = nullptr;
 
+    QLabel*               color_mode_label_ {nullptr};
     ViewLayerPanelWidget* layer_panel_     {nullptr};
     DBContentRootItem*    db_content_root_ {nullptr};
+
+    static QString colorModeText(unsigned int mode);
 };

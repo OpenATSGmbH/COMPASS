@@ -104,6 +104,43 @@ QColor commonChildEffectiveColor(const QTreeWidgetItem* item)
     return common; // invalid if no child contributed a color
 }
 
+/// Common color of the target-report DBContents that `ds_id` has inserted
+/// data for, resolved via the active color mode. Mirrors
+/// commonChildEffectiveColor but does not need CountItem children in the UI
+/// (used when count rows are hidden). Returns invalid when nothing matches
+/// or when the matching dbcontents disagree.
+QColor commonInsertedDBContentColor(context::DBContextManager& ctx_man,
+                                    unsigned int ds_id,
+                                    const std::string& ds_type,
+                                    const std::string& ds_name)
+{
+    if (!ctx_man.hasActiveContext())
+        return QColor();
+
+    auto& compass = ctx_man.compass();
+    auto& dbcont_man = compass.dbContentManager();
+
+    QColor common;
+    for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
+    {
+        const std::string& dbc_name = it->first;
+        if (!it->second->containsTargetReports())
+            continue;
+        if (ctx_man.numInserted(ds_id, dbc_name) == 0)
+            continue;
+
+        QColor c = context::resolveSeriesColor(
+            ds_type, ds_name, /*line_index=*/0, dbc_name, compass);
+        if (!c.isValid())
+            continue;
+        if (!common.isValid())
+            common = c;
+        else if (common != c)
+            return QColor();
+    }
+    return common;
+}
+
 } // anonymous
 
 /**************************************************************************************************
@@ -253,7 +290,57 @@ void DataSourceTypeItem::updateContent()
 
 QColor DataSourceTypeItem::effectiveColor() const
 {
-    return commonChildEffectiveColor(this);
+    auto& ctx_man = widget_->ctxManager();
+    if (!ctx_man.hasActiveContext())
+        return QColor();
+
+    const unsigned int mode = ctx_man.compass().colorMode();
+
+    // DSType mode: identity-derived. Works even when count rows are hidden
+    // (no children to aggregate from).
+    if (mode == 0)
+    {
+        QColor c = context::resolveSeriesColor(ds_type_, "", 0, "", ctx_man.compass());
+        loginf << "ds_type '" << ds_type_ << "' mode 0 (direct) -> "
+               << c.name().toStdString() << " valid " << c.isValid();
+        return c;
+    }
+
+    // DataSourceLine: line buttons render line shades, no leaf icon.
+    if (mode == 3)
+        return QColor();
+
+    // DBContent / DataSource modes: aggregate across this DSType's DSs.
+    // Resolve each DS's "common target-DBContent color" via the count map
+    // (works even when count rows are hidden), then require agreement.
+    QColor common;
+    for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
+    {
+        if (ds.dsType() != ds_type_)
+            continue;
+        if (!ctx_man.hasNumInserted(ds.id()))
+            continue;
+
+        QColor c;
+        if (mode == 1 /* DBContent */)
+            c = commonInsertedDBContentColor(ctx_man, ds.id(), ds.dsType(), ds.name());
+        else /* DataSource */
+            c = context::resolveSeriesColor(
+                ds.dsType(), ds.name(), /*line_index=*/0, /*dbcontent=*/"", ctx_man.compass());
+
+        if (!c.isValid())
+            continue;
+        if (!common.isValid())
+            common = c;
+        else if (common != c)
+        {
+            common = QColor();
+            break;
+        }
+    }
+    loginf << "ds_type '" << ds_type_ << "' mode " << mode << " (data-driven) -> "
+           << common.name().toStdString() << " valid " << common.isValid();
+    return common;
 }
 
 /**************************************************************************************************
@@ -337,7 +424,37 @@ void DataSourceItem::updateContent()
 
 QColor DataSourceItem::effectiveColor() const
 {
-    return commonChildEffectiveColor(this);
+    auto& ctx_man = widget_->ctxManager();
+    if (!ctx_man.hasActiveContext())
+        return QColor();
+    const auto* ds = dataSource();
+    if (!ds)
+        return QColor();
+
+    const unsigned int mode = ctx_man.compass().colorMode();
+
+    // DataSourceLine: line buttons render line shades, no leaf icon.
+    if (mode == 3)
+        return QColor();
+
+    // DBContent mode: there is no single identity-derived color for the row,
+    // so look at which target DBContents this DS actually holds data for.
+    // Works even when count rows are hidden in the UI.
+    if (mode == 1)
+    {
+        QColor c = commonInsertedDBContentColor(ctx_man, ds_id_, ds->dsType(), ds->name());
+        loginf << "ds '" << ds->name() << "' mode 1 (data-driven) -> "
+               << c.name().toStdString() << " valid " << c.isValid();
+        return c;
+    }
+
+    // DSType / DataSource modes: identity-derived (no aggregation needed,
+    // works even when count rows are hidden).
+    QColor c = context::resolveSeriesColor(
+        ds->dsType(), ds->name(), /*line_index=*/0, /*dbcontent=*/"", ctx_man.compass());
+    loginf << "ds '" << ds->name() << "' type '" << ds->dsType() << "' mode " << mode
+           << " (direct) -> " << c.name().toStdString() << " valid " << c.isValid();
+    return c;
 }
 
 const context::DataSource* DataSourceItem::dataSource() const
@@ -441,35 +558,25 @@ QColor DataSourceCountItem::effectiveColor() const
         !dbcont_man.dbContent(dbc_name_).containsTargetReports())
         return QColor();
 
-    const unsigned int mode = ctx_man.compass().colorMode();
-    const auto& colors = ctx_man.activeContext().colors();
-
     const auto* ds = dataSource();
+    if (!ds)
+        return QColor();
 
-    switch (mode)
-    {
-        case 0: /* DSType */
-        {
-            if (!ds) return QColor();
-            const auto& palette = colors.ds_type_colors;
-            auto it = palette.find(ds->dsType());
-            return (it != palette.end()) ? it->second : QColor();
-        }
-        case 1: /* DBContent */
-        {
-            const auto& palette = colors.dbcontent_colors;
-            auto it = palette.find(dbc_name_);
-            return (it != palette.end()) ? it->second : QColor();
-        }
-        case 2: /* DataSource */
-        {
-            return ds ? ds->baseColor() : QColor();
-        }
-        case 3: /* DataSourceLine */
-        default:
-            // Line color is rendered on the line buttons, not as a tree icon.
-            return QColor();
-    }
+    // DataSourceLine: leaf stays blank - the four line shades are rendered on
+    // the per-line buttons of the parent DataSourceItem, which remain the
+    // single source of truth for line color in this widget.
+    if (ctx_man.compass().colorMode() == 3 /* DataSourceLine */)
+        return QColor();
+
+    // Match the views' layer panels exactly: same palette -> default ->
+    // hashed fallback chain (see color_provider.cpp resolveSeriesColor).
+    // line_index is unused for DSType / DBContent / DataSource modes.
+    QColor c = context::resolveSeriesColor(
+        ds->dsType(), ds->name(), /*line_index=*/0, dbc_name_, ctx_man.compass());
+    loginf << "count ds '" << ds->name() << "' dbc '" << dbc_name_
+           << "' mode " << ctx_man.compass().colorMode()
+           << " -> " << c.name().toStdString() << " valid " << c.isValid();
+    return c;
 }
 
 const context::DataSource* DataSourceCountItem::dataSource() const

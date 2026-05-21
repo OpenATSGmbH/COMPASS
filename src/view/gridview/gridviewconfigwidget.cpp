@@ -207,10 +207,19 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
     updateDistributedVariable();
     updateUIFromSource();
 
-    // Layer panel at the bottom of the config pane. DBContent items have no
-    // color (grid layers aren't color-coded) but the icon column is still
-    // reserved so the sibling Annotations root can show the compass icon.
+    // Color mode label + layer panel at the bottom of the config pane.
+    // DBContent leaves have no color (grid layers aren't color-coded) but the
+    // icon column is still reserved so the sibling Annotations root can show
+    // the compass icon. The label tracks the current color mode so the
+    // default expansion depth (which follows the color mode) is discoverable.
     {
+        color_mode_label_ = new QLabel(this);
+        color_mode_label_->setText("Color Mode: " + colorModeText(view_->compass().colorMode()));
+        config_layout->addWidget(color_mode_label_);
+
+        connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+                this, &GridViewConfigWidget::colorModeChangedSlot);
+
         LayerColumnSpec null_col;
         null_col.header           = "# Null";
         null_col.default_width    = 70;
@@ -245,11 +254,35 @@ void GridViewConfigWidget::applyDefaultExpansionSlot()
     if (!db_content_root_ || !layer_panel_)
         return;
 
-    // Mirror the expansion the other views use. The grid view has no color
-    // mode of its own - pick the DBContent expansion so the user sees the
-    // innermost rows.
+    // Mirror the expansion the other views use - drive depth from the active
+    // COMPASS color mode so the level that differentiates colors in other
+    // views stays visible here too.
     db_content_root_->applyDefaultExpansionForColorMode(
-        layer_panel_->treeView(), /*DBContent*/ 1);
+        layer_panel_->treeView(), view_->compass().colorMode());
+}
+
+/**
+*/
+void GridViewConfigWidget::colorModeChangedSlot(unsigned int mode)
+{
+    traced_assert(color_mode_label_);
+    color_mode_label_->setText("Color Mode: " + colorModeText(mode));
+
+    applyDefaultExpansionSlot();
+}
+
+/**
+*/
+QString GridViewConfigWidget::colorModeText(unsigned int mode)
+{
+    switch (mode)
+    {
+        case 0: return "DSType";
+        case 1: return "DBContent";
+        case 2: return "Data Source";
+        case 3: return "Data Source + Line";
+        default: return "Unknown";
+    }
 }
 
 /**

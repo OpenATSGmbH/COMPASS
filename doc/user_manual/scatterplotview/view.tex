@@ -5,8 +5,8 @@ A ScatterPlot View displays the distribution of two numerical variables as point
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/scatter_start.png}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/scatter_start.png}
   \caption{ScatterPlot View startup}
 \end{figure}
 
@@ -24,8 +24,8 @@ To load the data the mechanism described in section \nameref{sec:ui_overview} or
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/scatter_loaded.png}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/scatter_loaded.png}
   \caption{ScatterPlot View after loading data}
 \end{figure}
 
@@ -35,10 +35,6 @@ In the current example the WGS-84 meta-variables 'Longitude' and 'Latitude' are 
 Data points are colored according to the global Color Mode (see \nameref{sec:color_mode}); the legend reflects the chosen coloring level (DSType, DBContent, Data Source, or Data Source + Line). \\
 
 Colors come from the active Data Context's palette, so the same Data Source / DSType keeps the same color across reloads and across all Views. Series visibility also persists across reloads; this is driven entirely by the shared mechanism, no per-view persistence control exists.
-
-%TODO_V7 i think here it would be immensely important to tell the user why he might not see any data at all when selecting variables from two different DBContents!
-
-%On the right side of the plot a legend is shown, giving the total counts of all data points.
 
 \section{Usage}
 
@@ -81,12 +77,6 @@ Such a variable can be any numerical variable. A reload operation might be requi
 
 The Config Tab includes the shared Layers Tree (see \nameref{sec:layers_tree}), which controls per-DBContent / per-Data-Source / per-line visibility for the scatter data items. The dedicated per-view annotation tab that existed in earlier releases has been removed; plottable scatter annotations of active View Points are now exposed under the 'Annotations' group of the Layers Tree. When multiple scatter annotations are present, the 'Plot' and (if available) 'Plot Group' combo boxes are used to choose between them. \\
 
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Scatter Plot View Configuration Panel with the shared Layers Tree visible]}}\vspace{1.5cm}}}
-  \caption{Scatter Plot View: shared Layers Tree in the Config Tab}
-\end{figure}
-
 Scatter data items can be drawn with their data points connected by lines by checking the 'Use Connection Lines' box.
 \textbf{Note} that on a reload, if the total number of drawn data points exceeds 100000, connections lines will be deactivated automatically
 in order to prevent performance issues. After the reload the connection lines can be reactivated manually by the user if desired.
@@ -99,8 +89,8 @@ If the 'Select' tool is active, data can be selected. Using the left mouse-butto
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/scatter_select.png}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/scatter_select.png}
   \caption{ScatterPlot View data selection}
 \end{figure}
 
@@ -108,8 +98,8 @@ The selected data is then presented in an extra 'Selected' item in the scatter d
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/scatter_selected.png}
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/scatter_selected.png}
   \caption{ScatterPlot View data selected}
 \end{figure}
 

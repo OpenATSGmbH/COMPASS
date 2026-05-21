@@ -33,6 +33,7 @@
 
 #include "buffer.h"
 
+#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
@@ -349,6 +350,13 @@ void GridViewDataWidget::attachLayerPanel(DBContentRootItem* root,
 
     if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
         annotations_root_ = vlm->annotationsRootItem();
+
+    // Color-mode change -> rebuild the layer tree. The leaves themselves have
+    // no color, but the rebuild resets all expansion state via refreshSubtree
+    // (begin/endRemoveRows), and the resulting layerTreeRebuiltSignal lets
+    // the config widget re-apply the depth that matches the new color mode.
+    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+            this, [this](unsigned int) { rebuildLayerTree(); });
 
     // If payloads_ was already populated before the panel was attached, push
     // it into the tree now so the UI matches reality.
