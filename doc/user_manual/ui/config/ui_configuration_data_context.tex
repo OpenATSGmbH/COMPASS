@@ -1,0 +1,85 @@
+\subsection{Data Context}
+\label{sec:configure_data_context}
+
+This dialog manages the active Data Context and all surveillance entities stored inside it. It is opened from the 'Context' menu via \textit{Context} $\rightarrow$ \textit{Edit...} (see \nameref{sec:ui_overview_context_menu}). \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-1cm}
+    \includegraphics[width=17cm]{figures/data_context_edit.png}
+    \caption{Data Context Dialog}
+\end{figure}
+
+A Data Context is a named surveillance context grouping all entities describing the recorded surveillance environment: data sources, sectors, FFTs, ASTERIX decoding settings and data sources display colors. The dialog allows editing of these entities, as well as switching between contexts and copying, renaming, deleting, importing or exporting whole contexts. \\
+
+The dialog is split into 3 areas:
+
+\begin{itemize}
+\item Top bar: context selector and context-level actions
+\item Tree on the left: navigation through all entity groups of the active context
+\item Detail widget on the right: edit surface for the entry selected in the tree
+\end{itemize}
+\ \\
+
+\paragraph{Top Bar}
+
+The top bar offers the following controls:
+
+\begin{itemize}
+\item Context: Combo box for selecting the active context
+\item Copy: Duplicates the active context under a new name
+\item Rename: Renames the active context
+\item Delete: Removes one or more contexts (disabled if only one context remains)
+\item Export as ZIP: Exports the active context as a single ZIP archive bundle
+\item Import from ZIP: Imports a previously exported context bundle
+\end{itemize}
+\ \\
+
+Please \textbf{note} that the context combo box and the 'Delete' button are disabled while a database with imported data is open, since switching or removing the active context could detach the database from its surveillance context. \\
+
+When importing a ZIP archive whose context name already exists, a confirmation prompt asks whether to overwrite the existing context with the imported version. \\
+
+\paragraph{Tree}
+
+The tree shows the following top-level entries of the active context:
+
+\begin{itemize}
+\item 'Data Sources': grouped per DSType (e.g. 'Radar', 'ADS-B', 'MLAT', 'Tracker'); individual entries are shown as 'Name (SAC/SIC)'
+\item 'ASTERIX Configuration': single leaf opening the per-CAT decoding settings on the right
+\item 'Sector Layers': grouped per sector layer; individual sectors are listed underneath
+\item 'FFTs': all Fixed Field Transponders, listed by name
+\item 'Colors': single leaf opening the Colors widget on the right
+\end{itemize}
+\ \\
+
+Selecting an entry in the tree opens the matching detail widget on the right. Right-clicking a group or item opens a context menu with management actions (add, import, export, delete, ...), described in the following subsections. \\
+
+\subfile{ui_configuration_data_context_data_sources}
+
+\subfile{ui_configuration_data_context_asterix}
+
+\subfile{ui_configuration_data_context_sectors}
+
+\subfile{ui_configuration_data_context_ffts}
+
+\subfile{ui_configuration_data_context_colors}
+
+\subsubsection{No Context State}
+
+When no Data Context is available (e.g. after deleting the last one), the application runs in the 'No Context' state, in which parts of the main menu are disabled. A new context has to be created or imported to return to normal operation. See also \nameref{sec:key_concepts}. \\
+
+\subsubsection{Persistence}
+
+Each Data Context is stored as a directory under \texttt{\textasciitilde/.compass/data\_contexts/<name>/} with one JSON file per content type:
+
+\begin{itemize}
+\item \texttt{context\_meta.json}
+\item \texttt{data\_sources.json}
+\item \texttt{ffts.json}
+\item \texttt{asterix\_decoding.json}
+\item \texttt{sectors.json}
+\item \texttt{colors.json}
+\end{itemize}
+\ \\
+
+Each file carries 'version', 'content\_type' and 'data' top-level fields for forward-compatible schema upgrades. For the broader on-disk configuration layout see \nameref{sec:appendix_configuration}.

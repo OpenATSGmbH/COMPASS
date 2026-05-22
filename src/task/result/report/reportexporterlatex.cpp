@@ -16,6 +16,8 @@
  */
 
 #include "task/result/report/reportexporterlatex.h"
+#include "task/result/report/reportexport.h"
+#include "compass.h"
 
 #include "task/result/report/section.h"
 #include "task/result/report/sectioncontent.h"
@@ -29,6 +31,7 @@
 #include "lateximage.h"
 #include "latextable.h"
 
+#include "compass.h"
 #include "files.h"
 #include "stringconv.h"
 #include "util/system.h"
@@ -67,13 +70,12 @@ ReportExporterLatex::~ReportExporterLatex()
  */
 Result ReportExporterLatex::initExport_impl(TaskResult& result)
 {
-    bool pdflatex_found = Utils::System::exec("which pdflatex").size();
-    if (write_pdf_ && !pdflatex_found)
+    if (write_pdf_ && !compass().pdflatexFound())
         return Result::failed("Cannot generate PDF: pdflatex not installed");
 
     std::string report_fn = boost::filesystem::path(exportFilename()).stem().string() + ".tex";
 
-    latex_doc_.reset(new LatexDocument(exportResourceDir(), report_fn));
+    latex_doc_.reset(new LatexDocument(compass(), exportResourceDir(), report_fn));
 
     latex_doc_->title(result.name() + " Report");
 
@@ -389,12 +391,20 @@ Result ReportExporterLatex::writePDF() const
     unsigned int max_runs = s.latex_pdf_max_reruns;
     unsigned int run_cnt  = 0;
 
-    while (run_cnt < max_runs || 
-           (command_out.find("Rerun to get outlines right"        ) != std::string::npos) || 
-           (command_out.find("Rerun to get cross-references right") != std::string::npos))
+    auto hasFatalError = [&command_out]()
+    {
+        return command_out.find("! LaTeX Error")   != std::string::npos
+            || command_out.find("! Emergency stop") != std::string::npos
+            || command_out.find("Fatal error")      != std::string::npos;
+    };
+
+    while (!hasFatalError() &&
+           (run_cnt < max_runs ||
+            (command_out.find("Rerun to get outlines right"        ) != std::string::npos) ||
+            (command_out.find("Rerun to get cross-references right") != std::string::npos)))
     {
         loginf << "re-running pdflatex";
-        
+
         //re-run
         runPDFLatex();
 

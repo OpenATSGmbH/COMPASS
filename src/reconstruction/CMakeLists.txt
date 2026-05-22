@@ -1,9 +1,6 @@
+add_library(compass_reconstruction "")
 
-include_directories (
-    "${CMAKE_CURRENT_LIST_DIR}"
-    )
-
-target_sources(compass
+target_sources(compass_reconstruction
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/kalman_defs.h"
         "${CMAKE_CURRENT_LIST_DIR}/kalman_tools.h"
@@ -20,7 +17,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/reconstruction_defs.h"
         "${CMAKE_CURRENT_LIST_DIR}/spline_interpolator.h"
         "${CMAKE_CURRENT_LIST_DIR}/gaussian_pdf.h"
-        
+
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/kalman_defs.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/kalman_tools.cpp"
@@ -37,3 +34,19 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/spline_interpolator.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/gaussian_pdf.cpp"
 )
+
+target_include_directories(compass_reconstruction PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
+
+if(EXPERIMENTAL_SRC)
+    target_include_directories(compass_reconstruction PRIVATE
+        "${CMAKE_SOURCE_DIR}/experimental_src/reconstruction/kalman"
+    )
+endif()
+
+target_link_libraries(compass_reconstruction
+    PUBLIC
+        compass_core
+        Eigen3::Eigen
+)
+
+compass_automoc(compass_reconstruction)

@@ -8,9 +8,9 @@ cmake_minimum_required(VERSION 3.3)
 set ( CMAKE_BUILD_TYPE RelWithDebInfo ) #Debug RelWithDebInfo Release
 
 project( COMPASS )
-SET(CPACK_PACKAGE_VERSION_MAJOR "0")
-SET(CPACK_PACKAGE_VERSION_MINOR "9")
-SET(CPACK_PACKAGE_VERSION_PATCH "2")
+SET(CPACK_PACKAGE_VERSION_MAJOR "1")
+SET(CPACK_PACKAGE_VERSION_MINOR "0")
+SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
 message("  System: ${CMAKE_SYSTEM}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -19,7 +19,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 if(EXISTS "/.dockerenv")
 message("  Platform: Linux (inside docker)")
-add_definitions ( -UNDEBUG -Wall -std=c++14 -fext-numeric-literals) # -DQT_NO_KEYWORDS
+add_definitions ( -UNDEBUG -Wall -std=c++17 -fext-numeric-literals) # -DQT_NO_KEYWORDS
 ELSE()
 message("  Platform: Linux (local)")
 add_definitions ( -UNDEBUG -Wall -std=c++17 -fno-omit-frame-pointer) # -DQT_NO_KEYWORDS -fext-numeric-literals
@@ -42,8 +42,31 @@ message("Qt Widgets version: ${Qt5Widgets_VERSION}")
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-# Instruct CMake to run moc automatically when needed.
-set(CMAKE_AUTOMOC ON)
+# Global AUTOMOC is OFF - each target opts in explicitly to avoid
+# duplicate MOC generation when a library's .cpp files #include
+# Q_OBJECT headers from dependency libraries.
+set(CMAKE_AUTOMOC OFF)
+
+# compass_automoc(<target>)
+# Collect the target's own .h sources that contain Q_OBJECT or Q_GADGET,
+# run qt5_wrap_cpp on them, and add the result as PRIVATE sources.
+# Call this AFTER all target_sources() calls for the target.
+function(compass_automoc target)
+    get_target_property(_sources ${target} SOURCES)
+    set(_headers_to_moc)
+    foreach(_src IN LISTS _sources)
+        if(_src MATCHES "\\.h$")
+            file(STRINGS "${_src}" _has_qobject REGEX "Q_OBJECT|Q_GADGET" LIMIT_COUNT 1)
+            if(_has_qobject)
+                list(APPEND _headers_to_moc "${_src}")
+            endif()
+        endif()
+    endforeach()
+    if(_headers_to_moc)
+        qt5_wrap_cpp(_moc_srcs ${_headers_to_moc} TARGET ${target})
+        target_sources(${target} PRIVATE ${_moc_srcs})
+    endif()
+endfunction()
 
 #add_definitions(${Qt5Widgets_DEFINITIONS})
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
@@ -55,19 +78,15 @@ message("  Boost_LIBRARIES: ${Boost_LIBRARIES}")
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS -DBOOST_GEOMETRY_DISABLE_DEPRECATED_03_WARNING") # suppress internal boost deprecated warnings
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH};${COMPASS_PATH}/cmake_modules)
-message("  CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}") 
+message("  CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH};/usr/local/lib/cmake/;/usr/lib/x86_64-linux-gnu/)
 message("  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 
 find_package (Eigen3 3.2 REQUIRED)
 
-find_package ( Sqlite3 3.35 REQUIRED )
-message("  SQLite3_INCLUDE_DIR: ${SQLITE3_INCLUDE_DIR}")
-message("  SQLite3_LIBRARY_DIR: ${SQLITE3_LIBRARIES}")
-
 find_package ( LOG4CPP REQUIRED )
 message("  LOG4CPP_INCLUDE_DIR: ${LOG4CPP_INCLUDE_DIR}")
-message("  LOG4CPP_LIBRARY: ${LOG4CPP_LIBRARIES}") 
+message("  LOG4CPP_LIBRARY: ${LOG4CPP_LIBRARIES}")
 
 find_package ( GDAL REQUIRED )
 message("  GDAL_INCLUDE_DIRS: ${GDAL_INCLUDE_DIRS}")
@@ -127,55 +146,9 @@ message("  GeographicLib_LIBRARIES: ${GeographicLib_LIBRARIES}")
 #find_package(Parquet REQUIRED)
 find_package(DuckDB REQUIRED)
 
-add_library(compass "")
-
-# Enable C++ warnings
-# target_compile_options(compass PRIVATE
-#     -Wall
-#     -Wextra
-#     -Wpedantic
-#     -Wshadow
-#     -Wconversion
-# )
-
-# Debug + sanitizers
-# target_compile_options(compass PRIVATE
-#     -g
-#     -O0
-#     -fsanitize=address,undefined
-#     -fno-omit-frame-pointer
-# )
-
-# target_link_options(compass PRIVATE
-#     -fsanitize=address,undefined
-# )
-
 message("Install path: ${CMAKE_INSTALL_PREFIX}")
 
-include(lib/CMakeLists.txt)
-include(src/CMakeLists.txt)
-
-set (EXPERIMENTAL_SRC true)
-message("Experimental source: ${EXPERIMENTAL_SRC}")
-
-IF (EXPERIMENTAL_SRC)
-    IF(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/experimental_src")
-        MESSAGE(STATUS "Experimental source found")
-    ELSE()
-        MESSAGE(STATUS "Experimental source not found found, deactivating")
-        set (EXPERIMENTAL_SRC false)
-    ENDIF()
-ENDIF()
-
-IF (EXPERIMENTAL_SRC)
-    MESSAGE(STATUS "Including experimental source")
-    include(experimental_src/CMakeLists.txt)
-ENDIF()
-
-configure_file(src/util/global.h.in include/global.h)
-
-# includes and library linking
-
+# Global include directories (for all targets)
 include_directories (
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -185,7 +158,6 @@ include_directories (
     ${Qt5Charts_INCLUDE_DIRS}
     ${Qt5Test_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
-    ${SQLITE3_INCLUDE_DIR}
     ${LOG4CPP_INCLUDE_DIR}
     ${GDAL_INCLUDE_DIRS}
     ${OPENSCENEGRAPH_INCLUDE_DIRS}
@@ -205,41 +177,91 @@ link_directories(
     ${jASTERIX_LIBRARIES}
     )
 
-target_link_libraries ( compass
-    Qt5::Widgets
-    Qt5::Core
-    Qt5::OpenGL
-    Qt5::Charts
-    Qt5::Test
-    ${jASTERIX_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${LOG4CPP_LIBRARIES}
-    ${GDAL_LIBRARIES}
-    ${SQLITE3_LIBRARIES}
-    ${LibArchive_LIBRARIES}
-    ${JSONCPP_LIBRARY}
-    ${PCAP_LIBRARY}
-    ${TBB_LIBRARIES}
-    TBB::tbb
-    ${OPENSSL_CRYPTO_LIBRARY}
-    NemaTode::NemaTode
-    Threads::Threads
-    ${OPENSCENEGRAPH_LIBRARIES}
-    #${OSGQT_LIBRARIES}
-    ${OSGEARTH_LIBRARY}
-    ${GeographicLib_LIBRARIES}
-    #Arrow::arrow_static 
-    #Parquet::parquet_static
-    ${DUCKDB_LIBRARIES}
+# Third-party headers
+include(lib/CMakeLists.txt)
+
+# src/ root include (for #include "src/..." style paths)
+include(src/CMakeLists.txt)
+
+# Detect experimental source early (before component libs that check EXPERIMENTAL_SRC)
+set (EXPERIMENTAL_SRC true)
+message("Experimental source: ${EXPERIMENTAL_SRC}")
+
+IF (EXPERIMENTAL_SRC)
+    IF(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/experimental_src")
+        MESSAGE(STATUS "Experimental source found")
+    ELSE()
+        MESSAGE(STATUS "Experimental source not found found, deactivating")
+        set (EXPERIMENTAL_SRC false)
+    ENDIF()
+ENDIF()
+
+# Component libraries (order matters: dependencies first)
+add_subdirectory(src/config)
+add_subdirectory(src/core)
+add_subdirectory(src/reconstruction)
+add_subdirectory(src/gui)
+add_subdirectory(src/filter)
+add_subdirectory(src/task)
+add_subdirectory(src/eval)
+add_subdirectory(src/view)
+add_subdirectory(src/report)
+
+# Experimental source - creates its own library targets
+IF (EXPERIMENTAL_SRC)
+    MESSAGE(STATUS "Including experimental source")
+    include(experimental_src/CMakeLists.txt)
+ENDIF()
+
+# Precompiled headers for faster local incremental builds (not used in Docker/AppImage)
+if(NOT EXISTS "/.dockerenv")
+    set(COMPASS_PCH_HEADERS
+        <string>
+        <vector>
+        <map>
+        <memory>
+        <algorithm>
+        <functional>
+        <QString>
+        <QWidget>
+        <QObject>
+        <QVariant>
+        <boost/optional.hpp>
+        <boost/geometry.hpp>
+        "lib/json.hpp"
     )
 
-target_compile_definitions(compass PRIVATE
-    BOOST_STACKTRACE_USE_BACKTRACE
-    #BOOST_ENABLE_ASSERT_HANDLER
-    BOOST_STACKTRACE_LINK
-)
+    set(COMPASS_PCH_TARGETS
+        compass_config compass_core compass_reconstruction
+        compass_gui compass_filter compass_task
+        compass_eval compass_view compass_report)
 
-# target_link_options(compass PRIVATE -rdynamic)
+    if(EXPERIMENTAL_SRC)
+        list(APPEND COMPASS_PCH_TARGETS
+            compass_osg_utils compass_docx compass_reconst_adv
+            compass_geo_view compass_rtcmd_ext compass_test_lab)
+    endif()
+
+    foreach(_target ${COMPASS_PCH_TARGETS})
+        set_target_properties(${_target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        target_precompile_headers(${_target} PRIVATE ${COMPASS_PCH_HEADERS})
+    endforeach()
+endif()
+
+configure_file(src/core/util/global.h.in include/global.h)
+
+# Application executables
+add_subdirectory(src/app)
+
+# compass_app links against component libraries inside src/app/CMakeLists.txt
+
+# unit tests
+enable_testing()
+add_subdirectory(src/unit_tests)
+
+IF (EXPERIMENTAL_SRC)
+    add_subdirectory(experimental_src/unit_tests)
+ENDIF()
 
 # installation stuff
 
@@ -247,41 +269,23 @@ message("Installing using prefix: ${CMAKE_INSTALL_PREFIX}")
 install(DIRECTORY "conf" DESTINATION compass)
 install(DIRECTORY "data" DESTINATION compass)
 
-install (TARGETS compass DESTINATION lib
+set(COMPASS_INSTALL_LIBS
+    compass_config compass_core compass_reconstruction
+    compass_gui compass_filter compass_task
+    compass_eval compass_view compass_report)
+if(EXPERIMENTAL_SRC)
+    list(APPEND COMPASS_INSTALL_LIBS
+        compass_osg_utils compass_docx compass_reconst_adv
+        compass_geo_view compass_rtcmd_ext compass_test_lab)
+endif()
+install(TARGETS ${COMPASS_INSTALL_LIBS} DESTINATION lib
     PUBLIC_HEADER DESTINATION include/compass)
 
-install (TARGETS compass_client DESTINATION bin)
+# compass_client and compass_handler install() moved to src/app/client/ and
+# src/app/watchdog/ respectively (CMake <3.13 requires install() in same scope as target)
 
 # build a CPack driven installer package
 include (InstallRequiredSystemLibraries)
 set (CPACK_RESOURCE_FILE_LICENSE
      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 include (CPack)
-
-# add a target to generate API documentation with Doxygen
-#find_package(Doxygen)
-#if(DOXYGEN_FOUND)
-#    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in @ONLY)
-#    add_custom_target(doc
-#        ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/doc/Doxyfile
-#        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
-#        COMMENT "Generating API documentation with Doxygen" VERBATIM
-#        )
-#endif(DOXYGEN_FOUND)
-
-#file(GLOB DOT ".*")
-#file(GLOB TILD "*~")
-#file(GLOB TEMP "*.cmake")
-
-message("Installing handler")
-
-target_link_libraries ( compass_handler
-    Qt5::Widgets
-    Qt5::Core
-    Qt5::OpenGL
-    Qt5::Charts
-    Qt5::Test
-    ${Boost_LIBRARIES}
-    )
-
-install (TARGETS compass_handler DESTINATION bin)

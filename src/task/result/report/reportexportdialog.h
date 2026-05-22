@@ -117,6 +117,8 @@ protected:
     QSpinBox*        latex_max_colw_edit_  = nullptr;
 
     ResultT<nlohmann::json> export_result_;
+
+    bool export_triggered_ = false;  // see showEvent() - prevents re-triggering export on desktop switch
 };
 
 }

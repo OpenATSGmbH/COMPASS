@@ -1,13 +1,13 @@
 {
-    "name":"cat030_7.0_record",
-    "type":"record",
-    "field_specification":{
-        "name":"FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat030_7.0_record",
+    "type": "record",
+    "field_specification": {
+        "name": "FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "uap":[
+    "uap": [
         "010",
         "015",
         "030",
@@ -73,1623 +73,1630 @@
         "RE",
         "FX"
     ],
-    "items":[
+    "items": [
         {
-            "number":"010",
-            "name":"SERVER IDENTIFICATION TAG",
-            "comment":"Identification of the Server of track information.",
-            "type":"item",
-            "data_fields":[
+            "number": "010",
+            "name": "SERVER IDENTIFICATION TAG",
+            "comment": "Identification of the Server of track information.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAC",
-                    "comment":"Source Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SAC",
+                    "comment": "Source Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"SIC",
-                    "comment":"Source Identity Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SIC",
+                    "comment": "Source Identity Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"015",
-            "name":"USER NUMBER",
-            "comment":"Identification of the User of track information",
-            "type":"item",
-            "data_fields":[
+            "number": "015",
+            "name": "USER NUMBER",
+            "comment": "Identification of the User of track information",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"USER NUMBER",
-                    "comment":"User number (0 => 16#FFFF#)",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint"
+                    "name": "USER NUMBER",
+                    "comment": "User number (0 => 16#FFFF#)",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"020",
-            "name":"TIME OF MESSAGE",
-            "comment":"Absolute time stamping of the message in the form of elapsed time since last midnight",
-            "type":"item",
-            "data_fields":[
+            "number": "020",
+            "name": "TIME OF MESSAGE",
+            "comment": "Absolute time stamping of the message in the form of elapsed time since last midnight",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"TIME OF MESSAGE",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.0078125
-                }
-             ]
-        },
-        {
-            "number":"030",
-            "name":"SERVICE IDENTIFICATION",
-            "comment":"Identification of the service(s) to which a track message belongs.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"SERVICE IDENTIFICATION",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
-                        {
-                            "name":"BS",
-                            "comment":"1 Track selected by the Background service",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"C1",
-                            "comment":"1 Track selected by the Complementary service 1",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
-                        }
-                    ]
-                },
-                {
-                    "name":"SERVICE IDENTIFICATION First Extent",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
-                        {
-                            "name":"C2",
-                            "comment":"1 Track selected by the Complementary service 2",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"C3",
-                            "comment":"1 Track selected by the Complementary service 3",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"C4",
-                            "comment":"1 Track selected by the Complementary service 4",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"C5",
-                            "comment":"1 Track selected by the Complementary service 5",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
-                        }
-                    ]
+                    "name": "TIME OF MESSAGE",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"035",
-            "name":"TYPE OF MESSAGE",
-            "comment":"This data item allows for a more convenient handling of the message at the receiver side by further defining the type of transaction.",
-            "type":"item",
-            "data_fields":[
+            "number": "030",
+            "name": "SERVICE IDENTIFICATION",
+            "comment": "Identification of the service(s) to which a track message belongs.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"TYPE OF MESSAGE",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "SERVICE IDENTIFICATION",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"FAMILY",
-                            "comment":"FAMILY to which the message belongs",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":4
+                            "name": "BS",
+                            "comment": "1 Track selected by the Background service",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         },
                         {
-                            "name":"NATURE",
-                            "comment":"NATURE of the message within its FAMILY",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":4
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"040",
-            "name":"TRACK NUMBER",
-            "comment":"Identification of a track",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"TRACK NUMBER",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
-                        {
-                            "name":"sttn",
-                            "comment":"track numbering indicator, value is changed when the track numbering is restarted.",
-                            "type":"fixed_bits",
-                            "start_bit":12,
-                            "bit_length":1
+                            "name": "C1",
+                            "comment": "1 Track selected by the Complementary service 1",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TRACK NUMBER",
-                            "comment":"0 to 4095",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":12
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"050",
-            "name":"ARTAS TRACK NUMBER",
-            "comment":"Identification of an ARTAS track",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"ARTAS TRACK NUMBER",
-                    "type":"fixed_bitfield",
-                    "length":3,
-                    "items":[
-                        {
-                            "name":"ARTAS UNIT IDENTIFICATION",
-                            "comment":"0 to 255",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":11
-                        },
-                        {
-                            "name":"SYSTEM TRACK NUMBER",
-                            "comment":"0 to 4095",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":12
-                        },
-                        {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"ARTAS TRACK NUMBER First Extent",
-                    "type":"fixed_bitfield",
-                    "length":3,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "SERVICE IDENTIFICATION First Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"UNIT a IDENT",
-                            "comment":"0 to 255",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":11
+                            "name": "C2",
+                            "comment": "1 Track selected by the Complementary service 2",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"SYSTEM TRACK NUMBER IN UNIT a",
-                            "comment":"0 to 4095",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":12
+                            "name": "C3",
+                            "comment": "1 Track selected by the Complementary service 3",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "C4",
+                            "comment": "1 Track selected by the Complementary service 4",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "C5",
+                            "comment": "1 Track selected by the Complementary service 5",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "035",
+            "name": "TYPE OF MESSAGE",
+            "comment": "This data item allows for a more convenient handling of the message at the receiver side by further defining the type of transaction.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "TYPE OF MESSAGE",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
+                        {
+                            "name": "FAMILY",
+                            "comment": "FAMILY to which the message belongs",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 4
+                        },
+                        {
+                            "name": "NATURE",
+                            "comment": "NATURE of the message within its FAMILY",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 4
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "040",
+            "name": "TRACK NUMBER",
+            "comment": "Identification of a track",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "TRACK NUMBER",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
+                        {
+                            "name": "sttn",
+                            "comment": "track numbering indicator, value is changed when the track numbering is restarted.",
+                            "type": "fixed_bits",
+                            "start_bit": 12,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "TRACK NUMBER",
+                            "comment": "0 to 4095",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 12
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "050",
+            "name": "ARTAS TRACK NUMBER",
+            "comment": "Identification of an ARTAS track",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "ARTAS TRACK NUMBER",
+                    "type": "fixed_bitfield",
+                    "length": 3,
+                    "items": [
+                        {
+                            "name": "ARTAS UNIT IDENTIFICATION",
+                            "comment": "0 to 255",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 11
+                        },
+                        {
+                            "name": "SYSTEM TRACK NUMBER",
+                            "comment": "0 to 4095",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 12
+                        },
+                        {
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"ARTAS TRACK NUMBER Second Extent",
-                    "type":"fixed_bitfield",
-                    "length":3,
-                    "optional":true,
-                    "optional_variable_name":"FX2",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "ARTAS TRACK NUMBER First Extent",
+                    "type": "fixed_bitfield",
+                    "length": 3,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"UNIT b IDENT",
-                            "comment":"0 to 255",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":11
+                            "name": "UNIT a IDENT",
+                            "comment": "0 to 255",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 11
                         },
                         {
-                            "name":"SYSTEM TRACK NUMBER IN UNIT b",
-                            "comment":"0 to 4095",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":12
+                            "name": "SYSTEM TRACK NUMBER IN UNIT a",
+                            "comment": "0 to 4095",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 12
                         },
                         {
-                            "name":"FX3",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"ARTAS TRACK NUMBER Third Extent",
-                    "type":"fixed_bitfield",
-                    "length":3,
-                    "optional":true,
-                    "optional_variable_name":"FX3",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "ARTAS TRACK NUMBER Second Extent",
+                    "type": "fixed_bitfield",
+                    "length": 3,
+                    "optional": true,
+                    "optional_variable_name": "FX2",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"UNIT c IDENT",
-                            "comment":"0 to 255",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":11
+                            "name": "UNIT b IDENT",
+                            "comment": "0 to 255",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 11
                         },
                         {
-                            "name":"SYSTEM TRACK NUMBER IN UNIT c",
-                            "comment":"0 to 4095",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":12
+                            "name": "SYSTEM TRACK NUMBER IN UNIT b",
+                            "comment": "0 to 4095",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 12
                         },
                         {
-                            "name":"FX4",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX3",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"ARTAS TRACK NUMBER Fourth Extent",
-                    "type":"fixed_bitfield",
-                    "length":3,
-                    "optional":true,
-                    "optional_variable_name":"FX4",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "ARTAS TRACK NUMBER Third Extent",
+                    "type": "fixed_bitfield",
+                    "length": 3,
+                    "optional": true,
+                    "optional_variable_name": "FX3",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"UNIT d IDENT",
-                            "comment":"0 to 255",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":11
+                            "name": "UNIT c IDENT",
+                            "comment": "0 to 255",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 11
                         },
                         {
-                            "name":"SYSTEM TRACK NUMBER IN UNIT d",
-                            "comment":"0 to 4095",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":12
+                            "name": "SYSTEM TRACK NUMBER IN UNIT c",
+                            "comment": "0 to 4095",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 12
                         },
                         {
-                            "name":"FX5",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX4",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"ARTAS TRACK NUMBER Fifth Extent",
-                    "type":"fixed_bitfield",
-                    "length":3,
-                    "optional":true,
-                    "optional_variable_name":"FX5",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "ARTAS TRACK NUMBER Fourth Extent",
+                    "type": "fixed_bitfield",
+                    "length": 3,
+                    "optional": true,
+                    "optional_variable_name": "FX4",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"UNIT e IDENT",
-                            "comment":"0 to 255",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":11
+                            "name": "UNIT d IDENT",
+                            "comment": "0 to 255",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 11
                         },
                         {
-                            "name":"SYSTEM TRACK NUMBER IN UNIT e",
-                            "comment":"0 to 4095",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":12
+                            "name": "SYSTEM TRACK NUMBER IN UNIT d",
+                            "comment": "0 to 4095",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 12
                         },
                         {
-                            "name":"FX6",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX5",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"ARTAS TRACK NUMBER Sixth Extent",
-                    "type":"fixed_bitfield",
-                    "length":3,
-                    "optional":true,
-                    "optional_variable_name":"FX6",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "ARTAS TRACK NUMBER Fifth Extent",
+                    "type": "fixed_bitfield",
+                    "length": 3,
+                    "optional": true,
+                    "optional_variable_name": "FX5",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"UNIT f IDENT",
-                            "comment":"0 to 255",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":11
+                            "name": "UNIT e IDENT",
+                            "comment": "0 to 255",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 11
                         },
                         {
-                            "name":"SYSTEM TRACK NUMBER IN UNIT f",
-                            "comment":"0 to 4095",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":12
+                            "name": "SYSTEM TRACK NUMBER IN UNIT e",
+                            "comment": "0 to 4095",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 12
                         },
                         {
-                            "name":"FX7",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"060",
-            "name":"TRACK MODE 3/A",
-            "comment":"Mode 3/A identity associated to the track",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"Mode 3/A",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
-                        {
-                            "name":"V",
-                            "comment":"0 Code validated\n1 Code not validated",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"G",
-                            "comment":"0 Default\n1 Garbled Code",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"C",
-                            "comment":"Change in Mode 3/A\n0 No Change\n1 Mode 3/A has changed",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"Mode 3/A Code",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"digits",
-                            "start_bit":0,
-                            "bit_length":12,
-                            "num_digits":4,
-                            "digit_bit_length":3
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"070",
-            "name":"TIME OF LAST UPDATE",
-            "comment":"Absolute time stamping of the information provided in the track message, in the form of elapsed time since last midnight.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"TIME OF LAST UPDATE",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.0078125
-                }
-            ]
-        },
-        {
-            "number":"080",
-            "name":"ARTAS TRACK STATUS",
-            "comment":"Status of an ARTAS track.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"ARTAS TRACK STATUS",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
-                        {
-                            "name":"LIV",
-                            "comment":"0 Live target\n1 Simulated or test target track",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"CNF",
-                            "comment":"0 Confirmed track\n1 Tentative track",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"ADD",
-                            "comment":"0 track not updated using Aircraft Derived Data\n1 track updated using Aircraft Derived Data",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"CST",
-                            "comment":"0 non-coasted track\n1 coasted track",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"TYPE",
-                            "comment":"000 both PR and SSR Multiradar track\n001 PR only Multiradar track\n010 SSR only Multiradar track\n011 not used\n100 combined (P+S) monoradar track\n101 PR monoradar track\n110 SSR monoradar track\n111 not used",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":3
-                        },
-                        {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX6",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Track Status First Extent",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "ARTAS TRACK NUMBER Sixth Extent",
+                    "type": "fixed_bitfield",
+                    "length": 3,
+                    "optional": true,
+                    "optional_variable_name": "FX6",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"TRM",
-                            "comment":"0 default value\n1 track TERMINATED",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "UNIT f IDENT",
+                            "comment": "0 to 255",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 11
                         },
                         {
-                            "name":"CRE",
-                            "comment":"0 default value\n1 track CREATED",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
+                            "name": "SYSTEM TRACK NUMBER IN UNIT f",
+                            "comment": "0 to 4095",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 12
                         },
                         {
-                            "name":"SLR",
-                            "comment":"0 slant range corrected track coordinates using tracked MODE C information.\n1 slant range corrected track coordinates using triangulated track height or height derived from coverage\n2 slant range correction using assumed height\n3 non slant range corrected track coordinates",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":2
+                            "name": "FX7",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "060",
+            "name": "TRACK MODE 3/A",
+            "comment": "Mode 3/A identity associated to the track",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "Mode 3/A",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
+                        {
+                            "name": "V",
+                            "comment": "0 Code validated\n1 Code not validated",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
                         },
                         {
-                            "name":"COR",
-                            "comment":"000 confirmed flight plan to track correlation\n001 type 1 correlation\n010 type 2 correlation\n011 type 3 correlation\n100 type 4 correlation\n101 type 5 correlation\n110 type 6 correlation\n111 track not correlated to a flight plan",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":3
+                            "name": "G",
+                            "comment": "0 Default\n1 Garbled Code",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX2",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "C",
+                            "comment": "Change in Mode 3/A\n0 No Change\n1 Mode 3/A has changed",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "Mode 3/A Code",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "digits",
+                            "start_bit": 0,
+                            "bit_length": 12,
+                            "num_digits": 4,
+                            "digit_bit_length": 3
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "070",
+            "name": "TIME OF LAST UPDATE",
+            "comment": "Absolute time stamping of the information provided in the track message, in the form of elapsed time since last midnight.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "TIME OF LAST UPDATE",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
+                }
+            ]
+        },
+        {
+            "number": "080",
+            "name": "ARTAS TRACK STATUS",
+            "comment": "Status of an ARTAS track.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "ARTAS TRACK STATUS",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
+                        {
+                            "name": "LIV",
+                            "comment": "0 Live target\n1 Simulated or test target track",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "CNF",
+                            "comment": "0 Confirmed track\n1 Tentative track",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "ADD",
+                            "comment": "0 track not updated using Aircraft Derived Data\n1 track updated using Aircraft Derived Data",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "CST",
+                            "comment": "0 non-coasted track\n1 coasted track",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "TYPE",
+                            "comment": "000 both PR and SSR Multiradar track\n001 PR only Multiradar track\n010 SSR only Multiradar track\n011 not used\n100 combined (P+S) monoradar track\n101 PR monoradar track\n110 SSR monoradar track\n111 not used",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 3
+                        },
+                        {
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Track Status Second Extent",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX2",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "Track Status First Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"FOR",
-                            "comment":"0 default\n1 Formation flight",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "TRM",
+                            "comment": "0 default value\n1 track TERMINATED",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"AMA",
-                            "comment":"0 amalgamated track\n1 non amalgamated track",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "CRE",
+                            "comment": "0 default value\n1 track CREATED",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"SPI",
-                            "comment":"0 default value\n1 Special Position Indication in the last SSR plot that was used to update the track",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "SLR",
+                            "comment": "0 slant range corrected track coordinates using tracked MODE C information.\n1 slant range corrected track coordinates using triangulated track height or height derived from coverage\n2 slant range correction using assumed height\n3 non slant range corrected track coordinates",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 2
                         },
                         {
-                            "name":"ME",
-                            "comment":"0 default value\n1 Military Emergency",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "COR",
+                            "comment": "000 confirmed flight plan to track correlation\n001 type 1 correlation\n010 type 2 correlation\n011 type 3 correlation\n100 type 4 correlation\n101 type 5 correlation\n110 type 6 correlation\n111 track not correlated to a flight plan",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 3
                         },
                         {
-                            "name":"TDC",
-                            "comment":"0 Accurate estimation of the track Transponder Delay enabling correction of the plots associated to the track\n1 Estimation of the track Transponder Delay not accurate enough to enable the plots correction",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"FX3",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX2",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"Track Status Third Extent",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX3",
-                    "optional_variable_value":1,
-                    "items":[
-                       {
-                            "name":"SF",
-                            "comment":"0 Track position coding precision (1/64 NM)\n1 Track position coding precision = 1/32 NM",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                    "name": "Track Status Second Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX2",
+                    "optional_variable_value": 1,
+                    "items": [
+                        {
+                            "name": "FOR",
+                            "comment": "0 default\n1 Formation flight",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX4",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "AMA",
+                            "comment": "0 amalgamated track\n1 non amalgamated track",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "SPI",
+                            "comment": "0 default value\n1 Special Position Indication in the last SSR plot that was used to update the track",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "ME",
+                            "comment": "0 default value\n1 Military Emergency",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "TDC",
+                            "comment": "0 Accurate estimation of the track Transponder Delay enabling correction of the plots associated to the track\n1 Estimation of the track Transponder Delay not accurate enough to enable the plots correction",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "FX3",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "number":"090",
-            "name":"ARTAS TRACK QUALITY",
-            "comment":"ARTAS track quality.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"ARTAS TRACK QUALITY",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
-                       {
-                            "name":"Quality",
-                            "comment":"ARTAS track quality = 0 (low quality) to 7 (high quality)",
-                            "type":"fixed_bits",
-                            "data_type":"uint",
-                            "start_bit":0,
-                            "bit_length":3
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"100",
-            "name":"CALCULATED TRACK POSITION (CARTESIAN)",
-            "comment":"Calculated position of an aircraft expressed in Cartesian coordinates.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"X-Component",
-                    "comment":"unit: NM, NOTE: LSB is set considering f=0 (I252/340)",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.015625
                 },
                 {
-                    "name":"Y-Component",
-                    "comment":"unit: NM, NOTE: LSB is set considering f=0 (I252/340)",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.015625
-                }
-            ]
-        },
-        {
-            "number":"110",
-            "name":"ESTIMATED ACCURACY OF TRACK POSITION (CARTESIAN)",
-            "comment":"Estimated accuracy (i.e. standard deviation) of the calculated position of an aircraft expressed in Cartesian coordinates.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"X-Component accuracy",
-                    "comment":"unit: NM, NOTE: LSB is set considering f=0 (I252/340)",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.015625
-                },
-                {
-                    "name":"Y-Component accuracy",
-                    "comment":"unit: NM, NOTE: LSB is set considering f=0 (I252/340)",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.015625
-                }
-            ]
-        },
-        {
-            "number":"120",
-            "name":"TRACK MODE 2 CODE",
-            "comment":"Mode 2 identification associated to the track",
-            "type":"item",
-            "data_fields":[
-                 {
-                    "name":"TRACK MODE 2 CODE",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
+                    "name": "Track Status Third Extent",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX3",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"V",
-                            "comment":"0 Code validated\n1 Code not validated",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
+                            "name": "SF",
+                            "comment": "0 Track position coding precision (1/64 NM)\n1 Track position coding precision = 1/32 NM",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"G",
-                            "comment":"0 Default\n1 Garbled Code",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"C",
-                            "comment":"Change in Mode 2\n0 No Change\n1 Mode 2 has changed",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"Mode 2 reply",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"digits",
-                            "start_bit":0,
-                            "bit_length":12,
-                            "num_digits":4,
-                            "digit_bit_length":3
-                        }
-                    ]
-                }
-             ]
-        },
-        {
-            "number":"130",
-            "name":"CALCULATED TRACK ALTITUDE",
-            "comment":"Calculated altitude of an aircraft.",
-            "type":"item",
-            "data_fields":[
-                 {
-                    "name":"CALCULATED TRACK ALTITUDE",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
-                       {
-                            "name":"SRC",
-                            "comment":"0 3D height\n1 Triangulated height\n2 Height derived from coverage\n3 Assumed height",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":2
-                        },
-                        {
-                            "name":"ALTITUDE",
-                            "comment":"calculated track altitude. unit: feet",
-                            "type":"fixed_bits",
-                            "data_type":"int",
-                            "start_bit":0,
-                            "bit_length":14,
-                            "lsb":25
+                            "name": "FX4",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"135",
-            "name":"ESTIMATED ACCURACY OF TRACK ALTITUDE",
-            "comment":"Estimated accuracy (i.e. standard deviation) of the calculated altitude of an aircraft.",
-            "type":"item",
-            "data_fields":[
+            "number": "090",
+            "name": "ARTAS TRACK QUALITY",
+            "comment": "ARTAS track quality.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"ALTITUDE ACCURACY",
-                    "comment":"unit: feet",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":25
+                    "name": "ARTAS TRACK QUALITY",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
+                        {
+                            "name": "Quality",
+                            "comment": "ARTAS track quality = 0 (low quality) to 7 (high quality)",
+                            "type": "fixed_bits",
+                            "data_type": "uint",
+                            "start_bit": 0,
+                            "bit_length": 3
+                        }
+                    ]
                 }
             ]
         },
         {
-            "number":"140",
-            "name":"LAST MEASURED MODE C",
-            "comment":"Mode C code of the last nearest neighbour plot containing a Mode C and used to update the track.",
-            "type":"item",
-            "data_fields":[
-                 {
-                    "name":"LAST MEASURED MODE C",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
+            "number": "100",
+            "name": "CALCULATED TRACK POSITION (CARTESIAN)",
+            "comment": "Calculated position of an aircraft expressed in Cartesian coordinates.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "X-Component",
+                    "comment": "unit: NM, NOTE: LSB is set considering f=0 (I252/340)",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.015625
+                },
+                {
+                    "name": "Y-Component",
+                    "comment": "unit: NM, NOTE: LSB is set considering f=0 (I252/340)",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.015625
+                }
+            ]
+        },
+        {
+            "number": "110",
+            "name": "ESTIMATED ACCURACY OF TRACK POSITION (CARTESIAN)",
+            "comment": "Estimated accuracy (i.e. standard deviation) of the calculated position of an aircraft expressed in Cartesian coordinates.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "X-Component accuracy",
+                    "comment": "unit: NM, NOTE: LSB is set considering f=0 (I252/340)",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.015625
+                },
+                {
+                    "name": "Y-Component accuracy",
+                    "comment": "unit: NM, NOTE: LSB is set considering f=0 (I252/340)",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.015625
+                }
+            ]
+        },
+        {
+            "number": "120",
+            "name": "TRACK MODE 2 CODE",
+            "comment": "Mode 2 identification associated to the track",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "TRACK MODE 2 CODE",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"VAL",
-                            "comment":"0 valid Mode C code\n1 invalid Mode C code",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
+                            "name": "V",
+                            "comment": "0 Code validated\n1 Code not validated",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
                         },
                         {
-                            "name":"GC",
-                            "comment":"0 default value\n1 garbled information",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
+                            "name": "G",
+                            "comment": "0 Default\n1 Garbled Code",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
                         },
                         {
-                            "name":"MODE C",
-                            "comment":"Vmin = -12 FL = -1200 ft; Vmax = 1270 FL = 127000 ft",
-                            "type":"fixed_bits",
-                            "data_type":"int",
-                            "start_bit":0,
-                            "bit_length":14,
-                            "lsb":0.25
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"150",
-            "name":"MEASURED TRACK MODE C",
-            "comment":"Last validated and credible Mode C value used to update the track.",
-            "type":"item",
-            "data_fields":[
-                 {
-                    "name":"MEASURED TRACK MODE C",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
-                        {
-                            "name":"MODE C",
-                            "comment":"Vmin = -12 FL = -1200 ft; Vmax = 1270 FL = 127000 ft",
-                            "type":"fixed_bits",
-                            "data_type":"int",
-                            "start_bit":0,
-                            "bit_length":14,
-                            "lsb":0.25
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"160",
-            "name":"CALCULATED TRACK FLIGHT LEVEL",
-            "comment":"Calculated Flight Level of the track (isobar).",
-            "type":"item",
-            "data_fields":[
-                 {
-                    "name":"CALCULATED TRACK FLIGHT LEVEL",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
-                        {
-                            "name":"QNC",
-                            "comment":"0 FL calculated without QNH correction\n1 FL calculated with QNH correction",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
+                            "name": "C",
+                            "comment": "Change in Mode 2\n0 No Change\n1 Mode 2 has changed",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TRACK FLIGHT LEVEL",
-                            "comment":"Vmin = -15 FL = -1500 ft; Vmax = 15000 FL = 150000 ft",
-                            "type":"fixed_bits",
-                            "data_type":"int",
-                            "start_bit":0,
-                            "bit_length":14,
-                            "lsb":0.25
+                            "name": "Mode 2 reply",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "digits",
+                            "start_bit": 0,
+                            "bit_length": 12,
+                            "num_digits": 4,
+                            "digit_bit_length": 3
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"165",
-            "name":"ESTIMATED ACCURACY OF CALCULATED TRACK FLIGHT LEVEL",
-            "comment":"Estimated accuracy (i.e. standard deviation) of the calculated Flight Level of the track (isobar).",
-            "type":"item",
-            "data_fields":[
+            "number": "130",
+            "name": "CALCULATED TRACK ALTITUDE",
+            "comment": "Calculated altitude of an aircraft.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"CALCULATED TRACK FLIGHT LEVEL ACCURACY",
-                    "comment":"unit: FL",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.25
-                }
-             ]
-        },
-        {
-            "number":"170",
-            "name":"TRACK AGES",
-            "comment":"A set of track related ages.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"PSR",
-                    "comment":"Age of the last primary plot/local track used to update the track. maximum value = 63.75 s",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":0.25
-                },
-                {
-                    "name":"SSR",
-                    "comment":"Age of the last secondary plot/local track used to update the track. maximum value = 63.75 s",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":0.25
-                },
-                {
-                    "name":"AMODE",
-                    "comment":"Age of the last detection of the mode A contained in the track mode A item I030/060. maximum value = 63.75 s",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":0.25
-                },
-                {
-                    "name":"CMODE",
-                    "comment":"Age of the last valid and credible mode C used to update the track, contained in I030/150. maximum value = 63.75 s",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":0.25
-                }
-            ]
-        },
-        {
-            "number":"180",
-            "name":"CALCULATED TRACK VELOCITY (POLAR)",
-            "comment":"Calculated track velocity expressed in polar coordinates.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"SPEED",
-                    "comment":"Maximum value = 2 NM/s = 7200 kt",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.00006103515
-                },
-                {
-                    "name":"HEADING",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.00549316406
-                }
-            ]
-        },
-        {
-            "number":"181",
-            "name":"CALCULATED TRACK VELOCITY (CARTESIAN)",
-            "comment":"Calculated track velocity expressed in Cartesian coordinates.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"X-VELOCITY COMPONENT",
-                    "comment":"Maximum value = 2 NM/s = 7200 kt",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.00006103515
-                },
-                {
-                    "name":"Y-VELOCITY COMPONENT",
-                    "comment":"Maximum value = 2 NM/s = 7200 kt",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.00006103515
-                }
-            ]
-        },
-        {
-            "number":"190",
-            "name":"ESTIMATED ACCURACY OF TRACK VELOCITY (POLAR)",
-            "comment":"",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"SPEED COMPONENT ACCURACY",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.00006103515
-                },
-                {
-                    "name":"HEADING COMPONENT ACCURACY",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.00549316406
-                }
-            ]
-        },
-        {
-            "number":"191",
-            "name":"ESTIMATED ACCURACY OF TRACK VELOCITY (CARTESIAN)",
-            "comment":"Estimated accuracy (i.e. standard deviation) of the calculated track velocity expressed in Cartesian coordinates.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"X-velocity component accuracy",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.00006103515
-                },
-                {
-                    "name":"Y-velocity component accuracy",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.00006103515
-                }
-            ]
-        },
-        {
-            "number":"200",
-            "name":"MODE OF FLIGHT",
-            "comment":"Calculated Mode-of-Flight of an aircraft.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"Mode of Movement",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "CALCULATED TRACK ALTITUDE",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"TRANS",
-                            "comment":"Transversal Acceleration :\n0 Constant Course\n1 Right Turn\n2 Left Turn\n3 Undetermined",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":2
+                            "name": "SRC",
+                            "comment": "0 3D height\n1 Triangulated height\n2 Height derived from coverage\n3 Assumed height",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 2
                         },
                         {
-                            "name":"LONGI",
-                            "comment":"Longitudinal Acceleration :\n0 Constant Groundspeed\n1 Increasing Groundspeed\n2 Decreasing Groundspeed\n3 Undetermined",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":2
-                        },
-                        {
-                            "name":"VERTI",
-                            "comment":"Vertical Rate :\n0 Level\n1 Climb\n2 Descent\n3 Undetermined",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":2
+                            "name": "ALTITUDE",
+                            "comment": "calculated track altitude. unit: feet",
+                            "type": "fixed_bits",
+                            "data_type": "int",
+                            "start_bit": 0,
+                            "bit_length": 14,
+                            "lsb": 25
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"210",
-            "name":"MODE OF FLIGHT PROBABILITIES",
-            "comment":"Probabilities attached to the Transversal, longitudinal and Vertical components of a calculated Mode-of-Flight.",
-            "type":"item",
-            "data_fields":[
+            "number": "135",
+            "name": "ESTIMATED ACCURACY OF TRACK ALTITUDE",
+            "comment": "Estimated accuracy (i.e. standard deviation) of the calculated altitude of an aircraft.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"TCPROB",
-                    "comment":"probability associated to the assessment of the Transversal Acceleration Mode-of-Flight Component",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":0.5
+                    "name": "ALTITUDE ACCURACY",
+                    "comment": "unit: feet",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 25
+                }
+            ]
+        },
+        {
+            "number": "140",
+            "name": "LAST MEASURED MODE C",
+            "comment": "Mode C code of the last nearest neighbour plot containing a Mode C and used to update the track.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "LAST MEASURED MODE C",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
+                        {
+                            "name": "VAL",
+                            "comment": "0 valid Mode C code\n1 invalid Mode C code",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "GC",
+                            "comment": "0 default value\n1 garbled information",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "MODE C",
+                            "comment": "Vmin = -12 FL = -1200 ft; Vmax = 1270 FL = 127000 ft",
+                            "type": "fixed_bits",
+                            "data_type": "int",
+                            "start_bit": 0,
+                            "bit_length": 14,
+                            "lsb": 0.25
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "150",
+            "name": "MEASURED TRACK MODE C",
+            "comment": "Last validated and credible Mode C value used to update the track.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "MEASURED TRACK MODE C",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
+                        {
+                            "name": "MODE C",
+                            "comment": "Vmin = -12 FL = -1200 ft; Vmax = 1270 FL = 127000 ft",
+                            "type": "fixed_bits",
+                            "data_type": "int",
+                            "start_bit": 0,
+                            "bit_length": 14,
+                            "lsb": 0.25
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "160",
+            "name": "CALCULATED TRACK FLIGHT LEVEL",
+            "comment": "Calculated Flight Level of the track (isobar).",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "CALCULATED TRACK FLIGHT LEVEL",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
+                        {
+                            "name": "QNC",
+                            "comment": "0 FL calculated without QNH correction\n1 FL calculated with QNH correction",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "TRACK FLIGHT LEVEL",
+                            "comment": "Vmin = -15 FL = -1500 ft; Vmax = 15000 FL = 150000 ft",
+                            "type": "fixed_bits",
+                            "data_type": "int",
+                            "start_bit": 0,
+                            "bit_length": 14,
+                            "lsb": 0.25
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "165",
+            "name": "ESTIMATED ACCURACY OF CALCULATED TRACK FLIGHT LEVEL",
+            "comment": "Estimated accuracy (i.e. standard deviation) of the calculated Flight Level of the track (isobar).",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "CALCULATED TRACK FLIGHT LEVEL ACCURACY",
+                    "comment": "unit: FL",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.25
+                }
+            ]
+        },
+        {
+            "number": "170",
+            "name": "TRACK AGES",
+            "comment": "A set of track related ages.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "PSR",
+                    "comment": "Age of the last primary plot/local track used to update the track. maximum value = 63.75 s",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.25
                 },
                 {
-                    "name":"LCPROB",
-                    "comment":"probability associated to the assessment of the Longitudinal Acceleration Mode-of-Flight Component",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":0.5
+                    "name": "SSR",
+                    "comment": "Age of the last secondary plot/local track used to update the track. maximum value = 63.75 s",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.25
                 },
                 {
-                    "name":"VCPROB",
-                    "comment":"probability associated to the assessment of the Vertical Acceleration Mode-of-Flight Component",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":0.5
-                }
-            ]
-        },
-        {
-            "number":"220",
-            "name":"CALCULATED RATE OF CLIMB/DESCENT",
-            "comment":"Calculated rate of Climb/Descent of an aircraft.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"RATE OF C/D",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.0009765625
-                }
-            ]
-        },
-        {
-            "number":"230",
-            "name":"ESTIMATED ACCURACY OF RATE OF CLIMB/DESCENT",
-            "comment":"Estimated accuracy (i.e. standard deviation) of the calculated rate of Climb/Descent of an aircraft",
-            "type":"item",
-            "data_fields":[
-                 {
-                    "name":"RATE OF C/D ESTIMATED ACCURACY",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0009765625
-                }
-            ]
-        },
-        {
-            "number":"240",
-            "name":"CALCULATED RATE OF TURN",
-            "comment":"Calculated Rate of Turn expressed in degrees per second.",
-            "type":"item",
-            "data_fields":[
-                 {
-                    "name":"CALCULATED RATE OF TURN",
-                    "comment":"Maximum value = 32 deg/s",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"int",
-                    "lsb":0.25
-                }
-            ]
-        },
-        {
-            "number":"250",
-            "name":"ESTIMATED ACCURACY OF RATE OF TURN",
-            "comment":"Estimated accuracy (i.e. standard deviation) of a calculated Rate of Turn expressed in degrees per second",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"ESTIMATED ACCURACY OF RATE OF TURN",
-                    "comment":"Maximum value = 64 deg/s",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":0.25
-                }
-            ]
-        },
-        {
-            "number":"260",
-            "name":"RADAR IDENTIFICATION TAG",
-            "comment":"Identification of the radar station from which has been received the last plot/local track used to update an ARTAS track.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"SAC",
-                    "comment":"Source Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "AMODE",
+                    "comment": "Age of the last detection of the mode A contained in the track mode A item I030/060. maximum value = 63.75 s",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.25
                 },
                 {
-                    "name":"SIC",
-                    "comment":"Source Identity Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "CMODE",
+                    "comment": "Age of the last valid and credible mode C used to update the track, contained in I030/150. maximum value = 63.75 s",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.25
                 }
             ]
         },
         {
-            "number":"270",
-            "name":"LOCAL TRACK NUMBER",
-            "comment":"The local track number is an integer value representing a unique reference to a track record within a particular track file e.g. the track data-base of a radar local tracker.",
-            "type":"item",
-            "data_fields":[
+            "number": "180",
+            "name": "CALCULATED TRACK VELOCITY (POLAR)",
+            "comment": "Calculated track velocity expressed in polar coordinates.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"LOCAL TRACK NUMBER",
-                    "comment":"Maximum value = 65535",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint"
-                }
-            ]
-        },
-        {
-            "number":"290",
-            "name":"PLOT AGES",
-            "comment":"A set of plot related ages.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"AMODE",
-                    "comment":"Age of the last mode A used to update the track and contained in item I030/340. maximum value = 63.75 s",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":0.25
+                    "name": "SPEED",
+                    "comment": "Maximum value = 2 NM/s = 7200 kt",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 6.103515e-05
                 },
                 {
-                    "name":"CMODE",
-                    "comment":"Age of the last mode C used to update the track and contained in I030/140. maximum value = 63.75 s",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":0.25
+                    "name": "HEADING",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.00549316406
                 }
             ]
         },
         {
-            "number":"340",
-            "name":"LAST MEASURED MODE 3/A",
-            "comment":"Mode 3/A of the last nearest neighbour plot containing a mode 3/A and used to update the track.",
-            "type":"item",
-            "data_fields":[
+            "number": "181",
+            "name": "CALCULATED TRACK VELOCITY (CARTESIAN)",
+            "comment": "Calculated track velocity expressed in Cartesian coordinates.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Mode 3/A",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
-                        {
-                            "name":"V",
-                            "comment":"0 Code validated\n1 Code not validated",
-                            "type":"fixed_bits",
-                            "start_bit":15,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"G",
-                            "comment":"0 Default\n1 Garbled Code",
-                            "type":"fixed_bits",
-                            "start_bit":14,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"L",
-                            "comment":"0 MODE 3/A code as derived from the reply of the transponder\n1 Smoothed MODE 3/A code as provided by a local tracker",
-                            "type":"fixed_bits",
-                            "start_bit":13,
-                            "bit_length":1
-                        },
-                        {
-                            "name":"Mode 3/A Code",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"digits",
-                            "start_bit":0,
-                            "bit_length":12,
-                            "num_digits":4,
-                            "digit_bit_length":3
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"360",
-            "name":"MEASURED POSITION",
-            "comment":"Measured position of an aircraft in local polar coordinates (information provided in the last plot/local track used to update an ARTAS track).",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"RHO",
-                    "comment":"Measured distance",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "X-VELOCITY COMPONENT",
+                    "comment": "Maximum value = 2 NM/s = 7200 kt",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 6.103515e-05
                 },
                 {
-                    "name":"THETA",
-                    "comment":"measured azimuth",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.00549316406
+                    "name": "Y-VELOCITY COMPONENT",
+                    "comment": "Maximum value = 2 NM/s = 7200 kt",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 6.103515e-05
                 }
             ]
         },
         {
-            "number":"370",
-            "name":"MEASURED 3-D HEIGHT",
-            "comment":"Height of an aircraft measured by a 3-D Radar (Information provided in the last plot/local track used to update an ARTAS track).",
-            "type":"item",
-            "data_fields":[
+            "number": "190",
+            "name": "ESTIMATED ACCURACY OF TRACK VELOCITY (POLAR)",
+            "comment": "",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"HEIGHT",
-                    "comment":"unit: FL",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.25
-                }
-            ]
-        },
-        {
-            "number":"382",
-            "name":"AIRCRAFT ADDRESS",
-            "comment":"technical Mode-S address used for identification of an aircraft",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"AIRCRAFT ADDRESS",
-                    "comment":"24 bits Mode-S address",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint"
-                }
-            ]
-        },
-        {
-            "number":"384",
-            "name":"AIRCRAFT IDENTIFICATION",
-            "comment":"Aircraft Identification (in 8 characters) obtained from an aircraft equipped with a Mode S transponder.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"ID",
-                    "type":"fixed_bitfield",
-                    "length":6,
-                    "items":[
-                        {
-                            "name":"AIRCRAFT IDENTIFICATION",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"icao_characters",
-                            "start_bit":0,
-                            "bit_length":48,
-                            "num_characters":8,
-                            "character_bit_length":6
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"386",
-            "name":"COMMUNICATIONS CAPABILITY AND FLIGHT STATUS",
-            "comment":"Communications capability of the transponder and flight status.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"COMMUNICATIONS CAPABILITY AND FLIGHT STATUS",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
-                        {
-                            "name":"COM",
-                            "comment":"0 no communications capability (surveillance only)\n1 Comm. A and Comm. B capability\n2 Comm. A, Comm. B and Uplink ELM\n3 Comm. A, Comm. B, Uplink ELM and Downlink ELM\n4 Level 5 Transponder capability.\n5/7 not assigned",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":3
-                        },
-                        {
-                            "name":"STAT",
-                            "comment":"0 no alert, no SPI, aircraft airborne\n1 no alert, no SPI, aircraft on ground\n2 alert, no SPI, aircraft airborne\n3 alert, no SPI, aircraft on ground\n4 alert, SPI, aircraft on ground or airborne\n5 no alert, SPI, aircraft on ground or airborne\n6/7 not assigned",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":3
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"390",
-            "name":"FPPS IDENTIFICATION TAG",
-            "comment":"Identification of the Flight Plan Data Processing System from which Flight-Plan related information are preferred by the User.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"SAC",
-                    "comment":"Source Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SPEED COMPONENT ACCURACY",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 6.103515e-05
                 },
                 {
-                    "name":"SIC",
-                    "comment":"Source Identity Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "HEADING COMPONENT ACCURACY",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.00549316406
                 }
             ]
         },
         {
-            "number":"400",
-            "name":"CALLSIGN",
-            "comment":"Callsign (in 7 characters) of an aircraft (provided in the Miniplan).",
-            "type":"item",
-            "data_fields":[
+            "number": "191",
+            "name": "ESTIMATED ACCURACY OF TRACK VELOCITY (CARTESIAN)",
+            "comment": "Estimated accuracy (i.e. standard deviation) of the calculated track velocity expressed in Cartesian coordinates.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"CALLSIGN",
-                    "type":"fixed_bitfield",
-                    "length":7,
-                    "items":[
+                    "name": "X-velocity component accuracy",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 6.103515e-05
+                },
+                {
+                    "name": "Y-velocity component accuracy",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 6.103515e-05
+                }
+            ]
+        },
+        {
+            "number": "200",
+            "name": "MODE OF FLIGHT",
+            "comment": "Calculated Mode-of-Flight of an aircraft.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "Mode of Movement",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"CALLSIGN",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"ascii_characters",
-                            "start_bit":0,
-                            "bit_length":56,
-                            "num_characters":7,
-                            "character_bit_length":8
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"410",
-            "name":"PLN NUMBER",
-            "comment":"The PLN NUMBER is an integer value representing a unique reference to a Flight-plan record within a particular FPPS (Information provided in the miniplan).",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"PLN NUMBER",
-                    "comment":"Maximum value = 65535",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint"
-                }
-            ]
-        },
-        {
-            "number":"420",
-            "name":"FLIGHT CATEGORY",
-            "comment":"Flight Category (information provided in the Miniplan).",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"FLIGHT CATEGORY",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
-                        {
-                            "name":"GAT/OAT",
-                            "comment":"0 Unknown\n1 General Air Traffic\n2 Operational Air Traffic\n3 Not applicable",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":2
+                            "name": "TRANS",
+                            "comment": "Transversal Acceleration :\n0 Constant Course\n1 Right Turn\n2 Left Turn\n3 Undetermined",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 2
                         },
                         {
-                            "name":"FR1/FR2",
-                            "comment":"0 Instrument Flight Rules\n1 Visual Flight Rules\n2 Not applicable\n3 Controlled Visual Flight Rules",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":2
+                            "name": "LONGI",
+                            "comment": "Longitudinal Acceleration :\n0 Constant Groundspeed\n1 Increasing Groundspeed\n2 Decreasing Groundspeed\n3 Undetermined",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 2
                         },
                         {
-                            "name":"SP3/SP2/SP1",
-                            "comment":"These three bits allow for the definition of up to 7 sub-categories within the main categories.",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":3
+                            "name": "VERTI",
+                            "comment": "Vertical Rate :\n0 Level\n1 Climb\n2 Descent\n3 Undetermined",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 2
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"430",
-            "name":"TYPE OF AIRCRAFT",
-            "comment":"Type of Aircraft indicated in a Miniplan.",
-            "type":"item",
-            "data_fields":[
+            "number": "210",
+            "name": "MODE OF FLIGHT PROBABILITIES",
+            "comment": "Probabilities attached to the Transversal, longitudinal and Vertical components of a calculated Mode-of-Flight.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"TYPE OF AIRCRAFT",
-                    "type":"fixed_bitfield",
-                    "length":4,
-                    "items":[
+                    "name": "TCPROB",
+                    "comment": "probability associated to the assessment of the Transversal Acceleration Mode-of-Flight Component",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.5
+                },
+                {
+                    "name": "LCPROB",
+                    "comment": "probability associated to the assessment of the Longitudinal Acceleration Mode-of-Flight Component",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.5
+                },
+                {
+                    "name": "VCPROB",
+                    "comment": "probability associated to the assessment of the Vertical Acceleration Mode-of-Flight Component",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.5
+                }
+            ]
+        },
+        {
+            "number": "220",
+            "name": "CALCULATED RATE OF CLIMB/DESCENT",
+            "comment": "Calculated rate of Climb/Descent of an aircraft.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "RATE OF C/D",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.0009765625
+                }
+            ]
+        },
+        {
+            "number": "230",
+            "name": "ESTIMATED ACCURACY OF RATE OF CLIMB/DESCENT",
+            "comment": "Estimated accuracy (i.e. standard deviation) of the calculated rate of Climb/Descent of an aircraft",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "RATE OF C/D ESTIMATED ACCURACY",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0009765625
+                }
+            ]
+        },
+        {
+            "number": "240",
+            "name": "CALCULATED RATE OF TURN",
+            "comment": "Calculated Rate of Turn expressed in degrees per second.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "CALCULATED RATE OF TURN",
+                    "comment": "Maximum value = 32 deg/s",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "int",
+                    "lsb": 0.25
+                }
+            ]
+        },
+        {
+            "number": "250",
+            "name": "ESTIMATED ACCURACY OF RATE OF TURN",
+            "comment": "Estimated accuracy (i.e. standard deviation) of a calculated Rate of Turn expressed in degrees per second",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "ESTIMATED ACCURACY OF RATE OF TURN",
+                    "comment": "Maximum value = 64 deg/s",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.25
+                }
+            ]
+        },
+        {
+            "number": "260",
+            "name": "RADAR IDENTIFICATION TAG",
+            "comment": "Identification of the radar station from which has been received the last plot/local track used to update an ARTAS track.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "SAC",
+                    "comment": "Source Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
+                },
+                {
+                    "name": "SIC",
+                    "comment": "Source Identity Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
+                }
+            ]
+        },
+        {
+            "number": "270",
+            "name": "LOCAL TRACK NUMBER",
+            "comment": "The local track number is an integer value representing a unique reference to a track record within a particular track file e.g. the track data-base of a radar local tracker.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "LOCAL TRACK NUMBER",
+                    "comment": "Maximum value = 65535",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint"
+                }
+            ]
+        },
+        {
+            "number": "290",
+            "name": "PLOT AGES",
+            "comment": "A set of plot related ages.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "AMODE",
+                    "comment": "Age of the last mode A used to update the track and contained in item I030/340. maximum value = 63.75 s",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.25
+                },
+                {
+                    "name": "CMODE",
+                    "comment": "Age of the last mode C used to update the track and contained in I030/140. maximum value = 63.75 s",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 0.25
+                }
+            ]
+        },
+        {
+            "number": "340",
+            "name": "LAST MEASURED MODE 3/A",
+            "comment": "Mode 3/A of the last nearest neighbour plot containing a mode 3/A and used to update the track.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "Mode 3/A",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"TYPE OF AIRCRAFT",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"ascii_characters",
-                            "start_bit":0,
-                            "bit_length":32,
-                            "num_characters":4,
-                            "character_bit_length":8
+                            "name": "V",
+                            "comment": "0 Code validated\n1 Code not validated",
+                            "type": "fixed_bits",
+                            "start_bit": 15,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "G",
+                            "comment": "0 Default\n1 Garbled Code",
+                            "type": "fixed_bits",
+                            "start_bit": 14,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "L",
+                            "comment": "0 MODE 3/A code as derived from the reply of the transponder\n1 Smoothed MODE 3/A code as provided by a local tracker",
+                            "type": "fixed_bits",
+                            "start_bit": 13,
+                            "bit_length": 1
+                        },
+                        {
+                            "name": "Mode 3/A Code",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "digits",
+                            "start_bit": 0,
+                            "bit_length": 12,
+                            "num_digits": 4,
+                            "digit_bit_length": 3
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"435",
-            "name":"CATEGORY OF TURBULENCE",
-            "comment":"Category of turbulence of an aircraft (information provided in the Miniplan).",
-            "type":"item",
-            "data_fields":[
+            "number": "360",
+            "name": "MEASURED POSITION",
+            "comment": "Measured position of an aircraft in local polar coordinates (information provided in the last plot/local track used to update an ARTAS track).",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"TURBULENCE CATEGORY",
-                    "comment":"1001100 = L : Light\n1001101 = M : Medium\n1001000 = H : Heavy\n1001010 = J : Super",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "RHO",
+                    "comment": "Measured distance",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
+                },
+                {
+                    "name": "THETA",
+                    "comment": "measured azimuth",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.00549316406
                 }
             ]
         },
         {
-            "number":"440",
-            "name":"DEPARTURE AIRPORT",
-            "comment":"Departure Airport indicated in a Miniplan.",
-            "type":"item",
-            "data_fields":[
+            "number": "370",
+            "name": "MEASURED 3-D HEIGHT",
+            "comment": "Height of an aircraft measured by a 3-D Radar (Information provided in the last plot/local track used to update an ARTAS track).",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"DEPARTURE AIRPORT",
-                    "type":"fixed_bitfield",
-                    "length":4,
-                    "items":[
+                    "name": "HEIGHT",
+                    "comment": "unit: FL",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.25
+                }
+            ]
+        },
+        {
+            "number": "382",
+            "name": "AIRCRAFT ADDRESS",
+            "comment": "technical Mode-S address used for identification of an aircraft",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "AIRCRAFT ADDRESS",
+                    "comment": "24 bits Mode-S address",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint"
+                }
+            ]
+        },
+        {
+            "number": "384",
+            "name": "AIRCRAFT IDENTIFICATION",
+            "comment": "Aircraft Identification (in 8 characters) obtained from an aircraft equipped with a Mode S transponder.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "ID",
+                    "type": "fixed_bitfield",
+                    "length": 6,
+                    "items": [
                         {
-                            "name":"DEPARTURE AIRPORT",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"ascii_characters",
-                            "start_bit":0,
-                            "bit_length":32,
-                            "num_characters":4,
-                            "character_bit_length":8
+                            "name": "AIRCRAFT IDENTIFICATION",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "icao_characters",
+                            "start_bit": 0,
+                            "bit_length": 48,
+                            "num_characters": 8,
+                            "character_bit_length": 6
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"450",
-            "name":"DESTINATION AIRPORT",
-            "comment":"Destination Airport indicated in a Miniplan.",
-            "type":"item",
-            "data_fields":[
+            "number": "386",
+            "name": "COMMUNICATIONS CAPABILITY AND FLIGHT STATUS",
+            "comment": "Communications capability of the transponder and flight status.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"DESTINATION AIRPORT",
-                    "type":"fixed_bitfield",
-                    "length":4,
-                    "items":[
+                    "name": "COMMUNICATIONS CAPABILITY AND FLIGHT STATUS",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"DESTINATION AIRPORT",
-                            "comment":"",
-                            "type":"fixed_bits",
-                            "data_type":"ascii_characters",
-                            "start_bit":0,
-                            "bit_length":32,
-                            "num_characters":4,
-                            "character_bit_length":8
+                            "name": "COM",
+                            "comment": "0 no communications capability (surveillance only)\n1 Comm. A and Comm. B capability\n2 Comm. A, Comm. B and Uplink ELM\n3 Comm. A, Comm. B, Uplink ELM and Downlink ELM\n4 Level 5 Transponder capability.\n5/7 not assigned",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 3
+                        },
+                        {
+                            "name": "STAT",
+                            "comment": "0 no alert, no SPI, aircraft airborne\n1 no alert, no SPI, aircraft on ground\n2 alert, no SPI, aircraft airborne\n3 alert, no SPI, aircraft on ground\n4 alert, SPI, aircraft on ground or airborne\n5 no alert, SPI, aircraft on ground or airborne\n6/7 not assigned",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 3
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"460",
-            "name":"ALLOCATED SSR CODES",
-            "comment":"List of successive SSR codes allocated to a flight (Information provided in the miniplan).",
-            "type":"item",
-            "data_fields":[
+            "number": "390",
+            "name": "FPPS IDENTIFICATION TAG",
+            "comment": "Identification of the Flight Plan Data Processing System from which Flight-Plan related information are preferred by the User.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"ALLOCATED SSR CODES",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
+                    "name": "SAC",
+                    "comment": "Source Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
+                },
+                {
+                    "name": "SIC",
+                    "comment": "Source Identity Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
+                }
+            ]
+        },
+        {
+            "number": "400",
+            "name": "CALLSIGN",
+            "comment": "Callsign (in 7 characters) of an aircraft (provided in the Miniplan).",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "CALLSIGN",
+                    "type": "fixed_bitfield",
+                    "length": 7,
+                    "items": [
                         {
-                            "name":"Mode 3/A",
-                            "type":"fixed_bitfield",
-                            "length":2,
-                            "items":[
+                            "name": "CALLSIGN",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "ascii_characters",
+                            "start_bit": 0,
+                            "bit_length": 56,
+                            "num_characters": 7,
+                            "character_bit_length": 8
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "410",
+            "name": "PLN NUMBER",
+            "comment": "The PLN NUMBER is an integer value representing a unique reference to a Flight-plan record within a particular FPPS (Information provided in the miniplan).",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "PLN NUMBER",
+                    "comment": "Maximum value = 65535",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint"
+                }
+            ]
+        },
+        {
+            "number": "420",
+            "name": "FLIGHT CATEGORY",
+            "comment": "Flight Category (information provided in the Miniplan).",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "FLIGHT CATEGORY",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
+                        {
+                            "name": "GAT/OAT",
+                            "comment": "0 Unknown\n1 General Air Traffic\n2 Operational Air Traffic\n3 Not applicable",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 2
+                        },
+                        {
+                            "name": "FR1/FR2",
+                            "comment": "0 Instrument Flight Rules\n1 Visual Flight Rules\n2 Not applicable\n3 Controlled Visual Flight Rules",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 2
+                        },
+                        {
+                            "name": "SP3/SP2/SP1",
+                            "comment": "These three bits allow for the definition of up to 7 sub-categories within the main categories.",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 3
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "430",
+            "name": "TYPE OF AIRCRAFT",
+            "comment": "Type of Aircraft indicated in a Miniplan.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "TYPE OF AIRCRAFT",
+                    "type": "fixed_bitfield",
+                    "length": 4,
+                    "items": [
+                        {
+                            "name": "TYPE OF AIRCRAFT",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "ascii_characters",
+                            "start_bit": 0,
+                            "bit_length": 32,
+                            "num_characters": 4,
+                            "character_bit_length": 8
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "435",
+            "name": "CATEGORY OF TURBULENCE",
+            "comment": "Category of turbulence of an aircraft (information provided in the Miniplan).",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "TURBULENCE CATEGORY",
+                    "comment": "1001100 = L : Light\n1001101 = M : Medium\n1001000 = H : Heavy\n1001010 = J : Super",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
+                }
+            ]
+        },
+        {
+            "number": "440",
+            "name": "DEPARTURE AIRPORT",
+            "comment": "Departure Airport indicated in a Miniplan.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "DEPARTURE AIRPORT",
+                    "type": "fixed_bitfield",
+                    "length": 4,
+                    "items": [
+                        {
+                            "name": "DEPARTURE AIRPORT",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "ascii_characters",
+                            "start_bit": 0,
+                            "bit_length": 32,
+                            "num_characters": 4,
+                            "character_bit_length": 8
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "450",
+            "name": "DESTINATION AIRPORT",
+            "comment": "Destination Airport indicated in a Miniplan.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "DESTINATION AIRPORT",
+                    "type": "fixed_bitfield",
+                    "length": 4,
+                    "items": [
+                        {
+                            "name": "DESTINATION AIRPORT",
+                            "comment": "",
+                            "type": "fixed_bits",
+                            "data_type": "ascii_characters",
+                            "start_bit": 0,
+                            "bit_length": 32,
+                            "num_characters": 4,
+                            "character_bit_length": 8
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "460",
+            "name": "ALLOCATED SSR CODES",
+            "comment": "List of successive SSR codes allocated to a flight (Information provided in the miniplan).",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "ALLOCATED SSR CODES",
+                    "type": "repetitive",
+                    "items": [
+                        {
+                            "name": "Mode 3/A",
+                            "type": "fixed_bitfield",
+                            "length": 2,
+                            "items": [
                                 {
-                                    "name":"ALLOCATED SSR CODES",
-                                    "comment":"",
-                                    "type":"fixed_bits",
-                                    "data_type":"digits",
-                                    "start_bit":0,
-                                    "bit_length":12,
-                                    "num_digits":4,
-                                    "digit_bit_length":3
+                                    "name": "ALLOCATED SSR CODES",
+                                    "comment": "",
+                                    "type": "fixed_bits",
+                                    "data_type": "digits",
+                                    "start_bit": 0,
+                                    "bit_length": 12,
+                                    "num_digits": 4,
+                                    "digit_bit_length": 3
                                 }
                             ]
                         }
@@ -1698,40 +1705,40 @@
             ]
         },
         {
-            "number":"480",
-            "name":"CURRENT CLEARED FLIGHT LEVEL",
-            "comment":"Current Cleared Flight Level of an aircraft, provided by a FPPS.",
-            "type":"item",
-            "data_fields":[
+            "number": "480",
+            "name": "CURRENT CLEARED FLIGHT LEVEL",
+            "comment": "Current Cleared Flight Level of an aircraft, provided by a FPPS.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"CURRENT CLEARED FLIGHT LEVEL",
-                    "comment":"unit: FL",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.25
+                    "name": "CURRENT CLEARED FLIGHT LEVEL",
+                    "comment": "unit: FL",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.25
                 }
             ]
         },
         {
-            "number":"490",
-            "name":"CURRENT CONTROL POSITION",
-            "comment":"Identification of the Current Control Position in charge of an aircraft, as provided by a FPPS.",
-            "type":"item",
-            "data_fields":[
+            "number": "490",
+            "name": "CURRENT CONTROL POSITION",
+            "comment": "Identification of the Current Control Position in charge of an aircraft, as provided by a FPPS.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"CENTRE",
-                    "comment":"8-bit group identification code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "CENTRE",
+                    "comment": "8-bit group identification code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"POSITION",
-                    "comment":"8-bit Control Position identification code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "POSITION",
+                    "comment": "8-bit Control Position identification code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         }

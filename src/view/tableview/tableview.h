@@ -22,13 +22,14 @@
 
 class TableViewWidget;
 class TableViewDataWidget;
+class ViewContainer;
 
 class TableView : public View
 {
     Q_OBJECT
 public slots:
-    virtual void unshowViewPointSlot (const ViewableDataConfig* vp) override;
-    virtual void showViewPointSlot (const ViewableDataConfig* vp) override;
+    virtual void unshowViewPointSlot (ViewableDataConfig* vp) override;
+    virtual void showViewPointSlot (ViewableDataConfig* vp) override;
 
 // signals:
 //     void showOnlySelectedSignal(bool value);
@@ -44,12 +45,10 @@ public:
         bool ignore_non_target_reports_{true};
     };
 
-    TableView(const std::string& class_id, const std::string& instance_id, ViewContainer* w,
-                ViewManager& view_manager);
+    TableView(nlohmann::json& config, ViewContainer* parent);
     virtual ~TableView() override;
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     /// @brief Returns the used data source
     TableViewDataSource* getDataSource()

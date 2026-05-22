@@ -24,15 +24,11 @@
 class RefTrajAccuracyFilter : public DBFilter
 {
 public:
-    RefTrajAccuracyFilter(const std::string& class_id, const std::string& instance_id,
-                Configurable* parent);
+    RefTrajAccuracyFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~RefTrajAccuracyFilter();
 
-    virtual std::string getConditionString(const std::string& dbcontent_name, 
+    virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;
@@ -47,6 +43,5 @@ public:
 protected:
     float min_value_ {0};
 
-    virtual void checkSubConfigurables() override;
     virtual DBFilterWidget* createWidget() override;
 };

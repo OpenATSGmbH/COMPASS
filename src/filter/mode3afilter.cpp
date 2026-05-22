@@ -16,11 +16,10 @@
  */
 
 #include "mode3afilter.h"
-#include "compass.h"
 #include "mode3afilterwidget.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
+#include "buffer/buffer.h"
 #include "logger.h"
 #include "stringconv.h"
 
@@ -29,9 +28,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-Mode3AFilter::Mode3AFilter(const std::string& class_id, const std::string& instance_id,
-                       Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+Mode3AFilter::Mode3AFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("values_str", &values_str_, std::string());
     updateValuesFromStr(values_str_);
@@ -45,22 +43,21 @@ Mode3AFilter::~Mode3AFilter() {}
 
 bool Mode3AFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcont_name);
+    return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_m3a_);
 }
 
 std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcontent_name))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
         return "";
 
     stringstream ss;
 
     if (active_ && (values_.size() || null_wanted_))
     {
-        dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
-                    DBContent::meta_var_m3a_.name()).getFor(dbcontent_name);
+        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_m3a_);
 
         if (!first)
         {
@@ -74,7 +71,7 @@ std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, 
 
         if (values_.size())
         {
-            ss << var.dbColumnName() << " IN (" << String::compress(values_, ',') << ")";
+            ss << col_name << " IN (" << String::compress(values_, ',') << ")";
         }
 
         if (null_wanted_)
@@ -82,7 +79,7 @@ std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, 
             if (values_.size())
                 ss << " OR";
 
-            ss << " " << var.dbColumnName() << " IS NULL)";
+            ss << " " << col_name << " IS NULL)";
         }
 
         first = false;
@@ -93,17 +90,6 @@ std::string Mode3AFilter::getConditionString(const std::string& dbcontent_name, 
     return ss.str();
 }
 
-void Mode3AFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("Mode3AFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void Mode3AFilter::checkSubConfigurables()
-{
-    logdbg;
-}
 
 DBFilterWidget* Mode3AFilter::createWidget()
 {
@@ -113,7 +99,7 @@ DBFilterWidget* Mode3AFilter::createWidget()
 
 void Mode3AFilter::reset()
 {
-    if (widget())
+    if (widget_)
         widget_->update();
 }
 
@@ -140,8 +126,8 @@ void Mode3AFilter::loadViewPointConditions (const nlohmann::json& filters)
 
     updateValuesFromStr(values_str_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 std::string Mode3AFilter::valuesString() const
@@ -170,15 +156,14 @@ std::vector<unsigned int> Mode3AFilter::filterBuffer(const std::string& dbconten
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_m3a_.name()).existsIn(dbcontent_name))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
         return to_be_removed;
 
-    dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
-                DBContent::meta_var_m3a_.name()).getFor(dbcontent_name);
+    string var_name = variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_m3a_);
 
-    traced_assert(buffer->has<unsigned int> (var.name()));
+    traced_assert(buffer->has<unsigned int> (var_name));
 
-    NullableVector<unsigned int>& data_vec = buffer->get<unsigned int> (var.name());
+    NullableVector<unsigned int>& data_vec = buffer->get<unsigned int> (var_name);
 
     for (unsigned int cnt=0; cnt < buffer->size(); ++cnt)
     {

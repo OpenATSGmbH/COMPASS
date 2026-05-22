@@ -1,13 +1,13 @@
 {
-    "name":"cat002_1.0_record",
-    "type":"record",
-    "field_specification":{
-        "name":"FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat002_1.0_record",
+    "type": "record",
+    "field_specification": {
+        "name": "FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "uap":[
+    "uap": [
         "010",
         "000",
         "020",
@@ -25,119 +25,120 @@
         "-",
         "FX"
     ],
-    "items":[
+    "items": [
         {
-            "number":"000",
-            "name":"Message Type",
-            "comment":"This Data Item allows for a more convenient handling of the messages at the receiver side by further defining the type of transaction.",
-            "type":"item",
-            "data_fields":[
+            "number": "000",
+            "name": "Message Type",
+            "comment": "This Data Item allows for a more convenient handling of the messages at the receiver side by further defining the type of transaction.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Message Type",
-                    "comment":"001, North marker message;\n 002, Sector crossing message;\n003, South marker message;\n008, Activation of blind zone filtering;\n009, Stop of blind zone filtering.",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "Message Type",
+                    "comment": "001, North marker message;\n 002, Sector crossing message;\n003, South marker message;\n008, Activation of blind zone filtering;\n009, Stop of blind zone filtering.",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"010",
-            "name":"Data Source Identifier",
-            "comment":"Identification of the radar station from which the data are received.",
-            "type":"item",
-            "data_fields":[
+            "number": "010",
+            "name": "Data Source Identifier",
+            "comment": "Identification of the radar station from which the data are received.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAC",
-                    "comment":"System Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SAC",
+                    "comment": "System Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"SIC",
-                    "comment":"System Identification Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SIC",
+                    "comment": "System Identification Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"020",
-            "name":"Sector Number",
-            "comment":"Eight most significant bits of the antenna azimuth defining a particular azimuth sector.",
-            "type":"item",
-            "data_fields":[
+            "number": "020",
+            "name": "Sector Number",
+            "comment": "Eight most significant bits of the antenna azimuth defining a particular azimuth sector.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Sector Number",
-                    "comment":"Eight most significant bits of the antenna azimuth",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":1.40625
+                    "name": "Sector Number",
+                    "comment": "Eight most significant bits of the antenna azimuth",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 1.40625
                 }
             ]
         },
         {
-            "number":"030",
-            "name":"Time of Day",
-            "comment":"Absolute time stamping expressed as UTC time.",
-            "type":"item",
-            "data_fields":[
+            "number": "030",
+            "name": "Time of Day",
+            "comment": "Absolute time stamping expressed as UTC time.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Time of Day",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "Time of Day",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"041",
-            "name":"Antenna Rotation Speed",
-            "comment":"Antenna rotation period as measured between two consecutive North crossings or as averaged during a period of time.",
-            "type":"item",
-            "data_fields":[
+            "number": "041",
+            "name": "Antenna Rotation Speed",
+            "comment": "Antenna rotation period as measured between two consecutive North crossings or as averaged during a period of time.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Antenna Rotation Speed",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "Antenna Rotation Speed",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"050",
-            "name":"Station Configuration Status",
-            "comment":"Information concerning the use and status of some vital hardware components of the radar system.",
-            "type":"item",
-            "data_fields":[
+            "number": "050",
+            "name": "Station Configuration Status",
+            "comment": "Information concerning the use and status of some vital hardware components of the radar system.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Station Configuration Status",
-                    "type":"extendable",
-                    "items":[
+                    "name": "Station Configuration Status",
+                    "type": "extendable",
+                    "items": [
                         {
-                            "name":"Station Configuration Status",
-                            "type":"fixed_bitfield",
-                            "length":1,
-                            "items":[
+                            "name": "Station Configuration Status",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
                                 {
-                                    "name":"Value",
-                                    "comment":"",
-                                    "type":"fixed_bits",
-                                    "start_bit":1,
-                                    "bit_length":7
+                                    "name": "Value",
+                                    "comment": "",
+                                    "type": "fixed_bits",
+                                    "start_bit": 1,
+                                    "bit_length": 7
                                 },
                                 {
-                                    "name":"extend",
-                                    "type":"fixed_bits",
-                                    "start_bit":0,
-                                    "bit_length":1
+                                    "name": "extend",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 1,
+                                    "no_output": true
                                 }
                             ]
                         }
@@ -146,32 +147,33 @@
             ]
         },
         {
-            "number":"060",
-            "name":"Station Processing Mode",
-            "comment":"Details concerning the present status with respect to processing parameters and options.",
-            "type":"item",
-            "data_fields":[
+            "number": "060",
+            "name": "Station Processing Mode",
+            "comment": "Details concerning the present status with respect to processing parameters and options.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Station Processing Mode",
-                    "type":"extendable",
-                    "items":[
+                    "name": "Station Processing Mode",
+                    "type": "extendable",
+                    "items": [
                         {
-                            "name":"Station Processing Mode",
-                            "type":"fixed_bitfield",
-                            "length":1,
-                            "items":[
+                            "name": "Station Processing Mode",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
                                 {
-                                    "name":"Value",
-                                    "comment":"",
-                                    "type":"fixed_bits",
-                                    "start_bit":1,
-                                    "bit_length":7
+                                    "name": "Value",
+                                    "comment": "",
+                                    "type": "fixed_bits",
+                                    "start_bit": 1,
+                                    "bit_length": 7
                                 },
                                 {
-                                    "name":"extend",
-                                    "type":"fixed_bits",
-                                    "start_bit":0,
-                                    "bit_length":1
+                                    "name": "extend",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 1,
+                                    "no_output": true
                                 }
                             ]
                         }
@@ -180,46 +182,40 @@
             ]
         },
         {
-            "number":"070",
-            "name":"Plot Count Values",
-            "comment":"Plot count values according to various plot categories, either for the last full antenna scan or for the last sector processed.",
-            "type":"item",
-            "data_fields":[
+            "number": "070",
+            "name": "Plot Count Values",
+            "comment": "Plot count values according to various plot categories, either for the last full antenna scan or for the last sector processed.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"plot_count_values",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
+                    "name": "plot_count_values",
+                    "type": "repetitive",
+                    "items": [
                         {
-                            "name":"plot_count_values",
-                            "type":"fixed_bitfield",
-                            "length":2,
-                            "items":[
+                            "name": "plot_count_values",
+                            "type": "fixed_bitfield",
+                            "length": 2,
+                            "items": [
                                 {
-                                    "name":"A",
-                                    "comment":"Aerial identification:\n0 Counter for antenna 1;\n1 Counter for antenna 2.",
-                                    "type":"fixed_bits",
-                                    "start_bit":15,
-                                    "bit_length":1
+                                    "name": "A",
+                                    "comment": "Aerial identification:\n0 Counter for antenna 1;\n1 Counter for antenna 2.",
+                                    "type": "fixed_bits",
+                                    "start_bit": 15,
+                                    "bit_length": 1
                                 },
                                 {
-                                    "name":"IDENT",
-                                    "comment":"Five-bit plot category identification code, as follows:\n1 Sole primary plots;\n2 Sole SSR plots;\n3 Combined plots.",
-                                    "type":"fixed_bits",
-                                    "start_bit":10,
-                                    "bit_length":5
+                                    "name": "IDENT",
+                                    "comment": "Five-bit plot category identification code, as follows:\n1 Sole primary plots;\n2 Sole SSR plots;\n3 Combined plots.",
+                                    "type": "fixed_bits",
+                                    "start_bit": 10,
+                                    "bit_length": 5
                                 },
                                 {
-                                    "name":"COUNTER",
-                                    "comment":"10-bit counter value",
-                                    "type":"fixed_bits",
-                                    "start_bit":0,
-                                    "bit_length":10
+                                    "name": "COUNTER",
+                                    "comment": "10-bit counter value",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 10
                                 }
                             ]
                         }
@@ -228,32 +224,33 @@
             ]
         },
         {
-            "number":"080",
-            "name":"Warning/Error Conditions",
-            "comment":"Warning/error conditions affecting the functioning of the radar system itself.",
-            "type":"item",
-            "data_fields":[
+            "number": "080",
+            "name": "Warning/Error Conditions",
+            "comment": "Warning/error conditions affecting the functioning of the radar system itself.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"warning_error_conditions",
-                    "type":"extendable",
-                    "items":[
+                    "name": "warning_error_conditions",
+                    "type": "extendable",
+                    "items": [
                         {
-                            "name":"warning_error_condition",
-                            "type":"fixed_bitfield",
-                            "length":1,
-                            "items":[
+                            "name": "warning_error_condition",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
                                 {
-                                    "name":"W/E Value",
-                                    "comment":"",
-                                    "type":"fixed_bits",
-                                    "start_bit":1,
-                                    "bit_length":7
+                                    "name": "W/E Value",
+                                    "comment": "",
+                                    "type": "fixed_bits",
+                                    "start_bit": 1,
+                                    "bit_length": 7
                                 },
                                 {
-                                    "name":"extend",
-                                    "type":"fixed_bits",
-                                    "start_bit":0,
-                                    "bit_length":1
+                                    "name": "extend",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 1,
+                                    "no_output": true
                                 }
                             ]
                         }
@@ -262,66 +259,66 @@
             ]
         },
         {
-            "number":"090",
-            "name":"Collimation Error",
-            "comment":"Averaged difference in range and in azimuth for the primary target position with respect to the SSR target position as calculated by the radar station.",
-            "type":"item",
-            "data_fields":[
+            "number": "090",
+            "name": "Collimation Error",
+            "comment": "Averaged difference in range and in azimuth for the primary target position with respect to the SSR target position as calculated by the radar station.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"RANGE ERROR",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"int",
-                    "lsb":0.0078125
+                    "name": "RANGE ERROR",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "int",
+                    "lsb": 0.0078125
                 },
                 {
-                    "name":"AZIMUTH ERROR",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"int",
-                    "lsb":0.0054931640625
+                    "name": "AZIMUTH ERROR",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "int",
+                    "lsb": 0.0054931640625
                 }
             ]
         },
         {
-            "number":"100",
-            "name":"Dynamic Window - Type 1",
-            "comment":"Signals the activation of a certain selective filtering function and in a polar coordinates system the respective geographical areas.",
-            "type":"item",
-            "data_fields":[
+            "number": "100",
+            "name": "Dynamic Window - Type 1",
+            "comment": "Signals the activation of a certain selective filtering function and in a polar coordinates system the respective geographical areas.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"RHO-START",
-                    "comment":"Max. range = 512 NM",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "RHO-START",
+                    "comment": "Max. range = 512 NM",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 },
                 {
-                    "name":"RHO-END",
-                    "comment":"Max. range = 512 NM",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "RHO-END",
+                    "comment": "Max. range = 512 NM",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 },
                 {
-                    "name":"THETA-START",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0054931640625
+                    "name": "THETA-START",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0054931640625
                 },
                 {
-                    "name":"THETA-END",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.0054931640625
+                    "name": "THETA-END",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "uint",
+                    "lsb": 0.0054931640625
                 }
             ]
         }

@@ -1,128 +1,59 @@
 \section{Feature Highlights}
 
-\subsection{Application modes}
-\begin{itemize} 
-    \item Offline: Recordings can be imported and larger amounts of data can be inspected and evaluated
-    \item Live: Data can be read directly from network interfaces and immediately displayed to show the current airspace situation
+\subsection{Application Modes}
+\begin{itemize}
+    \item Offline: import of recordings, processing and evaluation of hours and days of data
+    \item Live: direct display of current airspace situation from network ASTERIX (UDP)
 \end{itemize}
 
 \subsection{Import}
-\begin{itemize}  
-    \item Support of DuckDB database system
-    \item Dynamic ASTERIX import
-    \begin{itemize}  
-        \item File recordings, PCAP, JSON
-    \end{itemize}    
-    \item Import of (D)GPS trails from NMEA files
-    \item Import of polygons from GML, KML, ESRI Shapefiles, GeoJSON
-    \item Supported data source types
-    \begin{itemize}  
-        \item Radar
-        \item MLAT \& WAM
-        \item ADS-B
-        \item System Tracker
-        \item Reference Trajectory
-    \end{itemize}
-    \item Sensor / System Tracker status messages
-    \item 24h+ import using EPOCH timestamps    
-\end{itemize}
-
-\subsection{Analysis}
-\begin{itemize}  
-    \item High performance processing, low memory footprint
-    \item Filtering for detailed analysis
-    \item Simple custom filter generation
-    \item ARTAS track association (TRI) analysis
+\begin{itemize}
+    \item Customizable ASTERIX import from file recordings (RAW/Netto, IOSS, RFF), PCAP and JSON to up to 4 lines
+    \item (D)GPS trail import from NMEA
+    \item Sector import from ESRI Shapefiles, GML, KML and GeoJSON
+    \item Supported data source types: Radar, MLAT / WAM, ADS-B, System Tracker, Reference Trajectory
+    \item Data Context: named surveillance context grouping data sources, sectors, FFTs, ASTERIX decoding and colors
+    \item 24h+ recordings using EPOCH timestamps
 \end{itemize}
 
 \subsection{Visualization}
-\begin{itemize}  
-    \item Textual data inspection using Table View
-    \begin{itemize}  
-        \item Display of data as text tables
-        \item Configurable loading of data of interest
-        \item Export of data as CSV
-    \end{itemize}
-    \item Data distribution inspection using Histogram View
-    \begin{itemize}  
-        \item Display of any numeric variable or evaluation result as histogram
-        \item Linear or logarithmic axis
-    \end{itemize}
-        \item Data distribution inspection using Grid View
-    \begin{itemize}  
-        \item Display of any numeric variable over 2D grid of two other numeric variables
-        \item Configurable color map and data ranges
-    \end{itemize}
-    \item Graphical data inspection using Geographic View
-    \begin{itemize}  
-        \item Automatic labeling of data
-        \item Customizable map/terrain display based on osgEarth
-        \item Customizable display of ATC surveillance data using OpenSceneGraph
-        \item High speed time-filtered display
-        \item Numerous features for analysis, e.g. data selection, labeling, distance measurements
-        \item Configurable data layering and styling for detailed analysis
-        \item Relatively low memory footprint (e.g. 16 million target reports in ~8 GB RAM)
-    \end{itemize}    
-    \item 2D data distribution inspection using ScatterPlot View
-    \begin{itemize}  
-        \item Display of any two numeric variables as X/Y plot
-    \end{itemize}
-    \item Cross-view data selection and inspection
-    \item Configurable view presets for various use cases
-    \item Persistent view points for efficient inspection
+\begin{itemize}
+    \item Multiple Views synchronized over one shared dataset, with cross-View selection and configurable View Presets
+    \item Geographic View: customizable osgEarth map and OpenSceneGraph display, automatic labeling, time-filtered display, low memory footprint
+    \item Table View: textual data inspection with sortable columns and CSV export
+    \item Histogram View, Grid View, Scatter Plot View: distribution and correlation of any numeric variables
+    \item Global Color Mode: consistent coloring by DSType, DBContent, Data Source or Data Source + Line ID
+    \item Shared Layers Tree controlling per-DBContent, per-Data-Source and per-line visibility
+    \item Persistent View Points for efficient revisiting of points of interest
 \end{itemize}
 
-\subsection{MLAT / WAM Contributing Receivers Analysis}    
-\begin{itemize}  
-    \item Processing of I020/400 Contributing Receivers
-    \item Definition of contributing receivers in name, position, ..
-    \item Display of contributing receivers names in Table View
-    \item Display of contributing receivers in Geographic View
-    \begin{itemize}  
-        \item In position, connection lines per target report
-    \end{itemize}
+\subsection{Analysis}
+\begin{itemize}
+    \item High-performance processing with low memory footprint
+    \item Predefined filters and simple custom filter generation
+    \item Per-DSType Analyze Data Source task, including MLAT sensor analysis with Contributing Receivers
+    \item ARTAS track association (TRI) analysis
 \end{itemize}
 
-\subsection{Reference Trajectory Calculation}    
-\begin{itemize}  
-    \item Association of target reports from same target
-    \item Calculation of reference trajectories based on sensors and System Trackers
-    \item Allows for manual comparison or evaluations using Traffic of Opportunity
-    \item 2 different reconstructors
-    \begin{itemize}  
-        \item Basic: Scoring + UMKalman
-        \begin{itemize}  
-            \item Included in free version
-            \item Association based on secondary attributes and simple, configurable distance scoring
-            \item Position estimation using Linear Uniform Motion Kalman filter
-        \end{itemize}  
-        \item Advanced: Probabilistic + IMM
-        \begin{itemize}  
-            \item Requires commercial professional license
-            \item Association based on secondary attributes and self-adaptive probabilistic thresholds
-            \item Uses Radar bias estimation \& correction, ADS-B geometric altitude for slant range correction, accuracy reestimation and scaling, ADS-B verification, ...
-            \item Position estimation using Interacting Multiple Models (IMM) filter, with a Rauch-Tung-Striebel (RTS) smoother
-        \end{itemize}          
-    \end{itemize}  
+\subsection{Reference Data}
+\begin{itemize}
+    \item GPS Trail import from test drives or flights
+    \item Reference Trajectory reconstruction from Traffic of Opportunity
+    \item Basic reconstructor (free): secondary attribute association with configurable distance scoring, Linear Uniform Motion Kalman filter
+    \item Advanced reconstructor (professional license): probabilistic association, radar bias estimation and correction, ADS-B-based slant range correction, IMM filter with RTS smoother
 \end{itemize}
 
-\subsection{Evaluation}    
-\begin{itemize}  
-    \item Standard compliance evaluation
-        \begin{itemize}  
-            \item EUROCAE ED-116, ED-87C/D/E, ED-117/A, ED-142, ...
-        \end{itemize}  
-    \item Definition of standards based on configurable requirements
-    \item Generalized comparison of selectable test data vs. reference data
-    \item Calculation of requirements/performance indicators
-    \item Investigation/display of results at several levels of detail
-    \item Automatic removal of targets (short tracks, VFR, …) possible
-    \item Manual removal of specific targets possible
-    \item Export of results as report PDF or JSON
+\subsection{Evaluation}
+\begin{itemize}
+    \item Standard compliance against EUROCAE ED-116, ED-87C/D/E, ED-117/A, ED-142 and custom standards
+    \item Generalized comparison of test data versus reference data, with results inspectable at several levels of detail
+    \item Automatic and manual removal of targets (short tracks, VFR, ...)
+    \item Export of results as PDF, DOCX or JSON reports
 \end{itemize}
 
-\subsection{Semi-automated Processing}    
-\begin{itemize}  
-    \item Command line options for common processing features
+\subsection{Semi-automated Processing}
+\begin{itemize}
+    \item Command line options for common processing tasks
+    \item Runtime Command interface (TCP, JSON) for driving COMPASS from external tools
+    \item Browser-based intranet access via the separate COMPASS Portal companion application
 \end{itemize}
-

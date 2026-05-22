@@ -19,9 +19,13 @@
 
 #include "variableviewstashdatawidget.h"
 #include "grid2dlayer.h"
+#include "grid2drendersettings.h"
 #include "colormap.h"
 
 #include <memory>
+#include <set>
+#include <string>
+#include <vector>
 
 #include <QImage>
 #include <QRectF>
@@ -32,6 +36,10 @@ class GridView;
 class GridViewWidget;
 class Grid2D;
 class ColorLegendWidget;
+class DBContentRootItem;
+class LayerTreeModel;
+class AnnotationsRootItem;
+class GridLeafPayload;
 
 namespace QtCharts
 {
@@ -87,6 +95,17 @@ public:
     boost::optional<std::pair<QImage, RasterReference>> currentGeoImage() const;
     const ColorLegend& currentLegend() const;
 
+    /// Called by GridViewConfigWidget once the LayerPanelWidget is built.
+    /// Provides the DBContent root item (owned by the panel's model) and the
+    /// layer tree model used for hidden-state round-tripping and recompute
+    /// triggering.
+    void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
+
+signals:
+    /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
+    /// The config widget uses this to re-apply default expansion.
+    void layerTreeRebuiltSignal();
+
 public slots:
     void rectangleSelectedSlot(QPointF p1, QPointF p2);
 
@@ -94,6 +113,11 @@ public slots:
     void clearSelectionSlot();
 
     void resetZoomSlot();
+
+    /// Connected to LayerTreeModel::hiddenChangedSignal. Captures the new set
+    /// of hidden series and triggers a full recompute of the grid so that only
+    /// checked layers contribute.
+    void layersChangedSlot();
 
 protected:
     virtual void mouseMoveEvent(QMouseEvent* event) override;
@@ -119,6 +143,16 @@ private:
     void updateRendering();
     DrawState updateChart(QtCharts::QChart* chart);
 
+    /// Rebuild grid_ / grid_layers_ / value ranges by iterating the current
+    /// stash and accumulating only groups that are NOT in hidden_series_.
+    /// Safe to call on a layer toggle - touches neither the stash nor the
+    /// layer tree, so DBContentLeafItem payload pointers stay valid.
+    void buildGridFromStash();
+
+    /// Rebuild the DBContent subtree in the layer panel from payloads_.
+    /// Re-applies hidden_series_ on the new tree. Emits layerTreeRebuiltSignal.
+    void rebuildLayerTree();
+
     GridView* view_   = nullptr;
     
     GridViewDataTool selected_tool_ = GV_NAVIGATE_TOOL;
@@ -142,4 +176,25 @@ private:
     std::string  x_axis_name_;
     std::string  y_axis_name_;
     std::string  title_;
+
+    /// Render settings declared inside the currently shown annotation's
+    /// `render_settings` block. When present they override the view's own
+    /// min/max/color-scale settings for the duration of the annotation.
+    boost::optional<Grid2DRenderSettings> annotation_render_settings_;
+
+    DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
+    LayerTreeModel*      layer_model_      {nullptr};   // owned by LayerPanelWidget
+    AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
+
+    std::vector<std::unique_ptr<GridLeafPayload>> payloads_;
+
+    /// Set of series keys currently hidden by the user. Consulted by
+    /// processStash() to skip aggregation of unchecked layers.
+    std::set<std::string> hidden_series_;
+
+    /// Re-entry guard for layersChangedSlot. rebuildLayerTree() eventually
+    /// calls applyPersistedHiddenIds() which re-emits hiddenChangedSignal -
+    /// without this guard, the post-load tree rebuild would recurse through
+    /// the slot.
+    bool in_layer_recompute_{false};
 };

@@ -48,7 +48,10 @@ ViewConfigWidget::ViewConfigWidget(ViewWidget* view_widget, QWidget* parent, Qt:
 */
 void ViewConfigWidget::loadingStarted()
 {
-    setDisabled(true);
+    // The offline load progress dialog is Qt::ApplicationModal, which already
+    // blocks input application-wide. In LiveRunning the started→done envelope
+    // wraps the whole live session, so disabling here would lock the panel for
+    // the entire session. Either way: nothing to disable.
 }
 
 /**
@@ -56,7 +59,6 @@ void ViewConfigWidget::loadingStarted()
 */
 void ViewConfigWidget::loadingDone()
 {
-    setDisabled(false);
 }
 
 /**

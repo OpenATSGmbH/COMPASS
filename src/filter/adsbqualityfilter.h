@@ -22,15 +22,11 @@
 class ADSBQualityFilter : public DBFilter
 {
 public:
-    ADSBQualityFilter(const std::string& class_id, const std::string& instance_id,
-                      Configurable* parent);
+    ADSBQualityFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~ADSBQualityFilter();
 
-    virtual std::string getConditionString(const std::string& dbcontent_name, 
+    virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual bool filters(const std::string& dbcont_name) override;
     virtual void reset() override;
@@ -147,6 +143,5 @@ protected:
     bool use_max_sil_v2_ {false};
     unsigned int max_sil_v2_ {0};
 
-    virtual void checkSubConfigurables();
     virtual DBFilterWidget* createWidget() override;
 };

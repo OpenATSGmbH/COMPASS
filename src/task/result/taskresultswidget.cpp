@@ -28,7 +28,8 @@
 #include "asynctask.h"
 #include "compass.h"
 #include "reportdefs.h"
-#include "system.h"
+#include "license/licensemanager.h"
+#include "license/license.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -39,6 +40,8 @@
 #include <QMenu>
 #include <QWidgetAction>
 #include <QComboBox>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QApplication>
@@ -101,21 +104,32 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     export_result_button_->setToolTip("Export Report");
 
     QMenu* export_menu = new QMenu(export_result_button_);
+    export_menu->setToolTipsVisible(true);
 
-    bool pdflatex_found = Utils::System::exec("which pdflatex").size();
+    bool pdflatex_found = task_man_.compass().pdflatexFound();
+    bool pro_license = task_man_.compass().licenseManager().componentEnabled(
+        license::License::Component::ComponentProbIMMReconstructor);
 
+    auto action_export_docx  = export_menu->addAction(
+        pro_license ? "Export as DocX" : "Export as DocX [pro]");
     auto action_export_json  = export_menu->addAction("Export as JSON");
     auto action_export_latex = export_menu->addAction("Export as Latex");
     auto action_export_pdf   = export_menu->addAction("Export as PDF");
 
+    action_export_docx->setEnabled(pro_license);
+    action_export_docx->setToolTip(pro_license ? "" :
+        "Only available with active Professional license");
+
     action_export_pdf->setEnabled(pdflatex_found);
     action_export_pdf->setToolTip(pdflatex_found ? "" : "pdflatex not installed");
 
-    connect(action_export_json, &QAction::triggered, 
+    connect(action_export_json, &QAction::triggered,
         [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::JSONFile); });
-    connect(action_export_latex, &QAction::triggered, 
+    connect(action_export_docx, &QAction::triggered,
+        [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::DOCX); });
+    connect(action_export_latex, &QAction::triggered,
         [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::Latex); });
-    connect(action_export_pdf, &QAction::triggered, 
+    connect(action_export_pdf, &QAction::triggered,
         [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::LatexPDF); });
 
     export_result_button_->setMenu(export_menu);
@@ -191,9 +205,9 @@ void TaskResultsWidget::setReport(const std::string name)
     std::string default_section = ResultReport::SectionID::reportResultOverviewID();
 
     if (!result->startSection().empty())
-        report_widget_->selectId(result->startSection(), false, {});
+        report_widget_->selectID(result->startSection(), false, {});
     else if (report->hasSection(default_section))
-        report_widget_->selectId(default_section, false, {});
+        report_widget_->selectID(default_section, false, {});
 
     report_widget_->setDisabled(false);
 
@@ -328,8 +342,7 @@ void TaskResultsWidget::removeCurrentResult()
     traced_assert(task_man_.hasResult(name));
 
     QString msg = "Do you really want to remove report '" + QString::fromStdString(name) + "'?";
-    auto answer = QMessageBox::question(this, "Remove Report", msg, QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No);
-    if (answer == QMessageBox::StandardButton::No)
+    if (!QuestionDialog::ask(this, "Remove Report", msg))
         return;
 
     auto cb = [ this, name ] (const AsyncTaskState&, AsyncTaskProgressWrapper&) 
@@ -374,7 +387,7 @@ void TaskResultsWidget::refreshCurrentResult()
  */
 QIcon TaskResultsWidget::toolIcon() const
 {
-    return QIcon(Utils::Files::getIconFilepath("reports.png").c_str());
+    return Utils::Files::IconProvider::getIcon("reports.png");
 }
 
 /**
@@ -440,7 +453,7 @@ std::string TaskResultsWidget::currentReportName() const
  */
 void TaskResultsWidget::selectID(const std::string id, bool show_figure)
 {
-    report_widget_->selectId(id, show_figure, {});
+    report_widget_->selectID(id, show_figure, {});
 }
 
 /**
@@ -476,7 +489,7 @@ void TaskResultsWidget::restoreBackupSection()
     if (current_section_name_backup_.empty())
         return;
 
-    report_widget_->selectId(current_section_name_backup_, false, current_section_config_backup_);
+    report_widget_->selectID(current_section_name_backup_, false, current_section_config_backup_);
     
     loginf << "restored section '" << current_section_name_backup_ << "'";
 }

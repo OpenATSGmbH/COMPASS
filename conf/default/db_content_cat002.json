@@ -1,4 +1,6 @@
 {
+    "class_name": "DBContent",
+    "instance_name": "CAT002",
     "parameters": {
         "contains_status_content": true,
         "contains_target_reports": false,
@@ -7,338 +9,402 @@
         "info": "",
         "name": "CAT002"
     },
-    "sub_configs": {
-        "Variable": {
-            "Variable1": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "message_type",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 000.Message Type\n\n001, North marker message;\n 002, Sector crossing message;\n003, South marker message;\n008, Activation of blind zone filtering;\n009, Stop of blind zone filtering.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Message Type",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable10": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "rho_start",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.RHO-START\n\nMax. range = 512 NM",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "Rho-Start",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Nautical Mile"
-                }
-            },
-            "Variable11": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "theta_end",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.THETA-END",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Theta-End",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Degree"
-                }
-            },
-            "Variable12": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "theta_start",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.THETA-START",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Theta-Start",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Degree"
-                }
-            },
-            "Variable13": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "station_configuration_status",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 050.Station Configuration Status.Value",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Station Configuration Status",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable14": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "station_processing_mode",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 060.Station Processing Mode.Value",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Station Processing Mode",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable15": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "w_e_value",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 080.warning_error_conditions.W/E Value",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "W/E Value",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable16": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "plot_count_a",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.plot_count_values.A\n\nAerial identification:\n0 Counter for antenna 1;\n1 Counter for antenna 2.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Plot Count A",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable17": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "plot_count_counter",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.plot_count_values.COUNTER\n\n10-bit counter value",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Plot Count Counter",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable18": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "plot_count_ident",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.plot_count_values.IDENT\n\nFive-bit plot category identification code, as follows:\n1 Sole primary plots;\n2 Sole SSR plots;\n3 Combined plots.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Plot Count Ident",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable2": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SAC\n\nSystem Area Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SAC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable3": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sic",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SIC\n\nSystem Identification Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SIC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable4": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "sector_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.Sector Number\n\nEight most significant bits of the antenna azimuth",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Sector Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Degree"
-                }
-            },
-            "Variable5": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_of_day",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 030.Time of Day",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time of Day",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "Variable6": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "antenna_rotation_speed",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 041.Antenna Rotation Speed",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Antenna Rotation Speed",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "Variable7": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "azimuth_error",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 090.AZIMUTH ERROR",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Azimuth Error",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Degree"
-                }
-            },
-            "Variable8": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "range_error",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 090.RANGE ERROR",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "Range Error",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Nautical Mile"
-                }
-            },
-            "Variable9": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "rho_end",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.RHO-END\n\nMax. range = 512 NM",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "Rho-End",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Nautical Mile"
-                }
-            },
-            "VariableTimestamp0": {
-                "parameters": {
-                    "data_type_str": "TIMESTAMP",
-                    "db_column_name": "timestamp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Epoch timestamp based on Time of Day",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Timestamp",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variableds_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "ds_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From ds_id\n\nData Source ID",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "DS ID",
-                    "representation_str": "DATA_SRC_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variableline_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "line_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "COMMUNICATION LINE ID determines the origin of the record",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Line ID",
-                    "representation_str": "LINE_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variablerec_num0": {
-                "parameters": {
-                    "data_type_str": "ULONGINT",
-                    "db_column_name": "record_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Unique record id starting with 0 on every new recording",
-                    "dimension": "",
-                    "is_key": true,
-                    "name": "Record Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
+    "sub_configs": [
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable1",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "message_type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "001, North marker message;\n 002, Sector crossing message;\n003, South marker message;\n008, Activation of blind zone filtering;\n009, Stop of blind zone filtering.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Message Type",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/000.Message Type",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable10",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "rho_start",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Max. range = 512 NM",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "Rho-Start",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/100.RHO-START",
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable11",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "theta_end",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Theta-End",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/100.THETA-END",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable12",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "theta_start",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Theta-Start",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/100.THETA-START",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable13",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "station_configuration_status",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "",
+                "is_key": false,
+                "name": "Station Configuration Status",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/050.Station Configuration Status.Value",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable14",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "station_processing_mode",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "",
+                "is_key": false,
+                "name": "Station Processing Mode",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/060.Station Processing Mode.Value",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable15",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "w_e_value",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "",
+                "is_key": false,
+                "name": "W/E Value",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/080.warning_error_conditions.W/E Value",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable16",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "plot_count_a",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Aerial identification:\n0 Counter for antenna 1;\n1 Counter for antenna 2.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Plot Count A",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/070.plot_count_values.A",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable17",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "plot_count_counter",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "10-bit counter value",
+                "dimension": "",
+                "is_key": false,
+                "name": "Plot Count Counter",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/070.plot_count_values.COUNTER",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable18",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "plot_count_ident",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Five-bit plot category identification code, as follows:\n1 Sole primary plots;\n2 Sole SSR plots;\n3 Combined plots.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Plot Count Ident",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/070.plot_count_values.IDENT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable2",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/010.SAC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable3",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/010.SIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable4",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "sector_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Eight most significant bits of the antenna azimuth",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Sector Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/020.Sector Number",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable5",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_of_day",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time of Day",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "source": "I002/030.Time of Day",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable6",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "antenna_rotation_speed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Antenna Rotation Speed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/041.Antenna Rotation Speed",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable7",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "azimuth_error",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Azimuth Error",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/090.AZIMUTH ERROR",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable8",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "range_error",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "Range Error",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/090.RANGE ERROR",
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable9",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "rho_end",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Max. range = 512 NM",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "Rho-End",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I002/100.RHO-END",
+                "unit": "Nautical Mile"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableTimestamp0",
+            "parameters": {
+                "data_type_str": "TIMESTAMP",
+                "db_column_name": "timestamp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Epoch timestamp computed from Time of Day plus the resolved calendar date (handles midnight wrap).",
+                "dimension": "",
+                "is_key": false,
+                "name": "Timestamp",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Calculated from Time of Day, calendar date",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variableds_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "ds_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Data Source Identifier (bit-packed SAC/SIC)",
+                "dimension": "",
+                "is_key": false,
+                "name": "DS ID",
+                "representation_str": "DATA_SRC_NAME",
+                "short_name": "",
+                "source": "Calculated from I002/010.SAC, I002/010.SIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variableline_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "line_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Communication line ID determining the origin of the record.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Line ID",
+                "representation_str": "LINE_NAME",
+                "short_name": "",
+                "source": "Internal: import line/source identifier",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variablerec_num0",
+            "parameters": {
+                "data_type_str": "ULONGINT",
+                "db_column_name": "record_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique record id starting with 0 on every new recording.",
+                "dimension": "",
+                "is_key": true,
+                "name": "Record Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Internal: ascending record number assigned at import",
+                "unit": ""
             }
         }
-    }
+    ]
 }

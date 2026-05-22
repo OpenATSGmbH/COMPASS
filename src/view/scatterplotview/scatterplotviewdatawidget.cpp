@@ -18,16 +18,24 @@
 #include "scatterplotviewdatawidget.h"
 #include "scatterplotviewwidget.h"
 #include "scatterplotview.h"
+#include "viewabledataconfig.h"
 #include "viewvariable.h"
 #include "viewpointgenerator.h"
 
 #include "buffer.h"
+#include "compass.h"
+#include "color_provider.h"
 
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
 #include "scatterplotviewdatasource.h"
 #include "scatterplotviewchartview.h"
+#include "scatterleafpayload.h"
+#include "dbcontentlayer.h"
+#include "layertreemodel.h"
+#include "viewlayertreemodel.h"
+#include "annotationsrootitem.h"
 #include "logger.h"
 #include "property_templates.h"
 #include "timeconv.h"
@@ -59,6 +67,15 @@ using namespace Utils;
 
 const int ScatterPlotViewDataWidget::ConnectLinesDataCountMax = 100000;
 
+namespace
+{
+    // Series key used for the pooled selection overlay. It is intentionally
+    // outside the "<ds_type>:<ds_name>:L<n>:<dbcontent>" scheme so the layer
+    // tree can render it as a dedicated top-level leaf instead of bucketing
+    // it into the DBContent subtree.
+    const std::string kSelectedSeriesKey = "Selected";
+}
+
 /**
 */
 ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view_widget,
@@ -83,7 +100,22 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
     updateDateTimeInfoFromVariables();
     updateChart();
 
-    connect (&data_model_, &ScatterSeriesModel::visibilityChangedSignal, this, &ScatterPlotViewDataWidget::updateChartSlot);
+    // Layer panel signals are wired by ScatterPlotViewConfigWidget via
+    // attachLayerPanel(); color-mode redraw is connected here independently.
+    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+            this, [this](unsigned int /*mode*/) { redrawData(true); });
+
+    // Annotations subtree of the layer panel mirrors view_->annotations(); the
+    // panel is wired via attachLayerPanel and may not yet be present at
+    // construction time.
+    connect(view_, &VariableView::annotationsChangedSignal, this, [this]()
+    {
+        if (annotations_root_)
+            annotations_root_->update(view_->annotations(),
+                                      view_->currentAnnotationGroupIdx(),
+                                      view_->currentAnnotationIdx(),
+                                      view_);
+    });
 }
 
 /**
@@ -108,7 +140,122 @@ void ScatterPlotViewDataWidget::resetSeries()
 
     bounds_ = {};
 
-    data_model_.updateFrom(scatter_series_);
+    rebuildLayerTree();
+}
+
+/**
+*/
+void ScatterPlotViewDataWidget::attachLayerPanel(DBContentRootItem* root,
+                                                 LayerTreeModel* layer_model)
+{
+    db_content_root_ = root;
+    layer_model_     = layer_model;
+
+    if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
+        annotations_root_ = vlm->annotationsRootItem();
+
+    // If scatter_series_ was already populated before the panel was attached,
+    // push it into the tree now so the UI matches reality.
+    rebuildLayerTree();
+
+    // Same for annotations: VariableView may have already populated them via
+    // a view point load that fired before attachLayerPanel.
+    if (annotations_root_)
+        annotations_root_->update(view_->annotations(),
+                                  view_->currentAnnotationGroupIdx(),
+                                  view_->currentAnnotationIdx(),
+                                  view_);
+}
+
+/**
+*/
+void ScatterPlotViewDataWidget::rebuildLayerTree()
+{
+    if (!db_content_root_ || !layer_model_)
+        return;
+
+    // Build new payloads from scatter_series_, parsing the "<ds_type>:<ds_name>
+    // :L<n>:<dbcontent>" key convention. The pooled "Selected" overlay series
+    // does not fit that scheme - it is kept aside and injected as a dedicated
+    // top-level leaf after the DBContent subtree is built.
+    std::vector<std::unique_ptr<ScatterLeafPayload>> new_payloads;
+    std::vector<DBContentRootItem::LeafEntry>        entries;
+    new_payloads.reserve(scatter_series_.numDataSeries());
+    entries.reserve(scatter_series_.numDataSeries());
+
+    ScatterLeafPayload* selected_payload = nullptr;
+
+    for (auto& kv : scatter_series_.dataSeries())
+    {
+        const std::string& full_key = kv.first;
+        auto& data_series           = kv.second;
+
+        if (full_key == kSelectedSeriesKey)
+        {
+            new_payloads.emplace_back(
+                std::make_unique<ScatterLeafPayload>(full_key, &data_series));
+            selected_payload = new_payloads.back().get();
+            continue;
+        }
+
+        std::string ds_type, ds_name, line_tok, dbcontent;
+        {
+            std::vector<std::string> parts;
+            size_t start = 0;
+            for (size_t i = 0; i <= full_key.size(); ++i)
+            {
+                if (i == full_key.size() || full_key[i] == ':')
+                {
+                    parts.push_back(full_key.substr(start, i - start));
+                    start = i + 1;
+                }
+            }
+            if (parts.size() == 4)
+            {
+                ds_type   = parts[0];
+                ds_name   = parts[1];
+                line_tok  = parts[2];
+                dbcontent = parts[3];
+            }
+            else
+            {
+                // malformed key fallback - collapse to a single leaf under an
+                // "<unknown>" branch so it's still visible.
+                ds_type   = "<unknown>";
+                ds_name   = full_key;
+                line_tok  = "L1";
+                dbcontent = "<unknown>";
+            }
+        }
+
+        new_payloads.emplace_back(
+            std::make_unique<ScatterLeafPayload>(full_key, &data_series));
+        entries.push_back({ds_type, ds_name, line_tok, dbcontent,
+                           new_payloads.back().get()});
+    }
+
+    // Scoped subtree refresh: removes old children, swaps payloads while the
+    // DBContent root is empty, then attaches the new subtree. Avoids a full
+    // modelReset that would make QHeaderView drop its section widths.
+    layer_model_->refreshSubtree(db_content_root_, [&]() {
+        payloads_ = std::move(new_payloads);
+        auto children = db_content_root_->buildChildrenFrom(entries);
+        if (selected_payload)
+        {
+            // Place the Selected overlay at the top of the tree so it is
+            // always visible regardless of how the DBContent subtree expands.
+            auto leaf = std::make_unique<DBContentLeafItem>(
+                kSelectedSeriesKey, selected_payload);
+            children.insert(children.begin(), std::move(leaf));
+        }
+        return children;
+    });
+    db_content_root_->recomputeColorsRecursive();
+
+    if (!hidden_series_.empty())
+        layer_model_->applyPersistedHiddenIds(hidden_series_);
+
+    emit layerTreeRebuiltSignal();
 }
 
 /**
@@ -132,18 +279,70 @@ bool ScatterPlotViewDataWidget::postLoadTrigger()
 void ScatterPlotViewDataWidget::resetVariableDisplay()
 {
     chart_view_.reset(nullptr);
+    prior_draw_had_content_ = false;
 }
 
 /**
 */
-ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay() 
+ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
 {
     loginf;
 
+    // Detect an annotation switch: if we are in annotation mode and the
+    // currently-active annotation differs from the one the chart was last
+    // drawn for, do NOT preserve the previous zoom - the new annotation
+    // typically has a different data range, and reusing the old range would
+    // hide parts of it.
+    const bool in_anno_mode  = view_->showsAnnotation();
+    const int  cur_group_idx = view_->currentAnnotationGroupIdx();
+    const int  cur_anno_idx  = view_->currentAnnotationIdx();
+    const bool anno_switched = in_anno_mode &&
+                               (cur_group_idx != last_drawn_anno_group_idx_ ||
+                                cur_anno_idx  != last_drawn_anno_idx_);
+
+    // Remember the current axis ranges so a redraw caused by e.g. a selection
+    // change does not throw away the user's zoom. Only do this if the prior
+    // render actually drew content - otherwise the "captured" range is the
+    // meaningless default of an empty chart.
+    bool capture_zoom = !anno_switched &&
+                        prior_draw_had_content_ &&
+                        chart_view_ &&
+                        chart_view_->chart() &&
+                       !chart_view_->chart()->axes(Qt::Horizontal).empty() &&
+                       !chart_view_->chart()->axes(Qt::Vertical).empty();
+
+    boost::optional<std::pair<double, double>> x_range, y_range;
+    if (capture_zoom)
+    {
+        x_range = getAxisRange(chart_view_->chart()->axes(Qt::Horizontal).first());
+        y_range = getAxisRange(chart_view_->chart()->axes(Qt::Vertical).first());
+    }
+
     auto draw_state = updateChart();
 
-    //reset zoom after update
-    resetZoomSlot();
+    bool has_axes_now = chart_view_ &&
+                        chart_view_->chart() &&
+                       !chart_view_->chart()->axes(Qt::Horizontal).empty() &&
+                       !chart_view_->chart()->axes(Qt::Vertical).empty();
+
+    if (capture_zoom && has_axes_now && x_range.has_value() && y_range.has_value())
+    {
+        setAxisRange(chart_view_->chart()->axes(Qt::Horizontal).first(),
+                     x_range->first, x_range->second);
+        setAxisRange(chart_view_->chart()->axes(Qt::Vertical).first(),
+                     y_range->first, y_range->second);
+    }
+    else
+    {
+        resetZoomSlot();
+    }
+
+    prior_draw_had_content_ = (draw_state == DrawState::DrawnContent);
+
+    // Remember which annotation this draw is for (or clear when leaving
+    // annotation mode) so the next call can detect a switch.
+    last_drawn_anno_group_idx_ = in_anno_mode ? cur_group_idx : -1;
+    last_drawn_anno_idx_       = in_anno_mode ? cur_anno_idx  : -1;
 
     return draw_state;
 }
@@ -214,12 +413,15 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
         size_t n = x_values.size();
 
+        size_t dbc_null_count = 0;
+
         for (size_t i = 0; i < n; ++i)
         {
             if (dbc_stash.second.nan_values[ i ])
             {
                 //nan = null, each value of the triplet must not be null
                 ++num_null_values;
+                ++dbc_null_count;
                 continue;
             }
             else if (dbc_stash.second.selected_values[ i ])
@@ -236,7 +438,45 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
         {
             std::string name = dbc_stash.first;
 
-            scatter_series_.addDataSeries(dbc_series, name, colorForGroupName(dbc_stash.first), MarkerSizePx);
+            // group key format: "<ds_type>:<ds_name>:L<n>:<dbcontent_name>"
+            std::string ds_type;
+            std::string ds_name;
+            int line_index = 0;
+            std::string dbcontent_name;
+            {
+                std::vector<std::string> parts;
+                size_t start = 0;
+                for (size_t i = 0; i <= name.size(); ++i)
+                {
+                    if (i == name.size() || name[i] == ':')
+                    {
+                        parts.push_back(name.substr(start, i - start));
+                        start = i + 1;
+                    }
+                }
+                if (parts.size() == 4)
+                {
+                    ds_type        = parts[0];
+                    ds_name        = parts[1];
+                    const auto& lt = parts[2];
+                    dbcontent_name = parts[3];
+                    if (lt.size() >= 2 && lt[0] == 'L')
+                    {
+                        try { line_index = std::stoi(lt.substr(1)) - 1; } // L1->0
+                        catch (...) { line_index = 0; }
+                    }
+                }
+                else
+                {
+                    ds_name = name; // malformed key fallback
+                }
+            }
+
+            QColor line_color = context::resolveSeriesColor(
+                ds_type, ds_name, line_index, dbcontent_name, view_->compass(),
+                [this](const std::string& key) { return colorForGroupName(key); });
+
+            scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx, dbc_null_count);
         }
     }
 
@@ -246,9 +486,8 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
     //add selected dataset as the last one (important for render order)
     if (!selected_series.points.empty())
     {
-        std::string name = "Selected";
-
-        scatter_series_.addDataSeries(selected_series, name, ColorSelected, MarkerSizeSelectedPx);
+        scatter_series_.addDataSeries(selected_series, kSelectedSeriesKey,
+                                      ColorSelected, MarkerSizeSelectedPx);
     }
 
     x_axis_name_ = view_->variable(0).description();
@@ -259,7 +498,7 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
     correctSeriesDateTime(scatter_series_);
 
-    data_model_.updateFrom(scatter_series_);
+    rebuildLayerTree();
 
     bounds_ = scatter_series_.getDataBounds();
 
@@ -277,36 +516,51 @@ bool ScatterPlotViewDataWidget::updateFromAnnotations()
     if (!view_->hasCurrentAnnotation())
         return false;
 
-    const auto& anno = view_->currentAnnotation();
+    try
+    {
+        const auto& anno = view_->currentAnnotation();
 
-    title_       = anno.metadata.title_;
-    x_axis_name_ = anno.metadata.xAxisLabel();
-    y_axis_name_ = anno.metadata.yAxisLabel();
+        title_       = anno.metadata.title_;
+        x_axis_name_ = anno.metadata.xAxisLabel();
+        y_axis_name_ = anno.metadata.yAxisLabel();
 
-    const auto& feature = anno.feature_json;
+        const auto& feature = anno.feature_json;
 
-    if (!feature.is_object() || !feature.contains(ViewPointGenFeatureScatterSeries::FeatureHistogramFieldNameScatterSeries))
-        return false;
-    
-    if (!scatter_series_.fromJSON(feature[ ViewPointGenFeatureScatterSeries::FeatureHistogramFieldNameScatterSeries ]))
+        if (!feature.is_object())
+            throw std::runtime_error("scatter series annotation feature is not an object");
+
+        if (!feature.contains(ViewPointGenFeatureScatterSeries::FeatureHistogramFieldNameScatterSeries))
+            throw std::runtime_error("scatter series annotation feature missing '"
+                + std::string(ViewPointGenFeatureScatterSeries::FeatureHistogramFieldNameScatterSeries) + "' field");
+
+        if (!scatter_series_.fromJSON(feature[ ViewPointGenFeatureScatterSeries::FeatureHistogramFieldNameScatterSeries ]))
+        {
+            scatter_series_.clear();
+            throw std::runtime_error("could not read scatter series from annotation");
+        }
+
+        x_axis_is_datetime_ = scatter_series_.commonDataTypeX() == ScatterSeries::DataTypeTimestamp;
+        y_axis_is_datetime_ = scatter_series_.commonDataTypeY() == ScatterSeries::DataTypeTimestamp;
+
+        correctSeriesDateTime(scatter_series_);
+
+        rebuildLayerTree();
+
+        bounds_ = scatter_series_.getDataBounds();
+
+        if (scatter_series_.useConnectionLines().has_value())
+        {
+            view_->useConnectionLines(scatter_series_.useConnectionLines().value(), false);
+            view_->updateComponents();
+        }
+    }
+    catch (const std::exception& e)
     {
         scatter_series_.clear();
+        if (view_->hasViewPoint())
+            view_->viewPoint().reportError(view_->getName(),
+                std::string("annotation error: ") + e.what());
         return false;
-    }
-
-    x_axis_is_datetime_ = scatter_series_.commonDataTypeX() == ScatterSeries::DataTypeTimestamp;
-    y_axis_is_datetime_ = scatter_series_.commonDataTypeY() == ScatterSeries::DataTypeTimestamp;
-
-    correctSeriesDateTime(scatter_series_);
-
-    data_model_.updateFrom(scatter_series_);
-
-    bounds_ = scatter_series_.getDataBounds();
-
-    if (scatter_series_.useConnectionLines().has_value())
-    {
-        view_->useConnectionLines(scatter_series_.useConnectionLines().value(), false);
-        view_->updateComponents();
     }
 
     loginf << "done, generated " << scatter_series_.numDataSeries() << " series";
@@ -408,8 +662,8 @@ void ScatterPlotViewDataWidget::invertSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
         {
@@ -431,8 +685,8 @@ void ScatterPlotViewDataWidget::clearSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
             selected_vec.set(cnt, false);
@@ -495,13 +749,6 @@ boost::optional<std::pair<double, double>> ScatterPlotViewDataWidget::getAxisRan
 
 /**
 */
-ScatterSeriesModel& ScatterPlotViewDataWidget::dataModel()
-{
-    return data_model_;
-}
-
-/**
-*/
 void ScatterPlotViewDataWidget::resetZoomSlot()
 {
     loginf;
@@ -558,6 +805,11 @@ void ScatterPlotViewDataWidget::resetZoomSlot()
 */
 void ScatterPlotViewDataWidget::updateChartSlot()
 {
+    // remember which series are hidden so we can restore after reload
+    if (layer_model_)
+        hidden_series_ = layer_model_->persistedHiddenIds();
+    loginf << "captured " << hidden_series_.size() << " hidden series";
+
     //remember current axis ranges if available
     bool has_axes0 = chart_view_ && 
                      chart_view_->chart() &&
@@ -1005,3 +1257,4 @@ void ScatterPlotViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
         info[ "chart" ] = chart_info;
     }
 }
+

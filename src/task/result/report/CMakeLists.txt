@@ -1,9 +1,9 @@
 
-include_directories (
+target_include_directories(compass_task PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_task
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/reportdefs.h"
         "${CMAKE_CURRENT_LIST_DIR}/section.h"
@@ -21,8 +21,9 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/reportexporter.h"
         "${CMAKE_CURRENT_LIST_DIR}/reportexporterjson.h"
         "${CMAKE_CURRENT_LIST_DIR}/reportexporterlatex.h"
+        "${CMAKE_CURRENT_LIST_DIR}/reportexporterdocx.h"
         "${CMAKE_CURRENT_LIST_DIR}/reportexportdialog.h"
-        
+
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/reportdefs.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/section.cpp"
@@ -40,5 +41,6 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/reportexporter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/reportexporterjson.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/reportexporterlatex.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/reportexporterdocx.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/reportexportdialog.cpp"
     )

@@ -16,11 +16,9 @@
  */
 
 #include "reftrajaccuracyfilter.h"
-#include "compass.h"
 #include "reftrajaccuracyfilterwidget.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
 #include "logger.h"
 
 #include <iostream>
@@ -31,9 +29,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-RefTrajAccuracyFilter::RefTrajAccuracyFilter(const std::string& class_id, const std::string& instance_id,
-                       Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+RefTrajAccuracyFilter::RefTrajAccuracyFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("min_value", &min_value_, 30.0f);
 
@@ -46,33 +43,40 @@ RefTrajAccuracyFilter::~RefTrajAccuracyFilter() {}
 
 bool RefTrajAccuracyFilter::filters(const std::string& dbcontent_name)
 {
-    return dbcontent_name == "RefTraj";
+    if (dbcontent_name != "RefTraj")
+        return false;
+
+    auto& resolver = variableResolver();
+    return resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_)
+        && resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_);
 }
 
 std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "start" << dbcontent_name << " active " << active_;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcontent_name))
+    auto& resolver = variableResolver();
+
+    // The condition needs both X StdDev and Y StdDev meta vars on the
+    // dbcontent; without them metaGetVariableDBColumn() would assert.
+    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_)
+        || !resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_))
         return "";
 
     stringstream ss;
 
     if (active_)
     {
-        dbContent::Variable& x_stddev_var = COMPASS::instance().dbContentManager().metaVariable(
-                    DBContent::meta_var_x_stddev_.name()).getFor(dbcontent_name);
-
-        dbContent::Variable& y_stddev_var = COMPASS::instance().dbContentManager().metaVariable(
-                    DBContent::meta_var_y_stddev_.name()).getFor(dbcontent_name);
+        string x_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_x_stddev_);
+        string y_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_y_stddev_);
 
         if (!first)
         {
             ss << " AND";
         }
 
-            ss << " sqrt(pow(" << x_stddev_var.dbColumnName() << ",2) + (pow("
-               << y_stddev_var.dbColumnName() << ",2))) <= " << min_value_ << "";
+            ss << " sqrt(pow(" << x_col << ",2) + (pow("
+               << y_col << ",2))) <= " << min_value_ << "";
 
         first = false;
     }
@@ -82,22 +86,9 @@ std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbconte
     return ss.str();
 }
 
-void RefTrajAccuracyFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("RefTrajAccuracyFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
 DBFilterWidget* RefTrajAccuracyFilter::createWidget()
 {
     return new RefTrajAccuracyFilterWidget(*this);
-}
-
-
-void RefTrajAccuracyFilter::checkSubConfigurables()
-{
-    logdbg;
 }
 
 
@@ -125,11 +116,15 @@ void RefTrajAccuracyFilter::loadViewPointConditions (const nlohmann::json& filte
     const json& filter = filters.at(name_);
 
     traced_assert(filter.contains("Accuracy Minimum"));
-    string value = filter.at("Accuracy Minimum");
-    min_value_ = std::stod(value);
+    const auto& val = filter.at("Accuracy Minimum");
 
-    if (widget())
-        widget()->update();
+    if (val.is_number())
+        min_value_ = val.get<float>();
+    else
+        min_value_ = std::stod(val.get<string>());
+
+    if (widget_)
+        widget_->update();
 }
 
 float RefTrajAccuracyFilter::minValue() const

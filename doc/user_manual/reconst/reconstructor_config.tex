@@ -1,12 +1,14 @@
 \section{Configuration}
+\label{sec:reconst_config}
 
 \subsection{Common}
 
 \subsubsection{Main}
 
 \begin{figure}[H]
-    \center
-      \includegraphics[width=16cm,frame]{figures/dialog_main.png}
+    \centering
+      \hspace*{-1.0cm}
+      \includegraphics[width=17cm]{figures/dialog_main.png}
     \caption{Calculate References Main}
 \end{figure}
 
@@ -35,8 +37,9 @@ In the main tab, the following parameters can be set:
 \subsubsection{Data Sources}
 
 \begin{figure}[H]
-    \center
-      \includegraphics[width=16cm,frame]{figures/dialog_data_sources.png}
+    \centering
+      \hspace*{-1.0cm}
+      \includegraphics[width=17cm]{figures/dialog_data_sources.png}
     \caption{Calculate References Data Sources}
 \end{figure}
 
@@ -46,13 +49,38 @@ Please \textbf{note} that deselected data sources are still associated, but thei
 
 Please also \textbf{note} that for ground surveillance datasets containing \textbf{SMRs}, it is imperative to set the detection type to "Primary Only" as well as to enable the "Ground Only" checkbox. Otherwise, SMR plots will be associated over long distances and cause sub-optimal reconstructor results.
 
+\subsubsection{Sectors}
+
+In the 'Sectors' tab, an optional spatial filter can be applied to the data used for reconstruction. When active, only target reports whose position falls inside at least one of the selected sector layers (extended outward by a configurable surrounding delta) are admitted to reconstruction; the remaining target reports are discarded. This can be used to limit reconstruction to a defined operational volume of interest. \\
+
+\begin{figure}[H]
+  \centering
+      \hspace*{-1.0cm}
+      \includegraphics[width=17cm]{figures/dialog_sectors.png}
+  \caption{Reconstructor: Sectors tab}
+\end{figure}
+
+The following controls exist:
+
+\begin{itemize}
+\item Use Sectors: When checked, the spatial filter is active. The checkbox is only enabled if at least one sector layer is defined in the active Data Context (see \nameref{sec:ui_configure_sectors}).
+\item Sector Layer Checkboxes: One checkbox per available sector layer; only checked layers participate in the inside test.
+\item Surrounding Delta [WGS84 deg]: Tolerance in WGS84 degrees added around the sector polygons (default 0.1 deg). A target report just outside a sector boundary is still kept if its position is within this delta of the polygon.
+\end{itemize}
+\ \\
+
+Every target report is tested against the polygons of the selected sector layers, grown outward by the surrounding delta. Target reports falling inside at least one of these layers (or within the delta of its boundary) are admitted to reconstruction; all others are discarded. The delta acts as a tolerance band around the sector edges, ensuring that targets crossing a boundary still have enough surrounding target reports to be associated cleanly. \\
+
+Please also \textbf{note} that the same 'Sectors' tab is available in both the Scoring + UMKalman and the Probabilistic + IMM configuration, with identical behavior. \\
+
 \subsubsection{Classification}
 
 In the classification tab, special parameters can be set to identify the AnyAircraft and Vehicle categories. Any target (without any other class information) and any Mode C code above the given 'Minimum Aircraft Altitude' will be classified as AnyAircraft. Vehicles (without any other class information) can be set by giving a list of Mode S Aircraft Identification and/or Aircraft Addresses. \\
 
 \begin{figure}[H]
-    \center
-      \includegraphics[width=16cm,frame]{figures/dialog_class.png}
+    \centering
+      \hspace*{-1.0cm}
+      \includegraphics[width=17cm]{figures/dialog_class.png}
     \caption{Classification Parameters}
 \end{figure}
 
@@ -60,8 +88,9 @@ In the classification tab, special parameters can be set to identify the AnyAirc
 \label{sec:reconst_scorum_ref_calc} 
 
 \begin{figure}[H]
-    \center
-      \includegraphics[width=16cm,frame]{figures/dialog_ref_calc.png}
+    \centering
+      \hspace*{-1.0cm}
+      \includegraphics[width=17cm]{figures/dialog_ref_calc.png}
     \caption{Reference Calculation parameters}
 \end{figure}
 
@@ -83,8 +112,9 @@ In this tab, the reference calculation parameters can be set, i.e. the Kalman an
     Resample Process Stddev (Ground) & Process noise applied specifically during the resampling phase for ground targets. & Advanced & 2.0 m & $>0$ m \\ \hline
     Resample Process Stddev (Air) & Process noise applied specifically during the resampling phase for airborne targets. & Advanced & 5.0 m & $>0$ m \\ \hline
     Resample Process Stddev (Unknown) & Process noise applied during resampling for unknown state targets. & Advanced & 3.0 m & $>0$ m \\ \hline
-    Filter Result References & Enable filtering of the final reference trajectory based on estimated accuracy (Standard Deviation). & Intermediate & True & True/False \\ \hline
-    Max. Stddev & Maximum allowed position standard deviation for a point to be included in the final reference. & Intermediate & 100.0 m & $>0$ m \\ \hline
+    Filter Result References & Enable filtering of the final reference trajectory based on estimated accuracy (Standard Deviation). When disabled, the two limits below are disabled. & Intermediate & True & True/False \\ \hline
+    Max. Stddev Air [m] & Maximum allowed position standard deviation for an airborne point to be included in the final reference. Drops reference trajectory points whose airborne accuracy stddev exceeds this. & Intermediate & 250.0 m & $>0$ m \\ \hline
+    Max. Stddev Ground [m] & Maximum allowed position standard deviation for a ground point to be included in the final reference. Drops reference trajectory points whose ground accuracy stddev exceeds this. & Intermediate & 50.0 m & $>0$ m \\ \hline
     \end{tabular}
     \caption{Reference Calculation parameters}
     \label{tab:reconst_params}
@@ -101,8 +131,9 @@ process standard deviation (parameter \textit{Resample Process Stddev}).
 \subsubsection{Association}
 
 \begin{figure}[H]
-    \center
-      \includegraphics[width=16cm,frame]{figures/dialog_scorum_assoc.png}
+    \centering
+      \hspace*{-1.0cm}
+      \includegraphics[width=17cm]{figures/dialog_scorum_assoc.png}
     \caption{Scoring + UMKalman Association Parameters}
 \end{figure}
 
@@ -165,16 +196,18 @@ Self-associate new targets (find matching UTNs created by the same target):
 \subsubsection{Association}
 
 \begin{figure}[H]
-    \center
-      \includegraphics[width=17cm,frame]{figures/dialog_probimm_assoc.png}
+    \centering
+      \hspace*{-1.0cm}
+      \includegraphics[width=17cm]{figures/dialog_probimm_assoc.png}
     \caption{Probabilistic + IMM Association Parameters}
 \end{figure}
 
 %\textbf{JPDA}
 
 \begin{figure}[H]
-    \center
-      \includegraphics[width=16cm,frame]{figures/dialog_probimm_assoc_jpda.png}
+    \centering
+      \hspace*{-1.0cm}
+      \includegraphics[width=17cm]{figures/dialog_probimm_assoc_jpda.png}
     \caption{Probabilistic + IMM Association Parameters}
 \end{figure}
 
@@ -193,6 +226,7 @@ The following tables list the association configuration parameters available for
     Multiple Calculation Runs Number & Number of calculation passes per time slice to refine associations. & Intermediate & 3 & 2 -- 10 \\ \hline
     Rescale Accuracies & If enabled, position accuracy values are rescaled based on statistical analysis. & Basic & True & True/False \\ \hline
     Correct Radar Biases & Enables correction of systematic radar azimuth/range biases. & Basic & True & True/False \\ \hline
+    Write Radar Biases/Accuracies & Controls how estimated radar biases and accuracies are written back to the active Data Context (see below). & Intermediate & Set if Missing & Set if Missing / Merge / Override / Do Nothing \\ \hline
     Use ADS-B Geo.Alt. for Slant-Range Correction & Enables usage of ADS-B geometric altitude for Radar slant-range correction. & Basic & True & True/False \\ \hline
     Do Position Outlier Checks & Enables flagging of position outliers, which then are not used for position estimation. & Basic & True & True/False \\ \hline
     Use Risky ADS-B & Enables position usage from lower quality ADS-B reports (only if Accuracy Rescaling is active). & Advanced & False & True/False \\ \hline
@@ -207,6 +241,16 @@ Primary Only Mode has the following options:
 \begin{itemize}
     \item \textbf{Probabilistic Scoring}: Primary plots are associated to existing targets using probabilistic distance measures at the end of a calculation pass. Tentative target creation will be disabled.
     \item \textbf{JPDA + Probabilistic Scoring}: Primary plots are associated using JPDA. JPDA may associate them to existing targets or initiate new tentative targets with them, otherwise they will be re-associated to existing targets using probabilistic distance measures at the end of a calculation pass.
+\end{itemize}
+\ \\
+
+Write Radar Biases/Accuracies controls how the estimated radar biases and accuracies are persisted back to each radar Data Source in the active Data Context (see \nameref{sec:reconst_radar_bias_estimation}). The setting is only effective when 'Correct Radar Biases' is enabled. The following options exist:
+
+\begin{itemize}
+    \item \textbf{Set if Missing}: Only set values on radar Data Sources that do not yet carry a bias / accuracy entry; existing values are left untouched.
+    \item \textbf{Merge}: Open a side-by-side review dialog after the run, where the user can accept or reject each proposed change per Data Source before it is applied.
+    \item \textbf{Override}: Always overwrite the existing values with the latest estimates.
+    \item \textbf{Do Nothing}: Discard the estimates; the active Data Context is not modified.
 \end{itemize}
 \ \\
 
@@ -296,10 +340,10 @@ Self-associate new targets (find matching UTNs created by the same target):
     \begin{tabular}{|p{4.5cm}|p{6.5cm}|l|l|l|}
     \hline
     \textbf{Parameter Name} & \textbf{Description} & \textbf{Complexity} & \textbf{Default} & \textbf{Range} \\ \hline
-    Max. Std.Dev. for Association in Air & Maximum standard deviation / minimum accuracy (air).  & Advanced & 1000 m & 1 -- 10000 m \\ \hline
-    Min. Std.Dev. for Association in Air & Minimum standard deviation / maximum accuracy (air). & Advanced & 50 m & 1 -- 10000 m \\ \hline
-    Max. Std.Dev. for Association on Ground & Maximum standard deviation / minimum accuracy (ground). & Advanced & 20 m & 1 -- 10000 m \\ \hline
-    Min. Std.Dev. for Association on Ground & Minimum standard deviation / maximum accuracy (ground). & Advanced & 5 m & 1 -- 10000 m \\ \hline
+    Max. Std.Dev. for Association in Air & Maximum combined standard deviation for position-based association (air). Limits how wide the Mahalanobis gate can open. & Advanced & 300 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association in Air & Minimum combined standard deviation for position-based association (air). Prevents overly tight gates. & Advanced & 50 m & 1 -- 10000 m \\ \hline
+    Max. Std.Dev. for Association on Ground & Maximum combined standard deviation for position-based association (ground). & Advanced & 30 m & 1 -- 10000 m \\ \hline
+    Min. Std.Dev. for Association on Ground & Minimum combined standard deviation for position-based association (ground). & Advanced & 5 m & 1 -- 10000 m \\ \hline
     \end{tabular}
 \end{table}
 \ \\
@@ -333,7 +377,7 @@ Basically, estimated accuracies are bound to the given range values, to mitigate
 \subsubsection{Analysis}
 
 \begin{figure}[H]
-    \center
+    \centering
       \includegraphics[width=16cm,frame]{figures/dialog_probimm_analyse.png}
     \caption{Probabilistic + IMM Analysis Parameters}
 \end{figure}
@@ -342,5 +386,6 @@ In the 'Analysis' tab, additional analysis functionality for the reconstruction 
 Setting the individual checkboxes will result in more analytical data being collected and written to
 the command line or the reconstruction report. \\
 
-Please \textbf{note} that a detailed discussion of the given parameters is out of scope for this user manual. 
-%For users with a professional license, a dedicated reconstructor user manual appendix is provided.
+
+
+

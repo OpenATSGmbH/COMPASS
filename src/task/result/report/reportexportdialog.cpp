@@ -74,11 +74,22 @@ ReportExportDialog::ReportExportDialog(TaskResult& task_result,
 }
 
 /**
+ * Bug: On Linux, Qt fires showEvent not only on the initial dialog show, but
+ * also when the window manager re-exposes the window (e.g. switching back to
+ * this virtual desktop). Without the guard, exportReport() would be called
+ * again mid-export - resetting the progress bar to 0 and starting a second
+ * export on top of the running one, making it appear as if the export
+ * "restarted from scratch" every time the user switched desktops.
+ *
+ * Fix: export_triggered_ ensures the auto-export fires exactly once.
  */
 void ReportExportDialog::showEvent(QShowEvent *event)
 {
-    if (no_interaction_mode_)
+    if (no_interaction_mode_ && !export_triggered_)
+    {
+        export_triggered_ = true;
         QTimer::singleShot(10, this, &ReportExportDialog::exportReport);
+    }
 }
 
 /**
@@ -240,7 +251,7 @@ void ReportExportDialog::configureUI(const boost::optional<std::string>& export_
         report_dir = *export_dir;
     else
     {
-        auto db_fn = COMPASS::instance().lastDbFilename();
+        auto db_fn = report_export_.compass().lastDbFilename();
         auto db_dir = Utils::Files::getDirectoryFromPath(db_fn);
         // auto db_dir     = export_dir.has_value() ? export_dir.value() :
         // Utils::Files::getDirectoryFromPath(db_fn);
@@ -261,13 +272,14 @@ void ReportExportDialog::configureUI(const boost::optional<std::string>& export_
     bool is_latex_mode = export_mode_ == ReportExportMode::Latex ||
                          export_mode_ == ReportExportMode::LatexPDF;
     bool is_pdf_mode   = export_mode_ == ReportExportMode::LatexPDF;
+    bool is_docx_mode  = export_mode_ == ReportExportMode::DOCX;
 
     config_widget_->setVisible(export_mode_ != ReportExportMode::JSONBlob);
     config_spacer_->setVisible(export_mode_ != ReportExportMode::JSONBlob);
 
     setRowVisible(latex_max_rows_edit_, is_latex_mode);
     setRowVisible(latex_max_colw_edit_, is_latex_mode);
-    setRowVisible(open_file_box_      , is_pdf_mode  );
+    setRowVisible(open_file_box_      , is_pdf_mode || is_docx_mode);
 
     loadSettings();
 }

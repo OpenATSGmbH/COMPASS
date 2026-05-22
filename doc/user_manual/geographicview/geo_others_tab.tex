@@ -1,7 +1,7 @@
 \subsection{Others Tab}
 
 \begin{figure}[H]
-   \center
+   \centering
     \includegraphics[width=8cm,frame]{figures/geoview_others_tab.png}
   \caption{Geographic View Others tab}
 \end{figure}
@@ -13,7 +13,7 @@ In the 'Others' tab, several elements exist:
  \item Ground speed: Defines if and how ground speed information is used.
  \item Position Accuracy: Defines if and how position accuracy information is used.
  \item Radar Default Accuracies: Defines Radar default accuracies.
- \item Update button: Triggers a redraw or reload of the geometry, becomes available after a change if needed.
+ \item Update button: Triggers a redraw or reload of the data, becomes available after a change if needed.
 \end{itemize} 
 
 \subsubsection{Height}
@@ -41,6 +41,7 @@ $$ h = h_n [m]$$
 
 
 \begin{figure}[H]
+    \centering
     \includegraphics[width=12cm,frame]{figures/geoview_use_height.png}
   \caption{Geographic View use height}
 \end{figure} 
@@ -54,9 +55,10 @@ $$ h = h_n [m]$$
 \end{itemize}
 \ \\
 
-For specific target reports the ground speed vectors can be shown using \nameref{sec:geometry_operations}.
+For specific target reports the ground speed vectors can be shown using \nameref{sec:data_operations}.
 
 \begin{figure}[H]
+    \centering
     \includegraphics[width=12cm,frame]{figures/geoview_groundspeed_vectors.png}
   \caption{Geographic View ground speed vectors}
 \end{figure} 
@@ -80,9 +82,10 @@ For specific target reports the ground speed vectors can be shown using \nameref
 \end{itemize}
 \ \\
 
-For specific target reports, position accuracy ellipses can be shown using \nameref{sec:geometry_operations}:
+For specific target reports, position accuracy ellipses can be shown using \nameref{sec:data_operations}:
 
 \begin{figure}[H]
+    \centering
     \includegraphics[width=12cm,frame]{figures/geoview_accuracy_ellipses.png}
   \caption{Geographic View position accuracy ellipses}
 \end{figure} 
@@ -91,23 +94,49 @@ How the position accuracy ellipses are generated is defined in \nameref{sec:algo
 
 \subsubsection{MLAT Contributing RUs}
 \label{sec:others_mlat_contributing_rus}
+\label{sec:geo_mlat_connection_lines}
+
+For MLAT target reports, the Geographic View can draw connection lines from each report to its contributing Remote Units. The lines are only available where the source data contains contributing receiver information and where the parent MLAT Data Source has Remote Units defined (see \nameref{sec:ui_configure_ds_mlat_rus}). \\
+
+The 'Others' tab provides the global toggle:
 
 \begin{itemize}
- \item Show MLAT Contributing RUs: Defines if MLAT Contributing RUs should be shown automatically for all MLAT data.
+ \item Show MLAT Contributing RUs: Enables or disables MLAT connection lines for the entire view
 \end{itemize}
+\ \\
 
-For specific target reports, MLAT Contributing RUs can be shown using \nameref{sec:geometry_operations}:
+The connection lines can additionally be toggled per target report or per layer / data item via the right-click context menus (see \nameref{sec:data_operations}):
+
+\begin{itemize}
+\item Per target report: 'Show MLAT Contributing RUs' / 'Clear MLAT Contributing RUs'
+\item Per layer or data item (Parent UTN, Parent DBContent CAT020, Parent Root): same actions
+\end{itemize}
+\ \\
+
+The context-menu actions only appear on items whose underlying data contains contributing receivers.
 
 \begin{figure}[H]
+    \centering
     \includegraphics[width=16cm,frame]{figures/geoview_mlat_rus.png}
   \caption{Geographic View MLAT Remote Units}
 \end{figure}
 
 \subsubsection{Extra Lines Opacity}
 
-The slider changes the line opacity for the following items:
+The slider at the bottom of the 'Other' tab changes the line opacity for all optional informative lines uniformly:
 \begin{itemize}
  \item Ground speed vectors
  \item Position accuracy ellipses
+ \item ARTAS target report usages
  \item MLAT Contributing RUs connection lines
 \end{itemize}
+\ \\
+
+Typical use:
+\begin{itemize}
+\item High opacity: brings fine details forward when only a few lines are visible
+\item Low opacity: reveals density patterns in busy regions
+\end{itemize}
+\ \\
+
+

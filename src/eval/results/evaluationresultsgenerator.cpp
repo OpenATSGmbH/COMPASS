@@ -29,7 +29,7 @@
 #include "eval/results/base/single.h"
 #include "eval/results/base/joined.h"
 
-#include "eval/results/report/evalsectionid.h"
+#include "eval/results/evalsectionid.h"
 
 #include "dbcontentmanager.h"
 #include "dbinterface.h"
@@ -61,7 +61,6 @@
 
 using namespace std;
 using namespace EvaluationRequirementResult;
-using namespace EvaluationResultsReport;
 using namespace Utils;
 
 /**
@@ -123,7 +122,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
         }
     }
 
-    QProgressDialog postprocess_dialog ("", "", 0, num_req_evals);
+    QProgressDialog postprocess_dialog ("", "", 0, num_req_evals, QApplication::activeWindow());
     postprocess_dialog.setWindowTitle("Evaluating");
     postprocess_dialog.setCancelButton(nullptr);
     postprocess_dialog.setWindowModality(Qt::ApplicationModal);
@@ -143,7 +142,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
     vector<unsigned int> used_utns;
     std::set<unsigned int> utn_set(utns.begin(), utns.end());
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = calculator_.manager().dbContentManager();
 
     for (auto& target_data_it : data)
     {
@@ -463,7 +462,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 
     loading_start_time = boost::posix_time::microsec_clock::local_time();
 
-    QProgressDialog dlg; // QApplication::topLevelWidgets().first()
+    QProgressDialog dlg(QApplication::activeWindow());
     dlg.setWindowTitle("Updating Results");
     dlg.setLabelText( "Please wait...");
     dlg.setRange(0, 0);
@@ -472,7 +471,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     dlg.setMinimumWidth(500);
     dlg.show();
 
-    auto& task_manager = COMPASS::instance().taskManager();
+    auto& task_manager = calculator_.manager().compass().taskManager();
     task_manager.beginTaskResultWriting(result_name_, task::TaskResultType::Evaluation);
 
     auto& result = task_manager.currentResult();
@@ -481,7 +480,9 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     EvaluationTaskResult* eval_result = dynamic_cast<EvaluationTaskResult*>(result.get());
     traced_assert(eval_result);
 
-    //store eval config
+    //store eval config - rebuild sub_configs bottom-up so nested children are included
+    calculator_.writeBackConfigRecursive();
+
     nlohmann::json config;
     calculator_.generateJSON(config, Configurable::JSONExportType::General);
     result->setJSONConfiguration(config);
@@ -498,7 +499,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 
     gen_table.addRow({"Application", "Application Filename", APP_FILENAME});
     gen_table.addRow({"Application Version", "Application Version", VERSION});
-    gen_table.addRow({"DB", "Database Name", COMPASS::instance().lastDbFilename()});
+    gen_table.addRow({"DB", "Database Name", calculator_.manager().compass().lastDbFilename()});
 
     traced_assert(calculator_.hasCurrentStandard());
     gen_table.addRow({"Standard", "Standard name", calculator_.currentStandardName()});

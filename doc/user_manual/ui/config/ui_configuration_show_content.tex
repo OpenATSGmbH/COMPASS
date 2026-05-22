@@ -1,0 +1,53 @@
+\subsection{Show Content}
+\label{sec:configure_show_content}
+\label{sec:configure_meta_vars}
+
+This dialog displays all meta variables and DBContent variables for inspection. Previously titled 'Meta Variables', it has been renamed to reflect that it covers the full DBContent schema rather than only the grouped meta variables. \\\\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-1cm}
+    \includegraphics[width=17cm]{figures/configuration_show_content.png}
+  \caption{Show Content}
+\end{figure}
+
+The content is presented as a flat table with the following columns: \\
+
+\begin{itemize}
+\item Name: The variable's name as used inside COMPASS
+\item Description: Short description of the variable's meaning
+\item Source: ASTERIX data item or other origin
+\item Data type: Underlying data type (bool, int, float, string, ...)
+\item Unit: Physical unit if applicable
+\item Representation: Display representation (decimal, hex, octal, ...)
+\item Schema: DBContent the variable belongs to, or empty for meta variables
+\end{itemize} \ \\
+
+The 'Source' column reflects what the DBContent definition specifies for each variable. Typical Source values are: \\
+
+\begin{itemize}
+\item ASTERIX item references, e.g.:
+\begin{itemize}
+  \item 'I020/020.CRT'
+  \item 'I001/042.X-Component'
+  \item 'I062/390.CTL.Centre'
+\end{itemize}
+\item Calculation hints, e.g.:
+\begin{itemize}
+  \item 'Calculated from Time of Day, calendar date'
+  \item 'Filled by the reconstructor'
+  \item 'Calculated from Range, Azimuth (Radar polar->WGS-84 projection)'
+\end{itemize}
+\item Internal hints, e.g.:
+\begin{itemize}
+  \item 'Internal: import line/source identifier'
+\end{itemize}
+\end{itemize} \ \\
+
+Please \textbf{note} that the above are examples of what the 'Source' field can contain - the complete set of possible values is defined by the underlying DBContent configuration. \\
+
+Editing of the displayed entries is gated to \textbf{expert mode}; by default the dialog is read-only. Expert mode can be enabled in either of the following ways: \\
+
+\begin{itemize}
+\item Pass the '--expert\_mode' command-line flag at application startup
+\end{itemize} \ \\

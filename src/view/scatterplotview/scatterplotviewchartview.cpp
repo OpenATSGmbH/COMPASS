@@ -51,7 +51,7 @@ void ScatterPlotViewChartView::onToolChanged()
     //disable drag
     drag_data_init_ = false;
 
-    //don't forget to invoke base behaviour
+    //don't forget to invoke base behavior
     ChartView::onToolChanged();
 }
 
@@ -207,3 +207,4 @@ void ScatterPlotViewChartView::wheelEvent(QWheelEvent* event)
 }
 
 }
+

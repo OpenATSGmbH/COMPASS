@@ -62,14 +62,10 @@ public:
         std::string  callsign;
     };
 
-    GPSTrailImportTask(const std::string& class_id, const std::string& instance_id,
-                       TaskManager& task_manager);
+    GPSTrailImportTask(nlohmann::json& config, TaskManager* parent);
     virtual ~GPSTrailImportTask();
 
     GPSTrailImportTaskDialog* dialog();
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     bool canImportFile();
 
@@ -139,7 +135,6 @@ signals:
     void fileChanged();
 
 protected:
-    virtual void checkSubConfigurables() override {}
     virtual void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
 
     void parseCurrentFile ();

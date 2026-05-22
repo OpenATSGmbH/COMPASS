@@ -16,6 +16,7 @@
  */
 
 #include "scatterplotview.h"
+#include "viewcontainer.h"
 
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -30,6 +31,7 @@
 #include "viewpointgenerator.h"
 
 #include <QApplication>
+#include <QColor>
 
 using namespace std;
 using namespace dbContent;
@@ -38,11 +40,14 @@ const std::string ScatterPlotView::ParamUseConnectionLines = "use_connection_lin
 
 /**
 */
-ScatterPlotView::ScatterPlotView(const std::string& class_id, 
-                                 const std::string& instance_id,
-                                 ViewContainer* w, 
-                                 ViewManager& view_manager)
-:   VariableView(class_id, instance_id, w, view_manager)
+// ScatterPlotView::ScatterPlotView(const std::string& class_name,
+//                                  const std::string& instance_name,
+//                                  ViewContainer* w,
+//                                  ViewManager& view_manager)
+// :   VariableView(class_name, instance_name, w, view_manager)
+
+ScatterPlotView::ScatterPlotView(nlohmann::json& config, ViewContainer* parent)
+:   VariableView(config, parent)
 {
     registerParameter(ParamUseConnectionLines, &settings_.use_connection_lines, Settings().use_connection_lines);
 
@@ -57,8 +62,8 @@ ScatterPlotView::ScatterPlotView(const std::string& class_id,
                                                         PropertyDataType::DOUBLE,
                                                         PropertyDataType::TIMESTAMP };
 
-    addVariable("data_var_x", "X", "x", META_OBJECT_NAME, DBContent::meta_var_longitude_.name(), true, true, false, valid_types);
-    addVariable("data_var_y", "Y", "y", META_OBJECT_NAME, DBContent::meta_var_latitude_.name() , true, true, false, valid_types);
+    addVariable("data_var_x", "X", "x", META_OBJECT_NAME, dbcontent_vars::meta_var_longitude_.name(), true, true, false, valid_types);
+    addVariable("data_var_y", "Y", "y", META_OBJECT_NAME, dbcontent_vars::meta_var_latitude_.name() , true, true, false, valid_types);
 
     // create sub done in init
 }
@@ -121,24 +126,20 @@ bool ScatterPlotView::init_impl()
 
 /**
 */
-void ScatterPlotView::generateSubConfigurable(const std::string& class_id,
-                                            const std::string& instance_id)
+void ScatterPlotView::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
-    if (class_id == "ScatterPlotViewDataSource")
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+    logdbg << "class_name " << class_name << " instance_name "
+           << instance_name;
+    if (class_name == "ScatterPlotViewDataSource")
     {
         traced_assert(!data_source_);
-        data_source_ = new ScatterPlotViewDataSource(class_id, instance_id, this);
-    }
-    else if (class_id == "ScatterPlotViewWidget")
-    {
-        widget_ = new ScatterPlotViewWidget(class_id, instance_id, this, this, central_widget_);
-        setWidget(widget_);
+        data_source_ = new ScatterPlotViewDataSource(child_json, this);
     }
     else
-        throw std::runtime_error("ScatterPlotView: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("ScatterPlotView: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 /**
@@ -147,12 +148,13 @@ void ScatterPlotView::checkSubConfigurables()
 {
     if (!data_source_)
     {
-        generateSubConfigurable("ScatterPlotViewDataSource", "ScatterPlotViewDataSource0");
+        generateSubConfigurableFromConfig("ScatterPlotViewDataSource", "ScatterPlotViewDataSource0");
     }
 
     if (!widget_)
     {
-        generateSubConfigurable("ScatterPlotViewWidget", "ScatterPlotViewWidget0");
+        widget_ = new ScatterPlotViewWidget(this, central_widget_);
+        setWidget(widget_);
     }
 }
 
@@ -174,13 +176,13 @@ VariableSet ScatterPlotView::getBaseSet(const std::string& dbcontent_name)
 
     if (dbcontent_name == "CAT063") // add sensor sec/sic special case
     {
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        DBContentManager& dbcont_man = compass().dbContentManager();
 
-        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
-        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_));
 
-        set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sac_));
-        set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat063_sensor_sic_));
+        set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_));
+        set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_));
     }
 
     return set;
@@ -227,7 +229,7 @@ void ScatterPlotView::updateSelection()
 
 /**
 */
-void ScatterPlotView::unshowViewPoint(const ViewableDataConfig* vp)
+void ScatterPlotView::unshowViewPoint(ViewableDataConfig* vp)
 {
     loginf;
 
@@ -238,7 +240,7 @@ void ScatterPlotView::unshowViewPoint(const ViewableDataConfig* vp)
 
 /**
 */
-void ScatterPlotView::showViewPoint(const ViewableDataConfig* vp)
+void ScatterPlotView::showViewPoint(ViewableDataConfig* vp)
 {
     loginf;
 
@@ -266,3 +268,4 @@ std::set<std::string> ScatterPlotView::acceptedAnnotationFeatureTypes() const
 
     return types;
 }
+

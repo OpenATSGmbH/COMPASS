@@ -36,7 +36,7 @@ and are always shared amongst these views. For each type of view, a number of pr
 In the toolbar of each view, the view preset selection is shown on the left side. 
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=4cm]{figures/view_preset_selection.png}
   \caption{View Preset Selection}
 \end{figure}
@@ -45,7 +45,7 @@ It displays the name of the last applied preset, if no preset has been applied i
 If the view configuration has been modified since a preset has been applied, a change indicator (*) is displayed after the preset name.
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=4cm]{figures/view_preset_selection_modified.png}
   \caption{View Preset Selection - Modified Preset}
 \end{figure}
@@ -53,7 +53,7 @@ If the view configuration has been modified since a preset has been applied, a c
 When clicked, the view preset list opens:
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=10cm,frame]{figures/view_presets.png}
   \caption{View Preset Selection - Preset List}
 \end{figure}
@@ -93,7 +93,7 @@ Each type of action will be described in more detail below:
 \paragraph*{Edit} The category and description of a preset can be edited by clicking the \textit{edit} action, which opens the following dialog:
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=10cm]{figures/view_preset_edit.png}
   \caption{View Preset Editing}
 \end{figure}
@@ -101,7 +101,7 @@ Each type of action will be described in more detail below:
 \paragraph*{Copy} A preset can be copied to a new preset by clicking the \textit{copy} action, which opens the following dialog:
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=10cm]{figures/view_preset_copy.png}
   \caption{View Preset Copying}
 \end{figure}
@@ -124,7 +124,7 @@ Please \textbf{note} that presets will be deleted \textbf{permanently}, so once 
 and can be used to create a new preset from the current view configuration. Clicking the button will open the following dialog:
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=10cm]{figures/view_preset_add.png}
   \caption{Creating a New Preset} 
 \end{figure}
@@ -134,7 +134,7 @@ A unique name has to be specified. Optionally, a category and description for th
 \paragraph*{Filtering Presets} At the top of the preset list, a filter text field is located, which can be used to filter presets by name.
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=10cm]{figures/view_preset_filter.png}
   \caption{Filtering Presets by Name}
 \end{figure}
@@ -158,10 +158,14 @@ Selected data items will be highlighted in a special way, typically in yellow co
 The target reports belonging to this time frame will also be selected in Geographic View.
 
 \begin{figure}[H]
+  \centering
   \hspace*{-2.5cm}
-  \center
-  \includegraphics[width=19cm]{figures/cross_selection.png}
-  \caption{Cross Selection}
+  \begin{minipage}{19cm}
+    \centering
+    \includegraphics[width=9.4cm,frame]{figures/cross_selection_hist.png}\hfill
+    \includegraphics[width=9.4cm,frame]{figures/cross_selection_geo.png}
+  \end{minipage}
+  \caption{Cross-selection between Histogram View and Geographic View}
 \end{figure}
 
 \subsection{Plots and Plot Groups}
@@ -169,22 +173,15 @@ The target reports belonging to this time frame will also be selected in Geograp
 
 Some Views support the concept of showing a \textit{Plot}, which represents a single displayable item in this view, 
 such as a histogram, a scatter point series, gridded data, etc. If such displayable Plot annotation data is present (e.g. provided by a Viewpoint, see \nameref{sec:view_points}), 
-it can be selected in the Configuration Panel of the View by switching to 'Show Annotations' and using the 'Plot' combo box.
-
-\begin{figure}[H]
-  \hspace*{-0.5cm}
-  \center
-  \includegraphics[width=18cm]{figures/view_select_plot.png}
-\caption{Histogram View: Selecting a Plot item}
-\end{figure}
+it can be selected in the Configuration Panel of the View by switching to 'Show Annotations' and using the 'Plot' combo box. \ \\
 
 Plots might further be grouped into so-called \textit{Plot Groups}. A Plot Group can be selected by using the 'Plot Group' combo box, if available.
 
 \begin{figure}[H]
   \hspace*{-0.5cm}
-  \center
-  \includegraphics[width=18cm]{figures/view_select_plot_group.png}
-\caption{Histogram View: Selecting a Plot Group}
+  \centering
+  \includegraphics[width=18cm,frame]{figures/view_select_plot.png}
+\caption{Histogram View: Selecting a Plot item}
 \end{figure}
 
 At the moment the following Views support the concept of Plots:
@@ -194,3 +191,73 @@ At the moment the following Views support the concept of Plots:
   \item Scatterplot View
   \item Grid View
  \end{itemize} \ \\
+
+\section{Color Mode}
+\label{sec:color_mode}
+
+All Views color the displayed data by a chosen level of the data-source hierarchy. The Color Mode is set globally and applies consistently to every View. \\\\
+
+The active Color Mode is selected via the Color Mode selector in the 'Data Sources' tool of the Flight Deck (see \nameref{sec:color_mode_selector}). The colors used for each level are configured in the active Data Context (see \nameref{sec:configure_data_context}). \\
+
+\begin{itemize}
+\item Available modes
+\begin{itemize}
+\item 'DSType': one color per DSType (Radar, MLAT, ADS-B, Tracker, RefTraj, Other)
+\item 'DBContent': one color per DBContent type (CAT048, CAT062, ...)
+\item 'Data Source': per-source base color
+\item 'Data Source + Line': per-source base color combined with the per-line (L1-L4) variant
+\end{itemize}
+\item Set globally for the whole application
+\begin{itemize}
+\item Applies to all open Views consistently
+\end{itemize}
+\item Each View's Configuration Panel shows the current Color Mode as a read-only label
+\item Persisted in the active Data Context
+\begin{itemize}
+\item Survives restarts and data reloads
+\end{itemize}
+\end{itemize} \ \\
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=12cm,frame]{figures/ui_color_mode.png}
+  \caption{Consistent coloring across Views}
+\end{figure}
+
+Please \textbf{note} that the 'Item Mode' panel in the Geographic View (see \nameref{sec:geo_item_mode}) is a separate per-target-report item browser with its own grouping selector, and is not an additional Color Mode level.
+
+\section{Layers Tree}
+\label{sec:layers_tree}
+
+The Layers Tree is a shared cross-View widget in the Configuration Panel that exposes the data-source hierarchy and the available view annotations as a single tree. \\\\
+
+It replaces the per-View tree widgets that previously existed (notably in the Geographic View 'Layers' tab) with a unified model. View-specific extras remain documented in the respective View chapter. \\
+
+\begin{itemize}
+\item Two top-level groups
+\begin{itemize}
+\item 'Data': data-source hierarchy, organized as DSType $\rightarrow$ data source $\rightarrow$ line $\rightarrow$ DBContent
+\item 'Annotations': all View annotations exposed in a shared place, replacing previously per-View annotation tabs
+\end{itemize}
+\item Each row carries
+\begin{itemize}
+\item A visibility checkbox toggling whether the corresponding data is shown
+\item The color of its level, when the active Color Mode applies to that level
+\end{itemize}
+\item Per-group expand/collapse
+\begin{itemize}
+\item Default expansion depth follows the active Color Mode
+\end{itemize}
+\end{itemize} \ \\
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=9cm,frame]{figures/ui_layers_tree_dstype.png}
+  \caption{Shared Layers Tree: Color per DSType}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=9cm,frame]{figures/ui_layers_tree_datasource.png}
+  \caption{Shared Layers Tree: Color per Data Source}
+\end{figure}

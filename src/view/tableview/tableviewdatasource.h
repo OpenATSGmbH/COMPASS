@@ -29,6 +29,7 @@
 
 class Job;
 class ViewableDataConfig;
+class TableView;
 
 class TableViewDataSource : public QObject, public Configurable
 {
@@ -39,21 +40,23 @@ class TableViewDataSource : public QObject, public Configurable
     void reloadNeeded();
 
   public:
-    TableViewDataSource(const std::string& class_id,
-                          const std::string& instance_id,
-                          Configurable* parent);
+    // TableViewDataSource(const std::string& class_name,
+    //                       const std::string& instance_name,
+    //                       Configurable* parent);
+    TableViewDataSource(nlohmann::json& config, TableView* parent);
     virtual ~TableViewDataSource();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json);
 
     dbContent::VariableOrderedSet* getSet();
 
-    void unshowViewPoint (const ViewableDataConfig* vp); // vp can be nullptr
-    void showViewPoint (const ViewableDataConfig* vp);
+    void unshowViewPoint (ViewableDataConfig* vp); // vp can be nullptr
+    void showViewPoint (ViewableDataConfig* vp);
 
 protected:
     virtual void checkSubConfigurables();
+
+    TableView& view_;
 
     bool addTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name); // only to set, true of added
     void removeTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name); // only to set

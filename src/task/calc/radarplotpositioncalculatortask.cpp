@@ -30,35 +30,42 @@
 #include "stringconv.h"
 #include "taskmanager.h"
 #include "viewmanager.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 
 #include <QApplication>
 #include <QCoreApplication>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 
 using namespace std;
 using namespace Utils;
 using namespace dbContent;
 
-RadarPlotPositionCalculatorTask::RadarPlotPositionCalculatorTask(const std::string& class_id,
-                                                                 const std::string& instance_id,
-                                                                 TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_calc_radar_pos.json")
+RadarPlotPositionCalculatorTask::RadarPlotPositionCalculatorTask(nlohmann::json& config,
+                                                                 TaskManager* parent,
+                                                                 COMPASS& compass)
+    : Task(*parent),
+      Configurable(config, parent),
+      compass_(compass),
+      dbcontent_man_(compass.dbContentManager())
 {
     tooltip_ =
             "Allows calculation of Radar plot position information based on the defined data sources.";
 
     qRegisterMetaType<std::shared_ptr<Buffer>>("std::shared_ptr<Buffer>");
-    // qRegisterMetaType<DBContent>("DBContent");
-
 }
 
 RadarPlotPositionCalculatorTask::~RadarPlotPositionCalculatorTask() {}
 
+ProjectionManager& RadarPlotPositionCalculatorTask::projectionManager()
+{
+    return compass_.projectionManager();
+}
+
 void RadarPlotPositionCalculatorTask::showDialog()
 {
-    RadarPlotPositionCalculatorTaskDialog dialog (*this);
+    RadarPlotPositionCalculatorTaskDialog dialog (*this, QApplication::activeWindow());
 
     if (dialog.exec() == QDialog::Rejected)
         return;
@@ -69,7 +76,7 @@ void RadarPlotPositionCalculatorTask::showDialog()
 
 bool RadarPlotPositionCalculatorTask::canRun()
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = dbcontent_man_;
 
     if (!dbcont_man.existsDBContent("CAT001")
             && !dbcont_man.existsDBContent("CAT010")
@@ -81,18 +88,16 @@ bool RadarPlotPositionCalculatorTask::canRun()
             && !dbcont_man.dbContent("CAT048").loadable())
         return false;
 
-    const std::vector<std::unique_ptr<dbContent::DBDataSource>>& db_srcs =
-            COMPASS::instance().dataSourceManager().dbDataSources();
+    auto& ctx_man = compass_.dbContextManager();
 
     bool found_radar_with_data = false;
-    for (const auto& src : db_srcs)
+    for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
     {
-        if (src->dsType() == "Radar" && src->hasNumInserted())
+        if (ds.dsType() == "Radar" && ctx_man.hasNumInserted(ds.id()))
         {
             found_radar_with_data = true;
             break;
         }
-
     }
 
     return found_radar_with_data;
@@ -106,23 +111,24 @@ void RadarPlotPositionCalculatorTask::run()
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
 
-    COMPASS::instance().logInfo("Radar Plot Position Calculation")
+    compass_.logInfo("Radar Plot Position Calculation")
         << "started";
 
     // set up projections
-    ProjectionManager& proj_man = ProjectionManager::instance();
+    ProjectionManager& proj_man = compass_.projectionManager();
 
     traced_assert(proj_man.hasCurrentProjection());
     Projection& projection = proj_man.currentProjection();
     projection.clearCoordinateSystems(); // to rebuild from data sources
     projection.addAllCoordinateSystems();
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
 
     dbcontent_man.clearData();
     dbcontent_done_.clear();
 
-    COMPASS::instance().viewManager().disableDataDistribution(true);
+    compass_.viewManager().disableDataDistribution(true);
+    compass_.dbContentManager().enableDataDistribution(false);
 
     connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &RadarPlotPositionCalculatorTask::loadedDataSlot);
@@ -134,7 +140,7 @@ void RadarPlotPositionCalculatorTask::run()
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
     std::string msg = "Loading object data";
-    msg_box_ = new QMessageBox;
+    msg_box_ = new QMessageBox(QApplication::activeWindow());
     traced_assert(msg_box_);
     msg_box_->setWindowTitle("Calculating Radar Plot Positions");
     msg_box_->setText(msg.c_str());
@@ -143,6 +149,7 @@ void RadarPlotPositionCalculatorTask::run()
 
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
+    std::set<std::string> targets;
     for (auto& dbcont_it : dbcontent_man)
     {
         if (dbcont_it.first != "CAT001" && dbcont_it.first != "CAT010" && dbcont_it.first != "CAT048")
@@ -151,10 +158,18 @@ void RadarPlotPositionCalculatorTask::run()
         if (!dbcont_it.second->hasData())
             continue;
 
-        VariableSet read_set = getReadSetFor(dbcont_it.first);
-
-        dbcont_it.second->load(read_set, false, false);
+        targets.insert(dbcont_it.first);
     }
+
+    LoadRequest req;
+    req.dbcontents_            = targets;
+    req.apply_datasrc_filters_ = false;
+    req.apply_view_filters_    = false;
+    req.show_status_           = false;   // task owns its own QMessageBox
+    req.cancellable_           = false;
+    req.read_set_ = [this](const std::string& name) { return getReadSetFor(name); };
+
+    dbcontent_man.load(req);
 }
 
 void RadarPlotPositionCalculatorTask::loadedDataSlot(
@@ -167,7 +182,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
 {
     loginf << "starting calculation";
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
 
     disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
                this, &RadarPlotPositionCalculatorTask::loadedDataSlot);
@@ -176,9 +191,10 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
 
     dbcontent_man.clearData();
 
-    COMPASS::instance().viewManager().disableDataDistribution(false);
+    compass_.viewManager().disableDataDistribution(false);
+    compass_.dbContentManager().enableDataDistribution(true);
 
-    ProjectionManager& proj_man = ProjectionManager::instance();
+    ProjectionManager& proj_man = compass_.projectionManager();
 
     std::pair<unsigned int, std::map<std::string, std::shared_ptr<Buffer>>> result_buffers =
             proj_man.doUpdateRadarPlotPositionCalculations (data_);
@@ -194,14 +210,12 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     traced_assert(msg_box_);
     delete msg_box_;
 
-    COMPASS::instance().logInfo("Radar Plot Position Calculation")
+    compass_.logInfo("Radar Plot Position Calculation")
         << transformation_errors << " transformation errors";
 
     if (transformation_errors)
     {
         QApplication::restoreOverrideCursor();
-
-        QMessageBox::StandardButton reply;
 
         std::string question =
                 "There were " + std::to_string(transformation_errors) +
@@ -209,15 +223,12 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
                 std::to_string(buffers_size) +
                 " coordinates were projected correctly. Do you want to insert the data?";
 
-        reply = QMessageBox::question(nullptr, "Insert Data", question.c_str(),
-                                      QMessageBox::Yes | QMessageBox::No);
-
-        if (reply == QMessageBox::No)
+        if (!QuestionDialog::ask(nullptr, "Insert Data", question.c_str()))
         {
             loginf << "aborted by user because of "
                       "transformation errors";
 
-            COMPASS::instance().logInfo("Radar Plot Position Calculation") << "save declined";
+            compass_.logInfo("Radar Plot Position Calculation") << "save declined";
 
             return;
         }
@@ -226,7 +237,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     if (buffers_size)
     {
         std::string msg;
-        msg_box_ = new QMessageBox;
+        msg_box_ = new QMessageBox(QApplication::activeWindow());
         traced_assert(msg_box_);
         msg_box_->setWindowTitle("Calculating Radar Plot Positions");
         msg = "Writing object data";
@@ -241,7 +252,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
             DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
 
             dbcontent.updateData(dbcontent_man.metaGetVariable(
-                                     buf_it.first, DBContent::meta_var_rec_num_), buf_it.second);
+                                     buf_it.first, dbcontent_vars::meta_var_rec_num_), buf_it.second);
 
             connect(&dbcontent, &DBContent::updateDoneSignal, this, &RadarPlotPositionCalculatorTask::updateDoneSlot);
         }
@@ -282,7 +293,7 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
 
         QApplication::restoreOverrideCursor();
 
-        msg_box_ = new QMessageBox;
+        msg_box_ = new QMessageBox(QApplication::activeWindow());
         traced_assert(msg_box_);
         msg_box_->setWindowTitle("Calculating Radar Plot Positions");
         msg_box_->setText("Writing of object data done.");
@@ -294,7 +305,7 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
         delete msg_box_;
         msg_box_ = nullptr;
 
-        COMPASS::instance().logInfo("Radar Plot Position Calculation")
+        compass_.logInfo("Radar Plot Position Calculation")
             << "finished after "
             << String::timeStringFromDouble(time_diff.total_milliseconds() / 1000.0, false);
 
@@ -309,34 +320,35 @@ bool RadarPlotPositionCalculatorTask::isCalculating() { return calculating_; }
 
 dbContent::VariableSet RadarPlotPositionCalculatorTask::getReadSetFor(const std::string& dbcontent_name)
 {
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
 
     VariableSet read_set;
 
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_rec_num_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rec_num_));
 
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
 
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
 
-    traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_radar_range_));
-    read_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_radar_range_));
+    traced_assert(dbcontent_man.canGetVariable(dbcontent_name, dbcontent_vars::var_radar_range_));
+    read_set.add(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_radar_range_));
 
-    traced_assert(dbcontent_man.canGetVariable(dbcontent_name, DBContent::var_radar_azimuth_));
-    read_set.add(dbcontent_man.getVariable(dbcontent_name, DBContent::var_radar_azimuth_));
+    traced_assert(dbcontent_man.canGetVariable(dbcontent_name, dbcontent_vars::var_radar_azimuth_));
+    read_set.add(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_radar_azimuth_));
 
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
 
     // optionals
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
 
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
 
     return read_set;
 }
+

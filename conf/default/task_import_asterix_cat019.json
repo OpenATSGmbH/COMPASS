@@ -1,491 +1,551 @@
 {
+    "class_name": "ASTERIXJSONParser",
+    "instance_name": "CAT019",
     "parameters": {
         "category": 19,
         "db_content_name": "CAT019",
         "name": "CAT019"
     },
-    "sub_configs": {
-        "JSONDataMapping": {
-            "JSONDataMapping1": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Message Type",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "000.Message Type",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping10": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "TP 1b",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "551.TP 1b",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping11": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "TP 2a",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "551.TP 2a",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping12": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "TP 2b",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "551.TP 2b",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping13": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "TP 3a",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "551.TP 3a",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping14": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "TP 3b",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "551.TP 3b",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping15": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "TP 4a",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "551.TP 4a",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping16": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "TP 4b",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "551.TP 4b",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping17": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "RS Identification",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "552.Remote Sensor Detailed Status.RS Identification",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping18": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "RS Operational",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "552.Remote Sensor Detailed Status.RS Operational",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping19": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "RS Status",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "552.Remote Sensor Detailed Status.RS Status",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping2": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "SAC",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "010.SAC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping20": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Receiver 1090 MHz",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "552.Remote Sensor Detailed Status.Receiver 1090 MHz",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping21": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Transmitter 1030 MHz",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "552.Remote Sensor Detailed Status.Transmitter 1030 MHz",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping22": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Transmitter 1090 MHz",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "552.Remote Sensor Detailed Status.Transmitter 1090 MHz",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping23": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Ref Trans 1 Status",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "553.Reference Transponder Detailed Status.Ref Trans 1 Status",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping24": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Ref Trans 2 Status",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "553.Reference Transponder Detailed Status.Ref Trans 2 Status",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping25": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Reference Point Latitude",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "600.Latitude",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping26": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Reference Point Longitude",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "600.Longitude",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping27": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Reference Point Height",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "610.Height",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping28": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Reference Point Undulation",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "620.Undulation",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping3": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "SIC",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "010.SIC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping4": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Time of Day",
-                    "dimension": "Time",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "140.Time of Day",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Second"
-                }
-            },
-            "JSONDataMapping5": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "NOGO",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "550.NOGO",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping6": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "OVL",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "550.OVL",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping7": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "TSV",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "550.TSV",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping8": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "TTF",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "550.TTF",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping9": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "TP 1a",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "551.TP 1a",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMappingDSID": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "DS ID",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "ds_id",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMappingLineID": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Line Identifer",
-                    "db_content_name": "CAT019",
-                    "db_content_variable_name": "Line ID",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "line_id",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
+    "sub_configs": [
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping1",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Message Type",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "000.Message Type",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping10",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "TP 1b",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "551.TP 1b",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping11",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "TP 2a",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "551.TP 2a",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping12",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "TP 2b",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "551.TP 2b",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping13",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "TP 3a",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "551.TP 3a",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping14",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "TP 3b",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "551.TP 3b",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping15",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "TP 4a",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "551.TP 4a",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping16",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "TP 4b",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "551.TP 4b",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping17",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "RS Identification",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "552.Remote Sensor Detailed Status.RS Identification",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping18",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "RS Operational",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "552.Remote Sensor Detailed Status.RS Operational",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping19",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "RS Status",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "552.Remote Sensor Detailed Status.RS Status",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping2",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "SAC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "010.SAC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping20",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Receiver 1090 MHz",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "552.Remote Sensor Detailed Status.Receiver 1090 MHz",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping21",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Transmitter 1030 MHz",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "552.Remote Sensor Detailed Status.Transmitter 1030 MHz",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping22",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Transmitter 1090 MHz",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "552.Remote Sensor Detailed Status.Transmitter 1090 MHz",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping23",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Ref Trans 1 Status",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "553.Reference Transponder Detailed Status.Ref Trans 1 Status",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping24",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Ref Trans 2 Status",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "553.Reference Transponder Detailed Status.Ref Trans 2 Status",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping25",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Reference Point Latitude",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "600.Latitude",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping26",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Reference Point Longitude",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "600.Longitude",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping27",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Reference Point Height",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "610.Height",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping28",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Reference Point Undulation",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "620.Undulation",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping3",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "SIC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "010.SIC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping4",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Time of Day",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "140.Time of Day",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping5",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "NOGO",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "550.NOGO",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping6",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "OVL",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "550.OVL",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping7",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "TSV",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "550.TSV",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping8",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "TTF",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "550.TTF",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping9",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "TP 1a",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "551.TP 1a",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingDSID",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "DS ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "ds_id",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingLineID",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Line Identifer",
+                "db_content_name": "CAT019",
+                "db_content_variable_name": "Line ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "line_id",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
             }
         }
-    }
+    ]
 }

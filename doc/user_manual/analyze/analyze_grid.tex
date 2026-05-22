@@ -1,0 +1,24 @@
+\section{3D Grid Infrastructure}
+\label{sec:analyze_grid}
+
+Most map-producing inspectors share a common 3D grid. The grid is defined by cell sizes in three dimensions:
+
+\begin{itemize}
+\item Horizontal: cell size in meters
+\item Vertical: cell size in feet, or alternatively in flight levels (FL)
+\end{itemize}
+\ \\
+
+Cells are indexed by (longitude, latitude, altitude). Inspectors produce one value per cell from the underlying samples and project that 3D grid onto one of the following 2D projections for display:
+
+\begin{itemize}
+\item Horizontal (longitude / latitude): top-down map
+\item Altitude / longitude: side view along latitude
+\item Altitude / latitude: side view along longitude
+\end{itemize}
+\ \\
+
+When sectors are defined in the active Data Context (see \nameref{sec:configure_data_context}), their boundaries can be overlaid on the projections to relate the inspector results to the airspace structure. \\
+
+The grid result panels behave like the Grid View (see \nameref{sec:grid_view}): the same color-scale, color-step and color-limit controls apply. \\
+

@@ -94,7 +94,7 @@ void GridViewChart::onToolChanged()
     //disable drag
     drag_data_init_ = false;
 
-    //don't forget to invoke base behaviour
+    //don't forget to invoke base behavior
     ChartView::onToolChanged();
 }
 
@@ -365,3 +365,4 @@ void GridViewChart::zoom(const QPointF& p1, const QPointF& p2)
 }
 
 }
+

@@ -48,9 +48,11 @@ const std::string EvaluationTaskResult::FieldTargetInfo = "info";
 
 /**
  */
-EvaluationTaskResult::EvaluationTaskResult(unsigned int id, 
-                                           TaskManager& task_man)
+EvaluationTaskResult::EvaluationTaskResult(unsigned int id,
+                                           TaskManager& task_man,
+                                           COMPASS& compass)
 :   TaskResult(id, task_man)
+,   compass_(compass)
 {
 }
 
@@ -87,8 +89,12 @@ Result EvaluationTaskResult::createCalculator()
 {
     calculator_.reset();
 
+    loginf << "creating calculator for result '" << name() << "' with config: " << config_.dump();
+
     //clone calculator from config
-    auto res = EvaluationCalculator::clone(config_);
+    auto res = EvaluationCalculator::clone(compass_.evaluationManager(),
+                                              compass_.dbContentManager(),
+                                              config_);
     if (!res.ok())
         return res;
 
@@ -117,7 +123,7 @@ Result EvaluationTaskResult::initResult_impl()
         return res;
 
     //connect to eval manager
-    auto& eval_manager = COMPASS::instance().evaluationManager();
+    auto& eval_manager = compass_.evaluationManager();
     connect(&eval_manager, &EvaluationManager::resultsNeedUpdate, this, &EvaluationTaskResult::informUpdateEvalResult);
 
     return Result::succeeded();
@@ -135,7 +141,7 @@ Result EvaluationTaskResult::prepareResult_impl()
 Result EvaluationTaskResult::finalizeResult_impl()
 {
     //connect to eval manager
-    auto& eval_manager = COMPASS::instance().evaluationManager();
+    auto& eval_manager = compass_.evaluationManager();
     connect(&eval_manager, &EvaluationManager::resultsNeedUpdate, this, &EvaluationTaskResult::informUpdateEvalResult);
 
     return Result::succeeded();
@@ -471,7 +477,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
             auto usage_menu = menu.addMenu("Target Usage");
 
             const auto& target             = targets_.at(utn);
-            auto        target_list_widget = COMPASS::instance().dbContentManager().targetListWidget();
+            auto        target_list_widget = compass_.dbContentManager().targetListWidget();
 
             target_list_widget->createTargetEvalMenu(*usage_menu, 
                                                      target,
@@ -508,7 +514,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
         if (calculator_ && !isLocked())
         {
             auto usage_menu = menu.addMenu("Target Usage");
-            COMPASS::instance().dbContentManager().targetListWidget()->createTargetEvalMenu(*usage_menu, { utn }, true);
+            compass_.dbContentManager().targetListWidget()->createTargetEvalMenu(*usage_menu, { utn }, true);
         }
 
         return true;
@@ -603,7 +609,7 @@ std::string EvaluationTaskResult::customTooltip_impl(const ResultReport::Section
  */
 void EvaluationTaskResult::updateTargets()
 {
-    auto& dbcontent_man = COMPASS::instance().dbContentManager();
+    auto& dbcontent_man = compass_.dbContentManager();
 
     for (auto& t : targets_)
         EvaluationTargetData::updateTarget(dbcontent_man, t.second);

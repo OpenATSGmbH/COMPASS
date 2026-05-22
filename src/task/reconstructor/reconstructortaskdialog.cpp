@@ -21,6 +21,7 @@
 #include "simplereconstructorwidget.h"
 #include "global.h"
 #include "compass.h"
+#include "taskmanager.h"
 #include "licensemanager.h"
 #include "dbcontentmanager.h"
 
@@ -41,8 +42,8 @@
 #include <QDesktopServices>
 #include <QUrl>
 
-ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task)
-    : QDialog(), task_(task)
+ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task, QWidget* parent)
+    : QDialog(parent), task_(task)
 {
     setWindowTitle("Reconstruct Reference Trajectories");
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
@@ -68,7 +69,7 @@ ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task)
     reconstructor_box_ = new QComboBox();
     reconstructor_box_->addItem(QString::fromStdString(ReconstructorTask::ScoringUMReconstructorName));
 
-    const auto& license_manager = COMPASS::instance().licenseManager();
+    const auto& license_manager = task_.manager().compass().licenseManager();
 
     bool has_adv_rec = false;
 
@@ -227,11 +228,11 @@ std::pair<bool, std::string> ReconstructorTaskDialog::configValid() const
         return std::make_pair(false, "No reconstructor found");
 
     //get full data time range
-    if (!COMPASS::instance().dbContentManager().hasMinMaxTimestamp())
+    if (!task_.manager().compass().dbContentManager().hasMinMaxTimestamp())
         return std::make_pair(false, "No timestamps found");
 
     boost::posix_time::ptime data_t0, data_t1;
-    std::tie(data_t0, data_t1) = COMPASS::instance().dbContentManager().minMaxTimestamp();
+    std::tie(data_t0, data_t1) = task_.manager().compass().dbContentManager().minMaxTimestamp();
 
     const auto& settings = rec->settings();
     if (settings.data_timestamp_min.is_not_a_date_time())
@@ -245,3 +246,4 @@ std::pair<bool, std::string> ReconstructorTaskDialog::configValid() const
 
     return std::make_pair(true, "");
 }
+

@@ -28,8 +28,8 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
-class TaskManager;
 class CreateARTASAssociationsTaskDialog;
+class TaskManager;
 
 class DBContent;
 class Buffer;
@@ -65,7 +65,8 @@ public:
     {
         NoError = 0,
         NoDataSource,
-        NoDataForLineID
+        NoDataForLineID,
+        NoHashData
     };
 
     struct Settings
@@ -94,8 +95,7 @@ public:
         bool mark_track_coasting_associations_dubious_{false};
     };
 
-    CreateARTASAssociationsTask(const std::string& class_id, const std::string& instance_id,
-                                TaskManager& task_manager);
+    CreateARTASAssociationsTask(nlohmann::json& config, TaskManager* parent);
     virtual ~CreateARTASAssociationsTask();
 
     void showDialog();

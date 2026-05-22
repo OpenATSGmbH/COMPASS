@@ -17,10 +17,10 @@
 
 #include "timestampfilter.h"
 #include "timestampfilterwidget.h"
-#include "compass.h"
-#include "dbcontent/dbcontent.h"
+#include "filtermanager.h"
 #include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
+#include "idbvariableresolver.h"
+#include "dbcontent/dbcontent.h"
 #include "util/timeconv.h"
 
 using namespace std;
@@ -28,9 +28,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-TimestampFilter::TimestampFilter(const std::string& class_id, const std::string& instance_id,
-                                 Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+TimestampFilter::TimestampFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("min_value", &min_value_str_, std::string());
     registerParameter("max_value", &max_value_str_, std::string());
@@ -50,34 +49,29 @@ TimestampFilter::~TimestampFilter() {}
 
 bool TimestampFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(
-                DBContent::meta_var_timestamp_.name()).existsIn(dbcont_name);
+    return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_timestamp_);
 }
 
 std::string TimestampFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont_name " << dbcontent_name << " active " << active_;
 
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
-
-    if (!dbcont_man.metaVariable(
-                DBContent::meta_var_timestamp_.name()).existsIn(dbcontent_name))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_))
         return "";
 
     stringstream ss;
 
     if (active_)
     {
-        dbContent::Variable& var = dbcont_man.metaVariable(
-                    DBContent::meta_var_timestamp_.name()).getFor(dbcontent_name);
+        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
         if (!first)
         {
             ss << " AND";
         }
 
-        ss << " (" << var.dbColumnName() << " >= " << Time::toLong(min_value_)
-           << " AND " << var.dbColumnName() << " <= " << Time::toLong(max_value_) << ")";
+        ss << " (" << col_name << " >= " << Time::toLong(min_value_)
+           << " AND " << col_name << " <= " << Time::toLong(max_value_) << ")";
 
         loginf << "dbcont " << dbcontent_name << " active " << active_
                << " min " << Time::toString(min_value_) << " max " << Time::toString(max_value_);
@@ -90,40 +84,25 @@ std::string TimestampFilter::getConditionString(const std::string& dbcontent_nam
     return ss.str();
 }
 
-
-void TimestampFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("TimestampFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
 DBFilterWidget* TimestampFilter::createWidget()
 {
     return new TimestampFilterWidget(*this);
 }
 
 
-void TimestampFilter::checkSubConfigurables()
-{
-    logdbg;
-}
-
-
 void TimestampFilter::reset()
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    if (widget_)
+        widget_->update();
+}
 
-    loginf << "has db min/max " << dbcont_man.hasMinMaxTimestamp();
+void TimestampFilter::reset(boost::posix_time::ptime min, boost::posix_time::ptime max)
+{
+    minValue(min);
+    maxValue(max);
 
-    if (dbcont_man.hasMinMaxTimestamp())
-    {
-        std::pair<boost::posix_time::ptime , boost::posix_time::ptime> minmax_ts =  dbcont_man.minMaxTimestamp();
-        minValue(get<0>(minmax_ts));
-        maxValue(get<1>(minmax_ts));
-    }
-
-    widget_->update();
+    if (widget_)
+        widget_->update();
 }
 
 void TimestampFilter::saveViewPointConditions (nlohmann::json& filters)
@@ -157,8 +136,8 @@ void TimestampFilter::loadViewPointConditions (const nlohmann::json& filters)
     traced_assert(max_value_str_.size());
     max_value_ = Time::fromString(max_value_str_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 boost::posix_time::ptime TimestampFilter::minValue() const
@@ -191,4 +170,50 @@ void TimestampFilter::maxValue(boost::posix_time::ptime max_value, bool update_w
 
     if (widget_ && update_widget)
         widget_->update();
+}
+
+void TimestampFilter::shiftWindow(int minutes)
+{
+    boost::posix_time::time_duration delta = boost::posix_time::minutes(minutes);
+
+    boost::posix_time::ptime new_min = min_value_ + delta;
+    boost::posix_time::ptime new_max = max_value_ + delta;
+
+    auto& dbcont_man = filter_manager_->dbContentManager();
+    if (dbcont_man.hasMinMaxTimestamp())
+    {
+        auto minmax = dbcont_man.minMaxTimestamp();
+
+        if (new_min < minmax.first)
+            new_min = minmax.first;
+        if (new_max > minmax.second)
+            new_max = minmax.second;
+    }
+
+    min_value_ = new_min;
+    max_value_ = new_max;
+
+    min_value_str_ = Time::toString(min_value_);
+    max_value_str_ = Time::toString(max_value_);
+
+    loginf << "shifted by " << minutes << " min, new min " << min_value_str_
+           << " max " << max_value_str_;
+
+    if (widget_)
+        widget_->update();
+}
+
+bool TimestampFilter::canShiftWindow(int minutes) const
+{
+    auto& dbcont_man = filter_manager_->dbContentManager();
+
+    if (!dbcont_man.hasMinMaxTimestamp())
+        return true;
+
+    auto minmax = dbcont_man.minMaxTimestamp();
+
+    if (minutes > 0)
+        return max_value_ < minmax.second;
+    else
+        return min_value_ > minmax.first;
 }

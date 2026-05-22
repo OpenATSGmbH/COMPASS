@@ -18,12 +18,18 @@
 #include "chartview.h"
 #include <logger.h>
 
+#include <QApplication>
+#include <QEvent>
 #include <QRubberBand>
 #include <QChart>
 #include <QAreaSeries>
 #include <QLineSeries>
 #include <QXYSeries>
+#include <QLegend>
 #include <QLegendMarker>
+#include <QBarCategoryAxis>
+#include <QFontMetricsF>
+#include <QtMath>
 
 const QColor ChartView::SelectionColor = Qt::red;
 
@@ -60,11 +66,169 @@ ChartView::ChartView(QtCharts::QChart* chart, SelectionStyle sel_style, QWidget*
     createDisplayElements(chart);
 
     setRenderHint(QPainter::Antialiasing);
+
+    applyPaletteTheme();
 }
 
 /**
  */
 ChartView::~ChartView() = default;
+
+void ChartView::changeEvent(QEvent* event)
+{
+    QChartView::changeEvent(event);
+
+    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::StyleChange)
+        applyPaletteTheme();
+}
+
+/**
+ * Applies QApplication::palette()-derived colors to the chart chrome
+ * (background, axes, grid, legend, title) so charts follow the dark/light
+ * palette automatically. Series colors are not touched - callers keep their
+ * explicit per-data-source coloring.
+ *
+ * Re-runs on QEvent::PaletteChange (delivered to all widgets when
+ * QApplication::setPalette() is called), so live dark-mode toggle works.
+ */
+void ChartView::applyPaletteTheme()
+{
+    auto* c = chart();
+    if (!c)
+        return;
+
+    QPalette pal = QApplication::palette();
+
+    c->setBackgroundBrush(pal.window());
+    c->setTitleBrush(pal.windowText());
+    c->setPlotAreaBackgroundBrush(pal.base());
+    c->setPlotAreaBackgroundVisible(true);
+
+    if (auto* legend = c->legend())
+    {
+        legend->setLabelBrush(pal.windowText());
+        legend->setBackgroundVisible(false);
+    }
+
+    QColor line_color = pal.color(QPalette::Mid);
+    QColor grid_color = line_color;
+    grid_color.setAlpha(60);
+
+    QPen line_pen(line_color);
+    line_pen.setWidthF(1.0);
+
+    QPen grid_pen(grid_color);
+    grid_pen.setStyle(Qt::SolidLine);
+
+    for (auto* axis : c->axes())
+    {
+        axis->setLabelsBrush(pal.text());
+        // Skip the spacer-title trick (titleText == " " with transparent brush)
+        // used by histogram/scatter to reserve layout space; flipping its brush
+        // to the palette text would render the space character visibly.
+        if (axis->titleBrush().color() != Qt::transparent)
+            axis->setTitleBrush(pal.text());
+        axis->setLinePen(line_pen);
+        axis->setGridLinePen(grid_pen);
+    }
+
+    if (x_axis_label_item_)
+        x_axis_label_item_->setBrush(pal.text());
+}
+
+/**
+ * Sets a custom x-axis label rendered as a QGraphicsSimpleTextItem on the chart.
+ * This bypasses QAbstractAxis::setTitleText(), which Qt Charts' internal layout
+ * truncates to "..." when rotated tick labels consume too much vertical space.
+ */
+void ChartView::setXAxisLabel(const QString& label)
+{
+    if (label.isEmpty())
+    {
+        if (x_axis_label_item_)
+        {
+            delete x_axis_label_item_;
+            x_axis_label_item_ = nullptr;
+        }
+        return;
+    }
+
+    if (!x_axis_label_item_)
+    {
+        x_axis_label_item_ = new QGraphicsSimpleTextItem(chart());
+
+        // use the same font as the axis title would
+        QFont f = chart()->font();
+        f.setBold(true);
+        x_axis_label_item_->setFont(f);
+        x_axis_label_item_->setBrush(QApplication::palette().text());
+    }
+
+    x_axis_label_item_->setText(label);
+    updateXAxisLabelPosition();
+}
+
+/**
+ */
+void ChartView::resizeEvent(QResizeEvent* event)
+{
+    QChartView::resizeEvent(event);
+    updateXAxisLabelPosition();
+}
+
+/**
+ * Positions the custom x-axis label centered below the plot area,
+ * dynamically below the tick labels to avoid overlap.
+ *
+ * Qt Charts paints tick labels directly inside the axis item (not as child
+ * graphics items), so their extent cannot be discovered via the scene graph.
+ * Instead, the tick label height is calculated from font metrics and the
+ * configured label rotation angle.
+ */
+void ChartView::updateXAxisLabelPosition()
+{
+    if (!x_axis_label_item_)
+        return;
+
+    QRectF plot_area = chart()->plotArea();
+    QRectF label_rect = x_axis_label_item_->boundingRect();
+
+    // calculate the vertical extent of rotated tick labels from font metrics
+    qreal tick_label_height = 0;
+
+    for (auto* axis : chart()->axes(Qt::Horizontal))
+    {
+        QFontMetricsF fm(axis->labelsFont());
+        qreal max_label_width = 0;
+
+        auto* cat_axis = dynamic_cast<QtCharts::QBarCategoryAxis*>(axis);
+        if (cat_axis)
+        {
+            for (const auto& cat : cat_axis->categories())
+                max_label_width = std::max(max_label_width, fm.horizontalAdvance(cat));
+        }
+
+        // rotated label height = width * sin(angle) + height * cos(angle)
+        qreal angle_rad = qDegreesToRadians(qAbs((qreal)axis->labelsAngle()));
+        tick_label_height = max_label_width * qSin(angle_rad) + fm.height() * qCos(angle_rad);
+
+        // account for tick mark length
+        tick_label_height += 8;
+    }
+
+    qreal x = plot_area.center().x() - label_rect.width() / 2.0;
+    qreal y = plot_area.bottom() + tick_label_height + 4;
+
+    // clamp so it doesn't overlap the legend
+    if (chart()->legend() && chart()->legend()->isVisible())
+    {
+        qreal legend_top = chart()->legend()->geometry().top();
+        if (y + label_rect.height() > legend_top)
+            y = legend_top - label_rect.height() - 2;
+    }
+
+    x_axis_label_item_->setPos(x, y);
+}
 
 /**
  * Convert from local widget coordinates to chart coordinates.
@@ -259,7 +423,7 @@ void ChartView::updateRubberBand(const QRectF& region)
 
 /**
  * Reacts on tool changes.
- * Override for more specific behaviour.
+ * Override for more specific behavior.
  */
 void ChartView::onToolChanged()
 {
@@ -464,3 +628,4 @@ void ChartView::addLegendOnlyItem(const QString& name, const QColor& color)
 
     chart()->addSeries(series);
 }
+

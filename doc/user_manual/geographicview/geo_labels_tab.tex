@@ -2,7 +2,7 @@
 \label{sec:geoview_labels_tab} 
  
 \begin{figure}[H]
-   \center
+   \centering
     \includegraphics[width=8cm,frame]{figures/geoview_labels_tab.png}
   \caption{Geographic View Labels tab}
 \end{figure}
@@ -20,12 +20,45 @@ In the 'Labels' tab, several elements exist:
 
 When the auto-label feature is active and one or more data sources are selected for labeling, automatic labels are generated in the Geographic View according to the content and label filter settings. \\
 
+\subsubsection{Label Interaction}
+
+Labels in the map respond to mouse interaction as follows:
+
+\begin{itemize}
+\item Single left click on a label: expands the label to the '3x3 view' showing the most relevant fields around the clicked item
+\item Double left click on a label: maximizes the label to the full field set
+\item Right click on a label: opens a context menu with a 'Copy' action that copies the clicked field's value to the clipboard
+\end{itemize}
+\ \\
+
+The existing label decluttering behavior is preserved by the auto-LoD selection described below.
+
+\begin{figure}[H]
+    \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/geoview_labels.png}
+  \caption{Geographic View label: Level of Detail 3}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/geoview_max_label.png}
+  \caption{Geographic View label: maximized}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10cm,frame]{figures/geoview_label_menu.png}
+  \caption{Geographic View label: Copy context menu}
+\end{figure}
+
 \subsubsection{Label Menu}
 
 This menu allows showing all nor no data source labels, or to edit label contents.
 
 \begin{figure}[H]
-   \center
+   \centering
     \includegraphics[width=3cm,frame]{figures/geoview_label_tab_menu.png}
   \caption{Geographic View Label Tab Menu}
 \end{figure}
@@ -37,7 +70,7 @@ Using the 'Label menu' button \includegraphics[width=0.5cm,frame]{../../data/ico
 The label contents are organized in a 3x3 matrix, the contents of the first 2 rows and columns are fixed while row 3 and column 3 can be edited. 
 
 \begin{figure}[H]
-   \center
+   \centering
     \includegraphics[width=14cm]{figures/geoview_label_content_edit.png}
   \caption{Geographic View Edit Label Contents}
 \end{figure}
@@ -90,12 +123,13 @@ If a data source to be labeled is activated, automatic labels are generated (int
 Please \textbf{note} that when automatic labeling is active, manually created labels are removed once per second. This will be improved in the future.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geoview_label_lod1.png}
   \caption{Geographic View Auto-Labels LoD 1}
 \end{figure}
 
-For each target (as in the last layer item according to \nameref{sec:layer_mode}) a single label is created for the latest shown target report. \\
+For each target, a single label is created for the latest shown target report. \\
 
 The Level of Detail can have the following values:
 \begin{itemize}
@@ -109,14 +143,16 @@ The Level of Detail can have the following values:
 Depending on the number of visible labels, the LoD is chosen by Auto LoD, if (e.g. with zoom or time window filter operations) the number of visible labels is reduced, a higher LoD is shown.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geoview_label_lod2.png}
   \caption{Geographic View Auto-Labels LoD 2}
 \end{figure}
 
-The automatic labeling can be most useful when choosing a target-specific layer mode (e.g. based on unique secondary identification or UTN) and activating the time window filter (or in Live mode).
+The automatic labeling can be most useful in combination with the time window filter (or in Live mode).
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geoview_label_lod3.png}
   \caption{Geographic View Auto-Labels LoD 3}

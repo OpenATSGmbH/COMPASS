@@ -16,11 +16,11 @@
  */
 
 #include "reportwidget.h"
-#include "report/treeitem.h"
-#include "report/report.h"
-#include "report/section.h"
-#include "report/sectioncontentfigure.h"
-#include "report/sectioncontenttable.h"
+#include "task/result/report/treeitem.h"
+#include "task/result/report/report.h"
+#include "task/result/report/section.h"
+#include "task/result/report/sectioncontentfigure.h"
+#include "task/result/report/sectioncontenttable.h"
 #include "files.h"
 #include "logger.h"
 #include "popupmenu.h"
@@ -144,9 +144,9 @@ void ReportWidget::expand()
     tree_view_->expandToDepth(3);
 }
 
-void ReportWidget::selectId (const std::string& id,
-                             bool show_figure,
-                             const nlohmann::json& config)
+void ReportWidget::selectID(const std::string& id,
+                            bool show_figure,
+                            const nlohmann::json& config)
 {
     loginf << "id '" << id << "'";
 
@@ -166,15 +166,17 @@ void ReportWidget::selectId (const std::string& id,
     tree_view_->selectionModel()->select(index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
     tree_view_->scrollTo(index);
 
+    bool show_id_figure = always_show_section_figure_ || show_figure;
+
     //note: we should preload on-demand contents such as on-demand tables before showing a figure. 
     //otherwise loading the figure on-demand and loading the table on-demand could interfere with each other, 
     //as there is a timegap before a table is loaded on-demand.
     //(either signal-slot mechanics or multithreading related)
-    bool preload_ondemand_contents = show_figure;
+    bool preload_ondemand_contents = show_id_figure;
 
     triggerItem(index, preload_ondemand_contents);
 
-    if (show_figure)
+    if (show_id_figure)
         showFigure(index);
 
     if (current_section_ && config.is_object() && !config.empty())
@@ -189,7 +191,7 @@ void ReportWidget::reshowLastId ()
 {
     if (id_history_.size() >= 1)
     {
-        selectId(*id_history_.rbegin(), false, {}); // select last one
+        selectID(*id_history_.rbegin(), false, {}); // select last one
 
         id_history_.pop_back(); // remove re-added id. slightly hacky
     }
@@ -390,3 +392,4 @@ bool ReportWidget::configureSection(const nlohmann::json& config)
 }
 
 }
+

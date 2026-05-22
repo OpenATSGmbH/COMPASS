@@ -16,8 +16,6 @@
  */
 
 #include "accuracyestimatorbase.h"
-#include "datasourcemanager.h"
-#include "dbdatasource.h"
 #include "logger.h"
 #include "stringconv.h"
 #include "reconstructorbase.h"
@@ -140,3 +138,5 @@ void AccuracyEstimatorBase::printStatistics (
     loginf << name << " SRC " << name_ << ": "  << " avg " << String::doubleToStringPrecision(mean, 2)
            << " stddev " << String::doubleToStringPrecision(stdev, 2) << " min " << min << " max " << max;
 }
+
+

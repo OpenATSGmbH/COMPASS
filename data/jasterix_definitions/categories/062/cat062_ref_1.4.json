@@ -1,0 +1,1515 @@
+{
+    "name": "cat062_ref_1.4",
+    "type": "ReservedExpansionField",
+    "field_specification": {
+        "name": "REF_FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
+    },
+    "items_indicator": [
+        "CST",
+        "CSN",
+        "TVS",
+        "STS",
+        "V3",
+        "MOI",
+        "MTI",
+        "GEN62"
+    ],
+    "items": [
+        {
+            "number": "CST",
+            "name": "Contributing Sensors With Local Tracknumbers",
+            "comment": "List of Sensors contributing to the system track and providing a local track-number",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "CST",
+                    "type": "repetitive",
+                    "items": [
+                        {
+                            "name": "SAC",
+                            "comment": "SAC of the sensor contributing to the track in the current update cycle.",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
+                        },
+                        {
+                            "name": "SIC",
+                            "comment": "SIC of the sensor contributing to the track in the current update cycle.",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
+                        },
+                        {
+                            "name": "TYP",
+                            "comment": "0: No detection\n1: Single PSR detection\n2: Single SSR detection\n3: SSR+PSR detection\n4: Single Mode S All-Call\n5: Single Mode S Roll-Call\n6: Mode S All-Call + PSR\n7: Mode S Roll-Call + PSR\n8: ADS-B\n9: WAM\nOthers: Reserved for future use",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
+                                {
+                                    "name": "Spare",
+                                    "comment": "Spare bits, set to 0",
+                                    "type": "fixed_bits",
+                                    "start_bit": 4,
+                                    "bit_length": 4
+                                },
+                                {
+                                    "name": "TYP",
+                                    "comment": "0: No detection\n1: Single PSR detection\n2: Single SSR detection\n3: SSR+PSR detection\n4: Single Mode S All-Call\n5: Single Mode S Roll-Call\n6: Mode S All-Call + PSR\n7: Mode S Roll-Call + PSR\n8: ADS-B\n9: WAM\nOthers: Reserved for future use",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 4
+                                }
+                            ]
+                        },
+                        {
+                            "name": "LOCAL TRACK NUMBER",
+                            "comment": "local Track Number allocated by the sensor denominated by SAC/SIC",
+                            "type": "fixed_bytes",
+                            "length": 2,
+                            "data_type": "uint"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "CSN",
+            "name": "Contributing Sensors No Local Tracknumbers",
+            "comment": "List of Sensors contributing to the system track and not providing a local track-number",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "CSN",
+                    "type": "repetitive",
+                    "items": [
+                        {
+                            "name": "SAC",
+                            "comment": "SAC of the sensor contributing to the track in the current update cycle.",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
+                        },
+                        {
+                            "name": "SIC",
+                            "comment": "SIC of the sensor contributing to the track in the current update cycle.",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
+                        },
+                        {
+                            "name": "TYP",
+                            "comment": "0: No detection\n1: Single PSR detection\n2: Single SSR detection\n3: SSR+PSR detection\n4: Single Mode S All-Call\n5: Single Mode S Roll-Call\n6: Mode S All-Call + PSR\n7: Mode S Roll-Call + PSR\n8: ADS-B\n9: WAM\nOthers: Reserved for future use",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
+                                {
+                                    "name": "Spare",
+                                    "comment": "Spare bits, set to 0",
+                                    "type": "fixed_bits",
+                                    "start_bit": 4,
+                                    "bit_length": 4
+                                },
+                                {
+                                    "name": "TYP",
+                                    "comment": "0: No detection\n1: Single PSR detection\n2: Single SSR detection\n3: SSR+PSR detection\n4: Single Mode S All-Call\n5: Single Mode S Roll-Call\n6: Mode S All-Call + PSR\n7: Mode S Roll-Call + PSR\n8: ADS-B\n9: WAM\nOthers: Reserved for future use",
+                                    "type": "fixed_bits",
+                                    "start_bit": 0,
+                                    "bit_length": 4
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "TVS",
+            "name": "Calculated Track Velocity Relative to System Reference Point",
+            "comment": "Calculated track velocity expressed in Cartesian co-ordinates relative to the system reference point, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "Vx",
+                    "comment": "-8192m/s <= Vx <= 8191.75m/s",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.25
+                },
+                {
+                    "name": "Vy",
+                    "comment": "-8192m/s <= Vy <= 8191.75m/s",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.25
+                }
+            ]
+        },
+        {
+            "number": "STS",
+            "name": "Supplementary Track Status",
+            "comment": "Track status information to be transmitted in addition to the information available in data item I062/080 (Track Status).",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "STS",
+                    "type": "extendable",
+                    "items": [
+                        {
+                            "name": "address",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
+                                {
+                                    "name": "FDR",
+                                    "comment": "Flight Data Retained\n0: Flight plan data from active FDPS\n1: Flight plan data retained from no longer active FDPS",
+                                    "type": "fixed_bits",
+                                    "start_bit": 7,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "LNAV#EP",
+                                    "comment": "LNAV Element Populated\n0: LNAV not populated\n1: LNAV populated",
+                                    "type": "fixed_bits",
+                                    "start_bit": 6,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "LNAV#VAL",
+                                    "comment": "LNAV Mode\n0: LNAV Mode Engaged\n1: LNAV Mode not Engaged",
+                                    "type": "fixed_bits",
+                                    "start_bit": 5,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "ATP#EP",
+                                    "comment": "ATP Element Populated\n0: ATP not populated\n1: ATP populated",
+                                    "type": "fixed_bits",
+                                    "start_bit": 4,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "ATP#VAL",
+                                    "comment": "24-Bit Address Type\n0: 24-Bit ICAO address\n1: 24-Bit Non-ICAO address\n2: Surface vehicle address\n3: Anonymous address\n4: Fixed ADS-B Beacon\n5-7: Reserved for future use",
+                                    "type": "fixed_bits",
+                                    "start_bit": 1,
+                                    "bit_length": 3
+                                }
+                            ]
+                        },
+                        {
+                            "name": "address",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
+                                {
+                                    "name": "DAD#EP",
+                                    "comment": "DAD Element Populated\n0: DAD not populated\n1: DAD populated",
+                                    "type": "fixed_bits",
+                                    "start_bit": 7,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "DAD#VAL",
+                                    "comment": "Service wide Duplicate Address Status detected by the SDPS\n0: duplicate address not present\n1: duplicate address present",
+                                    "type": "fixed_bits",
+                                    "start_bit": 6,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "DUP#EP",
+                                    "comment": "DUP Element Populated\n0: DUP not populated\n1: DUP populated",
+                                    "type": "fixed_bits",
+                                    "start_bit": 5,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "DUP#VAL",
+                                    "comment": "Duplicate Address condition detected by a sensor\n0: Duplicate Address Condition - Resolved\n1: Duplicate Address Condition - Partly Resolved\n2: Duplicate Address Condition - Not Resolved\n3: Reserved for future use",
+                                    "type": "fixed_bits",
+                                    "start_bit": 3,
+                                    "bit_length": 2
+                                },
+                                {
+                                    "name": "CSX#EP",
+                                    "comment": "CSX Element Populated\n0: CSX not populated\n1: CSX populated",
+                                    "type": "fixed_bits",
+                                    "start_bit": 2,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "CSX#VAL",
+                                    "comment": "Extended Coasting Status\n0: no extended coasting\n1: extended coasting",
+                                    "type": "fixed_bits",
+                                    "start_bit": 1,
+                                    "bit_length": 1
+                                }
+                            ]
+                        },
+                        {
+                            "name": "address",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
+                                {
+                                    "name": "TLI#EP",
+                                    "comment": "TLI Element Populated\n0: TLI not populated\n1: TLI populated",
+                                    "type": "fixed_bits",
+                                    "start_bit": 7,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "TLI#VAL",
+                                    "comment": "Transition Level Indication\n0: at or above transition level\n1: below transition level",
+                                    "type": "fixed_bits",
+                                    "start_bit": 6,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "TAI#EP",
+                                    "comment": "TAI Element Populated\n0: TAI not populated\n1: TAI populated",
+                                    "type": "fixed_bits",
+                                    "start_bit": 5,
+                                    "bit_length": 1
+                                },
+                                {
+                                    "name": "TAI#VAL",
+                                    "comment": "Transition Altitude Indication\n0: above transition altitude\n1: at or below transition altitude",
+                                    "type": "fixed_bits",
+                                    "start_bit": 4,
+                                    "bit_length": 1
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "V3",
+            "name": "ADS-B Version 3 Data",
+            "comment": "Information transmitted by aircraft equipped with an ADS-B Version 3 System.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "V3",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
+                    },
+                    "items": [
+                        {
+                            "name": "PS3",
+                            "comment": "Priority Status ADS-B Version 3",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
+                                {
+                                    "name": "PS3",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
+                                        {
+                                            "name": "PS3#EP",
+                                            "comment": "Priority Status for Version 3 ADS-B Systems Populated\n0: PS3 Element not populated\n1: PS3 Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 7,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "PS3#VAL",
+                                            "comment": "Priority Status for Version 3 ADS-B Systems\n0: No emergency / not reported\n1: General emergency\n2: UAS/RPAS - Lost Link\n3: Minimum fuel\n4: No communications\n5: Unlawful interference\n6: Aircraft in Distress Automatic Activation\n7: Aircraft in Distress Manual Activation",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 3
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "AS",
+                            "comment": "Aircraft Status",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
+                                {
+                                    "name": "AS",
+                                    "type": "fixed_bitfield",
+                                    "length": 3,
+                                    "items": [
+                                        {
+                                            "name": "RCE#EP",
+                                            "comment": "Reduced Capability Equipment Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 23,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "RCE#VAL",
+                                            "comment": "Reduced Capability Equipment\n0: Not RCE\n1: TABS\n2: Reserved for future use\n3: Other RCE",
+                                            "type": "fixed_bits",
+                                            "start_bit": 21,
+                                            "bit_length": 2
+                                        },
+                                        {
+                                            "name": "RRL#EP",
+                                            "comment": "Reply Rate Limiting Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 20,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "RRL#VAL",
+                                            "comment": "Reply Rate Limiting\n0: Reply Rate Limiting is not active\n1: Reply Rate Limiting is active",
+                                            "type": "fixed_bits",
+                                            "start_bit": 19,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "TPW#EP",
+                                            "comment": "Transmit Power Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 18,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "TPW#VAL",
+                                            "comment": "Transmit Power\n0: Unavailable, Unknown, or less than 70 W\n1: 70 W\n2: 125 W\n3: 200W",
+                                            "type": "fixed_bits",
+                                            "start_bit": 16,
+                                            "bit_length": 2
+                                        },
+                                        {
+                                            "name": "TSI#EP",
+                                            "comment": "Transponder Side Indication Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 15,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "TSI#VAL",
+                                            "comment": "Transponder Side Indication\n0: Unknown\n1: Transponder #1 (left/pilot side or single)\n2: Transponder #2 (right/co-pilot side)\n3: Transponder #3 (auxiliary or Back-up)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 13,
+                                            "bit_length": 2
+                                        },
+                                        {
+                                            "name": "TAO#EP",
+                                            "comment": "Transponder Antenna Offset Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 12,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "RE",
+                                            "comment": "Range Exceeded\n0: Value in defined range\n1: Value exceeds defined range",
+                                            "type": "fixed_bits",
+                                            "start_bit": 11,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "TAO#VAL",
+                                            "comment": "Transponder Antenna Offset Value (LSB = approx. 1.87m)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 6
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "UAS",
+                            "comment": "UAS/RPAS Status",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
+                                {
+                                    "name": "UAS",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
+                                        {
+                                            "name": "MUO#EP",
+                                            "comment": "Manned / Unmanned Operation Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 7,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "MUO#VAL",
+                                            "comment": "Manned / Unmanned Operation\n0: Manned Operation\n1: Unmanned Operation",
+                                            "type": "fixed_bits",
+                                            "start_bit": 6,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "DAA#EP",
+                                            "comment": "Detect and Avoid Capabilities Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "DAA#VAL",
+                                            "comment": "Detect and Avoid Capabilities\n0: No RWC Capability\n1: RWC/RA/OCM Capability\n2: RWC/OCM Capability\n3: Invalid ASTERIX Value",
+                                            "type": "fixed_bits",
+                                            "start_bit": 3,
+                                            "bit_length": 2
+                                        },
+                                        {
+                                            "name": "RWC#EP",
+                                            "comment": "Remain Well Clear Corrective Alert Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 2,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "RWC#VAL",
+                                            "comment": "Remain Well Clear Corrective Alert\n0: RWC Corrective Alert not active\n1: RWC Corrective Alert active",
+                                            "type": "fixed_bits",
+                                            "start_bit": 1,
+                                            "bit_length": 1
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "CASS",
+                            "comment": "Collision Avoidance System Status",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
+                                {
+                                    "name": "CASS",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
+                                        {
+                                            "name": "SVH#EP",
+                                            "comment": "Sense Vertical & Horizontal Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 7,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "SVH#VAL",
+                                            "comment": "Sense Vertical & Horizontal\n0: Vertical Only\n1: Horizontal Only\n2: Blended\n3: Vertical Only or Horizontal Only per intruder",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 2
+                                        },
+                                        {
+                                            "name": "CATC#EP",
+                                            "comment": "CAS Type & Capability Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "CATC#VAL",
+                                            "comment": "CAS Type & Capability\n0: Active CAS (TCAS II) or no CAS\n1: Active CAS (not TCAS II)\n2: Active CAS (not TCAS II) with OCM transmit capability\n3: Active CAS of Junior Status\n4: Passive CAS with 1030 TCAS Resolution Message receive capability\n5: Passive CAS with only OCM receive capability\n6: Reserved for future use\n7: Reserved for future use",
+                                            "type": "fixed_bits",
+                                            "start_bit": 1,
+                                            "bit_length": 3
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "MOI",
+            "name": "Miscellaneous Operational Items",
+            "comment": "Miscellaneous items intended for operational purposes.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "LEN",
+                    "comment": "Length of the Data Item in octets including the Length Indicator itself.",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
+                },
+                {
+                    "name": "MOI",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
+                    },
+                    "items": [
+                        {
+                            "name": "ATAD",
+                            "comment": "Age of Target Address",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
+                                {
+                                    "name": "ATAD",
+                                    "comment": "Age of Target Address (I062/380/SI#1) or Expired Target Address (I062/REF/MTI/EXADDR)",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
+                                }
+                            ]
+                        },
+                        {
+                            "name": "ATID",
+                            "comment": "Age of Target Identification",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
+                                {
+                                    "name": "ATID",
+                                    "comment": "Age of Target Identification (I062/380/SI#2) or Expired Target Identification (I062/REF/MTI/EXTID)",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
+                                }
+                            ]
+                        },
+                        {
+                            "name": "ADTNH",
+                            "comment": "Age of Downlinked True North Heading",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
+                                {
+                                    "name": "ADTNH",
+                                    "comment": "Age of Downlinked True North Heading (I062/REF/MOI/SI#14)",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
+                                }
+                            ]
+                        },
+                        {
+                            "name": "ADMNH",
+                            "comment": "Age of Downlinked Magnetic North Heading",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
+                                {
+                                    "name": "ADMNH",
+                                    "comment": "Age of Downlinked Magnetic North Heading (I062/REF/MOI/SI#15)",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
+                                }
+                            ]
+                        },
+                        {
+                            "name": "ADTNT",
+                            "comment": "Age of Downlinked True North Track Angle",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 4,
+                            "data_fields": [
+                                {
+                                    "name": "ADTNT",
+                                    "comment": "Age of Downlinked True North Track Angle (I062/REF/MOI/SI#16)",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
+                                }
+                            ]
+                        },
+                        {
+                            "name": "ADMNT",
+                            "comment": "Age of Downlinked Magnetic North Track Angle",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 5,
+                            "data_fields": [
+                                {
+                                    "name": "ADMNT",
+                                    "comment": "Age of Downlinked Magnetic North Track Angle (I062/REF/MOI/SI#17)",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
+                                }
+                            ]
+                        },
+                        {
+                            "name": "ASEPMIN",
+                            "comment": "Age of the System Calculated Separation Minimum",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 6,
+                            "data_fields": [
+                                {
+                                    "name": "ASEPMIN",
+                                    "comment": "Age of System Calculated Separation Minimum (I062/REF/MOI/SI#24)",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
+                                }
+                            ]
+                        },
+                        {
+                            "name": "AM5I",
+                            "comment": "Age of Mode 5 Interrogation",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 7,
+                            "data_fields": [
+                                {
+                                    "name": "AM5I",
+                                    "comment": "Age of Mode 5 Interrogation",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
+                                }
+                            ]
+                        },
+                        {
+                            "name": "AM5L2S",
+                            "comment": "Age of Mode 5 Level 2 Squitter",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 8,
+                            "data_fields": [
+                                {
+                                    "name": "AM5L2S",
+                                    "comment": "Age of Mode 5 Level 2 Squitter",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint",
+                                    "lsb": 0.25
+                                }
+                            ]
+                        },
+                        {
+                            "name": "ABDS",
+                            "comment": "BDS Register Data Age",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 9,
+                            "data_fields": [
+                                {
+                                    "name": "ABDS",
+                                    "type": "repetitive",
+                                    "items": [
+                                        {
+                                            "name": "ABDS",
+                                            "comment": "BDS Register Data Age. BDS1: Comm B Data Buffer Store 1 Address, BDS2: Comm B Data Buffer Store 2 Address, ABDS: Age of BDS Register Data (I062/380/SI#25). LSB = 1/4 s",
+                                            "type": "fixed_bitfield",
+                                            "length": 2,
+                                            "items": [
+                                                {
+                                                    "name": "BDS1",
+                                                    "comment": "Comm B Data Buffer Store 1 Address",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 12,
+                                                    "bit_length": 4
+                                                },
+                                                {
+                                                    "name": "BDS2",
+                                                    "comment": "Comm B Data Buffer Store 2 Address",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 8,
+                                                    "bit_length": 4
+                                                },
+                                                {
+                                                    "name": "ABDS",
+                                                    "comment": "Age of BDS Register Data (I062/380/SI#25). LSB = 1/4 s",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 0,
+                                                    "bit_length": 8,
+                                                    "lsb": 0.25
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "MPID",
+                            "comment": "Movement Plan ID",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 10,
+                            "data_fields": [
+                                {
+                                    "name": "MPID",
+                                    "type": "repetitive",
+                                    "items": [
+                                        {
+                                            "name": "CHAR",
+                                            "comment": "ASCII character",
+                                            "type": "fixed_bytes",
+                                            "length": 1,
+                                            "data_type": "uint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "LS",
+                            "comment": "Leading Source",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 11,
+                            "data_fields": [
+                                {
+                                    "name": "LS",
+                                    "type": "fixed_bitfield",
+                                    "length": 4,
+                                    "items": [
+                                        {
+                                            "name": "LSSAC",
+                                            "comment": "System Area Code of the leading source",
+                                            "type": "fixed_bits",
+                                            "start_bit": 24,
+                                            "bit_length": 8
+                                        },
+                                        {
+                                            "name": "LSSIC",
+                                            "comment": "System Identification Code of the leading source",
+                                            "type": "fixed_bits",
+                                            "start_bit": 16,
+                                            "bit_length": 8
+                                        },
+                                        {
+                                            "name": "LSSID#EP",
+                                            "comment": "LSSID Element Populated Bit\n0: Element not populated\n1: Element populated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 15,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "LSSID#VAL",
+                                            "comment": "Value of LSSID",
+                                            "type": "fixed_bits",
+                                            "start_bit": 7,
+                                            "bit_length": 8
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "LSQI",
+                            "comment": "Leading Source Quality Indication",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 12,
+                            "data_fields": [
+                                {
+                                    "name": "LSQUAL",
+                                    "comment": "Leading Source Quality Indication. LSB = 1 m^2*s",
+                                    "type": "fixed_bytes",
+                                    "length": 4,
+                                    "data_type": "uint",
+                                    "lsb": 1.0
+                                }
+                            ]
+                        },
+                        {
+                            "name": "DTNH",
+                            "comment": "Downlinked True North Heading",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 13,
+                            "data_fields": [
+                                {
+                                    "name": "DTNH",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "DTNH",
+                                            "comment": "Downlinked True North Heading. LSB = 360/2^13 degrees (approx. 0.044 degrees)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 13,
+                                            "lsb": 0.0439453125
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "DMNH",
+                            "comment": "Downlinked Magnetic North Heading",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 14,
+                            "data_fields": [
+                                {
+                                    "name": "DMNH",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "DMNH",
+                                            "comment": "Downlinked Magnetic North Heading. LSB = 360/2^13 degrees (approx. 0.044 degrees)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 13,
+                                            "lsb": 0.0439453125
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "DTNT",
+                            "comment": "Downlinked True North Track Angle",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 15,
+                            "data_fields": [
+                                {
+                                    "name": "DTNT",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "DTNT",
+                                            "comment": "Downlinked True North Track Angle. LSB = 360/2^13 degrees (approx. 0.044 degrees)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 13,
+                                            "lsb": 0.0439453125
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "DMNT",
+                            "comment": "Downlinked Magnetic North Track Angle",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 16,
+                            "data_fields": [
+                                {
+                                    "name": "DMNT",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "DMNT",
+                                            "comment": "Downlinked Magnetic North Track Angle. LSB = 360/2^13 degrees (approx. 0.044 degrees)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 13,
+                                            "lsb": 0.0439453125
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "TBP",
+                            "comment": "Tracker Barometric Pressure",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 17,
+                            "data_fields": [
+                                {
+                                    "name": "TBP",
+                                    "comment": "Barometric pressure used by the tracker for this track. LSB = 0.05 hPa",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.05
+                                }
+                            ]
+                        },
+                        {
+                            "name": "ALTQCMFL",
+                            "comment": "Altitude from QNH Corrected Measured Flight Level",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 18,
+                            "data_fields": [
+                                {
+                                    "name": "ALTQCMFL",
+                                    "comment": "Altitude from QNH Corrected Measured Flight Level, in two's complement. LSB = 25 ft",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "int",
+                                    "lsb": 25.0
+                                }
+                            ]
+                        },
+                        {
+                            "name": "CTBA",
+                            "comment": "Calculated Track Barometric Altitude",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 19,
+                            "data_fields": [
+                                {
+                                    "name": "CTBA",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "QNH",
+                                            "comment": "QNH correction applied\n0: No QNH correction applied\n1: QNH correction applied",
+                                            "type": "fixed_bits",
+                                            "start_bit": 15,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "CTBA",
+                                            "comment": "Calculated Track Barometric Altitude, in two's complement form. LSB = 1/4 FL = 25 ft. Range: -1500 ft <= QCTBA <= 150000 ft",
+                                            "type": "fixed_bits",
+                                            "data_type": "int",
+                                            "start_bit": 0,
+                                            "bit_length": 15,
+                                            "lsb": 25.0
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "INPS",
+                            "comment": "Input to SDPS with Service ID and Local Track Number",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 20,
+                            "data_fields": [
+                                {
+                                    "name": "INPS",
+                                    "type": "repetitive",
+                                    "items": [
+                                        {
+                                            "name": "SAC",
+                                            "comment": "System Area Code of the input contributing to the track",
+                                            "type": "fixed_bytes",
+                                            "length": 1,
+                                            "data_type": "uint"
+                                        },
+                                        {
+                                            "name": "SIC",
+                                            "comment": "System Identification Code of the input contributing to the track",
+                                            "type": "fixed_bytes",
+                                            "length": 1,
+                                            "data_type": "uint"
+                                        },
+                                        {
+                                            "name": "INPS_DATA",
+                                            "comment": "SID, TIDN, IDN, AINP, and status fields",
+                                            "type": "fixed_bitfield",
+                                            "length": 6,
+                                            "items": [
+                                                {
+                                                    "name": "SID#EP",
+                                                    "comment": "SID Element Populated Bit. 0: Element not populated, 1: Element populated",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 47,
+                                                    "bit_length": 1
+                                                },
+                                                {
+                                                    "name": "SID#VAL",
+                                                    "comment": "Service Identification of the input contributing to the track in the current update cycle",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 39,
+                                                    "bit_length": 8
+                                                },
+                                                {
+                                                    "name": "TIDN",
+                                                    "comment": "Type of Identification number. 0: Information not available, 1: Local track number, 2: Address Type & Address Extension Number, 3-7: reserved",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 36,
+                                                    "bit_length": 3
+                                                },
+                                                {
+                                                    "name": "IDN",
+                                                    "comment": "Identification Number",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 20,
+                                                    "bit_length": 16
+                                                },
+                                                {
+                                                    "name": "AINP#EP",
+                                                    "comment": "AINP Element Populated Bit. 0: Element not populated, 1: Element populated",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 19,
+                                                    "bit_length": 1
+                                                },
+                                                {
+                                                    "name": "AINP#VAL",
+                                                    "comment": "Age of Input. LSB = 0.25 s",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 11,
+                                                    "bit_length": 8,
+                                                    "lsb": 0.25
+                                                },
+                                                {
+                                                    "name": "SSS",
+                                                    "comment": "SDPS Support Status of Input. 0: sensor measurement, 1: tracked data",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 10,
+                                                    "bit_length": 1
+                                                },
+                                                {
+                                                    "name": "INCS",
+                                                    "comment": "Independent Non-Cooperative support status of input. 0: no INCS support, 1: has INCS support",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 9,
+                                                    "bit_length": 1
+                                                },
+                                                {
+                                                    "name": "SSR",
+                                                    "comment": "SSR support status of input. 0: no SSR support, 1: has SSR support",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 8,
+                                                    "bit_length": 1
+                                                },
+                                                {
+                                                    "name": "MDS",
+                                                    "comment": "Mode-S radar support status of input. 0: no Mode-S radar support, 1: has Mode-S radar support",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 7,
+                                                    "bit_length": 1
+                                                },
+                                                {
+                                                    "name": "ADS",
+                                                    "comment": "ADS-B support status of input. 0: no ADS-B support, 1: has ADS-B support",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 6,
+                                                    "bit_length": 1
+                                                },
+                                                {
+                                                    "name": "MLT",
+                                                    "comment": "MLAT support status of input. 0: no MLAT support, 1: has MLAT support",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 5,
+                                                    "bit_length": 1
+                                                },
+                                                {
+                                                    "name": "Spare",
+                                                    "comment": "Spare bits, set to 0",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 0,
+                                                    "bit_length": 5
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "FPVHR",
+                            "comment": "Fractional Part of Velocity (High Resolution)",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 21,
+                            "data_fields": [
+                                {
+                                    "name": "FPVHR",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "DVX",
+                                            "comment": "Fractional part of velocity in x direction, in two's complement. LSB = 1/2^10 m/s",
+                                            "type": "fixed_bits",
+                                            "data_type": "int",
+                                            "start_bit": 8,
+                                            "bit_length": 8,
+                                            "lsb": 0.0009765625
+                                        },
+                                        {
+                                            "name": "DVY",
+                                            "comment": "Fractional part of velocity in y direction, in two's complement. LSB = 1/2^10 m/s",
+                                            "type": "fixed_bits",
+                                            "data_type": "int",
+                                            "start_bit": 0,
+                                            "bit_length": 8,
+                                            "lsb": 0.0009765625
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "SCT",
+                            "comment": "SUC Correlation Text",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 22,
+                            "data_fields": [
+                                {
+                                    "name": "SUCTXT",
+                                    "comment": "SUC correlation text consisting of 7 ASCII characters.",
+                                    "type": "fixed_bytes",
+                                    "length": 7,
+                                    "data_type": "string"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "SCSM",
+                            "comment": "System Calculated Separation Minimum",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 23,
+                            "data_fields": [
+                                {
+                                    "name": "SEPMIN",
+                                    "comment": "System Calculated Separation Minimum. LSB = 0.1 NM",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
+                                }
+                            ]
+                        },
+                        {
+                            "name": "TCAT",
+                            "comment": "Target Category",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 24,
+                            "data_fields": [
+                                {
+                                    "name": "TCAT",
+                                    "type": "extendable",
+                                    "items": [
+                                        {
+                                            "name": "address",
+                                            "type": "fixed_bitfield",
+                                            "length": 2,
+                                            "items": [
+                                                {
+                                                    "name": "TYP",
+                                                    "comment": "Target type\n0: Information not available\n1: powered fixed / variable-sweep wing\n2: rotocraft\n3: glider / sailplane\n4: lighter-than-air\n5: ultralight / handglider / paraglider\n6: parachutist / skydiver\n7: surface vehicle\n8-15: Reserved for future use",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 12,
+                                                    "bit_length": 4
+                                                },
+                                                {
+                                                    "name": "WGT",
+                                                    "comment": "Target weight\n0: Information not available\n1: light aircraft <= 7000 kg\n2: 7000 kg < medium aircraft < 136000 kg\n3: 136000 kg <= heavy aircraft\n4-15: Reserved for future use",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 8,
+                                                    "bit_length": 4
+                                                },
+                                                {
+                                                    "name": "PLT",
+                                                    "comment": "Pilot status\n0: Information not available\n1: on-board piloted\n2: remotely piloted\n3: autonomous",
+                                                    "type": "fixed_bits",
+                                                    "start_bit": 6,
+                                                    "bit_length": 2
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "MTI",
+            "name": "Miscellaneous Technical Items",
+            "comment": "Miscellaneous items for the addition of information to Category 062 mainly intended for technical purposes.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "LEN",
+                    "comment": "Length of the Data Item in octets including the Length Indicator itself.",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
+                },
+                {
+                    "name": "MTI",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
+                    },
+                    "items": [
+                        {
+                            "name": "DATE",
+                            "comment": "Date of Track Information",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
+                                {
+                                    "name": "DATE",
+                                    "comment": "Current date of the track information in the form YYYYMMDD (BCD encoded)",
+                                    "type": "fixed_bytes",
+                                    "length": 4,
+                                    "data_type": "uint"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "TENTU",
+                            "comment": "Time to Expected Next Track Update",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
+                                {
+                                    "name": "TENTU",
+                                    "comment": "Time to expected next track update relative to the track information provided in I062/070. LSB = 1/128 s",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.0078125
+                                }
+                            ]
+                        },
+                        {
+                            "name": "IPMC",
+                            "comment": "Inverse Point Scale Factor and Meridian Convergence",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
+                                {
+                                    "name": "IPMC",
+                                    "type": "fixed_bitfield",
+                                    "length": 4,
+                                    "items": [
+                                        {
+                                            "name": "IPNTSCL",
+                                            "comment": "Inverse Point Scale Factor. LSB = 1/2^15",
+                                            "type": "fixed_bits",
+                                            "start_bit": 16,
+                                            "bit_length": 16,
+                                            "lsb": 3.0517578125e-05
+                                        },
+                                        {
+                                            "name": "MERCVG",
+                                            "comment": "Meridian Convergence, in two's complement. LSB = 180/2^15 degrees",
+                                            "type": "fixed_bits",
+                                            "data_type": "int",
+                                            "start_bit": 0,
+                                            "bit_length": 16,
+                                            "lsb": 0.00549316406
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "IMP",
+                            "comment": "IMM Model Probability",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
+                                {
+                                    "name": "IMP",
+                                    "type": "repetitive",
+                                    "items": [
+                                        {
+                                            "name": "IMM_MID",
+                                            "comment": "IMM model identification",
+                                            "type": "fixed_bytes",
+                                            "length": 1,
+                                            "data_type": "uint"
+                                        },
+                                        {
+                                            "name": "IMM_MPR",
+                                            "comment": "IMM model probability. LSB = 0.5 per cent",
+                                            "type": "fixed_bytes",
+                                            "length": 1,
+                                            "data_type": "uint",
+                                            "lsb": 0.5
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "IST",
+                            "comment": "IMM State",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 4,
+                            "data_fields": [
+                                {
+                                    "name": "IST",
+                                    "type": "repetitive",
+                                    "items": [
+                                        {
+                                            "name": "IMM_MID",
+                                            "comment": "IMM model identification",
+                                            "type": "fixed_bytes",
+                                            "length": 1,
+                                            "data_type": "uint"
+                                        },
+                                        {
+                                            "name": "LAT",
+                                            "comment": "Latitude in WGS-84, in two's complement. LSB = 180/2^31 degrees",
+                                            "type": "fixed_bytes",
+                                            "length": 4,
+                                            "data_type": "int",
+                                            "lsb": 8.381903171539307e-08
+                                        },
+                                        {
+                                            "name": "LON",
+                                            "comment": "Longitude in WGS-84, in two's complement. LSB = 180/2^31 degrees",
+                                            "type": "fixed_bytes",
+                                            "length": 4,
+                                            "data_type": "int",
+                                            "lsb": 8.381903171539307e-08
+                                        },
+                                        {
+                                            "name": "Vx",
+                                            "comment": "Velocity in X direction, in two's complement. LSB = 0.25 m/s",
+                                            "type": "fixed_bytes",
+                                            "length": 2,
+                                            "data_type": "int",
+                                            "lsb": 0.25
+                                        },
+                                        {
+                                            "name": "Vy",
+                                            "comment": "Velocity in Y direction, in two's complement. LSB = 0.25 m/s",
+                                            "type": "fixed_bytes",
+                                            "length": 2,
+                                            "data_type": "int",
+                                            "lsb": 0.25
+                                        },
+                                        {
+                                            "name": "Ax",
+                                            "comment": "Acceleration in X direction, in two's complement. LSB = 0.25 m/s^2",
+                                            "type": "fixed_bytes",
+                                            "length": 1,
+                                            "data_type": "int",
+                                            "lsb": 0.25
+                                        },
+                                        {
+                                            "name": "Ay",
+                                            "comment": "Acceleration in Y direction, in two's complement. LSB = 0.25 m/s^2",
+                                            "type": "fixed_bytes",
+                                            "length": 1,
+                                            "data_type": "int",
+                                            "lsb": 0.25
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "TTT",
+                            "comment": "Time of Track Termination",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 5,
+                            "data_fields": [
+                                {
+                                    "name": "TTT",
+                                    "comment": "Time of Track Termination, absolute time stamp since last midnight, expressed as UTC. LSB = 1/128 s",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "uint",
+                                    "lsb": 0.0078125
+                                }
+                            ]
+                        },
+                        {
+                            "name": "EXM3A",
+                            "comment": "Expired Mode 3/A Code",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 6,
+                            "data_fields": [
+                                {
+                                    "name": "EXM3A",
+                                    "comment": "Expired Mode 3/A Code after I062/060, Track Mode 3/A Code, has been removed from the track.",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "Spare",
+                                            "comment": "Spare bits, set to 0",
+                                            "type": "fixed_bits",
+                                            "start_bit": 12,
+                                            "bit_length": 4
+                                        },
+                                        {
+                                            "name": "Mode-3/A reply",
+                                            "comment": "Expired Mode 3/A Code in octal representation",
+                                            "type": "fixed_bits",
+                                            "data_type": "digits",
+                                            "start_bit": 0,
+                                            "bit_length": 12,
+                                            "num_digits": 4,
+                                            "digit_bit_length": 3
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "EXADDR",
+                            "comment": "Expired Target Address",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 7,
+                            "data_fields": [
+                                {
+                                    "name": "EXADDR",
+                                    "comment": "Expired 24-bit target address after I062/380/SI#1, Target Address, has been removed from the track.",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "uint"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "EXTID",
+                            "comment": "Expired Target Identification",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 8,
+                            "data_fields": [
+                                {
+                                    "name": "EXTID",
+                                    "comment": "Expired target identification after I062/380/SI#2, Target Identification, has been removed from the track. 8 characters in 6-bit ICAO encoding.",
+                                    "type": "fixed_bitfield",
+                                    "length": 6,
+                                    "items": [
+                                        {
+                                            "name": "Target Identification",
+                                            "comment": "Expired Target Identification",
+                                            "type": "fixed_bits",
+                                            "data_type": "icao_characters",
+                                            "start_bit": 0,
+                                            "bit_length": 48,
+                                            "num_characters": 8,
+                                            "character_bit_length": 6
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "GEN62",
+            "name": "Generic Category 062 Data",
+            "comment": "Placeholder for the addition of information to Category 062 even if all bits of the Item Indicator are allocated.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "GEN62",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
+                    },
+                    "items": []
+                }
+            ]
+        }
+    ]
+}

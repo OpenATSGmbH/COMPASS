@@ -1,9 +1,6 @@
+add_library(compass_filter "")
 
-include_directories (
-    "${CMAKE_CURRENT_LIST_DIR}"
-    )
-
-target_sources(compass
+target_sources(compass_filter
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/dbfilter.h"
         "${CMAKE_CURRENT_LIST_DIR}/filtermanager.h"
@@ -29,6 +26,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/primaryonlyfilterwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/timestampfilter.h"
         "${CMAKE_CURRENT_LIST_DIR}/timestampfilterwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/timeofdayfilterwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/excludedtimewindowsfilter.h"
         "${CMAKE_CURRENT_LIST_DIR}/excludedtimewindowsfilterwidget.h"        
         "${CMAKE_CURRENT_LIST_DIR}/trackertracknumberfilter.h"
@@ -37,6 +35,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/reftrajaccuracyfilterwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilter.h"
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilterwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentmanagervariableresolver.h"
 
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/dbfilter.cpp"
@@ -61,6 +60,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/primaryonlyfilterwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/timestampfilter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/timestampfilterwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/timeofdayfilterwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/excludedtimewindowsfilter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/excludedtimewindowsfilterwidget.cpp"                
         "${CMAKE_CURRENT_LIST_DIR}/trackertracknumberfilter.cpp"
@@ -69,6 +69,20 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/reftrajaccuracyfilterwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/mlatrufilterwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentmanagervariableresolver.cpp"
 )
 
+target_include_directories(compass_filter PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 
+target_link_libraries(compass_filter
+    PUBLIC
+        compass_core
+        compass_gui
+)
+
+# filtermanager.cpp includes viewpoint.h - circular with compass_view, include-only
+target_include_directories(compass_filter PRIVATE
+    "${CMAKE_SOURCE_DIR}/src/view/points"
+)
+
+compass_automoc(compass_filter)

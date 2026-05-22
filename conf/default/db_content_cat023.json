@@ -1,4 +1,6 @@
 {
+    "class_name": "DBContent",
+    "instance_name": "CAT023",
     "parameters": {
         "contains_status_content": true,
         "contains_target_reports": false,
@@ -7,398 +9,474 @@
         "info": "",
         "name": "CAT023"
     },
-    "sub_configs": {
-        "Variable": {
-            "Variable1": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "report_type",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 000.Report Type\n\n1 Ground Station Status report\n2 Service Status report\n3 Service Statistics report",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Report Type",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable10": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "odp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.ODP\n\nData Processor Overload Indicator\n0 Default, no overload\n1 Overload in DP",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "ODP",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable11": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "oxt",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.OXT\n\nGround Interface Data Communications Overload\n0 Default, no overload\n1 Overload in transmission subsystem",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "OXT",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable12": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "rn",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.RN\n\nRenumbering Indication for Track ID\n0 default\n1 track numbering has restarted",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RN",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable13": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "spo",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.SPO\n\nIndication of spoofing attack\n0 no spoofing detected\n1 potential spoofing attack",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SPO",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable14": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tsv",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.TSV\n\nTime Source Validity\n0 valid\n1 invalid",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TSV",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable15": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "rp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 101.RP\n\nReport Period for Category 021 Reports\n0: Data driven mode",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RP",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable16": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sc",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 101.SC\n\nService Class\n0 No information\n1 NRA class\n2-7 reserved for future use",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable17": {
-                "parameters": {
-                    "data_type_str": "CHAR",
-                    "db_column_name": "ssrp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 101.SSRP\n\nService Status Reporting Period\nValid range: 1 <= GSSP <= 127s",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SSRP",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable18": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "stat",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 110.STAT\n\nStatus of the Service\n0 Unknown\n1 Failed\n2 Disabled\n3 Degraded\n4 Normal\n5 Initialisation",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "STAT",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable19": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "counter_value",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.service_statistics.COUNTER VALUE\n\n32-bit counter value",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Counter Value",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable2": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SAC\n\nSystem Area Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SAC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable20": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "counter_type",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.service_statistics.TYPE\n\n0 Number of unknown messages received\n1 Number of ‘too old’ messages received\n2 Number of failed message conversions\n3 Total Number of messages received\n4 Total number of messages transmitted\n20 Number of TIS-B management messages received\n21 Number of 'Basic' messages received\n22 Number of 'High Dynamic' messages received\n23 Number of 'Full Position' messages received\n24 Number of 'Basic Ground' messages received\n25 Number of 'TCP' messages received\n26 Number of 'UTC time' messages received\n27 Number of 'Data' messages received\n28 Number of 'High Resolution' messages received\n29 Number of 'Aircraft Target Airborne' messages received.\n30 Number of 'Aircraft Target 'Ground' messages received.\n31 Number of 'Ground Vehicle Target' messages received.\n32 Number of '2 slots TCP messages received.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Counter Type",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable21": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "range",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 200.Range\n\nOperational range of the GS",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Range",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable22": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "counter_ref",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 120.service_statistics.REF\n\nReference from which the messages are countered\n0 From midnight\n1 From the last report",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Counter Ref",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable3": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sic",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SIC\n\nSystem Identification Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SIC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable4": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sid",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 015.SID\n\nService Identification",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SID",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable5": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "styp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 015.STYP\n\nType of Service\n1 ADS-B VDL4\n2 ADS-B Ext Squitter\n3 ADS-B UAT\n4 TIS-B VDL4\n5 TIS-B Ext Squitter\n6 TIS-B UAT\n7 FIS-B VDL4\n8 GRAS VDL4\n9 MLT",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "STYP",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable6": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_of_day",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.Time of Day",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time of Day",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "Variable7": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "gssp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.GSSP\n\nGround Station Status Reporting Period\nValid range: 1 <= GSSP <= 127s",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "GSSP",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable8": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "nogo",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.NOGO\n\nOperational Release Status of the Data\n0 Data is released for operational use\n1 Data must not be used operationally",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "NOGO",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable9": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "msc",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 100.MSC\n\nMonitoring System Connected Status\n0 Monitoring system not connected or unknown\n1 Monitoring system connected",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MSC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableTimestamp0": {
-                "parameters": {
-                    "data_type_str": "TIMESTAMP",
-                    "db_column_name": "timestamp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Epoch timestamp based on Time of Day",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Timestamp",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variableds_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "ds_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From ds_id\n\nData Source ID",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "DS ID",
-                    "representation_str": "DATA_SRC_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variableline_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "line_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "COMMUNICATION LINE ID determines the origin of the record",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Line ID",
-                    "representation_str": "LINE_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variablerec_num0": {
-                "parameters": {
-                    "data_type_str": "ULONGINT",
-                    "db_column_name": "record_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Unique record id starting with 0 on every new recording",
-                    "dimension": "",
-                    "is_key": true,
-                    "name": "Record Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
+    "sub_configs": [
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable1",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "report_type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Ground Station Status report\n2 Service Status report\n3 Service Statistics report",
+                "dimension": "",
+                "is_key": false,
+                "name": "Report Type",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/000.Report Type",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable10",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "odp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Data Processor Overload Indicator\n0 Default, no overload\n1 Overload in DP",
+                "dimension": "",
+                "is_key": false,
+                "name": "ODP",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/100.ODP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable11",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "oxt",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Ground Interface Data Communications Overload\n0 Default, no overload\n1 Overload in transmission subsystem",
+                "dimension": "",
+                "is_key": false,
+                "name": "OXT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/100.OXT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable12",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "rn",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Renumbering Indication for Track ID\n0 default\n1 track numbering has restarted",
+                "dimension": "",
+                "is_key": false,
+                "name": "RN",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/100.RN",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable13",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "spo",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Indication of spoofing attack\n0 no spoofing detected\n1 potential spoofing attack",
+                "dimension": "",
+                "is_key": false,
+                "name": "SPO",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/100.SPO",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable14",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tsv",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time Source Validity\n0 valid\n1 invalid",
+                "dimension": "",
+                "is_key": false,
+                "name": "TSV",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/100.TSV",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable15",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "rp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Report Period for Category 021 Reports\n0: Data driven mode",
+                "dimension": "",
+                "is_key": false,
+                "name": "RP",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/101.RP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable16",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Service Class\n0 No information\n1 NRA class\n2-7 reserved for future use",
+                "dimension": "",
+                "is_key": false,
+                "name": "SC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/101.SC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable17",
+            "parameters": {
+                "data_type_str": "CHAR",
+                "db_column_name": "ssrp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Service Status Reporting Period\nValid range: 1 <= GSSP <= 127s",
+                "dimension": "",
+                "is_key": false,
+                "name": "SSRP",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/101.SSRP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable18",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "stat",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Status of the Service\n0 Unknown\n1 Failed\n2 Disabled\n3 Degraded\n4 Normal\n5 Initialisation",
+                "dimension": "",
+                "is_key": false,
+                "name": "STAT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/110.STAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable19",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "counter_value",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "32-bit counter value",
+                "dimension": "",
+                "is_key": false,
+                "name": "Counter Value",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/120.service_statistics.COUNTER VALUE",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable2",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/010.SAC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable20",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "counter_type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Number of unknown messages received\n1 Number of ‘too old’ messages received\n2 Number of failed message conversions\n3 Total Number of messages received\n4 Total number of messages transmitted\n20 Number of TIS-B management messages received\n21 Number of 'Basic' messages received\n22 Number of 'High Dynamic' messages received\n23 Number of 'Full Position' messages received\n24 Number of 'Basic Ground' messages received\n25 Number of 'TCP' messages received\n26 Number of 'UTC time' messages received\n27 Number of 'Data' messages received\n28 Number of 'High Resolution' messages received\n29 Number of 'Aircraft Target Airborne' messages received.\n30 Number of 'Aircraft Target 'Ground' messages received.\n31 Number of 'Ground Vehicle Target' messages received.\n32 Number of '2 slots TCP messages received.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Counter Type",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/120.service_statistics.TYPE",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable21",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "range",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Operational range of the GS",
+                "dimension": "",
+                "is_key": false,
+                "name": "Range",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/200.Range",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable22",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "counter_ref",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Reference from which the messages are countered\n0 From midnight\n1 From the last report",
+                "dimension": "",
+                "is_key": false,
+                "name": "Counter Ref",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/120.service_statistics.REF",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable3",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/010.SIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable4",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Service Identification",
+                "dimension": "",
+                "is_key": false,
+                "name": "SID",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/015.SID",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable5",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "styp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Type of Service\n1 ADS-B VDL4\n2 ADS-B Ext Squitter\n3 ADS-B UAT\n4 TIS-B VDL4\n5 TIS-B Ext Squitter\n6 TIS-B UAT\n7 FIS-B VDL4\n8 GRAS VDL4\n9 MLT",
+                "dimension": "",
+                "is_key": false,
+                "name": "STYP",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/015.STYP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable6",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_of_day",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time of Day",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "source": "I023/070.Time of Day",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable7",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "gssp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Ground Station Status Reporting Period\nValid range: 1 <= GSSP <= 127s",
+                "dimension": "",
+                "is_key": false,
+                "name": "GSSP",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/100.GSSP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable8",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "nogo",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Operational Release Status of the Data\n0 Data is released for operational use\n1 Data must not be used operationally",
+                "dimension": "",
+                "is_key": false,
+                "name": "NOGO",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/100.NOGO",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable9",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "msc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Monitoring System Connected Status\n0 Monitoring system not connected or unknown\n1 Monitoring system connected",
+                "dimension": "",
+                "is_key": false,
+                "name": "MSC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I023/100.MSC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableTimestamp0",
+            "parameters": {
+                "data_type_str": "TIMESTAMP",
+                "db_column_name": "timestamp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Epoch timestamp computed from Time of Day plus the resolved calendar date (handles midnight wrap).",
+                "dimension": "",
+                "is_key": false,
+                "name": "Timestamp",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Calculated from Time of Day, calendar date",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variableds_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "ds_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Data Source Identifier (bit-packed SAC/SIC)",
+                "dimension": "",
+                "is_key": false,
+                "name": "DS ID",
+                "representation_str": "DATA_SRC_NAME",
+                "short_name": "",
+                "source": "Calculated from I023/010.SAC, I023/010.SIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variableline_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "line_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Communication line ID determining the origin of the record.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Line ID",
+                "representation_str": "LINE_NAME",
+                "short_name": "",
+                "source": "Internal: import line/source identifier",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variablerec_num0",
+            "parameters": {
+                "data_type_str": "ULONGINT",
+                "db_column_name": "record_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique record id starting with 0 on every new recording.",
+                "dimension": "",
+                "is_key": true,
+                "name": "Record Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Internal: ascending record number assigned at import",
+                "unit": ""
             }
         }
-    }
+    ]
 }

@@ -20,6 +20,10 @@
 #include "rtcommand_registry.h"
 #include "compass.h"
 #include "evaluationmanager.h"
+#include "evaluationcalculator.h"
+#include "evaluationstandard.h"
+#include "requirement/group.h"
+#include "requirement/base/baseconfig.h"
 #include "mainwindow.h"
 #include "compass.h"
 #include "dbcontentmanager.h"
@@ -27,12 +31,17 @@
 #include <boost/program_options.hpp>
 
 REGISTER_RTCOMMAND(RTCommandEvaluate)
+REGISTER_RTCOMMAND(RTCommandGetEvalStandards)
+
+static COMPASS* s_compass = nullptr;
 
 /**
 */
-void init_evaluation_commands()
+void init_evaluation_commands(COMPASS& compass)
 {
+    s_compass = &compass;
     RTCommandEvaluate::init();
+    RTCommandGetEvalStandards::init();
 }
 
 /***************************************************************************************
@@ -41,19 +50,19 @@ void init_evaluation_commands()
 
 bool RTCommandEvaluate::run_impl()
 {
-    if (!COMPASS::instance().dbOpened())
+    if (!(*s_compass).dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if ((*s_compass).appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+(*s_compass).appModeStr());
         return false;
     }
 
-    EvaluationManager& eval_man = COMPASS::instance().evaluationManager();
+    EvaluationManager& eval_man = (*s_compass).evaluationManager();
 
     //try to parse configuration
     if (!config_.empty())
@@ -67,7 +76,7 @@ bool RTCommandEvaluate::run_impl()
     }
 
     if (run_filter_)
-        COMPASS::instance().dbContentManager().autoFilterUTNS();
+        (*s_compass).dbContentManager().autoFilterUTNS();
 
     auto can_evaluate = eval_man.canEvaluate();
     if (!can_evaluate.ok())
@@ -76,9 +85,8 @@ bool RTCommandEvaluate::run_impl()
         return false;
     }
 
-    loginf << "loading evaluation data";
-
     auto res = eval_man.evaluate(false, result_name_);
+
     if (!res.ok())
     {
         setResultMessage(res.error());
@@ -102,4 +110,72 @@ void RTCommandEvaluate::assignVariables_impl(const VariablesMap& variables)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "result", std::string, result_name_)
     RTCOMMAND_CHECK_VAR(variables, "run_filter", run_filter_)
+}
+
+/***************************************************************************************
+ * RTCommandGetEvalStandards
+ ***************************************************************************************/
+
+RTCommandGetEvalStandards::RTCommandGetEvalStandards()
+    : rtcommand::RTCommand()
+{
+    condition.setDelay(10);
+}
+
+bool RTCommandGetEvalStandards::run_impl()
+{
+    if (!s_compass)
+    {
+        setResultMessage("COMPASS not initialized");
+        return false;
+    }
+
+    if (!s_compass->evaluationManager().calculator())
+    {
+        setResultMessage("Evaluation calculator not available");
+        return false;
+    }
+
+    return true;
+}
+
+bool RTCommandGetEvalStandards::checkResult_impl()
+{
+    auto& calculator = *s_compass->evaluationManager().calculator();
+
+    nlohmann::json standards_array = nlohmann::json::array();
+
+    for (auto it = calculator.standardsBegin(); it != calculator.standardsEnd(); ++it)
+    {
+        EvaluationStandard& standard = **it;
+
+        nlohmann::json standard_json;
+        standard_json["name"] = standard.name();
+
+        nlohmann::json groups_array = nlohmann::json::array();
+
+        for (auto grp_it = standard.begin(); grp_it != standard.end(); ++grp_it)
+        {
+            Group& group = **grp_it;
+
+            nlohmann::json group_json;
+            group_json["name"] = group.name();
+
+            nlohmann::json requirements_array = nlohmann::json::array();
+            for (auto req_it = group.begin(); req_it != group.end(); ++req_it)
+                requirements_array.push_back((*req_it)->name());
+
+            group_json["requirements"] = std::move(requirements_array);
+            groups_array.push_back(std::move(group_json));
+        }
+
+        standard_json["groups"] = std::move(groups_array);
+        standards_array.push_back(std::move(standard_json));
+    }
+
+    nlohmann::json reply;
+    reply["standards"] = std::move(standards_array);
+    setJSONReply(reply);
+
+    return true;
 }

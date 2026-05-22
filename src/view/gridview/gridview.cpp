@@ -16,6 +16,7 @@
  */
 
 #include "gridview.h"
+#include "viewcontainer.h"
 #include "gridviewdatawidget.h"
 #include "gridviewwidget.h"
 #include "viewvariable.h"
@@ -48,11 +49,8 @@ const int GridView::DecimalsDefault = 3;
 
 /**
 */
-GridView::GridView(const std::string& class_id, 
-                   const std::string& instance_id,
-                   ViewContainer* w, 
-                   ViewManager& view_manager)
-:   VariableView(class_id, instance_id, w, view_manager)
+GridView::GridView(nlohmann::json& config, ViewContainer* parent)
+:   VariableView(config, parent)
 {
     registerParameter("value_type", &settings_.value_type, Settings().value_type);
     registerParameter("grid_resolution", &settings_.grid_resolution, Settings().grid_resolution);
@@ -82,8 +80,8 @@ GridView::GridView(const std::string& class_id,
                                                            PropertyDataType::FLOAT,
                                                            PropertyDataType::DOUBLE };
 
-    addVariable("data_var_x", "X"          , "x", META_OBJECT_NAME, DBContent::meta_var_longitude_.name(), true, true, false, valid_types_xy);
-    addVariable("data_var_y", "Y"          , "y", META_OBJECT_NAME, DBContent::meta_var_latitude_.name() , true, true, false, valid_types_xy);
+    addVariable("data_var_x", "X"          , "x", META_OBJECT_NAME, dbcontent_vars::meta_var_longitude_.name(), true, true, false, valid_types_xy);
+    addVariable("data_var_y", "Y"          , "y", META_OBJECT_NAME, dbcontent_vars::meta_var_latitude_.name() , true, true, false, valid_types_xy);
     addVariable("data_var_z", "Distributed", "z", ""              , ""                                   , true, true, true , valid_types_z );
 
     updateSettingsFromVariable();
@@ -115,29 +113,13 @@ bool GridView::init_impl()
 
 /**
 */
-void GridView::generateSubConfigurable(const std::string& class_id,
-                                       const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
-    
-    if (class_id == "GridViewWidget")
-    {
-        widget_ = new GridViewWidget(class_id, instance_id, this, this, central_widget_);
-        setWidget(widget_);
-    }
-    else
-    {
-        throw std::runtime_error("GridView: generateSubConfigurable: unknown class_id " + class_id);
-    }
-}
-
-/**
-*/
 void GridView::checkSubConfigurables()
 {
     if (!widget_)
-        generateSubConfigurable("GridViewWidget", "GridViewWidget0");
+    {
+        widget_ = new GridViewWidget(this, central_widget_);
+        setWidget(widget_);
+    }
 }
 
 /**

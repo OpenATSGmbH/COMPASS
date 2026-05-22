@@ -17,21 +17,20 @@
 
 #include "adsbqualityfilter.h"
 #include "adsbqualityfilterwidget.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "compass.h"
 #include "logger.h"
 //#include "stringconv.h"
 
 #include <sstream>
+#include <vector>
 
 using namespace std;
 using namespace Utils;
 using namespace nlohmann;
 
-ADSBQualityFilter::ADSBQualityFilter(const std::string& class_id, const std::string& instance_id,
-                                     Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+ADSBQualityFilter::ADSBQualityFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("use_v0", &use_v0_, true);
     registerParameter("use_v1", &use_v1_, true);
@@ -90,105 +89,98 @@ std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_n
 
     stringstream ss;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& resolver = variableResolver();
 
-    string mops_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_mops_version_).dbColumnName();
-    string nacp_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_nacp_).dbColumnName();
-    string mucp_nic_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_nucp_nic_).dbColumnName();
-    string sil_col_name = dbcont_man.getVariable("CAT021", DBContent::var_cat021_sil_).dbColumnName();
+    string mops_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_mops_version_);
+    string nacp_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_nacp_);
+    string mucp_nic_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_nucp_nic_);
+    string sil_col_name = resolver.getVariableDBColumn("CAT021", dbcontent_vars::var_cat021_sil_);
 
     if (active_)
     {
-        if (!first)
+        // Build into an inner stream first; only emit the outer " AND" and
+        // flip `first` once we know at least one clause was produced.
+        // Otherwise an all-flags-off configuration would yield "mops IN ()"
+        // (invalid SQL) or a dangling " AND ".
+        stringstream inner;
+        bool inner_first = true;
+
+        std::vector<std::string> versions;
+        if (use_v0_) versions.push_back("0");
+        if (use_v1_) versions.push_back("1");
+        if (use_v2_) versions.push_back("2");
+
+        if (!versions.empty())
         {
-            ss << " AND";
+            inner << " " << mops_col_name << " IN (";
+            for (size_t i = 0; i < versions.size(); ++i)
+            {
+                if (i) inner << ",";
+                inner << versions[i];
+            }
+            inner << ")";
+            inner_first = false;
         }
 
-        first = false;
-
-        ss << " " << mops_col_name << " IN (";
-
-        if (use_v0_)
-            ss << "0";
-
-        if (use_v1_)
-        {
-            if (use_v0_)
-                ss << ",1";
-            else
-                ss << "1";
-        }
-
-        if (use_v2_)
-        {
-            if (use_v0_ || use_v1_)
-                ss << ",2";
-            else
-                ss << "2";
-        }
-
-        ss << ")";
+        auto add_clause = [&](const std::string& clause) {
+            if (!inner_first)
+                inner << " AND";
+            inner << " " << clause;
+            inner_first = false;
+        };
 
         if (use_min_nucp_)
-            ss << " AND ((" << mucp_nic_col_name << " >= " << min_nucp_
-               << " AND " << mops_col_name << "=0) OR " << mops_col_name << " IN (1,2))";
+            add_clause("((" + mucp_nic_col_name + " >= " + std::to_string(min_nucp_)
+                 + " AND " + mops_col_name + "=0) OR " + mops_col_name + " IN (1,2))");
 
         if (use_max_nucp_)
-            ss << " AND ((" << mucp_nic_col_name << " <= " << max_nucp_
-               << " AND " << mops_col_name << "=0) OR " << mops_col_name << " IN (1,2))";
+            add_clause("((" + mucp_nic_col_name + " <= " + std::to_string(max_nucp_)
+                 + " AND " + mops_col_name + "=0) OR " + mops_col_name + " IN (1,2))");
 
         if (use_min_nic_)
-            ss << " AND ((" << mucp_nic_col_name << " >= " << min_nic_
-               << " AND " << mops_col_name << " IN (1,2)) OR " << mops_col_name << " = 0)";
+            add_clause("((" + mucp_nic_col_name + " >= " + std::to_string(min_nic_)
+                 + " AND " + mops_col_name + " IN (1,2)) OR " + mops_col_name + " = 0)");
 
         if (use_max_nic_)
-            ss << " AND ((" << mucp_nic_col_name << " <= " << max_nic_
-               << " AND " << mops_col_name << " IN (1,2)) OR " << mops_col_name << " = 0)";
+            add_clause("((" + mucp_nic_col_name + " <= " + std::to_string(max_nic_)
+                 + " AND " + mops_col_name + " IN (1,2)) OR " + mops_col_name + " = 0)");
 
         if (use_min_nacp_)
-            ss << " AND ((" << nacp_col_name << " >= " << min_nacp_
-               << " AND " << mops_col_name << " IN (1,2)) OR " << mops_col_name << " = 0)";
+            add_clause("((" + nacp_col_name + " >= " + std::to_string(min_nacp_)
+                 + " AND " + mops_col_name + " IN (1,2)) OR " + mops_col_name + " = 0)");
 
         if (use_max_nacp_)
-            ss << " AND ((" << nacp_col_name << " <= " << max_nacp_
-               << " AND " << mops_col_name << " IN (1,2)) OR " << mops_col_name << " = 0)";
+            add_clause("((" + nacp_col_name + " <= " + std::to_string(max_nacp_)
+                 + " AND " + mops_col_name + " IN (1,2)) OR " + mops_col_name + " = 0)");
 
         if (use_min_sil_v1_)
-            ss << " AND ((" << sil_col_name << " >= " << min_sil_v1_
-               << " AND " << mops_col_name << "=1) OR " << mops_col_name << " IN (0,2))";
+            add_clause("((" + sil_col_name + " >= " + std::to_string(min_sil_v1_)
+                 + " AND " + mops_col_name + "=1) OR " + mops_col_name + " IN (0,2))");
 
         if (use_max_sil_v1_)
-            ss << " AND ((" << sil_col_name << " <= " << max_sil_v1_
-               << " AND " << mops_col_name << "=1) OR " << mops_col_name << " IN (0,2))";
+            add_clause("((" + sil_col_name + " <= " + std::to_string(max_sil_v1_)
+                 + " AND " + mops_col_name + "=1) OR " + mops_col_name + " IN (0,2))");
 
         if (use_min_sil_v2_)
-            ss << " AND ((" << sil_col_name << " >= " << min_sil_v2_
-               << " AND " << mops_col_name << "=2) OR " << mops_col_name << " IN (0,1))";
+            add_clause("((" + sil_col_name + " >= " + std::to_string(min_sil_v2_)
+                 + " AND " + mops_col_name + "=2) OR " + mops_col_name + " IN (0,1))");
 
         if (use_max_sil_v2_)
-            ss << " AND ((" << sil_col_name << " <= " << max_sil_v2_
-               << " AND " << mops_col_name << "=2) OR " << mops_col_name << " IN (0,1))";
+            add_clause("((" + sil_col_name + " <= " + std::to_string(max_sil_v2_)
+                 + " AND " + mops_col_name + "=2) OR " + mops_col_name + " IN (0,1))");
 
+        if (!inner_first) // at least one clause emitted
+        {
+            if (!first)
+                ss << " AND";
+            ss << inner.str();
+            first = false;
+        }
     }
 
     loginf << "here '" << ss.str() << "'";
 
     return ss.str();
-}
-
-
-void ADSBQualityFilter::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("ADSBQualityFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-
-void ADSBQualityFilter::checkSubConfigurables()
-{
-    logdbg;
 }
 
 DBFilterWidget* ADSBQualityFilter::createWidget()
@@ -336,8 +328,8 @@ void ADSBQualityFilter::loadViewPointConditions (const nlohmann::json& filters)
     max_sil_v2_ = filter.at("max_sil_v2");
 
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 bool ADSBQualityFilter::useV0() const

@@ -19,28 +19,39 @@
 
 #include "viewdatawidget.h"
 
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
+
 class TableView;
 class TableViewWidget;
 class TableViewDataSource;
-class QTabWidget;
 class AllBufferTableWidget;
-class BufferTableWidget;
 class Buffer;
 class DBContent;
+class DBContentRootItem;
+class LayerTreeModel;
+class TableLeafPayload;
 
 class TableViewDataWidget : public ViewDataWidget
 {
     Q_OBJECT
 
 signals:
-    void exportDoneSignal(bool cancelled);
+    void exportDoneSignal(bool canceled);
+
+    /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
+    /// The config widget uses this to re-apply default expansion.
+    void layerTreeRebuiltSignal();
+
 public slots:
     void exportDataSlot();
-    void exportDoneSlot(bool cancelled);
+    void exportDoneSlot(bool canceled);
 
 public:
-    TableViewDataWidget(TableViewWidget* view_widget, 
-                          QWidget* parent = nullptr, 
+    TableViewDataWidget(TableViewWidget* view_widget,
+                          QWidget* parent = nullptr,
                           Qt::WindowFlags f = Qt::WindowFlags());
     virtual ~TableViewDataWidget();
 
@@ -53,7 +64,10 @@ public:
 
     void updateToSettingsChange();
 
-    void showTab(QWidget* widget_ptr, bool value);
+    /// Called by TableViewConfigWidget once the LayerPanelWidget is built.
+    /// Provides the DBContent root item (owned by the panel's model) and the
+    /// layer tree model used for hidden-state round-tripping.
+    void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
 
 protected:
     virtual void toolChanged_impl(int mode) override;
@@ -70,10 +84,24 @@ protected:
 
     TableView*           view_{nullptr};
     TableViewDataSource* data_source_{nullptr};
-    QTabWidget*            tab_widget_{nullptr};
 
     AllBufferTableWidget*  all_buffer_table_widget_{nullptr};
 
-    std::map<std::string, BufferTableWidget*> buffer_tables_;
-};
+    DBContentRootItem* db_content_root_{nullptr};   // owned by layer panel model
+    LayerTreeModel*    layer_model_    {nullptr};   // owned by LayerPanelWidget
 
+    std::vector<std::unique_ptr<TableLeafPayload>> payloads_;
+
+    std::set<std::string> hidden_layer_ids_;  // transient: remember unchecked layers across reloads
+
+private:
+    /// Rebuild payloads_ from the loaded buffers and repopulate the DBContent
+    /// subtree. Emits layerTreeRebuiltSignal.
+    void rebuildLayerTree();
+
+    /// Compute the allowed-layer-ids set + per-layer icon colors from current
+    /// panel state and push them onto the AllBufferTableModel. Empty layer
+    /// panel (no payloads) = no filter (std::nullopt); otherwise the set of
+    /// currently-visible layer ids.
+    void pushLayerStateToModel();
+};

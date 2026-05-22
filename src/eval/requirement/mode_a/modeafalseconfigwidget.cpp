@@ -47,3 +47,4 @@ ModeAFalseConfig& ModeAFalseConfigWidget::config()
     return *config;
 }
 }
+

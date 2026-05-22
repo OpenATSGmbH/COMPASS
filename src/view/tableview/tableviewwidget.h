@@ -35,12 +35,7 @@ class QTabWidget;
 class TableViewWidget : public ViewWidget
 {
   public:
-    /// @brief Constructor
-    TableViewWidget(const std::string& class_id, 
-                      const std::string& instance_id,
-                      Configurable* config_parent, 
-                      TableView* view, 
-                      QWidget* parent = NULL);
+    TableViewWidget(TableView* view, QWidget* parent = nullptr);
     /// @brief Destructor
     virtual ~TableViewWidget();
 

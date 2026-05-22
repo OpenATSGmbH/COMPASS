@@ -16,11 +16,10 @@
  */
 
 #include "modecfilter.h"
-#include "compass.h"
 #include "modecfilterwidget.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
+#include "buffer/buffer.h"
 #include "logger.h"
 //#include "stringconv.h"
 
@@ -29,9 +28,8 @@ using namespace std;
 using namespace nlohmann;
 using namespace dbContent;
 
-ModeCFilter::ModeCFilter(const std::string& class_id, const std::string& instance_id,
-                         Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+ModeCFilter::ModeCFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("min_value", &min_value_, -1000.0f);
     registerParameter("max_value", &max_value_, 10000.0f);
@@ -46,51 +44,33 @@ ModeCFilter::~ModeCFilter() {}
 
 bool ModeCFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcont_name);
+    return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_mc_);
 }
 
 std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& resolver = variableResolver();
 
-    if (!dbcont_man.metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcontent_name))
+    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
         return "";
 
     stringstream ss;
 
     if (active_)
     {
-        // if (!first)
-        // {
-        //     ss << " AND";
-        // }
-
-                // if (null_wanted_)
-                // {
-                //     ss << " (" << var.dbColumnName() << " IS NULL OR";
-                //     ss << " (" << var.dbColumnName() << " >= " << min_value_
-                //        << " AND " << var.dbColumnName() << " <= " << max_value_ << "))";
-
-                // }
-                // else
-                // {
-                //     ss << " (" << var.dbColumnName() << " >= " << min_value_
-                //        << " AND " << var.dbColumnName() << " <= " << max_value_ << ")";
-                // }
-
         { // first check always to enforce if null_wanted_
-            dbContent::Variable& var = dbcont_man.metaGetVariable(
-                dbcontent_name, DBContent::meta_var_mc_);
+            string col_name = resolver.metaGetVariableDBColumn(
+                dbcontent_name, dbcontent_vars::meta_var_mc_);
 
             if (!first)
                 ss << " AND";
 
-            ss << " (" << var.dbColumnName() << " BETWEEN " << min_value_ << " AND " << max_value_;
+            ss << " (" << col_name << " BETWEEN " << min_value_ << " AND " << max_value_;
 
             if (null_wanted_)
-                ss << " OR " << var.dbColumnName() << " IS NULL";
+                ss << " OR " << col_name << " IS NULL";
 
             ss << ")";
 
@@ -100,18 +80,18 @@ std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, d
         if (dbcontent_name == "CAT062")
         {
             {
-                dbContent::Variable& var = dbcont_man.getVariable(
-                    dbcontent_name, DBContent::var_cat062_baro_alt_);
-
-                if (var.hasDBContent())
+                if (resolver.variableHasDBContent(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_))
                 {
+                    string col_name = resolver.getVariableDBColumn(
+                        dbcontent_name, dbcontent_vars::var_cat062_baro_alt_);
+
                     if (!first)
                         ss << " AND";
 
-                    ss << " (" << var.dbColumnName() << " BETWEEN " << min_value_ << " AND " << max_value_;
+                    ss << " (" << col_name << " BETWEEN " << min_value_ << " AND " << max_value_;
 
                     if (null_wanted_)
-                        ss << " OR " << var.dbColumnName() << " IS NULL";
+                        ss << " OR " << col_name << " IS NULL";
 
                     ss << ")";
 
@@ -120,18 +100,18 @@ std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, d
             }
 
             {
-                dbContent::Variable& var = dbcont_man.getVariable(
-                    dbcontent_name, DBContent::var_cat062_fl_measured_);
-
-                if (var.hasDBContent())
+                if (resolver.variableHasDBContent(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_))
                 {
+                    string col_name = resolver.getVariableDBColumn(
+                        dbcontent_name, dbcontent_vars::var_cat062_fl_measured_);
+
                     if (!first)
                         ss << " AND";
 
-                    ss << " (" << var.dbColumnName() << " BETWEEN " << min_value_ << " AND " << max_value_;
+                    ss << " (" << col_name << " BETWEEN " << min_value_ << " AND " << max_value_;
 
                     if (null_wanted_)
-                        ss << " OR " << var.dbColumnName() << " IS NULL";
+                        ss << " OR " << col_name << " IS NULL";
 
                     ss << ")";
 
@@ -146,22 +126,9 @@ std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, d
     return ss.str();
 }
 
-void ModeCFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("ModeCFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
 DBFilterWidget* ModeCFilter::createWidget()
 {
     return new ModeCFilterWidget(*this);
-}
-
-
-void ModeCFilter::checkSubConfigurables()
-{
-    logdbg;
 }
 
 
@@ -202,8 +169,8 @@ void ModeCFilter::loadViewPointConditions (const nlohmann::json& filters)
         null_wanted_ = false;
 
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 bool ModeCFilter::activeInLiveMode()
@@ -215,15 +182,14 @@ std::vector<unsigned int> ModeCFilter::filterBuffer(const std::string& dbcontent
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_mc_.name()).existsIn(dbcontent_name))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
         return to_be_removed;
 
-    dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
-                                                                         DBContent::meta_var_mc_.name()).getFor(dbcontent_name);
+    string var_name = variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_mc_);
 
-    traced_assert(buffer->has<float> (var.name()));
+    traced_assert(buffer->has<float> (var_name));
 
-    NullableVector<float>& data_vec = buffer->get<float> (var.name());
+    NullableVector<float>& data_vec = buffer->get<float> (var_name);
 
     float value;
 

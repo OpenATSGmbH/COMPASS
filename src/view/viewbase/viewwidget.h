@@ -21,10 +21,9 @@
 
 #include <QWidget>
 
-#include "configurable.h"
 #include "appmode.h"
 #include "ui_test_testable.h"
-#include "json_fwd.hpp"
+#include "traced_assert.h"
 
 #include <boost/optional.hpp>
 
@@ -85,7 +84,7 @@ ViewPresetWidget: Widget for selecting and editing view presets. No need to deri
 ViewToolWidget: A toolbar located above the ViewDataWidget, holding the view's needed tool buttons and actions.
 This is a generic class which doesn't need to be derived, but is rather filled in the derived ViewWidget's constructor and
 provided with all needed callbacks. Interacts with the ViewDataWidget to switch the view's active tool and handles tool
-interaction like activating, deactivating and cancelling tools.
+interaction like activating, deactivating and canceling tools.
 
 ViewLoadStateWidget: A widget located below the configuration area. Provides state information for the view
 and means to update the view manually. Interacts with the ViewWidget and the ViewDataWidget to e.g.issue reloads and redraws,
@@ -98,7 +97,7 @@ The widget's container is only visible if the widget is set.
 The ViewWidget acts both to generate the basic layout and to handle interaction between all these components.
 It also serves as the View's main interface to all ui and display functionality.
 */
-class ViewWidget : public QWidget, public Configurable, public ui_test::UITestable
+class ViewWidget : public QWidget, public ui_test::UITestable
 {
     Q_OBJECT
 
@@ -106,8 +105,7 @@ signals:
     void viewRefreshed();
 
 public:
-    ViewWidget(const std::string& class_id, const std::string& instance_id,
-               Configurable* config_parent, View* view, QWidget* parent = nullptr);
+    ViewWidget(View* view, QWidget* parent = nullptr);
     virtual ~ViewWidget();
 
     void toggleConfigWidget();
@@ -137,6 +135,8 @@ public:
     void init();
     bool isInit() const { return init_; }
 
+    void runPostInit();
+
     bool isVariableSetLoaded() const;
 
     View* getView() { return view_; }
@@ -148,6 +148,9 @@ public:
     void uiRefresh() override final;
 
     QImage renderContents();
+
+    void databaseOpened();
+    void databaseClosed();
 
     static QIcon getIcon(const std::string& fn);
 

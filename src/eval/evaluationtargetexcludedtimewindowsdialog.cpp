@@ -16,6 +16,7 @@
  */
 
 #include "evaluationtargetexcludedtimewindowsdialog.h"
+#include "dbcontent/dbcontentmanager.h"
 #include "traced_assert.h"
 
 #include <QVBoxLayout>
@@ -30,8 +31,9 @@
 #include <QPushButton>
 
 EvaluationTargetExcludedTimeWindowsDialog::EvaluationTargetExcludedTimeWindowsDialog(
+    DBContentManager& dbcont_man,
     const std::string utn_str, Utils::TimeWindowCollection& collection, QWidget* parent)
-    : QDialog(parent), collection_(collection)
+    : QDialog(parent), dbcont_man_(dbcont_man), collection_(collection)
 {
     setWindowTitle("Edit Evaluation Excluded Time Windows");
 
@@ -55,7 +57,14 @@ EvaluationTargetExcludedTimeWindowsDialog::EvaluationTargetExcludedTimeWindowsDi
 
     form_layout->addRow("UTNs", utn_label);
 
-    tw_widget_ = new TimeWindowCollectionWidget(collection_);
+    auto min_max_func = [this]()
+        -> boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
+    {
+        if (dbcont_man_.hasMinMaxTimestamp())
+            return dbcont_man_.minMaxTimestamp();
+        return boost::none;
+    };
+    tw_widget_ = new TimeWindowCollectionWidget(collection_, min_max_func);
     form_layout->addRow("Excluded Time Windows", tw_widget_);
 
     main_layout->addLayout(form_layout);
@@ -80,3 +89,4 @@ EvaluationTargetExcludedTimeWindowsDialog::EvaluationTargetExcludedTimeWindowsDi
 
     setLayout(main_layout);
 }
+

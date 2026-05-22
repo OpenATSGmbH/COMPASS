@@ -20,12 +20,15 @@
 #include <jasterix/jasterix.h>
 
 #include <QWidget>
+#include <QDate>
 
 #include <memory>
 
 class ASTERIXImportTask;
+class ASTERIXImportDataSourcesWidget;
 class ASTERIXConfigWidget;
 class ASTERIXOverrideWidget;
+class ASTERIXFramingComboBox;
 
 class QHBoxLayout;
 class QPushButton;
@@ -56,18 +59,26 @@ public slots:
 
     void decodingStateChangedSlot();
 
+    void framingChangedSlot();
+    void framingEditSlot();
+
   public:
     ASTERIXImportTaskWidget(ASTERIXImportTask& task, QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
     virtual ~ASTERIXImportTaskWidget();
 
     void updateSourcesGrid();
+    void updateFramingControls();
 
     ASTERIXOverrideWidget* overrideWidget() const;
+
+protected slots:
+    void dataSourcesWarningsChangedSlot(bool any);
 
 protected:
     void addMainTab();
     void addDecoderTab();
     void addOverrideTab();
+    void addDataSourcesTab();
     void addMappingsTab();
 
     void updateParserBox();
@@ -91,6 +102,11 @@ protected:
 
     ASTERIXConfigWidget* config_widget_{nullptr};
     ASTERIXOverrideWidget* override_widget_{nullptr};
+    ASTERIXImportDataSourcesWidget* data_sources_widget_{nullptr};
+    int data_sources_tab_index_{-1};
+
+    ASTERIXFramingComboBox* framing_combo_{nullptr};
+    QPushButton* framing_edit_{nullptr};
 
     QCheckBox* reset_date_between_files_check_{nullptr};
     QCheckBox* ignore_timejumps_check_{nullptr};

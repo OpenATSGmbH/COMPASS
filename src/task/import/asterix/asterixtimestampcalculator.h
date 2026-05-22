@@ -23,6 +23,7 @@
 #include <memory>
 
 class Buffer;
+class COMPASS;
 
 class ASTERIXTimestampCalculator
 {
@@ -33,14 +34,15 @@ public:
     void calculate(std::string source_name,
                    boost::posix_time::ptime date, bool reset_date_between_files,
                    bool override_tod_active, float override_tod_offset,
-                   bool ignore_time_jumps, bool do_timestamp_checks);
+                   bool ignore_time_jumps, bool do_timestamp_checks,
+                   COMPASS& compass);
     bool processing() const {return processing_; }
     void setProcessingDone();
     void reset();
 
     void resetDateInfo();
     void clearTimeStats();
-    void logLastTimestamp();
+    void logLastTimestamp(COMPASS& compass);
 
     bool first_time_{true};
     boost::posix_time::ptime timestamp_first_;
@@ -64,10 +66,10 @@ private:
     bool did_recent_time_jump_{false}; // indicator if recently a time jump was performed
     bool had_late_time_{false}; // indicator if time late before 24h mark occured
 
-    void doADSBTimeProcessing();
-    void doTodOverride(float override_tod_offset);
-    void doFutureTimestampsCheck();
-    void doTimeStampCalculation(bool ignore_time_jumps);
+    void doADSBTimeProcessing(COMPASS& compass);
+    void doTodOverride(float override_tod_offset, COMPASS& compass);
+    void doFutureTimestampsCheck(COMPASS& compass);
+    void doTimeStampCalculation(bool ignore_time_jumps, COMPASS& compass);
 };
 
 

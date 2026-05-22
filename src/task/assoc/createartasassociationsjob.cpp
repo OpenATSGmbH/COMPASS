@@ -19,6 +19,7 @@
 #include "compass.h"
 #include "buffer.h"
 #include "createartasassociationstask.h"
+#include "taskmanager.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -71,7 +72,7 @@ void CreateARTASAssociationsJob::run_impl()
 
     start_time = boost::posix_time::microsec_clock::local_time();
 
-    COMPASS::instance().logInfo("Create ARTAS Associations") << "started";
+    task_.manager().compass().logInfo("Create ARTAS Associations") << "started";
 
     // clear previous associations
 
@@ -91,7 +92,7 @@ void CreateARTASAssociationsJob::run_impl()
     // create associations for sensors
     createSensorAssociations();
 
-    COMPASS::instance().logInfo("Create ARTAS Associations")
+    task_.manager().compass().logInfo("Create ARTAS Associations")
         << missing_hashes_cnt_ << " missing hashes and "
         << dubious_associations_cnt_ << " dubious associations ("
         << found_hashes_cnt_ << " found total";
@@ -112,7 +113,7 @@ void CreateARTASAssociationsJob::run_impl()
         {
             stop_time = boost::posix_time::microsec_clock::local_time();
 
-            COMPASS::instance().logInfo("Create ARTAS Associations") << "save declined";
+            task_.manager().compass().logInfo("Create ARTAS Associations") << "save declined";
 
             double load_time;
             boost::posix_time::time_duration diff = stop_time - start_time;
@@ -143,7 +144,7 @@ void CreateARTASAssociationsJob::run_impl()
     loginf << "done ("
            << String::doubleToStringPrecision(load_time, 2) << " s).";
 
-    COMPASS::instance().logInfo("Create ARTAS Associations")
+    task_.manager().compass().logInfo("Create ARTAS Associations")
         << "finished after "
         << String::timeStringFromDouble(diff.total_milliseconds() / 1000.0, false);
 
@@ -179,38 +180,38 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
     shared_ptr<Buffer> buffer = buffers_.at(tracker_dbcontent_name_);
     size_t buffer_size = buffer->size();
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
     traced_assert(buffer->has<unsigned int>(
-               dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_num_).name()));
+               dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_track_num_).name()));
     traced_assert(buffer->has<bool>(
-               dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_begin_).name()));
+               dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_track_begin_).name()));
     traced_assert(buffer->has<bool>(
-               dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_end_).name()));
+               dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_track_end_).name()));
     traced_assert(buffer->has<unsigned char>(
-               dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_coasting_).name()));
-    traced_assert(buffer->has<string>(dbcont_man.getVariable(tracker_dbcontent_name_, DBContent::var_cat062_tris_).name()));
+               dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_track_coasting_).name()));
+    traced_assert(buffer->has<string>(dbcont_man.getVariable(tracker_dbcontent_name_, dbcontent_vars::var_cat062_tris_).name()));
 
     traced_assert(buffer->has<unsigned long>(
-               dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_rec_num_).name()));
+               dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_rec_num_).name()));
     traced_assert(buffer->has<boost::posix_time::ptime>(
-               dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_timestamp_).name()));
+               dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_timestamp_).name()));
 
     NullableVector<unsigned int>& track_num_vec = buffer->get<unsigned int>(
-                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_num_).name());
+                dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_track_num_).name());
     NullableVector<bool>& track_begin_vec = buffer->get<bool>(
-                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_begin_).name());
+                dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_track_begin_).name());
     NullableVector<bool>& track_end_vec = buffer->get<bool>(
-                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_end_).name());
+                dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_track_end_).name());
     NullableVector<unsigned char>& track_coasting_vec = buffer->get<unsigned char>(
-                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_track_coasting_).name());
+                dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_track_coasting_).name());
     NullableVector<string>& tri_hash_vec = buffer->get<string>(
-                dbcont_man.getVariable(tracker_dbcontent_name_, DBContent::var_cat062_tris_).name());
+                dbcont_man.getVariable(tracker_dbcontent_name_, dbcontent_vars::var_cat062_tris_).name());
 
     NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(
-                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_rec_num_).name());
+                dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_rec_num_).name());
     NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(
-                dbcont_man.metaGetVariable(tracker_dbcontent_name_, DBContent::meta_var_timestamp_).name());
+                dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_timestamp_).name());
 
     map<int, UniqueARTASTrack> current_tracks;  // utn -> unique track
     map<int, int> current_track_mappings;       // track_num -> utn
@@ -397,7 +398,7 @@ void CreateARTASAssociationsJob::saveAssociations()
 {
     loginf;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = task_.manager().compass().dbContentManager();
 
     // write association info to buffers
 
@@ -412,14 +413,14 @@ void CreateARTASAssociationsJob::saveAssociations()
 
     traced_assert(buffers_.count(tracker_dbcontent_name_));
 
-    traced_assert(dbcontent_man.metaCanGetVariable(tracker_dbcontent_name_, DBContent::meta_var_rec_num_));
-    traced_assert(dbcontent_man.canGetVariable(tracker_dbcontent_name_, DBContent::var_cat062_tri_recnums_));
+    traced_assert(dbcontent_man.metaCanGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_rec_num_));
+    traced_assert(dbcontent_man.canGetVariable(tracker_dbcontent_name_, dbcontent_vars::var_cat062_tri_recnums_));
 
     dbContent::Variable& rec_num_var = dbcontent_man.metaGetVariable(
-                tracker_dbcontent_name_, DBContent::meta_var_rec_num_);
+                tracker_dbcontent_name_, dbcontent_vars::meta_var_rec_num_);
 
     dbContent::Variable& tri_rec_num_var = dbcontent_man.getVariable(
-                tracker_dbcontent_name_, DBContent::var_cat062_tri_recnums_);
+                tracker_dbcontent_name_, dbcontent_vars::var_cat062_tri_recnums_);
 
     string rec_num_var_name = rec_num_var.name();
     string tri_rec_num_var_name = tri_rec_num_var.name();
@@ -521,7 +522,7 @@ void CreateARTASAssociationsJob::createSensorAssociations()
     loginf;
     // for each rec_num + tri, find sensor hash + rec_num
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
     for (auto& dbcont_it : dbcont_man)
     {
@@ -703,14 +704,14 @@ void CreateARTASAssociationsJob::removePreviousAssociations()
 {
     loginf;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = task_.manager().compass().dbContentManager();
 
     if (buffers_.count(tracker_dbcontent_name_))
     {
-        traced_assert(dbcontent_man.canGetVariable(tracker_dbcontent_name_, DBContent::var_cat062_tri_recnums_));
+        traced_assert(dbcontent_man.canGetVariable(tracker_dbcontent_name_, dbcontent_vars::var_cat062_tri_recnums_));
 
         string tri_rec_num_var_name =
-                dbcontent_man.getVariable(tracker_dbcontent_name_, DBContent::var_cat062_tri_recnums_).name();
+                dbcontent_man.getVariable(tracker_dbcontent_name_, dbcontent_vars::var_cat062_tri_recnums_).name();
 
         NullableVector<json>& tri_rec_num_vec = buffers_.at(tracker_dbcontent_name_)->get<json>(tri_rec_num_var_name);
 
@@ -767,11 +768,11 @@ void CreateARTASAssociationsJob::createSensorHashes(DBContent& object)
 
     using namespace dbContent;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
-    Variable& rec_num_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_);
-    Variable& hash_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_artas_hash_);
-    Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
+    Variable& rec_num_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rec_num_);
+    Variable& hash_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_artas_hash_);
+    Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
     traced_assert(buffer->has<unsigned long>(rec_num_var.name()));
     traced_assert(buffer->has<string>(hash_var.name()));
@@ -781,10 +782,17 @@ void CreateARTASAssociationsJob::createSensorHashes(DBContent& object)
     NullableVector<string>& hashes = buffer->get<string>(hash_var.name());
     NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(ts_var.name());
 
+    unsigned int null_hash_cnt = 0;
+
     for (size_t cnt = 0; cnt < buffer_size; ++cnt)
     {
         traced_assert(!rec_nums.isNull(cnt));
-        traced_assert(!hashes.isNull(cnt));
+
+        if (hashes.isNull(cnt))
+        {
+            ++null_hash_cnt;
+            continue;
+        }
 
         if (ts_vec.isNull(cnt))
         {
@@ -793,13 +801,15 @@ void CreateARTASAssociationsJob::createSensorHashes(DBContent& object)
             continue;
         }
 
-        traced_assert(!ts_vec.isNull(cnt));
-
         // hash -> rec_num, tod
         // map <string, multimap<string, pair<int, float>>> sensor_hashes_;
 
         sensor_hashes_.emplace(hashes.get(cnt), make_pair(rec_nums.get(cnt), ts_vec.get(cnt)));
     }
+
+    if (null_hash_cnt)
+        logwrn << object.name() << ": " << null_hash_cnt << " of " << buffer_size
+               << " target reports have null ARTAS hash, skipped";
 }
 
 std::map<std::string, std::pair<unsigned int, unsigned int> > CreateARTASAssociationsJob::associationCounts() const
@@ -814,3 +824,4 @@ void CreateARTASAssociationsJob::setSaveQuestionAnswer(bool value)
     save_question_answer_ = value;
     save_question_answered_ = true;
 }
+

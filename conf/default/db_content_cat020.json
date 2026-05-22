@@ -1,4 +1,6 @@
 {
+    "class_name": "DBContent",
+    "instance_name": "CAT020",
     "parameters": {
         "contains_status_content": false,
         "contains_target_reports": true,
@@ -7,1183 +9,1415 @@
         "info": "",
         "name": "CAT020"
     },
-    "sub_configs": {
-        "Variable": {
-            "Variable41": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "corrupted",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.CRT\n\n0 No Corrupted reply in multilateration\n1 Corrupted replies in multilateration",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Corrupted",
-                    "representation_str": "STANDARD",
-                    "short_name": "CRT",
-                    "unit": ""
-                }
-            },
-            "Variable42": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ot",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.OT\n\n1 Other Technology Multilateration\n0 No Other Technology Multilateration",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "OT",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable43": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "fft",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.RAB\n\n0 Report from target transponder\n1 Report from field monitor (fixed transponder)",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "FFT",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable44": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "altitude_reporting_capability_",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 230.ARC\n\nAltitude reporting capability\n0 100 ft resolution\n1 25 ft resolution",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Altitude Reporting Capability\n",
-                    "representation_str": "STANDARD",
-                    "short_name": "ARC",
-                    "unit": ""
-                }
-            },
-            "Variable45": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "acid_source",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 245.STI\n\n0 Callsign or registration not downlinked from transponder\n1 Registration downlinked from transponder\n2 Callsign downlinked from transponder\n3 Not defined",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "ACID Source",
-                    "representation_str": "STANDARD",
-                    "short_name": "STI",
-                    "unit": ""
-                }
-            },
-            "Variable46": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "contributing_receivers",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 400.Contributing Receivers.RUx\n\nRUx Contribution\n0 RUx has NOT contributed to the target detection\n1 RUx has contributed to the target detection",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Contributing Receivers",
-                    "representation_str": "STANDARD",
-                    "short_name": "RUx",
-                    "unit": ""
-                }
-            },
-            "Variable46_2": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "num_contributing_receivers",
-                    "db_expression": "CAST(json_array_length(contributing_receivers) AS INTEGER)",
-                    "db_expression_variables": [
-                        "Contributing Receivers"
-                    ],
-                    "description": "Number of contributing receivers",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Num Contributing Receivers",
-                    "representation_str": "STANDARD",
-                    "short_name": "NumRUx",
-                    "unit": ""
-                }
-            },
-            "Variable47": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "w_e_value",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 030.Warning/Error Conditions.W/E Value\n\nWarning/error condition value.\n0 Not defined; never used.\n1 Multipath Reply (Reflection)\n3 Split plot\n10 Phantom SSR plot\n11 Non-Matching Mode-3/A Code\n12 Mode C code / Mode S altitude code abnormal value compared to the track\n15 Transponder anomaly detected\n16 Duplicated or Illegal Mode S Aircraft Address\n17 Mode S error correction applied\n18 Undecodable Mode C code / Mode S altitude code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "W/E Value",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable48": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "mode_s_mb_data",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 250.Mode S MB Data.MB Data\n\n56-bit message conveying Mode S Comm B message data",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode S MB Data",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable49": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "acas_mb_data",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 260.MB DATA\n\n56-bit message conveying Mode S Comm B message data of BDS Register 3,0.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "ACAS MB DATA",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable50": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "vehicle_fleet_identification",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 300.VFI\n\n0 Unknown\n1 ATC equipment maintenance\n2 Airport maintenance\n3 Fire\n4 Bird scarer\n5 Snow plough\n6 Runway sweeper\n7 Emergency\n8 Police\n9 Bus\n10 Tug (push/tow)\n11 Grass cutter\n12 Fuel\n13 Baggage\n14 Catering\n15 Aircraft maintenance\n16 Flyco (follow me)",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Vehicle Fleet Identification",
-                    "representation_str": "STANDARD",
-                    "short_name": "VFI",
-                    "unit": ""
-                }
-            },
-            "Variable51": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "ppm_msg",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 310.MSG\n\n1 Towing aircraft\n2 “Follow me” operation\n3 Runway check\n4 Emergency operation (fire, medical...)\n5Work in progress (maintenance, birds scarer, sweepers...)",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "PPM MSG",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable52": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ppm_trb",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 310.TRB\n\n0 Default\n1 In Trouble",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "PPM TRB",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATTimestamp0": {
-                "parameters": {
-                    "data_type_str": "TIMESTAMP",
-                    "db_column_name": "timestamp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Epoch timestamp based on Time of Day",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Timestamp",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATUTN0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "utn",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Unique Target Number",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "UTN",
-                    "representation_str": "STANDARD",
-                    "short_name": "UTN",
-                    "unit": ""
-                }
-            },
-            "VariableMLATacas_aircraft_identification0": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "acid_capability",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 230.AIC\n\n\nFrom 230.AIC\n\nAircraft identification capability\n0 No\n1 Yes\n",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "ACID Capability",
-                    "representation_str": "STANDARD",
-                    "short_name": "AIC",
-                    "unit": ""
-                }
-            },
-            "VariableMLATacas_bds_1_a0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "b1a",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 230.B1A\n\nBDS 1,0 bit 16",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "B1A",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATacas_bds_1_b0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "b1b",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 230.B1B\n\nBDS 1,0 bits 37/40",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "B1B",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATacas_comm_capability0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "transponder_com_capability",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 230.COM\n\nCommunications capability of the transponder\n0 No communications capability (surveillance only)\n1 Comm. A and Comm. B capability\n2 Comm. A, Comm. B and Uplink ELM\n3 Comm. A, Comm. B, Uplink ELM and Downlink ELM\n4 Level 5 Transponder capability\n5 to 7 Not assigned",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Transponder Com. Capability",
-                    "representation_str": "STANDARD",
-                    "short_name": "COM",
-                    "unit": ""
-                }
-            },
-            "VariableMLATacas_flight_status0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "flight_status",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 230.STAT\n\nFlight Status\n0 No alert, no SPI, aircraft airborne\n1 No alert, no SPI, aircraft on ground\n2 Alert, no SPI, aircraft airborne\n3 Alert, no SPI, aircraft on ground\n4 Alert, SPI, aircraft airborne or on ground\n5 No alert, SPI, aircraft airborne or on ground\n6– Not assigned \n7 Information not yet extracted",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Flight Status",
-                    "representation_str": "STANDARD",
-                    "short_name": "STAT",
-                    "unit": ""
-                }
-            },
-            "VariableMLATacas_modes_service0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_s_specific_service_capability",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 230.MSSC\n\nMode-S Specific Service Capability\n0 No\n1 Yes",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode S Specific Service Capability",
-                    "representation_str": "STANDARD",
-                    "short_name": "MSSC",
-                    "unit": ""
-                }
-            },
-            "VariableMLATaccel_ax_ms20": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "ax",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 210.Ax\n\nCalculated Acceleration of the target in m/s^2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Ax",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATaccel_ay_ms20": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "ay",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 210.Ay\n\nCalculated Acceleration of the target in m/s^2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Ay",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATalt_baro_v0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_c_valid",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 090.V\n\n0 Code not validated\n1 Code validated",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode C Valid",
-                    "representation_str": "STANDARD",
-                    "short_name": "MC V",
-                    "unit": ""
-                }
-            },
-            "VariableMLATalt_geo_ft0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "geometric_altitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 105.Geometric Height\n\nHeight above WGS-84 ellipsoid in feet\n\nRenamed to match CAT062",
-                    "dimension": "Height",
-                    "is_key": false,
-                    "name": "Geometric Altitude",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "GA",
-                    "unit": "Feet"
-                }
-            },
-            "VariableMLATcalc_alt_geo_ft0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "measured_height",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 110.Measured Height\n\nHeight above local 2D co-ordinate system in reference to the\nMLT System Reference Point as defined in item I019/610, in\ntwo’s complement form, based on a direct measurement not\nrelated to barometric pressure.",
-                    "dimension": "Height",
-                    "is_key": false,
-                    "name": "Measured Height",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "MH",
-                    "unit": "Feet"
-                }
-            },
-            "VariableMLATcallsign0": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "aircraft_identification",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 245.Target Identification\n\nAircraft identification",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Aircraft Identification",
-                    "representation_str": "STANDARD",
-                    "short_name": "ACID",
-                    "unit": ""
-                }
-            },
-            "VariableMLATds_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "ds_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From ds_id\n\nData Source ID",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "DS ID",
-                    "representation_str": "DATA_SRC_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATflight_level_ft0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "mode_c_code",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 090.Flight Level\n\nFlight level in feet",
-                    "dimension": "Height",
-                    "is_key": false,
-                    "name": "Mode C Code",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "MC",
-                    "unit": "Feet"
-                }
-            },
-            "VariableMLATflight_level_g0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_c_garbled",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 090.G\n\n0 Default\n1 Garbled code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode C Garbled",
-                    "representation_str": "STANDARD",
-                    "short_name": "MC G",
-                    "unit": ""
-                }
-            },
-            "VariableMLATground_bit0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ground_bit",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.GBS\n\n0 Transponder Ground bit not set\n1 Transponder Ground bit set",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Ground Bit",
-                    "representation_str": "STANDARD",
-                    "short_name": "GBS",
-                    "unit": ""
-                }
-            },
-            "VariableMLATgroundspeed_kt0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "ground_speed",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Derived from Vx, Vy",
-                    "dimension": "Speed",
-                    "is_key": false,
-                    "name": "Ground Speed",
-                    "representation_str": "FLOAT_PREC1",
-                    "short_name": "GSpd",
-                    "unit": "Knots"
-                }
-            },
-            "VariableMLAThash_code0": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "artas_hash",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From artas_md5\n\nARTAS MD5 Hash Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "ARTAS Hash",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATline_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "line_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Communication line ID",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Line ID",
-                    "representation_str": "LINE_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATmode3a_code0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "mode_3a_code",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.Mode-3/A code\n\nMode-3/A Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Code",
-                    "representation_str": "DEC_TO_OCTAL",
-                    "short_name": "MA",
-                    "unit": ""
-                }
-            },
-            "VariableMLATmode3a_g0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_3a_garbled",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.G\n\n0 Default\n1 Garbled code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Garbled",
-                    "representation_str": "STANDARD",
-                    "short_name": "MA G",
-                    "unit": ""
-                }
-            },
-            "VariableMLATmode3a_smo0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_3a_smoothed",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.L\n\n0 Mode-3/A code derived from the reply of the transponder\n1 Mode-3/A code not extracted during the last update period",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Smoothed",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATmode3a_v0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_3a_valid",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 070.V\n\n0 Code not validated\n1 Code validated",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Valid",
-                    "representation_str": "STANDARD",
-                    "short_name": "MA V",
-                    "unit": ""
-                }
-            },
-            "VariableMLATpos_dop_x0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "x_dop",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From REF.PA.DOP.DOP-x\n\nDilution of Precision along x axis",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "X DoP",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATpos_dop_xy0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "x_y_dop_cov",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From REF.PA.DOP.DOP-xy\n\nDilution of Precision Covariance Component",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "X/Y DoP Cov",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATpos_dop_y0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "y_dop",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From REF.PA.DOP.DOP-y\n\nDilution of Precision along y axis",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Y DoP",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATpos_lat_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "latitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 041.Latitude\n\nPosition in WGS-84 Coordinates\nRange -90 <= latitude <= 90 deg.",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Latitude",
-                    "representation_str": "STANDARD",
-                    "short_name": "Lat",
-                    "unit": "Degree"
-                }
-            },
-            "VariableMLATpos_local_x_nm0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "x",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 042.X\n\nPosition in Cartesian Coordinates\n\nmax range=+/-4194.3km (~2265 NM)\n",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "X",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
-            },
-            "VariableMLATpos_local_y_nm0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "y",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 042.Y\n\nPosition in Cartesian Coordinates\n\nmax range=+/-4194.3km (~2265 NM)",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "Y",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
-            },
-            "VariableMLATpos_long_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "longitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 041.Longitude\n\nPosition in WGS-84 Coordinates\nRange -180 <= longitude < 180 deg.",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Longitude",
-                    "representation_str": "STANDARD",
-                    "short_name": "Lon",
-                    "unit": "Degree"
-                }
-            },
-            "VariableMLATpos_smoothed0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "smoothed_position",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.STH\n\n0 Measured position\n1 Smoothed position",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Smoothed Position",
-                    "representation_str": "STANDARD",
-                    "short_name": "STH",
-                    "unit": ""
-                }
-            },
-            "VariableMLATpos_std_dev_correlation_coeff0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "x_y_stddev_cov",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From REF.PA.SDC.COV-XY (Covariance Component)\n\nXY Covariance Component",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "X/Y StdDev Cov",
-                    "representation_str": "FLOAT_PREC4",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATpos_std_dev_lat_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "latitude_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From REF.PA.SDW.SDW (Latitude Component)\n\nStandard Deviation of Position of the target expressed in WGS-84",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Latitude StdDev",
-                    "representation_str": "STANDARD",
-                    "short_name": "Lat StdDev",
-                    "unit": ""
-                }
-            },
-            "VariableMLATpos_std_dev_latlong_corr_coeff0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "lat_lon_cov",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From REF.PA.SDW.COV-WGS (Lat/Long Covariance Component)\n\nLat/Long Covariance Component",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Lat/Lon Cov",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATpos_std_dev_long_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "longitude_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From REF.PA.SDW.SDW (Longitude Component)\n\nStandard Deviation of Position of the target expressed in WGS-84",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Longitude StdDev",
-                    "representation_str": "STANDARD",
-                    "short_name": "Lon StdDev",
-                    "unit": ""
-                }
-            },
-            "VariableMLATpos_std_dev_x_m0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "x_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From REF.PA.SDC.SDC (X-Component)\n\nStandard Deviation of Position of the target expressed in Cartesian coordinates",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "X StdDev",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATpos_std_dev_y_m0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "y_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From REF.PA.SDC.SDC (Y-Component)\n\nStandard Deviation of Position of the target expressed in Cartesian coordinates",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Y StdDev",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATrdp_chain0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "chain",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.CHN\n\n0 Chain 1\n1 Chain 2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Chain",
-                    "representation_str": "STANDARD",
-                    "short_name": "CHN",
-                    "unit": ""
-                }
-            },
-            "VariableMLATrec_num0": {
-                "parameters": {
-                    "data_type_str": "ULONGINT",
-                    "db_column_name": "record_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "ascending record number",
-                    "dimension": "",
-                    "is_key": true,
-                    "name": "Record Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATsac0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SAC\n\nSystem Area Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SAC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATsic0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sic",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SIC\n\nSystem Identification Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SIC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATsimulated_target0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "simulated",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.SIM\n\n0 Actual target report\n1 Simulated target report",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Simulated",
-                    "representation_str": "STANDARD",
-                    "short_name": "SIM",
-                    "unit": ""
-                }
-            },
-            "VariableMLATspi0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "spi",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.SPI\n\n0 Absence of SPI\n1 Special Position Identification",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SPI",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtarget_addr0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "aircraft_address",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 220.Target Address\n\n24-bits Mode S address\n",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Aircraft Address",
-                    "representation_str": "DEC_TO_HEX",
-                    "short_name": "ACAD",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtest_target0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "test",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.TST\n\n0 Default\n1 Test Target",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Test",
-                    "representation_str": "STANDARD",
-                    "short_name": "TST",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtod0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_of_day",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 140.Time of Day\n\nTime of Day (1/128 sec from midnight)",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time of Day",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "ToD",
-                    "unit": "Second"
-                }
-            },
-            "VariableMLATtrack_angle_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "track_angle",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Derived from Vx, Vy",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Track Angle",
-                    "representation_str": "FLOAT_PREC1",
-                    "short_name": "TrAng",
-                    "unit": "Degree"
-                }
-            },
-            "VariableMLATtrack_climb_desc_mode0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "track_climbing_descending",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CDM\n\n0 Maintaining\n1 Climbing\n2 Descending\n3 Invalid",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Climbing/Descending",
-                    "representation_str": "CLIMB_DESCENT",
-                    "short_name": "CDM",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrack_coasted0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "track_coasted",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CST\n\n0 Not extrapolated\n1 Extrapolated",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Coasted",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrack_confirmed0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track_confirmed",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.CNF\n\n0 Track in initiation phase\n1 Confirmed track",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Confirmed",
-                    "representation_str": "STANDARD",
-                    "short_name": "CNF",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrack_end0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track_end",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.TRE\n\n0 Default\n1 Last report for a track",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track End",
-                    "representation_str": "STANDARD",
-                    "short_name": "TRE",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrack_ghost_target0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track_ghost_target",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.GHO\n\n0 Default\n1 Ghost track",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Ghost Target",
-                    "representation_str": "STANDARD",
-                    "short_name": "GHO",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrack_manoeuvre_hori0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track_horizontal_manoeuvre",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 170.MAH\n\n0 Default\n1 Horizontal manoeuvre",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Horizontal Manoeuvre",
-                    "representation_str": "STANDARD",
-                    "short_name": "MAH",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrack_num0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "track_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 161.Track Number\n\nAn integer value representing a unique reference to a track\nrecord within a particular track file.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "TN",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrd_dme0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "dme_tacan",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.DME\n\n1 DME/TACAN multilateration\n0 no DME/TACAN multilateration",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "DME/TACAN",
-                    "representation_str": "STANDARD",
-                    "short_name": "DME",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrd_hf0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "hf",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.HF\n\n1 HF multilateration\n0 no HF multilateration",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "HF",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrd_ms0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ms",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.MS\n\n1 Mode-S 1090 MHz multilateration\n0 no Mode-S 1090 MHz multilateration",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MS",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrd_ssr0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ssr",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.SSR\n\n1 Non-Mode S 1090MHz multilateration\n0 no Non-Mode S 1090MHz multilat.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SSR",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrd_uat0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "uat",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.UAT\n\n1 UAT multilateration\n0 no UAT multilateration",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "UAT",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATtrd_vdl40": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "vdl4",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 020.VDL4\n\n1 VDL Mode 4 multilateration\n0 no VDL Mode 4 multilateration",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "VDL4",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableMLATvelocity_vx_ms0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "vx",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 202.Vx\n\nCalculated Track Velocity in Cartesian Coordinates",
-                    "dimension": "Speed",
-                    "is_key": false,
-                    "name": "Vx",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Meter/Second"
-                }
-            },
-            "VariableMLATvelocity_vy_ms0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "vy",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 202.Vy\n\nCalculated Track Velocity in Cartesian Coordinates",
-                    "dimension": "Speed",
-                    "is_key": false,
-                    "name": "Vy",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Meter/Second"
-                }
-            },
-            "Variablepos_max_std_dev_m0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "xy_std_dev_max",
-                    "db_expression": "greatest(x_stddev,y_stddev)",
-                    "db_expression_variables": [
-                        "X StdDev",
-                        "Y StdDev"
-                    ],
-                    "description": "Derived maximum standard deviation based on X StdDev,Y StdDev in meters",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "X/Y StdDev Max",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
+    "sub_configs": [
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable41",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "corrupted",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No Corrupted reply in multilateration\n1 Corrupted replies in multilateration",
+                "dimension": "",
+                "is_key": false,
+                "name": "Corrupted",
+                "representation_str": "STANDARD",
+                "short_name": "CRT",
+                "source": "I020/020.CRT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable42",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ot",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Other Technology Multilateration\n0 No Other Technology Multilateration",
+                "dimension": "",
+                "is_key": false,
+                "name": "OT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/020.OT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable43",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "fft",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Report from target transponder\n1 Report from field monitor (fixed transponder)",
+                "dimension": "",
+                "is_key": false,
+                "name": "FFT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/020.RAB",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable44",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "altitude_reporting_capability_",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Altitude reporting capability\n0 100 ft resolution\n1 25 ft resolution",
+                "dimension": "",
+                "is_key": false,
+                "name": "Altitude Reporting Capability\n",
+                "representation_str": "STANDARD",
+                "short_name": "ARC",
+                "source": "I020/230.ARC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable45",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "acid_source",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Callsign or registration not downlinked from transponder\n1 Registration downlinked from transponder\n2 Callsign downlinked from transponder\n3 Not defined",
+                "dimension": "",
+                "is_key": false,
+                "name": "ACID Source",
+                "representation_str": "STANDARD",
+                "short_name": "STI",
+                "source": "I020/245.STI",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable46",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "contributing_receivers",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "RUx Contribution\n0 RUx has NOT contributed to the target detection\n1 RUx has contributed to the target detection",
+                "dimension": "",
+                "is_key": false,
+                "name": "Contributing Receivers",
+                "representation_str": "MLAT_RUS",
+                "short_name": "RUx",
+                "source": "I020/400.Contributing Receivers.RUx",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable46_2",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "num_contributing_receivers",
+                "db_expression": "CAST(json_array_length(contributing_receivers) AS INTEGER)",
+                "db_expression_variables": [
+                    "Contributing Receivers"
+                ],
+                "description": "Number of contributing receivers.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Num Contributing Receivers",
+                "representation_str": "STANDARD",
+                "short_name": "NumRUx",
+                "source": "Calculated from RUs (count of contributing receivers)",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable47",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "w_e_value",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Warning/error condition value.\n0 Not defined; never used.\n1 Multipath Reply (Reflection)\n3 Split plot\n10 Phantom SSR plot\n11 Non-Matching Mode-3/A Code\n12 Mode C code / Mode S altitude code abnormal value compared to the track\n15 Transponder anomaly detected\n16 Duplicated or Illegal Mode S Aircraft Address\n17 Mode S error correction applied\n18 Undecodable Mode C code / Mode S altitude code",
+                "dimension": "",
+                "is_key": false,
+                "name": "W/E Value",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/030.Warning/Error Conditions.W/E Value",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable48",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "mode_s_mb_data",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "56-bit message conveying Mode S Comm B message data",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode S MB Data",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/250.Mode S MB Data.MB Data",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable49",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "acas_mb_data",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "56-bit message conveying Mode S Comm B message data of BDS Register 3,0.",
+                "dimension": "",
+                "is_key": false,
+                "name": "ACAS MB DATA",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/260.MB DATA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable50",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "vehicle_fleet_identification",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Unknown\n1 ATC equipment maintenance\n2 Airport maintenance\n3 Fire\n4 Bird scarer\n5 Snow plough\n6 Runway sweeper\n7 Emergency\n8 Police\n9 Bus\n10 Tug (push/tow)\n11 Grass cutter\n12 Fuel\n13 Baggage\n14 Catering\n15 Aircraft maintenance\n16 Flyco (follow me)",
+                "dimension": "",
+                "is_key": false,
+                "name": "Vehicle Fleet Identification",
+                "representation_str": "STANDARD",
+                "short_name": "VFI",
+                "source": "I020/300.VFI",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable51",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "ppm_msg",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Towing aircraft\n2 “Follow me” operation\n3 Runway check\n4 Emergency operation (fire, medical...)\n5Work in progress (maintenance, birds scarer, sweepers...)",
+                "dimension": "",
+                "is_key": false,
+                "name": "PPM MSG",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/310.MSG",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable52",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ppm_trb",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 In Trouble",
+                "dimension": "",
+                "is_key": false,
+                "name": "PPM TRB",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/310.TRB",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATTimestamp0",
+            "parameters": {
+                "data_type_str": "TIMESTAMP",
+                "db_column_name": "timestamp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Epoch timestamp computed from Time of Day plus the resolved calendar date (handles midnight wrap).",
+                "dimension": "",
+                "is_key": false,
+                "name": "Timestamp",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Calculated from Time of Day, calendar date",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATUTN0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "utn",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique Target Number, assigned by the reconstructor.",
+                "dimension": "",
+                "is_key": false,
+                "name": "UTN",
+                "representation_str": "STANDARD",
+                "short_name": "UTN",
+                "source": "Filled by the reconstructor",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATacas_aircraft_identification0",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "acid_capability",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Aircraft identification capability\n0 No\n1 Yes",
+                "dimension": "",
+                "is_key": false,
+                "name": "ACID Capability",
+                "representation_str": "STANDARD",
+                "short_name": "AIC",
+                "source": "I020/230.AIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATacas_bds_1_a0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "b1a",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "BDS 1,0 bit 16",
+                "dimension": "",
+                "is_key": false,
+                "name": "B1A",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/230.B1A",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATacas_bds_1_b0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "b1b",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "BDS 1,0 bits 37/40",
+                "dimension": "",
+                "is_key": false,
+                "name": "B1B",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/230.B1B",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATacas_comm_capability0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "transponder_com_capability",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Communications capability of the transponder\n0 No communications capability (surveillance only)\n1 Comm. A and Comm. B capability\n2 Comm. A, Comm. B and Uplink ELM\n3 Comm. A, Comm. B, Uplink ELM and Downlink ELM\n4 Level 5 Transponder capability\n5 to 7 Not assigned",
+                "dimension": "",
+                "is_key": false,
+                "name": "Transponder Com. Capability",
+                "representation_str": "STANDARD",
+                "short_name": "COM",
+                "source": "I020/230.COM",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATacas_flight_status0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "flight_status",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Flight Status\n0 No alert, no SPI, aircraft airborne\n1 No alert, no SPI, aircraft on ground\n2 Alert, no SPI, aircraft airborne\n3 Alert, no SPI, aircraft on ground\n4 Alert, SPI, aircraft airborne or on ground\n5 No alert, SPI, aircraft airborne or on ground\n6– Not assigned \n7 Information not yet extracted",
+                "dimension": "",
+                "is_key": false,
+                "name": "Flight Status",
+                "representation_str": "STANDARD",
+                "short_name": "STAT",
+                "source": "I020/230.STAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATacas_modes_service0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_s_specific_service_capability",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode-S Specific Service Capability\n0 No\n1 Yes",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode S Specific Service Capability",
+                "representation_str": "STANDARD",
+                "short_name": "MSSC",
+                "source": "I020/230.MSSC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATaccel_ax_ms20",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "ax",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Acceleration of the target in m/s^2",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ax",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/210.Ax",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATaccel_ay_ms20",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "ay",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Acceleration of the target in m/s^2",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ay",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/210.Ay",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATalt_baro_v0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code not validated\n1 Code validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Valid",
+                "representation_str": "STANDARD",
+                "short_name": "MC V",
+                "source": "I020/090.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATalt_geo_ft0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "geometric_altitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Height above WGS-84 ellipsoid in feet\n\nRenamed to match CAT062",
+                "dimension": "Height",
+                "is_key": false,
+                "name": "Geometric Altitude",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "GA",
+                "source": "I020/105.Geometric Height",
+                "unit": "Feet"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATcalc_alt_geo_ft0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "measured_height",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Height above local 2D co-ordinate system in reference to the\nMLT System Reference Point as defined in item I019/610, in\ntwo’s complement form, based on a direct measurement not\nrelated to barometric pressure.",
+                "dimension": "Height",
+                "is_key": false,
+                "name": "Measured Height",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "MH",
+                "source": "I020/110.Measured Height",
+                "unit": "Feet"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATcallsign0",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "aircraft_identification",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Aircraft identification",
+                "dimension": "",
+                "is_key": false,
+                "name": "Aircraft Identification",
+                "representation_str": "STANDARD",
+                "short_name": "ACID",
+                "source": "I020/245.Target Identification",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATds_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "ds_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Data Source Identifier (bit-packed SAC/SIC)",
+                "dimension": "",
+                "is_key": false,
+                "name": "DS ID",
+                "representation_str": "DATA_SRC_NAME",
+                "short_name": "",
+                "source": "Calculated from I020/010.SAC, I020/010.SIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATflight_level_ft0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_c_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Flight level in feet",
+                "dimension": "Height",
+                "is_key": false,
+                "name": "Mode C Code",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "MC",
+                "source": "I020/090.Flight Level",
+                "unit": "Feet"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATflight_level_g0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "MC G",
+                "source": "I020/090.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATground_bit0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ground_bit",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Transponder Ground bit not set\n1 Transponder Ground bit set",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ground Bit",
+                "representation_str": "STANDARD",
+                "short_name": "GBS",
+                "source": "I020/020.GBS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATgroundspeed_kt0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "ground_speed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Derived from Vx, Vy",
+                "dimension": "Speed",
+                "is_key": false,
+                "name": "Ground Speed",
+                "representation_str": "FLOAT_PREC1",
+                "short_name": "GSpd",
+                "source": "Calculated from Vx, Vy",
+                "unit": "Knots"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLAThash_code0",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "artas_hash",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "ARTAS MD5 Hash Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "ARTAS Hash",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Internal: artas_md5 column",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATline_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "line_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Communication line ID determining the origin of the record.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Line ID",
+                "representation_str": "LINE_NAME",
+                "short_name": "",
+                "source": "Internal: import line/source identifier",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATmode3a_code0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_3a_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode-3/A Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Code",
+                "representation_str": "DEC_TO_OCTAL",
+                "short_name": "MA",
+                "source": "I020/070.Mode-3/A code",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATmode3a_g0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_3a_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "MA G",
+                "source": "I020/070.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATmode3a_smo0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_3a_smoothed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode-3/A code derived from the reply of the transponder\n1 Mode-3/A code not extracted during the last update period",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Smoothed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/070.L",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATmode3a_v0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_3a_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code not validated\n1 Code validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Valid",
+                "representation_str": "STANDARD",
+                "short_name": "MA V",
+                "source": "I020/070.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_dop_x0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "x_dop",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Dilution of Precision along x axis",
+                "dimension": "",
+                "is_key": false,
+                "name": "X DoP",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/500.DOP.DOP-x\nI020/REF.PA.DOP.DOP-x",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_dop_xy0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "x_y_dop_cov",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Dilution of Precision Covariance Component",
+                "dimension": "",
+                "is_key": false,
+                "name": "X/Y DoP Cov",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/500.DOP.DOP-xy\nI020/REF.PA.DOP.DOP-xy",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_dop_y0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "y_dop",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Dilution of Precision along y axis",
+                "dimension": "",
+                "is_key": false,
+                "name": "Y DoP",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/500.DOP.DOP-y\nI020/REF.PA.DOP.DOP-y",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_lat_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "latitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Position in WGS-84 Coordinates\nRange -90 <= latitude <= 90 deg.",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Latitude",
+                "representation_str": "STANDARD",
+                "short_name": "Lat",
+                "source": "I020/041.Latitude\nCalculated from X, Y (Cartesian->WGS-84 projection when 041 absent)",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_local_x_nm0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "x",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Position in Cartesian Coordinates\n\nmax range=+/-4194.3km (~2265 NM)",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "X",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "source": "I020/042.X",
+                "unit": "Meter"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_local_y_nm0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "y",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Position in Cartesian Coordinates\n\nmax range=+/-4194.3km (~2265 NM)",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "Y",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "source": "I020/042.Y",
+                "unit": "Meter"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_long_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "longitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Position in WGS-84 Coordinates\nRange -180 <= longitude < 180 deg.",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Longitude",
+                "representation_str": "STANDARD",
+                "short_name": "Lon",
+                "source": "I020/041.Longitude\nCalculated from X, Y (Cartesian->WGS-84 projection when 041 absent)",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_smoothed0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "smoothed_position",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Measured position\n1 Smoothed position",
+                "dimension": "",
+                "is_key": false,
+                "name": "Smoothed Position",
+                "representation_str": "STANDARD",
+                "short_name": "STH",
+                "source": "I020/170.STH",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_std_dev_correlation_coeff0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "x_y_stddev_cov",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "XY covariance component of the position standard deviation in Cartesian coordinates.",
+                "dimension": "",
+                "is_key": false,
+                "name": "X/Y StdDev Cov",
+                "representation_str": "FLOAT_PREC4",
+                "short_name": "",
+                "source": "I020/500.SDP.rho-xy (rescaled to covariance: rho * sigma_x * sigma_y)\nI020/REF.PA.SDC.COV-XY (sign-square decoded: sign(v) * v^2)",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_std_dev_lat_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "latitude_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Standard Deviation of Position of the target expressed in WGS-84",
+                "dimension": "",
+                "is_key": false,
+                "name": "Latitude StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "Lat StdDev",
+                "source": "I020/REF.PA.SDW.SDW (Latitude Component)",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_std_dev_latlong_corr_coeff0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "lat_lon_cov",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Lat/Long Covariance Component",
+                "dimension": "",
+                "is_key": false,
+                "name": "Lat/Lon Cov",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.PA.SDW.COV-WGS (Lat/Long Covariance Component)",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_std_dev_long_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "longitude_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Standard Deviation of Position of the target expressed in WGS-84",
+                "dimension": "",
+                "is_key": false,
+                "name": "Longitude StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "Lon StdDev",
+                "source": "I020/REF.PA.SDW.SDW (Longitude Component)",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_std_dev_x_m0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "x_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Standard Deviation of Position of the target expressed in Cartesian coordinates",
+                "dimension": "",
+                "is_key": false,
+                "name": "X StdDev",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "source": "I020/500.SDP.sigma-x\nI020/REF.PA.SDC.SDC (X-Component)",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATpos_std_dev_y_m0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "y_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Standard Deviation of Position of the target expressed in Cartesian coordinates",
+                "dimension": "",
+                "is_key": false,
+                "name": "Y StdDev",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "source": "I020/500.SDP.sigma-y\nI020/REF.PA.SDC.SDC (Y-Component)",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATrdp_chain0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "chain",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Chain 1\n1 Chain 2",
+                "dimension": "",
+                "is_key": false,
+                "name": "Chain",
+                "representation_str": "STANDARD",
+                "short_name": "CHN",
+                "source": "I020/020.CHN",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATrec_num0",
+            "parameters": {
+                "data_type_str": "ULONGINT",
+                "db_column_name": "record_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique record id starting with 0 on every new recording.",
+                "dimension": "",
+                "is_key": true,
+                "name": "Record Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Internal: ascending record number assigned at import",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATsac0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/010.SAC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATsic0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/010.SIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATsimulated_target0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "simulated",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Actual target report\n1 Simulated target report",
+                "dimension": "",
+                "is_key": false,
+                "name": "Simulated",
+                "representation_str": "STANDARD",
+                "short_name": "SIM",
+                "source": "I020/020.SIM",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATspi0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "spi",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Absence of SPI\n1 Special Position Identification",
+                "dimension": "",
+                "is_key": false,
+                "name": "SPI",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/020.SPI",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtarget_addr0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "aircraft_address",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "24-bits Mode S address",
+                "dimension": "",
+                "is_key": false,
+                "name": "Aircraft Address",
+                "representation_str": "DEC_TO_HEX",
+                "short_name": "ACAD",
+                "source": "I020/220.Target Address",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtest_target0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "test",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Test Target",
+                "dimension": "",
+                "is_key": false,
+                "name": "Test",
+                "representation_str": "STANDARD",
+                "short_name": "TST",
+                "source": "I020/020.TST",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtod0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_of_day",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time of Day (1/128 sec from midnight)",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time of Day",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "ToD",
+                "source": "I020/140.Time of Day",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrack_angle_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "track_angle",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Derived from Vx, Vy",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Track Angle",
+                "representation_str": "FLOAT_PREC1",
+                "short_name": "TrAng",
+                "source": "Calculated from Vx, Vy",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrack_climb_desc_mode0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "track_climbing_descending",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Maintaining\n1 Climbing\n2 Descending\n3 Invalid",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Climbing/Descending",
+                "representation_str": "CLIMB_DESCENT",
+                "short_name": "CDM",
+                "source": "I020/170.CDM",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrack_coasted0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "track_coasted",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Not extrapolated\n1 Extrapolated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Coasted",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/170.CST",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrack_confirmed0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track_confirmed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Track in initiation phase\n1 Confirmed track",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Confirmed",
+                "representation_str": "STANDARD",
+                "short_name": "CNF",
+                "source": "I020/170.CNF",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrack_end0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track_end",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Last report for a track",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track End",
+                "representation_str": "STANDARD",
+                "short_name": "TRE",
+                "source": "I020/170.TRE",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrack_ghost_target0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track_ghost_target",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Ghost track",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Ghost Target",
+                "representation_str": "STANDARD",
+                "short_name": "GHO",
+                "source": "I020/170.GHO",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrack_manoeuvre_hori0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track_horizontal_manoeuvre",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Horizontal manoeuvre",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Horizontal Manoeuvre",
+                "representation_str": "STANDARD",
+                "short_name": "MAH",
+                "source": "I020/170.MAH",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrack_num0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "track_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "An integer value representing a unique reference to a track\nrecord within a particular track file.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Number",
+                "representation_str": "STANDARD",
+                "short_name": "TN",
+                "source": "I020/161.Track Number",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrd_dme0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "dme_tacan",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 DME/TACAN multilateration\n0 no DME/TACAN multilateration",
+                "dimension": "",
+                "is_key": false,
+                "name": "DME/TACAN",
+                "representation_str": "STANDARD",
+                "short_name": "DME",
+                "source": "I020/020.DME",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrd_hf0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "hf",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 HF multilateration\n0 no HF multilateration",
+                "dimension": "",
+                "is_key": false,
+                "name": "HF",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/020.HF",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrd_ms0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ms",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Mode-S 1090 MHz multilateration\n0 no Mode-S 1090 MHz multilateration",
+                "dimension": "",
+                "is_key": false,
+                "name": "MS",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/020.MS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrd_ssr0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ssr",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Non-Mode S 1090MHz multilateration\n0 no Non-Mode S 1090MHz multilat.",
+                "dimension": "",
+                "is_key": false,
+                "name": "SSR",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/020.SSR",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrd_uat0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "uat",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 UAT multilateration\n0 no UAT multilateration",
+                "dimension": "",
+                "is_key": false,
+                "name": "UAT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/020.UAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATtrd_vdl40",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "vdl4",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 VDL Mode 4 multilateration\n0 no VDL Mode 4 multilateration",
+                "dimension": "",
+                "is_key": false,
+                "name": "VDL4",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/020.VDL4",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATvelocity_vx_ms0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "vx",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Track Velocity in Cartesian Coordinates",
+                "dimension": "Speed",
+                "is_key": false,
+                "name": "Vx",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/202.Vx",
+                "unit": "Meter/Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableMLATvelocity_vy_ms0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "vy",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Track Velocity in Cartesian Coordinates",
+                "dimension": "Speed",
+                "is_key": false,
+                "name": "Vy",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/202.Vy",
+                "unit": "Meter/Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variablepos_max_std_dev_m0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "xy_std_dev_max",
+                "db_expression": "greatest(x_stddev,y_stddev)",
+                "db_expression_variables": [
+                    "X StdDev",
+                    "Y StdDev"
+                ],
+                "description": "Derived maximum standard deviation based on X StdDev,Y StdDev in meters",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "X/Y StdDev Max",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "source": "Calculated from X StdDev, Y StdDev (max of the two)",
+                "unit": "Meter"
             }
         }
-    }
+    ]
 }

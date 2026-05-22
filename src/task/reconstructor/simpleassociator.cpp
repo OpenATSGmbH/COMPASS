@@ -20,6 +20,7 @@
 #include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "measurement.h"
 #include "timeconv.h"
 
 #include "util/tbbhack.h"
@@ -165,33 +166,46 @@ bool SimpleAssociator::canGetPositionOffsetTR(
     const dbContent::targetReport::ReconstructorInfo& tr,
     const dbContent::ReconstructorTarget& target, bool use_max_distance)
 {
-    dbContent::targetReport::Position ref_pos;
-    bool ok;
+    // dbContent::targetReport::Position ref_pos;
+    // bool ok;
 
-    tie(ref_pos, ok) = target.interpolatedPosForTimeFast(tr.timestamp_, max_time_diff_);
+    // tie(ref_pos, ok) = target.interpolatedPosForTimeFast(tr.timestamp_, max_time_diff_);
 
-    return tr.position_ && ok;
+    // return tr.position_ && ok;
+
+    return tr.position_ && target.canPredict(tr.timestamp_);
 }
 
 // distance, target acc, tr acc
 boost::optional<std::tuple<double, double, double>> SimpleAssociator::getPositionOffsetTR(
     const dbContent::targetReport::ReconstructorInfo& tr,
-    const dbContent::ReconstructorTarget& target, 
+    const dbContent::ReconstructorTarget& target,
     bool do_debug,
     const boost::optional<unsigned int>& thread_id,
     reconstruction::PredictionStats* stats)
 {
-    dbContent::targetReport::Position ref_pos;
-    bool ok;
+    // dbContent::targetReport::Position ref_pos;
+    // bool ok;
 
-    tie(ref_pos, ok) = target.interpolatedPosForTimeFast(
-        tr.timestamp_, max_time_diff_);
+    // tie(ref_pos, ok) = target.interpolatedPosForTimeFast(
+    //     tr.timestamp_, max_time_diff_);
 
-    traced_assert(ok);
+    // traced_assert(ok);
+
+    // double distance_m = osgEarth::GeoMath::distance(tr.position_->latitude_ * DEG2RAD,
+    //                                                 tr.position_->longitude_ * DEG2RAD,
+    //                                                 ref_pos.latitude_ * DEG2RAD, ref_pos.longitude_ * DEG2RAD);
+
+    reconstruction::Measurement mm;
+
+    bool ok = target.predict(&mm, nullptr, nullptr, tr.timestamp_, stats);
+
+    if (!ok)
+        return {};
 
     double distance_m = osgEarth::GeoMath::distance(tr.position_->latitude_ * DEG2RAD,
                                                     tr.position_->longitude_ * DEG2RAD,
-                                                    ref_pos.latitude_ * DEG2RAD, ref_pos.longitude_ * DEG2RAD);
+                                                    mm.lat * DEG2RAD, mm.lon * DEG2RAD);
 
     // distance, target acc, tr acc
     return std::tuple<double, double, double>(distance_m, -1, -1);
@@ -201,17 +215,19 @@ bool SimpleAssociator::canGetPositionOffsetTargets(const boost::posix_time::ptim
                                                    const dbContent::ReconstructorTarget& target0,
                                                    const dbContent::ReconstructorTarget& target1)
 {
-    dbContent::targetReport::Position ref_pos;
-    bool ok;
+    // dbContent::targetReport::Position ref_pos;
+    // bool ok;
 
-    tie(ref_pos, ok) = target0.interpolatedPosForTimeFast(ts, max_time_diff_);
+    // tie(ref_pos, ok) = target0.interpolatedPosForTimeFast(ts, max_time_diff_);
 
-    if (!ok)
-        return false;
+    // if (!ok)
+    //     return false;
 
-    tie(ref_pos, ok) = target1.interpolatedPosForTimeFast(ts, max_time_diff_);
+    // tie(ref_pos, ok) = target1.interpolatedPosForTimeFast(ts, max_time_diff_);
 
-    return ok;
+    // return ok;
+
+    return target0.hasChainState(ts) && target1.canPredict(ts);
 }
 
 // distance, target0+target0 acc
@@ -223,24 +239,35 @@ boost::optional<std::tuple<double, double>> SimpleAssociator::getPositionOffsetT
     const boost::optional<unsigned int>& thread_id,
     reconstruction::PredictionStats* stats)
 {
-    dbContent::targetReport::Position target0_pos;
-    bool ok;
+    // dbContent::targetReport::Position target0_pos;
+    // bool ok;
 
-    tie(target0_pos, ok) = target0.interpolatedPosForTimeFast(ts, max_time_diff_);
-    traced_assert(ok);
+    // tie(target0_pos, ok) = target0.interpolatedPosForTimeFast(ts, max_time_diff_);
+    // traced_assert(ok);
 
-    dbContent::targetReport::Position target1_pos;
-    tie(target1_pos, ok) = target1.interpolatedPosForTimeFast(ts, max_time_diff_);
-    traced_assert(ok);
+    // dbContent::targetReport::Position target1_pos;
+    // tie(target1_pos, ok) = target1.interpolatedPosForTimeFast(ts, max_time_diff_);
+    // traced_assert(ok);
 
-    double distance_m = osgEarth::GeoMath::distance(target0_pos.latitude_ * DEG2RAD, target0_pos.longitude_ * DEG2RAD,
-                                                    target1_pos.latitude_ * DEG2RAD, target1_pos.longitude_ * DEG2RAD);
+    // double distance_m = osgEarth::GeoMath::distance(target0_pos.latitude_ * DEG2RAD, target0_pos.longitude_ * DEG2RAD,
+    //                                                 target1_pos.latitude_ * DEG2RAD, target1_pos.longitude_ * DEG2RAD);
+
+    reconstruction::Measurement mm0, mm1;
+
+    bool ret = target0.getChainState(mm0, ts, stats)
+            && target1.predict(&mm1, nullptr, nullptr, ts, stats);
+
+    if (!ret)
+        return {};
+
+    double distance_m = osgEarth::GeoMath::distance(mm0.lat * DEG2RAD, mm0.lon * DEG2RAD,
+                                                    mm1.lat * DEG2RAD, mm1.lon * DEG2RAD);
 
     // distance, sum target acc
     if (one_is_on_ground)
         return std::tuple<double, double>(distance_m, reconstructor_.settings().max_distance_acceptable_ground_);
     else
-        return std::tuple<double, double>(distance_m, reconstructor_.settings().max_distance_acceptable_air_);;
+        return std::tuple<double, double>(distance_m, reconstructor_.settings().max_distance_acceptable_air_);
 }
 
 boost::optional<bool> SimpleAssociator::isTrackNumberPositionOffsetTooLarge (

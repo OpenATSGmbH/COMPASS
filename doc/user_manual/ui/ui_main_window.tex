@@ -4,13 +4,13 @@
 When the application is started for the first time, the main window is shown as follows. 
 
 \begin{figure}[H]
-  %\hspace*{-2.5cm}
-  \center
-    \includegraphics[width=15cm]{figures/main_window.png}
+  \centering
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm]{figures/main_window.png}
   \caption{Main Window}
 \end{figure}
 
-In the simplest use case, the \nameref{sec:ui_main_menu_bar} allows opening or creating a database and importing data.
+In the simplest use case, the \nameref{sec:ui_main_menu_bar} allows opening or creating a database and importing data (using a given Data Context).
 After this step, data of interest can be chosen using tools located in the so-called \nameref{sec:ui_flight_deck}, 
 and loaded from the database using the 'Load' button of the \nameref{sec:ui_main_status_bar}. 
 The loaded data is then shown in Views located either in the \nameref{sec:ui_main_view_bar}, or in other windows. \\
@@ -36,6 +36,7 @@ At the top of the Main Window exists the Main Menubar, which contains the Main M
 
 \begin{itemize}
  \item \nameref{sec:ui_overview_file_menu}: Open/close a database, quit application
+ \item \nameref{sec:ui_overview_context_menu}: Manage the active Data Context
  \item \nameref{sec:ui_overview_import_menu}: Import ASTERIX, NMEA data
  \item \nameref{sec:ui_overview_config_menu}: Configure data sources, sectors, manage licenses
  \item \nameref{sec:ui_overview_process_menu}: Various processing tasks for imported data
@@ -43,8 +44,7 @@ At the top of the Main Window exists the Main Menubar, which contains the Main M
 \end{itemize} 
 \  \\
 
-A common workflow is to open or create a database using the 'File' menu. If new data is to be imported, this can be done using the 'Import' menu. 
-After all data was imported, the 'Process' menu can be used to post-process the data (if desired). \\
+A common workflow is to open or create a database using the 'File' menu. Before any data can be imported, an active Data Context must contain the data sources of the recording (see \nameref{sec:configure_data_context}). If new data is to be imported, this can be done using the 'Import' menu. After all data was imported, the 'Process' menu can be used to post-process the data in various ways. \\
 
 For a more detailed description of the Main Menu's contents refer to section \nameref{sec:main_menu}.
 
@@ -52,9 +52,8 @@ For a more detailed description of the Main Menu's contents refer to section \na
 \label{sec:ui_flight_deck}
 
 \begin{figure}[H]
-  \hspace*{-2.5cm}
-  \center
-  \includegraphics[width=12cm]{figures/ui_flight_deck.png}
+  \centering
+  \includegraphics[width=12cm, frame]{figures/ui_flight_deck.png}
   \caption{Opened Flight Deck}
 \end{figure}
 
@@ -129,9 +128,8 @@ Flight Deck occupies in the Main Window can be set by hand for the selected tool
 \includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_left.png}/\includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_right.png}.
 
 \begin{figure}[H]
-  \hspace*{-2.5cm}
-  \center
-  \includegraphics[width=12cm]{figures/ui_flight_deck_config.png}
+  \centering
+  \includegraphics[width=14cm,frame]{figures/ui_flight_deck_config.png}
   \caption{Flight Deck: Tool configuration menu}
 \end{figure}
 

@@ -116,6 +116,8 @@ public:
     static const std::string FeatureFieldNamePropColor;
     static const std::string FeatureFieldNamePlotMetadata;
 
+    static const std::set<std::string>& knownFeatureTypes();
+
 protected:
     virtual void toJSON_impl(nlohmann::json& j, bool write_binary_if_possible) const = 0;
 
@@ -660,6 +662,8 @@ public:
     bool noDataLoaded() const { return no_data_loaded_; }
     void noDataLoaded(bool value) { no_data_loaded_ = value; }
 
+    void setDataSourceTypes(const std::vector<std::string>& ds_types) { ds_types_ = ds_types; }
+
   private:
     std::string  name_;
     unsigned int id_;
@@ -671,6 +675,7 @@ public:
     ViewPointGenAnnotations annotations_;
     ViewPointGenFilters     filters_;
     bool no_data_loaded_ {false}; // set if no dbcontent data should be loaded
+    std::vector<std::string> ds_types_; // if non-empty, restricts loaded data source types
 
     std::map<std::string, QVariant> custom_fields_;
 };

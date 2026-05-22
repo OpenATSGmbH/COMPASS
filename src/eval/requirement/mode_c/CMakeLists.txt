@@ -1,8 +1,8 @@
-include_directories (
+target_include_directories(compass_eval PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_eval
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/falseconfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/modecfalseconfigwidget.h"

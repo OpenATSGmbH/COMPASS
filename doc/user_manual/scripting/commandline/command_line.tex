@@ -44,21 +44,27 @@ Allowed options:
   --import_gps_trail arg                imports gps trail NMEA with given filename, e.g. '/data/file2.txt'
   --import_gps_parameters arg           import GPS parameters as JSON string, e.g. ''{"callsign": "ENTRPRSE", "ds_name": "GPS Trail", "ds_sac": 0, "ds_sic": 0, "mode_3a_code": 961, "set_callsign": true, "set_mode_3a_code": true, "set_target_address": true, "target_address": 16702992,"tod_offset": 0.0}'' (including one pair of single quotes)
   --import_sectors_json arg             imports exported sectors JSON with given filename, e.g. '/data/sectors.json'
+  --list_contexts                       lists all available data contexts and exits
+  --set_context arg                     sets the active data context, e.g. 'Test'
   --calculate_radar_plot_positions      calculate radar plot positions
   --calculate_artas_tr_usage            associate target reports based on ARTAS usage
   --reconstruct_references              reconstruct references from sensor and tracker data
+  --reconstruct_references_cfg arg      reconstructor configuration as JSON string, e.g. ''{"current_reconstructor_str": "Scoring + UMKalman"}''
   --load_data                           load data after start
   --export_view_points_report arg       export view points report after start with given filename, e.g. '/data/db2/report.tex'
   --evaluate                            run evaluation
   --evaluation_parameters arg           evaluation parameters as JSON string, e.g. ''{"current_standard": "test", "dbcontent_name_ref": "CAT062", "dbcontent_name_tst": "CAT020"}'' (including one pair of single quotes)
   --evaluate_run_filter                 run evaluation filter before evaluation
+  --analyze_data_source arg             run the Analyze Data Source task for the given DSType, e.g. 'MLAT'
+  --analyze_parameters arg              Analyze task parameters as JSON string, analogous to --evaluation_parameters
   --export_report arg                   report name to export, e.g. 'EUROCAE 
                                         ED-87E Evaluation', PDF per default
   --export_report_directory arg         export directory, e.g. '/data/report2/'
-  --export_report_mode arg              export mode, i.e. 'JSON','Latex','PDF'
+  --export_report_mode arg              export mode, i.e. 'DocX','JSON','Latex','PDF'
   --no_cfg_save                         do not save configuration upon quitting
   --open_rt_cmd_port                    open runtime command port (default at 27960)
   --enable_event_log                    collect warnings and errors in the event log
+  --no_highdpi                          disable Qt high-DPI scaling (fixes double-sized UI on some systems)
   --quit                                quit after finishing all previous steps
 \end{lstlisting}
 \ \\
@@ -66,6 +72,42 @@ Allowed options:
 If additional command line options are wanted please contact the author.
 
 \subsection{Options}
+
+\subsubsection{-{}-reset}
+
+Triggers a reset of the user configuration and data. The bundled factory configuration and data are copied into the per-version subfolder of \texttt{\textasciitilde/.compass/}, replacing any user customizations. The short form \texttt{-r} is also accepted.
+
+\subsubsection{-{}-override\_cfg\_path arg}
+
+Overrides the 'default' configuration subfolder name with the given value. Configuration is then read from and written to \texttt{\textasciitilde/.compass/<version>/<arg>/} instead of \texttt{\textasciitilde/.compass/<version>/default/}, which allows separate configuration sets to coexist (e.g. 'org' for organization-specific settings).
+
+\begin{lstlisting}
+./COMPASS-release_x86_64.AppImage --override_cfg_path org
+\end{lstlisting}
+
+\subsubsection{-{}-list\_contexts}
+
+Lists all available data contexts and indicates which one is currently active. The application exits immediately after printing the list.
+
+\begin{lstlisting}
+./COMPASS-release_x86_64.AppImage --list_contexts
+\end{lstlisting}
+
+Example output:
+\begin{lstlisting}
+Available contexts:
+  Austria  (active)
+  Germany
+  Test
+\end{lstlisting}
+
+\subsubsection{-{}-set\_context name}
+
+Sets the active data context to the given name before any database or import operations are performed. If the context does not exist, the application exits with an error.
+
+\begin{lstlisting}
+./COMPASS-release_x86_64.AppImage --set_context Test --open_db /data/file.db
+\end{lstlisting}
 
 \subsubsection{-{}-create\_db filename}
 
@@ -99,6 +141,14 @@ If an import using the task described in \nameref{sec:ui_import_asterix} is star
 
 If an import using the task described in \nameref{sec:ui_import_asterix} is started, it will use the import date in YYYY-mm-DD format.
 
+\subsubsection{-{}-import\_asterix\_file\_time\_offset arg}
+
+If an import using the task described in \nameref{sec:ui_import_asterix} is started, the given Time of Day override offset will be applied to all decoded target reports. The argument is in HH:MM:SS.ZZZ format.
+
+\subsubsection{-{}-import\_asterix\_ignore\_time\_jumps}
+
+If an import using the task described in \nameref{sec:ui_import_asterix} is started, 24 hour Time of Day wrap-arounds detected during decoding will be ignored. By default such jumps trigger a day rollover.
+
 \subsubsection{-{}-import\_asterix\_network}
 
 After a database was opened, an import using the task described in \nameref{sec:ui_import_asterix_network} is started.
@@ -111,12 +161,16 @@ If an import using the task described in \nameref{sec:ui_import_asterix_network}
 
 If an import using the task described in \nameref{sec:ui_import_asterix_network} is started, it will use the given maximum number of input lines (and deactivate the others).
 
+\subsubsection{-{}-import\_asterix\_network\_ignore\_future\_ts}
+
+If an import using the task described in \nameref{sec:ui_import_asterix_network} is started, target reports with timestamps in the future relative to the current system time will be silently dropped instead of being kept.
+
 \subsubsection{-{}-asterix\_framing framing}
 
 When an Import ASTERIX Task is started the given framing is used, the following options exist:
 
 \begin{itemize}
-\item none:  Raw, netto, unframed ASTERIX data blocks, equivalent to the 'empty' value in the GUI
+\item none:  Raw, netto, unframed ASTERIX data blocks, equivalent to the 'raw/netto' value in the GUI
 \item ioss:  IOSS Final Format
 \item ioss\_seq: IOSS Final Format with sequence numbers
 \item rff: Comsoft RFF format
@@ -190,7 +244,7 @@ Please note that the parameter naming must be exactly as in the 'task\_import\_a
 \ \\
 
 
-\subsubsection{-{}-import\_json\_file filename}
+\subsubsection{-{}-import\_json filename}
 
 After a database was opened, adds the supplied filename and starts an import using the task described in \nameref{sec:ui_import_json}.
 
@@ -234,6 +288,10 @@ Please \textbf{note} that both 'mode\_3a\_code' and 'target\_address' must be gi
 
 After a database was opened, adds the sectors defined in supplied filename using the task described in \nameref{sec:ui_configure_sectors_manage}.
 
+\subsubsection{-{}-calculate\_radar\_plot\_positions}
+
+After a database with imported content exists, radar plot positions are calculated using the task described in \nameref{sec:ui_proc_radar_plot_pos}.
+
 \subsubsection{-{}-calculate\_artas\_tr\_usage}
 
 After a database with imported content exists, target report association can be calculated based on ARTAS tracks using the task described in \nameref{sec:ui_associate_tr_artas}.
@@ -241,6 +299,16 @@ After a database with imported content exists, target report association can be 
 \subsubsection{-{}-reconstruct\_references}
 
 After a database with imported content exists, reconstruct reference trajectories using the task described in \nameref{sec:reconst}.
+
+\subsubsection{-{}-reconstruct\_references\_cfg 'str'}
+
+Overrides the reconstructor configuration with a JSON snippet, e.g. to switch the reconstructor or change a parameter for one batch run without altering the GUI configuration.
+
+\begin{lstlisting}
+./COMPASS-release_x86_64.AppImage --open_db /data/file.db \
+  --reconstruct_references_cfg '{"current_reconstructor_str": "Scoring + UMKalman"}' \
+  --reconstruct_references --quit
+\end{lstlisting}
 
 \subsubsection{-{}-load\_data}
 
@@ -303,6 +371,18 @@ The configuration of such parameters is rather complex, and it is recommended to
 
 When an Evaluation task is started an automatic filtering of targets is performed, as configured using the 'Filter UTNs' dialog defined in \nameref{sec:ui_target_filtering}.
 
+\subsubsection{-{}-analyze\_data\_source 'dstype'}
+
+Triggers the Analyze Data Source task for the given DSType. In the current release only 'MLAT' is accepted; see \nameref{chap:analyze}.
+
+\begin{lstlisting}
+./COMPASS-release_x86_64.AppImage --open_db /data/file.db --analyze_data_source MLAT --quit
+\end{lstlisting}
+
+\subsubsection{-{}-analyze\_parameters 'str'}
+
+Provides a JSON parameter block for the Analyze task, analogous to \nameref{sec:command_line}'s '--evaluation\_parameters' for the Evaluation task. The exact JSON schema depends on the chosen DSType and is documented alongside \nameref{chap:analyze}.
+
 
 \subsubsection{-{}-export\_report 'str'}
 
@@ -316,11 +396,27 @@ Sets the report directory to the given value when exporting a report as describe
 
 \subsubsection{-{}-export\_report\_mode 'str'}
 
-Sets the report export type to the given value (i.e. 'JSON','Latex','PDF') when exporting a report as described in the section \nameref{sec:report_export}.
+Sets the report export type to the given value (i.e. 'DocX', 'JSON', 'Latex', 'PDF') when exporting a report as described in the section \nameref{sec:report_export}.
 
 \subsubsection{-{}-no\_cfg\_save}
 
 When quitting the application later, no configuration changes are saved.
+
+\subsubsection{-{}-open\_rt\_cmd\_port}
+
+Opens the runtime command TCP port (default 27960) so that the running instance can be controlled from external tools, as described in \nameref{sec:rtcommand_interface}.
+
+\subsubsection{-{}-enable\_event\_log}
+
+Enables collection of warnings and errors emitted during the session into an in-memory event log. The event log can then be queried via the 'get\_events' runtime command, as described in \nameref{sec:rtcommand_interface}.
+
+\subsubsection{-{}-expert\_mode}
+
+Enables expert mode for the session. This grants edit access to the Show Content dialog (see \nameref{sec:configure_show_content}) and a few other gated controls. The same setting can be made persistent by setting \texttt{"expert\_mode": true} in \texttt{\textasciitilde/.compass/<version>/task.json}.
+
+\subsubsection{-{}-no\_highdpi}
+
+Disables Qt high-DPI scaling. On some systems (e.g. AlmaLinux 9.7 with GNOME) the reported DPI is inflated, causing a double-sized UI. This flag forces 1:1 pixel scaling. The same effect can be achieved by setting the environment variables \texttt{QT\_AUTO\_SCREEN\_SCALE\_FACTOR=0} or \texttt{QT\_SCALE\_FACTOR=1}.
 
 \subsubsection{-{}-quit}
 

@@ -1,15 +1,11 @@
 <!--
 osgEarth Sample
-
-layout crop_features="true"
 -->
 
-<map name="Wordwide Line Vectors" type="geocentric" version="2">
-  
+<map name="Wordwide Line Vectors" type="geocentric">
+
     <options>
-        <lighting>false</lighting>
         <terrain>
-            <driver>rex</driver>
             <tile_size>2</tile_size>
             <color>#000000FF</color>
         </terrain>
@@ -19,33 +15,34 @@ layout crop_features="true"
     <OGRFeatures name="world-data">
         <url>shapefiles/TM_WORLD_BORDERS-0.3.shp</url>
     </OGRFeatures>
-  
 
   <FeatureModel name="world_boundaries" features="world-data">
+      <layout paged="true">
+          <level max_range="1e10"/>
+      </layout>
       <styles>
           <style type="text/css">
               world {
-                 stroke:       #ffff00;
-                 stroke-width: 2px;
-                 stroke-smooth:            true;
-                 render-anti-aliased:  true;
+                 stroke:                   #ffff00;
+                 stroke-width:             2px;
                  stroke-tessellation-size: 500m;
                  altitude-clamping:        terrain-gpu;
                  altitude-technique:       scene;
-                 render-clip-plane: 0;
+                 render-lighting:          false;
+                 render-clip-plane:        0;
                  render-anti-aliased:      true;
-                 render-depth-test: false;
+                 render-depth-test:        false;
               }                
           </style>
       </styles>
   </FeatureModel>
 
  
-    <feature_model name="Airports Europe">
-        <features name="Airports Europe" driver="ogr">
+    <FeatureModel name="Airports Europe">
+        <OGRFeatures name="Airports Europe">
             <url>shapefiles/AIRP_PT_2013.shp</url>
             <build_spatial_index>true</build_spatial_index>
-        </features>       
+        </OGRFeatures>
         
         <layout>
             <level name="far"    style="large"  max_range="1e10"/>
@@ -101,6 +98,6 @@ layout crop_features="true"
                 }
             </style>
         </styles>
-    </feature_model>
+    </FeatureModel>
 
 </map>

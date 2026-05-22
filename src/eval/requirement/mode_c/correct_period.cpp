@@ -149,12 +149,9 @@ std::string ModeCCorrectPeriod::probabilityName() const
 
 /**
  */
-ModeCCorrectPeriodConfig::ModeCCorrectPeriodConfig(const std::string& class_id, 
-                                                   const std::string& instance_id,
-                                                   Group& group, 
-                                                   EvaluationStandard& standard,
-                                                   EvaluationCalculator& calculator)
-:   IntervalBaseConfig(class_id, instance_id, group, standard, calculator)
+ModeCCorrectPeriodConfig::ModeCCorrectPeriodConfig(nlohmann::json& config,
+                                                   Group* parent)
+:   IntervalBaseConfig(config, parent)
 {
     configure(UseMissTol);
 

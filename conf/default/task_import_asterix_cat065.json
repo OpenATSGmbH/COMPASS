@@ -1,219 +1,245 @@
 {
+    "class_name": "ASTERIXJSONParser",
+    "instance_name": "CAT065",
     "parameters": {
         "category": 65,
         "db_content_name": "CAT065",
         "name": "CAT065"
     },
-    "sub_configs": {
-        "JSONDataMapping": {
-            "JSONDataMapping1": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "Message Type",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "000.Message Type",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping10": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "TSV",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "040.TSV",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping11": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "Report",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "050.REPORT",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping2": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "SAC",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "010.SAC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping3": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "SIC",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "010.SIC",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping4": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "Service Identification",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "015.Service Identification",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping5": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "Batch Number",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "020.Batch Number",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping6": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "Time of Message",
-                    "dimension": "Time",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "030.Time of Message",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": "Second"
-                }
-            },
-            "JSONDataMapping7": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "NOGO",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "040.NOGO",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping8": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "OVL",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "040.OVL",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMapping9": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "PSS",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "040.PSS",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMappingDSID": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "DS ID",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "ds_id",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
-            },
-            "JSONDataMappingLineID": {
-                "parameters": {
-                    "active": true,
-                    "append_value": false,
-                    "comment": "Line Identifer",
-                    "db_content_name": "CAT065",
-                    "db_content_variable_name": "Line ID",
-                    "dimension": "",
-                    "format_data_type": "",
-                    "in_array": false,
-                    "json_key": "line_id",
-                    "json_value_format": "",
-                    "mandatory": false,
-                    "unit": ""
-                }
+    "sub_configs": [
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping1",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "Message Type",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "000.Message Type",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping10",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "TSV",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "040.TSV",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping11",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "Report",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "050.REPORT",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping2",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "SAC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "010.SAC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping3",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "SIC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "010.SIC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping4",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "Service Identification",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "015.Service Identification",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping5",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "Batch Number",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.Batch Number",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping6",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "Time of Message",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "030.Time of Message",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping7",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "NOGO",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "040.NOGO",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping8",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "OVL",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "040.OVL",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping9",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "PSS",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "040.PSS",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingDSID",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "DS ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "ds_id",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingLineID",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Line Identifer",
+                "db_content_name": "CAT065",
+                "db_content_variable_name": "Line ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "line_id",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
             }
         }
-    }
+    ]
 }

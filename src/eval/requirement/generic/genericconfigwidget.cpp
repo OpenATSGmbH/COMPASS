@@ -90,3 +90,4 @@ void GenericDoubleConfigWidget::thresholdValueEditSlot(QString value)
 }
 
 }
+

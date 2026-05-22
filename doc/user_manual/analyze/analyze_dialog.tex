@@ -1,0 +1,37 @@
+\section{Configuration Dialog}
+\label{sec:analyze_dialog}
+
+Selecting an entry from the 'Analyze' menu opens the Analyze Data Source dialog, pre-configured for MLAT. \\\\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-1.0cm}
+    \includegraphics[width=17cm]{figures/analyze_mlat.png}
+  \caption{Analyze MLAT dialog}
+\end{figure}
+
+
+The dialog is split into a navigation tree on the left and a stacked detail widget on the right. \\
+
+\begin{itemize}
+\item Left tree
+\begin{itemize}
+\item 'Data Source' node: top-level entry; selecting it shows the Data Source selection widget on the right
+\item One node per available inspector, each with an active checkbox controlling whether that inspector runs
+\end{itemize}
+\item Right pane
+\begin{itemize}
+\item Shows the settings widget of the currently highlighted tree node
+\item When the 'Data Source' node is selected, lists all Data Sources of the bound DSType with checkboxes
+\item When an inspector node is selected, exposes the parameters specific to that inspector
+\end{itemize}
+\item Bottom
+\begin{itemize}
+\item 'Run' button: executes the enabled inspectors; performs validation first
+\item 'Cancel' button: closes the dialog without running
+\end{itemize}
+\end{itemize}
+\ \\
+
+Inspectors whose prerequisites are not met (e.g. Pro inspectors without an active Professional license, or RU-based inspectors without CAT020 data) appear greyed out. The corresponding tooltip explains the reason the inspector cannot be selected. 
+

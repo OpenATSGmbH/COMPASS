@@ -56,6 +56,8 @@ ReconstructorSectorWidget::ReconstructorSectorWidget(ReconstructorTask& task,
     
     layout->addLayout(grid_cont_lay);
 
+    layout->addSpacing(10);
+
     layout->addWidget(new QLabel("Surrounding Delta [WGS84 deg]"));
 
     sectors_delta_edit_ = new QLineEdit();
@@ -134,8 +136,6 @@ void ReconstructorSectorWidget::update()
             ++row;
         }
 
-        QSpacerItem* spacer = new QSpacerItem(1, 1, QSizePolicy::Preferred, QSizePolicy::Expanding);
-        grid_layout_->addItem(spacer, row, 0);
     }
 
     use_sectors_check_->setEnabled(used_sectors.size());
@@ -160,4 +160,5 @@ void ReconstructorSectorWidget::sectorsDeltaChangedSlot(const QString& value_str
     else
         loginf << "unable to parse string '" << value_str.toStdString() << "'";
 }
+
 

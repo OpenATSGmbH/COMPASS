@@ -1,12 +1,15 @@
-include_directories (
+target_include_directories(compass_task PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_task
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/asteriximporttask.h"
         "${CMAKE_CURRENT_LIST_DIR}/asteriximporttaskwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/asteriximporttaskdialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/asteriximportdatasourceswidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/asteriximportprobeaggregator.h"
+        "${CMAKE_CURRENT_LIST_DIR}/asterixreporthelpers.h"
         "${CMAKE_CURRENT_LIST_DIR}/asterixjsonmappingjob.h"
         "${CMAKE_CURRENT_LIST_DIR}/asterixtimestampcalculator.h"
         "${CMAKE_CURRENT_LIST_DIR}/asterixpostprocessjob.h"
@@ -15,6 +18,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/asterixdecoderfile.h"
         "${CMAKE_CURRENT_LIST_DIR}/asterixfiledecoder.h"
         "${CMAKE_CURRENT_LIST_DIR}/asterixnetworkdecoder.h"
+        "${CMAKE_CURRENT_LIST_DIR}/asteriximportsettings.h"
         "${CMAKE_CURRENT_LIST_DIR}/asteriximportsource.h"
         "${CMAKE_CURRENT_LIST_DIR}/asterixpcapdecoder.h"
         "${CMAKE_CURRENT_LIST_DIR}/asterixjsondecoder.h"
@@ -22,6 +26,9 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/asteriximporttask.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asteriximporttaskwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asteriximporttaskdialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/asteriximportdatasourceswidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/asteriximportprobeaggregator.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/asterixreporthelpers.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asterixjsonmappingjob.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asterixtimestampcalculator.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asterixpostprocessjob.cpp"
@@ -30,6 +37,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/asterixdecoderfile.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asterixfiledecoder.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asterixnetworkdecoder.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/asteriximportsettings.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asteriximportsource.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asterixpcapdecoder.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/asterixjsondecoder.cpp"

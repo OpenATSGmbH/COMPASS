@@ -29,11 +29,8 @@
 
 /**
 */
-VariableView::VariableView(const std::string& class_id, 
-                           const std::string& instance_id,
-                           ViewContainer* w, 
-                           ViewManager& view_manager)
-:   View(class_id, instance_id, w, view_manager)
+VariableView::VariableView(nlohmann::json& config, ViewContainer* parent)
+:   View(config, parent)
 {
 }
 
@@ -171,21 +168,21 @@ void VariableView::viewInfoJSON_impl(nlohmann::json& info) const
 
 /**
  */
-void VariableView::showVariables(bool force, bool update_config)
+void VariableView::showVariables(bool force)
 {
     if (!force && show_annotation_ == false)
         return;
 
     show_annotation_ = false;
 
-    onShowAnnotationChanged(update_config);
+    onShowAnnotationChanged();
 }
 
 /**
  */
 void VariableView::showVariables()
 {
-    showVariables(false, false);
+    showVariables(false);
 }
 
 /**
@@ -217,7 +214,7 @@ void VariableView::switchVariables(int var0, int var1, bool inform_config_widget
 
 /**
 */
-void VariableView::showAnnotation(bool force, bool update_config)
+void VariableView::showAnnotation(bool force)
 {
     if (!canShowAnnotations() || !hasAnnotations())
         return;
@@ -226,15 +223,15 @@ void VariableView::showAnnotation(bool force, bool update_config)
         return;
 
     show_annotation_ = true;
-    
-    onShowAnnotationChanged(update_config);
+
+    onShowAnnotationChanged();
 }
 
 /**
  */
 void VariableView::showAnnotation()
 {
-    showAnnotation(false, false);
+    showAnnotation(false);
 }
 
 /**
@@ -251,7 +248,7 @@ void VariableView::setCurrentAnnotation(int group_idx, int annotation_idx)
     current_annotation_group_idx_ = group_idx;
     current_annotation_idx_       = annotation_idx;
 
-    onShowAnnotationChanged(false);
+    onShowAnnotationChanged();
 }
 
 /**
@@ -309,14 +306,17 @@ bool VariableView::hasCurrentAnnotation() const
 
 /**
  */
-void VariableView::onShowAnnotationChanged(bool update_config_widget)
+void VariableView::onShowAnnotationChanged()
 {
     if (!canShowAnnotations())
         return;
 
-    if (update_config_widget)
-        getConfigWidget()->updateConfig();
-    
+    // Refresh derived config-widget UI (e.g. GridViewConfigWidget's export
+    // button + value-type controls) on every annotation-mode flip and every
+    // current-annotation change. Cheap and uniform, so the same call site
+    // covers tree-driven activation, view-point auto-switch, and unshow.
+    getConfigWidget()->updateConfig();
+
     widget_->getViewDataWidget()->redrawData(true);
     widget_->updateComponents();
 }
@@ -330,7 +330,7 @@ void VariableView::onEvalResultsChanged()
 
 /**
  */
-void VariableView::unshowViewPointSlot (const ViewableDataConfig* vp)
+void VariableView::unshowViewPointSlot (ViewableDataConfig* vp)
 {
     loginf;
 
@@ -343,13 +343,13 @@ void VariableView::unshowViewPointSlot (const ViewableDataConfig* vp)
         clearAnnotations();
 
         //switch back to variables
-        showVariables(true, true);
+        showVariables(true);
     }
 }
 
 /**
  */
-void VariableView::showViewPointSlot (const ViewableDataConfig* vp)
+void VariableView::showViewPointSlot (ViewableDataConfig* vp)
 {
     loginf;
 
@@ -364,9 +364,9 @@ void VariableView::showViewPointSlot (const ViewableDataConfig* vp)
 
         //switch to annotation if available, else switch back to variables
         if (hasAnnotations() && hasCurrentAnnotation())
-            showAnnotation(true, true);
+            showAnnotation(true);
         else
-            showVariables(true, true);
+            showVariables(true);
     }
 }
 
@@ -378,6 +378,8 @@ void VariableView::clearAnnotations()
 
     current_annotation_group_idx_ = -1;
     current_annotation_idx_       = -1;
+
+    emit annotationsChangedSignal();
 }
 
 /**
@@ -423,6 +425,8 @@ void VariableView::scanViewPointForAnnotations()
         current_annotation_group_idx_ = 0;
         current_annotation_idx_       = 0;
     }
+
+    emit annotationsChangedSignal();
 }
 
 /**

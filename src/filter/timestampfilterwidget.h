@@ -21,7 +21,11 @@
 #include "dbfilterwidget.h"
 #include "timestampfilter.h"
 
+#include <vector>
+#include <utility>
+
 class QDateTimeEdit;
+class QPushButton;
 
 /**
  */
@@ -39,11 +43,16 @@ public:
 
     virtual void update();
 
+private:
+    void updateStepButtons();
+
 protected:
     TimestampFilter& filter_;
 
     QDateTimeEdit* min_edit_ {nullptr};
     QDateTimeEdit* max_edit_ {nullptr};
+
+    std::vector<std::pair<int, QPushButton*>> step_buttons_;
 
     bool update_active_ {false};
 };

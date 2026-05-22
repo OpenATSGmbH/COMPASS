@@ -19,6 +19,7 @@
 
 #include "compass.h"
 #include "createartasassociationstask.h"
+#include "taskmanager.h"
 //#include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "logger.h"
@@ -274,7 +275,7 @@ void CreateARTASAssociationsStatusDialog::updateDBContentAssociatedGrid()
         dbcont_associated_grid_->addWidget(percent_label, row, 3);
     }
 
-    for (auto& dbcont_it : COMPASS::instance().dbContentManager())
+    for (auto& dbcont_it : task_.manager().compass().dbContentManager())
     {
         if (!dbcont_it.second->containsTargetReports() ||
             dbcont_it.second->isReferenceContent())
@@ -342,3 +343,4 @@ void CreateARTASAssociationsStatusDialog::updateDBContentAssociatedGrid()
             percent_label->setText("0");
     }
 }
+

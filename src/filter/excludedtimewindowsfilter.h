@@ -20,18 +20,17 @@
 #include "dbfilter.h"
 #include "util/timewindow.h"
 
+#include <boost/date_time/posix_time/ptime.hpp>
+#include <boost/optional.hpp>
+
 class ExcludedTimeWindowsFilter : public DBFilter
 {
 public:
-    ExcludedTimeWindowsFilter(const std::string& class_id, const std::string& instance_id,
-                              Configurable* parent);
+    ExcludedTimeWindowsFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver);
     virtual ~ExcludedTimeWindowsFilter();
 
-    virtual std::string getConditionString(const std::string& dbcontent_name, 
+    virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
-
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
 
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;
@@ -41,11 +40,20 @@ public:
 
     Utils::TimeWindowCollection& timeWindows();
 
+    // pushed by FilterManager when database is opened
+    void updateMinMaxTimestamp(const boost::posix_time::ptime& min_ts,
+                               const boost::posix_time::ptime& max_ts);
+
+    bool hasMinMaxTimestamp() const;
+    std::pair<boost::posix_time::ptime, boost::posix_time::ptime> minMaxTimestamp() const;
+
 protected:
     nlohmann::json time_windows_json_;
     Utils::TimeWindowCollection time_windows_;
 
-    virtual void checkSubConfigurables() override;
+    boost::optional<boost::posix_time::ptime> min_timestamp_;
+    boost::optional<boost::posix_time::ptime> max_timestamp_;
+
     virtual DBFilterWidget* createWidget() override;
 };
 

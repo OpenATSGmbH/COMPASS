@@ -60,11 +60,12 @@ public:
     struct DataSeries
     {
         ScatterSeries scatter_series;
-        
+
         std::string   name;
         QColor        color;
         double        marker_size;
         bool          visible {true};
+        size_t        null_count {0};
     };
 
     ScatterSeriesCollection();
@@ -77,7 +78,8 @@ public:
     void addDataSeries(const ScatterSeries& scatter_series,
                        const std::string& name,
                        const QColor& color = Qt::blue,
-                       double marker_size = 8.0);
+                       double marker_size = 8.0,
+                       size_t null_count = 0);
 
     size_t numDataSeries() const;
     size_t numPoints(bool visible_series_only = false) const;

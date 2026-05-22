@@ -18,6 +18,7 @@
 #pragma once
 
 #include <taskwidget.h>
+#include <QDate>
 
 class GPSTrailImportTask;
 

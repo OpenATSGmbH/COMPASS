@@ -31,9 +31,9 @@ using namespace std;
 namespace EvaluationRequirement
 {
 PositionDistanceRMSConfig::PositionDistanceRMSConfig(
-        const std::string& class_id, const std::string& instance_id,
-        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : PositionBaseValueConfig(class_id, instance_id, group, standard, calculator)
+        nlohmann::json& config,
+        Group* parent)
+    : PositionBaseValueConfig(config, parent)
 {
     registerParameter("threshold_value", &threshold_value_, 50.0);
 }

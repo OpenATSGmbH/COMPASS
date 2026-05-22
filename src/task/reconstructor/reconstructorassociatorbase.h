@@ -140,10 +140,27 @@ protected:
     virtual void countUnAssociated();
     void countUnAssociated(const std::vector<unsigned long>& rec_nums);
 
-    int findUTNFor (dbContent::targetReport::ReconstructorInfo& tr);
+    struct FindByMACPosDiag
+    {
+        unsigned int num_targets_checked {0};
+        unsigned int num_no_time_overlap {0};
+        unsigned int num_no_predict {0};
+        unsigned int num_mode_a_different {0};
+        unsigned int num_mode_c_different {0};
+        unsigned int num_no_pos_offset {0};
+        unsigned int num_pos_too_far {0};
+        unsigned int num_candidates {0};     // passed all checks
+        bool has_mode_ac {false};            // TR had mode a or c
+        double best_distance_m {0};          // distance of best candidate
+        double min_distance_m {std::numeric_limits<double>::max()}; // closest target reaching pos check
+    };
+
+    int findUTNFor (dbContent::targetReport::ReconstructorInfo& tr,
+                    FindByMACPosDiag* diag = nullptr);
 
             // tries to find existing utn for target report, based on mode a/c and position, -1 if failed
-    int findUTNByModeACPos (const dbContent::targetReport::ReconstructorInfo& tr);
+    int findUTNByModeACPos (const dbContent::targetReport::ReconstructorInfo& tr,
+                            FindByMACPosDiag* diag = nullptr);
 
     std::vector<ReconstructorAssociatorBase::AssociationOption> findUTNsForTarget (unsigned int utn,
                                                                                    std::map<std::pair<unsigned int, unsigned int>, ReconstructorAssociatorBase::AssociationOption>& assoc_option_cache);

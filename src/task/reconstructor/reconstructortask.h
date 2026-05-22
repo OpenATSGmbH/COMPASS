@@ -115,12 +115,10 @@ public slots:
     void updateProgressSlot(const QString& msg, bool add_slice_progress);
 
 public:
-    ReconstructorTask(const std::string& class_id, const std::string& instance_id,
-                      TaskManager& task_manager);
+    ReconstructorTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ReconstructorTask();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     virtual bool canRun() override;
     virtual void run() override;

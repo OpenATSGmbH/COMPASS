@@ -33,6 +33,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/optional/optional.hpp>
 
+class COMPASS;
 class ViewContainer;
 class ViewWidget;
 class QQWidget;
@@ -76,17 +77,14 @@ public:
         UnknownError
     };
 
-    View(const std::string& class_id, 
-         const std::string& instance_id,
-         ViewContainer* container,
-         ViewManager& view_manager);
+    View(nlohmann::json& config, ViewContainer* parent);
     virtual ~View();
 
     bool init();
     bool isInit() const { return init_; }
 
-    virtual void databaseOpened();
-    virtual void databaseClosed();
+    void databaseOpened();
+    void databaseClosed();
 
     virtual void loadingStarted();
     virtual void loadedData(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
@@ -95,6 +93,7 @@ public:
     virtual void appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current);
 
     const std::string& getName() const;
+    ViewManager& viewManager() { return view_manager_; }
 
     /// @brief Returns the view's central widget
     QWidget* getCentralWidget() { return central_widget_; }
@@ -118,6 +117,8 @@ public:
 
     QImage renderData() const;
     QImage renderView() const;
+
+    void prepareForRender();
 
     void setExporting(bool ok);
     bool hasScreenshotContent() const;
@@ -151,8 +152,11 @@ signals:
 
 public slots:
     void selectionChangedSlot();
-    virtual void unshowViewPointSlot (const ViewableDataConfig* vp)=0;
-    virtual void showViewPointSlot (const ViewableDataConfig* vp)=0;
+    virtual void unshowViewPointSlot (ViewableDataConfig* vp)=0;
+    virtual void showViewPointSlot (ViewableDataConfig* vp)=0;
+
+    COMPASS& compass();
+    COMPASS& compass() const;
 
 protected:
     virtual void updateSelection() = 0;
@@ -170,6 +174,9 @@ protected:
 
     virtual ViewInfos viewInfos_impl() const { return ViewInfos(); }
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
+
+    virtual void databaseOpened_impl() {}
+    virtual void databaseClosed_impl() {}
 
     void constructWidget();
     void setWidget(ViewWidget* widget);

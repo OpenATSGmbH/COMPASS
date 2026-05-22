@@ -30,12 +30,8 @@
 
 /**
  */
-GridViewWidget::GridViewWidget(const std::string& class_id, 
-                               const std::string& instance_id,
-                               Configurable* config_parent, 
-                               GridView* view,
-                               QWidget* parent)
-:   VariableViewWidget(class_id, instance_id, config_parent, view, parent)
+GridViewWidget::GridViewWidget(GridView* view, QWidget* parent)
+:   VariableViewWidget(view, parent)
 {
     auto data_widget = new GridViewDataWidget(this);
     setDataWidget(data_widget);
@@ -57,7 +53,7 @@ GridViewWidget::GridViewWidget(const std::string& class_id,
 
     UNUSED_VARIABLE(activeIfVariableDataShownCB);
 
-    getViewToolSwitcher()->addTool(Tool::GV_NAVIGATE_TOOL, "Navigate", {}, QIcon(), Qt::OpenHandCursor);
+    getViewToolSwitcher()->addTool(Tool::GV_NAVIGATE_TOOL, "Navigate", {}, QIcon(), Qt::ArrowCursor);
     //getViewToolSwitcher()->addTool(Tool::GV_SELECT_TOOL, "Select", Qt::Key_S, getIcon("select_action.png"), Qt::CrossCursor);
     getViewToolSwitcher()->addTool(Tool::GV_ZOOM_RECT_TOOL, "Zoom to Rectangle", Qt::Key_R, getIcon("zoom_select_action.png"), Qt::CrossCursor);
 

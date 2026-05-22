@@ -60,3 +60,4 @@ void ACADFilterWidget::valueEditedSlot(const QString& value)
 }
 
 
+

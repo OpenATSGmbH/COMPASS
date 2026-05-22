@@ -21,12 +21,16 @@
 #include "histograminitializer.h"
 #include "dbcontent.h"
 
+#include <functional>
+#include <set>
+#include <string>
+
 namespace dbContent
 {
     class Variable;
     class MetaVariable;
 }
- 
+
 /**
  * Buffer data based histogram generator.
  * Completely hides the concrete buffer data type.
@@ -36,7 +40,20 @@ class HistogramGeneratorBuffer : public HistogramGenerator
 public:
     typedef std::map<std::string, std::shared_ptr<Buffer>> Data;
 
-    HistogramGeneratorBuffer(Data* buffer_data, 
+    /// Per-row allow predicate. If set, rows for which the predicate returns
+    /// false are skipped both during min/max scanning and during bin counting.
+    /// Called as (dbcontent_name, row_index). An unset filter admits every row.
+    typedef std::function<bool(const std::string&, unsigned int)> RowFilter;
+
+    /// Per-row layer id lookup. Returns the layer id
+    /// ("<ds_type>:<ds_name>:L<n>:<dbcontent>") that a given row belongs to,
+    /// or an empty string for unmappable rows (no ds_id/line_id). When set,
+    /// the generator groups its per-layer result buckets by this id - one bar
+    /// set per visible layer, stacked in the chart. Without it, the generator
+    /// falls back to per-dbcontent grouping.
+    typedef std::function<std::string(const std::string&, unsigned int)> RowLayerLookup;
+
+    HistogramGeneratorBuffer(Data* buffer_data,
                              dbContent::Variable* variable,
                              dbContent::MetaVariable* meta_variable);
     virtual ~HistogramGeneratorBuffer() = default;
@@ -44,6 +61,30 @@ public:
     virtual bool hasData() const override;
 
     bool dataNotInBuffer() const { return data_not_in_buffer_; }
+
+    void setRowFilter(RowFilter f) { row_filter_ = std::move(f); }
+    bool hasRowFilter() const { return static_cast<bool>(row_filter_); }
+    bool rowAllowed(const std::string& dbc, unsigned int i) const
+    {
+        return !row_filter_ || row_filter_(dbc, i);
+    }
+
+    void setRowLayerLookup(RowLayerLookup f) { row_layer_lookup_ = std::move(f); }
+    bool hasRowLayerLookup() const { return static_cast<bool>(row_layer_lookup_); }
+    std::string rowLayerId(const std::string& dbc, unsigned int i) const
+    {
+        return row_layer_lookup_ ? row_layer_lookup_(dbc, i) : std::string{};
+    }
+
+    /// Group key for a row: layer id if a lookup is installed, otherwise the
+    /// dbcontent name (legacy per-dbcontent grouping). Used as the key for
+    /// `histograms_` / `intermediate_data_.content_data`.
+    std::string groupKey(const std::string& dbc, unsigned int i) const
+    {
+        if (row_layer_lookup_)
+            return row_layer_lookup_(dbc, i);
+        return dbc;
+    }
 
 protected:
     dbContent::Variable* currentVariable(const std::string& db_content) const;
@@ -66,6 +107,9 @@ private:
     dbContent::Variable*     variable_           = nullptr; //governed variable
     dbContent::MetaVariable* meta_variable_      = nullptr; //governed meta-variable
     bool                     data_not_in_buffer_ = false;
+
+    RowFilter                row_filter_;
+    RowLayerLookup           row_layer_lookup_;
 };
 
 /**
@@ -126,12 +170,42 @@ protected:
 
         logdbg << "config: num bins = " << config.num_bins << ", sorted = " << config.sorted_bins << ", type = " << (int)config.type;
 
-        //init needed histograms
-        for (const auto& db_content : scanned_contents)
-        {
-            auto& h = histograms_[ db_content ];
+        //remember a representative variable for bin label formatting
+        if (!scanned_contents.empty())
+            label_variable_ = currentVariable(scanned_contents.front());
 
-            //@TODO: needs further reaction on init fail?
+        //enumerate the group keys that will contribute data - one bucket per
+        //visible layer (when a row-layer lookup is installed) or per scanned
+        //dbcontent (legacy fallback). Each bucket gets its own histogram copy
+        //so zoom_impl and per-bucket bin counts can proceed independently.
+        std::set<std::string> keys;
+        if (hasRowLayerLookup())
+        {
+            for (auto& elem : *currentData())
+            {
+                const std::string& dbc = elem.first;
+                const Buffer&      buf = *elem.second;
+                const unsigned int n   = buf.size();
+                for (unsigned int i = 0; i < n; ++i)
+                {
+                    if (!rowAllowed(dbc, i))
+                        continue;
+                    std::string lid = rowLayerId(dbc, i);
+                    if (lid.empty())
+                        continue;
+                    keys.insert(lid);
+                }
+            }
+        }
+        else
+        {
+            for (const auto& dbc : scanned_contents)
+                keys.insert(dbc);
+        }
+
+        for (const auto& key : keys)
+        {
+            auto& h = histograms_[key];
             histogram_init_.initHistogram(h, config);
         }
 
@@ -170,42 +244,50 @@ protected:
 
     /**
      */
-    bool selectBuffer(const std::string& db_content, 
+    bool selectBuffer(const std::string& db_content,
                       Buffer& buffer,
-                      unsigned int bin0, 
+                      unsigned int bin0,
                       unsigned int bin1,
                       bool select_min_max,
-                      bool select_null, 
+                      bool select_null,
                       bool add_to_selection) override final
     {
-        //no histogram yet for db content?
-        auto it = histograms_.find(db_content);
-        if (it == histograms_.end())
+        //all histograms share the same config, so any one is sufficient for
+        //bin lookup. bail if there are none (nothing selectable).
+        if (histograms_.empty())
             return true;
-        
-        //no variable?
+
+        const auto& bin_lookup = histograms_.begin()->second;
+
+        //variable not mapped to this dbcontent (normal for meta-vars that
+        //don't apply to every dbcontent) - skip, not an error.
         auto variable = currentVariable(db_content);
         if (!variable)
-            return false;
+            return true;
 
         std::string current_var_name = variable->name();
 
-        //buffer does not obtain variable?
+        //buffer genuinely missing the column - same treatment (skip).
         if (!buffer.has<T>(current_var_name))
-            return false;
+            return true;
 
         NullableVector<T>& data = buffer.get<T>(current_var_name);
 
         unsigned int data_size = data.contentSize();
 
         //selected vector?
-        traced_assert(buffer.has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buffer.get<bool>(DBContent::selected_var.name());
+        traced_assert(buffer.has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buffer.get<bool>(dbcontent_vars::selected_var_.name());
 
         unsigned int select_cnt = 0;
 
+        const bool has_filter = hasRowFilter();
+
         for (unsigned int cnt=0; cnt < data_size; ++cnt)
         {
+            if (has_filter && !rowAllowed(db_content, cnt))
+                continue;
+
             //check null case
             if (data.isNull(cnt))
             {
@@ -229,8 +311,8 @@ protected:
                 continue;
             }
 
-            //find bin for data
-            int bin_idx = it->second.findBin(data.get(cnt));
+            //find bin for data (any layer's histogram works, shared config)
+            int bin_idx = bin_lookup.findBin(data.get(cnt));
             if (bin_idx < 0)
                 continue;
 
@@ -273,9 +355,10 @@ private:
      */
     void resetInternal()
     {
-        histograms_         = {};
-        histogram_init_     = {};
-        
+        histograms_     = {};
+        histogram_init_ = {};
+        label_variable_ = nullptr;
+
         setDataNotInBuffer(false);
     }
 
@@ -325,7 +408,7 @@ private:
     {
         logdbg << "bin " << bin;
 
-        if (bin < 0 || histograms_.empty())
+        if (bin < 0 || histograms_.empty() || !label_variable_)
             return {};
 
         auto it = histograms_.begin();
@@ -333,16 +416,12 @@ private:
         if (bin >= (int)it->second.numBins())
             return {};
 
-        auto var = currentVariable(it->first);
-        if (!var)
-            return {};
-
         const auto& b = it->second.getBin(bin);
 
         BinLabels labels;
-        labels.label     = b.label(var);
-        labels.label_min = b.labelMin(var);
-        labels.label_max = b.labelMax(var);
+        labels.label     = b.label(label_variable_);
+        labels.label_min = b.labelMin(label_variable_);
+        labels.label_max = b.labelMax(label_variable_);
 
         return labels;
     }
@@ -371,9 +450,19 @@ private:
         NullableVector<T>& data = buffer.get<T>(current_var_name);
 
         //loginf << "Scanning buffer of dbc " << db_content << " size = " << data.size();
-        
-        if (!histogram_init_.scan(data))
-            return false;
+
+        if (hasRowFilter())
+        {
+            const std::string dbc = db_content;
+            if (!histogram_init_.scanFiltered(data,
+                    [this, dbc](size_t i) { return rowAllowed(dbc, (unsigned int)i); }))
+                return false;
+        }
+        else
+        {
+            if (!histogram_init_.scan(data))
+                return false;
+        }
 
         return true;
     }
@@ -383,18 +472,13 @@ private:
      */
     bool addBuffer(const std::string& db_content, Buffer& buffer)
     {
-        //adding buffer needs previously initialized result and histogram for dbcontent type
-        if (intermediate_data_.content_data.find(db_content) == intermediate_data_.content_data.end() ||
-            histograms_.find(db_content) == histograms_.end())
-            return false;
-
         auto variable = currentVariable(db_content);
 
         //no variable set?
         if (!variable)
             return false;
 
-        //valid init happend?
+        //valid init happened?
         if (!histogram_init_.valid())
             return false;
 
@@ -407,20 +491,36 @@ private:
         NullableVector<T>& data = buffer.get<T>(current_var_name);
         unsigned int data_size = data.contentSize();
 
-        traced_assert(buffer.has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buffer.get<bool>(DBContent::selected_var.name());
+        traced_assert(buffer.has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buffer.get<bool>(dbcontent_vars::selected_var_.name());
 
-        auto& histogram = histograms_[ db_content ];
-
-        //histogram badly configured?
-        if (histogram.numBins() < 1)
-            return false;
-
-        auto& interm_data = intermediate_data_.content_data[ db_content ];
+        const bool has_filter        = hasRowFilter();
+        const bool has_layer_lookup  = hasRowLayerLookup();
 
         //add variable content
         for (unsigned int cnt=0; cnt < data_size; ++cnt)
         {
+            if (has_filter && !rowAllowed(db_content, cnt))
+                continue;
+
+            //resolve group key: layer id (per-layer mode) or dbcontent (legacy)
+            const std::string key = has_layer_lookup
+                                  ? rowLayerId(db_content, cnt)
+                                  : db_content;
+            if (key.empty())
+                continue; //unmappable row
+
+            auto hist_it = histograms_.find(key);
+            if (hist_it == histograms_.end() || hist_it->second.numBins() < 1)
+                continue;
+
+            auto interm_it = intermediate_data_.content_data.find(key);
+            if (interm_it == intermediate_data_.content_data.end())
+                continue;
+
+            auto& histogram   = hist_it->second;
+            auto& interm_data = interm_it->second;
+
             bool selected = !selected_vec.isNull(cnt) && selected_vec.get(cnt);
             bool is_null  = data.isNull(cnt);
 
@@ -428,20 +528,13 @@ private:
             if (is_null)
             {
                 if (selected)
-                {
                     ++interm_data.null_selected_count;
-                }
-                else 
-                {
+                else
                     ++interm_data.null_count;
-                }
                 continue;
             }
 
             //find bin
-            //@TODO: we use the histogram as a bin finder and store the counts externally,
-            //but we could also add some "extra data" to each histogram bin in the future,
-            //in order to track multiple per-bin counts inside the histogram itself.
             int bin_idx = histogram.findBin(data.get(cnt));
 
             if (bin_idx < 0)   // is non-insertable?
@@ -465,5 +558,6 @@ private:
     }
 
     HistogramInitializerT<T> histogram_init_;
-    Histograms               histograms_;     //histograms per db content type
+    Histograms               histograms_;     //histograms per group key (layer id or dbcontent)
+    dbContent::Variable*     label_variable_ = nullptr; //representative variable for bin labels
 };

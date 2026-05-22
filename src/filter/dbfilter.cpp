@@ -20,7 +20,9 @@
 #include "dbfiltercondition.h"
 #include "dbfilterwidget.h"
 #include "filtermanager.h"
+#include "idbvariableresolver.h"
 #include "logger.h"
+#include "timeofdayfilterwidget.h"
 
 #include <QVBoxLayout>
 
@@ -30,25 +32,32 @@
 
 using namespace nlohmann;
 
-DBFilter::DBFilter(const std::string& class_id, const std::string& instance_id,
-                   Configurable* parent, bool is_generic)
-    : Configurable(class_id, instance_id, parent)
+// DBFilter::DBFilter(const std::string& class_name, const std::string& instance_name,
+//                    Configurable* parent, bool is_generic)
+//     : Configurable(class_name, instance_name, parent) ...
+
+DBFilter::DBFilter(nlohmann::json& config, bool is_generic,
+                   FilterManager* parent, IDBVariableResolver& var_resolver)
+    : Configurable(config, parent),
+      filter_manager_(parent),
+      var_resolver_(var_resolver)
 {
-    registerParameter("name", &name_, instance_id);
+    registerParameter("name", &name_, instanceName());
     registerParameter("is_custom", &is_custom_, false);
 
     registerParameter("active", &active_, false);
     registerParameter("visible", &visible_, false);
 
     registerParameter("widget_visible", &widget_visible_, true);
+    registerParameter("condition_logic", &condition_logic_, std::string("AND"));
 
-    if (classId().compare("DBFilter") == 0)  // else do it in subclass
+    if (className().compare("DBFilter") == 0)  // else do it in subclass
         createSubConfigurables();
 }
 
 DBFilter::~DBFilter()
 {
-    logdbg << "instance_id " << instanceId();
+    logdbg << "instance_name " << instanceName();
 
     widget_ = nullptr;
     conditions_.clear();
@@ -87,6 +96,12 @@ void DBFilter::setName(const std::string& name)
         widget_->update();
 }
 
+void DBFilter::conditionLogic(const std::string& logic)
+{
+    traced_assert(logic == "AND" || logic == "OR");
+    condition_logic_ = logic;
+}
+
 bool DBFilter::filters(const std::string& dbcont_name)
 {
     if (unusable_)
@@ -116,36 +131,68 @@ std::string DBFilter::getConditionString(
 
     if (active_)
     {
+        bool use_or = (condition_logic_ == "OR");
+
+        // for OR mode, collect conditions internally with a local first flag,
+        // then wrap in parens and AND-join with outer query
+        bool local_first = true;
+
         for (unsigned int cnt = 0; cnt < conditions_.size(); cnt++)
         {
             if (conditions_.at(cnt)->valueInvalid())
             {
-                logwrn << "DBFilter " << instanceId()
+                logwrn << "DBFilter " << instanceName()
                        << ": getConditionString: invalid condition, will be skipped";
                 continue;
             }
 
-            std::string text =
-                conditions_.at(cnt)->getConditionString(dbcontent_name, read_set, first);
-            ss << text;
+            if (!conditions_.at(cnt)->filters(dbcontent_name))
+                continue;
+
+            if (use_or)
+            {
+                std::string text =
+                    conditions_.at(cnt)->getConditionString(dbcontent_name, read_set, local_first, "OR");
+                ss << text;
+            }
+            else
+            {
+                std::string text =
+                    conditions_.at(cnt)->getConditionString(dbcontent_name, read_set, first);
+                ss << text;
+            }
         }
 
+        // for OR mode, wrap in parens and join with outer AND chain
+        if (use_or && !local_first) // local_first==false means we added at least one condition
+        {
+            std::string or_block = ss.str();
+            ss.str("");
+
+            if (!first)
+                ss << " AND ";
+            first = false;
+
+            ss << "(" << or_block << ")";
+        }
     }
 
-    loginf << instanceId() << ": dbcont " << dbcontent_name
+    loginf << instanceName() << ": dbcont " << dbcontent_name
            << " here '" << ss.str() << "' first " << first;
 
     return ss.str();
 }
 
-void DBFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
+void DBFilter::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "start" << classId() << " instance " << instanceId();
+    const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_id == "DBFilterCondition")
+    logdbg << "start" << className() << " instance " << instanceName();
+
+    if (class_name == "DBFilterCondition")
     {
         logdbg << "generating condition";
-        conditions_.emplace_back(std::unique_ptr<DBFilterCondition>(new DBFilterCondition(class_id, instance_id, this)));
+        conditions_.emplace_back(std::unique_ptr<DBFilterCondition>(new DBFilterCondition(child_json, this)));
         DBFilterCondition* condition = conditions_.back().get();
 
         unusable_ = unusable_ | !condition->usable();
@@ -162,15 +209,14 @@ void DBFilter::generateSubConfigurable(const std::string& class_id, const std::s
         }
     }
     else
-        throw std::runtime_error("DBFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void DBFilter::checkSubConfigurables()
-{
+        throw std::runtime_error("DBFilter: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 DBFilterWidget* DBFilter::createWidget()
 {
+    if (name_ == "Time of Day")
+        return new TimeOfDayFilterWidget(*this);
+
     return new DBFilterWidget(*this);
 }
 
@@ -186,6 +232,11 @@ void DBFilter::reset()
     {
         conditions_.at(cnt)->reset();
     }
+}
+
+void DBFilter::clearConditions()
+{
+    conditions_.clear();
 }
 
 void DBFilter::deleteCondition(DBFilterCondition* condition)
@@ -214,8 +265,8 @@ void DBFilter::saveViewPointConditions (nlohmann::json& filters)
 
     for (auto& cond_it : conditions_)
     {
-        traced_assert(!filter.contains(cond_it->instanceId()));
-        filter[cond_it->instanceId()] = cond_it->getValue();
+        traced_assert(!filter.contains(cond_it->instanceName()));
+        filter[cond_it->instanceName()] = cond_it->getValue();
     }
 }
 
@@ -240,7 +291,7 @@ void DBFilter::loadViewPointConditions (const nlohmann::json& filters)
         std::string value = cond_it.second;
 
         auto it = find_if(conditions_.begin(), conditions_.end(),
-                          [cond_name] (const std::unique_ptr<DBFilterCondition>& c) { return c->instanceId() == cond_name; } );
+                          [cond_name] (const std::unique_ptr<DBFilterCondition>& c) { return c->instanceName() == cond_name; } );
 
         if (it == conditions_.end())
             logerr << name_ << ": cond_name '" << cond_name << "' not found";

@@ -18,8 +18,8 @@
 #include "viewpresets.h"
 
 #include "view.h"
-#include "files.h"
 #include "compass.h"
+#include "files.h"
 #include "config.h"
 #include "timeconv.h"
 
@@ -47,7 +47,7 @@ namespace
 {
     std::string viewID(const View* view)
     {
-        return view->classId();
+        return view->className();
     }
 }
 
@@ -370,7 +370,7 @@ bool ViewPresets::writePreset(const Preset& preset) const
 /**
  * Creates a new preset for the given view and optionally a preview image.
  */
-bool ViewPresets::createPreset(const View* view, 
+bool ViewPresets::createPreset(View* view,
                                const std::string& name,
                                const PresetMetadata& metadata,
                                bool create_preview)
@@ -572,10 +572,10 @@ bool ViewPresets::copyPreset(const Key& key,
  * Updates the preset under the given key to the passed preset.
  * Might cause a rename. If the update fails the old preset version will be restored.
  */
-bool ViewPresets::updatePreset(const Key& key, 
+bool ViewPresets::updatePreset(const Key& key,
                                UpdateMode mode,
                                const Preset* preset,
-                               const View* view,   
+                               View* view,
                                bool update_config_from_view,
                                bool update_preview)
 {
@@ -587,12 +587,12 @@ bool ViewPresets::updatePreset(const Key& key,
  * If a view is given the presets config will be updated to the view config.
  * Internal version.
  */
-bool ViewPresets::updatePreset(const Key& key, 
+bool ViewPresets::updatePreset(const Key& key,
                                const Preset* preset,
-                               const View* view, 
-                               bool update_config_from_view, 
+                               View* view,
+                               bool update_config_from_view,
                                UpdateMode mode,
-                               bool update_preview, 
+                               bool update_preview,
                                bool signal_changes)
 {
     traced_assert(presets_.count(key) > 0);
@@ -692,13 +692,13 @@ bool ViewPresets::writePreset(const Key& key) const
  * Updates the presets "stamp", meaning timestamp and app version.
  * This stamp is usually updated when setting a new view config.
 */
-void ViewPresets::updatePresetStamp(Preset& preset)
+void ViewPresets::updatePresetStamp(Preset& preset, const std::string& app_version)
 {
     //add timestamp
     preset.timestamp = Utils::Time::toString(Utils::Time::currentUTCTime());
 
     //add app version
-    preset.app_version = COMPASS::instance().config().getString("version");
+    preset.app_version = app_version;
 }
 
 /**
@@ -717,10 +717,13 @@ QImage ViewPresets::renderPreview(const View* view)
  * Preferably use this method to update the presets view config, since it also updates the preset's stamp
  * on config change.
  */
-bool ViewPresets::updatePresetConfig(Preset& preset, const View* view, bool update_preview)
+bool ViewPresets::updatePresetConfig(Preset& preset, View* view, bool update_preview)
 {
     traced_assert(view);
     traced_assert(preset.view.empty() || viewID(view) == preset.view);
+
+    //ensure nested sub_configs are fully populated before export
+    view->writeBackConfigRecursive();
 
     //collect json config
     nlohmann::json new_cfg;
@@ -734,7 +737,7 @@ bool ViewPresets::updatePresetConfig(Preset& preset, const View* view, bool upda
         preset.preview = renderPreview(view);
 
     //update signature on config modify
-    updatePresetStamp(preset);
+    updatePresetStamp(preset, view->compass().config().getString("version"));
 
     return cfg_changed;
 }
@@ -859,3 +862,4 @@ bool ViewPresets::hasPreset(const Key& key) const
 {
     return presets_.count(key) > 0;
 }
+

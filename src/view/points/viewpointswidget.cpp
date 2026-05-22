@@ -35,6 +35,8 @@
 #include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QFileDialog>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 #include <QShortcut>
 #include <QToolBar>
@@ -129,9 +131,9 @@ ViewPointsWidget::ViewPointsWidget(ViewManager& view_manager)
         connect (p_shortcut, &QShortcut::activated, this, &ViewPointsWidget::selectPreviousSlot);
     }
 
-    QObject::connect(&COMPASS::instance(), &COMPASS::databaseOpenedSignal,
+    QObject::connect(&view_manager_.compass(), &COMPASS::databaseOpenedSignal,
                      this, &ViewPointsWidget::databaseOpenedSlot);
-    QObject::connect(&COMPASS::instance(), &COMPASS::databaseClosedSignal,
+    QObject::connect(&view_manager_.compass(), &COMPASS::databaseClosedSignal,
                      this, &ViewPointsWidget::databaseClosedSlot);
 }
 
@@ -141,7 +143,7 @@ ViewPointsWidget::~ViewPointsWidget() = default;
  */
 QIcon ViewPointsWidget::toolIcon() const
 {
-    return QIcon(Utils::Files::getIconFilepath("view_points.png").c_str());
+    return Utils::Files::IconProvider::getIcon("view_points.png");
 }
 
 /**
@@ -585,9 +587,9 @@ void ViewPointsWidget::exportSlot()
 {
     loginf;
 
-    QFileDialog dialog(nullptr);
+    QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(COMPASS::instance().lastUsedPath().c_str());
+    dialog.setDirectory(view_manager_.compass().lastUsedPath().c_str());
     dialog.setNameFilter("JSON Files (*.json)");
     dialog.setDefaultSuffix("json");
     dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);
@@ -619,11 +621,7 @@ void ViewPointsWidget::deleteAllSlot()
 {
     loginf;
 
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(nullptr, "Delete All", "Delete All Viewpoints?",
-    QMessageBox::Yes | QMessageBox::No);
-
-    if (reply == QMessageBox::Yes)
+    if (QuestionDialog::ask(nullptr, "Delete All", "Delete All Viewpoints?"))
     {
         traced_assert(table_model_);
         table_model_->deleteAllViewPoints();
@@ -635,7 +633,7 @@ void ViewPointsWidget::importSlot()
 {
     loginf;
 
-    COMPASS::instance().mainWindow().importViewPointsSlot();
+    view_manager_.compass().mainWindow().importViewPointsSlot();
 
     resizeColumnsToContents();
 }
@@ -842,4 +840,5 @@ std::vector<unsigned int> ViewPointsWidget::viewedViewPoints()
 
     return data;
 }
+
 

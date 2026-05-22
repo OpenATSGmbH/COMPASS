@@ -122,7 +122,7 @@ void ViewPoint::save()
 {
     logdbg << "id " << id_;
 
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = view_manager_.compass().dbInterface();
     db_interface.setViewPoint(id_, data_.dump());
 }
 

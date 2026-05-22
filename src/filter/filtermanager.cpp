@@ -21,7 +21,7 @@
 #include "dbfilter.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "filtermanagerwidget.h"
 #include "logger.h"
 #include "viewpoint.h"
@@ -43,9 +43,15 @@
 using namespace std;
 using namespace nlohmann;
 
-FilterManager::FilterManager(const std::string& class_id, const std::string& instance_id,
-                             COMPASS* compass)
-    : Configurable(class_id, instance_id, compass, "filter.json")
+// FilterManager::FilterManager(const std::string& class_name, const std::string& instance_name,
+//                              COMPASS* compass)
+//     : Configurable(class_name, instance_name, compass, "filter.json") ...
+
+FilterManager::FilterManager(nlohmann::json& config, COMPASS& compass)
+    : Configurable(config, &compass),
+      compass_(compass),
+      dbcontent_man_(compass.dbContentManager()),
+      var_resolver_(dbcontent_man_)
 {
     logdbg;
 
@@ -55,6 +61,11 @@ FilterManager::FilterManager(const std::string& class_id, const std::string& ins
     createSubConfigurables();
 
     sortFilters();
+}
+
+context::DBContextManager& FilterManager::dbContextManager()
+{
+    return compass_.dbContextManager();
 }
 
 FilterManager::~FilterManager()
@@ -82,118 +93,100 @@ void FilterManager::useFilters(bool use_filters)
         widget_->updateUseFilters();
 }
 
-void FilterManager::generateSubConfigurable(const std::string& class_id,
-                                            const std::string& instance_id)
+void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (hasSubConfigurable(class_id, instance_id))
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+
+    if (hasSubConfigurable(class_name, instance_name))
     {
-        logerr << "filter " << instance_id
+        logerr << "filter " << instance_name
                << " already present";
         return;
     }
 
-    logdbg << "filter class_id " << class_id << " instance_id " << instance_id;
+    logdbg << "filter class_name " << class_name << " instance_name " << instance_name;
 
-    if (class_id == "DBFilter")
+    if (class_name == "DBFilter")
     {
-        DBFilter* filter = new DBFilter(class_id, instance_id, this);
+        DBFilter* filter = new DBFilter(child_json, true, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "ADSBQualityFilter")
+    else if (class_name == "ADSBQualityFilter")
     {
-        ADSBQualityFilter* filter = new ADSBQualityFilter(class_id, instance_id, this);
+        ADSBQualityFilter* filter = new ADSBQualityFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "ACADFilter")
+    else if (class_name == "ACADFilter")
     {
-        ACADFilter* filter = new ACADFilter(class_id, instance_id, this);
+        ACADFilter* filter = new ACADFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "ACIDFilter")
+    else if (class_name == "ACIDFilter")
     {
-        ACIDFilter* filter = new ACIDFilter(class_id, instance_id, this);
+        ACIDFilter* filter = new ACIDFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "Mode3AFilter")
+    else if (class_name == "Mode3AFilter")
     {
-        Mode3AFilter* filter = new Mode3AFilter(class_id, instance_id, this);
+        Mode3AFilter* filter = new Mode3AFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "ModeCFilter")
+    else if (class_name == "ModeCFilter")
     {
-        ModeCFilter* filter = new ModeCFilter(class_id, instance_id, this);
+        ModeCFilter* filter = new ModeCFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "TimestampFilter")
+    else if (class_name == "TimestampFilter")
     {
-        TimestampFilter* filter = new TimestampFilter(class_id, instance_id, this);
+        TimestampFilter* filter = new TimestampFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "TrackerTrackNumberFilter")
+    else if (class_name == "TrackerTrackNumberFilter")
     {
-        TrackerTrackNumberFilter* filter = new TrackerTrackNumberFilter(class_id, instance_id, this);
+        TrackerTrackNumberFilter* filter = new TrackerTrackNumberFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "UTNFilter")
+    else if (class_name == "UTNFilter")
     {
-        if (hasSubConfigurable(class_id, instance_id))
-        {
-            logerr << "utn filter "
-                   << instance_id << " already present";
-            return;
-        }
-
-        UTNFilter* filter = new UTNFilter(class_id, instance_id, this);
+        UTNFilter* filter = new UTNFilter(child_json, this, var_resolver_);
 
         filters_.emplace_back(filter);
     }
-    else if (class_id == "ADSBQualityFilter")
+    else if (class_name == "PrimaryOnlyFilter")
     {
-        if (hasSubConfigurable(class_id, instance_id))
-        {
-            logerr << "adsb quality filter "
-                   << instance_id << " already present";
-            return;
-        }
-
-        ADSBQualityFilter* filter = new ADSBQualityFilter(class_id, instance_id, this);
-
+        PrimaryOnlyFilter* filter = new PrimaryOnlyFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "PrimaryOnlyFilter")
+    else if (class_name == "RefTrajAccuracyFilter")
     {
-        PrimaryOnlyFilter* filter = new PrimaryOnlyFilter(class_id, instance_id, this);
+        RefTrajAccuracyFilter* filter = new RefTrajAccuracyFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "RefTrajAccuracyFilter")
+    else if (class_name == "MLATRUFilter")
     {
-        RefTrajAccuracyFilter* filter = new RefTrajAccuracyFilter(class_id, instance_id, this);
+        MLATRUFilter* filter = new MLATRUFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
-    else if (class_id == "MLATRUFilter")
+    else if (class_name == "ExcludedTimeWindowsFilter")
     {
-        MLATRUFilter* filter = new MLATRUFilter(class_id, instance_id, this);
-        filters_.emplace_back(filter);
-    }
-    else if (class_id == "ExcludedTimeWindowsFilter")
-    {
-        ExcludedTimeWindowsFilter* filter = new ExcludedTimeWindowsFilter(class_id, instance_id, this);
+        ExcludedTimeWindowsFilter* filter = new ExcludedTimeWindowsFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else
-        throw std::runtime_error("FilterManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("FilterManager: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 bool FilterManager::checkDBContent (const std::string& dbcontent_name)
 {
-    if (!COMPASS::instance().dbContentManager().existsDBContent(dbcontent_name))
+    if (!dbcontent_man_.existsDBContent(dbcontent_name))
     {
         loginf << "failed because of non-existing dbcontbject '" << dbcontent_name << "'";
         return false;
     }
 
-    DBContent& object = COMPASS::instance().dbContentManager().dbContent(dbcontent_name);
+    DBContent& object = dbcontent_man_.dbContent(dbcontent_name);
 
     if (!object.existsInDB())
     {
@@ -206,59 +199,27 @@ bool FilterManager::checkDBContent (const std::string& dbcontent_name)
 
 void FilterManager::checkSubConfigurables()
 {
-    // check for UTN filter
-
-    string classid = "UTNFilter";
-
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
-    { // no UTN filter
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
-
-    classid = "TimestampFilter";
-
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
+    auto ensureFilter = [this](const std::string& classid)
     {
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
+        if (std::find_if(filters_.begin(), filters_.end(),
+                         [&classid](const unique_ptr<DBFilter>& x) { return x->className() == classid;}) == filters_.end())
+        {
+            auto& child_json = addNewSubConfiguration(classid, classid+"0");
+            generateSubConfigurable(child_json);
+        }
+    };
 
-    classid = "TrackerTrackNumberFilter";
-
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
-    {
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
-
-    classid = "RefTrajAccuracyFilter";
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
-    {
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
-
-    classid = "MLATRUFilter";
-
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
-    {
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
-
-   classid = "ExcludedTimeWindowsFilter";
-
-    if (std::find_if(filters_.begin(), filters_.end(),
-                     [&classid](const unique_ptr<DBFilter>& x) { return x->classId() == classid;}) == filters_.end())
-    {
-        Configurable::generateSubConfigurableFromConfig(Configuration::create(classid, classid+"0"));
-    }
+    ensureFilter("UTNFilter");
+    ensureFilter("TimestampFilter");
+    ensureFilter("TrackerTrackNumberFilter");
+    ensureFilter("RefTrajAccuracyFilter");
+    ensureFilter("MLATRUFilter");
+    ensureFilter("ExcludedTimeWindowsFilter");
 }
 
 std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set)
 {
-    traced_assert(COMPASS::instance().dbContentManager().dbContent(dbcontent_name).loadable());
+    traced_assert(dbcontent_man_.dbContent(dbcontent_name).loadable());
 
     std::stringstream ss;
 
@@ -267,7 +228,7 @@ std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, db
 
     for (auto& filter : filters_)
     {
-        logdbg << "filter " << filter->instanceId() << " active "
+        logdbg << "filter " << filter->instanceName() << " active "
                << filter->getActive() << " filters " << dbcontent_name << " "
                << filter->filters(dbcontent_name);
 
@@ -275,7 +236,7 @@ std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, db
         {
             condition_str = filter->getConditionString(dbcontent_name, read_set, first);
 
-            logdbg << "filter " << filter->instanceId()
+            logdbg << "filter " << filter->instanceName()
                    << " condition '" << condition_str << "'";
 
             ss << condition_str;
@@ -366,7 +327,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
     const json& data = vp->data();
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ctx_man = compass_.dbContextManager();
 
     // add all data source types that need loading
     if (data.contains(ViewPoint::VP_DS_TYPES_KEY)) // the listed ones should be loaded
@@ -377,13 +338,13 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
         logdbg << "load " << ds_types.size() << " ds_types";
 
-        ds_man.setLoadOnlyDSTypes(ds_types);
+        ctx_man.setLoadOnlyDSTypes(ds_types);
     }
     else // all should be loaded
     {
         logdbg << "load all ds_types";
 
-        ds_man.setLoadDSTypes(true);
+        ctx_man.setLoadDSTypes(true);
     }
 
     if (data.contains(ViewPoint::VP_SELECTED_RECNUMS_KEY))
@@ -392,7 +353,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
         traced_assert(selected.is_array());
         std::vector<unsigned long> vec = selected.get<std::vector<unsigned long>>();
 
-        COMPASS::instance().dbContentManager().storeSelectedRecNums(vec);
+        dbcontent_man_.storeSelectedRecNums(vec);
     }
 
     // add all data sources that need loading
@@ -405,14 +366,14 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
         logdbg << "load " << ds_ids.size() << " ds_ids";
 
-        ds_man.setLoadOnlyDataSources(ds_ids);
+        ctx_man.setLoadOnlyDataSources(ds_ids);
     }
     else // all should be loaded
     {
         logdbg << "load all ds_ids";
 
-        ds_man.setLoadDataSources(true);
-        ds_man.setLoadAllDataSourceLines();
+        ctx_man.setLoadDataSources(true);
+        ctx_man.setLoadAllDataSourceLines();
     }
 
     // add filters
@@ -454,13 +415,13 @@ void FilterManager::setConfigInViewPoint (nlohmann::json& data)
 {
     loginf;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ctx_man = compass_.dbContextManager();
 
-    if (ds_man.dsTypeFiltered()) // ds types filters active
-        data[ViewPoint::VP_DS_TYPES_KEY] = ds_man.wantedDSTypes(); // add all data sources that need loading
+    if (ctx_man.dsTypeFiltered()) // ds types filters active
+        data[ViewPoint::VP_DS_TYPES_KEY] = ctx_man.wantedDSTypes(); // add all data sources that need loading
 
-    if (ds_man.loadDataSourcesFiltered()) // ds filters active
-        data[ViewPoint::VP_DS_KEY] = ds_man.getLoadDataSources(); // add all data sources that need loading
+    if (ctx_man.loadDataSourcesFiltered()) // ds filters active
+        data[ViewPoint::VP_DS_KEY] = ctx_man.getLoadDataSources(); // add all data sources that need loading
 
     // add filters
     if (use_filters_)
@@ -498,7 +459,30 @@ void FilterManager::databaseOpenedSlot()
         widget_->setDisabled(false);
 
     traced_assert(hasFilter("Timestamp"));
-    getFilter("Timestamp")->reset();
+
+    if (dbcontent_man_.hasMinMaxTimestamp())
+    {
+        auto minmax_ts = dbcontent_man_.minMaxTimestamp();
+
+        TimestampFilter* ts_filter = dynamic_cast<TimestampFilter*>(getFilter("Timestamp"));
+        traced_assert(ts_filter);
+        ts_filter->reset(minmax_ts.first, minmax_ts.second);
+
+        if (hasFilter("Excluded Time Windows"))
+        {
+            ExcludedTimeWindowsFilter* etw_filter =
+                dynamic_cast<ExcludedTimeWindowsFilter*>(getFilter("Excluded Time Windows"));
+            traced_assert(etw_filter);
+            etw_filter->updateMinMaxTimestamp(minmax_ts.first, minmax_ts.second);
+        }
+    }
+    else
+    {
+        getFilter("Timestamp")->reset();
+    }
+
+    if (hasFilter("Time of Day"))
+        getFilter("Time of Day")->widget()->update();
 }
 
 void FilterManager::databaseClosedSlot()
@@ -513,17 +497,78 @@ void FilterManager::dataSourcesChangedSlot()
 {
     loginf;
 
+    auto& ctx_man = dbContextManager();
+
+    if (!ctx_man.hasActiveContext())
+        return;
+
     if (hasFilter("Tracker Track Number"))
     {
         TrackerTrackNumberFilter* filter = dynamic_cast<TrackerTrackNumberFilter*>(getFilter("Tracker Track Number"));
         traced_assert(filter);
-        filter->updateDataSourcesSlot();
+
+        // build tracker lines map: ds_id -> line_id -> count
+        std::map<unsigned int, std::map<unsigned int, unsigned int>> tracker_lines;
+        std::map<unsigned int, std::string> ds_names;
+        for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
+        {
+            if (ds.dsType() != "Tracker")
+                continue;
+
+            // aggregate inserted line counts across all dbcontents
+            std::map<unsigned int, unsigned int> line_counts;
+            // TODO: need a method to get aggregate numInsertedPerLine across all dbcontents
+            // for now use individual dbcontent queries
+            for (const auto& dbcont : std::vector<std::string>{"CAT001", "CAT048", "CAT062"})
+            {
+                auto per_line = ctx_man.numInsertedPerLine(ds.id(), dbcont);
+                for (const auto& [line, cnt] : per_line)
+                    line_counts[line] += cnt;
+            }
+
+            if (line_counts.empty())
+                continue;
+
+            tracker_lines[ds.id()] = line_counts;
+            ds_names[ds.id()] = ds.name();
+        }
+        filter->updateTrackerDataSources(tracker_lines, ds_names);
     }
 
     if (hasFilter("MLAT RUs"))
     {
         MLATRUFilter* filter = dynamic_cast<MLATRUFilter*>(getFilter("MLAT RUs"));
         traced_assert(filter);
+
+        // build MLAT RU lookup: ds_id -> ru_name -> {ru_indexes}
+        std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>> mlat_ru_lookup;
+        std::set<std::string> known_ru_names;
+
+        for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
+        {
+            if (ds.dsType() == "MLAT" && ds.hasRemoteUnits())
+            {
+                // build mlatRUNames equivalent from context::DataSource info
+                std::map<std::string, std::vector<unsigned int>> ru_names;
+                const auto& info = ds.info();
+                if (info.contains("remote_units"))
+                {
+                    for (auto& [key, val] : info.at("remote_units").items())
+                    {
+                        unsigned int idx = std::stoi(key);
+                        std::string name = ds.remoteUnitName(idx);
+                        ru_names[name].push_back(idx);
+                    }
+                }
+
+                mlat_ru_lookup[ds.id()] = ru_names;
+                for (const auto& pair : ru_names)
+                    known_ru_names.insert(pair.first);
+            }
+        }
+        filter->updateMLATDataSources(mlat_ru_lookup);
+        filter->updateMLATKnownRUNames(known_ru_names);
+
         if (filter->widget())
             filter->widget()->update();
     }
@@ -592,4 +637,5 @@ void FilterManager::resetToStartupConfiguration()
 
     useFilters(false);
 }
+
 

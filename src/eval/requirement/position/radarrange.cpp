@@ -18,6 +18,7 @@
 #include "eval/requirement/position/radarrange.h"
 #include "eval/results/position/radarrange.h"
 #include "eval/standard/evaluationstandard.h"
+#include "compass.h"
 #include "evaluationmanager.h"
 #include "logger.h"
 #include "util/timeconv.h"
@@ -110,7 +111,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                                              .generalComment(comment));
     };
 
-    ProjectionManager& proj_man = ProjectionManager::instance();
+    ProjectionManager& proj_man = calculator_.manager().compass().projectionManager();
 
     Projection& projection = proj_man.currentProjection();
     traced_assert(projection.coordinateSystemsAdded());

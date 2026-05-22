@@ -27,6 +27,7 @@
 #include "viewpointswidget.h"
 #include "logger.h"
 
+#include <QApplication>
 #include <QMessageBox>
 
 #include <fstream>
@@ -60,9 +61,9 @@ void ViewPointsTableModel::loadViewPoints()
     beginResetModel();
 
     // load view points
-    if (COMPASS::instance().dbInterface().existsViewPointsTable())
+    if (view_manager_.compass().dbInterface().existsViewPointsTable())
     {
-        for (const auto& vp_it : COMPASS::instance().dbInterface().viewPoints())
+        for (const auto& vp_it : view_manager_.compass().dbInterface().viewPoints())
         {
             //assert (!view_points_.count(vp_it.first));
             traced_assert(!hasViewPoint(vp_it.first));
@@ -455,10 +456,10 @@ const ViewPoint& ViewPointsTableModel::saveNewViewPoint(unsigned int id, const n
 //    return view_points_.count(id) == 1;
 //}
 
-const ViewPoint& ViewPointsTableModel::viewPoint(unsigned int id)
+ViewPoint& ViewPointsTableModel::viewPoint(unsigned int id)
 {
     traced_assert(hasViewPoint(id));
-    return *view_points_.get<vp_tag>().find(id);
+    return const_cast<ViewPoint&>(*view_points_.get<vp_tag>().find(id));
 }
 
 //void ViewPointsTableModel::removeViewPoint(unsigned int id)
@@ -486,7 +487,7 @@ void ViewPointsTableModel::deleteAllViewPoints ()
     beginRemoveRows(QModelIndex(), 0, view_points_.size()-1); // TODO
 
     view_points_.clear();
-    COMPASS::instance().dbInterface().deleteAllViewPoints();
+    view_manager_.compass().dbInterface().deleteAllViewPoints();
 
     endRemoveRows();
 }
@@ -524,7 +525,8 @@ void ViewPointsTableModel::exportViewPoints (const std::string& filename)
 
     QMessageBox m_info(QMessageBox::Information, "View Points Export File",
                        "File export: '"+QString(filename.c_str())+"' done.\n"
-                       +QString::number(view_points.size())+" View Points saved.", QMessageBox::Ok);
+                       +QString::number(view_points.size())+" View Points saved.", QMessageBox::Ok,
+                       QApplication::activeWindow());
     m_info.exec();
 }
 
@@ -568,4 +570,5 @@ void ViewPointsTableModel::setStatus (const QModelIndex& row_index, const std::s
 
     //    emit dataChanged(index, index, {Qt::UserRole});
 }
+
 

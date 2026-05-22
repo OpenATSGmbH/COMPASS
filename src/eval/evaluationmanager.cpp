@@ -16,7 +16,6 @@
  */
 
 #include "evaluationmanager.h"
-#include "eval/results/report/pdfgeneratordialog.h"
 #include "evaluationstandard.h"
 #include "evaluationdialog.h"
 #include "eval/requirement/group.h"
@@ -28,7 +27,6 @@
 
 #include "sectorlayer.h"
 #include "sector.h"
-#include "airspace.h"
 
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -36,7 +34,7 @@
 
 #include "compass.h"
 #include "dbinterface.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "filtermanager.h"
 #include "viewmanager.h"
 #include "taskmanager.h"
@@ -61,7 +59,6 @@
 #include <memory>
 #include <fstream>
 #include <cstdlib>
-#include <system.h>
 
 using namespace Utils;
 using namespace std;
@@ -76,44 +73,43 @@ const std::string EVAL_TIME_CONSTRAINTS_EXCLUDED_WINDOWS {"excluded_windows"};
 
 /**
  */
-EvaluationManager::EvaluationManager(const std::string& class_id, 
-                                     const std::string& instance_id, 
-                                     COMPASS* compass)
-:   Configurable(class_id, instance_id, compass, "eval.json")
-//,   compass_    (*compass)
-    , dbcontent_man_(compass->dbContentManager())
+EvaluationManager::EvaluationManager(nlohmann::json& config,
+                                     COMPASS& compass)
+    : Configurable(config, &compass)
+    , compass_(compass)
+    , dbcontent_man_(compass.dbContentManager())
 {
     createSubConfigurables();
-    init_evaluation_commands();
+    init_evaluation_commands(compass_);
 }
 
 /**
  */
 EvaluationManager::~EvaluationManager()
 {
-    sector_layers_.clear();
 }
 
 /**
 */
-void EvaluationManager::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
+void EvaluationManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "EvaluationTargetFilter")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name == "EvaluationTargetFilter")
     {
         traced_assert(!target_filter_);
-        target_filter_.reset(new EvaluationTargetFilter(class_id, instance_id, *this));
+        target_filter_.reset(new EvaluationTargetFilter(child_json, *this));
     }
-    else if (class_id == "EvaluationCalculator")
+    else if (class_name == "EvaluationCalculator")
     {
         traced_assert(!calculator_);
 
-        EvaluationCalculator* calculator = new EvaluationCalculator(class_id, instance_id, *this, dbcontent_man_, true);
+        EvaluationCalculator* calculator = new EvaluationCalculator(child_json, *this, dbcontent_man_, true);
         calculator_.reset(calculator);
     }
     else
     {
-        throw std::runtime_error("EvaluationManager: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("EvaluationManager: generateSubConfigurable: unknown class_name " + class_name);
     }
 }
 
@@ -123,14 +119,14 @@ void EvaluationManager::checkSubConfigurables()
 {
     if (!target_filter_)
     {
-        generateSubConfigurable("EvaluationTargetFilter", "EvaluationTargetFilter0");
+        generateSubConfigurableFromConfig("EvaluationTargetFilter", "EvaluationTargetFilter0");
         traced_assert(target_filter_);
     }
 
     if (!calculator_)
     {
         //generate default calculator
-        generateSubConfigurable("EvaluationCalculator", "EvaluationCalculator0");
+        generateSubConfigurableFromConfig("EvaluationCalculator", "EvaluationCalculator0");
         traced_assert(calculator_);
     }
 }
@@ -146,7 +142,7 @@ void EvaluationManager::init()
 
     registerParameter("remove_disabled_utn_data", &remove_disabled_utn_data_, remove_disabled_utn_data_);
 
-    auto& dbc_manager = COMPASS::instance().dbContentManager();
+    auto& dbc_manager = dbcontent_man_;
 
     connect (&dbc_manager, &DBContentManager::associationStatusChangedSignal,
             this, &EvaluationManager::associationStatusChangedSlot);
@@ -159,7 +155,7 @@ void EvaluationManager::init()
     connect (dbc_manager.targetModel(), &dbContent::TargetModel::targetsDeletedSignal,
             this, &EvaluationManager::lockResultsSlot);
 
-    auto& task_manager = COMPASS::instance().taskManager();
+    auto& task_manager = compass_.taskManager();
 
     connect (&task_manager, &TaskManager::taskRadarPlotPositionsDoneSignal, 
              this, &EvaluationManager::lockResultsSlot);
@@ -192,10 +188,10 @@ Result EvaluationManager::canEvaluate() const
 
 /**
  */
-Result EvaluationManager::evaluate(bool show_dialog, 
+Result EvaluationManager::evaluate(bool show_dialog,
                                    const std::string& custom_result_name)
 {
-    loginf;
+    loginf << "show_dialog " << show_dialog;
 
     traced_assert(initialized_);
     traced_assert(calculator_);
@@ -206,7 +202,7 @@ Result EvaluationManager::evaluate(bool show_dialog,
     std::string report_name;
     if (show_dialog)
     {
-        EvaluationDialog dlg(*calculator_);
+        EvaluationDialog dlg(*calculator_, QApplication::activeWindow());
 
         if (!custom_result_name.empty())
             dlg.setReportName(custom_result_name);
@@ -245,7 +241,7 @@ Result EvaluationManager::evaluate(bool show_dialog,
     {
         //interaction mode => show error immediately
         if (show_dialog)
-            QMessageBox::critical(nullptr, "Evaluation Failed", QString::fromStdString(eval_res.error()));
+            QMessageBox::critical(QApplication::activeWindow(), "Evaluation Failed", QString::fromStdString(eval_res.error()));
 
         return eval_res;
     }
@@ -253,7 +249,7 @@ Result EvaluationManager::evaluate(bool show_dialog,
     traced_assert(calculator_local->evaluated());
 
     //store calculator to task result
-    auto& task_man = COMPASS::instance().taskManager();
+    auto& task_man = compass_.taskManager();
 
     traced_assert(task_man.hasResult(calculator_local->resultName()));
 
@@ -280,13 +276,16 @@ void EvaluationManager::databaseOpenedSlot()
 
     traced_assert(calculator_);
 
-    traced_assert(!sectors_loaded_);
-    loadSectors();
+    // sectors are now loaded by DBContextManager - forward its signal
+    connect(&compass_.dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
+            this, &EvaluationManager::sectorsChangedSignal);
+    connect(&compass_.dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
+            this, &EvaluationManager::sectorsChangedSlot);
 
     //load sectors before locking any results via this connections
     connect(this, &EvaluationManager::sectorsChangedSignal, this, &EvaluationManager::lockResultsSlot);
 
-    auto& dbinterface = COMPASS::instance().dbInterface();
+    auto& dbinterface = compass_.dbInterface();
 
     use_timestamp_filter_ = false;
     load_timestamp_begin_ = {};
@@ -320,7 +319,7 @@ void EvaluationManager::databaseOpenedSlot()
         }
     }
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = dbcontent_man_;
 
     if (dbcont_man.hasMinMaxTimestamp())
     {
@@ -346,6 +345,12 @@ void EvaluationManager::databaseClosedSlot()
     //disconnect result locking before clearing the sectors
     disconnect(this, &EvaluationManager::sectorsChangedSignal, this, &EvaluationManager::lockResultsSlot);
 
+    // disconnect forwarding of DBContextManager signal
+    disconnect(&compass_.dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
+               this, &EvaluationManager::sectorsChangedSignal);
+    disconnect(&compass_.dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
+               this, &EvaluationManager::sectorsChangedSlot);
+
     use_timestamp_filter_ = false;
     load_timestamp_begin_ = {};
     load_timestamp_end_ = {};
@@ -355,7 +360,8 @@ void EvaluationManager::databaseClosedSlot()
 
     calculator_->reset();
 
-    clearSectors();
+    // sectors are now cleared by DBContextManager
+    emit sectorsChangedSignal();
     resetViewableDataConfig(true);
 }
 
@@ -404,6 +410,17 @@ void EvaluationManager::lockResultsSlot()
     emit resultsNeedUpdate(task::UpdateState::Locked);
 }
 
+void EvaluationManager::sectorsChangedSlot()
+{
+    loginf;
+
+    if (calculator_)
+    {
+        calculator_->checkMinHeightFilterValid();
+        calculator_->clearData();
+    }
+}
+
 void EvaluationManager::saveTimeConstraints()
 {
     loginf;
@@ -417,7 +434,7 @@ void EvaluationManager::saveTimeConstraints()
 
     constraints_json[EVAL_TIME_CONSTRAINTS_EXCLUDED_WINDOWS] = load_filtered_time_windows_.asJSON();
 
-    COMPASS::instance().dbInterface().setProperty(EVAL_TIME_CONSTRAINTS_PROPRTY_NAME, constraints_json.dump());
+    compass_.dbInterface().setProperty(EVAL_TIME_CONSTRAINTS_PROPRTY_NAME, constraints_json.dump());
 }
 
 /**
@@ -433,559 +450,102 @@ void EvaluationManager::addVariables (const std::string dbcontent_name, dbConten
 {
     loginf << "dbcontent_name " << dbcontent_name;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
 
-    if (!dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_))
+    if (!dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_))
         return;
 
     // TODO add required variables from standard requirements
 
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rec_num_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
 
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_max_stddev_xy))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_max_stddev_xy));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_max_stddev_xy_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_max_stddev_xy_));
 
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
 
     // flight level
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
 
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_g_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_g_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_g_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_g_));
 
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_v_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_v_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_v_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_v_));
 
     //if (settings_.dbcontent_name_ref_ == dbcontent_name && settings_.dbcontent_name_ref_ == "CAT062")
 
     // flight level trusted
     if (dbcontent_name == "CAT062")
     {
-        read_set.add(dbcontent_man.getVariable("CAT062", DBContent::var_cat062_baro_alt_));
-        read_set.add(dbcontent_man.getVariable("CAT062", DBContent::var_cat062_fl_measured_));
+        read_set.add(dbcontent_man.getVariable("CAT062", dbcontent_vars::var_cat062_baro_alt_));
+        read_set.add(dbcontent_man.getVariable("CAT062", dbcontent_vars::var_cat062_fl_measured_));
     }
 
     // m3a
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
 
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_g_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_g_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_g_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_g_));
 
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_v_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_v_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_v_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_v_));
 
     // tn
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_num_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
 
     // ground bit
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ground_bit_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_bit_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_bit_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_bit_));
 
     // speed & track angle
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
-    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_));
+    read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_));
 
     // accs
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ax_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ax_));
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ay_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ay_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ax_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ax_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ay_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ay_));
 
     // rocd
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_rocd_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rocd_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_rocd_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rocd_));
 
     // moms
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mom_long_acc_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_long_acc_));
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mom_trans_acc_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_trans_acc_));
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mom_vert_rate_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_vert_rate_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_long_acc_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_long_acc_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_trans_acc_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_trans_acc_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_vert_rate_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_vert_rate_));
 
-    if (dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_coasting_))
-        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_coasting_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_coasting_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_coasting_));
 }
 
 /**
 */
-bool EvaluationManager::hasSectorLayer(const std::string& layer_name) const
-{
-    traced_assert(sectors_loaded_);
-
-    auto iter = std::find_if(sector_layers_.begin(), sector_layers_.end(),
-                             [&layer_name](const shared_ptr<SectorLayer>& x) { return x->name() == layer_name;});
-
-    return iter != sector_layers_.end();
-}
-
-/**
-*/
-//void EvaluationManager::renameSectorLayer (const std::string& name, const std::string& new_name)
-//{
-//    // TODO
-//}
-
-/**
-*/
-std::shared_ptr<SectorLayer> EvaluationManager::sectorLayer (const std::string& layer_name) const
-{
-    traced_assert(sectors_loaded_);
-    traced_assert(hasSectorLayer(layer_name));
-
-    auto iter = std::find_if(sector_layers_.begin(), sector_layers_.end(),
-                             [&layer_name](const shared_ptr<SectorLayer>& x) { return x->name() == layer_name;});
-    traced_assert(iter != sector_layers_.end());
-
-    return *iter;
-}
-
-/**
-*/
-void EvaluationManager::updateMaxSectorID()
-{
-    for (auto& sec_lay_it : sector_layers_)
-    {
-        for (auto& sec_it : sec_lay_it->sectors())
-            max_sector_id_ = std::max(max_sector_id_, sec_it->id());
-    }
-}
-
-/**
-*/
-void EvaluationManager::loadSectors()
-{
-    loginf;
-
-    traced_assert(!sectors_loaded_);
-
-    if (!COMPASS::instance().dbInterface().ready())
-    {
-        sectors_loaded_ = false;
-        return;
-    }
-
-    sector_layers_ = COMPASS::instance().dbInterface().loadSectors();
-    sectors_loaded_ = true;
-
-    updateMaxSectorID();
-    
-    emit sectorsChangedSignal();
-}
-
-/**
-*/
-void EvaluationManager::clearSectors()
-{
-    loginf;
-
-    sector_layers_.clear();
-    sectors_loaded_ = false;
-
-    emit sectorsChangedSignal();
-}
-
 /**
  */
 void EvaluationManager::updateSectorLayers()
 {
-    if (sectors_loaded_)
+    auto& ctx = compass_.dbContextManager();
+
+    if (ctx.sectorsLoaded())
     {
-        for (const auto& layer : sectorsLayers())
+        for (const auto& layer : ctx.sectorLayers())
             for (const auto& s : layer->sectors())
                 s->createFastInsideTest();
     }
-}
-
-/**
- */
-unsigned int EvaluationManager::getMaxSectorId ()
-{
-    traced_assert(sectors_loaded_);
-    return max_sector_id_;
-}
-
-/**
- */
-void EvaluationManager::createNewSector(const std::string& name, 
-                                        const std::string& layer_name,
-                                        bool exclude, 
-                                        QColor color, 
-                                        std::vector<std::pair<double,double>> points)
-{
-    loginf << "start"
-           << " name " << name 
-           << " layer_name " << layer_name
-           << " num points " << points.size();
-
-    traced_assert(sectors_loaded_);
-    traced_assert(!hasSector(name, layer_name));
-    traced_assert(calculator_);
-
-    ++max_sector_id_; // new max
-
-    shared_ptr<Sector> sector(new Sector(max_sector_id_, name, layer_name, true, exclude, color, points));
-
-    // add to existing sectors
-    if (!hasSectorLayer(layer_name))
-    {
-        sector_layers_.push_back(make_shared<SectorLayer>(layer_name));
-    }
-
-    traced_assert(hasSectorLayer(layer_name));
-
-    sectorLayer(layer_name)->addSector(sector);
-
-    traced_assert(hasSector(name, layer_name));
-    sector->save();
-
-    calculator_->clearData();
-
-    //emit sectorsChangedSignal(); // do in caller, otherwise too often
-}
-
-/**
- */
-bool EvaluationManager::hasSector (const string& name, const string& layer_name)
-{
-    traced_assert(sectors_loaded_);
-
-    if (!hasSectorLayer(layer_name))
-        return false;
-
-    return sectorLayer(layer_name)->hasSector(name);
-}
-
-/**
- */
-bool EvaluationManager::hasSector (unsigned int id)
-{
-    traced_assert(sectors_loaded_);
-
-    for (auto& sec_lay_it : sector_layers_)
-    {
-        auto& sectors = sec_lay_it->sectors();
-        auto iter = std::find_if(sectors.begin(), sectors.end(),
-                                 [id](const shared_ptr<Sector>& x) { return x->id() == id;});
-        if (iter != sectors.end())
-            return true;
-    }
-    return false;
-}
-
-/**
- */
-std::shared_ptr<Sector> EvaluationManager::sector (const string& name, const string& layer_name)
-{
-    traced_assert(sectors_loaded_);
-    traced_assert(hasSector(name, layer_name));
-
-    return sectorLayer(layer_name)->sector(name);
-}
-
-/**
- */
-std::shared_ptr<Sector> EvaluationManager::sector (unsigned int id)
-{
-    traced_assert(sectors_loaded_);
-    traced_assert(hasSector(id));
-
-    for (auto& sec_lay_it : sector_layers_)
-    {
-        auto& sectors = sec_lay_it->sectors();
-        auto iter = std::find_if(sectors.begin(), sectors.end(),
-                                 [id](const shared_ptr<Sector>& x) { return x->id() == id;});
-        if (iter != sectors.end())
-            return *iter;
-    }
-
-    logerr << "id " << id << " not found";
-    traced_assert(false);
-}
-
-/**
- */
-void EvaluationManager::moveSector(unsigned int id, const std::string& old_layer_name, const std::string& new_layer_name)
-{
-    traced_assert(sectors_loaded_);
-    traced_assert(hasSector(id));
-    traced_assert(calculator_);
-
-    shared_ptr<Sector> tmp_sector = sector(id);
-
-    traced_assert(hasSectorLayer(old_layer_name));
-    sectorLayer(old_layer_name)->removeSector(tmp_sector);
-
-    if (!hasSectorLayer(new_layer_name))
-        sector_layers_.push_back(make_shared<SectorLayer>(new_layer_name));
-
-    traced_assert(hasSectorLayer(new_layer_name));
-    sectorLayer(new_layer_name)->addSector(tmp_sector);
-
-    traced_assert(hasSector(tmp_sector->name(), new_layer_name));
-    tmp_sector->save();
-
-    calculator_->clearData();
-
-    emit sectorsChangedSignal();
-}
-
-/**
- */
-std::vector<std::shared_ptr<SectorLayer>>& EvaluationManager::sectorsLayers()
-{
-    traced_assert(sectors_loaded_);
-
-    return sector_layers_;
-}
-
-/**
- */
-void EvaluationManager::saveSector(unsigned int id)
-{
-    traced_assert(sectors_loaded_);
-    traced_assert(hasSector(id));
-
-    saveSector(sector(id));
-}
-
-/**
- */
-void EvaluationManager::saveSector(std::shared_ptr<Sector> sector)
-{
-    traced_assert(sectors_loaded_);
-    traced_assert(hasSector(sector->name(), sector->layerName()));
-    COMPASS::instance().dbInterface().saveSector(sector);
-}
-
-/**
- */
-void EvaluationManager::deleteSector(shared_ptr<Sector> sector)
-{
-    traced_assert(sectors_loaded_);
-    traced_assert(hasSector(sector->name(), sector->layerName()));
-    traced_assert(calculator_);
-
-    string layer_name = sector->layerName();
-
-    traced_assert(hasSectorLayer(layer_name));
-
-    sectorLayer(layer_name)->removeSector(sector);
-
-    // remove sector layer if empty
-    if (!sectorLayer(layer_name)->size())
-    {
-        auto iter = std::find_if(sector_layers_.begin(), sector_layers_.end(),
-                                 [&layer_name](const shared_ptr<SectorLayer>& x) { return x->name() == layer_name;});
-
-        traced_assert(iter != sector_layers_.end());
-        sector_layers_.erase(iter);
-
-        calculator_->checkMinHeightFilterValid();
-    }
-
-    COMPASS::instance().dbInterface().deleteSector(sector);
-
-    calculator_->clearData();
-
-    emit sectorsChangedSignal();
-}
-
-/**
- */
-void EvaluationManager::deleteAllSectors()
-{
-    traced_assert(sectors_loaded_);
-    traced_assert(calculator_);
-
-    sector_layers_.clear();
-
-    COMPASS::instance().dbInterface().deleteAllSectors();
-
-    calculator_->checkMinHeightFilterValid();
-    calculator_->clearData();
-
-    emit sectorsChangedSignal();
-}
-
-/**
- */
-void EvaluationManager::importSectors(const std::string& filename)
-{
-    loginf << "filename '" << filename << "'";
-
-    traced_assert(sectors_loaded_);
-    traced_assert(calculator_);
-
-    sector_layers_.clear();
-    COMPASS::instance().dbInterface().clearSectorsTable();
-
-    std::ifstream input_file(filename, std::ifstream::in);
-
-    try
-    {
-        json j = json::parse(input_file);
-
-        if (!j.contains("sectors"))
-        {
-            logerr << "file does not contain sectors";
-            return;
-        }
-
-        json& sectors = j["sectors"];
-
-        if (!sectors.is_array())
-        {
-            logerr << "file sectors is not an array";
-            return;
-        }
-
-        unsigned int id;
-        string name;
-        string layer_name;
-        string json_str;
-
-        for (auto& j_sec_it : sectors.get<json::array_t>())
-        {
-            if (!j_sec_it.contains("id")
-                    || !j_sec_it.contains("name")
-                    || !j_sec_it.contains("layer_name")
-                    || !j_sec_it.contains("points"))
-            {
-                logerr << "ill-defined sectors skipped, json '" << j_sec_it.dump(4)
-                       << "'";
-                continue;
-            }
-
-            id = j_sec_it.at("id");
-            name = j_sec_it.at("name");
-            layer_name = j_sec_it.at("layer_name");
-
-            auto eval_sector = new Sector(id, name, layer_name, true);
-            eval_sector->readJSON(j_sec_it.dump());
-
-            if (!hasSectorLayer(layer_name))
-                sector_layers_.push_back(make_shared<SectorLayer>(layer_name));
-
-            sectorLayer(layer_name)->addSector(shared_ptr<Sector>(eval_sector));
-
-            traced_assert(hasSector(name, layer_name));
-
-            eval_sector->save();
-
-            loginf << "loaded sector '" << name << "' in layer '"
-                   << layer_name << "' num points " << sector(name, layer_name)->size() << " id " << id;
-        }
-    }
-    catch (json::exception& e)
-    {
-        logerr << "could not load file '"
-               << filename << "'";
-        throw e;
-    }
-
-    calculator_->checkMinHeightFilterValid();
-    calculator_->clearData();
-
-    emit sectorsChangedSignal();
-}
-
-/**
- */
-void EvaluationManager::exportSectors (const std::string& filename)
-{
-    loginf << "filename '" << filename << "'";
-
-    traced_assert(sectors_loaded_);
-
-    json j;
-
-    j["sectors"] = json::array();
-    json& sectors = j["sectors"];
-
-    unsigned int cnt = 0;
-
-    for (auto& sec_lay_it : sector_layers_)
-    {
-        for (auto& sec_it : sec_lay_it->sectors())
-        {
-            sectors[cnt] = sec_it->jsonData();
-            ++cnt;
-        }
-    }
-
-    std::ofstream output_file;
-    output_file.open(filename, std::ios_base::out);
-
-    output_file << j.dump(4);
-}
-
-/**
- */
-bool EvaluationManager::importAirSpace(const AirSpace& air_space,
-                                       const boost::optional<std::set<std::string>>& sectors_to_import)
-{
-    auto layers = air_space.layers();
-    if (layers.empty())
-        return false;
-
-    std::vector<std::shared_ptr<SectorLayer>> new_layers;
-
-    for (auto l : layers)
-    {
-        std::vector<std::shared_ptr<Sector>> sectors;
-        for (auto s : l->sectors())
-        {
-            if (sectors_to_import.has_value() && sectors_to_import->find(s->name()) == sectors_to_import->end())
-                continue;
-
-            sectors.push_back(s);
-        }
-
-        if (!sectors.empty())
-        {
-            l->clearSectors();
-            for (auto s : sectors)
-            {
-                //serialize from now on
-                s->serializeSector(true);
-
-                l->addSector(s);
-            }
-            new_layers.push_back(l);
-        }
-    }
-
-    if (new_layers.empty())
-        return false;
-
-    sector_layers_.insert(sector_layers_.begin(), new_layers.begin(), new_layers.end());
-
-    for (auto& sec_lay_it : new_layers)
-        for (auto& sec_it : sec_lay_it->sectors())
-            sec_it->save();
-
-
-    updateMaxSectorID();
-
-    emit sectorsChangedSignal();
-
-    return true;
-}
-
-/**
- */
-bool EvaluationManager::sectorsLoaded() const
-{
-    return sectors_loaded_;
 }
 
 /**
@@ -994,7 +554,7 @@ void EvaluationManager::setViewableDataConfig (const nlohmann::json::object_t& d
 {
     viewable_data_cfg_.reset(new ViewableDataConfig(data));
 
-    COMPASS::instance().viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
+    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
 }
 
 /**
@@ -1002,7 +562,7 @@ void EvaluationManager::setViewableDataConfig (const nlohmann::json::object_t& d
 void EvaluationManager::resetViewableDataConfig(bool reset_view_point)
 {
     if (reset_view_point)
-        COMPASS::instance().viewManager().unsetCurrentViewPoint();
+        compass_.viewManager().unsetCurrentViewPoint();
 
     viewable_data_cfg_.reset();
 }
@@ -1019,38 +579,45 @@ void EvaluationManager::onConfigurationChanged(const std::vector<std::string>& c
 void EvaluationManager::loadData(const EvaluationCalculator& calculator,
                                  bool blocking)
 {
+    loginf << "blocking " << blocking;
+
     traced_assert(!raw_data_available_);
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ctx_man = compass_.dbContextManager();
 
     auto ds_ids = calculator.usedDataSources();
 
     //load only needed data sources
-    ds_man.setLoadDSTypes(true); // load all ds types
-    ds_man.setLoadOnlyDataSources(ds_ids); // limit loaded data sources
+    ctx_man.setLoadDSTypes(true); // load all ds types
+    ctx_man.setLoadOnlyDataSources(ds_ids); // limit loaded data sources
 
     //configure filters for load
     configureLoadFilters(calculator);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
     dbcontent_man.clearData(); //clear previously loaded data
 
     //!do not distribute this reload to views!
-    COMPASS::instance().viewManager().disableDataDistribution(true);
+    compass_.viewManager().disableDataDistribution(true);
+    compass_.dbContentManager().enableDataDistribution(false);
 
     //add variables needed by evaluation
     needs_additional_variables_ = true;
 
+    LoadRequest req;
+    req.dbcontents_ = { calculator.dbContentNameRef(),
+                        calculator.dbContentNameTst() };
+
     if (blocking)
     {
-        dbcontent_man.loadBlocking();
+        dbcontent_man.loadBlocking(req);
         loadingDone();
     }
     else
     {
         connect(&dbcontent_man, &DBContentManager::loadingDoneSignal, this, &EvaluationManager::loadingDone);
         active_load_connection_ = true;
-        dbcontent_man.load();
+        dbcontent_man.load(req);
     }
 
     needs_additional_variables_ = false;
@@ -1060,7 +627,7 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator,
  */
 void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calculator)
 {
-    FilterManager& fil_man = COMPASS::instance().filterManager();
+    FilterManager& fil_man = compass_.filterManager();
 
     // set use filters
     fil_man.useFilters(true);
@@ -1138,7 +705,7 @@ void EvaluationManager::loadingDone()
 {
     loginf;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = dbcontent_man_;
 
     if (active_load_connection_)
     {
@@ -1147,7 +714,8 @@ void EvaluationManager::loadingDone()
     }
 
     //!reenable distribution to views!
-    COMPASS::instance().viewManager().disableDataDistribution(false);
+    compass_.viewManager().disableDataDistribution(false);
+    compass_.dbContentManager().enableDataDistribution(true);
 
     traced_assert(!raw_data_available_);
 
@@ -1269,3 +837,4 @@ const EvaluationStandard& EvaluationManager::currentStandard() const
     traced_assert(calculator_);
     return calculator_->currentStandard();
 }
+

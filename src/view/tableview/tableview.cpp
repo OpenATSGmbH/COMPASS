@@ -16,6 +16,7 @@
  */
 
 #include "tableview.h"
+#include "viewcontainer.h"
 
 #include <QApplication>
 
@@ -43,11 +44,8 @@ TableView::Settings::Settings()
 
 /**
 */
-TableView::TableView(const std::string& class_id, 
-                         const std::string& instance_id,
-                         ViewContainer* w, 
-                         ViewManager& view_manager)
-:   View(class_id, instance_id, w, view_manager)
+TableView::TableView(nlohmann::json& config, ViewContainer* parent)
+:   View(config, parent)
 {
     registerParameter(ParamShowSelected, &settings_.show_only_selected_, Settings().show_only_selected_);
     registerParameter(ParamUsePresentation, &settings_.use_presentation_, Settings().use_presentation_);
@@ -97,28 +95,23 @@ bool TableView::init_impl()
 
 /**
 */
-void TableView::generateSubConfigurable(const std::string& class_id,
-                                          const std::string& instance_id)
+void TableView::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
-    if (class_id == SubConfigDataSource)
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    logdbg << "class_name " << class_name;
+    if (class_name == SubConfigDataSource)
     {
         traced_assert(!data_source_);
-        data_source_ = new TableViewDataSource(class_id, instance_id, this);
+        data_source_ = new TableViewDataSource(child_json, this);
 
         //notify view that it needs to reload
         connect(data_source_, &TableViewDataSource::reloadNeeded, [ this ] { notifyViewUpdateNeeded(VU_Reload); });
     }
-    else if (class_id == SubConfigViewWidget)
-    {
-        widget_ = new TableViewWidget(class_id, instance_id, this, this, central_widget_);
-        setWidget(widget_);
-    }
     else
     {
-        throw std::runtime_error("TableView: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("TableView: generateSubConfigurable: unknown class_name " +
+                                 class_name);
     }
 }
 
@@ -128,12 +121,13 @@ void TableView::checkSubConfigurables()
 {
     if (!data_source_)
     {
-        generateSubConfigurable(SubConfigDataSource, SubConfigDataSource + "0");
+        generateSubConfigurableFromConfig(SubConfigDataSource, SubConfigDataSource + "0");
     }
 
     if (!widget_)
     {
-        generateSubConfigurable(SubConfigViewWidget, SubConfigViewWidget + "0");
+        widget_ = new TableViewWidget(this, central_widget_);
+        setWidget(widget_);
     }
 }
 
@@ -216,7 +210,7 @@ void TableView::updateSelection()
         widget_->getViewDataWidget()->resetModels();  // just updates the checkboxes
 }
 
-void TableView::unshowViewPointSlot (const ViewableDataConfig* vp)
+void TableView::unshowViewPointSlot (ViewableDataConfig* vp)
 {
     loginf;
 
@@ -225,7 +219,7 @@ void TableView::unshowViewPointSlot (const ViewableDataConfig* vp)
     data_source_->unshowViewPoint(vp);
 }
 
-void TableView::showViewPointSlot (const ViewableDataConfig* vp)
+void TableView::showViewPointSlot (ViewableDataConfig* vp)
 {
     loginf;
 
@@ -255,3 +249,4 @@ const TableView::Settings& TableView::settings() const
 {
     return settings_;
 }
+

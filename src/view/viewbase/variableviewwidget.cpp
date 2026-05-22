@@ -19,12 +19,8 @@
 
 /**
 */
-VariableViewWidget::VariableViewWidget(const std::string& class_id, 
-                                       const std::string& instance_id,
-                                       Configurable* config_parent, 
-                                       View* view, 
-                                       QWidget* parent)
-:   ViewWidget(class_id, instance_id, config_parent, view, parent)
+VariableViewWidget::VariableViewWidget(View* view, QWidget* parent)
+:   ViewWidget(view, parent)
 {
 }
 

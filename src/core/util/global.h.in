@@ -1,0 +1,62 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+#include <QSize>
+#include <math.h>
+#include <string>
+
+static const std::string VERSION = "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@";
+static const std::string DELETE_CFG_BEFORE_VERSION = "0.5.0";
+extern std::string APP_FILENAME;
+
+static QSize UI_ICON_SIZE (20,20);
+static const unsigned int UI_ICON_BUTTON_MAX_WIDTH=40;
+static const bool UI_ICON_BUTTON_FLAT=true;
+static const std::string META_OBJECT_NAME="Meta";
+static const std::string NULL_STRING="NULL";
+
+static const double DEG2RAD = 2*M_PI/360.0;
+static const double RAD2DEG = 1.0/DEG2RAD;
+static const double FT2M = 0.3048;
+static const double M2FT = 1.0/0.3048;
+
+static const double FL2M    = 30.48; // flight levels to metres
+static const double NM2M    = 1852.0; // NM to meters
+static const double M_S2KNOTS = 3600.0 / 1852.0; // metres per second to knots
+static const double KNOTS2M_S = 1852.0 / 3600.0; // knots to metres per second
+
+static const unsigned int NUM_MIN_SAMPLES {10};
+static const unsigned int NUM_MIN_SAMPLES_OVERRIDE{50};
+
+static const double ADSB_MAX_STOPPED_SPEED = 1.0;
+
+static const std::string NULL_GROUP_ID {"None"};
+
+static const char* const LINE_EDIT_INVALID_STYLE =
+    "QLineEdit { background: rgb(255, 100, 100); selection-background-color:"
+    " rgb(255, 200, 200); }";
+
+//std::string my_var = "@MY_VAR@";
+#define USE_EXPERIMENTAL_SOURCE @EXPERIMENTAL_SRC@
+
+#define TODO_ASSERT traced_assert(false);
+#define UNUSED_VARIABLE(expr) do { (void)(expr); } while (0)
+
+static const std::string CMAKE_INSTALL_PREFIX = "@CMAKE_INSTALL_PREFIX@";
+

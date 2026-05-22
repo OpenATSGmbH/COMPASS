@@ -16,11 +16,9 @@
  */
 
 #include "utnfilter.h"
-#include "compass.h"
 #include "utnfilterwidget.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
 #include "logger.h"
 #include "stringconv.h"
 
@@ -29,9 +27,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-UTNFilter::UTNFilter(const std::string& class_id, const std::string& instance_id,
-                     Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+UTNFilter::UTNFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("utns_str", &utns_str_, std::string());
     updateUTNSFromStr(utns_str_);
@@ -45,7 +42,7 @@ UTNFilter::~UTNFilter() {}
 
 bool UTNFilter::filters(const std::string& dbcont_name)
 {
-    // if (!COMPASS::instance().dbContentManager().hasAssociations())
+    // if (!dbContentManager().hasAssociations())
     //     return false;
 
     return true; // condition string for non-associated dbcontent as well
@@ -56,13 +53,13 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
     logdbg << "dbcontent " << dbcontent_name << " active " << active_
            << " null_wanted " << null_wanted_;
 
-    if (!active_) //  !COMPASS::instance().dbContentManager().hasAssociations()
+    if (!active_) //  !dbContentManager().hasAssociations()
         return "";
 
     stringstream ss;
 
     // check if filter non-associated content
-    if (!COMPASS::instance().dbContentManager().metaCanGetVariable(dbcontent_name, DBContent::meta_var_utn_))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_))
     {
         if (!null_wanted_)
         {
@@ -83,8 +80,7 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
 
     if (values_.size() || null_wanted_)
     {
-        dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
-                    DBContent::meta_var_utn_.name()).getFor(dbcontent_name);
+        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_utn_);
 
         if (!first)
             ss << " AND";
@@ -96,7 +92,7 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
 
         if (values_.size())
         {
-            ss << var.dbColumnName() << " IN (" << String::compress(values_, ',') << ")";
+            ss << col_name << " IN (" << String::compress(values_, ',') << ")";
         }
 
         if (null_wanted_)
@@ -104,7 +100,7 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
             if (values_.size())
                 ss << " OR";
 
-            ss << " " << var.dbColumnName() << " IS NULL)";
+            ss << " " << col_name << " IS NULL)";
         }
 
         first = false;
@@ -113,20 +109,6 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
     logdbg << "condition '" << ss.str() << "'";
 
     return ss.str();
-}
-
-void UTNFilter::generateSubConfigurable(const std::string& class_id,
-                                        const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("UTNFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void UTNFilter::checkSubConfigurables()
-{
-    logdbg;
-
 }
 
 DBFilterWidget* UTNFilter::createWidget()
@@ -164,8 +146,8 @@ void UTNFilter::loadViewPointConditions (const nlohmann::json& filters)
 
     updateUTNSFromStr(utns_str_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 std::string UTNFilter::utns() const

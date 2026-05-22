@@ -18,6 +18,8 @@
 #include "referencecalculatorwidget.h"
 
 #include "reconstructorbase.h"
+#include "reconstructortask.h"
+#include "taskmanager.h"
 
 #include "compass.h"
 
@@ -37,7 +39,7 @@ ReferenceCalculatorWidget::ReferenceCalculatorWidget(ReconstructorBase& reconstr
 {
     auto* settings = &reconstructor_.referenceCalculatorSettings();
 
-    bool add_optionals = !COMPASS::isAppImage() || COMPASS::instance().expertMode();
+    bool add_optionals = !COMPASS::isAppImage() || reconstructor_.task().manager().compass().expertMode();
 
     auto layout = new QFormLayout;
     setLayout(layout);
@@ -280,12 +282,19 @@ ReferenceCalculatorWidget::ReferenceCalculatorWidget(ReconstructorBase& reconstr
         });
     layout->addRow("Filter Result References", filter_max_stddev_box_);
 
-    filter_max_stddev_thres_box_ = new QDoubleSpinBox;
-    filter_max_stddev_thres_box_->setDecimals(2);
-    filter_max_stddev_thres_box_->setMinimum(0.0);
-    filter_max_stddev_thres_box_->setMaximum(100000.0);
-    connect(filter_max_stddev_thres_box_, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [ = ] (double v) { settings->filter_references_max_stddev_m_ = v; });
-    layout->addRow("Max. Stddev [m]", filter_max_stddev_thres_box_);
+    filter_max_stddev_thres_air_box_ = new QDoubleSpinBox;
+    filter_max_stddev_thres_air_box_->setDecimals(2);
+    filter_max_stddev_thres_air_box_->setMinimum(0.0);
+    filter_max_stddev_thres_air_box_->setMaximum(100000.0);
+    connect(filter_max_stddev_thres_air_box_, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [ = ] (double v) { settings->filter_references_max_stddev_m_air_ = v; });
+    layout->addRow("Max. Stddev Air [m]", filter_max_stddev_thres_air_box_);
+
+    filter_max_stddev_thres_ground_box_ = new QDoubleSpinBox;
+    filter_max_stddev_thres_ground_box_->setDecimals(2);
+    filter_max_stddev_thres_ground_box_->setMinimum(0.0);
+    filter_max_stddev_thres_ground_box_->setMaximum(100000.0);
+    connect(filter_max_stddev_thres_ground_box_, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [ = ] (double v) { settings->filter_references_max_stddev_m_ground_ = v; });
+    layout->addRow("Max. Stddev Ground [m]", filter_max_stddev_thres_ground_box_);
 
     updateValues();
 }
@@ -320,7 +329,8 @@ void ReferenceCalculatorWidget::updateEnabledStates()
     resample_systracks_dt_box_->setEnabled(resample_systracks);
     resample_systracks_maxdt_box_->setEnabled(resample_systracks);
 
-    filter_max_stddev_thres_box_->setEnabled(filter_max_stddev);
+    filter_max_stddev_thres_air_box_->setEnabled(filter_max_stddev);
+    filter_max_stddev_thres_ground_box_->setEnabled(filter_max_stddev);
 }
 
 /**
@@ -361,7 +371,8 @@ void ReferenceCalculatorWidget::updateValues()
     if (resample_Q_std_unknown_edit_) resample_Q_std_unknown_edit_->setValue(settings.resample_Q_std.Q_std_unknown); 
 
     if (filter_max_stddev_box_) filter_max_stddev_box_->setChecked(settings.filter_references_max_stddev_);
-    if (filter_max_stddev_thres_box_) filter_max_stddev_thres_box_->setValue(settings.filter_references_max_stddev_m_);
+    if (filter_max_stddev_thres_air_box_) filter_max_stddev_thres_air_box_->setValue(settings.filter_references_max_stddev_m_air_);
+    if (filter_max_stddev_thres_ground_box_) filter_max_stddev_thres_ground_box_->setValue(settings.filter_references_max_stddev_m_ground_);
 
     updateEnabledStates();
 }

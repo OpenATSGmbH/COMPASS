@@ -70,3 +70,4 @@ ModeCFalseConfig& ModeCFalseConfigWidget::config()
 }
 
 }
+

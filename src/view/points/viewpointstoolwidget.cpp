@@ -298,3 +298,4 @@ void ViewPointsToolWidget::columnFilteredSlot ()
     else
         vp_widget_->filterColumn(col);
 }
+

@@ -7,10 +7,10 @@ mkdir -p appimage/appdir/lib/
 cp /usr/lib/libjasterix.a appimage/appdir/lib/
 
 
-if [[ $1 == "deb9" ]]
+if [[ $OS_NAME == "deb9" ]]
 then
   /app/workspace/compass/docker/linuxdeployqt/linuxdeployqt-deb9-x86_64.AppImage --appimage-extract-and-run appimage/appdir/jasterix.desktop -appimage -bundle-non-qt-libs -verbose=2
-elif [[ $1 == "deb10" ]]
+elif [[ $OS_NAME == "deb10" ]]
 then	
 /app/workspace/compass/docker/linuxdeployqt/linuxdeployqt-deb10-x86_64.AppImage --appimage-extract-and-run appimage/appdir/jasterix.desktop -appimage -bundle-non-qt-libs -verbose=2
 fi

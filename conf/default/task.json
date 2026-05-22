@@ -1,47 +1,33 @@
 {
+    "class_name": "TaskManager",
+    "instance_name": "TaskManager0",
     "parameters": {
         "expert_mode": false
     },
     "sub_config_files": [
+        "task_import_asterix.json",
+        "task_calc_artas_assoc.json",
+        "task_import_gps.json",
+        "task_import_json.json",
+        "task_calc_radar_pos.json",
+        "task_reconstructor.json",
+        "task_import_view_points.json",
+        "task_analyze_data_source.json"
+    ],
+    "sub_configs": [
         {
-            "class_id": "ASTERIXImportTask",
-            "instance_id": "ASTERIXImportTask0",
-            "path": "task_import_asterix.json"
-        },
-        {
-            "class_id": "CreateARTASAssociationsTask",
-            "instance_id": "CreateARTASAssociationsTask0",
-            "path": "task_calc_artas_assoc.json"
-        },
-        {
-            "class_id": "GPSTrailImportTask",
-            "instance_id": "GPSTrailImportTask0",
-            "path": "task_import_gps.json"
-        },
-        {
-            "class_id": "JSONImportTask",
-            "instance_id": "JSONImportTask0",
-            "path": "task_import_json.json"
-        },
-        {
-            "class_id": "ManageSectorsTask",
-            "instance_id": "ManageSectorsTask0",
-            "path": "task_manage_sectors.json"
-        },
-        {
-            "class_id": "RadarPlotPositionCalculatorTask",
-            "instance_id": "RadarPlotPositionCalculatorTask0",
-            "path": "task_calc_radar_pos.json"
-        },
-        {
-            "class_id": "ReconstructorTask",
-            "instance_id": "ReconstructorTask0",
-            "path": "task_reconstructor.json"
-        },        
-        {
-            "class_id": "ViewPointsImportTask",
-            "instance_id": "ViewPointsImportTask0",
-            "path": "task_import_view_points.json"
+            "class_name": "ReportExport",
+            "instance_name": "ReportExport0",
+            "parameters": {
+                "author": "sk",
+                "json_table_max_cols_inline": 0,
+                "json_table_max_rows_inline": 0,
+                "latex_pdf_max_reruns": 3,
+                "latex_table_max_col_width": 24,
+                "latex_table_max_rows": 500,
+                "latex_table_min_cols_wide": 9,
+                "open_created_file": true
+            }
         }
     ]
 }

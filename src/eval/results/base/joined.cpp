@@ -22,7 +22,7 @@
 #include "task/result/report/sectioncontenttable.h"
 #include "task/result/report/section.h"
 
-#include "eval/results/report/evalsectionid.h"
+#include "eval/results/evalsectionid.h"
 
 #include "eval/requirement/base/base.h"
 
@@ -39,6 +39,7 @@
 #include "compass.h"
 #include "tbbhack.h"
 
+#include <QApplication>
 #include <QFileDialog>
 #include <QMessageBox>
 
@@ -48,7 +49,7 @@ namespace EvaluationRequirementResult
 const std::string Joined::SectorTargetsTableName        = "Targets";
 const std::string Joined::SectorOverviewTableName       = "Sector Overview";
 const std::string Joined::SectorOverviewID              = "Sector Overview";
-const int         Joined::SectorOverviewRenderDelayMSec = 5000;
+const int         Joined::SectorOverviewRenderDelayMSec = 100;
 
 /**
 */
@@ -350,9 +351,9 @@ bool Joined::exportAsCSV() const
 
     loginf << "start" << type();
 
-    QFileDialog dialog(nullptr);
+    QFileDialog dialog(QApplication::activeWindow());
     dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(COMPASS::instance().lastUsedPath().c_str());
+    dialog.setDirectory(calculator_.manager().compass().lastUsedPath().c_str());
     dialog.setNameFilter("CSV Files (*.csv)");
     dialog.setDefaultSuffix("csv");
     dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);
@@ -370,7 +371,7 @@ bool Joined::exportAsCSV() const
 
     if (!output_file || !output_file.is_open() || !exportAsCSV(output_file))
     {
-        QMessageBox::critical(nullptr, "Error", "Exporting CSV file failed.");
+        QMessageBox::critical(QApplication::activeWindow(), "Error", "Exporting CSV file failed.");
         return false;
     }
 

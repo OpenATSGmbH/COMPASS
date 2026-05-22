@@ -24,6 +24,8 @@
 #include "viewcontainer.h"
 #include "viewcontainerwidget.h"
 #include "viewpoint.h"
+#include "viewpointgenerator.h"
+#include "viewabledataconfig.h"
 #include "dbinterface.h"
 #include "viewpointswidget.h"
 #include "filtermanager.h"
@@ -34,6 +36,10 @@
 #include "viewpointsreportgeneratordialog.h"
 #include "util/timeconv.h"
 #include "viewpoint_commands.h"
+
+#if USE_EXPERIMENTAL_SOURCE == true
+#include "geographicview_commands.h"
+#endif
 #include "global.h"
 
 #include "json.hpp"
@@ -42,7 +48,11 @@
 #include <QWidget>
 #include <QMetaType>
 #include <QApplication>
+#include <QCoreApplication>
+#include <QEventLoop>
+#include <QScopedValueRollback>
 #include <QTabWidget>
+#include <QTimer>
 
 #include "traced_assert.h"
 
@@ -52,14 +62,32 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace std;
 
-ViewManager::ViewManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass)
-    : Configurable(class_id, instance_id, compass, "views.json"), compass_(*compass)
+namespace
+{
+    // Pump only the events that are safe during loading dispatch:
+    //   paint / timer / WM-ping replies (so the WM does not flag us as unresponsive).
+    // Excluded:
+    //   user input  - modal dialog already blocks it; double-belt against any non-modal load path.
+    //   sockets     - keeps RT command TCP from firing a second load mid-dispatch.
+    inline void pumpLoadingEvents()
+    {
+        QCoreApplication::processEvents(
+            QEventLoop::ExcludeUserInputEvents | QEventLoop::ExcludeSocketNotifiers);
+    }
+}
+
+ViewManager::ViewManager(nlohmann::json& config, COMPASS& compass)
+    : Configurable(config, &compass), compass_(compass)
 {
     logdbg;
 
     qRegisterMetaType<ViewPoint*>("ViewPoint*");
 
-    init_view_point_commands();
+    init_view_point_commands(compass_);
+
+#if USE_EXPERIMENTAL_SOURCE == true
+    init_geographic_view_commands();
+#endif
 
     registerParameter("automatic_reload", &config_.automatic_reload, Config().automatic_reload);
     registerParameter("automatic_redraw", &config_.automatic_redraw, Config().automatic_redraw);
@@ -75,7 +103,7 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
     main_tab_widget_ = main_tab_widget;
 
-    connect (&COMPASS::instance(), &COMPASS::appModeSwitchSignal, this, &ViewManager::appModeSwitchSlot);
+    connect (&compass_, &COMPASS::appModeSwitchSignal, this, &ViewManager::appModeSwitchSlot);
 
     // view point stuff
 
@@ -87,7 +115,7 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
     traced_assert(view_points_widget_);
 
-    FilterManager& filter_man = COMPASS::instance().filterManager();
+    FilterManager& filter_man = compass_.filterManager();
 
     connect (this, &ViewManager::showViewPointSignal, &filter_man, &FilterManager::showViewPointSlot);
     connect (this, &ViewManager::unshowViewPointSignal, &filter_man, &FilterManager::unshowViewPointSlot);
@@ -168,50 +196,52 @@ ViewManager::~ViewManager()
     view_points_widget_ = nullptr;
 }
 
-void ViewManager::generateSubConfigurable(const std::string& class_id,
-                                          const std::string& instance_id)
+void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+
+    logdbg << "class_name " << class_name << " instance_name "
+           << instance_name;
 
     traced_assert(initialized_);
 
-    if (class_id == "ViewContainer")
+    if (class_name == "ViewContainer")
     {
         ViewContainer* container =
-                new ViewContainer(class_id, instance_id, this, this, main_tab_widget_, 0);
-        traced_assert(containers_.count(instance_id) == 0);
-        containers_.insert(std::pair<std::string, ViewContainer*>(instance_id, container));
+                new ViewContainer(child_json, *this, this, main_tab_widget_, 0);
+        traced_assert(containers_.count(instance_name) == 0);
+        containers_.insert(std::pair<std::string, ViewContainer*>(instance_name, container));
 
-        unsigned int number = String::getAppendedInt(instance_id);
+        unsigned int number = String::getAppendedInt(instance_name);
         if (number >= container_count_)
             container_count_ = number;
     }
-    else if (class_id == "ViewContainerWidget")
+    else if (class_name == "ViewContainerWidget")
     {
         ViewContainerWidget* container_widget =
-                new ViewContainerWidget(class_id, instance_id, this);
-        traced_assert(containers_.count(container_widget->viewContainer().instanceId()) == 0);
+                new ViewContainerWidget(child_json, *this);
+        traced_assert(containers_.count(container_widget->viewContainer().instanceName()) == 0);
         containers_.insert(std::pair<std::string, ViewContainer*>(
-                               container_widget->viewContainer().instanceId(), &container_widget->viewContainer()));
-        traced_assert(container_widgets_.count(instance_id) == 0);
+                               container_widget->viewContainer().instanceName(), &container_widget->viewContainer()));
+        traced_assert(container_widgets_.count(instance_name) == 0);
         container_widgets_.insert(
-                    std::pair<std::string, ViewContainerWidget*>(instance_id, container_widget));
+                    std::pair<std::string, ViewContainerWidget*>(instance_name, container_widget));
 
-        unsigned int number = String::getAppendedInt(instance_id);
+        unsigned int number = String::getAppendedInt(instance_name);
         if (number >= container_count_)
             container_count_ = number;
     }
-    else if (class_id == "ViewPointsReportGenerator")
+    else if (class_name == "ViewPointsReportGenerator")
     {
         traced_assert(!view_points_report_gen_);
 
-        view_points_report_gen_.reset(new ViewPointsReportGenerator(class_id, instance_id, *this));
+        view_points_report_gen_.reset(new ViewPointsReportGenerator(child_json, this));
         traced_assert(view_points_report_gen_);
     }
     else
-        throw std::runtime_error("ViewManager: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("ViewManager: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 //    if (widget_)
 //        widget_->update();
 }
@@ -233,7 +263,7 @@ void ViewManager::enableStoredReadSets()
 {
     loginf;
 
-    for (const auto& cont_it : COMPASS::instance().dbContentManager())
+    for (const auto& cont_it : compass_.dbContentManager())
     {
         logdbg << "stored readset for '" << cont_it.first << "'";
         tmp_stored_readset_[cont_it.first] = getReadSet(cont_it.first);
@@ -291,7 +321,7 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
         if (!json_ok)
             return std::make_pair(false, err);
 
-        DBInterface& db_interface = COMPASS::instance().dbInterface();
+        DBInterface& db_interface = compass_.dbInterface();
 
         //delete existing viewpoints
         if (db_interface.existsViewPointsTable() && db_interface.viewPoints().size())
@@ -335,7 +365,7 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
 
 void ViewManager::clearViewPoints()
 {
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = compass_.dbInterface();
 
             //delete existing viewpoints
     if (db_interface.existsViewPointsTable() && db_interface.viewPoints().size())
@@ -349,7 +379,7 @@ void ViewManager::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
     viewPointsWidget()->addViewPoints(viewpoints);
 }
 
-void ViewManager::setCurrentViewPoint (const ViewableDataConfig* viewable,
+void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
                                        bool load_blocking)
 {
     if (current_viewable_)
@@ -364,10 +394,85 @@ void ViewManager::setCurrentViewPoint (const ViewableDataConfig* viewable,
 
     emit showViewPointSignal(current_viewable_);
 
+    // After every view has consumed the viewpoint (and so registered any
+    // annotation), bring a compatible view to the front. Switching before
+    // the signal would make a not-yet-shown widget try to render mid-setup
+    // (the GridView duplicates its legend / skips the chart on that path).
+    activateCompatibleViewTabs(current_viewable_);
+
     if (load_blocking)
-        COMPASS::instance().dbContentManager().loadBlocking();
+        compass_.dbContentManager().loadBlocking(LoadRequest::standard());
     else
-        COMPASS::instance().dbContentManager().load();
+        compass_.dbContentManager().load(LoadRequest::standard());
+}
+
+void ViewManager::activateCompatibleViewTabs(const ViewableDataConfig* viewable)
+{
+    if (!viewable)
+        return;
+
+    auto features = ViewPointGenVP::scanForFeatures(viewable->data());
+    if (features.empty())
+        return;
+
+    std::set<std::string> feature_types;
+    for (const auto& f : features)
+    {
+        if (f.feature_json.is_object()
+            && f.feature_json.contains(ViewPointGenFeature::FeatureTypeFieldType))
+        {
+            feature_types.insert(
+                f.feature_json[ViewPointGenFeature::FeatureTypeFieldType].get<std::string>());
+        }
+    }
+    if (feature_types.empty())
+        return;
+
+    auto supports = [&feature_types](View* v) {
+        if (!v)
+            return false;
+        auto accepted = v->acceptedAnnotationFeatureTypes();
+        for (const auto& t : feature_types)
+            if (accepted.count(t))
+                return true;
+        return false;
+    };
+
+    for (const auto& entry : containers_)
+    {
+        ViewContainer* container = entry.second;
+        if (!container)
+            continue;
+
+        View* current = container->currentView();
+        if (current && supports(current))
+            continue;
+
+        for (const auto& v : container->getViews())
+        {
+            if (supports(v.get()))
+            {
+                View* view_to_show = v.get();
+                view_to_show->showInTabWidget();
+
+                // QtCharts occasionally leaves the chart unrendered on a
+                // tab's first show this session - the user then sees the
+                // legend stretched across the chart area and only a manual
+                // resize triggers a redraw. Forcing a geometry refresh after
+                // the show event has run does the same thing programmatically.
+                QWidget* central = view_to_show->getCentralWidget();
+                if (central)
+                {
+                    QTimer::singleShot(0, central, [central]()
+                    {
+                        central->updateGeometry();
+                        central->update();
+                    });
+                }
+                break;
+            }
+        }
+    }
 }
 
 
@@ -382,6 +487,8 @@ void ViewManager::unsetCurrentViewPoint ()
         view_point_data_selected_ = false;
     }
 }
+
+
 
 void ViewManager::doViewPointAfterLoad ()
 {
@@ -435,27 +542,27 @@ void ViewManager::doViewPointAfterLoad ()
                << " max " << Time::toString(vp_ts_max);
     }
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     bool selection_changed = false;
     for (auto& dbcont_it : dbcont_man)
     {
         std::string dbcontent_name = dbcont_it.first;
 
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_))
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_))
         {
             logerr << "required variables missing in " << dbcontent_name;
             continue;
         }
 
-        const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
+        const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
         if (dbcont_man.data().count(dbcont_it.first))
         {
             std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbcont_it.first);
 
-            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
-            NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
+            traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
+            NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
 
             traced_assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
             NullableVector<boost::posix_time::ptime>& tods = buffer->get<boost::posix_time::ptime>(ts_var.name());
@@ -506,27 +613,27 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
 {
     loginf << "ts_min " << ts_min << " ts_max " << ts_max;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass_.dbContentManager();
 
     bool selection_changed = false;
     for (auto& dbcont_it : dbcont_man)
     {
         std::string dbcontent_name = dbcont_it.first;
 
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_))
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_))
         {
             logerr << "required variables missing, quitting";
             continue;
         }
 
-        const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
+        const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
         if (dbcont_man.data().count(dbcont_it.first))
         {
             std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbcont_it.first);
 
-            traced_assert(buffer->has<bool>(DBContent::selected_var.name()));
-            NullableVector<bool>& selected_vec = buffer->get<bool>(DBContent::selected_var.name());
+            traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
+            NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
 
             traced_assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
             NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(ts_var.name());
@@ -577,17 +684,17 @@ std::map<std::string, std::string> ViewManager::viewClassList() const
     return view_class_list_;
 }
 
-unsigned int ViewManager::newViewNumber(const std::string& class_id)
+unsigned int ViewManager::newViewNumber(const std::string& class_name)
 {
     int max_number = -1;
     int tmp;
 
     for (auto& view_it : views_)
     {
-        if (view_it.second->classId() != class_id)
+        if (view_it.second->className() != class_name)
             continue;
 
-        tmp = String::getAppendedInt(view_it.second->instanceId());
+        tmp = String::getAppendedInt(view_it.second->instanceName());
 
         if (tmp > max_number)
             max_number = tmp;
@@ -596,15 +703,15 @@ unsigned int ViewManager::newViewNumber(const std::string& class_id)
     return max_number + 1;
 }
 
-std::string ViewManager::newViewInstanceId(const std::string& class_id)
+std::string ViewManager::newViewInstanceId(const std::string& class_name)
 {
-    return class_id + to_string(newViewNumber(class_id));
+    return class_name + to_string(newViewNumber(class_name));
 }
 
-std::string ViewManager::newViewName(const std::string& class_id)
+std::string ViewManager::newViewName(const std::string& class_name)
 {
-    traced_assert(view_class_list_.count(class_id));
-    return view_class_list_.at(class_id) + " " + to_string(newViewNumber(class_id));
+    traced_assert(view_class_list_.count(class_name));
+    return view_class_list_.at(class_name) + " " + to_string(newViewNumber(class_name));
 }
 
 void ViewManager::disableDataDistribution(bool value)
@@ -700,7 +807,7 @@ void ViewManager::registerView(View* view)
     logdbg;
     traced_assert(view);
     traced_assert(!isRegistered(view));
-    views_[view->instanceId()] = view;
+    views_[view->instanceName()] = view;
 }
 
 void ViewManager::unregisterView(View* view)
@@ -711,7 +818,7 @@ void ViewManager::unregisterView(View* view)
 
     std::map<std::string, View*>::iterator it;
 
-    it = views_.find(view->instanceId());
+    it = views_.find(view->instanceName());
     views_.erase(it);
 }
 
@@ -722,18 +829,18 @@ bool ViewManager::isRegistered(View* view)
 
     std::map<std::string, View*>::iterator it;
 
-    it = views_.find(view->instanceId());
+    it = views_.find(view->instanceName());
 
     return !(it == views_.end());
 }
 
-void ViewManager::removeContainer(std::string instance_id)
+void ViewManager::removeContainer(std::string instance_name)
 {
     std::map<std::string, ViewContainer*>::iterator it;
 
-    logdbg << "instance " << instance_id;
+    logdbg << "instance " << instance_name;
 
-    it = containers_.find(instance_id);
+    it = containers_.find(instance_name);
 
     if (it != containers_.end())
     {
@@ -745,13 +852,13 @@ void ViewManager::removeContainer(std::string instance_id)
     throw std::runtime_error("ViewManager: removeContainer:  key not found");
 }
 
-void ViewManager::removeContainerWidget(std::string instance_id)
+void ViewManager::removeContainerWidget(std::string instance_name)
 {
     std::map<std::string, ViewContainerWidget*>::iterator it;
 
-    logdbg << "instance " << instance_id;
+    logdbg << "instance " << instance_name;
 
-    it = container_widgets_.find(instance_id);
+    it = container_widgets_.find(instance_name);
 
     if (it != container_widgets_.end())
     {
@@ -763,13 +870,13 @@ void ViewManager::removeContainerWidget(std::string instance_id)
     throw std::runtime_error("ViewManager: removeContainer: key not found");
 }
 
-void ViewManager::deleteContainerWidget(std::string instance_id)
+void ViewManager::deleteContainerWidget(std::string instance_name)
 {
     std::map<std::string, ViewContainerWidget*>::iterator it;
 
-    logdbg << "instance " << instance_id;
+    logdbg << "instance " << instance_name;
 
-    it = container_widgets_.find(instance_id);
+    it = container_widgets_.find(instance_name);
 
     if (it != container_widgets_.end())
     {
@@ -787,7 +894,7 @@ void ViewManager::viewShutdown(View* view, const std::string& err)
     delete view;
 
     if (err.size())
-        QMessageBox::critical(NULL, "View Shutdown", QString::fromStdString(err));
+        QMessageBox::critical(QApplication::activeWindow(), "View Shutdown", QString::fromStdString(err));
 }
 
 void ViewManager::selectionChangedSlot()
@@ -820,13 +927,26 @@ void ViewManager::loadingStartedSlot()
     if (disable_data_distribution_)
         return;
 
+    if (processing_data_)
+    {
+        loginf << "re-entry detected (currently in '" << current_dispatch_
+               << "'), deferring via queued connection";
+        QMetaObject::invokeMethod(this, &ViewManager::loadingStartedSlot, Qt::QueuedConnection);
+        return;
+    }
+    QScopedValueRollback<bool> guard(processing_data_, true);
+    QScopedValueRollback<std::string> name_guard(current_dispatch_, "loadingStartedSlot");
+
     //reset reload flag
     reload_needed_ = false;
+    loading_done_dispatched_ = false;
 
-    loginf;
+    loginf << "begin, " << views_.size() << " views";
 
     for (auto& view_it : views_)
         view_it.second->loadingStarted();
+
+    loginf << "end";
 }
 
 // all data contained, also new one. requires_reset true indicates that all shown info should be re-created,
@@ -836,9 +956,25 @@ void ViewManager::loadedDataSlot (const std::map<std::string, std::shared_ptr<Bu
     if (disable_data_distribution_)
         return;
 
-    logdbg << "reset " << requires_reset;
+    if (processing_data_)
+    {
+        loginf << "re-entry detected (currently in '" << current_dispatch_
+               << "'), deferring via queued connection";
+        // data captured by value (the map holds shared_ptrs to immutable Buffers).
+        auto data_copy = data;
+        QMetaObject::invokeMethod(this,
+            [this, data_copy = std::move(data_copy), requires_reset]() {
+                loadedDataSlot(data_copy, requires_reset);
+            }, Qt::QueuedConnection);
+        return;
+    }
+    QScopedValueRollback<bool> guard(processing_data_, true);
+    QScopedValueRollback<std::string> name_guard(current_dispatch_, "loadedDataSlot");
 
-    processing_data_ = true;
+    if (loading_done_dispatched_)
+        logwrn << "called AFTER loadingDoneSlot completed - lifecycle contract violated";
+
+    loginf << "begin, " << views_.size() << " views, requires_reset " << requires_reset;
 
     using namespace boost::posix_time;
     ptime tmp_time;
@@ -848,36 +984,77 @@ void ViewManager::loadedDataSlot (const std::map<std::string, std::shared_ptr<Bu
         tmp_time = microsec_clock::local_time();
         view_it.second->loadedData(data, requires_reset);
 
-        logdbg << "start" << view_it.first << " took "
+        loginf << "view " << view_it.first << " took "
                << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
     }
 
-    processing_data_ = false;
-
-    logdbg << "done";
+    loginf << "end";
 }
 
 void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished loading
 {
-    if (disable_data_distribution_)
-        return;
+    auto& dbcm = compass_.dbContentManager();
 
-    loginf;
+    if (disable_data_distribution_)
+    {
+        // no views will be processed; jump the dialog to 100% so it's not stuck at 50%
+        dbcm.beginViewProgressPhase(0);
+        return;
+    }
+
+    if (processing_data_)
+    {
+        loginf << "re-entry detected (currently in '" << current_dispatch_
+               << "'), deferring via queued connection";
+        QMetaObject::invokeMethod(this, &ViewManager::loadingDoneSlot, Qt::QueuedConnection);
+        return;
+    }
+    QScopedValueRollback<bool> guard(processing_data_, true);
+    QScopedValueRollback<std::string> name_guard(current_dispatch_, "loadingDoneSlot");
+
+    loginf << "begin, " << views_.size() << " views";
+
+    dbcm.beginViewProgressPhase(static_cast<unsigned int>(views_.size()));
+
+    using namespace boost::posix_time;
+    ptime tmp_time;
+    ptime loop_start = microsec_clock::local_time();
+
+    // Threshold: only pump events between views once the loop has been running
+    // for a while. Short loops (typical UI test loads, ~1-2 s total) finish
+    // before the threshold and never pump - this keeps queued RT commands from
+    // interleaving with view dispatch and breaking UI test injection. Long
+    // loads (the original "WM unresponsive" case, 12+ s) cross the threshold
+    // and start pumping, restoring responsiveness for the user.
+    constexpr int pump_threshold_ms = 3000;
 
     for (auto& view_it : views_)
+    {
+        tmp_time = microsec_clock::local_time();
         view_it.second->loadingDone();
+        loginf << "view " << view_it.first << " took "
+               << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
+        dbcm.advanceViewProgress();
+
+        auto elapsed_ms = (microsec_clock::local_time() - loop_start).total_milliseconds();
+        if (elapsed_ms > pump_threshold_ms)
+            pumpLoadingEvents();
+    }
+
+    loading_done_dispatched_ = true;
+    loginf << "end";
 }
 
 void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)
 {
-    loginf << "app_mode " << COMPASS::instance().appModeStr();
+    loginf << "app_mode " << compass_.appModeStr();
 
     for (auto& view_it : views_)
     {
         view_it.second->appModeSwitch(app_mode_previous, app_mode_current);
 
         if (app_mode_current == AppMode::LiveRunning)
-            view_it.second->enableInTabWidget(view_it.second->classId() == "GeographicView");
+            view_it.second->enableInTabWidget(view_it.second->className() == "GeographicView");
         else
             view_it.second->enableInTabWidget(true);
     }
@@ -1028,3 +1205,4 @@ void ViewManager::updateFeatures()
 //    //view->saveConfigurationAsTemplate("Template"+view->getInstanceId());
 //    saveTemplateConfiguration (view, template_name);
 //}
+

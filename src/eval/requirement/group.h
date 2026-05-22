@@ -46,14 +46,13 @@ signals:
 //     void deleteRequirementSlot();
 
 public:
-    Group(const std::string& class_id, 
-          const std::string& instance_id,
-          EvaluationStandard& standard, 
-          EvaluationCalculator& calculator);
+    Group(nlohmann::json& config,
+          EvaluationStandard* parent);
+
+    EvaluationStandard* parentConfigurable() const;
     virtual ~Group();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void use(bool ok) override;
     bool used() const override;
@@ -62,7 +61,7 @@ public:
     std::string name() const;
 
     bool hasRequirementConfig (const std::string& name);
-    void addRequirementConfig (const std::string& class_id, const std::string& name, const std::string& short_name);
+    void addRequirementConfig (const std::string& class_name, const std::string& name, const std::string& short_name);
     EvaluationRequirement::BaseConfig& requirementConfig (const std::string& name);
     void removeRequirementConfig (const std::string& name);
 

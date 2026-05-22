@@ -224,9 +224,9 @@
     },
     "062":{
         "comment":"Category 062 SURVEILLANCE DATA EXCHANGE SDPS Track Messages",
-        "default_edition":"1.18",
+        "default_edition":"1.21",
         "default_ref_edition":"1.2",
-        "default_spf_edition":"ARTAS",
+        "default_spf_edition":"",
         "default_mapping":"",
         "editions":{
             "1.12":{
@@ -243,6 +243,11 @@
                 "document":"EUROCONTROL-SPEC-0149-9",
                 "date":"13/08/2018",
                 "file":"062/cat062_1.18.json"
+            },
+            "1.21":{
+                "document":"EUROCONTROL-SPEC-0149-9",
+                "date":"05/06/2025",
+                "file":"062/cat062_1.21.json"
             }
         },
         "ref_editions":{
@@ -250,6 +255,11 @@
                 "document":"Coding Rules for \"Reserved Expansion Field\" (Part 9, Appendix A)",
                 "date":"July 2011",
                 "file":"062/cat062_ref_1.2.json"
+            },
+            "1.4":{
+                "document":"EUROCONTROL-SPEC-0149-9A",
+                "date":"05/06/2025",
+                "file":"062/cat062_ref_1.4.json"
             }
         },
         "spf_editions":{

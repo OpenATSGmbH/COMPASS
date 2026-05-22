@@ -1,4 +1,6 @@
 {
+    "class_name": "DBContent",
+    "instance_name": "CAT019",
     "parameters": {
         "contains_status_content": true,
         "contains_target_reports": false,
@@ -7,488 +9,582 @@
         "info": "",
         "name": "CAT019"
     },
-    "sub_configs": {
-        "Variable": {
-            "Variable1": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "message_type",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 000.Message Type\n\n001 Start of Update Cycle\n002 Periodic Status Message\n003 Event-triggered Status Message",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Message Type",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable10": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tp_1b",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 551.TP 1b\n\n1 Exec\n0 Standby",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TP 1b",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable11": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tp_2a",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 551.TP 2a\n\n1 Exec\n0 Standby",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TP 2a",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable12": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tp_2b",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 551.TP 2b\n\n1 Exec\n0 Standby",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TP 2b",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable13": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tp_3a",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 551.TP 3a\n\n1 Exec\n0 Standby",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TP 3a",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable14": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tp_3b",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 551.TP 3b\n\n1 Exec\n0 Standby",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TP 3b",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable15": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tp_4a",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 551.TP 4a\n\n1 Exec\n0 Standby",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TP 4a",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable16": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tp_4b",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 551.TP 4b\n\n1 Exec\n0 Standby",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TP 4b",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable17": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "rs_identification",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 552.Remote Sensor Detailed Status.RS Identification\n\n8-bit Identification number of RS",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RS Identification",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable18": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "rs_operational",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 552.Remote Sensor Detailed Status.RS Operational\n\n1 Online\n0 Offline",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RS Operational",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable19": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "rs_status",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 552.Remote Sensor Detailed Status.RS Status\n\n1 Good\n0 Faulted",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "RS Status",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable2": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SAC\n\nSystem Area Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SAC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable20": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "receiver_1090_mhz",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 552.Remote Sensor Detailed Status.Receiver 1090 MHz\n\n1 present",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Receiver 1090 MHz",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable21": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "transmitter_1030_mhz",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 552.Remote Sensor Detailed Status.Transmitter 1030 MHz\n\n1 present",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Transmitter 1030 MHz",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable22": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "transmitter_1090_mhz",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 552.Remote Sensor Detailed Status.Transmitter 1090 MHz\n\n1 present",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Transmitter 1090 MHz",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable23": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "ref_trans_1_status",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 553.Reference Transponder Detailed Status.Ref Trans 1 Status\n\n3 Good\n2 Faulted\n1 Warning\n0",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Ref Trans 1 Status",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable24": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "ref_trans_2_status",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 553.Reference Transponder Detailed Status.Ref Trans 2 Status\n\n3 Good\n2 Faulted\n1 Warning\n0",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Ref Trans 2 Status",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable25": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "reference_point_latitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 600.Latitude\n\nIn WGS-84 in two’s complement.\nRange -90 <= latitude <= 90 deg.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Reference Point Latitude",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable26": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "reference_point_longitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 600.Longitude\n\nIn WGS-84 in two’s complement.\nRange -180 <= longitude < 180 deg.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Reference Point Longitude",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable27": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "reference_point_height",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 610.Height\n\nHeight (WGS-84) above MSL\nRange= +/- 8192 m",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Reference Point Height",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable28": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "reference_point_undulation",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 620.Undulation\n\nWGS-84 Undulation value (MSL)\nRange= +/- 127 m",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Reference Point Undulation",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable3": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sic",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SIC\n\nSystem Identification Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SIC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable4": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_of_day",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 140.Time of Day",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time of Day",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "Variable5": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "nogo",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 550.NOGO\n\nOperational Release Status of the System\n0 Operational\n1 Degraded\n2 NOGO\n3 undefined",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "NOGO",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable6": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ovl",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 550.OVL\n\nOverload indicator\n0 No overload\n1 Overload",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "OVL",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable7": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tsv",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 550.TSV\n\nTime Source Validity\n0 valid\n1 invalid",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TSV",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable8": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "ttf",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 550.TTF\n\n0 Test Target Operative\n1 Test Target Failure",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TTF",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable9": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "tp_1a",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 551.TP 1a\n\n1 Exec\n0 Standby",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "TP 1a",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableTimestamp0": {
-                "parameters": {
-                    "data_type_str": "TIMESTAMP",
-                    "db_column_name": "timestamp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Epoch timestamp based on Time of Day",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Timestamp",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variableds_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "ds_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From ds_id\n\nData Source ID",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "DS ID",
-                    "representation_str": "DATA_SRC_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variableline_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "line_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "COMMUNICATION LINE ID determines the origin of the record",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Line ID",
-                    "representation_str": "LINE_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variablerec_num0": {
-                "parameters": {
-                    "data_type_str": "ULONGINT",
-                    "db_column_name": "record_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Unique record id starting with 0 on every new recording",
-                    "dimension": "",
-                    "is_key": true,
-                    "name": "Record Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
+    "sub_configs": [
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable1",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "message_type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "001 Start of Update Cycle\n002 Periodic Status Message\n003 Event-triggered Status Message",
+                "dimension": "",
+                "is_key": false,
+                "name": "Message Type",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/000.Message Type",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable10",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tp_1b",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Exec\n0 Standby",
+                "dimension": "",
+                "is_key": false,
+                "name": "TP 1b",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/551.TP 1b",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable11",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tp_2a",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Exec\n0 Standby",
+                "dimension": "",
+                "is_key": false,
+                "name": "TP 2a",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/551.TP 2a",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable12",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tp_2b",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Exec\n0 Standby",
+                "dimension": "",
+                "is_key": false,
+                "name": "TP 2b",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/551.TP 2b",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable13",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tp_3a",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Exec\n0 Standby",
+                "dimension": "",
+                "is_key": false,
+                "name": "TP 3a",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/551.TP 3a",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable14",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tp_3b",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Exec\n0 Standby",
+                "dimension": "",
+                "is_key": false,
+                "name": "TP 3b",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/551.TP 3b",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable15",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tp_4a",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Exec\n0 Standby",
+                "dimension": "",
+                "is_key": false,
+                "name": "TP 4a",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/551.TP 4a",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable16",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tp_4b",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Exec\n0 Standby",
+                "dimension": "",
+                "is_key": false,
+                "name": "TP 4b",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/551.TP 4b",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable17",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "rs_identification",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "8-bit Identification number of RS",
+                "dimension": "",
+                "is_key": false,
+                "name": "RS Identification",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/552.Remote Sensor Detailed Status.RS Identification",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable18",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "rs_operational",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Online\n0 Offline",
+                "dimension": "",
+                "is_key": false,
+                "name": "RS Operational",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/552.Remote Sensor Detailed Status.RS Operational",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable19",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "rs_status",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Good\n0 Faulted",
+                "dimension": "",
+                "is_key": false,
+                "name": "RS Status",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/552.Remote Sensor Detailed Status.RS Status",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable2",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/010.SAC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable20",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "receiver_1090_mhz",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 present",
+                "dimension": "",
+                "is_key": false,
+                "name": "Receiver 1090 MHz",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/552.Remote Sensor Detailed Status.Receiver 1090 MHz",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable21",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "transmitter_1030_mhz",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 present",
+                "dimension": "",
+                "is_key": false,
+                "name": "Transmitter 1030 MHz",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/552.Remote Sensor Detailed Status.Transmitter 1030 MHz",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable22",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "transmitter_1090_mhz",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 present",
+                "dimension": "",
+                "is_key": false,
+                "name": "Transmitter 1090 MHz",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/552.Remote Sensor Detailed Status.Transmitter 1090 MHz",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable23",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "ref_trans_1_status",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "3 Good\n2 Faulted\n1 Warning\n0",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ref Trans 1 Status",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/553.Reference Transponder Detailed Status.Ref Trans 1 Status",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable24",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "ref_trans_2_status",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "3 Good\n2 Faulted\n1 Warning\n0",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ref Trans 2 Status",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/553.Reference Transponder Detailed Status.Ref Trans 2 Status",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable25",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "reference_point_latitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "In WGS-84 in two’s complement.\nRange -90 <= latitude <= 90 deg.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Reference Point Latitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/600.Latitude",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable26",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "reference_point_longitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "In WGS-84 in two’s complement.\nRange -180 <= longitude < 180 deg.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Reference Point Longitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/600.Longitude",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable27",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "reference_point_height",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Height (WGS-84) above MSL\nRange= +/- 8192 m",
+                "dimension": "",
+                "is_key": false,
+                "name": "Reference Point Height",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/610.Height",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable28",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "reference_point_undulation",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "WGS-84 Undulation value (MSL)\nRange= +/- 127 m",
+                "dimension": "",
+                "is_key": false,
+                "name": "Reference Point Undulation",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/620.Undulation",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable3",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/010.SIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable4",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_of_day",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time of Day",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "source": "I019/140.Time of Day",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable5",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "nogo",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Operational Release Status of the System\n0 Operational\n1 Degraded\n2 NOGO\n3 undefined",
+                "dimension": "",
+                "is_key": false,
+                "name": "NOGO",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/550.NOGO",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable6",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ovl",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Overload indicator\n0 No overload\n1 Overload",
+                "dimension": "",
+                "is_key": false,
+                "name": "OVL",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/550.OVL",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable7",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tsv",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time Source Validity\n0 valid\n1 invalid",
+                "dimension": "",
+                "is_key": false,
+                "name": "TSV",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/550.TSV",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable8",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "ttf",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Test Target Operative\n1 Test Target Failure",
+                "dimension": "",
+                "is_key": false,
+                "name": "TTF",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/550.TTF",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable9",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "tp_1a",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Exec\n0 Standby",
+                "dimension": "",
+                "is_key": false,
+                "name": "TP 1a",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I019/551.TP 1a",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableTimestamp0",
+            "parameters": {
+                "data_type_str": "TIMESTAMP",
+                "db_column_name": "timestamp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Epoch timestamp computed from Time of Day plus the resolved calendar date (handles midnight wrap).",
+                "dimension": "",
+                "is_key": false,
+                "name": "Timestamp",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Calculated from Time of Day, calendar date",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variableds_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "ds_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Data Source Identifier (bit-packed SAC/SIC)",
+                "dimension": "",
+                "is_key": false,
+                "name": "DS ID",
+                "representation_str": "DATA_SRC_NAME",
+                "short_name": "",
+                "source": "Calculated from I019/010.SAC, I019/010.SIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variableline_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "line_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Communication line ID determining the origin of the record.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Line ID",
+                "representation_str": "LINE_NAME",
+                "short_name": "",
+                "source": "Internal: import line/source identifier",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variablerec_num0",
+            "parameters": {
+                "data_type_str": "ULONGINT",
+                "db_column_name": "record_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique record id starting with 0 on every new recording.",
+                "dimension": "",
+                "is_key": true,
+                "name": "Record Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Internal: ascending record number assigned at import",
+                "unit": ""
             }
         }
-    }
+    ]
 }

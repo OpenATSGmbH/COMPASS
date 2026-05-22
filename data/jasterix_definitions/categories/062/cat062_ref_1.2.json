@@ -1,13 +1,13 @@
 {
-    "name":"cat062_ref_1.2",
-    "type":"ReservedExpansionField",
-    "field_specification":{
-        "name":"REF_FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat062_ref_1.2",
+    "type": "ReservedExpansionField",
+    "field_specification": {
+        "name": "REF_FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "items_indicator":[
+    "items_indicator": [
         "CST",
         "CSN",
         "TVS",
@@ -17,161 +17,131 @@
         "-",
         "-"
     ],
-    "items":[
+    "items": [
         {
-            "number":"CST",
-            "name":"Contributing Sensors With Local Tracknumbers",
-            "comment":"List of Sensors contributing to the system track and providing a local track-number",
-            "type":"item",
-            "data_fields":[
+            "number": "CST",
+            "name": "Contributing Sensors With Local Tracknumbers",
+            "comment": "List of Sensors contributing to the system track and providing a local track-number",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"CST",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
+                    "name": "CST",
+                    "type": "repetitive",
+                    "items": [
                         {
-                            "name":"SAC",
-                            "comment":"SAC of the sensor contributing to the track in the current update cycle.",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "SAC",
+                            "comment": "SAC of the sensor contributing to the track in the current update cycle.",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         },
                         {
-                            "name":"SIC",
-                            "comment":"SIC of the sensor contributing to the track in the current update cycle.",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "SIC",
+                            "comment": "SIC of the sensor contributing to the track in the current update cycle.",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         },
                         {
-                            "name":"TYP",
-                            "comment":"0: No detection\n1: Single PSR detection\n2: Single SSR detection\n3: SSR+PSR detection\n4: Single Mode S All-Call\n5: Single Mode S Roll-Call\n6: Mode S All-Call + PSR\n7: Mode S Roll-Call + PSR\n8: ADS-B\n9: WAM\nOthers: Reserved for future use",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "TYP",
+                            "comment": "0: No detection\n1: Single PSR detection\n2: Single SSR detection\n3: SSR+PSR detection\n4: Single Mode S All-Call\n5: Single Mode S Roll-Call\n6: Mode S All-Call + PSR\n7: Mode S Roll-Call + PSR\n8: ADS-B\n9: WAM\nOthers: Reserved for future use",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         },
                         {
-                            "name":"LOCAL TRACK NUMBER",
-                            "comment":"local Track Number allocated by the sensor denominated by SAC/SIC",
-                            "type":"fixed_bytes",
-                            "length":2,
-                            "data_type":"uint"
+                            "name": "LOCAL TRACK NUMBER",
+                            "comment": "local Track Number allocated by the sensor denominated by SAC/SIC",
+                            "type": "fixed_bytes",
+                            "length": 2,
+                            "data_type": "uint"
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"CSN",
-            "name":"Contributing Sensors No Local Tracknumbers",
-            "comment":"List of Sensors contributing to the system track and not providing a local track-number",
-            "type":"item",
-            "data_fields":[
+            "number": "CSN",
+            "name": "Contributing Sensors No Local Tracknumbers",
+            "comment": "List of Sensors contributing to the system track and not providing a local track-number",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"CSN",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
+                    "name": "CSN",
+                    "type": "repetitive",
+                    "items": [
                         {
-                            "name":"SAC",
-                            "comment":"SAC of the sensor contributing to the track in the current update cycle.",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "SAC",
+                            "comment": "SAC of the sensor contributing to the track in the current update cycle.",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         },
                         {
-                            "name":"SIC",
-                            "comment":"SIC of the sensor contributing to the track in the current update cycle.",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "SIC",
+                            "comment": "SIC of the sensor contributing to the track in the current update cycle.",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         },
                         {
-                            "name":"TYP",
-                            "comment":"0: No detection\n1: Single PSR detection\n2: Single SSR detection\n3: SSR+PSR detection\n4: Single Mode S All-Call\n5: Single Mode S Roll-Call\n6: Mode S All-Call + PSR\n7: Mode S Roll-Call + PSR\n8: ADS-B\n9: WAM\nOthers: Reserved for future use",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "TYP",
+                            "comment": "0: No detection\n1: Single PSR detection\n2: Single SSR detection\n3: SSR+PSR detection\n4: Single Mode S All-Call\n5: Single Mode S Roll-Call\n6: Mode S All-Call + PSR\n7: Mode S Roll-Call + PSR\n8: ADS-B\n9: WAM\nOthers: Reserved for future use",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"TVS",
-            "name":"Calculated Track Velocity Relative to System Reference Point",
-            "comment":"Calculated track velocity expressed in Cartesian co-ordinates relative to the system reference point, in two’s complement form.",
-            "type":"item",
-            "data_fields":[
+            "number": "TVS",
+            "name": "Calculated Track Velocity Relative to System Reference Point",
+            "comment": "Calculated track velocity expressed in Cartesian co-ordinates relative to the system reference point, in two\u2019s complement form.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Vx",
-                    "comment":"-8192m/s <= Vx <= 8191.75m/s",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.25
+                    "name": "Vx",
+                    "comment": "-8192m/s <= Vx <= 8191.75m/s",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.25
                 },
                 {
-                    "name":"Vy",
-                    "comment":"-8192m/s <= Vx <= 8191.75m/s",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"int",
-                    "lsb":0.25
+                    "name": "Vy",
+                    "comment": "-8192m/s <= Vy <= 8191.75m/s",
+                    "type": "fixed_bytes",
+                    "length": 2,
+                    "data_type": "int",
+                    "lsb": 0.25
                 }
             ]
         },
         {
-            "number":"STS",
-            "name":"Ground Velocity Accuracy",
-            "comment":"Accuracy of the Ground Speed and Track Angle elements of Ground Velocity Vector.",
-            "type":"item",
-            "data_fields":[
+            "number": "STS",
+            "name": "Supplementary Track Status",
+            "comment": "Track status information to be transmitted in addition to the information available in data item I062/080 (Track Status).",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"GSSD",
-                    "comment":"IStandard deviation of the Ground Speed",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.00006103515
-                },
-                {
-                    "name":"TASD",
-                    "comment":"Standard deviation of the Track Angle",
-                    "type":"fixed_bytes",
-                    "length":2,
-                    "data_type":"uint",
-                    "lsb":0.087890625
-                }
-            ]
-        },
-        {
-            "number":"TRT",
-            "name":"Time of ASTERIX Report Transmission",
-            "comment":"Time of the transmission of the ASTERIX category 020 report in the form of elapsed time since last midnight, expressed as UTC.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"address",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "STS",
+                    "type": "extendable",
+                    "items": [
                         {
-                            "name":"FDR",
-                            "comment":"Flight Data Retained\n0: Flight plan data from active FDPS\n1: Flight plan data retained from no longer active FDPS",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "address",
+                            "type": "fixed_bitfield",
+                            "length": 1,
+                            "items": [
+                                {
+                                    "name": "FDR",
+                                    "comment": "Flight Data Retained\n0: Flight plan data from active FDPS\n1: Flight plan data retained from no longer active FDPS",
+                                    "type": "fixed_bits",
+                                    "start_bit": 7,
+                                    "bit_length": 1
+                                }
+                            ]
                         }
                     ]
                 }

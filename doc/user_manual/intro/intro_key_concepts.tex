@@ -48,6 +48,34 @@ Using this configuration, a user can have a specific program configuration for a
 \end{itemize}
 \end{itemize}
 
+\subsection*{Data Context}
+A \textbf{Data Context} is a named surveillance context grouping the entities that describe the surveillance environment a database was recorded in: data sources, sectors, FFTs, ASTERIX decoding settings and coloring. It is distinct from the program-wide configuration described above, and 
+therefore does not have to be re-created after a version upgrade. \\\\
+
+At most one Data Context is active at a time. When no context is available (e.g. after deleting the last one), the application runs in a 'No Context' state, in which parts of the menu are reduced. \\
+
+\begin{itemize}
+\item Groups the following content
+\begin{itemize}
+\item Data sources (sensor definitions, ranges, accuracies, network settings)
+\item Sectors (per-sector airspace polygons grouped by sector layer)
+\item Fixed Field Transponders (FFTs)
+\item ASTERIX decoding settings per CAT
+\item Colors (DSType palette, DBContent palette, per-data-source base and line colors)
+\end{itemize}
+\item At most one Data Context is active at a time
+\begin{itemize}
+\item 'No Context' state possible with reduced menu availability
+\end{itemize}
+\item Persisted under \texttt{\textasciitilde/.compass/data\_contexts/<name>/}
+\begin{itemize}
+\item One JSON file per content type
+\item Active context recorded in \texttt{active\_context.json}
+\end{itemize}
+\item Switching the active Data Context via the 'Context' menu in the menu bar
+\item Managing the active Data Context (edit, copy, rename, delete, import/export ZIP) via the dedicated Data Context dialog, see \nameref{sec:configure_data_context}
+\end{itemize}
+
 \subsection*{Data Sources \& Database Content}
 
 Data sources are (at the most basic level) defined by a name and SAC/SIC, and obtain a certain data source type (\textbf{DSType}). 
@@ -176,7 +204,50 @@ The main use case of calculated references is as reference data in evaluations. 
 
 OpenATS COMPASS is publicly available and free for anyone to use (including commercial usage), under the \href{https://www.gnu.org/licenses/gpl-3.0.en.html}{GPL-3.0}, and \href{https://creativecommons.org/licenses/by/4.0/}{CC BY 4.0} licenses. \\
 
-However, one component, namely an advanced reference trajectory calculation feature (Probabilistic + IMM Reconstructor) is only available under a commercial professional license. In the free license, a basic reconstructor (Scoring + UMKalman) is available.
+Selected advanced features require a commercial professional license. The split is as follows: \\
+
+Available in the free license:
+\begin{itemize}
+\item Basic reconstructor (Scoring + UMKalman) for Reference Trajectory calculation
+\item Analyze Data Source MLAT inspectors:
+\begin{itemize}
+\item 'Data Item Analysis': per-source, per-CAT cumulative table of which ASTERIX data items are present
+\item 'Sensor Coverage': per-cell Probability of Detection on a 3D grid using the Reference Trajectory as truth
+\end{itemize}
+\end{itemize}
+\ \\
+
+Requires a professional license:
+\begin{itemize}
+\item Advanced reconstructor (Probabilistic + IMM) for Reference Trajectory calculation
+\item Analyze Data Source MLAT inspectors:
+\begin{itemize}
+\item 'Position Accuracy': maps reported position accuracy, offset against the Reference Trajectory, and consistency between the two
+\item 'RU Coverage': per-RU coverage map and Dominant RU map (requires CAT020 with contributing-receiver info)
+\item 'RU Effect': per-RU contribution to the MLAT solution via marginal effect table, redundancy curve, and per-RU drill-down
+\end{itemize}
+\item DOCX evaluation report export
+\end{itemize}
+\ \\
+
+For entering and verifying the professional license key, see \nameref{sec:ui_configure_licenses}. \\
+
+\subsection*{Data Source Analysis}
+
+Separately from evaluation, COMPASS provides a dedicated 'Analyze Data Source' task that inspects a single data source against the calculated Reference Trajectory from multiple angles. \\\\
+
+The task is independent of the requirement-based evaluation: it does not assess compliance to a standard, but produces per-DSType diagnostics intended to characterize the sensor's behavior in the recorded environment. \\
+
+\begin{itemize}
+\item Uses the calculated Reference Trajectory as ground truth
+\item Per-DSType inspectors examine a chosen data source from multiple angles
+\item Two inspector tiers
+\begin{itemize}
+\item Free: always available
+\item \textbf{[Pro]}: requires a Professional license
+\end{itemize}
+\item For the full chapter, see \nameref{chap:analyze}
+\end{itemize}
 
 \subsection*{Evaluation}
 
@@ -189,33 +260,16 @@ Each view can be configured to the user's needs, to suit various use-cases. For 
 \subsection*{View Points}
 \label{sec:key_concepts_viewpoints}
 
-A View Point can be seen as a conglomerate of filter settings, view configurations and displayable view annotations, 
-which represents a unique view onto either internal data (COMPASS database) or externally provided data. \\
+A View Point bundles filter settings, view configurations, and displayable annotations into a single, restorable view onto either internal database data or externally provided data. \\
 
-Key features of View Points include: \\
-
-\begin{itemize}
-    \item \textbf{Data Sources}: Specification for enabling/disabling certain data sources
-    \item \textbf{Filters}: Filter statements for which data to load from the specified data sources
-    \item \textbf{View Configurations}: Specification for regions of interest, time frames of interest, etc.
-    \item \textbf{Annotations}: View annotations to display in COMPASS' various views (scatter data, histograms, grid data, geometric data, etc.) 
-\end{itemize}
-
-These key features reflect the data flow in COMPASS:  
-
-\textit{Database} $\rightarrow$ \textit{Data Sources} $\rightarrow$ \textit{Filters} $\rightarrow$ \textit{Views} \\
-
-Usage of each feature is optional, so a viewpoint may contain e.g. only a set of filter statements or only a set of annotations. \\
-
-View Points can be used in various ways in COMPASS: \\
+Optional components:
 
 \begin{itemize}
-    \item View Points can be exported from or imported into COMPASS using the 'View Points' tab in the main window (see \ref{sec:view_points}).
-    This way a specific view onto data can be saved and restored at a later point.
-    \item View Points also provide a simple and practical interface to provide external data to COMPASS via view annotations.
-    \item They are also used heavily by COMPASS itself, e.g. to distribute evaluation results to its views.
+    \item \textbf{Data Sources}: which sources to enable
+    \item \textbf{Filters}: filter statements for the data load
+    \item \textbf{View Configurations}: regions of interest, time frames, per-view settings
+    \item \textbf{Annotations}: scatter data, histograms, grid data, geometric data, etc.
 \end{itemize}
 \ \\
 
-A View Point is stored in the widely-used JSON format and uses predefined tags, which are explained in more detail in 
-the appendix (\ref{sec:appendix_view_points}).
+Each component is optional, so a View Point may carry only filters, or only annotations. View Points are stored as JSON; the tag set is documented in \nameref{sec:appendix_view_points}. Import, export, and stepping are handled in the Flight Deck \nameref{sec:view_points} tab, and View Points are also used internally to distribute evaluation results to the Views. \\

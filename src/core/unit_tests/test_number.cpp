@@ -1,0 +1,680 @@
+#include "catch.hpp"
+#include "number.h"
+#include "rs2gcoordinatesystem.h"
+#include "radarbiasinfo.h"
+
+#include <cmath>
+#include <random>
+#include <tuple>
+
+using namespace Utils::Number;
+
+TEST_CASE("deg2rad and rad2deg", "[number][conversion]")
+{
+    REQUIRE(deg2rad(0.0) == Approx(0.0));
+    REQUIRE(deg2rad(180.0) == Approx(M_PI));
+    REQUIRE(deg2rad(90.0) == Approx(M_PI / 2.0));
+    REQUIRE(deg2rad(360.0) == Approx(2.0 * M_PI));
+    REQUIRE(deg2rad(-90.0) == Approx(-M_PI / 2.0));
+
+    REQUIRE(rad2deg(0.0) == Approx(0.0));
+    REQUIRE(rad2deg(M_PI) == Approx(180.0));
+    REQUIRE(rad2deg(M_PI / 2.0) == Approx(90.0));
+
+    // roundtrip
+    REQUIRE(rad2deg(deg2rad(47.5)) == Approx(47.5));
+    REQUIRE(deg2rad(rad2deg(1.23)) == Approx(1.23));
+}
+
+TEST_CASE("knots2MPS and mps2Knots", "[number][conversion]")
+{
+    REQUIRE(knots2MPS(0.0) == Approx(0.0));
+    REQUIRE(knots2MPS(1.0) == Approx(0.514444));
+    REQUIRE(mps2Knots(0.0) == Approx(0.0));
+    REQUIRE(mps2Knots(1.0) == Approx(1.94384));
+
+    // roundtrip (within floating point tolerance)
+    REQUIRE(mps2Knots(knots2MPS(100.0)) == Approx(100.0).epsilon(1e-4));
+}
+
+TEST_CASE("round", "[number]")
+{
+    REQUIRE(round(3.14159, 2) == Approx(3.14));
+    REQUIRE(round(3.14159, 4) == Approx(3.1416));
+    REQUIRE(round(3.14159, 0) == Approx(3.0));
+    REQUIRE(round(-2.555, 2) == Approx(-2.56));
+    REQUIRE(round(0.0, 5) == Approx(0.0));
+}
+
+TEST_CASE("calculateAngle", "[number]")
+{
+    // 47 degrees, 26 minutes, 58.9526 seconds
+    REQUIRE(calculateAngle(47.0, 26.0, 58.9526) == Approx(47.44971).epsilon(1e-4));
+    REQUIRE(calculateAngle(0.0, 0.0, 0.0) == Approx(0.0));
+    REQUIRE(calculateAngle(90.0, 0.0, 0.0) == Approx(90.0));
+    REQUIRE(calculateAngle(0.0, 30.0, 0.0) == Approx(0.5));
+    REQUIRE(calculateAngle(0.0, 0.0, 3600.0) == Approx(1.0));
+}
+
+TEST_CASE("dsId encoding/decoding", "[number]")
+{
+    unsigned int sac = 12;
+    unsigned int sic = 34;
+    unsigned int ds_id = dsIdFrom(sac, sic);
+
+    REQUIRE(sacFromDsId(ds_id) == sac);
+    REQUIRE(sicFromDsId(ds_id) == sic);
+
+    // boundary: sac=0, sic=0
+    REQUIRE(dsIdFrom(0, 0) == 0);
+    REQUIRE(sacFromDsId(0) == 0);
+    REQUIRE(sicFromDsId(0) == 0);
+
+    // boundary: sac=1, sic=254
+    ds_id = dsIdFrom(1, 254);
+    REQUIRE(sacFromDsId(ds_id) == 1);
+    REQUIRE(sicFromDsId(ds_id) == 254);
+
+    // regression: base-256 encoding must be exact (base-255 would give 12763)
+    REQUIRE(dsIdFrom(50, 13) == 12813);
+
+    // regression: SIC=255 must not collide with the next SAC's SIC=0
+    REQUIRE(dsIdFrom(0, 255) != dsIdFrom(1, 0));
+
+    // regression: SIC=255 must round-trip (base-255 decoded this as 256/0)
+    ds_id = dsIdFrom(255, 255);
+    REQUIRE(sacFromDsId(ds_id) == 255);
+    REQUIRE(sicFromDsId(ds_id) == 255);
+
+    ds_id = dsIdFrom(7, 255);
+    REQUIRE(sacFromDsId(ds_id) == 7);
+    REQUIRE(sicFromDsId(ds_id) == 255);
+}
+
+TEST_CASE("bearing2Vec and vec2Bearing", "[number]")
+{
+    // North (0 deg) -> dx=0, dy=1
+    double dx, dy;
+    std::tie(dx, dy) = bearing2Vec(0.0);
+    REQUIRE(dx == Approx(0.0).margin(1e-10));
+    REQUIRE(dy == Approx(1.0));
+
+    // East (90 deg) -> dx=1, dy=0
+    std::tie(dx, dy) = bearing2Vec(90.0);
+    REQUIRE(dx == Approx(1.0));
+    REQUIRE(dy == Approx(0.0).margin(1e-10));
+
+    // roundtrip
+    REQUIRE(vec2Bearing(0.0, 1.0) == Approx(0.0));
+    REQUIRE(vec2Bearing(1.0, 0.0) == Approx(90.0));
+}
+
+TEST_CASE("calculateMinAngleDifference", "[number]")
+{
+    REQUIRE(calculateMinAngleDifference(0.0, 0.0) == Approx(0.0));
+    REQUIRE(calculateMinAngleDifference(10.0, 20.0) == Approx(10.0));
+    REQUIRE(calculateMinAngleDifference(350.0, 10.0) == Approx(20.0));
+    REQUIRE(calculateMinAngleDifference(10.0, 350.0) == Approx(-20.0));
+    REQUIRE(calculateMinAngleDifference(0.0, 180.0) == Approx(-180.0));
+}
+
+TEST_CASE("recNum encoding/decoding", "[number]")
+{
+    unsigned long rec_num = 12345;
+    unsigned int dbcont_id = 42;
+
+    unsigned long encoded = recNumAddDBContId(rec_num, dbcont_id);
+    REQUIRE(recNumGetWithoutDBContId(encoded) == rec_num);
+    REQUIRE(recNumGetDBContId(encoded) == dbcont_id);
+}
+
+TEST_CASE("convertLatitude", "[number][conversion]")
+{
+    bool ok = false;
+
+    double lat = convertLatitude("47:26:58.9526N", ok);
+    REQUIRE(ok);
+    REQUIRE(lat == Approx(47.44971).epsilon(1e-4));
+
+    lat = convertLatitude("47:26:58.9526S", ok);
+    REQUIRE(ok);
+    REQUIRE(lat == Approx(-47.44971).epsilon(1e-4));
+
+    // no hemisphere suffix defaults to N
+    lat = convertLatitude("47:26:58.9526", ok);
+    REQUIRE(ok);
+    REQUIRE(lat == Approx(47.44971).epsilon(1e-4));
+
+    // empty string
+    convertLatitude("", ok);
+    REQUIRE_FALSE(ok);
+}
+
+TEST_CASE("convertLongitude", "[number][conversion]")
+{
+    bool ok = false;
+
+    double lon = convertLongitude("008:34:25.5397E", ok);
+    REQUIRE(ok);
+    REQUIRE(lon == Approx(8.57376).epsilon(1e-4));
+
+    lon = convertLongitude("008:34:25.5397W", ok);
+    REQUIRE(ok);
+    REQUIRE(lon == Approx(-8.57376).epsilon(1e-4));
+}
+
+// --- Azimuth Bias Estimation ---
+
+TEST_CASE("estimateAzimuthBias zero bias", "[number][bias]")
+{
+    std::vector<double> ref = {10.0, 50.0, 120.0, 200.0, 300.0};
+    std::vector<double> tst = {10.0, 50.0, 120.0, 200.0, 300.0};
+
+    auto result = estimateAzimuthBias(ref, tst);
+    REQUIRE(result.valid);
+    REQUIRE(result.azimuth_bias_deg == Approx(0.0).margin(1e-10));
+}
+
+TEST_CASE("estimateAzimuthBias known bias", "[number][bias]")
+{
+    // bias = tst - ref = +2.0 deg
+    std::vector<double> ref = {10.0, 50.0, 120.0, 200.0, 300.0};
+    std::vector<double> tst = {12.0, 52.0, 122.0, 202.0, 302.0};
+
+    auto result = estimateAzimuthBias(ref, tst);
+    REQUIRE(result.valid);
+    REQUIRE(result.azimuth_bias_deg == Approx(2.0).epsilon(1e-6));
+}
+
+TEST_CASE("estimateAzimuthBias wraparound", "[number][bias]")
+{
+    // bias of +1.5 deg near 0/360 boundary
+    std::vector<double> ref = {359.0, 0.5, 1.0, 358.0};
+    std::vector<double> tst = {0.5,   2.0, 2.5, 359.5};
+
+    auto result = estimateAzimuthBias(ref, tst);
+    REQUIRE(result.valid);
+    REQUIRE(result.azimuth_bias_deg == Approx(1.5).epsilon(1e-6));
+}
+
+TEST_CASE("estimateAzimuthBias outlier filtering", "[number][bias]")
+{
+    // 4 good pairs with +1.0 bias, 1 outlier with 50 deg diff
+    std::vector<double> ref = {10.0, 50.0, 120.0, 200.0, 300.0};
+    std::vector<double> tst = {11.0, 51.0, 121.0, 201.0, 350.0}; // last is outlier
+
+    auto result = estimateAzimuthBias(ref, tst, 30.0);
+    REQUIRE(result.valid);
+    REQUIRE(result.azimuth_bias_deg == Approx(1.0).epsilon(1e-6));
+}
+
+TEST_CASE("estimateAzimuthBias too high", "[number][bias]")
+{
+    // all diffs are ~35 deg, exceeding max_bias_deg=30
+    std::vector<double> ref = {10.0, 50.0, 120.0};
+    std::vector<double> tst = {45.0, 85.0, 155.0};
+
+    auto result = estimateAzimuthBias(ref, tst, 40.0, 30.0);
+    REQUIRE_FALSE(result.valid);
+}
+
+TEST_CASE("estimateAzimuthBias empty input", "[number][bias]")
+{
+    auto result = estimateAzimuthBias({}, {});
+    REQUIRE_FALSE(result.valid);
+}
+
+// --- Range Bias/Gain Estimation ---
+
+TEST_CASE("estimateRangeBiasGain zero bias", "[number][bias]")
+{
+    std::vector<double> ranges = {10000.0, 20000.0, 30000.0, 50000.0, 80000.0};
+
+    auto result = estimateRangeBiasGain(ranges, ranges);
+    REQUIRE(result.valid);
+    REQUIRE(result.range_bias_m == Approx(0.0).margin(1.0));
+    REQUIRE(result.range_gain == Approx(0.0).margin(1e-6));
+}
+
+TEST_CASE("estimateRangeBiasGain known bias and gain", "[number][bias]")
+{
+    // tst = ref * (1 + gain) + bias
+    // with gain = 0.01, bias = 50.0
+    double gain = 0.01;
+    double bias = 50.0;
+
+    std::vector<double> ref_ranges = {10000.0, 20000.0, 30000.0, 50000.0, 80000.0};
+    std::vector<double> tst_ranges;
+
+    for (double r : ref_ranges)
+        tst_ranges.push_back(r * (1.0 + gain) + bias);
+
+    auto result = estimateRangeBiasGain(tst_ranges, ref_ranges);
+    REQUIRE(result.valid);
+    REQUIRE(result.range_bias_m == Approx(bias).epsilon(1e-4));
+    REQUIRE(result.range_gain == Approx(gain).epsilon(1e-6));
+}
+
+TEST_CASE("estimateRangeBiasGain outlier filtering", "[number][bias]")
+{
+    // 4 good pairs (no bias), 1 outlier with 2x range ratio
+    std::vector<double> ref = {10000.0, 20000.0, 30000.0, 50000.0, 80000.0};
+    std::vector<double> tst = {10000.0, 20000.0, 30000.0, 50000.0, 160000.0}; // last is 2x
+
+    auto result = estimateRangeBiasGain(tst, ref, 0.1);
+    REQUIRE(result.valid);
+    REQUIRE(result.range_bias_m == Approx(0.0).margin(1.0));
+    REQUIRE(result.range_gain == Approx(0.0).margin(1e-6));
+}
+
+TEST_CASE("estimateRangeBiasGain empty input", "[number][bias]")
+{
+    auto result = estimateRangeBiasGain({}, {});
+    REQUIRE_FALSE(result.valid);
+}
+
+TEST_CASE("estimateRangeBiasGain single point", "[number][bias]")
+{
+    // need at least 2 points for linear regression
+    auto result = estimateRangeBiasGain({10000.0}, {10000.0});
+    REQUIRE_FALSE(result.valid);
+}
+
+// --- End-to-end: bias estimation + position correction ---
+
+// Haversine great-circle distance in meters
+static double haversineDistance(double lat1_deg, double lon1_deg,
+                                double lat2_deg, double lon2_deg)
+{
+    const double R = 6371000.0;
+    double lat1 = lat1_deg * M_PI / 180.0;
+    double lat2 = lat2_deg * M_PI / 180.0;
+    double dlat = (lat2_deg - lat1_deg) * M_PI / 180.0;
+    double dlon = (lon2_deg - lon1_deg) * M_PI / 180.0;
+
+    double a = std::sin(dlat / 2.0) * std::sin(dlat / 2.0)
+             + std::cos(lat1) * std::cos(lat2)
+             * std::sin(dlon / 2.0) * std::sin(dlon / 2.0);
+    double c = 2.0 * std::atan2(std::sqrt(a), std::sqrt(1.0 - a));
+    return R * c;
+}
+
+TEST_CASE("radar bias estimation and correction end-to-end", "[number][bias][e2e]")
+{
+    const unsigned int num_iterations = 20;
+    std::mt19937 rng(42); // fixed seed for reproducibility
+
+    // sensible parameter distributions
+    std::uniform_real_distribution<double> lat_dist(-60.0, 70.0);
+    std::uniform_real_distribution<double> lon_dist(-170.0, 170.0);
+    std::uniform_real_distribution<double> alt_dist(0.0, 800.0);
+    std::uniform_real_distribution<double> az_bias_dist(-2.0, 2.0);
+    std::uniform_real_distribution<double> rng_bias_dist(-400.0, 400.0);
+    std::uniform_real_distribution<double> rng_gain_dist(-0.02, 0.02);
+
+    for (unsigned int iter = 0; iter < num_iterations; ++iter)
+    {
+        double radar_lat = lat_dist(rng);
+        double radar_lon = lon_dist(rng);
+        double radar_alt = alt_dist(rng);
+
+        double true_az_bias_deg  = az_bias_dist(rng);
+        double true_range_bias_m = rng_bias_dist(rng);
+        double true_range_gain   = rng_gain_dist(rng);
+
+        INFO("iteration " << iter
+             << " radar=(" << radar_lat << ", " << radar_lon << ", " << radar_alt << ")"
+             << " az_bias=" << true_az_bias_deg
+             << " rng_bias=" << true_range_bias_m
+             << " rng_gain=" << true_range_gain);
+
+        RS2GCoordinateSystem cs(iter + 1, radar_lat, radar_lon, radar_alt);
+
+        // ground-only targets: altitude = radar altitude, so slant_range ≈ ground_range
+        const double target_alt = radar_alt;
+
+        struct Position { double lat_deg; double lon_deg; };
+
+        std::vector<double> ref_azms_deg, tst_azms_deg;
+        std::vector<double> ref_ground_ranges, tst_ground_ranges;
+        std::vector<Position> ref_positions, tst_positions;
+
+        // generate targets at 24 azimuths x 8 ranges = 192 points
+        for (double az_deg = 5.0; az_deg < 360.0; az_deg += 15.0)
+        {
+            for (double slant_range = 10000.0; slant_range <= 80000.0; slant_range += 10000.0)
+            {
+                double az_rad = az_deg * M_PI / 180.0;
+
+                // forward project true polar -> reference WGS-84 position
+                double gr_ref, ecef_x, ecef_y, ecef_z;
+                bool ok = cs.calculateRadSlt2Geocentric(
+                    az_rad, slant_range, true, target_alt,
+                    gr_ref, ecef_x, ecef_y, ecef_z);
+                REQUIRE(ok);
+
+                double ref_lat, ref_lon, ref_h;
+                ok = cs.geocentric2Geodesic(ecef_x, ecef_y, ecef_z, ref_lat, ref_lon, ref_h);
+                REQUIRE(ok);
+                ref_positions.push_back({ref_lat, ref_lon});
+
+                // convert ref position back to polar to get ref azimuth and ground range
+                double lx, ly, lz;
+                cs.geodesic2LocalCart(ref_lat * M_PI / 180.0, ref_lon * M_PI / 180.0,
+                                      ref_h, lx, ly, lz);
+
+                double ref_az_rad, ref_sr, ref_gr, ref_alt_out;
+                cs.localCart2RadarSlant(lx, ly, lz, ref_az_rad, ref_sr, ref_gr, ref_alt_out);
+
+                double ref_az_d = ref_az_rad * 180.0 / M_PI;
+                if (ref_az_d < 0) ref_az_d += 360.0;
+
+                ref_azms_deg.push_back(ref_az_d);
+                ref_ground_ranges.push_back(ref_gr);
+
+                // apply bias to create simulated "measured" radar data
+                double tst_az_d = ref_az_d + true_az_bias_deg;
+                double tst_gr   = ref_gr * (1.0 + true_range_gain) + true_range_bias_m;
+
+                tst_azms_deg.push_back(tst_az_d);
+                tst_ground_ranges.push_back(tst_gr);
+
+                // convert biased measurement to WGS-84 "test" position
+                double tst_az_rad = tst_az_d * M_PI / 180.0;
+                double tst_lx = tst_gr * std::sin(tst_az_rad);
+                double tst_ly = tst_gr * std::cos(tst_az_rad);
+                double tst_lz = 0.0;
+
+                double tst_ex, tst_ey, tst_ez;
+                cs.localCart2Geocentric(tst_lx, tst_ly, tst_lz, tst_ex, tst_ey, tst_ez);
+
+                double tst_lat, tst_lon, tst_h;
+                ok = cs.geocentric2Geodesic(tst_ex, tst_ey, tst_ez, tst_lat, tst_lon, tst_h);
+                REQUIRE(ok);
+                tst_positions.push_back({tst_lat, tst_lon});
+            }
+        }
+
+        size_t n = ref_positions.size();
+        REQUIRE(n == 192);
+
+        // --- Step 1: Estimate biases from ref/tst polar data ---
+
+        auto az_result = estimateAzimuthBias(ref_azms_deg, tst_azms_deg);
+        REQUIRE(az_result.valid);
+        REQUIRE(az_result.azimuth_bias_deg == Approx(true_az_bias_deg).epsilon(0.01));
+
+        auto rg_result = estimateRangeBiasGain(tst_ground_ranges, ref_ground_ranges);
+        REQUIRE(rg_result.valid);
+        REQUIRE(rg_result.range_bias_m == Approx(true_range_bias_m).epsilon(0.01));
+        REQUIRE(rg_result.range_gain   == Approx(true_range_gain).epsilon(0.01));
+
+        // --- Step 2: Apply bias correction to test measurements ---
+
+        RadarBiasInfo estimated_bias;
+        estimated_bias.azimuth_bias_valid_ = true;
+        estimated_bias.azimuth_bias_deg_   = az_result.azimuth_bias_deg;
+        estimated_bias.range_bias_valid_   = true;
+        estimated_bias.range_bias_m_       = rg_result.range_bias_m;
+        estimated_bias.range_gain_         = rg_result.range_gain;
+
+        std::vector<Position> cor_positions;
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            double tst_az_rad = tst_azms_deg[i] * M_PI / 180.0;
+
+            double ecef_x, ecef_y, ecef_z;
+            cs.calculateRadSlt2Geocentric(
+                tst_az_rad, tst_ground_ranges[i],
+                true, target_alt, estimated_bias,
+                ecef_x, ecef_y, ecef_z);
+
+            double cor_lat, cor_lon, cor_h;
+            cs.geocentric2Geodesic(ecef_x, ecef_y, ecef_z, cor_lat, cor_lon, cor_h);
+            cor_positions.push_back({cor_lat, cor_lon});
+        }
+
+        // --- Step 3: Compute errors ---
+
+        std::vector<double> org_errors, cor_errors;
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            org_errors.push_back(haversineDistance(
+                tst_positions[i].lat_deg, tst_positions[i].lon_deg,
+                ref_positions[i].lat_deg, ref_positions[i].lon_deg));
+
+            cor_errors.push_back(haversineDistance(
+                cor_positions[i].lat_deg, cor_positions[i].lon_deg,
+                ref_positions[i].lat_deg, ref_positions[i].lon_deg));
+        }
+
+        auto org_stats = getMedianStatistics(org_errors);
+        auto cor_stats = getMedianStatistics(cor_errors);
+
+        double org_median = std::get<0>(org_stats);
+        double cor_median = std::get<0>(cor_stats);
+
+        INFO("org median=" << org_median << " cor median=" << cor_median);
+
+        // original error must be significant (bias creates real displacement)
+        REQUIRE(org_median > 10.0);
+
+        // corrected error must be much smaller than original
+        REQUIRE(cor_median < org_median);
+        REQUIRE(cor_median < 5.0);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// End-to-end: bias estimation + correction with altitude difference
+// Radar at MSL altitude, reference positions at WGS84 height 0
+// ---------------------------------------------------------------------------
+
+TEST_CASE("bias estimation and correction with altitude difference", "[number][bias][e2e][altitude]")
+{
+    const unsigned int num_iterations = 20;
+    std::mt19937 rng(123); // different seed from flat test
+
+    std::uniform_real_distribution<double> lat_dist(-60.0, 70.0);
+    std::uniform_real_distribution<double> lon_dist(-170.0, 170.0);
+    std::uniform_real_distribution<double> alt_dist(50.0, 800.0);  // radar always elevated
+    std::uniform_real_distribution<double> az_bias_dist(-2.0, 2.0);
+    std::uniform_real_distribution<double> rng_bias_dist(-400.0, 400.0);
+    std::uniform_real_distribution<double> rng_gain_dist(-0.02, 0.02);
+
+    for (unsigned int iter = 0; iter < num_iterations; ++iter)
+    {
+        double radar_lat = lat_dist(rng);
+        double radar_lon = lon_dist(rng);
+        double radar_alt = alt_dist(rng);  // meters MSL, used as WGS84 h for the projection
+
+        double true_az_bias_deg  = az_bias_dist(rng);
+        double true_range_bias_m = rng_bias_dist(rng);
+        double true_range_gain   = rng_gain_dist(rng);
+
+        INFO("iteration " << iter
+             << " radar=(" << radar_lat << ", " << radar_lon << ", " << radar_alt << ")"
+             << " az_bias=" << true_az_bias_deg
+             << " rng_bias=" << true_range_bias_m
+             << " rng_gain=" << true_range_gain);
+
+        RS2GCoordinateSystem cs(iter + 1, radar_lat, radar_lon, radar_alt);
+
+        // Key difference: targets at WGS84 height 0, NOT at radar altitude
+        const double target_wgs84_height = 0.0;
+
+        struct Position { double lat_deg; double lon_deg; };
+
+        std::vector<double> ref_azms_deg, tst_azms_deg;
+        std::vector<double> ref_ground_ranges, tst_ground_ranges;
+        std::vector<Position> ref_positions, tst_positions;
+
+        // generate targets at 24 azimuths x 8 ranges = 192 points
+        for (double az_deg = 5.0; az_deg < 360.0; az_deg += 15.0)
+        {
+            for (double ground_dist = 10000.0; ground_dist <= 80000.0; ground_dist += 10000.0)
+            {
+                double az_rad = az_deg * M_PI / 180.0;
+
+                // Create a reference position at WGS84 height 0 at roughly ground_dist away.
+                // Use local cartesian: target is on the ground (below radar).
+                // First, generate reference lat/lon by projecting from radar at ground level.
+                double ref_lx = ground_dist * std::sin(az_rad);
+                double ref_ly = ground_dist * std::cos(az_rad);
+                // local z for a point at WGS84 height 0: approximately -(radar_alt)
+                // but to be precise, we use geodesic2LocalCart after getting the position.
+
+                // Convert local cart (at radar height plane) to ECEF, then geodesic
+                double ref_ex, ref_ey, ref_ez;
+                cs.localCart2Geocentric(ref_lx, ref_ly, 0.0, ref_ex, ref_ey, ref_ez);
+
+                double approx_lat, approx_lon, approx_h;
+                bool ok = cs.geocentric2Geodesic(ref_ex, ref_ey, ref_ez,
+                                                  approx_lat, approx_lon, approx_h);
+                REQUIRE(ok);
+
+                // Now create the TRUE reference position at WGS84 height 0 at this lat/lon
+                double ref_lat = approx_lat;
+                double ref_lon = approx_lon;
+                ref_positions.push_back({ref_lat, ref_lon});
+
+                // Convert reference position (at height 0) back to radar polar coordinates
+                double lx, ly, lz;
+                cs.geodesic2LocalCart(ref_lat * M_PI / 180.0, ref_lon * M_PI / 180.0,
+                                      target_wgs84_height, lx, ly, lz);
+
+                double ref_az_rad, ref_sr, ref_gr, ref_alt_out;
+                cs.localCart2RadarSlant(lx, ly, lz, ref_az_rad, ref_sr, ref_gr, ref_alt_out);
+
+                // altitude out = h_r_ + local_z; includes earth curvature so
+                // it won't be exactly 0 but should be in the right ballpark
+                REQUIRE(ref_alt_out < radar_alt);  // below radar
+                // slant range > ground range (target below radar)
+                REQUIRE(ref_sr >= ref_gr);
+
+                double ref_az_d = ref_az_rad * 180.0 / M_PI;
+                if (ref_az_d < 0) ref_az_d += 360.0;
+
+                ref_azms_deg.push_back(ref_az_d);
+                ref_ground_ranges.push_back(ref_gr);
+
+                // Simulate radar measurement: use slant range (what the radar actually measures)
+                // then compute ground range from slant range + target altitude
+                // This mimics what the real code does in radarSlant2LocalCart
+                double tst_slant_range = ref_sr;
+
+                // Compute the "measured" ground range as the radar would see it
+                // (from slant range, assuming target at given altitude)
+                double tst_gr_raw, tst_adj_alt;
+                cs.getGroundRange(tst_slant_range, true, target_wgs84_height,
+                                  tst_gr_raw, tst_adj_alt);
+
+                // Apply bias to the ground range
+                double tst_az_d = ref_az_d + true_az_bias_deg;
+                double tst_gr = tst_gr_raw * (1.0 + true_range_gain) + true_range_bias_m;
+
+                tst_azms_deg.push_back(tst_az_d);
+                tst_ground_ranges.push_back(tst_gr);
+
+                // Convert biased measurement back to a WGS-84 position
+                // Use radarSlant2LocalCart with biased values (no bias correction applied)
+                double tst_az_rad = tst_az_d * M_PI / 180.0;
+                double tst_lx = tst_gr * std::sin(tst_az_rad);
+                double tst_ly = tst_gr * std::cos(tst_az_rad);
+                double tst_lz = tst_slant_range * std::sin(
+                    cs.rs2gElevation(target_wgs84_height, tst_slant_range));
+
+                double tst_ex, tst_ey, tst_ez;
+                cs.localCart2Geocentric(tst_lx, tst_ly, tst_lz, tst_ex, tst_ey, tst_ez);
+
+                double tst_lat, tst_lon, tst_h;
+                ok = cs.geocentric2Geodesic(tst_ex, tst_ey, tst_ez, tst_lat, tst_lon, tst_h);
+                REQUIRE(ok);
+                tst_positions.push_back({tst_lat, tst_lon});
+            }
+        }
+
+        size_t n = ref_positions.size();
+        REQUIRE(n == 192);
+
+        // --- Step 1: Estimate biases ---
+
+        auto az_result = estimateAzimuthBias(ref_azms_deg, tst_azms_deg);
+        REQUIRE(az_result.valid);
+        REQUIRE(az_result.azimuth_bias_deg == Approx(true_az_bias_deg).epsilon(0.01));
+
+        auto rg_result = estimateRangeBiasGain(tst_ground_ranges, ref_ground_ranges);
+        REQUIRE(rg_result.valid);
+        REQUIRE(rg_result.range_bias_m == Approx(true_range_bias_m).epsilon(0.01));
+        REQUIRE(rg_result.range_gain   == Approx(true_range_gain).epsilon(0.01));
+
+        // --- Step 2: Apply bias correction ---
+
+        RadarBiasInfo estimated_bias;
+        estimated_bias.azimuth_bias_valid_ = true;
+        estimated_bias.azimuth_bias_deg_   = az_result.azimuth_bias_deg;
+        estimated_bias.range_bias_valid_   = true;
+        estimated_bias.range_bias_m_       = rg_result.range_bias_m;
+        estimated_bias.range_gain_         = rg_result.range_gain;
+
+        std::vector<Position> cor_positions;
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            // Use the biased slant range to reconstruct the corrected position
+            // via the projection's bias-corrected path
+            double tst_az_rad = tst_azms_deg[i] * M_PI / 180.0;
+
+            // The radarSlant2LocalCart with bias does:
+            //   ground_range = slant * cos(elev)
+            //   ground_range_corrected = (ground_range - bias) / (1 + gain)
+            //   azimuth_corrected = azimuth - azimuth_bias
+            // We pass the biased ground range as slant_range since for the bias
+            // correction path, we're already working with ground ranges
+            double cor_lx, cor_ly, cor_lz;
+            cs.radarSlant2LocalCart(tst_az_rad, tst_ground_ranges[i],
+                                    true, target_wgs84_height, estimated_bias,
+                                    cor_lx, cor_ly, cor_lz);
+
+            double cor_ex, cor_ey, cor_ez;
+            cs.localCart2Geocentric(cor_lx, cor_ly, cor_lz, cor_ex, cor_ey, cor_ez);
+
+            double cor_lat, cor_lon, cor_h;
+            cs.geocentric2Geodesic(cor_ex, cor_ey, cor_ez, cor_lat, cor_lon, cor_h);
+            cor_positions.push_back({cor_lat, cor_lon});
+        }
+
+        // --- Step 3: Compute errors ---
+
+        std::vector<double> org_errors, cor_errors;
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            org_errors.push_back(haversineDistance(
+                tst_positions[i].lat_deg, tst_positions[i].lon_deg,
+                ref_positions[i].lat_deg, ref_positions[i].lon_deg));
+
+            cor_errors.push_back(haversineDistance(
+                cor_positions[i].lat_deg, cor_positions[i].lon_deg,
+                ref_positions[i].lat_deg, ref_positions[i].lon_deg));
+        }
+
+        auto org_stats = getMedianStatistics(org_errors);
+        auto cor_stats = getMedianStatistics(cor_errors);
+
+        double org_median = std::get<0>(org_stats);
+        double cor_median = std::get<0>(cor_stats);
+
+        INFO("org median=" << org_median << " cor median=" << cor_median);
+
+        // original error must be significant
+        REQUIRE(org_median > 10.0);
+
+        // corrected error must be much smaller than original
+        REQUIRE(cor_median < org_median);
+        // Allow slightly larger tolerance than flat test due to altitude effects
+        REQUIRE(cor_median < 20.0);
+    }
+}

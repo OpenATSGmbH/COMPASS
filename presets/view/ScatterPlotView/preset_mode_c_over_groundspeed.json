@@ -1,5 +1,5 @@
 {
-    "app_version": "0.9.2",
+    "app_version": "0.8.0",
     "category": "Default",
     "deployed": true,
     "description": "Displays baromatric altitude over groundspeed - giving a distribution of speeds at each altitude (and vice-versa).",
@@ -14,26 +14,21 @@
             "data_var_y_dbcont": "Meta",
             "data_var_y_name": "Mode C Code"
         },
-        "sub_configs": {
-            "ScatterPlotViewDataSource": {
-                "ScatterPlotViewDataSource0": {
-                    "parameters": null,
-                    "sub_configs": {
-                        "VariableOrderedSet": {
-                            "VariableOrderedSet0": {
-                                "parameters": {
-                                    "variable_definitions": []
-                                }
-                            }
+        "sub_configs": [
+            {
+                "class_name": "ScatterPlotViewDataSource",
+                "instance_name": "ScatterPlotViewDataSource0",
+                "parameters": {},
+                "sub_configs": [
+                    {
+                        "class_name": "VariableOrderedSet",
+                        "instance_name": "VariableOrderedSet0",
+                        "parameters": {
+                            "variable_definitions": []
                         }
                     }
-                }
-            },
-            "ScatterPlotViewWidget": {
-                "ScatterPlotViewWidget0": {
-                    "parameters": null
-                }
+                ]
             }
-        }
+        ]
     }
 }

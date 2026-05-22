@@ -26,12 +26,11 @@ class QWidget;
 class QLineEdit;
 class QLabel;
 
+class IDBVariableResolver;
 class DBFilter;
 
 namespace dbContent
 {
-class Variable;
-class MetaVariable;
 class VariableSet;
 }
 
@@ -43,17 +42,14 @@ class DBFilterCondition : public QObject, public Configurable
 private slots:
     void valueChanged();
 
-// signals:
-//     void possibleFilterChange();
-
 public:
-    DBFilterCondition(const std::string& class_id, const std::string& instance_id,
-                      DBFilter* filter_parent);
+    DBFilterCondition(nlohmann::json& config, DBFilter* parent);
     virtual ~DBFilterCondition();
 
     void invert();
     bool filters(const std::string& dbcontent_name);
-    std::string getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first);
+    std::string getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first,
+                                   const std::string& logic_op = "AND");
 
     QLabel* getLabel()
     {
@@ -71,8 +67,9 @@ public:
     std::string getVariableName() const;
     void setVariableName(const std::string& variable_name);
 
-    bool hasVariable (const std::string& dbcontent_name);
-    dbContent::Variable& variable (const std::string& dbcontent_name);
+    const std::string& getVariableDBContentName() const { return variable_dbcontent_name_; }
+
+    bool hasVariable(const std::string& dbcontent_name);
 
     bool getAbsoluteValue() { return absolute_value_; }
     void setAbsoluteValue(bool abs) { absolute_value_ = abs; }
@@ -82,6 +79,12 @@ public:
 
     std::string getValue() { return value_; }
     void setValue(const std::string& value);
+
+    std::string getValue2() { return value2_; }
+    void setValue2(const std::string& value) { value2_ = value; }
+
+    bool getIncludeNull() { return include_null_; }
+    void setIncludeNull(bool include_null) { include_null_ = include_null; }
 
     std::string getResetValue() { return reset_value_; }
     void setResetValue(std::string reset_value) { reset_value_ = reset_value; }
@@ -93,25 +96,34 @@ public:
 
     bool getDisplayInstanceId() const;
 
+    const std::string& labelPrefix() const { return label_prefix_; }
+    void setLabelPrefix(const std::string& prefix);
+
 private:
+    IDBVariableResolver& var_resolver_;
+
     DBFilter* filter_parent_{nullptr};
     std::string operator_;
-    //bool op_and_{true};
     bool absolute_value_{false};
     std::string value_;
+    std::string value2_; // second value for BETWEEN operator
     std::string reset_value_;
     std::string variable_dbcontent_name_;
     std::string variable_name_;
-    bool display_instance_id_ {false};
+    bool display_instance_name_ {false};
+    bool include_null_{false};
 
     bool usable_{true};
     bool value_invalid_{false};
+
+    std::string label_prefix_; // "AND " or "OR " - set by widget
+    std::string base_label_text_; // e.g. "altitude >"
 
     QLineEdit* edit_{nullptr};
     QLabel* label_{nullptr};
 
     // transformed val, null contained
     std::pair<std::string, bool> getTransformedValue(const std::string& untransformed_value,
-                                                     dbContent::Variable* variable);
+                                                     const std::string& dbcontent_name);
     bool checkValueInvalid(const std::string& new_value);
 };

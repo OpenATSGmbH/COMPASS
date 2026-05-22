@@ -20,6 +20,7 @@
 #include "rtcommand_registry.h"
 #include "dbcontentmanager.h"
 #include "viewmanager.h"
+#include "viewpointgenerator.h"
 #include "compass.h"
 
 #include <boost/program_options.hpp>
@@ -28,8 +29,47 @@ REGISTER_RTCOMMAND(RTCommandSetViewPoint)
 
 using namespace std;
 
-void init_view_point_commands()
+namespace
 {
+    bool validateAnnotationFeatureTypes(const nlohmann::json& anno_json, std::string& error)
+    {
+        if (anno_json.contains("features") && anno_json.at("features").is_array())
+        {
+            for (const auto& feat : anno_json.at("features"))
+            {
+                if (!feat.contains("type"))
+                {
+                    error = "annotation feature without type";
+                    return false;
+                }
+
+                std::string type = feat.at("type");
+                if (!ViewPointGenFeature::knownFeatureTypes().count(type))
+                {
+                    error = "unknown annotation feature type '" + type + "'";
+                    return false;
+                }
+            }
+        }
+
+        if (anno_json.contains("annotations") && anno_json.at("annotations").is_array())
+        {
+            for (const auto& child : anno_json.at("annotations"))
+            {
+                if (!validateAnnotationFeatureTypes(child, error))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+}
+
+static COMPASS* s_compass = nullptr;
+
+void init_view_point_commands(COMPASS& compass)
+{
+    s_compass = &compass;
     RTCommandSetViewPoint::init();
 }
 
@@ -48,28 +88,42 @@ bool RTCommandSetViewPoint::run_impl()
 {
     loginf << "vp_json_str_ '" << vp_json_str_ << "'";
 
-    if (!COMPASS::instance().dbOpened())
+    if (!s_compass->dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (COMPASS::instance().appMode() != AppMode::Offline) // to be sure
+    if (s_compass->appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+COMPASS::instance().appModeStr());
+        setResultMessage("Wrong application mode "+s_compass->appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = s_compass->dbContentManager();
     dbcontent_man.clearData();
 
     try
     {
-        nlohmann::json::object_t vp_json = nlohmann::json::parse(vp_json_str_);
+        nlohmann::json vp_json_parsed = nlohmann::json::parse(vp_json_str_);
 
-        viewable_data_cfg_.reset(new ViewableDataConfig(vp_json));
+        // validate annotation feature types
+        if (vp_json_parsed.contains("annotations") && vp_json_parsed.at("annotations").is_array())
+        {
+            std::string validation_error;
+            for (const auto& anno : vp_json_parsed.at("annotations"))
+            {
+                if (!validateAnnotationFeatureTypes(anno, validation_error))
+                {
+                    setResultMessage(validation_error);
+                    return false;
+                }
+            }
+        }
 
-        COMPASS::instance().viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
+        viewable_data_cfg_.reset(new ViewableDataConfig(vp_json_parsed.get<nlohmann::json::object_t>()));
+
+        s_compass->viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
     }
     catch (exception& e)
     {
@@ -83,7 +137,23 @@ bool RTCommandSetViewPoint::run_impl()
 
 bool RTCommandSetViewPoint::checkResult_impl()
 {
-    return true; // if ok
+    if (!viewable_data_cfg_)
+        return true;
+
+    const auto& errors = viewable_data_cfg_->errors();
+
+    if (!errors.empty())
+    {
+        nlohmann::json err_json = nlohmann::json::array();
+        for (const auto& [component, msg] : errors)
+            err_json.push_back({{"component", component}, {"error", msg}});
+
+        setJSONReply({{"view_point_errors", err_json}});
+        setResultMessage("view point consumption failed in " + std::to_string(errors.size()) + " component(s)");
+        return false;
+    }
+
+    return true;
 }
 
 

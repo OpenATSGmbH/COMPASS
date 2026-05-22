@@ -17,11 +17,9 @@
 
 #include "trackertracknumberfilter.h"
 #include "trackertracknumberfilterwidget.h"
-#include "compass.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
-#include "datasourcemanager.h"
+#include "stringconv.h"
 //#include "util/timeconv.h"
 
 #include <sstream>
@@ -31,9 +29,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-TrackerTrackNumberFilter::TrackerTrackNumberFilter(const std::string& class_id, const std::string& instance_id,
-                                                   Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+TrackerTrackNumberFilter::TrackerTrackNumberFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("tracker_track_nums", &tracker_track_nums_, json::object());
 
@@ -58,55 +55,52 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
 
     stringstream ss;
 
-    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
-                DBContent::meta_var_ds_id_.name()).existsIn(dbcontent_name));
+    auto& resolver = variableResolver();
 
-    traced_assert(COMPASS::instance().dbContentManager().metaVariable(
-                DBContent::meta_var_track_num_.name()).existsIn(dbcontent_name));
+    traced_assert(resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    traced_assert(resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
 
     // ds_id -> line_id -> values
     std::map<unsigned int, std::map<unsigned int, std::string>> active_tns = getActiveTrackerTrackNums();
 
     if (active_ && active_tns.size())
     {
-        dbContent::Variable& ds_id_var = COMPASS::instance().dbContentManager().metaVariable(
-                    DBContent::meta_var_ds_id_.name()).getFor(dbcontent_name);
+        string ds_id_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_ds_id_);
+        string line_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_line_id_);
+        string tn_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_track_num_);
 
-        dbContent::Variable& line_var = COMPASS::instance().dbContentManager().metaVariable(
-                    DBContent::meta_var_line_id_.name()).getFor(dbcontent_name);
-
-        dbContent::Variable& tn_var = COMPASS::instance().dbContentManager().metaVariable(
-                    DBContent::meta_var_track_num_.name()).getFor(dbcontent_name);
-
-        if (!first)
-        {
-            ss << " AND ";
-        }
-
-        ss << "(";
-
+        stringstream inner;
         bool first_inside = true;
 
         for (auto& ds_it : active_tns)
         {
             for (auto& line_it : ds_it.second)
             {
-                if (!first_inside)
-                {
-                    ss << " OR ";
-                }
+                // Skip lines without configured track numbers - emitting
+                // "IN ()" would produce invalid SQL and crash the query.
+                if (String::trim(line_it.second).empty())
+                    continue;
 
-                ss << " (" + ds_id_var.dbColumnName() << " = " << ds_it.first;
-                ss << " AND " + line_var.dbColumnName() << " = " << line_it.first;
-                ss << " AND " << tn_var.dbColumnName() << " IN (" << line_it.second << "))";
+                if (!first_inside)
+                    inner << " OR ";
+
+                inner << " (" << ds_id_col << " = " << ds_it.first;
+                inner << " AND " << line_col << " = " << line_it.first;
+                inner << " AND " << tn_col << " IN (" << line_it.second << "))";
 
                 first_inside = false;
             }
         }
 
-        ss << ")";
+        if (!first_inside) // at least one inner clause emitted
+        {
+            if (!first)
+                ss << " AND ";
 
-        first = false;
+            ss << "(" << inner.str() << ")";
+
+            first = false;
+        }
     }
 
     loginf << "here '" << ss.str() << "'";
@@ -114,23 +108,9 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
     return ss.str();
 }
 
-
-void TrackerTrackNumberFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("TrackerTrackNumberFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
 DBFilterWidget* TrackerTrackNumberFilter::createWidget()
 {
     return new TrackerTrackNumberFilterWidget(*this);
-}
-
-
-void TrackerTrackNumberFilter::checkSubConfigurables()
-{
-    logdbg;
 }
 
 
@@ -172,8 +152,8 @@ void TrackerTrackNumberFilter::loadViewPointConditions (const nlohmann::json& fi
         }
     }
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 void TrackerTrackNumberFilter::setTrackerTrackNum(unsigned int ds_id, unsigned int line_id, const std::string& value)
@@ -195,19 +175,11 @@ std::map<unsigned int, std::map<unsigned int, std::string>> TrackerTrackNumberFi
 
     std::map<unsigned int, std::map<unsigned int, std::string>> active_values;
 
-    for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
+    for (auto& ds_it : tracker_lines_)
     {
-        if (ds_it->dsType() != "Tracker")
-            continue;
+        string ds_id_str = to_string(ds_it.first);
 
-        if (!ds_it->hasNumInserted())
-            continue;
-
-        string ds_id_str = to_string(ds_it->id());
-
-        std::map<unsigned int, unsigned int> line_cnts = ds_it->numInsertedLinesMap();
-
-        for (auto& line_cnt_it : line_cnts)
+        for (auto& line_cnt_it : ds_it.second)
         {
             if (line_cnt_it.second == 0)
                 continue;
@@ -215,9 +187,9 @@ std::map<unsigned int, std::map<unsigned int, std::string>> TrackerTrackNumberFi
             string line_id_str = to_string(line_cnt_it.first);
 
             if (saved_values.count(ds_id_str) && saved_values.at(ds_id_str).count(line_id_str))
-                active_values[ds_it->id()][line_cnt_it.first] = saved_values.at(ds_id_str).at(line_id_str);
+                active_values[ds_it.first][line_cnt_it.first] = saved_values.at(ds_id_str).at(line_id_str);
             else
-                active_values[ds_it->id()][line_cnt_it.first] = "";
+                active_values[ds_it.first][line_cnt_it.first] = "";
         }
     }
 
@@ -232,19 +204,11 @@ std::map<std::string, std::map<std::string, std::string>> TrackerTrackNumberFilt
 
     std::map<std::string, std::map<std::string, std::string>> active_values;
 
-    for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
+    for (auto& ds_it : tracker_lines_)
     {
-        if (ds_it->dsType() != "Tracker")
-            continue;
+        string ds_id_str = to_string(ds_it.first);
 
-        if (!ds_it->hasNumInserted())
-            continue;
-
-        string ds_id_str = to_string(ds_it->id());
-
-        std::map<unsigned int, unsigned int> line_cnts = ds_it->numInsertedLinesMap();
-
-        for (auto& line_cnt_it : line_cnts)
+        for (auto& line_cnt_it : ds_it.second)
         {
             if (line_cnt_it.second == 0)
                 continue;
@@ -252,13 +216,37 @@ std::map<std::string, std::map<std::string, std::string>> TrackerTrackNumberFilt
             string line_id_str = to_string(line_cnt_it.first);
 
             if (saved_values.count(ds_id_str) && saved_values.at(ds_id_str).count(line_id_str))
-                active_values[to_string(ds_it->id())][line_id_str] = saved_values.at(ds_id_str).at(line_id_str);
+                active_values[ds_id_str][line_id_str] = saved_values.at(ds_id_str).at(line_id_str);
             else
-                active_values[to_string(ds_it->id())][line_id_str] = "";
+                active_values[ds_id_str][line_id_str] = "";
         }
     }
 
     return active_values;
+}
+
+void TrackerTrackNumberFilter::updateTrackerDataSources(
+    const std::map<unsigned int, std::map<unsigned int, unsigned int>>& tracker_lines,
+    const std::map<unsigned int, std::string>& ds_names)
+{
+    tracker_lines_ = tracker_lines;
+    ds_names_ = ds_names;
+
+    if (widget_)
+        widget_->update();
+}
+
+bool TrackerTrackNumberFilter::hasDataSourceName(unsigned int ds_id) const
+{
+    return ds_names_.count(ds_id) > 0;
+}
+
+std::string TrackerTrackNumberFilter::dataSourceName(unsigned int ds_id) const
+{
+    auto it = ds_names_.find(ds_id);
+    if (it != ds_names_.end())
+        return it->second;
+    return std::to_string(ds_id);
 }
 
 
@@ -269,3 +257,4 @@ void TrackerTrackNumberFilter::updateDataSourcesSlot()
     if (widget_)
         widget_->update();
 }
+

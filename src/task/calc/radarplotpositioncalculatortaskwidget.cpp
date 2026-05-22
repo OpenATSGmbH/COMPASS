@@ -43,7 +43,7 @@ RadarPlotPositionCalculatorTaskWidget::RadarPlotPositionCalculatorTaskWidget(
 {
     QVBoxLayout* main_layout = new QVBoxLayout();
 
-    main_layout->addWidget(ProjectionManager::instance().widget());
+    main_layout->addWidget(task_.projectionManager().widget());
 
     main_layout->addStretch();
 
@@ -52,6 +52,7 @@ RadarPlotPositionCalculatorTaskWidget::RadarPlotPositionCalculatorTaskWidget(
 
 RadarPlotPositionCalculatorTaskWidget::~RadarPlotPositionCalculatorTaskWidget()
 {
-    ProjectionManager::instance().deleteWidget();
+    task_.projectionManager().deleteWidget();
 }
+
 

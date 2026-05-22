@@ -22,8 +22,10 @@
 #include "histograminitializer.h"
 #include "kalman_estimator.h"
 #include "reconstructorbase.h"
+#include "reconstructortask.h"
+#include "taskmanager.h"
 #include "dbcontentmanager.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "compass.h"
 
 #include "number.h"
@@ -340,22 +342,22 @@ void ReferenceCalculatorAnnotations::addAnnotationData(const std::string& name,
 
             //dbcontent info
             auto dbc_id = Utils::Number::recNumGetDBContId(mm.source_id.value());
-            if (COMPASS::instance().dbContentManager().existsDBContentWithId(dbc_id))
-                dbc_info = COMPASS::instance().dbContentManager().dbContentWithId(dbc_id);
+            if (reconstructor_->task().manager().compass().dbContentManager().existsDBContentWithId(dbc_id))
+                dbc_info = reconstructor_->task().manager().compass().dbContentManager().dbContentWithId(dbc_id);
         
             //sensor info
             auto rec_info = reconstructor_->getInfo(mm.source_id.value());
             if (rec_info)
             {
-                if (COMPASS::instance().dataSourceManager().hasDBDataSource(rec_info->ds_id_))
+                if (reconstructor_->task().manager().compass().dbContextManager().hasDataSource(rec_info->ds_id_))
                 {
-                    const auto& ds = COMPASS::instance().dataSourceManager().dbDataSource(rec_info->ds_id_);
-                    sensor_info = ds.hasShortName() ? ds.shortName() : ds.name();
+                    const auto* ds = reconstructor_->task().manager().compass().dbContextManager().dataSource(rec_info->ds_id_);
+                    sensor_info = ds->hasShortName() ? ds->shortName() : ds->name();
                 }
 
                 //get dbcontent string if not yet recovered from record number
                 if (dbc_info.empty())
-                    dbc_info = COMPASS::instance().dbContentManager().dbContentWithId(rec_info->dbcont_id_);
+                    dbc_info = reconstructor_->task().manager().compass().dbContentManager().dbContentWithId(rec_info->dbcont_id_);
             }
         }
 

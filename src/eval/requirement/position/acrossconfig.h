@@ -33,8 +33,8 @@ namespace EvaluationRequirement
 class PositionAcrossConfig : public PositionBaseProbConfig
 {
 public:
-    PositionAcrossConfig(const std::string& class_id, const std::string& instance_id,
-                         Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    PositionAcrossConfig(nlohmann::json& config,
+                         Group* parent);
     virtual ~PositionAcrossConfig();
 
     std::shared_ptr<Base> createRequirement() override;

@@ -735,3 +735,4 @@ void RangeSlider::paintEvent(QPaintEvent* event)
         break;
     }
 }
+

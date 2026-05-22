@@ -19,7 +19,6 @@
 #include "evaluationmanager.h"
 #include "evaluationtarget.h"
 
-#include "eval/results/report/pdfgeneratordialog.h"
 #include "evaluationstandard.h"
 #include "evaluationdialog.h"
 #include "eval/requirement/group.h"
@@ -33,7 +32,7 @@
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 
 #include "sectorlayer.h"
 //#include "sector.h"
@@ -72,12 +71,11 @@ using namespace boost::posix_time;
 
 /**
  */
-EvaluationCalculator::EvaluationCalculator(const std::string& class_id, 
-                                           const std::string& instance_id,
-                                           EvaluationManager& eval_man, 
+EvaluationCalculator::EvaluationCalculator(nlohmann::json& config,
+                                           EvaluationManager& eval_man,
                                            DBContentManager& dbcontent_man,
                                            bool is_default_calculator)
-:   Configurable          (class_id, instance_id, &eval_man)
+:   Configurable          (config, &eval_man)
 ,   eval_man_             (eval_man)
 ,   data_                 (new EvaluationData(*this, eval_man_, dbcontent_man))
 ,   results_gen_          (new EvaluationResultsGenerator(*this))
@@ -90,11 +88,18 @@ EvaluationCalculator::EvaluationCalculator(const std::string& class_id,
 
 /**
  */
-EvaluationCalculator::EvaluationCalculator(EvaluationManager& eval_man, 
+static nlohmann::json& configCopy(const nlohmann::json& src)
+{
+    static nlohmann::json s_copy;
+    s_copy = src;
+    return s_copy;
+}
+
+EvaluationCalculator::EvaluationCalculator(EvaluationManager& eval_man,
                                            DBContentManager& dbcontent_man,
                                            const nlohmann::json& config,
                                            bool is_default_calculator)
-:   Configurable          ("EvaluationManager", "EvaluationManager0", nullptr, "", &config)
+:   Configurable          (configCopy(config), nullptr)
 ,   eval_man_             (eval_man)
 ,   data_                 (new EvaluationData(*this, eval_man_, dbcontent_man))
 ,   results_gen_          (new EvaluationResultsGenerator(*this))
@@ -111,25 +116,29 @@ EvaluationCalculator::~EvaluationCalculator() = default;
 
 /**
  */
-ResultT<EvaluationCalculator*> EvaluationCalculator::clone() const
+ResultT<EvaluationCalculator*> EvaluationCalculator::clone()
 {
+    //ensure nested sub_configs are fully populated before export
+    writeBackConfigRecursive();
+
     //obtain current json config
     nlohmann::json config;
     generateJSON(config, Configurable::JSONExportType::General);
 
     //clone from config
-    return EvaluationCalculator::clone(config);
+    return EvaluationCalculator::clone(eval_man_, eval_man_.dbContentManager(), config);
 }
 
 /**
  */
-ResultT<EvaluationCalculator*> EvaluationCalculator::clone(const nlohmann::json& config)
+ResultT<EvaluationCalculator*> EvaluationCalculator::clone(EvaluationManager& eval_man,
+                                                           DBContentManager& dbcontent_man,
+                                                           const nlohmann::json& config)
 {
     if (!config.is_object())
         return Result::failed("Config not available");
 
-    auto& eval_man = COMPASS::instance().evaluationManager();
-    auto& dbc_man  = COMPASS::instance().dbContentManager();
+    auto& dbc_man = dbcontent_man;
 
     EvaluationCalculator* c = nullptr;
 
@@ -260,12 +269,13 @@ void EvaluationCalculator::readSettings()
 
 /**
  */
-void EvaluationCalculator::generateSubConfigurable(const std::string& class_id,
-                                                   const std::string& instance_id)
+void EvaluationCalculator::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "EvaluationStandard")
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name == "EvaluationStandard")
     {
-        EvaluationStandard* standard = new EvaluationStandard(class_id, instance_id, *this);
+        EvaluationStandard* standard = new EvaluationStandard(child_json, this);
         logdbg << "adding standard " << standard->name();
 
         traced_assert(!hasStandard(standard->name()));
@@ -280,7 +290,7 @@ void EvaluationCalculator::generateSubConfigurable(const std::string& class_id,
         });
     }
     else
-        throw std::runtime_error("EvaluationCalculator: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("EvaluationCalculator: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 /**
@@ -293,9 +303,16 @@ void EvaluationCalculator::checkSubConfigurables()
  */
 void EvaluationCalculator::updateDerivedParameters()
 {
-    //data sources
-    data_sources_ref_ = settings_.active_sources_ref_.get<std::map<std::string, std::map<std::string, bool>>>();
-    data_sources_tst_ = settings_.active_sources_tst_.get<std::map<std::string, std::map<std::string, bool>>>();
+    //data sources - default-constructed json is null, only parse if object
+    if (settings_.active_sources_ref_.is_object())
+        data_sources_ref_ = settings_.active_sources_ref_.get<std::map<std::string, std::map<std::string, bool>>>();
+    else
+        data_sources_ref_.clear();
+
+    if (settings_.active_sources_tst_.is_object())
+        data_sources_tst_ = settings_.active_sources_tst_.get<std::map<std::string, std::map<std::string, bool>>>();
+    else
+        data_sources_tst_.clear();
 
     //read various constraints from config json
     loadGlobalTimeWindow();
@@ -307,31 +324,63 @@ void EvaluationCalculator::updateDerivedParameters()
  */
 Result EvaluationCalculator::canEvaluate() const
 {
+    loginf << "checking canEvaluate:"
+           << " has_associations " << eval_man_.dbContentManager().hasAssociations()
+           << " current_standard '" << settings_.current_standard_ << "'"
+           << " has_current_standard " << hasCurrentStandard()
+           << " sectors_loaded " << sectorsLoaded()
+           << " num_sector_layers " << (sectorsLoaded() ? sectorLayers().size() : 0)
+           << " use_grp_in_sector " << settings_.use_grp_in_sector_.dump();
+
     //needs associations
-    if (!COMPASS::instance().dbContentManager().hasAssociations())
+    if (!eval_man_.dbContentManager().hasAssociations())
+    {
+        logerr << "no associations";
         return Result::failed("Please run target report association");
+    }
 
     //needs a set standard
     if (!hasCurrentStandard())
+    {
+        logerr << "no current standard '" << settings_.current_standard_ << "'"
+               << ", available standards " << standards_.size();
+        for (const auto& s : standards_)
+            logerr << "  standard '" << s->name() << "'";
         return Result::failed("Please select a standard");
+    }
 
     //needs selected ref data sources
     if (!hasSelectedReferenceDataSources())
+    {
+        logerr << "no selected reference data sources";
         return Result::failed("Please select reference data sources");
+    }
 
     //needs selected test data sources
     if (!hasSelectedTestDataSources())
+    {
+        logerr << "no selected test data sources";
         return Result::failed("Please select test data sources");
+    }
 
     //needs loaded sectors
     if (!sectorsLoaded())
+    {
+        logerr << "sectors not loaded";
         return Result::failed("No Database loaded");
+    }
 
     if (sectorLayers().empty())
+    {
+        logerr << "no sector layers";
         return Result::failed("Please add at least one sector");
+    }
 
     if (!anySectorsWithReq())
+    {
+        logerr << "no sectors with requirements";
         return Result::failed("Please set requirements for at least one sector");
+    }
 
     //@TODO
     //return "Please activate at least one requirement group";
@@ -559,7 +608,7 @@ Result EvaluationCalculator::evaluateData()
     traced_assert(data_loaded_);
     traced_assert(canEvaluate().ok());
 
-    Projection& projection = ProjectionManager::instance().currentProjection();
+    Projection& projection = eval_man_.compass().projectionManager().currentProjection();
     projection.clearCoordinateSystems();
     projection.addAllCoordinateSystems();
 
@@ -587,7 +636,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
 {
     std::map<unsigned int, std::set<unsigned int>> data_sources;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ds_man = eval_man_.compass().dbContextManager();
 
     std::set<unsigned int> line_ref_set = {settings_.line_id_ref_};
 
@@ -602,7 +651,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
         for (auto& line_it : line_ref_set)
             loginf << "ref line " << line_it;
 
-        traced_assert(ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDataSource(ds_id));
 
         if (ds_it.second)
             data_sources.insert(make_pair(ds_id, line_ref_set));
@@ -619,7 +668,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
         for (auto& line_it : line_tst_set)
             loginf << "tst line " << line_it;
 
-        traced_assert(ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDataSource(ds_id));
 
         if (ds_it.second)
         {
@@ -651,7 +700,7 @@ const std::string& EvaluationCalculator::minHeightFilterLayerName() const
  */
 void EvaluationCalculator::minHeightFilterLayerName(const std::string& layer_name)
 {
-    traced_assert(layer_name.empty() || eval_man_.hasSectorLayer(layer_name));
+    traced_assert(layer_name.empty() || eval_man_.compass().dbContextManager().hasSectorLayer(layer_name));
 
     loginf << "layer changed to "
            << (layer_name.empty() ? "null" : "'" + layer_name + "'");
@@ -667,7 +716,7 @@ std::shared_ptr<SectorLayer> EvaluationCalculator::minHeightFilterLayer() const
         return {};
 
     //!will assert on non-existing layer name!
-    return eval_man_.sectorLayer(settings_.min_height_filter_layer_);
+    return eval_man_.compass().dbContextManager().sectorLayer(settings_.min_height_filter_layer_);
 }
 
 /**
@@ -676,7 +725,7 @@ std::shared_ptr<SectorLayer> EvaluationCalculator::minHeightFilterLayer() const
  */
 void EvaluationCalculator::checkMinHeightFilterValid()
 {
-    if (!settings_.min_height_filter_layer_.empty() && !eval_man_.hasSectorLayer(settings_.min_height_filter_layer_))
+    if (!settings_.min_height_filter_layer_.empty() && !eval_man_.compass().dbContextManager().hasSectorLayer(settings_.min_height_filter_layer_))
     {
         logerr << "Layer '" << settings_.min_height_filter_layer_ << "'"
                << " not present, resetting min height filter";
@@ -710,7 +759,7 @@ bool EvaluationCalculator::hasValidReferenceDBContent () const
     if (!settings_.dbcontent_name_ref_.size())
         return false;
 
-    return COMPASS::instance().dbContentManager().existsDBContent(settings_.dbcontent_name_ref_);
+    return eval_man_.dbContentManager().existsDBContent(settings_.dbcontent_name_ref_);
 }
 
 /**
@@ -733,12 +782,12 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesRef()
 {
     set<unsigned int> srcs;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ds_man = eval_man_.compass().dbContextManager();
 
     for (auto& ds_it : data_sources_ref_[settings_.dbcontent_name_ref_])
     {
         unsigned int ds_id = stoul(ds_it.first);
-        traced_assert(ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDataSource(ds_id));
 
         if (ds_it.second)
             srcs.insert(ds_id);
@@ -754,7 +803,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
     EvaluationDSInfo ds_info;
     ds_info.dbcontent = settings_.dbcontent_name_ref_;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ds_man = eval_man_.compass().dbContextManager();
 
     for (auto& ds_it : data_sources_ref_.at(settings_.dbcontent_name_ref_))
     {
@@ -762,9 +811,9 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
             continue;
 
         unsigned int ds_id = stoul(ds_it.first);
-        traced_assert(ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDataSource(ds_id));
 
-        const auto& name = ds_man.dbDataSource(ds_id).name();
+        const auto& name = ds_man.dataSource(ds_id)->name();
 
         ds_info.data_sources.push_back({ name, ds_id });
     }
@@ -809,7 +858,7 @@ bool EvaluationCalculator::hasValidTestDBContent () const
     if (!settings_.dbcontent_name_tst_.size())
         return false;
 
-    return COMPASS::instance().dbContentManager().existsDBContent(settings_.dbcontent_name_tst_);
+    return eval_man_.dbContentManager().existsDBContent(settings_.dbcontent_name_tst_);
 }
 
 /**
@@ -831,12 +880,12 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesTst()
 {
     set<unsigned int> srcs;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ds_man = eval_man_.compass().dbContextManager();
 
     for (auto& ds_it : data_sources_tst_[settings_.dbcontent_name_tst_])
     {
         unsigned int ds_id = stoul(ds_it.first);
-        traced_assert(ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDataSource(ds_id));
 
         if (ds_it.second)
             srcs.insert(ds_id);
@@ -852,7 +901,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
     EvaluationDSInfo ds_info;
     ds_info.dbcontent = settings_.dbcontent_name_tst_;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ds_man = eval_man_.compass().dbContextManager();
 
     for (auto& ds_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
     {
@@ -860,9 +909,9 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
             continue;
 
         unsigned int ds_id = stoul(ds_it.first);
-        traced_assert(ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDataSource(ds_id));
 
-        const auto& name = ds_man.dbDataSource(ds_id).name();
+        const auto& name = ds_man.dataSource(ds_id)->name();
 
         ds_info.data_sources.push_back({ name, ds_id });
     }
@@ -967,7 +1016,7 @@ void EvaluationCalculator::copyCurrentStandard (const std::string& new_name)
     nlohmann::json data;
     data["parameters"]["name"] = new_name;
 
-    Configurable::generateSubConfigurableFromJSON(currentStandard(), data, "EvaluationStandard");
+    Configurable::generateSubConfigurableFromJSON(currentStandard(), data);
 
     setCurrentStandardName(new_name);
 
@@ -1027,10 +1076,10 @@ void EvaluationCalculator::addStandard(const std::string& name)
 
     std::string instance = "EvaluationStandard" + name + "0";
 
-    auto config = Configuration::create("EvaluationStandard", instance);
-    config->addParameter<std::string>("name", name);
+    auto& child_json = addNewSubConfiguration("EvaluationStandard", instance);
+    child_json[Configuration::ParameterSection]["name"] = name;
 
-    generateSubConfigurableFromConfig(std::move(config));
+    generateSubConfigurable(child_json);
 
     emit standardsChanged();
 
@@ -1084,7 +1133,7 @@ std::vector<std::string> EvaluationCalculator::currentRequirementNames() const
  */
 bool EvaluationCalculator::sectorsLoaded() const
 {
-    return eval_man_.sectorsLoaded();
+    return eval_man_.compass().dbContextManager().sectorsLoaded();
 }
 
 /**
@@ -1092,7 +1141,10 @@ bool EvaluationCalculator::sectorsLoaded() const
 bool EvaluationCalculator::anySectorsWithReq() const
 {
     if (!sectorsLoaded())
+    {
+        loginf << "sectors not loaded";
         return false;
+    }
 
     bool any = false;
 
@@ -1101,21 +1153,34 @@ bool EvaluationCalculator::anySectorsWithReq() const
         const EvaluationStandard& standard = currentStandard();
 
         const std::vector<std::shared_ptr<SectorLayer>>& sector_layers = sectorLayers();
+        loginf << "checking " << sector_layers.size() << " sector layers, standard '" << settings_.current_standard_ << "'"
+               << " use_grp_in_sector: " << settings_.use_grp_in_sector_.dump();
+
         for (const auto& sec_it : sector_layers)
         {
             const string& sector_layer_name = sec_it->name();
+
+            loginf << "sector '" << sector_layer_name << "' checking requirement groups";
 
             for (auto& req_group_it : standard)
             {
                 const string& requirement_group_name = req_group_it->name();
 
-                if (useGroupInSectorLayer(sector_layer_name, requirement_group_name))
+                bool use = useGroupInSectorLayer(sector_layer_name, requirement_group_name);
+                loginf << "sector '" << sector_layer_name << "' group '" << requirement_group_name << "' use=" << use;
+
+                if (use)
                 {
                     any = true;
                     break;
                 }
             }
         }
+    }
+    else
+    {
+        loginf << "no current standard, current_standard_='" << settings_.current_standard_
+               << "' num standards=" << standards_.size();
     }
 
     return any;
@@ -1125,14 +1190,14 @@ bool EvaluationCalculator::anySectorsWithReq() const
  */
 std::vector<std::shared_ptr<SectorLayer>>& EvaluationCalculator::sectorLayers()
 {
-    return eval_man_.sectorsLayers();
+    return eval_man_.compass().dbContextManager().sectorLayers();
 }
 
 /**
  */
 const std::vector<std::shared_ptr<SectorLayer>>& EvaluationCalculator::sectorLayers() const
 {
-    return eval_man_.sectorsLayers();
+    return eval_man_.compass().dbContextManager().sectorLayers();
 }
 
 /**
@@ -1152,7 +1217,7 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
     if (!hasValidReferenceDBContent())
         return;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ds_man = eval_man_.compass().dbContextManager();
 
     // clear out old ds_ids
     auto ds_copy = data_sources_ref_[settings_.dbcontent_name_ref_];
@@ -1162,19 +1227,19 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
     {
         ds_id = stoul(ds_it.first);
 
-        if (!ds_man.hasDBDataSource(ds_id))
+        if (!ds_man.hasDataSource(ds_id))
             data_sources_ref_[settings_.dbcontent_name_ref_].erase(ds_it.first);
     }
 
     // init non-existing ones with false
     if (ds_man.hasDataSourcesOfDBContent(settings_.dbcontent_name_ref_))
     {
-        for (auto& ds_it : ds_man.dbDataSources())
+        for (const auto& [ds_id, ds] : ds_man.activeContext().dataSources())
         {
-            if (!ds_it->hasNumInserted(settings_.dbcontent_name_ref_))
+            if (ds_man.numInserted(ds.id(), settings_.dbcontent_name_ref_) == 0)
                 continue;
 
-            string ds_id_str = to_string(ds_it->id());
+            string ds_id_str = to_string(ds.id());
 
             if (!data_sources_ref_[settings_.dbcontent_name_ref_].count(ds_id_str))
                 data_sources_ref_[settings_.dbcontent_name_ref_][ds_id_str] = false; // init with default false
@@ -1194,7 +1259,7 @@ void EvaluationCalculator::checkTestDataSources(bool update_settings)
     if (!hasValidTestDBContent())
         return;
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ds_man = eval_man_.compass().dbContextManager();
 
     // clear out old ds_ids
     auto ds_copy = data_sources_tst_[settings_.dbcontent_name_tst_];
@@ -1204,19 +1269,19 @@ void EvaluationCalculator::checkTestDataSources(bool update_settings)
     {
         ds_id = stoul(ds_it.first);
 
-        if (!ds_man.hasDBDataSource(ds_id))
+        if (!ds_man.hasDataSource(ds_id))
             data_sources_tst_[settings_.dbcontent_name_tst_].erase(ds_it.first);
     }
 
     // init non-existing ones with false
     if (ds_man.hasDataSourcesOfDBContent(settings_.dbcontent_name_tst_))
     {
-        for (auto& ds_it : ds_man.dbDataSources())
+        for (const auto& [ds_id, ds] : ds_man.activeContext().dataSources())
         {
-            if (!ds_it->hasNumInserted(settings_.dbcontent_name_tst_))
+            if (ds_man.numInserted(ds.id(), settings_.dbcontent_name_tst_) == 0)
                 continue;
 
-            string ds_id_str = to_string(ds_it->id());
+            string ds_id_str = to_string(ds.id());
 
             if (!data_sources_tst_[settings_.dbcontent_name_tst_].count(ds_id_str))
                 data_sources_tst_[settings_.dbcontent_name_tst_][ds_id_str] = false; // init with default false
@@ -1715,13 +1780,15 @@ void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sou
 
     tst_srcs_coverage_->clear();
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ds_man = eval_man_.compass().dbContextManager();
 
     for (auto ds_id : tst_sources)
     {
-        traced_assert(ds_man.hasDBDataSource(ds_id));
+        traced_assert(ds_man.hasDataSource(ds_id));
 
-        dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
+        auto* ds_ptr = ds_man.dataSource(ds_id);
+        traced_assert(ds_ptr);
+        auto& ds = *ds_ptr;
 
         if (ds.hasRadarRanges())
         {
@@ -1767,7 +1834,7 @@ void EvaluationCalculator::updateConstraints()
     global_time_filter_enabled_    = eval_man_.useTimestampFilter();
     global_time_window_            = load_filter_valid ? Utils::TimeWindow(eval_man_.loadTimestampBegin(), eval_man_.loadTimestampEnd()) : Utils::TimeWindow();
     global_exclusion_time_windows_ = eval_man_.excludedTimeWindows();
-    target_constraints_            = COMPASS::instance().dbContentManager().targetModel()->evaluationConstraints(true);
+    target_constraints_            = eval_man_.dbContentManager().targetModel()->evaluationConstraints(true);
 
     //update serializable json
     storeGlobalTimeWindow();
@@ -1975,12 +2042,12 @@ std::string EvaluationCalculator::suggestReportName() const
     if (ds_sel.empty())
         return "";
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ds_man = eval_man_.compass().dbContextManager();
 
     unsigned int ds_id = stoul(ds_sel);
-    traced_assert(ds_man.hasDBDataSource(ds_id));
+    traced_assert(ds_man.hasDataSource(ds_id));
 
-    const auto& ds_name = ds_man.dbDataSource(ds_id).name();
+    const auto& ds_name = ds_man.dataSource(ds_id)->name();
 
     std::string report_name = settings_.current_standard_ + " " + ds_name + " L" + std::to_string(settings_.line_id_tst_ + 1) + " Evaluation";
 
@@ -2018,3 +2085,4 @@ void EvaluationCalculator::onConfigurationChanged(const std::vector<std::string>
 
     loginf << "configuration changed, can evaluate? " << canEvaluate().ok();
 }
+

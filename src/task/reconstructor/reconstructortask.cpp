@@ -19,7 +19,7 @@
 
 #include "compass.h"
 #include "reconstructortaskdialog.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableset.h"
@@ -41,9 +41,9 @@
 #include "licensemanager.h"
 #include "sectorlayer.h"
 
-#include "report/report.h"
-#include "report/section.h"
-#include "report/sectioncontenttable.h"
+#include "task/result/report/report.h"
+#include "task/result/report/section.h"
+#include "task/result/report/sectioncontenttable.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "probimmreconstructor.h"
@@ -72,10 +72,9 @@ const std::string ReconstructorTask::ScoringUMReconstructorName {"Scoring + UMKa
 const std::string ReconstructorTask::ProbImmReconstructorName {"Probabilistic + IMM"};
 #endif
 
-ReconstructorTask::ReconstructorTask(const std::string& class_id, const std::string& instance_id,
-                                     TaskManager& task_manager)
-    : Task(task_manager),
-    Configurable(class_id, instance_id, &task_manager, "task_reconstructor.json")
+ReconstructorTask::ReconstructorTask(nlohmann::json& config, TaskManager* parent)
+    : Task(*parent),
+    Configurable(config, parent)
 {
     tooltip_ = "Associate target reports and calculate reference trajectories based on all DB Content.";
 
@@ -148,22 +147,22 @@ ReconstructorTask::~ReconstructorTask()
 {
 }
 
-void ReconstructorTask::generateSubConfigurable(const std::string& class_id,
-                                                const std::string& instance_id)
+void ReconstructorTask::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "SimpleReconstructor")
+    const auto& class_name = Configuration::getClassName(child_json);
+    if (class_name == "SimpleReconstructor")
     {
         traced_assert(!simple_reconstructor_);
 
         std::unique_ptr<AccuracyEstimatorBase> acc_estimator;
         acc_estimator.reset(new SimpleAccuracyEstimator());
 
-        simple_reconstructor_.reset(new SimpleReconstructor(class_id, instance_id, *this, std::move(acc_estimator)));
+        simple_reconstructor_.reset(new SimpleReconstructor(child_json, std::move(acc_estimator), this));
         traced_assert(simple_reconstructor_);
 
         connect(simple_reconstructor_.get(), &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
     }
-    else if (class_id == "ProbIMMReconstructor")
+    else if (class_name == "ProbIMMReconstructor")
     {
 #if USE_EXPERIMENTAL_SOURCE == true
 
@@ -172,14 +171,14 @@ void ReconstructorTask::generateSubConfigurable(const std::string& class_id,
         std::unique_ptr<AccuracyEstimatorBase> acc_estimator;
         acc_estimator.reset(new ComplexAccuracyEstimator());
 
-        probimm_reconstructor_.reset(new ProbIMMReconstructor(class_id, instance_id, *this, std::move(acc_estimator)));
+        probimm_reconstructor_.reset(new ProbIMMReconstructor(child_json, std::move(acc_estimator), this));
         traced_assert(probimm_reconstructor_);
 
         connect(probimm_reconstructor_.get(), &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
 #endif
     }
     else
-        throw std::runtime_error("ReconstructorTask: generateSubConfigurable: unknown class_id " + class_id);
+        throw std::runtime_error("ReconstructorTask: generateSubConfigurable: unknown class_name " + class_name);
 }
 
 void ReconstructorTask::initTask()
@@ -188,7 +187,7 @@ void ReconstructorTask::initTask()
 
 void ReconstructorTask::checkReconstructor()
 {
-    const auto& license_manager = COMPASS::instance().licenseManager();
+    const auto& license_manager = manager().compass().licenseManager();
 
     if (!license_manager.componentEnabled(license::License::ComponentProbIMMReconstructor) && currentReconstructorStr() == ProbImmReconstructorName)
         currentReconstructorStr(ScoringUMReconstructorName);
@@ -205,7 +204,12 @@ bool ReconstructorTask::canRun()
 {
     traced_assert(currentReconstructor());
 
-    return COMPASS::instance().dbContentManager().hasData() && currentReconstructor()->hasNextTimeSlice();
+    bool has_data       = manager().compass().dbContentManager().hasData();
+    bool has_next_slice = has_data && currentReconstructor()->hasNextTimeSlice();
+
+    loginf << "has_data " << has_data << " has_next_slice " << has_next_slice;
+
+    return has_data && has_next_slice;
 }
 
 void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_progress)
@@ -272,8 +276,8 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
 
         const auto& counts = currentReconstructor()->assocCounts();
 
-        DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        auto& ctx_man = manager().compass().dbContextManager();
+        DBContentManager& dbcont_man = manager().compass().dbContentManager();
 
         if (counts.size())
         {
@@ -288,7 +292,7 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
                     unsigned int assoc_cnt = dbcont_it.second.first;
                     unsigned int unassoc_cnt = dbcont_it.second.second;
 
-                    std::string ds_name = ds_man.dbDataSource(ds_it.first).name();
+                    std::string ds_name = ctx_man.dataSource(ds_it.first)->name();
                     std::string dbcont_name = dbcont_man.dbContentWithId(dbcont_it.first);
 
                     string row_str;
@@ -407,10 +411,10 @@ std::set<unsigned int> ReconstructorTask::disabledDataSources() const
 
     if (current_reconstructor_str_ == ScoringUMReconstructorName)
     {
-        for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
+        for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
         {
-            if (ds_it->name() == "CalcRef")
-                disabled_ds.insert(ds_it->id());
+            if (ds.name() == "CalcRef")
+                disabled_ds.insert(ds.id());
         }
     }
 
@@ -439,18 +443,18 @@ void ReconstructorTask::run()
     delassocs_future_ = {};
     process_future_ = {};
 
-    ReconstructorBase::TargetsContainer::unspecific_acids_ = COMPASS::instance().unspecificACIDs();
+    ReconstructorBase::TargetsContainer::unspecific_acids_ = manager().compass().unspecificACIDs();
 
-    COMPASS::instance().dbContentManager().clearAssociationsIdentifier();
-    COMPASS::instance().dbInterface().startPerformanceMetrics();
+    manager().compass().dbContentManager().clearAssociationsIdentifier();
+    manager().compass().dbInterface().startPerformanceMetrics();
 
-    COMPASS::instance().taskManager().beginTaskResultWriting(
+    manager().compass().taskManager().beginTaskResultWriting(
         "Reconstruct References "+String::lineStrFrom(currentReconstructor()->settings().ds_line),
          task::TaskResultType::Generic);
 
-    COMPASS::instance().logInfo("Reconstructor") << "running " << current_reconstructor_str_;
+    manager().compass().logInfo("Reconstructor") << "running " << current_reconstructor_str_;
 
-    Projection& projection = ProjectionManager::instance().currentProjection();
+    Projection& projection = manager().compass().projectionManager().currentProjection();
     projection.clearCoordinateSystems();
     projection.addAllCoordinateSystems();
 
@@ -459,7 +463,7 @@ void ReconstructorTask::run()
     run_start_time_ = boost::posix_time::microsec_clock::local_time();
     run_start_time_after_del_ = {};
 
-    auto& section = COMPASS::instance().taskManager().currentReport()->getSection("Overview");
+    auto& section = manager().compass().taskManager().currentReport()->getSection("Overview");
     section.addTable("Info", 3, {"Name", "Value", "Comment"}, false);
 
     auto& table = section.getTable("Info");
@@ -468,7 +472,8 @@ void ReconstructorTask::run()
     QLabel* tmp_label = new QLabel();
     tmp_label->setTextFormat(Qt::RichText);
 
-    progress_dialog_.reset(new QProgressDialog("Reconstructing...", "Cancel", 0, 100));
+    progress_dialog_.reset(new QProgressDialog("Reconstructing...", "Cancel", 0, 100,
+                                               QApplication::activeWindow()));
     progress_dialog_->setWindowTitle("Reconstructing References");
     progress_dialog_->setMinimumWidth(600);
     progress_dialog_->setLabel(tmp_label);
@@ -484,10 +489,10 @@ void ReconstructorTask::run()
 
     updateProgressSlot("Deleting Previous References", false);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
     dbcontent_man.clearData();
 
-    COMPASS::instance().evaluationManager().clearData(); // in case there are previous results
+    manager().compass().evaluationManager().clearData(); // in case there are previous results
 
     delcalcref_future_ = std::async(std::launch::async, [&] {
         {
@@ -514,7 +519,7 @@ void ReconstructorTask::deleteCalculatedReferencesDoneSlot()
 
     updateProgressSlot("Deleting Previous Targets", false);
 
-    DBContentManager& cont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& cont_man = manager().compass().dbContentManager();
 
     deltgts_future_ = std::async(std::launch::async, [&] {
         {
@@ -541,7 +546,7 @@ void ReconstructorTask::deleteTargetsDoneSlot()
 
     updateProgressSlot("Deleting Previous Associations", false);
 
-    DBContentManager& cont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& cont_man = manager().compass().dbContentManager();
 
     delassocs_future_ = std::async(std::launch::async, [&] {
         {
@@ -555,7 +560,7 @@ void ReconstructorTask::deleteTargetsDoneSlot()
                                                   Q_ARG(const QString&, "Deleting Previous Associations"),
                                                   Q_ARG(bool, false));
 
-                        COMPASS::instance().dbInterface().clearAssociations(*dbcont_it.second);
+                        manager().compass().dbInterface().clearAssociations(*dbcont_it.second);
                     }
                 }
 
@@ -576,7 +581,7 @@ void ReconstructorTask::deleteAssociationsDoneSlot()
 {
     loginf;
 
-    // enable cancelling
+    // enable canceling
 
     traced_assert(progress_dialog_);
     progress_dialog_->setCancelButton(new QPushButton("Cancel"));
@@ -588,11 +593,12 @@ void ReconstructorTask::deleteAssociationsDoneSlot()
 
     run_start_time_after_del_ = boost::posix_time::microsec_clock::local_time();
 
-    COMPASS::instance().viewManager().disableDataDistribution(true);
+    manager().compass().viewManager().disableDataDistribution(true);
+    manager().compass().dbContentManager().enableDataDistribution(false);
 
     currentReconstructor()->reset();
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &ReconstructorTask::loadedDataSlot);
@@ -635,7 +641,7 @@ void ReconstructorTask::loadDataSlice()
 
     if (use_sectors_extend_)
     {
-        auto& eval_man = COMPASS::instance().evaluationManager();
+        auto& ctx = manager().compass().dbContextManager();
 
         bool first = true;
         double lat_min{0}, lat_max{0}, long_min{0}, long_max{0};
@@ -643,12 +649,12 @@ void ReconstructorTask::loadDataSlice()
 
         for (auto& sect_it : used_sectors_)
         {
-            traced_assert(eval_man.hasSectorLayer(sect_it.first));
+            traced_assert(ctx.hasSectorLayer(sect_it.first));
 
             if (!sect_it.second)
                 continue;
 
-            std::shared_ptr<SectorLayer> sect_lay = eval_man.sectorLayer(sect_it.first);
+            std::shared_ptr<SectorLayer> sect_lay = ctx.sectorLayer(sect_it.first);
 
             if (first)
             {
@@ -685,23 +691,37 @@ void ReconstructorTask::loadDataSlice()
         }
     }
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
+    std::set<std::string> targets;
     for (auto& dbcont_it : dbcontent_man)
     {
         logdbg << "start" << dbcont_it.first
                << " has data " << dbcont_it.second->hasData();
 
-        if (!dbcont_it.second->hasData()) // also include status messages
+        if (!dbcont_it.second->hasData())
             continue;
 
-        VariableSet read_set = currentReconstructor()->getReadSetFor(dbcont_it.first);
-
-        if (dbcont_it.second->containsTargetReports())
-            dbcont_it.second->load(read_set, false, false, timestamp_filter+position_filter);
-        else
-            dbcont_it.second->load(read_set, false, false, timestamp_filter);
+        targets.insert(dbcont_it.first);
     }
+
+    LoadRequest req;
+    req.dbcontents_            = targets;
+    req.apply_datasrc_filters_ = false;
+    req.apply_view_filters_    = false;
+    req.show_status_           = false;
+    req.cancellable_           = false;
+    req.read_set_ = [this](const std::string& name) {
+        return currentReconstructor()->getReadSetFor(name);
+    };
+    req.custom_filter_clause_ = [&dbcontent_man, timestamp_filter, position_filter]
+        (const std::string& name) -> std::string {
+        return dbcontent_man.dbContent(name).containsTargetReports()
+                   ? timestamp_filter + position_filter
+                   : timestamp_filter;
+    };
+
+    dbcontent_man.load(req);
 }
 
 void ReconstructorTask::loadedDataSlot(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
@@ -719,7 +739,7 @@ void ReconstructorTask::loadingDoneSlot()
     traced_assert(currentReconstructor());
     traced_assert(loading_slice_);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     if (cancelled_)
     {
@@ -740,7 +760,7 @@ void ReconstructorTask::loadingDoneSlot()
 
     for (auto& buf_it : loading_slice_->data_)
     {
-        loginf << buf_it.first << " size " << buf_it.second->size() 
+        logdbg << buf_it.first << " size " << buf_it.second->size() 
         << " num prop " << buf_it.second->properties().size();
     }
 
@@ -820,7 +840,8 @@ void ReconstructorTask::loadingDoneSlot()
         disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
                    this, &ReconstructorTask::loadingDoneSlot);
 
-        COMPASS::instance().viewManager().disableDataDistribution(false);
+        manager().compass().viewManager().disableDataDistribution(false);
+        manager().compass().dbContentManager().enableDataDistribution(true);
     }
     else // do next load
     {
@@ -948,7 +969,7 @@ void ReconstructorTask::writeDataSlice()
 
     traced_assert(writing_slice_);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     if (skip_reference_data_writing_)
     {
@@ -984,7 +1005,7 @@ void ReconstructorTask::writeDataSlice()
             DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
 
             dbcontent.updateData(
-                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
+                dbcontent_man.metaVariable(dbcontent_vars::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
         }
 
         loginf << "references dbcontent slice idx " << writing_slice_->slice_count_;
@@ -1006,7 +1027,7 @@ void ReconstructorTask::writeDataSlice()
             DBContent& dbcontent = dbcontent_man.dbContent(buf_it.first);
 
             dbcontent.updateData(
-                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
+                dbcontent_man.metaVariable(dbcontent_vars::meta_var_rec_num_.name()).getFor(buf_it.first), buf_it.second);
         }
 
         loginf << "references dbcontent (overlap) slice idx " << last_slice_->slice_count_;
@@ -1043,7 +1064,9 @@ void ReconstructorTask::writeDoneSlot()
 
     loginf << "is last = " << last_slice_->is_last_slice_;
 
-    if (last_slice_->is_last_slice_)
+    bool was_last = last_slice_->is_last_slice_;
+
+    if (was_last)
     {
         last_slice_.reset();
 
@@ -1053,23 +1076,33 @@ void ReconstructorTask::writeDoneSlot()
     // release unused memory
     malloc_trim(0);
 
-    loginf << "done";
+    // doneSignal must mean "all cleanup is complete" so that the RT-command
+    // gating on it (RTCommandReconstructReferences) doesn't release the
+    // next command before this slot's tail (malloc_trim, etc.) has run.
+    // The dialog-cancel path in non-interactive mode used to emit it from
+    // runCancelledSlot's early-return, which fires synchronously inside
+    // endReconstruction's progress_dialog_->close() above - that put the
+    // signal BEFORE malloc_trim. Now the normal-completion path emits it
+    // here; the early-return below no longer emits.
+    if (was_last)
+        emit doneSignal();
 }
 
 void ReconstructorTask::endReconstruction()
 {
     loginf << "ending reconstruction...";
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                this, &ReconstructorTask::writeDoneSlot);
 
     currentReconstructor()->saveTargets();
 
-    COMPASS::instance().dataSourceManager().saveDBDataSources();
-    emit COMPASS::instance().dataSourceManager().dataSourcesChangedSignal();
-    COMPASS::instance().dbInterface().saveProperties();
+    currentReconstructor()->finalizePersistence();
+
+    manager().compass().dbContextManager().saveCountsToDB();
+    manager().compass().dbInterface().saveProperties();
 
     done_ = true;
 
@@ -1097,20 +1130,20 @@ void ReconstructorTask::endReconstruction()
            << String::timeStringFromDouble(time_elapsed_s, false)
            << ", after deletion " << String::timeStringFromDouble(time_elapsed_s_after_del, false);
 
-    loginf << COMPASS::instance().dbInterface().stopPerformanceMetrics().asString();
+    loginf << manager().compass().dbInterface().stopPerformanceMetrics().asString();
 
-    COMPASS::instance().logInfo("Reconstructor") << "done using " << current_reconstructor_str_
+    manager().compass().logInfo("Reconstructor") << "done using " << current_reconstructor_str_
                                                  << " after " << String::timeStringFromDouble(time_elapsed_s, false);
 
     // report: info
-    auto& section = COMPASS::instance().taskManager().currentReport()->getSection("Overview");
+    auto& section = manager().compass().taskManager().currentReport()->getSection("Overview");
 
     {
         auto& table = section.getTable("Info");
         table.addRow({"End", Time::toString(boost::posix_time::microsec_clock::local_time()), ""});
         table.addRow({"Elapsed", String::timeStringFromDouble(time_elapsed_s, false), ""});
         table.addRow({"Elapsed After Deletion", String::timeStringFromDouble(time_elapsed_s_after_del, false), ""});
-        table.addRow({"Number of Targets", COMPASS::instance().dbContentManager().numTargets(), ""});
+        table.addRow({"Number of Targets", manager().compass().dbContentManager().numTargets(), ""});
     }
 
     // report: assoc counts
@@ -1123,8 +1156,8 @@ void ReconstructorTask::endReconstruction()
 
         const auto& counts = currentReconstructor()->assocCounts();
 
-        DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        auto& ctx_man = manager().compass().dbContextManager();
+        DBContentManager& dbcont_man = manager().compass().dbContentManager();
 
         if (counts.size())
         {
@@ -1139,7 +1172,7 @@ void ReconstructorTask::endReconstruction()
                     unsigned int assoc_cnt = dbcont_it.second.first;
                     unsigned int unassoc_cnt = dbcont_it.second.second;
 
-                    std::string ds_name = ds_man.dbDataSource(ds_it.first).name();
+                    std::string ds_name = ctx_man.dataSource(ds_it.first)->name();
                     std::string dbcont_name = dbcont_man.dbContentWithId(dbcont_it.first);
 
                     std::string assoc_perc_str;
@@ -1159,12 +1192,12 @@ void ReconstructorTask::endReconstruction()
     currentReconstructor()->reset();
 
     if (!skip_reference_data_writing_)
-        COMPASS::instance().dbContentManager().setAssociationsIdentifier("All");
+        manager().compass().dbContentManager().setAssociationsIdentifier("All");
 
-    COMPASS::instance().taskManager().endTaskResultWriting(true, true);
+    manager().compass().taskManager().endTaskResultWriting(true, true);
 
     //cleanup db after reconstruction
-    COMPASS::instance().dbInterface().cleanupDB(true);
+    manager().compass().dbInterface().cleanupDB(true);
 
     if (!allow_user_interactions_)
     {
@@ -1177,9 +1210,9 @@ void ReconstructorTask::sectorsChangedSlot()
 {
     used_sectors_.clear();
 
-    if (COMPASS::instance().evaluationManager().sectorsLoaded())
+    if (manager().compass().dbContextManager().sectorsLoaded())
     {
-        auto& sectors_layers = COMPASS::instance().evaluationManager().sectorsLayers();
+        auto& sectors_layers = manager().compass().dbContextManager().sectorLayers();
 
         use_sectors_extend_ = sectors_layers.size();
 
@@ -1194,7 +1227,7 @@ void ReconstructorTask::sectorsChangedSlot()
 
 void ReconstructorTask::runCancelledSlot()
 {
-    loginf;
+    loginf << "done_ " << done_;
 
     traced_assert(progress_dialog_);
 
@@ -1203,8 +1236,12 @@ void ReconstructorTask::runCancelledSlot()
         //close progress dialog
         progress_dialog_.reset();
 
-        emit doneSignal();
-
+        // doneSignal is emitted from writeDoneSlot's tail in this path -
+        // not here. Emitting from this slot would fire BEFORE writeDoneSlot
+        // completes its malloc_trim, since this slot is reached
+        // synchronously via the dialog-close in endReconstruction (which
+        // runs inside writeDoneSlot). That race caused std::bad_alloc in
+        // the subsequent evaluate RT command (see doc/evaluations.md).
         return;
     }
 
@@ -1217,7 +1254,7 @@ void ReconstructorTask::runCancelledSlot()
 
     cancelled_ = true;
 
-    QMessageBox* msg_box = new QMessageBox;
+    QMessageBox* msg_box = new QMessageBox(QApplication::activeWindow());
 
     msg_box->setWindowTitle("Cancelling Reconstruction");
     msg_box->setText("Please wait ...");
@@ -1227,7 +1264,7 @@ void ReconstructorTask::runCancelledSlot()
 
     Async::waitAndProcessEventsFor(50);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     if (dbcontent_man.loadInProgress())
         dbcontent_man.quitLoading();
@@ -1254,9 +1291,10 @@ void ReconstructorTask::runCancelledSlot()
     disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
                this, &ReconstructorTask::loadingDoneSlot);
 
-    COMPASS::instance().viewManager().disableDataDistribution(false);
+    manager().compass().viewManager().disableDataDistribution(false);
+    manager().compass().dbContentManager().enableDataDistribution(true);
 
-    COMPASS::instance().logInfo("Reconstructor") << "cancelled by user";
+    manager().compass().logInfo("Reconstructor") << "canceled by user";
 
     currentReconstructor()->reset();
 
@@ -1271,11 +1309,9 @@ void ReconstructorTask::runCancelledSlot()
     msg_box->close();
     delete msg_box;
 
-    COMPASS::instance().taskManager().endTaskResultWriting(false);
+    manager().compass().taskManager().endTaskResultWriting(false);
 
     emit doneSignal();
-
-    loginf << "done";
 }
 
 bool ReconstructorTask::useDStype(const std::string& ds_type) const
@@ -1329,13 +1365,13 @@ std::set<unsigned int> ReconstructorTask::unusedDSIDs() const
 {
     std::set<unsigned int> unused_ds = disabledDataSources();
 
-    for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
+    for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
     {
-        if (unused_ds.count(ds_it->id()))
+        if (unused_ds.count(ds.id()))
             continue;
 
-        if (!useDStype(ds_it->dsType()) || !useDataSource(ds_it->id()))
-            unused_ds.insert(ds_it->id());
+        if (!useDStype(ds.dsType()) || !useDataSource(ds.id()))
+            unused_ds.insert(ds.id());
     }
 
     return unused_ds;
@@ -1347,15 +1383,15 @@ std::map<unsigned int, std::set<unsigned int>> ReconstructorTask::unusedDSIDLine
 
     std::map<unsigned int, std::set<unsigned int>> unused_lines;
 
-    for (auto& ds_it : COMPASS::instance().dataSourceManager().dbDataSources())
+    for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
     {
-        if (unused_ds.count(ds_it->id()))
+        if (unused_ds.count(ds.id()))
             continue;
 
         for (unsigned int line_id = 0; line_id < 4; ++line_id)
         {
-            if (!useDataSourceLine(ds_it->id(), line_id))
-                unused_lines[ds_it->id()].insert(line_id);
+            if (!useDataSourceLine(ds.id(), line_id))
+                unused_lines[ds.id()].insert(line_id);
         }
     }
 
@@ -1428,7 +1464,6 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointNoData(const
 
 std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsigned long utn, const std::string& name_prefix) const
 {
-    bool created;
     string name;
 
     if (name_prefix.size())
@@ -1436,14 +1471,9 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
     else
         name = "UTN " + std::to_string(utn);
 
-    auto vp = getDebugViewpoint(name, "UTN", &created);
+    auto vp = getDebugViewpoint(name, "UTN");
 
-    if (created)
-    {
-        ViewPointGenFilterUTN* filter_utn = new ViewPointGenFilterUTN(utn);
-
-        vp->filters().addFilter(std::unique_ptr<ViewPointGenFilterUTN>(filter_utn));
-    }
+    vp->filters().addFilter(std::unique_ptr<ViewPointGenFilterUTN>(new ViewPointGenFilterUTN(utn)));
 
     return vp;
 }
@@ -1459,7 +1489,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
 // {
 //     loginf;
 
-//     COMPASS::instance().viewManager().clearViewPoints();
+//     manager().compass().viewManager().clearViewPoints();
 
 //     std::vector <nlohmann::json> view_points;
 
@@ -1471,7 +1501,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
 //         view_points.emplace_back(j);
 //     }
 
-//     COMPASS::instance().viewManager().addViewPoints(view_points);
+//     manager().compass().viewManager().addViewPoints(view_points);
 
 //     debug_viewpoints_.clear();
 // }
@@ -1490,14 +1520,14 @@ void ReconstructorTask::checkSubConfigurables()
 {
     if (!simple_reconstructor_)
     {
-        generateSubConfigurable("SimpleReconstructor", "SimpleReconstructor0");
+        generateSubConfigurableFromConfig("SimpleReconstructor", "SimpleReconstructor0");
         traced_assert(simple_reconstructor_);
     }
 
 #if USE_EXPERIMENTAL_SOURCE == true
     if (!probimm_reconstructor_)
     {
-        generateSubConfigurable("ProbIMMReconstructor", "ProbIMMReconstructor0");
+        generateSubConfigurableFromConfig("ProbIMMReconstructor", "ProbIMMReconstructor0");
         traced_assert(probimm_reconstructor_);
     }
 #endif
@@ -1508,7 +1538,7 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
     loginf << "delete_all_calc_reftraj "
            << currentReconstructor()->settings().delete_all_calc_reftraj;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     loginf << "deleting";
 
@@ -1534,20 +1564,19 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
         QThread::msleep(1000);
     }
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ctx_man_del = manager().compass().dbContextManager();
 
     unsigned int ds_id = Number::dsIdFrom(currentReconstructor()->settings().ds_sac,
                                           currentReconstructor()->settings().ds_sic);
 
     // clear counts
-    if (ds_man.hasDBDataSource(ds_id))
+    if (ctx_man_del.hasDataSource(ds_id))
     {
-        dbContent::DBDataSource& ds = ds_man.dbDataSource(ds_id);
-
         if (currentReconstructor()->settings().delete_all_calc_reftraj)
-            ds.clearNumInserted("RefTraj");
+            ctx_man_del.clearInsertedCounts(ds_id, "RefTraj");
         else
-            ds.clearNumInserted("RefTraj", currentReconstructor()->settings().ds_line);
+            ctx_man_del.clearInsertedCounts(ds_id, "RefTraj",
+                {currentReconstructor()->settings().ds_line});
     }
 
     // emit done in run
@@ -1557,10 +1586,11 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
 
 void ReconstructorTask::showDialog()
 {
-    ReconstructorTaskDialog dlg(*this);
+    ReconstructorTaskDialog dlg(*this, QApplication::activeWindow());
     if (dlg.exec() == QDialog::Rejected)
         return;
 
     traced_assert(canRun());
     run();
 }
+

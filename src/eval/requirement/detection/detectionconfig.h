@@ -35,8 +35,8 @@ namespace EvaluationRequirement
 class DetectionConfig : public ProbabilityBaseConfig
 {
 public:
-    DetectionConfig(const std::string& class_id, const std::string& instance_id,
-                    Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    DetectionConfig(nlohmann::json& config,
+                    Group* parent);
     virtual ~DetectionConfig();
 
     std::shared_ptr<Base> createRequirement() override;

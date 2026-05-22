@@ -17,17 +17,11 @@
 
 #include "asterixdecodejob.h"
 #include "asteriximporttask.h"
-#include "json_tools.h"
 #include "logger.h"
-//#include "asterixfiledecoder.h"
-//#include "asterixnetworkdecoder.h"
-//#include "asterixpcapdecoder.h"
 #include "asteriximportsource.h"
 
 #include <QThread>
 
-//#include <chrono>
-//#include <thread>
 #include <memory>
 
 using namespace nlohmann;
@@ -136,84 +130,37 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
     if (num_errors_)
         logwrn << "num errors " << num_errors_;
 
-    unsigned int category{0};
-
-    auto count_lambda = [this, &category] (nlohmann::json& record) 
+    // flat format: top-level keys are category numbers, values are objects with array columns
+    for (auto it = data->begin(); it != data->end(); ++it)
     {
-        countRecord(category, record);
-    };
-
-    auto process_lambda = [this, line_id, &category] (nlohmann::json& record) 
-    {
-        record["line_id"] = line_id;
-        post_process_.postProcess(category, record);
-    };
-
-    if (settings_.activeFileFraming() == "")
-    {
-        traced_assert(data->contains("data_blocks"));
-        traced_assert(data->at("data_blocks").is_array());
-
-        std::vector<std::string> keys{"content", "records"};
-
-        for (json& data_block : data->at("data_blocks"))
+        unsigned int category = 0;
+        try
         {
-            if (!data_block.contains("category"))
-            {
-                logwrn << "data block without asterix category";
-                continue;
-            }
-
-            category = data_block.at("category");
-
-            traced_assert(data_block.contains("content"));
-            traced_assert(data_block.at("content").is_object());
-
-            if (category == 1)
-                checkCAT001SacSics(data_block);
-
-            logdbg << "applying JSON function without framing";
-            JSON::applyFunctionToValues(data_block, keys, keys.begin(), process_lambda, false);
-            JSON::applyFunctionToValues(data_block, keys, keys.begin(), count_lambda  , false);
+            category = std::stoul(it.key());
         }
-    }
-    else
-    {
-        traced_assert(data->contains("frames"));
-        traced_assert(data->at("frames").is_array());
-
-        std::vector<std::string> keys{"content", "records"};
-
-        for (json& frame : data->at("frames"))
+        catch (...)
         {
-            if (!frame.contains("content"))  // frame with errors
-                continue;
+            continue; // skip non-numeric keys
+        }
 
-            traced_assert(frame.at("content").is_object());
-
-            if (!frame.at("content").contains("data_blocks"))  // frame with errors
-                continue;
-
-            traced_assert(frame.at("content").at("data_blocks").is_array());
-
-            for (json& data_block : frame.at("content").at("data_blocks"))
+        // count records from the longest array in this category
+        size_t cat_records = 0;
+        if (it.value().is_object())
+        {
+            for (auto arr_it = it.value().begin(); arr_it != it.value().end(); ++arr_it)
             {
-                if (!data_block.contains("category"))  // data block with errors
-                {
-                    logwrn << "data block without asterix "
-                              "category";
-                    continue;
-                }
-
-                category = data_block.at("category");
-
-                if (category == 1)
-                    checkCAT001SacSics(data_block);
-
-                JSON::applyFunctionToValues(data_block, keys, keys.begin(), process_lambda, false);
-                JSON::applyFunctionToValues(data_block, keys, keys.begin(), count_lambda  , false);
+                if (arr_it.value().is_array() && arr_it.value().size() > cat_records)
+                    cat_records = arr_it.value().size();
             }
         }
+
+        if (cat_records == 0)
+            continue;
+
+        // post-process: adds category, ds_id, line_id arrays + category-specific corrections
+        post_process_.postProcessFlat(category, line_id, it.value(), cat_records);
+
+        category_counts_[category] += cat_records;
     }
 
     while (!obsolete_ && extracted_data_.size())  // block decoder until extracted records have been moved out
@@ -251,7 +198,6 @@ void ASTERIXDecodeJob::netJasterixCallback(std::unique_ptr<nlohmann::json> data,
         return;
     }
 
-    //loginf << "data '" << data->dump(2) << "'";
     loginf << "line_id " << line_id << " num_records " << num_records;
 
     num_frames_  = num_frames;
@@ -261,46 +207,41 @@ void ASTERIXDecodeJob::netJasterixCallback(std::unique_ptr<nlohmann::json> data,
     if (num_errors_)
         logwrn << "num errors " << num_errors_;
 
-    unsigned int category{0};
+    // flat format: top-level keys are category numbers
+    bool has_data = false;
 
-    auto count_lambda = [this, &category](nlohmann::json& record) 
+    for (auto it = data->begin(); it != data->end(); ++it)
     {
-        countRecord(category, record);
-    };
-
-    auto process_lambda = [this, line_id, &category](nlohmann::json& record) 
-    {
-        record["line_id"] = line_id;
-        post_process_.postProcess(category, record);
-    };
-
-    traced_assert(data->contains("data_blocks"));
-    traced_assert(data->at("data_blocks").is_array());
-
-    std::vector<std::string> keys{"content", "records"};
-
-    for (json& data_block : data->at("data_blocks"))
-    {
-        if (!data_block.contains("category"))
+        unsigned int category = 0;
+        try
         {
-            logwrn << "data block without asterix category";
+            category = std::stoul(it.key());
+        }
+        catch (...)
+        {
             continue;
         }
 
-        category = data_block.at("category");
+        size_t cat_records = 0;
+        if (it.value().is_object())
+        {
+            for (auto arr_it = it.value().begin(); arr_it != it.value().end(); ++arr_it)
+            {
+                if (arr_it.value().is_array() && arr_it.value().size() > cat_records)
+                    cat_records = arr_it.value().size();
+            }
+        }
 
-        traced_assert(data_block.contains("content"));
-        traced_assert(data_block.at("content").is_object());
+        if (cat_records == 0)
+            continue;
 
-        if (category == 1)
-            checkCAT001SacSics(data_block);
+        post_process_.postProcessFlat(category, line_id, it.value(), cat_records);
 
-        logdbg << "applying JSON function without framing";
-        JSON::applyFunctionToValues(data_block, keys, keys.begin(), process_lambda, false);
-        JSON::applyFunctionToValues(data_block, keys, keys.begin(), count_lambda  , false);
+        category_counts_[category] += cat_records;
+        has_data = true;
     }
 
-    if (data->at("data_blocks").size())
+    if (has_data)
     {
         boost::mutex::scoped_lock locker(extracted_data_mutex_);
         extracted_data_.emplace_back(std::move(data));
@@ -326,16 +267,6 @@ size_t ASTERIXDecodeJob::numRecords() const
 bool ASTERIXDecodeJob::error() const 
 { 
     return decoder_ && decoder_->error(); 
-}
-
-/**
-*/
-void ASTERIXDecodeJob::countRecord(unsigned int category, nlohmann::json& record)
-{
-    logdbg << "cat " << category << " record '" << record.dump(4)
-           << "'";
-
-    category_counts_[category] += 1;
 }
 
 /**
@@ -414,62 +345,4 @@ std::string ASTERIXDecodeJob::errorMessage() const
     return (decoder_ ? decoder_->errorMessage() : ""); 
 }
 
-/**
- * equivalent function in JSONParseJob
- */
-void ASTERIXDecodeJob::checkCAT001SacSics(nlohmann::json& data_block)
-{
-    if (!data_block.contains("content"))
-    {
-        logdbg << "no content in data block";
-        return;
-    }
 
-    nlohmann::json& content = data_block.at("content");
-
-    if (!content.contains("records"))
-    {
-        logdbg << "no records in content";
-        return;
-    }
-
-    nlohmann::json& records = content.at("records");
-
-    bool found_any_sac_sic = false;
-
-    unsigned int sac = 0;
-    unsigned int sic = 0;
-
-    // check if any SAC/SIC info can be found
-    for (nlohmann::json& record : records)
-    {
-        if (record.count("error") && record.at("error") == true)
-            return; // skip target reports marked with errors
-
-        if (!found_any_sac_sic)
-        {
-            if (record.contains("010"))  // found, set as transferable values
-            {
-                sac = record.at("010").at("SAC");
-                sic = record.at("010").at("SIC");
-                found_any_sac_sic = true;
-            }
-            else  // not found, can not set values
-                logwrn << "record without any SAC/SIC found";
-        }
-        else
-        {
-            if (record.contains("010"))  // found, check values
-            {
-                if (record.at("010").at("SAC") != sac || record.at("010").at("SIC") != sic)
-                    logwrn << "record with differing "
-                              "SAC/SICs found";
-            }
-            else  // not found, set values
-            {
-                record["010"]["SAC"] = sac;
-                record["010"]["SIC"] = sic;
-            }
-        }
-    }
-}

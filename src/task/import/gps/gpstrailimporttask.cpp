@@ -25,7 +25,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "buffer.h"
 #include "util/number.h"
 #include "util/timeconv.h"
@@ -79,11 +79,9 @@ GPSTrailImportTask::Settings::Settings()
 
 /**
 */
-GPSTrailImportTask::GPSTrailImportTask(const std::string& class_id, 
-                                       const std::string& instance_id,
-                                       TaskManager& task_manager)
-:   Task        (task_manager)
-,   Configurable(class_id, instance_id, &task_manager, "task_import_gps.json")
+GPSTrailImportTask::GPSTrailImportTask(nlohmann::json& config, TaskManager* parent)
+:   Task        (*parent)
+,   Configurable(config, parent)
 {
     tooltip_ = "Allows importing of GPS trails as NMEA into the opened database.";
 
@@ -113,14 +111,6 @@ GPSTrailImportTask::GPSTrailImportTask(const std::string& class_id,
 /**
 */
 GPSTrailImportTask::~GPSTrailImportTask() = default;
-
-/**
-*/
-void GPSTrailImportTask::generateSubConfigurable(const std::string& class_id,
-                                                 const std::string& instance_id)
-{
-    throw std::runtime_error("GPSTrailImportTask: generateSubConfigurable: unknown class_id " + class_id);
-}
 
 /**
 */
@@ -158,10 +148,10 @@ void GPSTrailImportTask::importFilename(const std::string& filename)
 */
 bool GPSTrailImportTask::checkPrerequisites()
 {
-    if (!COMPASS::instance().dbInterface().ready())  // must be connected
+    if (!manager().compass().dbInterface().ready())  // must be connected
         return false;
 
-    if (!COMPASS::instance().dbContentManager().existsDBContent("RefTraj"))
+    if (!manager().compass().dbContentManager().existsDBContent("RefTraj"))
         return false;
 
     return true;
@@ -627,61 +617,61 @@ void GPSTrailImportTask::run()
     traced_assert(gps_fixes_.size());
     traced_assert(!buffer_);
 
-    COMPASS::instance().logInfo("GPS Trail NMEA Import") << "started";
+    manager().compass().logInfo("GPS Trail NMEA Import") << "started";
 
     if (currentError().size())
-        COMPASS::instance().logWarn("GPS Trail NMEA Import") << "errors:\n" << currentError();
+        manager().compass().logWarn("GPS Trail NMEA Import") << "errors:\n" << currentError();
 
     if (currentText().size())
-        COMPASS::instance().logInfo("GPS Trail NMEA Import") << currentText();
+        manager().compass().logInfo("GPS Trail NMEA Import") << currentText();
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     string dbcontent_name = "RefTraj";
     traced_assert(dbcontent_man.existsDBContent(dbcontent_name));
 
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sac_id_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_sic_id_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vx_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_vy_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_x_stddev_));
-    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_y_stddev_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_sac_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_sic_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_));
+    traced_assert(dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_));
 
     loginf << "getting variables";
 
     using namespace dbContent;
 
-    Variable& sac_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sac_id_);
-    Variable& sic_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sic_id_);
-    Variable& ds_id_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_);
-    Variable& line_id_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_);
-    Variable& tod_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_);
-    Variable& ts_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_);
-    Variable& lat_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_);
-    Variable& long_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_);
-    Variable& m3a_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_);
-    Variable& ta_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_);
-    Variable& ti_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_);
-    Variable& tn_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_);
-    Variable& vx_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vx_);
-    Variable& vy_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vy_);
-    Variable& speed_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_);
-    Variable& track_angle_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_);
+    Variable& sac_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sac_id_);
+    Variable& sic_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sic_id_);
+    Variable& ds_id_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_);
+    Variable& line_id_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_);
+    Variable& tod_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_);
+    Variable& ts_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
+    Variable& lat_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_);
+    Variable& long_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_);
+    Variable& m3a_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_);
+    Variable& ta_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_);
+    Variable& ti_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_);
+    Variable& tn_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_);
+    Variable& vx_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_);
+    Variable& vy_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_);
+    Variable& speed_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_);
+    Variable& track_angle_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_);
 
-    Variable& xstddev_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_x_stddev_);
-    Variable& ystddev_var = dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_y_stddev_);
+    Variable& xstddev_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_);
+    Variable& ystddev_var = dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_);
 
     PropertyList properties;
     properties.addProperty(sac_var.name(), PropertyDataType::UCHAR);
@@ -738,7 +728,7 @@ void GPSTrailImportTask::run()
     // BufferWrapper wrap (buffer_);
     // wrap.init();
 
-    // NullableVector<double>& vx_vec = wrap.getNV<double> (DBContent::meta_var_vx_);
+    // NullableVector<double>& vx_vec = wrap.getNV<double> (dbcontent_vars::meta_var_vx_);
 
     unsigned int ds_id = Number::dsIdFrom(settings_.ds_sac, settings_.ds_sic);
 
@@ -749,20 +739,16 @@ void GPSTrailImportTask::run()
 
     // config data source
     {
-        DataSourceManager& src_man = COMPASS::instance().dataSourceManager();
+        auto& ctx_man = manager().compass().dbContextManager();
 
-        if (!src_man.hasConfigDataSource(ds_id))
+        if (!ctx_man.hasDataSource(ds_id))
         {
             loginf << "creating data source";
 
-            src_man.createConfigDataSource(ds_id);
-            traced_assert(src_man.hasConfigDataSource(ds_id));
+            ctx_man.createDataSource(settings_.ds_sac, settings_.ds_sic,
+                                     settings_.ds_name, "RefTraj");
+            traced_assert(ctx_man.hasDataSource(ds_id));
         }
-
-        dbContent::ConfigurationDataSource& src = src_man.configDataSource(ds_id);
-
-        src.name(settings_.ds_name);
-        src.dsType(dbcontent_name); // same as dstype
 
     }
 
@@ -938,16 +924,15 @@ void GPSTrailImportTask::insertDoneSlot()
 
     buffer_ = nullptr;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
             this, &GPSTrailImportTask::insertDoneSlot);
 
-    COMPASS::instance().dataSourceManager().saveDBDataSources();
-    emit COMPASS::instance().dataSourceManager().dataSourcesChangedSignal();
-    emit COMPASS::instance().dbContentManager().dbContentStatusChanged();
+    manager().compass().dbContextManager().saveCountsToDB();
+    emit manager().compass().dbContentManager().dbContentStatusChanged();
 
-    COMPASS::instance().logInfo("GPS Trail NMEA Import") << "done with " << gps_fixes_.size() << " GPS fixes";
+    manager().compass().logInfo("GPS Trail NMEA Import") << "done with " << gps_fixes_.size() << " GPS fixes";
 
     done_ = true;
 
@@ -1006,3 +991,4 @@ void GPSTrailImportTask::onConfigurationChanged(const std::vector<std::string>& 
 //{
 //    loginf;
 //}
+

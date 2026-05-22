@@ -34,9 +34,9 @@ namespace EvaluationRequirement
 {
 
 ExtraDataConfig::ExtraDataConfig(
-        const std::string& class_id, const std::string& instance_id,
-        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+        nlohmann::json& config,
+        Group* parent)
+    : ProbabilityBaseConfig(config, parent)
 {
     registerParameter("min_duration", &min_duration_, 60.0f);
     registerParameter("min_num_updates", &min_num_updates_, 10u);

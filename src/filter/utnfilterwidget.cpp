@@ -62,3 +62,4 @@ void UTNFilterWidget::valueEditedSlot(const QString& value)
 
     filter_.utns(value_str);
 }
+

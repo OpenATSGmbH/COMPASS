@@ -36,9 +36,10 @@
 #include <memory>
 
 
+class COMPASS;
+class DBContentManager;
 class TaskManager;
 
-class ASTERIXCategoryConfig;
 class ASTERIXStatusDialog;
 
 class QProgressDialog;
@@ -94,13 +95,12 @@ public slots:
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);
 
 public:
-    ASTERIXImportTask(const std::string& class_id, 
-                      const std::string& instance_id,
-                      TaskManager& task_manager);
+    ASTERIXImportTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ASTERIXImportTask();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id) override;
+    COMPASS& compass() const { return compass_; }
+
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void asterixFileFraming(const std::string& asterix_framing);
     void asterixDecoderConfig(const std::string& asterix_decoder_cfg);
@@ -124,11 +124,8 @@ public:
     bool decodeCategory(unsigned int category);
     void decodeCategory(unsigned int category, bool decode);
     std::string editionForCategory(unsigned int category);
-    void editionForCategory(unsigned int category, const std::string& edition);
     std::string refEditionForCategory(unsigned int category);
-    void refEditionForCategory(unsigned int category, const std::string& ref);
     std::string spfEditionForCategory(unsigned int category);
-    void spfEditionForCategory(unsigned int category, const std::string& spf);
 
     std::shared_ptr<ASTERIXJSONParsingSchema> schema() const;
 
@@ -151,15 +148,24 @@ protected:
 
     void insertData(); // inserts queued job buffers
     void checkAllDone();
+    void logRAMUsage(const std::string& context);
 
     bool maxLoadReached();
     void updateFileProgressDialog(bool force=false);
 
     void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
 
-    void refreshjASTERIX() const;
+    void initjASTERIX() const;        // create decoder, validate framings - no context needed
+    void configurejASTERIX() const;   // apply context category configs to decoder - needs context
+    void refreshjASTERIX() const;     // init + configure
 
     void sourceChanged();
+
+    void beginResultReport();
+    void buildResultReport(const boost::posix_time::ptime& end_time);
+
+    COMPASS&          compass_;
+    DBContentManager& dbcontent_man_;
 
     ASTERIXImportTaskSettings settings_;
     ASTERIXImportSource       source_;
@@ -168,10 +174,10 @@ protected:
     std::unique_ptr<QTimer>          data_received_timer_;
 
     mutable std::shared_ptr<jASTERIX::jASTERIX> jasterix_;
+    mutable std::string last_applied_asterix_config_; // signature of last config applied by configurejASTERIX, for logging
     ASTERIXPostProcess post_process_;
 
     //sub-configurables
-    std::map<unsigned int, ASTERIXCategoryConfig> category_configs_;
     std::shared_ptr<ASTERIXJSONParsingSchema>     schema_;
 
     std::unique_ptr<ASTERIXDecoderBase> decoder_;
@@ -209,4 +215,6 @@ protected:
 
     bool insert_slot_connected_ {false};
     bool all_done_{false};
+
+    float max_process_ram_gb_{0.0f};
 };

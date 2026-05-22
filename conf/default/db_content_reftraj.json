@@ -1,4 +1,6 @@
 {
+    "class_name": "DBContent",
+    "instance_name": "RefTraj",
     "parameters": {
         "contains_status_content": false,
         "contains_target_reports": true,
@@ -7,1061 +9,1199 @@
         "info": "",
         "name": "RefTraj"
     },
-    "sub_configs": {
-        "Variable": {
-            "Variable115": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "geometric_altitude_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Estimated accuracy (i.e. standard deviation) of the calculated geometric altitude of a target.",
-                    "dimension": "Height",
-                    "is_key": false,
-                    "name": "Geometric Altitude StdDev",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "GA StdDev",
-                    "unit": "Feet"
-                }
-            },
-            "Variable116": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "vx_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Estimated accuracy (i.e. standard deviation) of the calculated track velocity in Cartesian co-ordinates.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Vx StdDev",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable117": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "vy_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Estimated accuracy (i.e. standard deviation) of the calculated track velocity in Cartesian co-ordinates.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Vy StdDev",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable118": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "ax_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Estimated accuracy (i.e. standard deviation) of the calculated acceleration in Cartesian co-ordinates.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Ax StdDev",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable119": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "ay_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Estimated accuracy (i.e. standard deviation) of the calculated acceleration in Cartesian co-ordinates.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Ay StdDev",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable120": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "rate_of_climb_descent_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Estimated accuracy (i.e. standard deviation) of the calculated rate of Climb/Descent of an aircraft.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Rate Of Climb/Descent StdDev",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable121": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "barometric_altitude_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Estimated accuracy (i.e. standard deviation) of the calculated barometric altitude of the track.",
-                    "dimension": "Height",
-                    "is_key": false,
-                    "name": "Barometric Altitude StdDev",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": "Feet"
-                }
-            },
-            "Variable25": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "surface_target",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "0 Default value\n1 Surface target",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Surface Target",
-                    "representation_str": "STANDARD",
-                    "short_name": "SFC",
-                    "unit": ""
-                }
-            },
-            "Variable26": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "x",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated position in Cartesian co-ordinates with a resolution of\n0.5m",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "X",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable27": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "y",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated position in Cartesian co-ordinates with a resolution of\n0.5m",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Y",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable28": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "barometric_altitude_qnh_corrected",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "0 No QNH correction applied\n1 QNH correction applied",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Barometric Altitude QNH Corrected",
-                    "representation_str": "STANDARD",
-                    "short_name": "BA QNH C C",
-                    "unit": ""
-                }
-            },
-            "Variable29": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "vx",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated track velocity expressed in Cartesian co-ordinates\n\n(LSB) = 0.25 m/s\n\n-8192m/s <= Vx <= 8191.75m/s",
-                    "dimension": "Speed",
-                    "is_key": false,
-                    "name": "Vx",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Meter/Second"
-                }
-            },
-            "Variable30": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "vy",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated track velocity expressed in Cartesian co-ordinates\n\n(LSB) = 0.25 m/s\n\n-8192m/s <= Vx <= 8191.75m/s",
-                    "dimension": "Speed",
-                    "is_key": false,
-                    "name": "Vy",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Meter/Second"
-                }
-            },
-            "Variable32": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "ax",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated Acceleration of the target expressed in Cartesian co-\nordinates\n\n(LSB) = 0.25 m/s^2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Ax",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable33": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "ay",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated Acceleration of the target expressed in Cartesian co-\nordinates\n\n(LSB) = 0.25 m/s^2",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Ay",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "Variable35": {
-                "parameters": {
-                    "data_type_str": "STRING",
-                    "db_column_name": "aircraft_identification",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Target Identification",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Aircraft Identification",
-                    "representation_str": "STANDARD",
-                    "short_name": "ACID",
-                    "unit": ""
-                }
-            },
-            "Variable36": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "target_length",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "Target Length",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
-            },
-            "Variable37": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "target_orientation",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "The orientation gives the direction which the target nose is pointing to, relative to the Geographical North.",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Target Orientation",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Degree"
-                }
-            },
-            "Variable38": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "target_width",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "Target Width",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
-            },
-            "Variable71": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "barometric_vertical_rate",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Barometric Vertical Rate\n\nUnit:  feet/minute",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Barometric Vertical Rate",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "BVR",
-                    "unit": ""
-                }
-            },
-            "Variable72": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "geometric_vertical_rate",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "GVR.Geometric Vertical Rate\n\nUnit: feet/minute",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Geometric Vertical Rate",
-                    "representation_str": "STANDARD",
-                    "short_name": "GVR",
-                    "unit": ""
-                }
-            },
-            "Variable73": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "roll_angle",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Roll Angle\n\nRoll Angle\n-180 <= Roll Angle <= 180\n",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Roll Angle",
-                    "representation_str": "STANDARD",
-                    "short_name": "RAN",
-                    "unit": "Degree"
-                }
-            },
-            "VariableRefTrajContribADSBAge": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "contrib_adsb_age",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Time since last updated by contributing ADS-B",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Contributing ADS-B Age",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajContribMLATAge": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "contrib_mlat_age",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Time since last updated by contributing MLAT",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Contributing MLAT Age",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajContribOtherAge": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "contrib_other_age",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Time since last updated by contributing Other",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Contributing Other Age",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajContribRadarAge": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "contrib_radar_age",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Time since last updated by contributing Radar",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Contributing Radar Age",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajContribRefTrajAge": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "contrib_reftraj_age",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Time since last updated by contributing RefTraj",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Contributing RefTraj Age",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajContribSources": {
-                "parameters": {
-                    "data_type_str": "JSON",
-                    "db_column_name": "contrib_sources",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Contributing Sources",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Contributing Sources",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajContribTrackerAge": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "contrib_tracker_age",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Time since last updated by contributing Tracker",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Contributing Tracker Age",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajModeACUpdateAge": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "update_age_modeac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Time since last updated by Mode A/C",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Mode A/C Update Age",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajModeSUpdateAge": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "update_age_modes",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Time since last updated by Mode S",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Mode S Update Age",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajNumContribSources": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "contrib_sources_num",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Number of Contributing Sources",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Contributing Sources Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajPriUpdateAge": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "update_age_primary",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Time since last updated by primary source",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Primary Update Age",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajTimestamp0": {
-                "parameters": {
-                    "data_type_str": "TIMESTAMP",
-                    "db_column_name": "timestamp",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Epoch timestamp based on Time of Day",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Timestamp",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajUTN0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "utn",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Unique Target Number",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "UTN",
-                    "representation_str": "STANDARD",
-                    "short_name": "UTN",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajcalc_alt_geo_ft0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "geometric_altitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated Track Geometric Altitude\n\nVertical distance between the target and the projection of its position on the earth’s ellipsoid, as defined by WGS84",
-                    "dimension": "Height",
-                    "is_key": false,
-                    "name": "Geometric Altitude",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "GA",
-                    "unit": "Feet"
-                }
-            },
-            "VariableRefTrajcalc_vertical_rate_ftm0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "rate_of_climb_descent",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated rate of Climb/Descent of an aircraft",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Rate Of Climb/Descent",
-                    "representation_str": "STANDARD",
-                    "short_name": "RoCD",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajds_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "ds_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Data Source Identifier",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "DS ID",
-                    "representation_str": "DATA_SRC_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajgroundspeed_kt0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "ground_speed",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Track ground speed, derived from Vx, Vy",
-                    "dimension": "Speed",
-                    "is_key": false,
-                    "name": "Ground Speed",
-                    "representation_str": "FLOAT_PREC1",
-                    "short_name": "GSpd",
-                    "unit": "Knots"
-                }
-            },
-            "VariableRefTrajline_id0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "line_id",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Communication line ID",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Line ID",
-                    "representation_str": "LINE_NAME",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajlm_alt_baro_ft0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "mode_c_code",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Mode C Code",
-                    "dimension": "Height",
-                    "is_key": false,
-                    "name": "Mode C Code",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "MC",
-                    "unit": "Feet"
-                }
-            },
-            "VariableRefTrajlm_alt_baro_g0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_c_garbled",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "0 Default\n1 Garbled code\n",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode C Garbled",
-                    "representation_str": "STANDARD",
-                    "short_name": "MC G",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajlm_alt_baro_v0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_c_valid",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "0 Code not validated\n1 Code validated\n\n\n",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode C Valid",
-                    "representation_str": "STANDARD",
-                    "short_name": "MC V",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajmode3a_g0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_3a_garbled",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Mode-3/A Garbled\n\n0 Default\n1 Garbled Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Garbled",
-                    "representation_str": "STANDARD",
-                    "short_name": "MA G",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajmode3a_v0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "mode_3a_valid",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "0 Code not validated\n1 Code validated",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Valid",
-                    "representation_str": "STANDARD",
-                    "short_name": "MA V",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajmof_long0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "mom_longitudinal_acc",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Mode of Movement\n\nLongitudinal Acceleration :\n0 Constant Groundspeed\n1 Increasing Groundspeed\n2 Decreasing Groundspeed\n3 Undetermined",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MOM Longitudinal Acc",
-                    "representation_str": "STANDARD",
-                    "short_name": "MON LONG",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajmof_trans0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "mom_transversal_acc",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Mode of Movement\n\nTransversal Acceleration:\n0 Constant Course\n1 Right Turn\n2 Left Turn\n3 Undetermined",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MOM Transversal Acc",
-                    "representation_str": "STANDARD",
-                    "short_name": "MOM TRANS",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajmof_vert0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "mom_vertical_rate",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Mode of Movement\n\nVertical Rate :\n0 Level\n1 Climb\n2 Descent\n3 Undetermined",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "MOM Vertical Rate",
-                    "representation_str": "CLIMB_DESCENT",
-                    "short_name": "MOM VERT",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajpos_lat_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "latitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated Position in WGS-84 Co-ordinates with a resolution of\n180/2^25 degrees",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Latitude",
-                    "representation_str": "STANDARD",
-                    "short_name": "Lat",
-                    "unit": "Degree"
-                }
-            },
-            "VariableRefTrajpos_long_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "longitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated Position in WGS-84 Co-ordinates with a resolution of\n180/2^25 degrees",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Longitude",
-                    "representation_str": "STANDARD",
-                    "short_name": "Lon",
-                    "unit": "Degree"
-                }
-            },
-            "VariableRefTrajpos_std_dev_lat_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "latitude_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Estimated accuracy (i.e. standard deviation) of the calculated position of a target expressed in WGS-84.\n ",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Latitude StdDev",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Degree"
-                }
-            },
-            "VariableRefTrajpos_std_dev_long_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "longitude_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Estimated accuracy (i.e. standard deviation) of the calculated position of a target expressed in WGS-84.",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Longitude StdDev",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": "Degree"
-                }
-            },
-            "VariableRefTrajpos_std_dev_x_m0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "x_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Standard deviation of x component in meters",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "X StdDev",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
-            },
-            "VariableRefTrajpos_std_dev_xy_corr_coeff0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "x_y_covariance",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "XY Covariance Component\n\n1. XY covariance component = sign {Cov(X,Y)} * sqrt {abs [Cov (X,Y)]}\n2.",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "X/Y Covariance",
-                    "representation_str": "FLOAT_PREC4",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajpos_std_dev_y_m0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "y_stddev",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Standard deviation of y component in meters",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "Y StdDev",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
-            },
-            "VariableRefTrajrec_num0": {
-                "parameters": {
-                    "data_type_str": "ULONGINT",
-                    "db_column_name": "record_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Unique record id starting with 0 on every new recording",
-                    "dimension": "",
-                    "is_key": true,
-                    "name": "Record Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajsac0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sac",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SAC\n\nSystem Area Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SAC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajsic0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "sic",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 010.SIC\n\nSystem Identification Code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SIC",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajspi0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "spi",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "0 default value\n1 SPI present in the last report received from a sensor capable of decoding this data",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "SPI",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajtarget_addr0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "aircraft_address",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "24 bits Target Address (ADD)",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Aircraft Address",
-                    "representation_str": "DEC_TO_HEX",
-                    "short_name": "ACAD",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajtod0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "time_of_day",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Absolute time stamping of the information provided in the track\nmessage, in the form of elapsed time since last midnight, expressed as UTC.",
-                    "dimension": "Time",
-                    "is_key": false,
-                    "name": "Time of Day",
-                    "representation_str": "SECONDS_TO_TIME",
-                    "short_name": "ToD",
-                    "unit": "Second"
-                }
-            },
-            "VariableRefTrajtrack_angle_deg0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "track_angle",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Track angle, derived from Vx, Vy",
-                    "dimension": "Angle",
-                    "is_key": false,
-                    "name": "Track Angle",
-                    "representation_str": "FLOAT_PREC1",
-                    "short_name": "TrAng",
-                    "unit": "Degree"
-                }
-            },
-            "VariableRefTrajtrack_coasted0": {
-                "parameters": {
-                    "data_type_str": "UCHAR",
-                    "db_column_name": "coasting",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "0 Default value\n1 Age of the last received track update is higher than system dependent threshold (coasting)",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Coasting",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajtrack_confirmed0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "confirmed",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "0 Tentative track\n1 Confirmed track\n",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Confirmed",
-                    "representation_str": "STANDARD",
-                    "short_name": "",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajtrack_created0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track_begin",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "0 default value\n1 first message transmitted to the user for the track",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Begin",
-                    "representation_str": "STANDARD",
-                    "short_name": "TSB",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajtrack_end0": {
-                "parameters": {
-                    "data_type_str": "BOOL",
-                    "db_column_name": "track_end",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 080.TSE\n\n0 default value\n1 last message transmitted to the user for the track",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track End",
-                    "representation_str": "STANDARD",
-                    "short_name": "TSE",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajtrack_num0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "track_number",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "From 040.Track Number\n\nIdentification of a track",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Track Number",
-                    "representation_str": "STANDARD",
-                    "short_name": "TN",
-                    "unit": ""
-                }
-            },
-            "VariableRefTrajtracked_alt_baro_ft0": {
-                "parameters": {
-                    "data_type_str": "FLOAT",
-                    "db_column_name": "barometric_altitude",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Calculated Track Barometric Altitude\n\nCalculated Barometric Altitude of the track",
-                    "dimension": "Height",
-                    "is_key": false,
-                    "name": "Barometric Altitude",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "BA",
-                    "unit": "Feet"
-                }
-            },
-            "VariableRefTrajtracked_mode3a_code0": {
-                "parameters": {
-                    "data_type_str": "UINT",
-                    "db_column_name": "mode_3a_code",
-                    "db_expression": "",
-                    "db_expression_variables": {},
-                    "description": "Mode-3/A code",
-                    "dimension": "",
-                    "is_key": false,
-                    "name": "Mode 3/A Code",
-                    "representation_str": "DEC_TO_OCTAL",
-                    "short_name": "MA",
-                    "unit": ""
-                }
-            },
-            "Variablepos_max_std_dev_m0": {
-                "parameters": {
-                    "data_type_str": "DOUBLE",
-                    "db_column_name": "xy_std_dev_max",
-                    "db_expression": "greatest(x_stddev,y_stddev)",
-                    "db_expression_variables": [
-                        "X StdDev",
-                        "Y StdDev"
-                    ],
-                    "description": "Derived maximum standard deviation based on X StdDev,Y StdDev in meters",
-                    "dimension": "Length",
-                    "is_key": false,
-                    "name": "X/Y StdDev Max",
-                    "representation_str": "FLOAT_PREC2",
-                    "short_name": "",
-                    "unit": "Meter"
-                }
+    "sub_configs": [
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable115",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "geometric_altitude_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated geometric altitude of a target.",
+                "dimension": "Height",
+                "is_key": false,
+                "name": "Geometric Altitude StdDev",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "GA StdDev",
+                "unit": "Feet"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable116",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "vx_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated track velocity in Cartesian co-ordinates.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Vx StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable117",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "vy_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated track velocity in Cartesian co-ordinates.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Vy StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable118",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "ax_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated acceleration in Cartesian co-ordinates.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ax StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable119",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "ay_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated acceleration in Cartesian co-ordinates.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ay StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable120",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "rate_of_climb_descent_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated rate of Climb/Descent of an aircraft.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Rate Of Climb/Descent StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable121",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "barometric_altitude_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated barometric altitude of the track.",
+                "dimension": "Height",
+                "is_key": false,
+                "name": "Barometric Altitude StdDev",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "unit": "Feet"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable25",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "surface_target",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default value\n1 Surface target",
+                "dimension": "",
+                "is_key": false,
+                "name": "Surface Target",
+                "representation_str": "STANDARD",
+                "short_name": "SFC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable26",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "x",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated position in Cartesian co-ordinates with a resolution of\n0.5m",
+                "dimension": "",
+                "is_key": false,
+                "name": "X",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable27",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "y",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated position in Cartesian co-ordinates with a resolution of\n0.5m",
+                "dimension": "",
+                "is_key": false,
+                "name": "Y",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable28",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "barometric_altitude_qnh_corrected",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No QNH correction applied\n1 QNH correction applied",
+                "dimension": "",
+                "is_key": false,
+                "name": "Barometric Altitude QNH Corrected",
+                "representation_str": "STANDARD",
+                "short_name": "BA QNH C C",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable29",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "vx",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated track velocity expressed in Cartesian co-ordinates\n\n(LSB) = 0.25 m/s\n\n-8192m/s <= Vx <= 8191.75m/s",
+                "dimension": "Speed",
+                "is_key": false,
+                "name": "Vx",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Meter/Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable30",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "vy",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated track velocity expressed in Cartesian co-ordinates\n\n(LSB) = 0.25 m/s\n\n-8192m/s <= Vx <= 8191.75m/s",
+                "dimension": "Speed",
+                "is_key": false,
+                "name": "Vy",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Meter/Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable32",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "ax",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Acceleration of the target expressed in Cartesian co-\nordinates\n\n(LSB) = 0.25 m/s^2",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ax",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable33",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "ay",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Acceleration of the target expressed in Cartesian co-\nordinates\n\n(LSB) = 0.25 m/s^2",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ay",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable35",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "aircraft_identification",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Target Identification",
+                "dimension": "",
+                "is_key": false,
+                "name": "Aircraft Identification",
+                "representation_str": "STANDARD",
+                "short_name": "ACID",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable36",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "target_length",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "Target Length",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Meter"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable37",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "target_orientation",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "The orientation gives the direction which the target nose is pointing to, relative to the Geographical North.",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Target Orientation",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable38",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "target_width",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "Target Width",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Meter"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable71",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "barometric_vertical_rate",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Barometric Vertical Rate\n\nUnit:  feet/minute",
+                "dimension": "",
+                "is_key": false,
+                "name": "Barometric Vertical Rate",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "BVR",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable72",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "geometric_vertical_rate",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "GVR.Geometric Vertical Rate\n\nUnit: feet/minute",
+                "dimension": "",
+                "is_key": false,
+                "name": "Geometric Vertical Rate",
+                "representation_str": "STANDARD",
+                "short_name": "GVR",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable73",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "roll_angle",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Roll Angle\n\nRoll Angle\n-180 <= Roll Angle <= 180\n",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Roll Angle",
+                "representation_str": "STANDARD",
+                "short_name": "RAN",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajContribADSBAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "contrib_adsb_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last updated by contributing ADS-B",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Contributing ADS-B Age",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajContribMLATAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "contrib_mlat_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last updated by contributing MLAT",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Contributing MLAT Age",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajContribOtherAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "contrib_other_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last updated by contributing Other",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Contributing Other Age",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajContribRadarAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "contrib_radar_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last updated by contributing Radar",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Contributing Radar Age",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajContribRefTrajAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "contrib_reftraj_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last updated by contributing RefTraj",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Contributing RefTraj Age",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajContribSources",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "contrib_sources",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Contributing Sources",
+                "dimension": "",
+                "is_key": false,
+                "name": "Contributing Sources",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajContribTrackerAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "contrib_tracker_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last updated by contributing Tracker",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Contributing Tracker Age",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajModeACUpdateAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "update_age_modeac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last updated by Mode A/C",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode A/C Update Age",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajModeSUpdateAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "update_age_modes",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last updated by Mode S",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode S Update Age",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajNumContribSources",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "contrib_sources_num",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Number of Contributing Sources",
+                "dimension": "",
+                "is_key": false,
+                "name": "Contributing Sources Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajPriUpdateAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "update_age_primary",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last updated by primary source",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Primary Update Age",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajTimestamp0",
+            "parameters": {
+                "data_type_str": "TIMESTAMP",
+                "db_column_name": "timestamp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Epoch timestamp based on Time of Day",
+                "dimension": "",
+                "is_key": false,
+                "name": "Timestamp",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajUTN0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "utn",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique Target Number",
+                "dimension": "",
+                "is_key": false,
+                "name": "UTN",
+                "representation_str": "STANDARD",
+                "short_name": "UTN",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajcalc_alt_geo_ft0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "geometric_altitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Track Geometric Altitude\n\nVertical distance between the target and the projection of its position on the earth’s ellipsoid, as defined by WGS84",
+                "dimension": "Height",
+                "is_key": false,
+                "name": "Geometric Altitude",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "GA",
+                "unit": "Feet"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajcalc_vertical_rate_ftm0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "rate_of_climb_descent",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated rate of Climb/Descent of an aircraft",
+                "dimension": "",
+                "is_key": false,
+                "name": "Rate Of Climb/Descent",
+                "representation_str": "STANDARD",
+                "short_name": "RoCD",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajds_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "ds_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Data Source Identifier",
+                "dimension": "",
+                "is_key": false,
+                "name": "DS ID",
+                "representation_str": "DATA_SRC_NAME",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajgroundspeed_kt0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "ground_speed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Track ground speed, derived from Vx, Vy",
+                "dimension": "Speed",
+                "is_key": false,
+                "name": "Ground Speed",
+                "representation_str": "FLOAT_PREC1",
+                "short_name": "GSpd",
+                "unit": "Knots"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajline_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "line_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Communication line ID",
+                "dimension": "",
+                "is_key": false,
+                "name": "Line ID",
+                "representation_str": "LINE_NAME",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajlm_alt_baro_ft0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_c_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode C Code",
+                "dimension": "Height",
+                "is_key": false,
+                "name": "Mode C Code",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "MC",
+                "unit": "Feet"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajlm_alt_baro_g0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code\n",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "MC G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajlm_alt_baro_v0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code not validated\n1 Code validated\n\n\n",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Valid",
+                "representation_str": "STANDARD",
+                "short_name": "MC V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajmode3a_g0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_3a_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode-3/A Garbled\n\n0 Default\n1 Garbled Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "MA G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajmode3a_v0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_3a_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code not validated\n1 Code validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Valid",
+                "representation_str": "STANDARD",
+                "short_name": "MA V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajmof_long0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "mom_longitudinal_acc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode of Movement\n\nLongitudinal Acceleration :\n0 Constant Groundspeed\n1 Increasing Groundspeed\n2 Decreasing Groundspeed\n3 Undetermined",
+                "dimension": "",
+                "is_key": false,
+                "name": "MOM Longitudinal Acc",
+                "representation_str": "STANDARD",
+                "short_name": "MON LONG",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajmof_trans0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "mom_transversal_acc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode of Movement\n\nTransversal Acceleration:\n0 Constant Course\n1 Right Turn\n2 Left Turn\n3 Undetermined",
+                "dimension": "",
+                "is_key": false,
+                "name": "MOM Transversal Acc",
+                "representation_str": "STANDARD",
+                "short_name": "MOM TRANS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajmof_vert0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "mom_vertical_rate",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode of Movement\n\nVertical Rate :\n0 Level\n1 Climb\n2 Descent\n3 Undetermined",
+                "dimension": "",
+                "is_key": false,
+                "name": "MOM Vertical Rate",
+                "representation_str": "CLIMB_DESCENT",
+                "short_name": "MOM VERT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajpos_lat_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "latitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Position in WGS-84 Co-ordinates with a resolution of\n180/2^25 degrees",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Latitude",
+                "representation_str": "STANDARD",
+                "short_name": "Lat",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajpos_long_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "longitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Position in WGS-84 Co-ordinates with a resolution of\n180/2^25 degrees",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Longitude",
+                "representation_str": "STANDARD",
+                "short_name": "Lon",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajpos_std_dev_lat_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "latitude_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated position of a target expressed in WGS-84.\n ",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Latitude StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajpos_std_dev_long_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "longitude_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Estimated accuracy (i.e. standard deviation) of the calculated position of a target expressed in WGS-84.",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Longitude StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajpos_std_dev_x_m0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "x_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Standard deviation of x component in meters",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "X StdDev",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "unit": "Meter"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajpos_std_dev_xy_corr_coeff0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "x_y_covariance",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "XY Covariance Component\n\n1. XY covariance component = sign {Cov(X,Y)} * sqrt {abs [Cov (X,Y)]}\n2.",
+                "dimension": "",
+                "is_key": false,
+                "name": "X/Y Covariance",
+                "representation_str": "FLOAT_PREC4",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajpos_std_dev_y_m0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "y_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Standard deviation of y component in meters",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "Y StdDev",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "unit": "Meter"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajrec_num0",
+            "parameters": {
+                "data_type_str": "ULONGINT",
+                "db_column_name": "record_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique record id starting with 0 on every new recording",
+                "dimension": "",
+                "is_key": true,
+                "name": "Record Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajsac0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 010.SAC\n\nSystem Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajsic0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 010.SIC\n\nSystem Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajspi0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "spi",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 default value\n1 SPI present in the last report received from a sensor capable of decoding this data",
+                "dimension": "",
+                "is_key": false,
+                "name": "SPI",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajtarget_addr0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "aircraft_address",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "24 bits Target Address (ADD)",
+                "dimension": "",
+                "is_key": false,
+                "name": "Aircraft Address",
+                "representation_str": "DEC_TO_HEX",
+                "short_name": "ACAD",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajtod0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_of_day",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Absolute time stamping of the information provided in the track\nmessage, in the form of elapsed time since last midnight, expressed as UTC.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time of Day",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "ToD",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajtrack_angle_deg0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "track_angle",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Track angle, derived from Vx, Vy",
+                "dimension": "Angle",
+                "is_key": false,
+                "name": "Track Angle",
+                "representation_str": "FLOAT_PREC1",
+                "short_name": "TrAng",
+                "unit": "Degree"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajtrack_coasted0",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "coasting",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default value\n1 Age of the last received track update is higher than system dependent threshold (coasting)",
+                "dimension": "",
+                "is_key": false,
+                "name": "Coasting",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajtrack_confirmed0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "confirmed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Tentative track\n1 Confirmed track\n",
+                "dimension": "",
+                "is_key": false,
+                "name": "Confirmed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajtrack_created0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track_begin",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 default value\n1 first message transmitted to the user for the track",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Begin",
+                "representation_str": "STANDARD",
+                "short_name": "TSB",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajtrack_end0",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "track_end",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 080.TSE\n\n0 default value\n1 last message transmitted to the user for the track",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track End",
+                "representation_str": "STANDARD",
+                "short_name": "TSE",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajtrack_num0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "track_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "From 040.Track Number\n\nIdentification of a track",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Number",
+                "representation_str": "STANDARD",
+                "short_name": "TN",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajtracked_alt_baro_ft0",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "barometric_altitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Track Barometric Altitude\n\nCalculated Barometric Altitude of the track",
+                "dimension": "Height",
+                "is_key": false,
+                "name": "Barometric Altitude",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "BA",
+                "unit": "Feet"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajtracked_mode3a_code0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_3a_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode-3/A code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Code",
+                "representation_str": "DEC_TO_OCTAL",
+                "short_name": "MA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variablepos_max_std_dev_m0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "xy_std_dev_max",
+                "db_expression": "greatest(x_stddev,y_stddev)",
+                "db_expression_variables": [
+                    "X StdDev",
+                    "Y StdDev"
+                ],
+                "description": "Derived maximum standard deviation based on X StdDev,Y StdDev in meters",
+                "dimension": "Length",
+                "is_key": false,
+                "name": "X/Y StdDev Max",
+                "representation_str": "FLOAT_PREC2",
+                "short_name": "",
+                "unit": "Meter"
             }
         }
-    }
+    ]
 }

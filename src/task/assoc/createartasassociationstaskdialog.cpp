@@ -25,8 +25,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-CreateARTASAssociationsTaskDialog::CreateARTASAssociationsTaskDialog(CreateARTASAssociationsTask& task)
-: QDialog(), task_(task)
+CreateARTASAssociationsTaskDialog::CreateARTASAssociationsTaskDialog(CreateARTASAssociationsTask& task, QWidget* parent)
+: QDialog(parent), task_(task)
 {
     setWindowTitle("Calculate ARTAS Target Report Usage");
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
@@ -71,6 +71,8 @@ CreateARTASAssociationsTaskDialog::CreateARTASAssociationsTaskDialog(CreateARTAS
         tt = "Chosen data source invalid or empty";
     else if (err == CreateARTASAssociationsTask::Error::NoDataForLineID)
         tt = "Chosen line empty";
+    else if (err == CreateARTASAssociationsTask::Error::NoHashData)
+        tt = "ARTAS hash variable has no data in the database";
 
     run_button->setDefault(true);
 
@@ -78,4 +80,5 @@ CreateARTASAssociationsTaskDialog::CreateARTASAssociationsTaskDialog(CreateARTAS
     run_button->setToolTip(tt);
 
 }
+
 

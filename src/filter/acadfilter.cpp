@@ -16,11 +16,10 @@
  */
 
 #include "acadfilter.h"
-#include "compass.h"
 #include "acadfilterwidget.h"
+#include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/metavariable.h"
+#include "buffer/buffer.h"
 #include "logger.h"
 #include "stringconv.h"
 
@@ -29,9 +28,8 @@ using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
-ACADFilter::ACADFilter(const std::string& class_id, const std::string& instance_id,
-                       Configurable* parent)
-    : DBFilter(class_id, instance_id, parent, false)
+ACADFilter::ACADFilter(nlohmann::json& config, FilterManager* parent, IDBVariableResolver& var_resolver)
+    : DBFilter(config, false, parent, var_resolver)
 {
     registerParameter("values_str", &values_str_, std::string());
     updateValuesFromStr(values_str_);
@@ -45,22 +43,21 @@ ACADFilter::~ACADFilter() {}
 
 bool ACADFilter::filters(const std::string& dbcont_name)
 {
-    return COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_acad_.name()).existsIn(dbcont_name);
+    return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_acad_);
 }
 
 std::string ACADFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_acad_.name()).existsIn(dbcontent_name))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
         return "";
 
     stringstream ss;
 
     if (active_ && (values_.size() || null_wanted_))
     {
-        dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
-                    DBContent::meta_var_acad_.name()).getFor(dbcontent_name);
+        string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_acad_);
 
         if (!first)
             ss << " AND";
@@ -72,7 +69,7 @@ std::string ACADFilter::getConditionString(const std::string& dbcontent_name, db
 
         if (values_.size())
         {
-            ss << var.dbColumnName() << " IN (" << String::compress(values_, ',') << ")";
+            ss << col_name << " IN (" << String::compress(values_, ',') << ")";
         }
 
         if (null_wanted_)
@@ -80,7 +77,7 @@ std::string ACADFilter::getConditionString(const std::string& dbcontent_name, db
             if (values_.size())
                 ss << " OR";
 
-            ss << " " << var.dbColumnName() << " IS NULL)";
+            ss << " " << col_name << " IS NULL)";
         }
 
         first = false;
@@ -91,17 +88,6 @@ std::string ACADFilter::getConditionString(const std::string& dbcontent_name, db
     return ss.str();
 }
 
-void ACADFilter::generateSubConfigurable(const std::string& class_id, const std::string& instance_id)
-{
-    logdbg << "class_id " << class_id;
-
-    throw std::runtime_error("ACADFilter: generateSubConfigurable: unknown class_id " + class_id);
-}
-
-void ACADFilter::checkSubConfigurables()
-{
-    logdbg;
-}
 
 DBFilterWidget* ACADFilter::createWidget()
 {
@@ -138,8 +124,8 @@ void ACADFilter::loadViewPointConditions (const nlohmann::json& filters)
 
     updateValuesFromStr(values_str_);
 
-    if (widget())
-        widget()->update();
+    if (widget_)
+        widget_->update();
 }
 
 std::string ACADFilter::valuesString() const
@@ -164,15 +150,14 @@ std::vector<unsigned int> ACADFilter::filterBuffer(const std::string& dbcontent_
 {
     std::vector<unsigned int> to_be_removed;
 
-    if (!COMPASS::instance().dbContentManager().metaVariable(DBContent::meta_var_acad_.name()).existsIn(dbcontent_name))
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
         return to_be_removed;
 
-    dbContent::Variable& var = COMPASS::instance().dbContentManager().metaVariable(
-                DBContent::meta_var_acad_.name()).getFor(dbcontent_name);
+    string var_name = variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_acad_);
 
-    traced_assert(buffer->has<unsigned int> (var.name()));
+    traced_assert(buffer->has<unsigned int> (var_name));
 
-    NullableVector<unsigned int>& data_vec = buffer->get<unsigned int> (var.name());
+    NullableVector<unsigned int>& data_vec = buffer->get<unsigned int> (var_name);
 
     for (unsigned int cnt=0; cnt < buffer->size(); ++cnt)
     {

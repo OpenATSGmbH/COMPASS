@@ -242,10 +242,14 @@ public:
     typedef std::map<std::string, std::shared_ptr<Buffer>>                Buffers;
     typedef std::map<unsigned int, std::map<unsigned long, unsigned int>> AssocMap;
 
-    ReconstructorBase(const std::string& class_id, 
-                      const std::string& instance_id,
-                      ReconstructorTask& task, 
-                      std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator);
+    // ReconstructorBase(const std::string& class_name,
+    //                   const std::string& instance_name,
+    //                   ReconstructorTask& task,
+    //                   std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator);
+    ReconstructorBase(nlohmann::json& config,
+                      ReconstructorTask& task,
+                      std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator,
+                      Configurable* parent = nullptr);
     virtual ~ReconstructorBase();
 
     const boost::posix_time::ptime& timestampMin() const { return timestamp_min_; }
@@ -318,6 +322,12 @@ public:
     // ds_id -> dbcont id -> (assoc, not assoc cnt)
 
     virtual void createAdditionalAnnotations() {}
+
+    /// Main-thread hook called once at the end of a reconstruction run,
+    /// after all slices have been processed and written. Used for
+    /// persisting derived artifacts (e.g. estimated radar biases) that
+    /// may involve UI interaction.
+    virtual void finalizePersistence() {}
 
     virtual bool doFurtherSliceProcessing() { return false; }     // called for repeat checking
     virtual bool isLastRunInSlice() { return true; }      // called to check if another repeat run is planned

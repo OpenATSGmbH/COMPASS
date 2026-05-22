@@ -1,8 +1,8 @@
-include_directories (
+target_include_directories(compass_eval PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_eval
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/dataconfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/dataconfigwidget.h"

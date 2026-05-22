@@ -1,4 +1,6 @@
 {
+    "class_name": "CreateARTASAssociationsTask",
+    "instance_name": "CreateARTASAssociationsTask0",
     "parameters": {
         "association_dubious_close_time_future": 1.0,
         "association_dubious_close_time_past": 8.0,
@@ -6,8 +8,8 @@
         "association_time_past": 20.0,
         "associations_dubious_distant_time": 12.0,
         "beginning_time": 30.0,
-        "current_data_source_name": "ARTAS",
         "current_data_source_line_id": 0,
+        "current_data_source_name": "ARTAS",
         "dubious_time": 30.0,
         "end_track_time": 300.0,
         "future_time": 2.0,

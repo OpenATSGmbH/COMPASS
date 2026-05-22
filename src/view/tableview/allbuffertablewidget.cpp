@@ -18,43 +18,18 @@
 #include "allbuffertablewidget.h"
 #include "allbuffertablemodel.h"
 #include "buffer.h"
-#include "tableviewdatasource.h"
 #include "logger.h"
-#include "compass.h"
 
-#include <QApplication>
-#include <QClipboard>
-#include <QFileDialog>
-#include <QKeyEvent>
 #include <QMessageBox>
 #include <QTableView>
-#include <QVBoxLayout>
 #include <QTimer>
-
-#include "boost/date_time/posix_time/posix_time.hpp"
-
 
 AllBufferTableWidget::AllBufferTableWidget(TableView& view, TableViewDataSource& data_source,
                                            QWidget* parent, Qt::WindowFlags f)
-    : QWidget(parent, f), view_(view), data_source_(data_source)
+    : BaseBufferTableWidget(view, data_source, parent, f)
 {
-    //setAutoFillBackground(true);
-
-    QVBoxLayout* layout = new QVBoxLayout();
-
-    table_ = new QTableView(this);
-    table_->setSelectionBehavior(QAbstractItemView::SelectItems);
-    table_->setSelectionMode(QAbstractItemView::ContiguousSelection);
-    model_ = new AllBufferTableModel(view_, this, data_source_);
-    table_->setModel(model_);
-
-    connect(model_, &AllBufferTableModel::exportDoneSignal,
-            this, &AllBufferTableWidget::exportDoneSlot);
-
-    layout->addWidget(table_);
-    table_->show();
-
-    setLayout(layout);
+    all_buffer_model_ = new AllBufferTableModel(view_, this, data_source_);
+    initModel(all_buffer_model_);
 }
 
 AllBufferTableWidget::~AllBufferTableWidget() {}
@@ -64,86 +39,12 @@ int AllBufferTableWidget::rowCount() const
     return table_->model()->rowCount();
 }
 
-void AllBufferTableWidget::clear()
-{
-    traced_assert(model_);
-
-    model_->clearData();
-}
-
 void AllBufferTableWidget::show(std::map<std::string, std::shared_ptr<Buffer>> buffers)
 {
     traced_assert(table_);
-    traced_assert(model_);
+    traced_assert(all_buffer_model_);
 
-    model_->setData(buffers);
-    table_->resizeColumnsToContents();
-}
-
-void AllBufferTableWidget::exportSlot()
-{
-    loginf;
-
-    QFileDialog dialog(nullptr);
-    dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(COMPASS::instance().lastUsedPath().c_str());
-    dialog.setNameFilter("CSV Files (*.csv)");
-    dialog.setDefaultSuffix("csv");
-    dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);
-
-    QStringList file_names;
-    if (dialog.exec())
-        file_names = dialog.selectedFiles();
-
-    QString filename;
-
-    if (file_names.size() == 1)
-        filename = file_names.at(0);
-
-    if (filename.size())
-    {
-        if (!filename.endsWith(".csv"))  // in case of qt bug
-            filename += ".csv";
-
-        loginf << "export filename " << filename.toStdString();
-        traced_assert(model_);
-        model_->saveAsCSV(filename.toStdString());
-    }
-    else
-    {
-        emit exportDoneSignal(true);
-    }
-}
-
-void AllBufferTableWidget::exportDoneSlot(bool cancelled) { emit exportDoneSignal(cancelled); }
-
-void AllBufferTableWidget::updateToSettingsChange()
-{
-    logdbg;
-
-    traced_assert(model_);
-    model_->rebuild();
-    traced_assert(table_);
-    table_->resizeColumnsToContents();
-}
-
-void AllBufferTableWidget::resetModel()
-{
-    traced_assert(model_);
-    model_->reset();
-}
-
-void AllBufferTableWidget::updateToSelection()
-{
-    traced_assert(model_);
-    model_->rebuild();
-    traced_assert(table_);
-    table_->resizeColumnsToContents();
-}
-
-void AllBufferTableWidget::resizeColumns()
-{
-    traced_assert(table_);
+    all_buffer_model_->setData(buffers);
     table_->resizeColumnsToContents();
 }
 
@@ -152,8 +53,8 @@ void AllBufferTableWidget::selectSelectedRows()
     loginf;
 
     traced_assert(table_);
-    traced_assert(model_);
-    std::pair<int,int> rows = model_->getSelectedRows();
+    traced_assert(all_buffer_model_);
+    std::pair<int,int> rows = all_buffer_model_->getSelectedRows();
 
     if (rows.first >= 0 && rows.second >= 0)
     {
@@ -161,16 +62,15 @@ void AllBufferTableWidget::selectSelectedRows()
 
         traced_assert(rows.first <= rows.second);
 
-        QModelIndex first = model_->index(rows.first, 0, QModelIndex());
+        QModelIndex first = all_buffer_model_->index(rows.first, 0, QModelIndex());
         traced_assert(first.isValid());
 
-        QModelIndex last = model_->index(rows.second, 0, QModelIndex());
+        QModelIndex last = all_buffer_model_->index(rows.second, 0, QModelIndex());
         traced_assert(last.isValid());
 
         table_->selectionModel()->select(QItemSelection(first, last),
                                          QItemSelectionModel::Select | QItemSelectionModel::Rows);
 
-        //table_->scrollTo(first, QAbstractItemView::PositionAtCenter);
         // needed, maybe because model is reset
         QTimer::singleShot(10, [this,first]{table_->scrollTo(first, QAbstractItemView::PositionAtCenter);});
     }
@@ -178,90 +78,7 @@ void AllBufferTableWidget::selectSelectedRows()
         loginf << "nothing selected";
 }
 
-TableView& AllBufferTableWidget::view() const { return view_; }
-
-void AllBufferTableWidget::keyPressEvent(QKeyEvent* event)
-{
-    loginf << "got keypressed";
-
-    traced_assert(table_);
-
-    if (event->modifiers() & Qt::ControlModifier)
-    {
-        if (event->key() == Qt::Key_C)
-        {
-            loginf << "copying";
-
-            QAbstractItemModel* model = table_->model();
-            QItemSelectionModel* selection = table_->selectionModel();
-            QModelIndexList indexes = selection->selectedIndexes();
-
-            QString selected_text;
-            QString selected_headers;
-            // You need a pair of indexes to find the row changes
-            QModelIndex previous = indexes.first();
-            unsigned int row_count = 0;
-
-            selected_headers = model->headerData(previous.column(), Qt::Horizontal).toString();
-            selected_text = model->data(previous).toString();
-            indexes.removeFirst();
-
-            foreach (const QModelIndex& current, indexes)
-            {
-                // If you are at the start of the row the row number of the previous index
-                // isn't the same.  Text is followed by a row separator, which is a newline.
-                if (current.row() != previous.row())
-                {
-                    selected_text.append('\n');
-
-                    if (!row_count)  // first row
-                        selected_headers.append('\n');
-
-                    ++row_count;
-
-                    if (row_count == 999)
-                    {
-                        QMessageBox m_warning(
-                                    QMessageBox::Warning, "Too Many Rows Selected",
-                                    "If more than 1000 lines are selected, only the first 1000 are copied.",
-                                    QMessageBox::Ok);
-                        m_warning.exec();
-                        break;
-                    }
-                }
-                // Otherwise it's the same row, so append a column separator, which is a tab.
-                else
-                {
-                    if (!row_count)  // first row
-                        selected_headers.append(';');
-
-                    selected_text.append(';');
-                }
-
-                QVariant data = model->data(current);
-                QString text = data.toString();
-                // At this point `text` contains the text in one cell
-                selected_text.append(text);
-
-                //                loginf << "UGA row " << current.row() << " col " <<
-                //                current.column() << " text '"
-                //                       << text.toStdString() << "'";
-
-                if (!row_count)  // first row
-                    selected_headers.append(
-                                model->headerData(current.column(), Qt::Horizontal).toString());
-
-                previous = current;
-            }
-
-            QApplication::clipboard()->setText(selected_headers + selected_text);
-        }
-    }
-
-    loginf << "done";
-}
-
-std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText ()
+std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText()
 {
     std::vector<std::vector<std::string>> data;
 
@@ -288,8 +105,6 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText ()
 
     foreach (const QModelIndex& current, indexes)
     {
-        // If you are at the start of the row the row number of the previous index
-        // isn't the same.  Text is followed by a row separator, which is a newline.
         if (current.row() != previous.row())
         {
             if (!row_count)  // first row
@@ -311,7 +126,6 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText ()
             }
         }
 
-        // Otherwise it's the same row, so append a column separator, which is a tab.
         current_row_data.push_back(model->data(current).toString().toStdString());
 
         if (!row_count)  // first row
@@ -323,7 +137,7 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText ()
     return data;
 }
 
-std::vector<std::vector<std::string>> AllBufferTableWidget::getText (unsigned int max_rows)
+std::vector<std::vector<std::string>> AllBufferTableWidget::getText(unsigned int max_rows)
 {
     std::vector<std::vector<std::string>> data;
 
@@ -370,8 +184,6 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getText (unsigned in
             if (!current_index.isValid())
                 break;
 
-            // If you are at the start of the row the row number of the previous index
-            // isn't the same.  Text is followed by a row separator, which is a newline.
             if (current_index.row() != previous_index.row())
             {
                 if (!row_count)  // first row
@@ -383,7 +195,6 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getText (unsigned in
                 ++row_count;
             }
 
-            // Otherwise it's the same row, so append a column separator, which is a tab.
             current_row_data.push_back(model->data(current_index).toString().toStdString());
 
             if (!row_count)  // first row
@@ -406,3 +217,4 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getText (unsigned in
 
     return data;
 }
+

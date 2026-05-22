@@ -17,30 +17,10 @@
 
 #include "reportdefs.h"
 
+#include <stdexcept>
+
 namespace ResultReport
 {
-
-const QColor Colors::TextRed      = QColor(220,20,60);
-const QColor Colors::TextOrange   = QColor(255,140,0);
-const QColor Colors::TextGreen    = QColor(0,128,0);
-const QColor Colors::TextGray     = Qt::darkGray;
-
-const QColor Colors::BGRed        = QColor(240,128,128);
-const QColor Colors::BGOrange     = QColor(255,165,0);
-const QColor Colors::BGGreen      = QColor(144,238,144);
-const QColor Colors::BGGray       = Qt::lightGray;
-const QColor Colors::BGYellow     = QColor(255,255,153);
-
-const std::string Colors::TextLatexRed    = "celldarkred";
-const std::string Colors::TextLatexOrange = "celldarkorange";
-const std::string Colors::TextLatexGreen  = "celldarkgreen";
-const std::string Colors::TextLatexGray   = "celldarkgray";
-
-const std::string Colors::BGLatexRed      = "celllightred";
-const std::string Colors::BGLatexOrange   = "celllightorange";
-const std::string Colors::BGLatexGreen    = "celllightgreen";
-const std::string Colors::BGLatexGray     = "celllightgray";
-const std::string Colors::BGLatexYellow   = "celllightyellow";
 
 /**
  */
@@ -83,10 +63,13 @@ ReportExportMode reportExportModeFromString(const std::string& str)
         return ReportExportMode::Latex;
     else if (str == "PDF")
         return ReportExportMode::LatexPDF;
+    else if (str == "DocX")
+        return ReportExportMode::DOCX;
     else if (str == "CSV")
         return ReportExportMode::CSV;
 
-    return ReportExportMode::LatexPDF;
+    throw std::runtime_error("Unknown report export mode '" + str
+                             + "', valid modes are: DocX, JSON, Latex, PDF, CSV");
 }
 
 /**
@@ -103,6 +86,8 @@ std::string reportExportMode2String(ReportExportMode mode)
             return "Latex";
         case ReportExportMode::LatexPDF:
             return "PDF";
+        case ReportExportMode::DOCX:
+            return "DocX";
         case ReportExportMode::CSV:
             return "CSV";
     }
@@ -122,6 +107,8 @@ std::string reportExportMode2Extension(ReportExportMode mode)
             return ".tex";
         case ReportExportMode::LatexPDF:
             return ".pdf";
+        case ReportExportMode::DOCX:
+            return ".docx";
         case ReportExportMode::CSV:
             return ".csv";
     }

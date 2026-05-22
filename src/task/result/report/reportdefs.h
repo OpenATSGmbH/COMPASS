@@ -18,6 +18,7 @@
 #pragma once
 
 #include <limits>
+#include <string>
 #include <vector>
 
 #include <QColor>
@@ -47,31 +48,33 @@ namespace ResultReport
     };
 
     /**
+     * Members are defined inline to avoid static initialization order issues
+     * across translation units (e.g. sectioncontenttable.cpp referencing these).
      */
     class Colors
     {
     public:
-        static const QColor TextRed;
-        static const QColor TextOrange;
-        static const QColor TextGreen;
-        static const QColor TextGray;
+        static inline const QColor TextRed    = QColor(220,20,60);
+        static inline const QColor TextOrange = QColor(255,140,0);
+        static inline const QColor TextGreen  = QColor(0,128,0);
+        static inline const QColor TextGray   = Qt::darkGray;
 
-        static const QColor BGRed;
-        static const QColor BGOrange;
-        static const QColor BGGreen;
-        static const QColor BGGray;
-        static const QColor BGYellow;
+        static inline const QColor BGRed      = QColor(240,128,128);
+        static inline const QColor BGOrange   = QColor(255,165,0);
+        static inline const QColor BGGreen    = QColor(144,238,144);
+        static inline const QColor BGGray     = Qt::lightGray;
+        static inline const QColor BGYellow   = QColor(255,255,153);
 
-        static const std::string TextLatexRed;
-        static const std::string TextLatexOrange;
-        static const std::string TextLatexGreen;
-        static const std::string TextLatexGray;
+        static inline const std::string TextLatexRed    = "celldarkred";
+        static inline const std::string TextLatexOrange = "celldarkorange";
+        static inline const std::string TextLatexGreen  = "celldarkgreen";
+        static inline const std::string TextLatexGray   = "celldarkgray";
 
-        static const std::string BGLatexRed;
-        static const std::string BGLatexOrange;
-        static const std::string BGLatexGreen;
-        static const std::string BGLatexGray;
-        static const std::string BGLatexYellow;
+        static inline const std::string BGLatexRed      = "celllightred";
+        static inline const std::string BGLatexOrange   = "celllightorange";
+        static inline const std::string BGLatexGreen    = "celllightgreen";
+        static inline const std::string BGLatexGray     = "celllightgray";
+        static inline const std::string BGLatexYellow   = "celllightyellow";
 
         static std::vector<std::string> latexCustomColorDefines();
     };
@@ -82,6 +85,7 @@ namespace ResultReport
         JSONBlob,
         Latex,
         LatexPDF,
+        DOCX,
         CSV //@TODO: to be fully implemented
     };
 

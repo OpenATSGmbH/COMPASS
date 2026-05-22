@@ -148,11 +148,17 @@ bool TaskResultMetaData::fromJSON(const nlohmann::json& j)
         !j.contains(TaskResult::FieldMetaDataComments))
         return false;
 
+    bool ok = false;
+
     std::string ts_created_str = j[ TaskResult::FieldMetaDataCreated ];
-    ts_created = Utils::Time::fromString(ts_created_str);
+    ts_created = Utils::Time::fromString(ts_created_str, &ok);
+    if (!ok)
+        logwrn << "invalid created timestamp '" << ts_created_str << "'";
 
     std::string ts_refreshed_str = j[ TaskResult::FieldMetaDataRefreshed ];
-    ts_refreshed = Utils::Time::fromString(ts_refreshed_str);
+    ts_refreshed = Utils::Time::fromString(ts_refreshed_str, &ok);
+    if (!ok)
+        logwrn << "invalid refreshed timestamp '" << ts_refreshed_str << "'";
 
     user     = j[ TaskResult::FieldMetaDataUser     ];
     comments = j[ TaskResult::FieldMetaDataComments ];
@@ -597,6 +603,16 @@ Result TaskResult::initResult()
  */
 Result TaskResult::prepareResult()
 {
+    auto now = Utils::Time::currentUTCTime();
+
+    if (metadata_.ts_created.is_not_a_date_time())
+        metadata_.ts_created = now;
+
+    metadata_.ts_refreshed = now;
+
+    loginf << "ts_created '" << Utils::Time::toString(metadata_.ts_created)
+           << "' ts_refreshed '" << Utils::Time::toString(metadata_.ts_refreshed) << "'";
+
     //clear report
     report()->clear();
 
@@ -750,6 +766,11 @@ nlohmann::json TaskResult::toJSON() const
     //derived content
     toJSON_impl(j);
 
+    std::string dump_str = j.dump();
+    if (dump_str.size() > 200)
+        dump_str = dump_str.substr(0, 200) + "...";
+    loginf << "writing result '" << name_ << "' JSON: " << dump_str;
+
     return j;
 }
 
@@ -757,16 +778,26 @@ nlohmann::json TaskResult::toJSON() const
  */
 bool TaskResult::fromJSON(const nlohmann::json& j)
 {
-    //loginf << j.dump(4);
+    //loginf << "loading result JSON: " << j.dump();
 
-    if (!j.is_object()                    || 
+    if (!j.is_object()                    ||
         !j.contains(FieldType)            ||
         !j.contains(FieldID)              ||
         !j.contains(FieldName)            ||
         !j.contains(FieldMetaData)        ||
         !j.contains(FieldReport)          ||
         !j.contains(FieldConfig))
+    {
+        logerr << "missing required fields:"
+               << " is_object=" << j.is_object()
+               << " has_type=" << j.contains(FieldType)
+               << " has_id=" << j.contains(FieldID)
+               << " has_name=" << j.contains(FieldName)
+               << " has_metadata=" << j.contains(FieldMetaData)
+               << " has_report=" << j.contains(FieldReport)
+               << " has_config=" << j.contains(FieldConfig);
         return false;
+    }
 
     task::TaskResultType stored_type = j[ FieldType ];
     if (stored_type != type())
@@ -780,22 +811,31 @@ bool TaskResult::fromJSON(const nlohmann::json& j)
     name_     = j[ FieldName ];
 
     if (!metadata_.fromJSON(j[ FieldMetaData ]))
+    {
+        logerr << "failed to parse metadata for result '" << name_ << "'";
         return false;
+    }
 
     if (!report_->fromJSON(j[ FieldReport ]))
+    {
+        logerr << "failed to parse report for result '" << name_ << "'";
         return false;
+    }
 
     config_ = j[ FieldConfig ];
 
     //derived content
     if (!fromJSON_impl(j))
+    {
+        logerr << "failed to parse implementation data for result '" << name_ << "'";
         return false;
+    }
 
     //init after reading in data
     auto init_res = initResult();
     if (!init_res.ok())
     {
-        logerr << "initializing result failed: " << init_res.error();
+        logerr << "initializing result '" << name_ << "' failed: " << init_res.error();
         return false;
     }
 
@@ -812,8 +852,8 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
 
     std::vector<std::pair<QImage, std::string>> renderings;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
-    ViewManager&      view_man   = COMPASS::instance().viewManager();
+    DBContentManager& dbcont_man = task_manager_.compass().dbContentManager();
+    ViewManager&      view_man   = task_manager_.compass().viewManager();
 
     QCoreApplication::processEvents();
 
@@ -823,7 +863,7 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
     for (auto& view_it : view_man.getViews())
     {
         //skip table views
-        if (view_it.second->classId() == "TableView")
+        if (view_it.second->className() == "TableView")
             continue;
         
         //enable export
@@ -841,18 +881,28 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
     //wait a little for e.g. geoimages to warp and render correctly in geographic view
     figure.executeRenderDelay();
 
+    //let views settle any async resources (geo view waits for map tile + osgEarth job pipeline)
+    for (auto& view_it : view_man.getViews())
+    {
+        if (view_it.second->className() == "TableView")
+            continue;
+
+        if (view_it.second->hasScreenshotContent())
+            view_it.second->prepareForRender();
+    }
+
     for (auto& view_it : view_man.getViews())
     {
         //skip table views
-        if (view_it.second->classId() == "TableView")
+        if (view_it.second->className() == "TableView")
             continue;
-        
+
         //skip views which show no content
         if (view_it.second->hasScreenshotContent())
         {
             //render view and collect
             auto img = view_it.second->renderData();
-            renderings.emplace_back(img, view_it.second->instanceId());
+            renderings.emplace_back(img, view_it.second->instanceName());
 
             //disable export
             view_it.second->setExporting(false);

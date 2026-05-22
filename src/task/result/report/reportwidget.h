@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "report/treemodel.h"
+#include "task/result/report/treemodel.h"
 #include "json_fwd.hpp"
 
 #include <boost/optional.hpp>
@@ -60,9 +60,9 @@ public:
     void showResultWidget(Section* section, // can be nullptr
                           bool preload_ondemand_contents); 
 
-    void selectId (const std::string& id, 
-                   bool show_figure,
-                   const nlohmann::json& config);
+    void selectID(const std::string& id, 
+                  bool show_figure,
+                  const nlohmann::json& config);
     void reshowLastId ();
 
     std::string currentSectionID() const;
@@ -97,6 +97,8 @@ protected:
 
     QLabel*  current_section_label_ = nullptr;
     Section* current_section_       = nullptr;
+
+    bool always_show_section_figure_ = true;
 };
 
 }

@@ -21,16 +21,19 @@
 #include "dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "logger.h"
+#include "stringconv.h"
 #include "timeconv.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
+#include "sector.h"
+#include "datasourcebase.h" // for dbContent::DataSourceType enum
 #include "evaluationmanager.h"
 #include "reconstructorassociatorbase.h"
 
 #include "taskmanager.h"
-#include "report/report.h"
-#include "report/section.h"
-#include "report/sectioncontenttext.h"
-#include "report/sectioncontenttable.h"
+#include "task/result/report/report.h"
+#include "task/result/report/section.h"
+#include "task/result/report/sectioncontenttext.h"
+#include "task/result/report/sectioncontenttable.h"
 
 #include "kalman_chain.h"
 #include "kalman_online_tracker.h"
@@ -494,17 +497,23 @@ void ReconstructorBase::TargetsContainer::clear()
     //removed_utns_.clear();
 }
 
-ReconstructorBase::ReconstructorBase(const std::string& class_id, 
-                                     const std::string& instance_id,
-                                     ReconstructorTask& task, 
-                                     std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator)
-    :   Configurable (class_id, instance_id, &task)
+// ReconstructorBase::ReconstructorBase(const std::string& class_name,
+//                                      const std::string& instance_name,
+//                                      ReconstructorTask& task,
+//                                      std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator)
+//     :   Configurable (class_name, instance_name, &task)
+
+ReconstructorBase::ReconstructorBase(nlohmann::json& config,
+                                     ReconstructorTask& task,
+                                     std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator,
+                                     Configurable* parent)
+    :   Configurable (config, parent)
     ,   targets_container_(this)
     ,   acc_estimator_(std::move(acc_estimator))
     ,   task_(task)
     ,   chain_predictors_(new reconstruction::KalmanChainPredictors)
 {
-    accessor_ = make_shared<dbContent::DBContentAccessor>();
+    accessor_ = make_shared<dbContent::DBContentAccessor>(task_.manager().compass().dbContentManager());
 
     // reference computation
     {
@@ -554,8 +563,10 @@ ReconstructorBase::ReconstructorBase(const std::string& class_id,
 
         registerParameter("filter_references_max_stddev"  , &ref_calc_settings_.filter_references_max_stddev_,
                           ReferenceCalculatorSettings().filter_references_max_stddev_);
-        registerParameter("filter_references_max_stddev_m", &ref_calc_settings_.filter_references_max_stddev_m_,
-                          ReferenceCalculatorSettings().filter_references_max_stddev_m_);
+        registerParameter("filter_references_max_stddev_m_air", &ref_calc_settings_.filter_references_max_stddev_m_air_,
+                          ReferenceCalculatorSettings().filter_references_max_stddev_m_air_);
+        registerParameter("filter_references_max_stddev_m_ground", &ref_calc_settings_.filter_references_max_stddev_m_ground_,
+                          ReferenceCalculatorSettings().filter_references_max_stddev_m_ground_);
     }
 
     traced_assert(acc_estimator_);
@@ -639,7 +650,7 @@ void ReconstructorBase::init()
     //not needed at the moment
     //initChainPredictors();
 
-    //invoke derived behaviour
+    //invoke derived behavior
     init_impl();
 
     current_slice_begin_ = timestamp_min_;
@@ -675,11 +686,11 @@ bool ReconstructorBase::isVehicleACAD(unsigned int value)
 std::pair<boost::posix_time::ptime, boost::posix_time::ptime> ReconstructorBase::timeFrame() const
 {
     //get full data time range (should)
-    if (!COMPASS::instance().dbContentManager().hasMinMaxTimestamp())
+    if (!task_.manager().compass().dbContentManager().hasMinMaxTimestamp())
         return std::pair<boost::posix_time::ptime, boost::posix_time::ptime>();
 
     boost::posix_time::ptime data_t0, data_t1;
-    std::tie(data_t0, data_t1) = COMPASS::instance().dbContentManager().minMaxTimestamp();
+    std::tie(data_t0, data_t1) = task_.manager().compass().dbContentManager().minMaxTimestamp();
 
     if (data_t0 >= data_t1)
         return std::pair<boost::posix_time::ptime, boost::posix_time::ptime>();
@@ -889,6 +900,36 @@ void ReconstructorBase::processSlice()
 
     processSlice_impl();
 
+    // log association rates
+    {
+        const auto& counts = assocCounts();
+
+        auto& ctx_man = task_.manager().compass().dbContextManager();
+        DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
+
+        for (auto& ds_it : counts)
+        {
+            for (auto& dbcont_it : ds_it.second)
+            {
+                unsigned int a_cnt = dbcont_it.second.first;
+                unsigned int u_cnt = dbcont_it.second.second;
+
+                std::string ds_n = ctx_man.dataSource(ds_it.first)->name();
+                std::string dbc_n = dbcont_man.dbContentWithId(dbcont_it.first);
+
+                std::string perc_str;
+                if (a_cnt + u_cnt)
+                    perc_str = String::percentToString(
+                                   100.0 * a_cnt / (float)(a_cnt + u_cnt)) + "%";
+                else
+                    perc_str = "0%";
+
+                loginf << "association rate: " << ds_n << " " << dbc_n
+                       << " associated " << a_cnt << " " << perc_str;
+            }
+        }
+    }
+
     processing_ = false;
 
     currentSlice().processing_done_ = true;
@@ -993,7 +1034,7 @@ void ReconstructorBase::createTargetReports()
 
     dbContent::targetReport::ReconstructorInfo info;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
     accessors_.clear();
 
@@ -1004,29 +1045,33 @@ void ReconstructorBase::createTargetReports()
     std::set<unsigned int> unused_ds_ids = task_.unusedDSIDs();
     std::map<unsigned int, std::set<unsigned int>> unused_lines = task_.unusedDSIDLines();
 
-    auto& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ctx_man = task_.manager().compass().dbContextManager();
 
-    std::set<unsigned int> ground_only_ds_ids = ds_man.groundOnlyDBDataSources();
-    std::map<unsigned int, dbContent::DataSourceType> ds_types = ds_man.dsTypes();
+    std::set<unsigned int> ground_only_ds_ids = ctx_man.groundOnlyDataSources();
+
+    // build ds_types map from string type to enum
+    std::map<unsigned int, dbContent::DataSourceType> ds_types;
+    for (const auto& [ds_id, type_str] : ctx_man.dsTypes())
+        ds_types[ds_id] = dbContent::DataSourceBase::dsTypeFromString(type_str);
 
     std::vector<std::shared_ptr<SectorLayer>> used_sector_layers;
     //bool inside_any;
 
     if (task_.useSectorsExtend())
     {
-        auto& eval_man = COMPASS::instance().evaluationManager();
+        auto& ctx = task_.manager().compass().dbContextManager();
 
         for (auto& sect_it : task_.usedSectors())
         {
-            traced_assert(eval_man.hasSectorLayer(sect_it.first));
+            traced_assert(ctx.hasSectorLayer(sect_it.first));
 
             if (!sect_it.second)
                 continue;
 
-            for (const auto& s : eval_man.sectorLayer(sect_it.first)->sectors())
+            for (const auto& s : ctx.sectorLayer(sect_it.first)->sectors())
                 s->createFastInsideTest();
 
-            used_sector_layers.push_back(eval_man.sectorLayer(sect_it.first));
+            used_sector_layers.push_back(ctx.sectorLayer(sect_it.first));
         }
     }
 
@@ -1132,9 +1177,9 @@ void ReconstructorBase::createTargetReports()
                 info.in_current_slice_ = true;
 
                 info.is_calculated_reference_ =
-                    ds_man.hasDBDataSource(info.ds_id_)
-                    && ds_man.dbDataSource(info.ds_id_).sac() == ReconstructorBaseSettings::REC_DS_SAC
-                    && ds_man.dbDataSource(info.ds_id_).sic() == ReconstructorBaseSettings::REC_DS_SIC;
+                    ctx_man.hasDataSource(info.ds_id_)
+                    && ctx_man.dataSource(info.ds_id_)->sac() == ReconstructorBaseSettings::REC_DS_SAC
+                    && ctx_man.dataSource(info.ds_id_)->sic() == ReconstructorBaseSettings::REC_DS_SIC;
 
                 info.acad_ = tgt_acc.acad(cnt);
                 info.acid_ = tgt_acc.acid(cnt);
@@ -1162,8 +1207,17 @@ void ReconstructorBase::createTargetReports()
                 info.ground_bit_ = tgt_acc.groundBit(cnt);
                 info.data_source_is_ground_only_ = ground_only_ds_ids.count(info.ds_id_);
 
+                // adsb stuff
                 info.mops_ = tgt_acc.mopsVersion(cnt);
+                info.nacp_ = tgt_acc.nacp(cnt);
+                info.nucp_nic_ = tgt_acc.nucp(cnt);
+                info.sil_ = tgt_acc.sil(cnt);
                 info.ecat_ = tgt_acc.ecat(cnt);
+
+                boost::optional<bool> pos_check_failed = tgt_acc.posCheckFailed(cnt);
+
+                if (pos_check_failed && *pos_check_failed)
+                    info.invalidated_pos_ = true;
 
                 // insert info
                 target_reports_[record_num] = info;
@@ -1200,7 +1254,7 @@ void ReconstructorBase::createTargetReportBatches()
 {
     loginf << "begin";
 
-    dbContent::DBContentStatusInfo status_info;
+    dbContent::DBContentStatusInfo status_info(task_.manager().compass().dbContentManager());
 
     status_info.process(accessor_->buffers());
 
@@ -1209,7 +1263,7 @@ void ReconstructorBase::createTargetReportBatches()
 
     std::vector<std::string> data_source_type_order {"RefTraj", "ADSB", "Tracker", "MLAT", "Radar", "Other"};
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ctx_man2 = task_.manager().compass().dbContextManager();
 
     size_t num_truncated_noinfo = 0;
     size_t num_truncated_oor    = 0;
@@ -1225,10 +1279,10 @@ void ReconstructorBase::createTargetReportBatches()
 
             for (auto& ds_it : dbcont_it.second)
             {
-                if (ds_man.dbDataSource(ds_it.first).dsType() != ds_type)
+                if (ctx_man2.dataSource(ds_it.first)->dsType() != ds_type)
                     continue;
 
-                logdbg << "ds_type " << ds_type << " dbcont " << dbcont_it.first << " ds " << ds_man.dbDataSource(ds_it.first).name();
+                logdbg << "ds_type " << ds_type << " dbcont " << dbcont_it.first << " ds " << ctx_man2.dataSource(ds_it.first)->name();
 
                 for (auto& line_it : ds_it.second)
                 {
@@ -1383,7 +1437,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
 {
     logdbg;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = task_.manager().compass().dbContentManager();
 
     // write association info to buffers
 
@@ -1410,14 +1464,14 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
             logdbg << "db content " << dbcontent_name;
 
             string rec_num_name =
-                dbcontent_man.metaVariable(DBContent::meta_var_rec_num_.name()).getFor(dbcontent_name).name();
+                dbcontent_man.metaVariable(dbcontent_vars::meta_var_rec_num_.name()).getFor(dbcontent_name).name();
 
             string utn_name =
-                dbcontent_man.metaVariable(DBContent::meta_var_utn_.name()).getFor(dbcontent_name).name();
+                dbcontent_man.metaVariable(dbcontent_vars::meta_var_utn_.name()).getFor(dbcontent_name).name();
 
             PropertyList properties;
-            properties.addProperty(utn_name,  DBContent::meta_var_utn_.dataType());
-            properties.addProperty(rec_num_name,  DBContent::meta_var_rec_num_.dataType());
+            properties.addProperty(utn_name,  dbcontent_vars::meta_var_utn_.dataType());
+            properties.addProperty(rec_num_name,  dbcontent_vars::meta_var_rec_num_.dataType());
 
             assoc_data[dbcontent_name].reset(new Buffer(properties));
 
@@ -1507,28 +1561,24 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
         if (buffer && buffer->size())
         {
             NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(
-                DBContent::meta_var_timestamp_.name());
+                dbcontent_vars::meta_var_timestamp_.name());
 
             logdbg << "buffer size " << buffer->size()
                 << " ts min " << Time::toString(ts_vec.get(0))
                 << " max " << Time::toString(ts_vec.get(ts_vec.contentSize()-1));
 
-            DataSourceManager& src_man = COMPASS::instance().dataSourceManager();
+            auto& ctx_man3 = task_.manager().compass().dbContextManager();
 
             unsigned int ds_id = Number::dsIdFrom(settings().ds_sac, settings().ds_sic);
 
-            if (!src_man.hasConfigDataSource(ds_id))
+            if (!ctx_man3.hasDataSource(ds_id))
             {
                 logdbg << "creating data source";
 
-                src_man.createConfigDataSource(ds_id);
-                traced_assert(src_man.hasConfigDataSource(ds_id));
+                ctx_man3.createDataSource(settings().ds_sac, settings().ds_sic,
+                                          settings().ds_name, "RefTraj");
+                traced_assert(ctx_man3.hasDataSource(ds_id));
             }
-
-            dbContent::ConfigurationDataSource& src = src_man.configDataSource(ds_id);
-
-            src.name(settings().ds_name);
-            src.dsType("RefTraj"); // same as dstype
         }
     };
 
@@ -1559,7 +1609,7 @@ void ReconstructorBase::doReconstructionStatistics()
 
     auto getTable = [ & ] ()
     {
-        auto& section = COMPASS::instance().taskManager().currentReport()->getSection("Reconstruction Statistics");
+        auto& section = task_.manager().compass().taskManager().currentReport()->getSection("Reconstruction Statistics");
         if (!section.hasTable("Reconstruction Statistics"))
             section.addTable("Reconstruction Statistics", 4, {"", "", "Value", "Value [%]"}, false);
 
@@ -1734,7 +1784,7 @@ void ReconstructorBase::doReconstructionStatistics()
 
 void ReconstructorBase::doUnassociatedAnalysis()
 {
-    auto& dbcont_man = COMPASS::instance().dbContentManager();
+    auto& dbcont_man = task_.manager().compass().dbContentManager();
 
     traced_assert(dbcont_man.hasMinMaxPosition());
 
@@ -1766,7 +1816,7 @@ void ReconstructorBase::doUnassociatedAnalysis()
     Grid2D grid;
     grid.create(roi, grid2d::GridResolution().setCellCount(num_cells_x, num_cells_y));
 
-    auto& section = COMPASS::instance().taskManager().currentReport()->getSection(
+    auto& section = task_.manager().compass().taskManager().currentReport()->getSection(
         "Association:Unassociated");
 
     for (auto rec_num : associator().unassociatedRecNums())
@@ -1873,7 +1923,7 @@ void ReconstructorBase::saveTargets()
 
     processing_ = true;
 
-    DBContentManager& cont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& cont_man = task_.manager().compass().dbContentManager();
 
     cont_man.createNewTargets(targets_container_.targets_);
 
@@ -2186,3 +2236,4 @@ void ReconstructorBase::initAssocChainPredictors()
                             assocChainEstimatorSettings(),
                             num_threads);
 }
+

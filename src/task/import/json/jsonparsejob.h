@@ -28,7 +28,7 @@ class JSONParseJob : public Job
 {
   public:
     JSONParseJob(std::vector<std::string> objects, const std::string& current_schema,
-                 ASTERIXPostProcess& post_process);  // is moved from objects
+                 unsigned int line_id, ASTERIXPostProcess& post_process);  // is moved from objects
     virtual ~JSONParseJob();
 
     std::unique_ptr<nlohmann::json> jsonObjects();  // for move operation
@@ -42,12 +42,11 @@ class JSONParseJob : public Job
   private:
     std::vector<std::string> objects_;
     std::string current_schema_;
+    unsigned int line_id_;
     std::unique_ptr<nlohmann::json> json_objects_;
 
     ASTERIXPostProcess& post_process_;
 
     size_t objects_parsed_{0};
     size_t parse_errors_{0};
-
-    void checkCAT001SacSics(nlohmann::json& data_block);
 };

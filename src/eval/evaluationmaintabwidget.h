@@ -17,14 +17,15 @@
 
 #pragma once
 
+#include "evaluationdatasourcewidget.h"
+#include "evaluationstandardcombobox.h"
+#include "evaluationsectorwidget.h"
+
 #include <QWidget>
 
 #include <memory>
 
 class EvaluationCalculator;
-class EvaluationDataSourceWidget;
-class EvaluationStandardComboBox;
-class EvaluationSectorWidget;
 class EvaluationDialog;
 
 class QComboBox;
@@ -55,6 +56,7 @@ private slots:
 public:
     EvaluationMainTabWidget(EvaluationCalculator& calculator,
                             EvaluationDialog& dialog);
+    ~EvaluationMainTabWidget() override;
 
     void updateDataSources();
     void updateSectors();

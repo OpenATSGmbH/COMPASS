@@ -30,6 +30,8 @@
 #include <QSplitter>
 #include <QSettings>
 #include <QInputDialog>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 #include <QFormLayout>
 
@@ -179,7 +181,7 @@ void EvaluationStandardWidget::addGroupSlot()
 
     bool ok;
     QString text =
-        QInputDialog::getText(nullptr, tr("Group Name"),
+        QInputDialog::getText(this, tr("Group Name"),
                               tr("Specify a (unique) group name:"), QLineEdit::Normal, "", &ok);
 
     if (ok && !text.isEmpty())
@@ -189,7 +191,7 @@ void EvaluationStandardWidget::addGroupSlot()
         if (!name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Group Failed",
-                                  "Group has to have a non-empty name.", QMessageBox::Ok);
+                                  "Group has to have a non-empty name.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -197,7 +199,7 @@ void EvaluationStandardWidget::addGroupSlot()
         if (standard_.hasGroup(name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Group Failed",
-                                  "Group with this name already exists.", QMessageBox::Ok);
+                                  "Group with this name already exists.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -225,13 +227,13 @@ void EvaluationStandardWidget::deleteGroupSlot(Group& group)
     expandAll();
 }
 
-void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::string& class_id)
+void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::string& class_name)
 {
-    loginf << standard_.name() << ": class_id " << class_id;
+    loginf << standard_.name() << ": class_name " << class_name;
 
     bool ok;
     QString text =
-        QInputDialog::getText(nullptr, tr("Requirement Name"),
+        QInputDialog::getText(this, tr("Requirement Name"),
                               tr("Specify a (unique) requirement name:"), QLineEdit::Normal,
                               "", &ok);
 
@@ -246,7 +248,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
         if (!req_name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Requirement Failed",
-                                  "Requirement has to have a non-empty name.", QMessageBox::Ok);
+                                  "Requirement has to have a non-empty name.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -254,7 +256,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
         if (group.hasRequirementConfig(req_name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Requirement Failed",
-                                  "Requirement with this name already exists.", QMessageBox::Ok);
+                                  "Requirement with this name already exists.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -262,7 +264,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
 
     std::string req_short_name;
 
-    text =  QInputDialog::getText(nullptr, tr("Requirement Short Name"),
+    text =  QInputDialog::getText(this, tr("Requirement Short Name"),
                                  tr("Specify a requirement short name:"), QLineEdit::Normal,
                                  "", &ok);
 
@@ -272,14 +274,14 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
     if (!text.isEmpty())
         req_short_name = text.toStdString();
 
-    loginf << group.name() << ": class_id " << class_id
+    loginf << group.name() << ": class_name " << class_name
            << " req_name '" << req_name << "' req_short_name '" << req_short_name << "'";
 
     if (req_name.size() && req_short_name.size())
     {
         model().beginReset();
 
-        group.addRequirementConfig(class_id, req_name, req_short_name);
+        group.addRequirementConfig(class_name, req_name, req_short_name);
 
         model().endReset();
         expandAll();
@@ -287,7 +289,7 @@ void EvaluationStandardWidget::addRequirementSlot(Group& group, const std::strin
     else
     {
         QMessageBox m_warning(QMessageBox::Warning, "Adding Requirement Failed",
-                              "Requirement has to have a non-empty name and short name.", QMessageBox::Ok);
+                              "Requirement has to have a non-empty name and short name.", QMessageBox::Ok, this);
         m_warning.exec();
         return;
     }
@@ -306,10 +308,8 @@ void EvaluationStandardWidget::deleteRequirementSlot(Group& group, EvaluationReq
     //string name = data.toString().toStdString();
     string name = req.name();
 
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(nullptr, "Delete Requirement", ("Confirm to delete requirement '"+name+"'").c_str(),
-                                  QMessageBox::Yes|QMessageBox::No);
-    if (reply == QMessageBox::Yes)
+    if (QuestionDialog::ask(nullptr, "Delete Requirement",
+            ("Confirm to delete requirement '" + name + "'").c_str()))
     {
         model().beginReset();
 
@@ -365,9 +365,9 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
 
         for (auto& req_it : Group::requirement_type_mapping_)
         {
-            std::string class_id = req_it.first;
-            QAction* action = req_menu->addAction(class_id.c_str());
-            connect(action, &QAction::triggered, [this,&group,class_id]() {this->addRequirementSlot(group, class_id);});
+            std::string class_name = req_it.first;
+            QAction* action = req_menu->addAction(class_name.c_str());
+            connect(action, &QAction::triggered, [this,&group,class_name]() {this->addRequirementSlot(group, class_name);});
         }
 
         {
@@ -454,3 +454,4 @@ void EvaluationStandardWidget::refMinAccEditSlot(QString value)
     else
         loginf << "invalid value";
 }
+

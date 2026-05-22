@@ -25,7 +25,7 @@
 #include "task/result/report/sectioncontentfigure.h"
 #include "task/result/report/sectioncontenttext.h"
 
-#include "eval/results/report/evalsectionid.h"
+#include "eval/results/evalsectionid.h"
 
 #include "eval/requirement/base/base.h"
 
@@ -986,7 +986,7 @@ void Single::addAnnotationDistance(nlohmann::json& annotations_json,
 
 /**
  * Returns a detail key given an annotation id.
- * Default behaviour will return a first level detail index.
+ * Default behavior will return a first level detail index.
 */
 boost::optional<Base::DetailIndex> Single::detailIndex(const QVariant& annotation) const
 {
@@ -1006,7 +1006,7 @@ boost::optional<Base::DetailIndex> Single::detailIndex(const QVariant& annotatio
 
 /**
  * Iterates over all details for which skip_func does not return true, and applies the given functor func.
- * Default behaviour will iterate over all first level details.
+ * Default behavior will iterate over all first level details.
 */
 void Single::iterateDetails(const DetailFunc& func,
                             const DetailSkipFunc& skip_func) const

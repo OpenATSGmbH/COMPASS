@@ -31,9 +31,9 @@ using namespace std;
 namespace EvaluationRequirement
 {
 SpeedConfig::SpeedConfig(
-        const std::string& class_id, const std::string& instance_id,
-        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+        nlohmann::json& config,
+        Group* parent)
+    : ProbabilityBaseConfig(config, parent)
 {
     registerParameter("threshold_value", &threshold_value_, 50.0f);
     registerParameter("use_percent_if_higher", &use_percent_if_higher_, false);

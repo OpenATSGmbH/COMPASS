@@ -25,6 +25,7 @@
 
 #include "task/result/taskresult.h"
 
+#include "compass.h"
 #include "files.h"
 #include "global.h"
 
@@ -62,6 +63,11 @@ ReportExporter::ReportExporter(const ReportExport* report_export,
 ,   interaction_mode_   (interaction_mode   )
 {
     traced_assert(report_export_);
+}
+
+COMPASS& ReportExporter::compass() const
+{
+    return report_export_->compass();
 }
 
 /**
@@ -458,3 +464,4 @@ double ReportExporter::progress() const
 }
 
 }
+

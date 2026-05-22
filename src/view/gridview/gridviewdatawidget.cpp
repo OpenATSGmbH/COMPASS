@@ -18,11 +18,13 @@
 #include "gridviewdatawidget.h"
 #include "gridviewwidget.h"
 #include "gridview.h"
+#include "viewabledataconfig.h"
 #include "gridviewchart.h"
 #include "grid2d.h"
 #include "grid2dlayer.h"
 #include "grid2drendersettings.h"
 #include "grid2dlayerrenderer.h"
+#include "gridleafpayload.h"
 
 #include "viewvariable.h"
 #include "viewpointgenerator.h"
@@ -31,9 +33,15 @@
 
 #include "buffer.h"
 
+#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
+
+#include "dbcontentlayer.h"
+#include "layertreemodel.h"
+#include "viewlayertreemodel.h"
+#include "annotationsrootitem.h"
 
 #include "logger.h"
 
@@ -56,7 +64,7 @@
 GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
                                        QWidget* parent,
                                        Qt::WindowFlags f)
-:   VariableViewStashDataWidget(view_widget, view_widget->getView(), false, parent, f)
+:   VariableViewStashDataWidget(view_widget, view_widget->getView(), true, parent, f)
 {
     view_ = view_widget->getView();
     traced_assert(view_);
@@ -77,6 +85,18 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
     y_axis_name_ = view_->variable(1).description();
 
     updateGridChart();
+
+    // Annotations subtree of the layer panel mirrors view_->annotations(); the
+    // panel is wired via attachLayerPanel and may not yet be present at
+    // construction time.
+    connect(view_, &VariableView::annotationsChangedSignal, this, [this]()
+    {
+        if (annotations_root_)
+            annotations_root_->update(view_->annotations(),
+                                      view_->currentAnnotationGroupIdx(),
+                                      view_->currentAnnotationIdx(),
+                                      view_);
+    });
 }
 
 /**
@@ -146,6 +166,15 @@ void GridViewDataWidget::resetStashDependentData()
 {
     resetGrid();
     resetGridLayers();
+    annotation_render_settings_.reset();
+
+    // NOTE: payloads_ intentionally not cleared here. The layer tree's
+    // DBContentLeafItems hold raw pointers into these payloads and outlive
+    // this reset - clearing would dangle the tree and crash on next click or
+    // render (itemData() / onEffectiveHiddenChanged dereference payload_).
+    // Payload lifetime is managed by processStash(): on a non-toggle
+    // recompute a fresh vector is built and swapped in, and the old one stays
+    // alive until the tree has been rebuilt to reference the new entries.
 }
 
 /**
@@ -161,17 +190,77 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 {
     loginf;
 
-    const auto& data_ranges = getStash().dataRanges();
-
     x_axis_name_ = view_->variable(0).description();
     y_axis_name_ = view_->variable(1).description();
     title_       = "";
 
-    bool has_data = (hasData() && 
-                     getStash().hasData() && 
-                     variablesOk() && 
-                     data_ranges[ 0 ].has_value() && 
-                     data_ranges[ 1 ].has_value() && 
+    // Build one payload per group (total count + # Null), unconditionally -
+    // the panel should show the full dataset breakdown regardless of which
+    // layers are currently visible.
+    size_t num_null_values = 0;
+    std::vector<std::unique_ptr<GridLeafPayload>> new_payloads;
+    new_payloads.reserve(getStash().groupedStashes().size());
+
+    for (const auto& dbc_values : getStash().groupedStashes())
+    {
+        const std::string& group_key = dbc_values.first;
+        const auto&        gds       = dbc_values.second;
+
+        num_null_values += gds.nan_count;
+
+        // Display name for the leaf row: the dbcontent token from the group
+        // key "<ds_type>:<ds_name>:L<n>:<dbcontent>" - fall back to the full
+        // key if the scheme is not met.
+        std::string leaf_name = group_key;
+        {
+            auto last = group_key.find_last_of(':');
+            if (last != std::string::npos && last + 1 < group_key.size())
+                leaf_name = group_key.substr(last + 1);
+        }
+
+        new_payloads.emplace_back(std::make_unique<GridLeafPayload>(
+            group_key, leaf_name,
+            (unsigned int)gds.size(),
+            gds.nan_count));
+    }
+
+    addNullCount(num_null_values);
+
+    // Swap rather than move-assign: the OLD payloads end up in new_payloads
+    // and stay alive until this function returns. rebuildLayerTree below
+    // walks the current (NEW) payloads_ to build fresh tree entries, and
+    // refreshSubtree inside it destroys the old DBContentLeafItems. Those
+    // old items held raw pointers into the OLD payloads - still valid here
+    // because new_payloads keeps them alive. After rebuildLayerTree returns,
+    // new_payloads goes out of scope and the OLD payloads are finally freed.
+    payloads_.swap(new_payloads);
+
+    // Aggregate visible groups into the Grid2D.
+    buildGridFromStash();
+
+    // Fresh tree with leaves pointing at the new payloads.
+    rebuildLayerTree();
+}
+
+/**
+*/
+void GridViewDataWidget::buildGridFromStash()
+{
+    resetGrid();
+    resetGridLayers();
+
+    // resetGridLayers clears the axis/title strings; restore them so the
+    // render path keeps the data widget's view of them consistent.
+    x_axis_name_ = view_->variable(0).description();
+    y_axis_name_ = view_->variable(1).description();
+
+    const auto& data_ranges = getStash().dataRanges();
+
+    bool has_data = (hasData() &&
+                     getStash().hasData() &&
+                     variablesOk() &&
+                     data_ranges[ 0 ].has_value() &&
+                     data_ranges[ 1 ].has_value() &&
                      data_ranges[ 2 ].has_value());
     if (!has_data)
         return;
@@ -179,7 +268,7 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
     auto bounds = getXYVariableBounds(true);
     if (!bounds.has_value() || bounds->isEmpty())
     {
-        loginf << "bounds empty, skipping...";
+        loginf << "bounds empty, skipping";
         return;
     }
     traced_assert(bounds->isValid());
@@ -189,7 +278,8 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 
     const auto& settings = view_->settings();
 
-    grid2d::GridResolution res = grid2d::GridResolution().setCellCount(settings.grid_resolution, settings.grid_resolution);
+    grid2d::GridResolution res = grid2d::GridResolution().setCellCount(
+        settings.grid_resolution, settings.grid_resolution);
 
     grid_.reset(new Grid2D);
 
@@ -203,63 +293,184 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 
     loginf << "created grid of " << grid_->numCellsX() << "x" << grid_->numCellsY();
 
-    size_t num_null_values = 0;
-
     for (const auto& dbc_values : getStash().groupedStashes())
     {
-        const auto& x_values = dbc_values.second.variable_stashes[ 0 ].values;
-        const auto& y_values = dbc_values.second.variable_stashes[ 1 ].values;
-        const auto& z_values = dbc_values.second.variable_stashes[ 2 ].values;
+        const std::string& group_key = dbc_values.first;
+        const auto&        gds       = dbc_values.second;
+
+        // Skip groups the user has hidden in the layer panel.
+        if (hidden_series_.count(group_key))
+            continue;
+
+        const auto& x_values = gds.variable_stashes[ 0 ].values;
+        const auto& y_values = gds.variable_stashes[ 1 ].values;
+        const auto& z_values = gds.variable_stashes[ 2 ].values;
 
         traced_assert(x_values.size() == y_values.size() &&
                y_values.size() == z_values.size());
 
-        loginf << "dbcontent " << dbc_values.first
-               << " #x " << x_values.size()
-               << " #y " << y_values.size()
-               << " #z " << z_values.size();
+        loginf << "group " << group_key
+               << " #x " << x_values.size();
 
         for (size_t i = 0; i < z_values.size(); ++i)
         {
-            if (dbc_values.second.nan_values[ i ])
-                ++num_null_values;
-
-            if (!dbc_values.second.isNan(0, i) && !dbc_values.second.isNan(1, i))
+            if (!gds.isNan(0, i) && !gds.isNan(1, i))
                 grid_->addValue(x_values[ i ], y_values[ i ], z_values[ i ]);
         }
     }
 
-    addNullCount(num_null_values);
-
-    loginf << "start"
-           << " added " << grid_->numAdded() 
-           << " oor "   << grid_->numOutOfRange() 
-           << " inf "   << grid_->numInf();
-
-    loginf << "getting layer";
+    loginf << "added " << grid_->numAdded()
+           << " oor "  << grid_->numOutOfRange()
+           << " inf "  << grid_->numInf();
 
     auto layer_name = grid2d::valueTypeToString((grid2d::ValueType)settings.value_type);
-
-    loginf << "value type = " << layer_name;
-
     grid_->addToLayers(grid_layers_, layer_name, (grid2d::ValueType)settings.value_type);
 
     auto range = grid_layers_.layer(0).range();
-
     grid_value_min_.reset();
     grid_value_max_.reset();
-
     if (range.has_value())
     {
         loginf << "grid range min " << range->first << " max " << range->second;
-
         grid_value_min_ = range->first;
         grid_value_max_ = range->second;
-
         traced_assert(grid_value_min_.value() <= grid_value_max_.value());
     }
 
     loginf << "done, generated " << grid_layers_.numLayers() << " layers";
+}
+
+/**
+*/
+void GridViewDataWidget::attachLayerPanel(DBContentRootItem* root,
+                                          LayerTreeModel* layer_model)
+{
+    db_content_root_ = root;
+    layer_model_     = layer_model;
+
+    if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
+        annotations_root_ = vlm->annotationsRootItem();
+
+    // Color-mode change -> rebuild the layer tree. The leaves themselves have
+    // no color, but the rebuild resets all expansion state via refreshSubtree
+    // (begin/endRemoveRows), and the resulting layerTreeRebuiltSignal lets
+    // the config widget re-apply the depth that matches the new color mode.
+    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+            this, [this](unsigned int) { rebuildLayerTree(); });
+
+    // If payloads_ was already populated before the panel was attached, push
+    // it into the tree now so the UI matches reality.
+    rebuildLayerTree();
+
+    // Same for annotations: VariableView may have already populated them via
+    // a view point load that fired before attachLayerPanel.
+    if (annotations_root_)
+        annotations_root_->update(view_->annotations(),
+                                  view_->currentAnnotationGroupIdx(),
+                                  view_->currentAnnotationIdx(),
+                                  view_);
+}
+
+/**
+*/
+void GridViewDataWidget::rebuildLayerTree()
+{
+    if (!db_content_root_ || !layer_model_)
+        return;
+
+    std::vector<DBContentRootItem::LeafEntry> entries;
+    entries.reserve(payloads_.size());
+
+    for (auto& p : payloads_)
+    {
+        const std::string& key = p->persistenceId();
+
+        // Parse "<ds_type>:<ds_name>:L<n>:<dbcontent>" - the group key format
+        // produced when group_per_datasource is on. Malformed keys fall back
+        // to a single leaf under an "<unknown>" branch.
+        std::string ds_type, ds_name, line_tok, dbcontent;
+        {
+            std::vector<std::string> parts;
+            size_t start = 0;
+            for (size_t i = 0; i <= key.size(); ++i)
+            {
+                if (i == key.size() || key[i] == ':')
+                {
+                    parts.push_back(key.substr(start, i - start));
+                    start = i + 1;
+                }
+            }
+            if (parts.size() == 4)
+            {
+                ds_type   = parts[0];
+                ds_name   = parts[1];
+                line_tok  = parts[2];
+                dbcontent = parts[3];
+            }
+            else
+            {
+                ds_type   = "<unknown>";
+                ds_name   = key;
+                line_tok  = "L1";
+                dbcontent = "<unknown>";
+            }
+        }
+
+        entries.push_back({ds_type, ds_name, line_tok, dbcontent, p.get()});
+    }
+
+    // Re-entry guard: applyPersistedHiddenIds emits hiddenChangedSignal which
+    // routes back to layersChangedSlot. Without this guard a data load with
+    // non-empty hidden_series_ would trigger a recursive recompute.
+    const bool was_guarded = in_layer_recompute_;
+    in_layer_recompute_ = true;
+
+    layer_model_->refreshSubtree(db_content_root_, [&]() {
+        return db_content_root_->buildChildrenFrom(entries);
+    });
+
+    if (!hidden_series_.empty())
+        layer_model_->applyPersistedHiddenIds(hidden_series_);
+
+    in_layer_recompute_ = was_guarded;
+
+    emit layerTreeRebuiltSignal();
+}
+
+/**
+*/
+void GridViewDataWidget::layersChangedSlot()
+{
+    if (in_layer_recompute_)
+        return;
+
+    // Annotation mode: hiddenChangedSignal here originates from the
+    // annotations subtree's radio activation (AnnotationLeafItem). The
+    // activation already triggered a full redraw via setCurrentAnnotation ->
+    // onShowAnnotationChanged -> redrawData(true), which repopulated
+    // grid_layers_ from the new annotation. Running buildGridFromStash() now
+    // would wipe that grid by trying to rebuild from the (possibly empty)
+    // variable stash, leaving the chart blank.
+    if (view_->showsAnnotation())
+        return;
+
+    in_layer_recompute_ = true;
+
+    if (layer_model_)
+        hidden_series_ = layer_model_->persistedHiddenIds();
+
+    loginf << "captured " << hidden_series_.size() << " hidden series";
+
+    // Match the scatter plot pattern: a layer toggle only re-aggregates and
+    // re-renders. Do NOT call redrawData(true) - that resets the stash and
+    // payloads_, which would dangle the tree items' payload_ pointers and
+    // crash on the next cascadeEffectiveHidden(). The stash and layer tree
+    // are untouched here; we only rebuild the Grid2D from the currently
+    // visible groups and redraw the chart.
+    buildGridFromStash();
+    updateGridChart();
+
+    in_layer_recompute_ = false;
 }
 
 /**
@@ -279,20 +490,31 @@ bool GridViewDataWidget::updateFromAnnotations()
 
     const auto& feature = anno.feature_json;
 
+    auto reportErr = [&](const std::string& msg)
+    {
+        traced_assert(view_->hasViewPoint());
+
+        view_->viewPoint().reportError(view_->getName(),
+                std::string("annotation error: ") + msg);
+    };
+
     if (!feature.is_object() || !feature.contains(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid))
+    {
+        reportErr("missing '" + std::string(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid) + "' field");
         return false;
+    }
 
     std::unique_ptr<Grid2DLayer> layer(new Grid2DLayer);
     if (!layer->fromJSON(feature[ ViewPointGenFeatureGrid::FeatureGridFieldNameGrid ]))
     {
-        logerr << "could not read grid layer";
+        reportErr("could not read grid layer");
         return false;
     }
 
-    if (layer->data.cols() < 1 || 
+    if (layer->data.cols() < 1 ||
         layer->data.rows() < 1)
     {
-        logerr << "grid layer empty";
+        reportErr("grid layer empty");
         return false;
     }
     
@@ -311,6 +533,16 @@ bool GridViewDataWidget::updateFromAnnotations()
         grid_value_max_ = range->second;
 
         traced_assert(grid_value_min_.value() <= grid_value_max_.value());
+    }
+
+    annotation_render_settings_.reset();
+    if (feature.contains(ViewPointGenFeatureGrid::FeatureGridFieldNameRenderSettings))
+    {
+        Grid2DRenderSettings rs;
+        if (rs.fromJSON(feature[ ViewPointGenFeatureGrid::FeatureGridFieldNameRenderSettings ]))
+            annotation_render_settings_ = rs;
+        else
+            logwrn << "render_settings present but unparseable; ignored";
     }
 
     loginf << "done, generated " << grid_layers_.numLayers() << " layers";
@@ -417,8 +649,8 @@ void GridViewDataWidget::invertSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
         {
@@ -440,8 +672,8 @@ void GridViewDataWidget::clearSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
             selected_vec.set(cnt, false);
@@ -528,9 +760,17 @@ void GridViewDataWidget::updateRendering()
         //combine data range with user override range
         std::pair<double, double> range(grid_value_min_.value(), grid_value_max_.value());
 
-        auto vmin = view_->getMinValue();
-        auto vmax = view_->getMaxValue();
-        
+        //annotation-provided min/max take priority over view UI min/max
+        boost::optional<double> ann_min, ann_max;
+        if (annotation_render_settings_.has_value())
+        {
+            ann_min = annotation_render_settings_->min_value;
+            ann_max = annotation_render_settings_->max_value;
+        }
+
+        auto vmin = ann_min.has_value() ? ann_min : view_->getMinValue();
+        auto vmax = ann_max.has_value() ? ann_max : view_->getMaxValue();
+
         if (vmin.has_value() || vmax.has_value())
         {
             if (vmin.has_value() && vmax.has_value() && vmin.value() <= vmax.value())
@@ -561,11 +801,27 @@ void GridViewDataWidget::updateRendering()
 
         auto dtype = view_->currentLegendDataType();
 
-        //derive suggested number of color steps from ui value
-        size_t num_steps = property_templates::suggestedNumColorSteps(dtype, 
-                                                                      range.first, 
-                                                                      range.second, 
-                                                                      settings.render_color_num_steps);
+        //color scale: annotation override -> view setting
+        int active_color_scale = settings.render_color_scale;
+        if (annotation_render_settings_.has_value()
+            && annotation_render_settings_->color_map.valid())
+        {
+            active_color_scale = static_cast<int>(
+                annotation_render_settings_->color_map.colorScale());
+        }
+
+        //number of color steps: annotation override -> derived from ui
+        size_t num_steps = 0;
+        if (annotation_render_settings_.has_value()
+            && annotation_render_settings_->color_map.valid())
+        {
+            num_steps = annotation_render_settings_->color_map.colorSteps();
+        }
+        else
+        {
+            num_steps = property_templates::suggestedNumColorSteps(
+                dtype, range.first, range.second, settings.render_color_num_steps);
+        }
 
         loginf << "suggested color steps = " << num_steps;
 
@@ -573,7 +829,7 @@ void GridViewDataWidget::updateRendering()
         if (num_steps == 1)
         {
             //single value
-            render_settings.color_map.create((colorscale::ColorScale)settings.render_color_scale,
+            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
                                             1,
                                             ColorMap::Type::LinearSamples,
                                             range);
@@ -581,7 +837,7 @@ void GridViewDataWidget::updateRendering()
         else if (num_steps == 2)
         {
             //binary
-            render_settings.color_map.create((colorscale::ColorScale)settings.render_color_scale,
+            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
                                             2,
                                             ColorMap::Type::Binary,
                                             range);
@@ -589,7 +845,7 @@ void GridViewDataWidget::updateRendering()
         else if (num_steps > 0)
         {
             //multi-value
-            render_settings.color_map.create((colorscale::ColorScale)settings.render_color_scale,
+            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
                                             num_steps,
                                             ColorMap::Type::LinearSamples,
                                             range);
@@ -739,3 +995,4 @@ const ColorLegend& GridViewDataWidget::currentLegend() const
     traced_assert(legend_);
     return legend_->currentLegend();
 }
+

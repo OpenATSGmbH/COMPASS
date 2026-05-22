@@ -1,13 +1,13 @@
 {
-    "name":"cat048_ref_1.9",
-    "type":"ReservedExpansionField",
-    "field_specification":{
-        "name":"REF_FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat048_ref_1.9",
+    "type": "ReservedExpansionField",
+    "field_specification": {
+        "name": "REF_FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "items_indicator":[
+    "items_indicator": [
         "MD5",
         "M5N",
         "M4E",
@@ -17,306 +17,299 @@
         "-",
         "-"
     ],
-    "items":[
+    "items": [
         {
-            "number":"MD5",
-            "name":"Mode 5 Reports",
-            "comment":"Mode 5 Data/Reports, Extended Mode 1 Code and X pulse",
-            "type":"item",
-            "data_fields":[
+            "number": "MD5",
+            "name": "Mode 5 Reports",
+            "comment": "Mode 5 Data/Reports, Extended Mode 1 Code and X pulse",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"MD5",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
+                    "name": "MD5",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
                     },
-                    "items":[
+                    "items": [
                         {
-                            "name":"SUM",
-                            "comment":"Mode 5 Summary",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
+                            "name": "SUM",
+                            "comment": "Mode 5 Summary",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
                                 {
-                                   "name":"Mode 5 Summary",
-                                   "type":"fixed_bitfield",
-                                   "length":1,
-                                   "items":[
-                                       {
-                                           "name":"M5",
-                                           "comment":"0 No Mode 5 interrogation\n1 Mode 5 interrogation",
-                                           "type":"fixed_bits",
-                                           "start_bit":7,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"ID",
-                                           "comment":"0 No authenticated Mode 5 ID reply/report\n1 Authenticated Mode 5 ID reply/report",
-                                           "type":"fixed_bits",
-                                           "start_bit":6,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"DA",
-                                           "comment":"0 No authenticated Mode 5 Data reply/report\n1 Authenticated Mode 5 Data reply/report (i.e any valid Mode 5 reply type other than ID)",
-                                           "type":"fixed_bits",
-                                           "start_bit":5,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"M1",
-                                           "comment":"0 Mode 1 code not present or not from Mode 5 reply/report\n1 Mode 1 code from Mode 5 reply/report",
-                                           "type":"fixed_bits",
-                                           "start_bit":4,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"M2",
-                                           "comment":"0 Mode 2 code not present or not from Mode 5 reply/report\n1 Mode 2 code from Mode 5 reply/report",
-                                           "type":"fixed_bits",
-                                           "start_bit":3,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"M3",
-                                           "comment":"0 Mode 3 code not present or not from Mode 5 reply/report\n1 Mode 3 code from Mode 5 reply/report",
-                                           "type":"fixed_bits",
-                                           "start_bit":2,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"MC",
-                                           "comment":"0 Mode C altitude not present or not from Mode 5 reply/report\n1 Mode C altitude from Mode 5 reply/report",
-                                           "type":"fixed_bits",
-                                           "start_bit":1,
-                                           "bit_length":1
-                                       }
-                                   ]
+                                    "name": "Mode 5 Summary",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
+                                        {
+                                            "name": "M5",
+                                            "comment": "0 No Mode 5 interrogation\n1 Mode 5 interrogation",
+                                            "type": "fixed_bits",
+                                            "start_bit": 7,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "ID",
+                                            "comment": "0 No authenticated Mode 5 ID reply/report\n1 Authenticated Mode 5 ID reply/report",
+                                            "type": "fixed_bits",
+                                            "start_bit": 6,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "DA",
+                                            "comment": "0 No authenticated Mode 5 Data reply/report\n1 Authenticated Mode 5 Data reply/report (i.e any valid Mode 5 reply type other than ID)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "M1",
+                                            "comment": "0 Mode 1 code not present or not from Mode 5 reply/report\n1 Mode 1 code from Mode 5 reply/report",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "M2",
+                                            "comment": "0 Mode 2 code not present or not from Mode 5 reply/report\n1 Mode 2 code from Mode 5 reply/report",
+                                            "type": "fixed_bits",
+                                            "start_bit": 3,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "M3",
+                                            "comment": "0 Mode 3 code not present or not from Mode 5 reply/report\n1 Mode 3 code from Mode 5 reply/report",
+                                            "type": "fixed_bits",
+                                            "start_bit": 2,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "MC",
+                                            "comment": "0 Mode C altitude not present or not from Mode 5 reply/report\n1 Mode C altitude from Mode 5 reply/report",
+                                            "type": "fixed_bits",
+                                            "start_bit": 1,
+                                            "bit_length": 1
+                                        }
+                                    ]
                                 }
                             ]
                         },
                         {
-                            "name":"PMN",
-                            "comment":"Mode 5 PIN/National Origin/Mission Code",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
+                            "name": "PMN",
+                            "comment": "Mode 5 PIN/National Origin/Mission Code",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
                                 {
-                                   "name":"Mode 5 PIN/National Origin/Mission Code",
-                                   "type":"fixed_bitfield",
-                                   "length":4,
-                                   "items":[
-                                       {
-                                           "name":"PIN",
-                                           "comment":"PIN Code",
-                                           "type":"fixed_bits",
-                                           "start_bit":16,
-                                           "bit_length":14
-                                       },
-                                       {
-                                           "name":"NAV",
-                                           "comment":"0 National Origin is valid\n1 National Origin is invalid",
-                                           "type":"fixed_bits",
-                                           "start_bit":13,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"NAT",
-                                           "comment":"National Origin",
-                                           "type":"fixed_bits",
-                                           "start_bit":7,
-                                           "bit_length":5
-                                       },
-                                       {
-                                           "name":"MIS",
-                                           "comment":"Mission Code",
-                                           "type":"fixed_bits",
-                                           "start_bit":0,
-                                           "bit_length":6
-                                       }
-                                   ]
+                                    "name": "Mode 5 PIN/National Origin/Mission Code",
+                                    "type": "fixed_bitfield",
+                                    "length": 4,
+                                    "items": [
+                                        {
+                                            "name": "PIN",
+                                            "comment": "PIN Code",
+                                            "type": "fixed_bits",
+                                            "start_bit": 16,
+                                            "bit_length": 14
+                                        },
+                                        {
+                                            "name": "NAV",
+                                            "comment": "0 National Origin is valid\n1 National Origin is invalid",
+                                            "type": "fixed_bits",
+                                            "start_bit": 13,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "NAT",
+                                            "comment": "National Origin",
+                                            "type": "fixed_bits",
+                                            "start_bit": 7,
+                                            "bit_length": 5
+                                        },
+                                        {
+                                            "name": "MIS",
+                                            "comment": "Mission Code",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 6
+                                        }
+                                    ]
                                 }
                             ]
                         },
                         {
-                            "name":"POS",
-                            "comment":"Mode 5 Reported Position",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
-                               {
-                                   "name":"LAT",
-                                   "comment":"Latitude in WGS 84\nRange -90 <= latitude <= 90",
-                                   "type":"fixed_bytes",
-                                   "length":3,
-                                   "data_type":"int",
-                                   "lsb":0.00002145767
-                               },
-                               {
-                                   "name":"LON",
-                                   "comment":"Longitude in WGS 84\nRange -180 <= latitude <= 180",
-                                   "type":"fixed_bytes",
-                                   "length":3,
-                                   "data_type":"int",
-                                   "lsb":0.00002145767
-                               }
-                            ]
-                        },
-                        {
-                            "name":"GA",
-                            "comment":"Mode 5 GNSS-derived Altitude",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
+                            "name": "POS",
+                            "comment": "Mode 5 Reported Position",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
                                 {
-                                   "name":"GA",
-                                   "type":"fixed_bitfield",
-                                   "length":2,
-                                   "items":[
-                                       {
-                                           "name":"RES",
-                                           "comment":"Resolution with which the GNSS-derived Altitude (GA) is reported\n0 GA reported in 100 ft increments\n1 GA reported in 25 ft increments",
-                                           "type":"fixed_bits",
-                                           "start_bit":14,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"GA",
-                                           "comment":"GNSS-derived Altitude of target, expressed as height above WGS 84 ellipsoid",
-                                           "type":"fixed_bits",
-                                           "data_type":"int",
-                                           "lsb":25,
-                                           "start_bit":0,
-                                           "bit_length":14
-                                       }
-                                   ]
+                                    "name": "LAT",
+                                    "comment": "Latitude in WGS 84\nRange -90 <= latitude <= 90",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "int",
+                                    "lsb": 2.145767e-05
+                                },
+                                {
+                                    "name": "LON",
+                                    "comment": "Longitude in WGS 84\nRange -180 <= latitude <= 180",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "int",
+                                    "lsb": 2.145767e-05
                                 }
                             ]
                         },
                         {
-                            "name":"EM1",
-                            "comment":"Subfield #5: Extended Mode 1 Code in Octal Representation",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":4,
-                            "data_fields":[
+                            "name": "GA",
+                            "comment": "Mode 5 GNSS-derived Altitude",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
                                 {
-                                   "name":"extended_mode_1",
-                                   "comment":"",
-                                   "type":"fixed_bitfield",
-                                   "length":2,
-                                   "items":[
-                                       {
-                                           "name":"V",
-                                           "comment":"0 Code not validated\n1 Code validated",
-                                           "type":"fixed_bits",
-                                           "start_bit":15,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"G",
-                                           "comment":"0 Default\n1 Garbled code",
-                                           "type":"fixed_bits",
-                                           "start_bit":14,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"L",
-                                           "comment":"0 Mode-1 code derived from the reply of the transponder\n1 Mode-1 code not extracted during the last scan",
-                                           "type":"fixed_bits",
-                                           "start_bit":13,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"EM1",
-                                           "comment":"Extended Mode 1 Code in octal representation",
-                                           "type":"fixed_bits",
-                                           "start_bit":0,
-                                           "bit_length":12
-                                       }
-                                   ]
+                                    "name": "GA",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "RES",
+                                            "comment": "Resolution with which the GNSS-derived Altitude (GA) is reported\n0 GA reported in 100 ft increments\n1 GA reported in 25 ft increments",
+                                            "type": "fixed_bits",
+                                            "start_bit": 14,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "GA",
+                                            "comment": "GNSS-derived Altitude of target, expressed as height above WGS 84 ellipsoid",
+                                            "type": "fixed_bits",
+                                            "data_type": "int",
+                                            "lsb": 25,
+                                            "start_bit": 0,
+                                            "bit_length": 14
+                                        }
+                                    ]
                                 }
                             ]
                         },
                         {
-                            "name":"TOS",
-                            "comment":"Subfield #6: Time Offset for POS and GA",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":5,
-                            "data_fields":[
+                            "name": "EM1",
+                            "comment": "Subfield #5: Extended Mode 1 Code in Octal Representation",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 4,
+                            "data_fields": [
                                 {
-                                   "name":"TOS",
-                                   "comment":"The time at which the Mode 5 Reported Position (Subfield #3) and Mode 5 GNSS-derived Altitude (Subfield #4) are valid is given by Time of Day (I048/140) plus Time Offset",
-                                   "type":"fixed_bytes",
-                                   "length":1,
-                                   "data_type":"int",
-                                   "lsb":0.0078125
+                                    "name": "extended_mode_1",
+                                    "comment": "",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "V",
+                                            "comment": "0 Code not validated\n1 Code validated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 15,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "G",
+                                            "comment": "0 Default\n1 Garbled code",
+                                            "type": "fixed_bits",
+                                            "start_bit": 14,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "L",
+                                            "comment": "0 Mode-1 code derived from the reply of the transponder\n1 Mode-1 code not extracted during the last scan",
+                                            "type": "fixed_bits",
+                                            "start_bit": 13,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "EM1",
+                                            "comment": "Extended Mode 1 Code in octal representation",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 12
+                                        }
+                                    ]
                                 }
                             ]
                         },
                         {
-                            "name":"XP",
-                            "comment":"X Pulse Presence",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":6,
-                            "data_fields":[
+                            "name": "TOS",
+                            "comment": "Subfield #6: Time Offset for POS and GA",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 5,
+                            "data_fields": [
                                 {
-                                   "name":"X Pulse Presence",
-                                   "type":"fixed_bitfield",
-                                   "length":1,
-                                   "items":[
-                                       {
-                                           "name":"XP",
-                                           "comment":"X-pulse from Mode 5 PIN reply/report\n0 X-Pulse not present\n1 X-pulse present",
-                                           "type":"fixed_bits",
-                                           "start_bit":5,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"X5",
-                                           "comment":"X-pulse from Mode 5 Data reply or Report\n0 X-pulse set to zero or no authenticated Data reply or Report received\n1 X-pulse set to one (present)",
-                                           "type":"fixed_bits",
-                                           "start_bit":4,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"XC",
-                                           "comment":"X-pulse from Mode C reply\n0 X-pulse set to zero or no Mode C reply\n1 X-pulse set to one (present)",
-                                           "type":"fixed_bits",
-                                           "start_bit":3,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"X3",
-                                           "comment":"X-pulse from Mode 3/A reply\n0 X-pulse set to zero or no Mode 3/A reply\n1 X-pulse set to one (present)",
-                                           "type":"fixed_bits",
-                                           "start_bit":2,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"X2",
-                                           "comment":"X-pulse from Mode 2 reply\n0 X-pulse set to zero or no Mode 2 reply\n1 X-pulse set to one (present)",
-                                           "type":"fixed_bits",
-                                           "start_bit":1,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"X1",
-                                           "comment":"X-pulse from Mode 1 reply\n0 X-pulse set to zero or no Mode 1 reply\n1 X-pulse set to one (present)",
-                                           "type":"fixed_bits",
-                                           "start_bit":0,
-                                           "bit_length":1
-                                       }
-                                   ]
+                                    "name": "TOS",
+                                    "comment": "The time at which the Mode 5 Reported Position (Subfield #3) and Mode 5 GNSS-derived Altitude (Subfield #4) are valid is given by Time of Day (I048/140) plus Time Offset",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "int",
+                                    "lsb": 0.0078125
+                                }
+                            ]
+                        },
+                        {
+                            "name": "XP",
+                            "comment": "X Pulse Presence",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 6,
+                            "data_fields": [
+                                {
+                                    "name": "X Pulse Presence",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
+                                        {
+                                            "name": "XP",
+                                            "comment": "X-pulse from Mode 5 PIN reply/report\n0 X-Pulse not present\n1 X-pulse present",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "X5",
+                                            "comment": "X-pulse from Mode 5 Data reply or Report\n0 X-pulse set to zero or no authenticated Data reply or Report received\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "XC",
+                                            "comment": "X-pulse from Mode C reply\n0 X-pulse set to zero or no Mode C reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 3,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "X3",
+                                            "comment": "X-pulse from Mode 3/A reply\n0 X-pulse set to zero or no Mode 3/A reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 2,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "X2",
+                                            "comment": "X-pulse from Mode 2 reply\n0 X-pulse set to zero or no Mode 2 reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 1,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "X1",
+                                            "comment": "X-pulse from Mode 1 reply\n0 X-pulse set to zero or no Mode 1 reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 1
+                                        }
+                                    ]
                                 }
                             ]
                         }
@@ -325,450 +318,438 @@
             ]
         },
         {
-            "number":"M5N",
-            "name":"Mode 5 Reports, New Format",
-            "comment":"Mode 5 Data/Reports, Extended Mode 1 Code and X pulse following the updated NATO format for the National Origin code",
-            "type":"item",
-            "data_fields":[
+            "number": "M5N",
+            "name": "Mode 5 Reports, New Format",
+            "comment": "Mode 5 Data/Reports, Extended Mode 1 Code and X pulse following the updated NATO format for the National Origin code",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"M5N",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
+                    "name": "M5N",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
                     },
-                    "items":[
+                    "items": [
                         {
-                            "name":"SUM",
-                            "comment":"Mode 5 Summary",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
+                            "name": "SUM",
+                            "comment": "Mode 5 Summary",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
                                 {
-                                   "name":"Mode 5 Summary",
-                                   "type":"fixed_bitfield",
-                                   "length":1,
-                                   "items":[
-                                       {
-                                           "name":"M5",
-                                           "comment":"0 No Mode 5 interrogation\n1 Mode 5 interrogation",
-                                           "type":"fixed_bits",
-                                           "start_bit":7,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"ID",
-                                           "comment":"0 No authenticated Mode 5 ID reply/report\n1 Authenticated Mode 5 ID reply/report",
-                                           "type":"fixed_bits",
-                                           "start_bit":6,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"DA",
-                                           "comment":"0 No authenticated Mode 5 Data reply/report\n1 Authenticated Mode 5 Data reply/report (i.e any valid Mode 5 reply type other than ID)",
-                                           "type":"fixed_bits",
-                                           "start_bit":5,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"M1",
-                                           "comment":"0 Mode 1 code not present or not from Mode 5 reply/report\n1 Mode 1 code from Mode 5 reply/report",
-                                           "type":"fixed_bits",
-                                           "start_bit":4,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"M2",
-                                           "comment":"0 Mode 2 code not present or not from Mode 5 reply/report\n1 Mode 2 code from Mode 5 reply/report",
-                                           "type":"fixed_bits",
-                                           "start_bit":3,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"M3",
-                                           "comment":"0 Mode 3 code not present or not from Mode 5 reply/report\n1 Mode 3 code from Mode 5 reply/report",
-                                           "type":"fixed_bits",
-                                           "start_bit":2,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"MC",
-                                           "comment":"0 Mode C altitude not present or not from Mode 5 reply/report\n1 Mode C altitude from Mode 5 reply/report",
-                                           "type":"fixed_bits",
-                                           "start_bit":1,
-                                           "bit_length":1
-                                       }
-                                   ]
+                                    "name": "Mode 5 Summary",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
+                                        {
+                                            "name": "M5",
+                                            "comment": "0 No Mode 5 interrogation\n1 Mode 5 interrogation",
+                                            "type": "fixed_bits",
+                                            "start_bit": 7,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "ID",
+                                            "comment": "0 No authenticated Mode 5 ID reply/report\n1 Authenticated Mode 5 ID reply/report",
+                                            "type": "fixed_bits",
+                                            "start_bit": 6,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "DA",
+                                            "comment": "0 No authenticated Mode 5 Data reply/report\n1 Authenticated Mode 5 Data reply/report (i.e any valid Mode 5 reply type other than ID)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "M1",
+                                            "comment": "0 Mode 1 code not present or not from Mode 5 reply/report\n1 Mode 1 code from Mode 5 reply/report",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "M2",
+                                            "comment": "0 Mode 2 code not present or not from Mode 5 reply/report\n1 Mode 2 code from Mode 5 reply/report",
+                                            "type": "fixed_bits",
+                                            "start_bit": 3,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "M3",
+                                            "comment": "0 Mode 3 code not present or not from Mode 5 reply/report\n1 Mode 3 code from Mode 5 reply/report",
+                                            "type": "fixed_bits",
+                                            "start_bit": 2,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "MC",
+                                            "comment": "0 Mode C altitude not present or not from Mode 5 reply/report\n1 Mode C altitude from Mode 5 reply/report",
+                                            "type": "fixed_bits",
+                                            "start_bit": 1,
+                                            "bit_length": 1
+                                        }
+                                    ]
                                 }
                             ]
                         },
                         {
-                            "name":"PMN",
-                            "comment":"Mode 5 PIN/ National Origin",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
+                            "name": "PMN",
+                            "comment": "Mode 5 PIN/ National Origin",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
                                 {
-                                   "name":"Mode 5 PIN/National Origin/Mission Code",
-                                   "type":"fixed_bitfield",
-                                   "length":4,
-                                   "items":[
-                                       {
-                                           "name":"PIN",
-                                           "comment":"PIN Code",
-                                           "type":"fixed_bits",
-                                           "start_bit":16,
-                                           "bit_length":14
-                                       },
-                                       {
-                                           "name":"NOV",
-                                           "comment":"0 National Origin is valid\n1 National Origin is invalid",
-                                           "type":"fixed_bits",
-                                           "start_bit":11,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"NO",
-                                           "comment":"National Origin Code",
-                                           "type":"fixed_bits",
-                                           "start_bit":0,
-                                           "bit_length":11
-                                       }
-                                   ]
+                                    "name": "Mode 5 PIN/National Origin/Mission Code",
+                                    "type": "fixed_bitfield",
+                                    "length": 4,
+                                    "items": [
+                                        {
+                                            "name": "PIN",
+                                            "comment": "PIN Code",
+                                            "type": "fixed_bits",
+                                            "start_bit": 16,
+                                            "bit_length": 14
+                                        },
+                                        {
+                                            "name": "NOV",
+                                            "comment": "0 National Origin is valid\n1 National Origin is invalid",
+                                            "type": "fixed_bits",
+                                            "start_bit": 11,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "NO",
+                                            "comment": "National Origin Code",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 11
+                                        }
+                                    ]
                                 }
                             ]
                         },
                         {
-                            "name":"POS",
-                            "comment":"Mode 5 Reported Position",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
-                               {
-                                   "name":"LAT",
-                                   "comment":"Latitude in WGS 84\nRange -90 <= latitude <= 90",
-                                   "type":"fixed_bytes",
-                                   "length":3,
-                                   "data_type":"int",
-                                   "lsb":0.00002145767
-                               },
-                               {
-                                   "name":"LON",
-                                   "comment":"Longitude in WGS 84\nRange -180 <= latitude <= 180",
-                                   "type":"fixed_bytes",
-                                   "length":3,
-                                   "data_type":"int",
-                                   "lsb":0.00002145767
-                               }
-                            ]
-                        },
-                        {
-                            "name":"GA",
-                            "comment":"Mode 5 GNSS-derived Altitude",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
+                            "name": "POS",
+                            "comment": "Mode 5 Reported Position",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
                                 {
-                                   "name":"GA",
-                                   "type":"fixed_bitfield",
-                                   "length":2,
-                                   "items":[
-                                       {
-                                           "name":"RES",
-                                           "comment":"Resolution with which the GNSS-derived Altitude (GA) is reported\n0 GA reported in 100 ft increments\n1 GA reported in 25 ft increments",
-                                           "type":"fixed_bits",
-                                           "start_bit":14,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"GA",
-                                           "comment":"GNSS-derived Altitude of target, expressed as height above WGS 84 ellipsoid",
-                                           "type":"fixed_bits",
-                                           "data_type":"int",
-                                           "lsb":25,
-                                           "start_bit":0,
-                                           "bit_length":14
-                                       }
-                                   ]
+                                    "name": "LAT",
+                                    "comment": "Latitude in WGS 84\nRange -90 <= latitude <= 90",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "int",
+                                    "lsb": 2.145767e-05
+                                },
+                                {
+                                    "name": "LON",
+                                    "comment": "Longitude in WGS 84\nRange -180 <= latitude <= 180",
+                                    "type": "fixed_bytes",
+                                    "length": 3,
+                                    "data_type": "int",
+                                    "lsb": 2.145767e-05
                                 }
                             ]
                         },
                         {
-                            "name":"EM1",
-                            "comment":"Extended Mode 1 Code in Octal Representation",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":4,
-                            "data_fields":[
+                            "name": "GA",
+                            "comment": "Mode 5 GNSS-derived Altitude",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
                                 {
-                                   "name":"extended_mode_1",
-                                   "comment":"",
-                                   "type":"fixed_bitfield",
-                                   "length":2,
-                                   "items":[
-                                       {
-                                           "name":"V",
-                                           "comment":"0 Code not validated\n1 Code validated",
-                                           "type":"fixed_bits",
-                                           "start_bit":15,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"G",
-                                           "comment":"0 Default\n1 Garbled code",
-                                           "type":"fixed_bits",
-                                           "start_bit":14,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"L",
-                                           "comment":"0 Mode-1 code derived from the reply of the transponder\n1 Mode-1 code not extracted during the last scan",
-                                           "type":"fixed_bits",
-                                           "start_bit":13,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"EM1",
-                                           "comment":"Extended Mode 1 Code in octal representation",
-                                           "type":"fixed_bits",
-                                           "start_bit":0,
-                                           "bit_length":12
-                                       }
-                                   ]
+                                    "name": "GA",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "RES",
+                                            "comment": "Resolution with which the GNSS-derived Altitude (GA) is reported\n0 GA reported in 100 ft increments\n1 GA reported in 25 ft increments",
+                                            "type": "fixed_bits",
+                                            "start_bit": 14,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "GA",
+                                            "comment": "GNSS-derived Altitude of target, expressed as height above WGS 84 ellipsoid",
+                                            "type": "fixed_bits",
+                                            "data_type": "int",
+                                            "lsb": 25,
+                                            "start_bit": 0,
+                                            "bit_length": 14
+                                        }
+                                    ]
                                 }
                             ]
                         },
                         {
-                            "name":"TOS",
-                            "comment":"Time Offset for POS and GA",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":5,
-                            "data_fields":[
+                            "name": "EM1",
+                            "comment": "Extended Mode 1 Code in Octal Representation",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 4,
+                            "data_fields": [
                                 {
-                                   "name":"TOS",
-                                   "comment":"The time at which the Mode 5 Reported Position (Subfield #3) and Mode 5 GNSS-derived Altitude (Subfield #4) are valid is given by Time of Day (I048/140) plus Time Offset",
-                                   "type":"fixed_bytes",
-                                   "length":1,
-                                   "data_type":"int",
-                                   "lsb":0.0078125
+                                    "name": "extended_mode_1",
+                                    "comment": "",
+                                    "type": "fixed_bitfield",
+                                    "length": 2,
+                                    "items": [
+                                        {
+                                            "name": "V",
+                                            "comment": "0 Code not validated\n1 Code validated",
+                                            "type": "fixed_bits",
+                                            "start_bit": 15,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "G",
+                                            "comment": "0 Default\n1 Garbled code",
+                                            "type": "fixed_bits",
+                                            "start_bit": 14,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "L",
+                                            "comment": "0 Mode-1 code derived from the reply of the transponder\n1 Mode-1 code not extracted during the last scan",
+                                            "type": "fixed_bits",
+                                            "start_bit": 13,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "EM1",
+                                            "comment": "Extended Mode 1 Code in octal representation",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 12
+                                        }
+                                    ]
                                 }
                             ]
                         },
                         {
-                            "name":"XP",
-                            "comment":"X Pulse Presence",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":6,
-                            "data_fields":[
+                            "name": "TOS",
+                            "comment": "Time Offset for POS and GA",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 5,
+                            "data_fields": [
                                 {
-                                   "name":"X Pulse Presence",
-                                   "type":"fixed_bitfield",
-                                   "length":1,
-                                   "items":[
-                                       {
-                                           "name":"XP",
-                                           "comment":"X-pulse from Mode 5 PIN reply/report\n0 X-Pulse not present\n1 X-pulse present",
-                                           "type":"fixed_bits",
-                                           "start_bit":5,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"X5",
-                                           "comment":"X-pulse from Mode 5 Data reply or Report\n0 X-pulse set to zero or no authenticated Data reply or Report received\n1 X-pulse set to one (present)",
-                                           "type":"fixed_bits",
-                                           "start_bit":4,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"XC",
-                                           "comment":"X-pulse from Mode C reply\n0 X-pulse set to zero or no Mode C reply\n1 X-pulse set to one (present)",
-                                           "type":"fixed_bits",
-                                           "start_bit":3,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"X3",
-                                           "comment":"X-pulse from Mode 3/A reply\n0 X-pulse set to zero or no Mode 3/A reply\n1 X-pulse set to one (present)",
-                                           "type":"fixed_bits",
-                                           "start_bit":2,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"X2",
-                                           "comment":"X-pulse from Mode 2 reply\n0 X-pulse set to zero or no Mode 2 reply\n1 X-pulse set to one (present)",
-                                           "type":"fixed_bits",
-                                           "start_bit":1,
-                                           "bit_length":1
-                                       },
-                                       {
-                                           "name":"X1",
-                                           "comment":"X-pulse from Mode 1 reply\n0 X-pulse set to zero or no Mode 1 reply\n1 X-pulse set to one (present)",
-                                           "type":"fixed_bits",
-                                           "start_bit":0,
-                                           "bit_length":1
-                                       }
-                                   ]
+                                    "name": "TOS",
+                                    "comment": "The time at which the Mode 5 Reported Position (Subfield #3) and Mode 5 GNSS-derived Altitude (Subfield #4) are valid is given by Time of Day (I048/140) plus Time Offset",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "int",
+                                    "lsb": 0.0078125
                                 }
                             ]
                         },
                         {
-                            "name":"FOM",
-                            "comment":"Figure of Merit",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":8,
-                            "data_fields":[
+                            "name": "XP",
+                            "comment": "X Pulse Presence",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 6,
+                            "data_fields": [
                                 {
-                                   "name":"Figure of Merit",
-                                   "type":"fixed_bitfield",
-                                   "length":1,
-                                   "items":[
-                                      {
-                                           "name":"FOM",
-                                           "comment":"Figure of Merit",
-                                           "type":"fixed_bits",
-                                           "start_bit":0,
-                                           "bit_length":5
-                                      }
-                                   ]
+                                    "name": "X Pulse Presence",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
+                                        {
+                                            "name": "XP",
+                                            "comment": "X-pulse from Mode 5 PIN reply/report\n0 X-Pulse not present\n1 X-pulse present",
+                                            "type": "fixed_bits",
+                                            "start_bit": 5,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "X5",
+                                            "comment": "X-pulse from Mode 5 Data reply or Report\n0 X-pulse set to zero or no authenticated Data reply or Report received\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 4,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "XC",
+                                            "comment": "X-pulse from Mode C reply\n0 X-pulse set to zero or no Mode C reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 3,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "X3",
+                                            "comment": "X-pulse from Mode 3/A reply\n0 X-pulse set to zero or no Mode 3/A reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 2,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "X2",
+                                            "comment": "X-pulse from Mode 2 reply\n0 X-pulse set to zero or no Mode 2 reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 1,
+                                            "bit_length": 1
+                                        },
+                                        {
+                                            "name": "X1",
+                                            "comment": "X-pulse from Mode 1 reply\n0 X-pulse set to zero or no Mode 1 reply\n1 X-pulse set to one (present)",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 1
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "FOM",
+                            "comment": "Figure of Merit",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 8,
+                            "data_fields": [
+                                {
+                                    "name": "Figure of Merit",
+                                    "type": "fixed_bitfield",
+                                    "length": 1,
+                                    "items": [
+                                        {
+                                            "name": "FOM",
+                                            "comment": "Figure of Merit",
+                                            "type": "fixed_bits",
+                                            "start_bit": 0,
+                                            "bit_length": 5
+                                        }
+                                    ]
                                 }
                             ]
                         }
-                  ]
-               }
-            ]
-        },
-        {
-            "number":"M4E",
-            "name":"Extended Mode 4 Report",
-            "comment":"Extended encoding of the Mode 4 interrogation result",
-            "type":"item",
-            "data_fields":[
-                {
-                   "name":"M4E",
-                   "type":"fixed_bitfield",
-                   "length":1,
-                   "items":[
-                      {
-                           "name":"FOE/FRI",
-                           "comment":"Indication Foe/Friend (Mode4)\n00 No Mode 4 identification\n01 possibly friendly target\n10 probably friendly target\n11 friendly target",
-                           "type":"fixed_bits",
-                           "start_bit":1,
-                           "bit_length":2
-                      }
-                   ]
+                    ]
                 }
             ]
         },
         {
-            "number":"RPC",
-            "name":"Radar Plot Characteristics",
-            "comment":"Extension to data item I048/130 for primary reports",
-            "type":"item",
-            "data_fields":[
+            "number": "M4E",
+            "name": "Extended Mode 4 Report",
+            "comment": "Extended encoding of the Mode 4 interrogation result",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"RPC",
-                    "type":"compound",
-                    "field_specification":{
-                        "name":"available",
-                        "type":"extendable_bits",
-                        "data_type":"bitfield",
-                        "reverse_bits":true
-                    },
-                    "items":[
+                    "name": "M4E",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"SCO",
-                            "comment":"Score",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":0,
-                            "data_fields":[
-                                {
-                                   "name":"SCO",
-                                   "comment":"The score describes the number of raw responses used to create the plot",
-                                   "type":"fixed_bytes",
-                                   "length":1,
-                                   "data_type":"uint"
-                                }
-                            ]
-                        },
-                        {
-                            "name":"SCR",
-                            "comment":"Signal/Clutter Ratio",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":1,
-                            "data_fields":[
-                                {
-                                   "name":"SCR",
-                                   "comment":"The Signal / Clutter Ratio describes the difference in signal strength between the signal constituting the raw plot and the signal of the clutter\n0.1 db < SCR < 2550",
-                                   "type":"fixed_bytes",
-                                   "length":2,
-                                   "data_type":"uint",
-                                   "lsb":0.1
-                                }
-                            ]
-                        },
-                        {
-                            "name":"RW",
-                            "comment":"Range Width",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":2,
-                            "data_fields":[
-                                {
-                                   "name":"RW",
-                                   "comment":"The Range Width defines the difference in range between the closest proximity to the radar of the raw response and the point farthest away from the radar\nMax. value: 256 NM",
-                                   "type":"fixed_bytes",
-                                   "length":2,
-                                   "data_type":"uint",
-                                   "lsb":0.00390625
-                                }
-                            ]
-                        },
-                        {
-                            "name":"AR",
-                            "comment":"Ambiguous Range",
-                            "type":"optional_item",
-                            "optional_bitfield_name":"available",
-                            "optional_bitfield_index":3,
-                            "data_fields":[
-                                {
-                                   "name":"AR",
-                                   "comment":"The Ambiguous Range describes the Pulse Repetition Interval of the radar in range\nMax. value: 256 NM",
-                                   "type":"fixed_bytes",
-                                   "length":2,
-                                   "data_type":"uint",
-                                   "lsb":0.00390625
-                                }
-                            ]
+                            "name": "FOE/FRI",
+                            "comment": "Indication Foe/Friend (Mode4)\n00 No Mode 4 identification\n01 possibly friendly target\n10 probably friendly target\n11 friendly target",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 2
                         }
-                  ]
-               }
+                    ]
+                }
             ]
         },
         {
-            "number":"ERR",
-            "name":"Extended Range Report",
-            "comment":"",
-            "type":"item",
-            "data_fields":[
-                 {
-                    "name":"RHO",
-                    "comment":"Adaptation of data item I048/040 to extended range radars for provision of the measured range of an aircraft in local polar coordinates when the range is greater than 256NM",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.00390625
-                 }
+            "number": "RPC",
+            "name": "Radar Plot Characteristics",
+            "comment": "Extension to data item I048/130 for primary reports",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "RPC",
+                    "type": "compound",
+                    "field_specification": {
+                        "name": "available",
+                        "type": "extendable_bits",
+                        "data_type": "bitfield",
+                        "reverse_bits": true
+                    },
+                    "items": [
+                        {
+                            "name": "SCO",
+                            "comment": "Score",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 0,
+                            "data_fields": [
+                                {
+                                    "name": "SCO",
+                                    "comment": "The score describes the number of raw responses used to create the plot",
+                                    "type": "fixed_bytes",
+                                    "length": 1,
+                                    "data_type": "uint"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "SCR",
+                            "comment": "Signal/Clutter Ratio",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 1,
+                            "data_fields": [
+                                {
+                                    "name": "SCR",
+                                    "comment": "The Signal / Clutter Ratio describes the difference in signal strength between the signal constituting the raw plot and the signal of the clutter\n0.1 db < SCR < 2550",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.1
+                                }
+                            ]
+                        },
+                        {
+                            "name": "RW",
+                            "comment": "Range Width",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 2,
+                            "data_fields": [
+                                {
+                                    "name": "RW",
+                                    "comment": "The Range Width defines the difference in range between the closest proximity to the radar of the raw response and the point farthest away from the radar\nMax. value: 256 NM",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.00390625
+                                }
+                            ]
+                        },
+                        {
+                            "name": "AR",
+                            "comment": "Ambiguous Range",
+                            "type": "optional_item",
+                            "optional_bitfield_index": 3,
+                            "data_fields": [
+                                {
+                                    "name": "AR",
+                                    "comment": "The Ambiguous Range describes the Pulse Repetition Interval of the radar in range\nMax. value: 256 NM",
+                                    "type": "fixed_bytes",
+                                    "length": 2,
+                                    "data_type": "uint",
+                                    "lsb": 0.00390625
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "ERR",
+            "name": "Extended Range Report",
+            "comment": "",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "RHO",
+                    "comment": "Adaptation of data item I048/040 to extended range radars for provision of the measured range of an aircraft in local polar coordinates when the range is greater than 256NM",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.00390625
+                }
             ]
         }
     ]

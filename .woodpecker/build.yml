@@ -1,0 +1,29 @@
+when:
+  - event: [push, manual]
+
+steps:
+  - name: setup-workspace
+    image: alpine/git
+    commands:
+      - git clone --depth 1 --branch ${CI_COMMIT_BRANCH} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src
+      - git clone --depth 1 --branch devel https://github.com/hpuhr/jASTERIX.git ../jasterix
+      - chmod -R a+rwX ../jasterix ..
+      - ln -s "$CI_WORKSPACE" "$CI_WORKSPACE/../compass"
+
+  - name: build
+    image: compass/build_deb10
+    commands:
+      - bash -c "set -e; export WORKSPACE_BASE=$CI_WORKSPACE/..; cd $CI_WORKSPACE/docker && ./build_jasterix.sh && ./build_compass.sh"
+
+  - name: test
+    image: compass/build_deb10
+    commands:
+      - $CI_WORKSPACE/build_deb10/bin/compass_tests
+
+  - name: appimage
+    image: compass/build_deb10
+    volumes:
+      - /home/user/ci:/home/user/ci
+    commands:
+      - bash -c "set -e; export WORKSPACE_BASE=$CI_WORKSPACE/..; sudo make -C $CI_WORKSPACE/../jasterix/build_deb10 install && sudo make -C $CI_WORKSPACE/build_deb10 install && cd $CI_WORKSPACE/docker && ./deploy_compass.sh"
+      - bash $CI_WORKSPACE/docker/collect_artifacts.sh $CI_WORKSPACE $CI_PIPELINE_NUMBER $CI_COMMIT_BRANCH

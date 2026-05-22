@@ -100,3 +100,4 @@ void FormatSelectionWidget::triggerSlot(QAction* action)
 
     //  emit selectionChanged();
 }
+

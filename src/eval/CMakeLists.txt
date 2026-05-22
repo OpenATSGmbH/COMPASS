@@ -1,13 +1,11 @@
+add_library(compass_eval "")
+
 include("${CMAKE_CURRENT_LIST_DIR}/data/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/requirement/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/results/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/standard/CMakeLists.txt")
 
-include_directories (
-    "${CMAKE_CURRENT_LIST_DIR}"
-    )
-
-target_sources(compass
+target_sources(compass_eval
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/evaluationdefs.h"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationsettings.h"
@@ -41,7 +39,28 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/evaluationtargetfilter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationtargetfilterdialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationtargetexcludedtimewindowsdialog.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/evaluationtargetexcludedrequirementsdialog.cpp"        
+        "${CMAKE_CURRENT_LIST_DIR}/evaluationtargetexcludedrequirementsdialog.cpp"
 )
 
+target_include_directories(compass_eval PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 
+target_link_libraries(compass_eval
+    PUBLIC
+        compass_core
+        compass_reconstruction
+        compass_task
+        compass_gui
+)
+
+# eval sources include headers from app and view - circular deps
+target_include_directories(compass_eval PRIVATE
+    "${CMAKE_SOURCE_DIR}/src/app/client"
+    "${CMAKE_SOURCE_DIR}/src/view"
+    "${CMAKE_SOURCE_DIR}/src/view/viewbase"
+    "${CMAKE_SOURCE_DIR}/src/view/points"
+    "${CMAKE_SOURCE_DIR}/src/view/histogramview"
+    "${CMAKE_SOURCE_DIR}/src/view/scatterplotview"
+    "${CMAKE_SOURCE_DIR}/src/view/gridview"
+)
+
+compass_automoc(compass_eval)

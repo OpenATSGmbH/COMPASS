@@ -2,6 +2,7 @@
 \label{sec:reports}
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/reports.png}
   \caption{Reports overview, showing an Evaluation report}
@@ -73,17 +74,29 @@ A report can be exported by clicking the \includegraphics[width=0.5cm,frame]{../
 A menu will open, giving multiple options for export.
 
 \begin{figure}[H]
-    \center
+    \centering
     \includegraphics[width=4cm,frame]{figures/export_options.png}
   %\caption{Data Sources Overview}
 \end{figure}
 
 \begin{itemize}
+  \item \nameref{sec:report_export_docx}: Export to a Microsoft Word DocX file (Pro license only)
   \item \nameref{sec:report_export_json}: Export to a JSON file with additional linked resources
   \item \nameref{sec:report_export_latex}: Export to a Latex file with additional linked resources
   \item \nameref{sec:report_export_pdf}: Export to a PDF file
-\end{itemize} 
+\end{itemize}
 \  \\
+
+Please \textbf{note} that the 'Export as PDF' entry is disabled when \texttt{pdflatex} is not installed on the system. \\
+
+\subsubsection{Export as DocX}
+\label{sec:report_export_docx}
+
+This export will generate a Microsoft Word DocX file containing the currently selected report. \\
+
+Please \textbf{note} that this export is only available with a Pro license. \\
+
+The export uses the same dialog as \nameref{sec:report_export_json} (Report Directory, Report Name, Author, optional Comments); only the produced file format differs. The resulting DocX document is written into the specified Report Directory under the chosen Report Name with a '.docx' extension. \\
 
 \subsubsection{Export as JSON}
 \label{sec:report_export_json}
@@ -94,7 +107,7 @@ The following dialog will open.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
-    \center
+    \centering
     \includegraphics[width=14cm]{figures/export_json.png}
   \caption{Export as JSON}
 \end{figure}
@@ -117,7 +130,7 @@ After export the folder structure created will e.g. look like this.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
-    \center
+    \centering
     \includegraphics[width=10cm,frame]{figures/export_json_result.png}
   \caption{Export as JSON: Resulting folder structure}
 \end{figure}
@@ -139,7 +152,7 @@ The following dialog will open.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
-    \center
+    \centering
     \includegraphics[width=14cm]{figures/export_latex.png}
   \caption{Export as Latex}
 \end{figure}
@@ -164,7 +177,7 @@ After export the folder structure created will e.g. look like this.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
-    \center
+    \centering
     \includegraphics[width=10cm,frame]{figures/export_latex_result.png}
   \caption{Export as Latex: Resulting folder structure}
 \end{figure}
@@ -178,7 +191,7 @@ The following dialog will open.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
-    \center
+    \centering
     \includegraphics[width=14cm]{figures/export_pdf.png}
   \caption{Export as Latex PDF}
 \end{figure}
@@ -202,7 +215,7 @@ After export the folder structure created will e.g. look like this.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
-    \center
+    \centering
     \includegraphics[width=14cm,frame]{figures/export_pdf_result.png}
   \caption{Export as PDF: Resulting folder structure}
 \end{figure}
@@ -220,7 +233,7 @@ Above the displayed section, a couple of navigation elements reside.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
-    \center
+    \centering
     \includegraphics[width=12cm,frame]{figures/navigation.png}
   \caption{Navigating sections}
 \end{figure}
@@ -238,7 +251,7 @@ contents listing all available sections.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
-    \center
+    \centering
     \includegraphics[width=12cm,frame]{figures/section_button.png}
   \caption{Section table of contents}
 \end{figure}
@@ -263,7 +276,7 @@ A section can obtain three types of contents:
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
-    \center
+    \centering
     \includegraphics[width=12cm,frame]{figures/content_figure.png}
   \caption{Figure content}
 \end{figure}
@@ -276,7 +289,7 @@ drawable contents will be shown in all Views that are able to display it.
 
 \begin{figure}[H]
     \hspace*{-2.5cm}
-    \center
+    \centering
     \includegraphics[width=12cm,frame]{figures/content_table.png}
   \caption{Table content}
 \end{figure}

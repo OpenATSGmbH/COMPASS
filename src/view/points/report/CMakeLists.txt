@@ -1,8 +1,8 @@
-include_directories (
+target_include_directories(compass_view PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_view
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/viewpointsreportgenerator.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewpointsreportgeneratordialog.h"

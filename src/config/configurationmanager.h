@@ -18,70 +18,54 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <vector>
 
 #include "configuration.h"
-#include "singleton.h"
+#include "configjson.h"
 
 class Configurable;
 
 /**
  * @brief Main class for configuration loading, generating and writing.
  *
- * @details Singleton, parses main configuration file using parseConfigurationFile. Each XML
- * configuration file has to consist of a file section (where additional configuration files are
- * defined) and configuration section where all configurations and their sub-configurations are
- * defined.
- *
- * Holds Configurations for all root configurables (no parent). When such a root registers itself,
- * it receives its configuration reference, which is iteratively passed on to its children. When all
- * configurations should be saved, all root configurables pass on their configuration, and unused
- * (root) configurations are saved unmodified.
- *
+ * Normal class (no singleton) owned by Client and passed by reference to COMPASS.
+ * Reads the main config file (client.json) and creates ConfigJSON objects for each
+ * root configurable. Root configurables obtain their json& from ConfigJSON and pass
+ * subtrees to their children.
  */
-class ConfigurationManager : public Singleton
+class ConfigurationManager
 {
   public:
+    using Key = std::pair<std::string, std::string>;
+
+    ConfigurationManager();
+    ~ConfigurationManager();
+    ConfigurationManager(const ConfigurationManager&) = delete;
+    ConfigurationManager& operator=(const ConfigurationManager&) = delete;
+
+    /// Parses the main config file (e.g. client.json) and creates a ConfigJSON
+    /// for each root configurable listed in its "sub_config_files" array.
     void init(const std::string& main_config_filename);
 
-    /// @brief Destructor
-    virtual ~ConfigurationManager();
+    bool hasRootConfigJSON(const std::string& class_name, const std::string& instance_name) const;
+    ConfigJSON& getRootConfigJSON(const std::string& class_name, const std::string& instance_name);
+    const ConfigJSON& getRootConfigJSON(const std::string& class_name, const std::string& instance_name) const;
 
-    /// @brief Registers a configurable as root (no parent)
-    Configuration& registerRootConfigurable(Configurable& configurable);
-    /// @brief Unregisters a configurable as root
-    void unregisterRootConfigurable(Configurable& configurable);
+    /// Registers a root configurable so its parameters are written back before save.
+    void registerJsonRootConfigurable(Configurable& configurable);
+    void unregisterJsonRootConfigurable(Configurable& configurable);
 
-    /// @brief Saves the current configuration
+    /// Writes back all registered root configurables (bottom-up) and saves their ConfigJSON files.
     void saveConfiguration();
 
-    /// @brief Returns singleton instance
-    static ConfigurationManager& getInstance()
-    {
-        static ConfigurationManager instance;
-        return instance;
-    }
-
-    /// @brief Returns a dummy configuration which is discarded
-    // Configuration &getDummyConfiguration () { return dummy_configuration_; }
-
-    bool hasRootConfiguration(const std::string& class_id, const std::string& instance_id);
-    Configuration& getRootConfiguration(const std::string& class_id, const std::string& instance_id);
-
-  protected:
-    bool initialized_;
+  private:
+    bool initialized_{false};
     std::string main_config_filename_;
-    /// Container with all root configurables (class id, instance id) -> Configurable
-    std::map<std::pair<std::string, std::string>, Configurable&> root_configurables_;
-    /// Container with all root configurations (class id, instance id) -> Configuration
-    std::map<std::pair<std::string, std::string>, std::unique_ptr<Configuration>> root_configurations_;
-    // Configuration dummy_configuration_;
 
-    /// @brief Constructor
-    ConfigurationManager();
+    /// One ConfigJSON per root configurable, loaded from separate files at init().
+    std::map<Key, std::unique_ptr<ConfigJSON>> root_config_jsons_;
 
-    /// @brief Parses a configuration file
-    void parseJSONConfigurationFile(const std::string& filename);
-
-    void saveJSONConfiguration();
+    /// Root configurables that have been constructed and registered for save-time writeback.
+    std::map<Key, Configurable*> json_root_configurables_;
 };

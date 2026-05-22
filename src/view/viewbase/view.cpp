@@ -24,6 +24,7 @@
 #include "compass.h"
 #include "dbcontentmanager.h"
 #include "viewdatawidget.h"
+#include "viewconfigwidget.h"
 #include "config.h"
 
 #include <QVBoxLayout>
@@ -39,18 +40,15 @@ unsigned int View::cnt_ = 0;
 
 /**
 @brief Constructor.
-@param class_id Configurable class id.
-@param instance_id Configurable instance id.
+@param class_name Configurable class id.
+@param instance_name Configurable instance id.
 @param w ViewContainerWidget the view is embedded in, configurable parent.
  */
-View::View(const std::string& class_id, 
-           const std::string& instance_id, 
-           ViewContainer* container,
-           ViewManager& view_manager)
-    : Configurable(class_id, instance_id, container),
-      view_manager_(view_manager),
+View::View(nlohmann::json& config, ViewContainer* parent)
+    : Configurable(config, parent),
+      view_manager_(parent->viewManager()),
       widget_(nullptr),
-      container_(container)
+      container_(parent)
 {
     logdbg;
 
@@ -75,6 +73,16 @@ View::View(const std::string& class_id,
 
     //do not write view name to presets
     addJSONExportFilter(Configurable::JSONExportType::Preset, Configurable::JSONExportFilterType::ParamID, "name");
+}
+
+COMPASS& View::compass()
+{
+    return view_manager_.compass();
+}
+
+COMPASS& View::compass() const
+{
+    return view_manager_.compass();
 }
 
 /**
@@ -111,7 +119,7 @@ bool View::init()
     // add view to container widget
     //container_->addView(this);
 
-    app_mode_ = COMPASS::instance().appMode();
+    app_mode_ = view_manager_.compass().appMode();
 
     // invoke derive class (will create subconfigurables, such as view widget)
     if (!init_impl())
@@ -125,6 +133,9 @@ bool View::init()
 
     init_ = true;
 
+    //all init => run post init ops on some widget components
+    w->runPostInit();
+
     return true;
 }
 
@@ -132,12 +143,20 @@ bool View::init()
 */
 void View::databaseOpened()
 {
+    if (widget_)
+        widget_->databaseOpened();
+
+    databaseOpened_impl();
 }
 
 /**
 */
 void View::databaseClosed()
 {
+    if (widget_)
+        widget_->databaseClosed();
+
+    databaseClosed_impl();
 }
 
 /**
@@ -369,9 +388,17 @@ QImage View::renderView() const
 
 /**
  */
+void View::prepareForRender()
+{
+    traced_assert(widget_ && widget_->getViewDataWidget());
+    widget_->getViewDataWidget()->prepareForRender();
+}
+
+/**
+ */
 void View::setExporting(bool ok)
 {
-    traced_assert(widget_ && widget_->getViewDataWidget());  
+    traced_assert(widget_ && widget_->getViewDataWidget());
     return widget_->getViewDataWidget()->isExporting(ok);
 }
 
@@ -467,7 +494,7 @@ void View::notifyViewUpdateNeeded(int flags, bool add)
     traced_assert(widget_);
 
     //live mode updates are handled immediately in their own way
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    if (view_manager_.compass().appMode() == AppMode::LiveRunning)
     {
         if (flags & VU_Reload)
         {
@@ -602,8 +629,8 @@ void View::updateView(int flags)
     if (flags & VU_Reload) //reload = complete update
     {
         //start reload (will reset all cached updates)
-        if (COMPASS::instance().dbOpened())
-            COMPASS::instance().dbContentManager().load();
+        if (view_manager_.compass().dbOpened())
+            view_manager_.compass().dbContentManager().load(LoadRequest::standard());
     }
     else //handle all other updates
     {
@@ -631,7 +658,7 @@ View::PresetError View::applyPreset(const ViewPresets::Preset& preset,
                                     std::vector<MissingKey>* missing_param_keys,
                                     std::string* error_msg)
 {
-    auto version = COMPASS::instance().config().getString("version");
+    auto version = view_manager_.compass().config().getString("version");
 
     if (!preset.app_version.empty() && preset.app_version != version)
     {
@@ -640,7 +667,7 @@ View::PresetError View::applyPreset(const ViewPresets::Preset& preset,
         //return PresetError::IncompatibleVersion;
     }
 
-    bool assert_on_errors = !COMPASS::instance().isAppImage();
+    bool assert_on_errors = !view_manager_.compass().isAppImage();
 
     auto result = reconfigure(preset.view_config, missing_subconfig_keys, missing_param_keys, assert_on_errors);
 
@@ -762,24 +789,12 @@ ViewInfos View::viewInfos() const
         return ViewInfos();
 
     ViewInfos vinfos;
-    
+
     //get custom infos
     ViewInfos vinfos_custom = viewInfos_impl();
 
-    //create standard view infos
-    ViewInfos vinfos_standard;
-    vinfos_standard.addSection("Loaded Data");
-
-    const auto& null_cnt = widget_->getViewDataWidget()->nullCount();
-
-    if (null_cnt.has_value())
-        vinfos_standard.addInfo("info_null_values", "NULL values:", std::to_string(null_cnt.value()));
-
-    //add custom infos, then standard ones
     if (vinfos_custom.numInfos() > 0)
         vinfos.addInfos(vinfos_custom);
-    if (vinfos_standard.numInfos() > 0)
-        vinfos.addInfos(vinfos_standard);
 
     return vinfos;
 }
@@ -806,3 +821,4 @@ nlohmann::json View::viewInfoJSON() const
 
     return info;
 }
+

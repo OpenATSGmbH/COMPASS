@@ -1,13 +1,13 @@
 {
-    "name":"cat023_1.2_record",
-    "type":"record",
-    "field_specification":{
-        "name":"FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat023_1.2_record",
+    "type": "record",
+    "field_specification": {
+        "name": "FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "uap":[
+    "uap": [
         "010",
         "000",
         "015",
@@ -25,314 +25,310 @@
         "SP",
         "FX"
     ],
-    "items":[
+    "items": [
         {
-            "number":"000",
-            "name":"Report Type",
-            "comment":"This Data Item allows for a more convenient handling of the reports at the receiver side by further defining the type of transaction.",
-            "type":"item",
-            "data_fields":[
+            "number": "000",
+            "name": "Report Type",
+            "comment": "This Data Item allows for a more convenient handling of the reports at the receiver side by further defining the type of transaction.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Report Type",
-                    "comment":"1 Ground Station Status report\n2 Service Status report\n3 Service Statistics report",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "Report Type",
+                    "comment": "1 Ground Station Status report\n2 Service Status report\n3 Service Statistics report",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"010",
-            "name":"Data Source Identifier",
-            "comment":"Identification of the Ground Station from which the data is received.",
-            "type":"item",
-            "data_fields":[
+            "number": "010",
+            "name": "Data Source Identifier",
+            "comment": "Identification of the Ground Station from which the data is received.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAC",
-                    "comment":"System Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SAC",
+                    "comment": "System Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"SIC",
-                    "comment":"System Identification Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SIC",
+                    "comment": "System Identification Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"015",
-            "name":"Service Type and Identification",
-            "comment":"Identifies the type of service being reported.",
-            "type":"item",
-            "data_fields":[
+            "number": "015",
+            "name": "Service Type and Identification",
+            "comment": "Identifies the type of service being reported.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"service_type_and_identification",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "service_type_and_identification",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"SID",
-                            "comment":"Service Identification",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":4
+                            "name": "SIC",
+                            "comment": "Service Identification",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 4
                         },
                         {
-                            "name":"STYP",
-                            "comment":"Type of Service\n1 ADS-B VDL4\n2 ADS-B Ext Squitter\n3 ADS-B UAT\n4 TIS-B VDL4\n5 TIS-B Ext Squitter\n6 TIS-B UAT\n7 FIS-B VDL4\n8 GRAS VDL4\n9 MLT",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":4
+                            "name": "STYP",
+                            "comment": "Type of Service\n1 ADS-B VDL4\n2 ADS-B Ext Squitter\n3 ADS-B UAT\n4 TIS-B VDL4\n5 TIS-B Ext Squitter\n6 TIS-B UAT\n7 FIS-B VDL4\n8 GRAS VDL4\n9 MLT",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 4
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"070",
-            "name":"Time of Day",
-            "comment":"Absolute time stamping expressed as UTC time.",
-            "type":"item",
-            "data_fields":[
+            "number": "070",
+            "name": "Time of Day",
+            "comment": "Absolute time stamping expressed as UTC time.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Time of Day",
-                    "comment":"",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "Time of Day",
+                    "comment": "",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"100",
-            "name":"Ground Station Status",
-            "comment":"Information concerning the status of a Ground Station.",
-            "type":"item",
-            "data_fields":[
+            "number": "100",
+            "name": "Ground Station Status",
+            "comment": "Information concerning the status of a Ground Station.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"ground_station_status",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "ground_station_status",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"NOGO",
-                            "comment":"Operational Release Status of the Data\n0 Data is released for operational use\n1 Data must not be used operationally",
-                            "type":"fixed_bits",
-                            "start_bit":7,
-                            "bit_length":1
+                            "name": "NOGO",
+                            "comment": "Operational Release Status of the Data\n0 Data is released for operational use\n1 Data must not be used operationally",
+                            "type": "fixed_bits",
+                            "start_bit": 7,
+                            "bit_length": 1
                         },
                         {
-                            "name":"ODP",
-                            "comment":"Data Processor Overload Indicator\n0 Default, no overload\n1 Overload in DP",
-                            "type":"fixed_bits",
-                            "start_bit":6,
-                            "bit_length":1
+                            "name": "ODP",
+                            "comment": "Data Processor Overload Indicator\n0 Default, no overload\n1 Overload in DP",
+                            "type": "fixed_bits",
+                            "start_bit": 6,
+                            "bit_length": 1
                         },
                         {
-                            "name":"OXT",
-                            "comment":"Ground Interface Data Communications Overload\n0 Default, no overload\n1 Overload in transmission subsystem",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":1
+                            "name": "OXT",
+                            "comment": "Ground Interface Data Communications Overload\n0 Default, no overload\n1 Overload in transmission subsystem",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 1
                         },
                         {
-                            "name":"MSC",
-                            "comment":"Monitoring System Connected Status\n0 Monitoring system not connected or unknown\n1 Monitoring system connected",
-                            "type":"fixed_bits",
-                            "start_bit":4,
-                            "bit_length":1
+                            "name": "MSC",
+                            "comment": "Monitoring System Connected Status\n0 Monitoring system not connected or unknown\n1 Monitoring system connected",
+                            "type": "fixed_bits",
+                            "start_bit": 4,
+                            "bit_length": 1
                         },
                         {
-                            "name":"TSV",
-                            "comment":"Time Source Validity\n0 valid\n1 invalid",
-                            "type":"fixed_bits",
-                            "start_bit":3,
-                            "bit_length":1
+                            "name": "TSV",
+                            "comment": "Time Source Validity\n0 valid\n1 invalid",
+                            "type": "fixed_bits",
+                            "start_bit": 3,
+                            "bit_length": 1
                         },
                         {
-                            "name":"SPO",
-                            "comment":"Indication of spoofing attack\n0 no spoofing detected\n1 potential spoofing attack",
-                            "type":"fixed_bits",
-                            "start_bit":2,
-                            "bit_length":1
+                            "name": "SPO",
+                            "comment": "Indication of spoofing attack\n0 no spoofing detected\n1 potential spoofing attack",
+                            "type": "fixed_bits",
+                            "start_bit": 2,
+                            "bit_length": 1
                         },
                         {
-                            "name":"RN",
-                            "comment":"Renumbering Indication for Track ID\n0 default\n1 track numbering has restarted",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":1
+                            "name": "RN",
+                            "comment": "Renumbering Indication for Track ID\n0 default\n1 track numbering has restarted",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 1
                         },
                         {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
-                        }
-                    ]
-                },
-                {
-                    "name":"ground_station_status_first_extend",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
-                        {
-                            "name":"GSSP",
-                            "comment":"Ground Station Status Reporting Period\nValid range: 1 <= GSSP <= 127s",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":7,
-                            "lsb":1.0
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "number":"101",
-            "name":"Service Configuration",
-            "comment":"Information concerning the configuration of a Service.",
-            "type":"item",
-            "data_fields":[
-                {
-                    "name":"service_configuration",
-                    "type":"fixed_bitfield",
-                    "length":2,
-                    "items":[
-                        {
-                            "name":"RP",
-                            "comment":"Report Period for Category 021 Reports\n0: Data driven mode",
-                            "type":"fixed_bits",
-                            "start_bit":8,
-                            "bit_length":8,
-                            "lsb":0.5
-                        },
-                        {
-                            "name":"SC",
-                            "comment":"Service Class\n0 No information\n1 NRA class\n2-7 reserved for future use",
-                            "type":"fixed_bits",
-                            "start_bit":5,
-                            "bit_length":3
-                        },
-                        {
-                            "name":"FX",
-                            "type":"fixed_bits",
-                            "start_bit":0,
-                            "bit_length":1
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
                         }
                     ]
                 },
                 {
-                    "name":"service_configuration_first_extend",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "optional":true,
-                    "optional_variable_name":"FX",
-                    "optional_variable_value":1,
-                    "items":[
+                    "name": "ground_station_status_first_extend",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
                         {
-                            "name":"SSRP",
-                            "comment":"Service Status Reporting Period\nValid range: 1 <= GSSP <= 127s",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":7,
-                            "lsb":1.0
+                            "name": "GSSP",
+                            "comment": "Ground Station Status Reporting Period\nValid range: 1 <= GSSP <= 127s",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 7,
+                            "lsb": 1.0
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"110",
-            "name":"Service Status",
-            "comment":"Information concerning the status of the Service provided by a Ground Station.",
-            "type":"item",
-            "data_fields":[
+            "number": "101",
+            "name": "Service Configuration",
+            "comment": "Information concerning the configuration of a Service.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"service_status",
-                    "type":"fixed_bitfield",
-                    "length":1,
-                    "items":[
+                    "name": "service_configuration",
+                    "type": "fixed_bitfield",
+                    "length": 2,
+                    "items": [
                         {
-                            "name":"STAT",
-                            "comment":"Status of the Service\n0 Unknown\n1 Failed\n2 Disabled\n3 Degraded\n4 Normal\n5 Initialisation",
-                            "type":"fixed_bits",
-                            "start_bit":1,
-                            "bit_length":3
+                            "name": "RP",
+                            "comment": "Report Period for Category 021 Reports\n0: Data driven mode",
+                            "type": "fixed_bits",
+                            "start_bit": 8,
+                            "bit_length": 8,
+                            "lsb": 0.5
+                        },
+                        {
+                            "name": "SC",
+                            "comment": "Service Class\n0 No information\n1 NRA class\n2-7 reserved for future use",
+                            "type": "fixed_bits",
+                            "start_bit": 5,
+                            "bit_length": 3
+                        },
+                        {
+                            "name": "FX",
+                            "type": "fixed_bits",
+                            "start_bit": 0,
+                            "bit_length": 1,
+                            "no_output": true
+                        }
+                    ]
+                },
+                {
+                    "name": "service_configuration_first_extend",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "optional": true,
+                    "optional_variable_name": "FX",
+                    "optional_variable_value": 1,
+                    "items": [
+                        {
+                            "name": "SSRP",
+                            "comment": "Service Status Reporting Period\nValid range: 1 <= GSSP <= 127s",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 7,
+                            "lsb": 1.0
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"120",
-            "name":"Service Statistics",
-            "comment":"Statistics concerning the service. Provides counts of various ADS-B message types that have been received since the report was last sent.",
-            "type":"item",
-            "data_fields":[
+            "number": "110",
+            "name": "Service Status",
+            "comment": "Information concerning the status of the Service provided by a Ground Station.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"service_statistics",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
+                    "name": "service_status",
+                    "type": "fixed_bitfield",
+                    "length": 1,
+                    "items": [
                         {
-                            "name":"service_statistics",
-                            "type":"fixed_bitfield",
-                            "length":2,
-                            "items":[
+                            "name": "STAT",
+                            "comment": "Status of the Service\n0 Unknown\n1 Failed\n2 Disabled\n3 Degraded\n4 Normal\n5 Initialisation",
+                            "type": "fixed_bits",
+                            "start_bit": 1,
+                            "bit_length": 3
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number": "120",
+            "name": "Service Statistics",
+            "comment": "Statistics concerning the service. Provides counts of various ADS-B message types that have been received since the report was last sent.",
+            "type": "item",
+            "data_fields": [
+                {
+                    "name": "service_statistics",
+                    "type": "repetitive",
+                    "items": [
+                        {
+                            "name": "service_statistics",
+                            "type": "fixed_bitfield",
+                            "length": 2,
+                            "items": [
                                 {
-                                    "name":"TYPE",
-                                    "comment":"0 Number of unknown messages received\n1 Number of ‘too old’ messages received\n2 Number of failed message conversions\n3 Total Number of messages received\n4 Total number of messages transmitted\n20 Number of TIS-B management messages received\n21 Number of 'Basic' messages received\n22 Number of 'High Dynamic' messages received\n23 Number of 'Full Position' messages received\n24 Number of 'Basic Ground' messages received\n25 Number of 'TCP' messages received\n26 Number of 'UTC time' messages received\n27 Number of 'Data' messages received\n28 Number of 'High Resolution' messages received\n29 Number of 'Aircraft Target Airborne' messages received.\n30 Number of 'Aircraft Target 'Ground' messages received.\n31 Number of 'Ground Vehicle Target' messages received.\n32 Number of '2 slots TCP messages received.",
-                                    "type":"fixed_bits",
-                                    "start_bit":8,
-                                    "bit_length":8
+                                    "name": "TYPE",
+                                    "comment": "0 Number of unknown messages received\n1 Number of \u2018too old\u2019 messages received\n2 Number of failed message conversions\n3 Total Number of messages received\n4 Total number of messages transmitted\n20 Number of TIS-B management messages received\n21 Number of 'Basic' messages received\n22 Number of 'High Dynamic' messages received\n23 Number of 'Full Position' messages received\n24 Number of 'Basic Ground' messages received\n25 Number of 'TCP' messages received\n26 Number of 'UTC time' messages received\n27 Number of 'Data' messages received\n28 Number of 'High Resolution' messages received\n29 Number of 'Aircraft Target Airborne' messages received.\n30 Number of 'Aircraft Target 'Ground' messages received.\n31 Number of 'Ground Vehicle Target' messages received.\n32 Number of '2 slots TCP messages received.",
+                                    "type": "fixed_bits",
+                                    "start_bit": 8,
+                                    "bit_length": 8
                                 },
                                 {
-                                    "name":"REF",
-                                    "comment":"Reference from which the messages are countered\n0 From midnight\n1 From the last report",
-                                    "type":"fixed_bits",
-                                    "start_bit":7,
-                                    "bit_length":1
+                                    "name": "REF",
+                                    "comment": "Reference from which the messages are countered\n0 From midnight\n1 From the last report",
+                                    "type": "fixed_bits",
+                                    "start_bit": 7,
+                                    "bit_length": 1
                                 }
                             ]
                         },
                         {
-                            "name":"COUNTER VALUE",
-                            "comment":"32-bit counter value",
-                            "type":"fixed_bytes",
-                            "length":4,
-                            "data_type":"uint"
+                            "name": "COUNTER VALUE",
+                            "comment": "32-bit counter value",
+                            "type": "fixed_bytes",
+                            "length": 4,
+                            "data_type": "uint"
                         }
                     ]
                 }
             ]
         },
         {
-            "number":"200",
-            "name":"Operational Range",
-            "comment":"",
-            "type":"item",
-            "data_fields":[
+            "number": "200",
+            "name": "Operational Range",
+            "comment": "",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Range",
-                    "comment":"Operational range of the GS",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint",
-                    "lsb":1.0
+                    "name": "Range",
+                    "comment": "Operational range of the GS",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint",
+                    "lsb": 1.0
                 }
             ]
         }

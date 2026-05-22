@@ -20,12 +20,23 @@
 #include "histogramview.h"
 #include "compass.h"
 #include "buffer.h"
+#include "color_provider.h"
+#include "data_source.h"
+#include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
+#include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
+#include "dbcontentlayer.h"
+#include "histogramleafpayload.h"
 #include "histogramviewdatasource.h"
 #include "histogramviewchartview.h"
+#include "layertreemodel.h"
+#include "viewlayertreemodel.h"
+#include "annotationsrootitem.h"
 #include "logger.h"
+#include "number.h"
+#include "stringconv.h"
 #include "evaluationmanager.h"
 #include "histogramgenerator.h"
 #include "histogramgeneratorbuffer.h"
@@ -38,6 +49,8 @@
 #include <QTabWidget>
 
 #include <QtCharts/QChartView>
+#include <QtCharts/QAbstractBarSeries>
+#include <QtCharts/QStackedBarSeries>
 #include <QtCharts/QBarSeries>
 #include <QtCharts/QBarSet>
 #include <QtCharts/QLegend>
@@ -55,6 +68,39 @@ QT_CHARTS_USE_NAMESPACE
 
 using namespace EvaluationRequirementResult;
 using namespace std;
+
+namespace
+{
+    /// Group key derived from a full layer id ("<ds_type>:<ds_name>:L<n>:
+    /// <dbcontent>") for the given color mode - this is what the chart
+    /// actually stacks on (one bar set per group). Matches the semantics of
+    /// COMPASS::colorMode():
+    ///   0 DSType, 1 DBContent, 2 Data Source, 3 Data Source + Line.
+    std::string groupKeyFor(const std::string& layer_id, unsigned int color_mode)
+    {
+        std::vector<std::string> parts;
+        size_t start = 0;
+        for (size_t i = 0; i <= layer_id.size(); ++i)
+        {
+            if (i == layer_id.size() || layer_id[i] == ':')
+            {
+                parts.push_back(layer_id.substr(start, i - start));
+                start = i + 1;
+            }
+        }
+        if (parts.size() != 4)
+            return layer_id;
+
+        switch (color_mode)
+        {
+            case 0: return parts[0];                                        // DSType
+            case 1: return parts[3];                                        // DBContent
+            case 2: return parts[0] + ":" + parts[1];                       // Data Source
+            case 3: return parts[0] + ":" + parts[1] + ":" + parts[2];      // Data Source + Line
+            default: return layer_id;
+        }
+    }
+}
 
 /**
  */
@@ -77,6 +123,18 @@ HistogramViewDataWidget::HistogramViewDataWidget(HistogramViewWidget* view_widge
     x_axis_name_ = view_->variable(0).description();
 
     updateChart();
+
+    // Annotations subtree of the layer panel mirrors view_->annotations(); the
+    // panel is wired via attachLayerPanel and may not yet be present at
+    // construction time.
+    connect(view_, &VariableView::annotationsChangedSignal, this, [this]()
+    {
+        if (annotations_root_)
+            annotations_root_->update(view_->annotations(),
+                                      view_->currentAnnotationGroupIdx(),
+                                      view_->currentAnnotationIdx(),
+                                      view_);
+    });
 }
 
 /**
@@ -85,9 +143,51 @@ HistogramViewDataWidget::~HistogramViewDataWidget() = default;
 
 /**
  */
+void HistogramViewDataWidget::attachLayerPanel(DBContentRootItem* root,
+                                               LayerTreeModel* layer_model)
+{
+    db_content_root_ = root;
+    layer_model_     = layer_model;
+
+    if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
+        annotations_root_ = vlm->annotationsRootItem();
+
+    // Visibility toggle -> capture the new hidden set, then trigger a full
+    // redraw so the histogram is rebuilt without the hidden layers.
+    connect(layer_model_, &LayerTreeModel::hiddenChangedSignal,
+            this, [this]() {
+                if (layer_model_)
+                    hidden_layer_ids_ = layer_model_->persistedHiddenIds();
+                redrawData(true);
+            });
+
+    // Color-mode change -> resolveSeriesColor outputs differ -> rebuild
+    // payloads (leaf icon + panel group colors) AND redraw the chart so
+    // the stacked bar colors match. The histogram values are unchanged -
+    // redrawData(true) does recompute, but rebuilding the histogram on a
+    // color-mode toggle is cheap compared to a buffer reload.
+    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+            this, [this](unsigned int) {
+                rebuildLayerTree();
+                redrawData(true);
+            });
+
+    rebuildLayerTree();
+
+    // Same for annotations: VariableView may have already populated them via
+    // a view point load that fired before attachLayerPanel.
+    if (annotations_root_)
+        annotations_root_->update(view_->annotations(),
+                                  view_->currentAnnotationGroupIdx(),
+                                  view_->currentAnnotationIdx(),
+                                  view_);
+}
+
+/**
+ */
 void HistogramViewDataWidget::resetHistogram()
 {
-    histogram_generator_.reset(); 
+    histogram_generator_.reset();
     histogram_raw_.clear();
 
     x_axis_name_ = "";
@@ -100,6 +200,12 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
 {
     //current generator makes no sense any more
     resetHistogram();
+
+    //new data -> old zoom bin indices are meaningless
+    saved_zoom_range_.reset();
+
+    // Buffers have changed; repopulate the layer panel (empty if no data).
+    rebuildLayerTree();
 }
 
 /**
@@ -134,7 +240,8 @@ void HistogramViewDataWidget::preUpdateVariableDataEvent()
  */
 void HistogramViewDataWidget::postUpdateVariableDataEvent()
 {
-    //nothing to do
+    //nothing to do - panel is refreshed from updateDataEvent on data arrival,
+    //and the per-redraw filter is rebuilt inside updateFromVariables().
 }
 
 /**
@@ -153,26 +260,41 @@ bool HistogramViewDataWidget::updateFromAnnotations()
     if (!view_->hasCurrentAnnotation())
         return false;
 
-    const auto& anno = view_->currentAnnotation();
+    try
+    {
+        const auto& anno = view_->currentAnnotation();
 
-    title_       = anno.metadata.title_;
-    x_axis_name_ = anno.metadata.xAxisLabel();
+        title_       = anno.metadata.title_;
+        x_axis_name_ = anno.metadata.xAxisLabel();
 
-    const auto& feature = anno.feature_json;
+        const auto& feature = anno.feature_json;
 
-    if (!feature.is_object() || !feature.contains(ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram))
-        return false;
+        if (!feature.is_object())
+            throw std::runtime_error("histogram annotation feature is not an object");
 
-    if (!histogram_raw_.fromJSON(feature[ ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram ]))
+        if (!feature.contains(ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram))
+            throw std::runtime_error("histogram annotation feature missing '"
+                + ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram + "' field");
+
+        if (!histogram_raw_.fromJSON(feature[ ViewPointGenFeatureHistogram::FeatureHistogramFieldNameHistogram ]))
+        {
+            histogram_raw_.clear();
+            throw std::runtime_error("could not read histogram from annotation");
+        }
+
+        if (histogram_raw_.useLogScale().has_value())
+        {
+            view_->useLogScale(histogram_raw_.useLogScale().value(), false);
+            view_->updateComponents();
+        }
+    }
+    catch (const std::exception& e)
     {
         histogram_raw_.clear();
+        if (view_->hasViewPoint())
+            view_->viewPoint().reportError(view_->getName(),
+                std::string("annotation error: ") + e.what());
         return false;
-    }
-
-    if (histogram_raw_.useLogScale().has_value())
-    {
-        view_->useLogScale(histogram_raw_.useLogScale().value(), false);
-        view_->updateComponents();
     }
 
     loginf << "done";
@@ -218,13 +340,62 @@ void HistogramViewDataWidget::updateFromVariables()
     SwitchPropertyDataTypeNumeric(data_type, UpdateFunc, UnsupportedFunc, UnsupportedFunc, NotFoundFunc)
 
     traced_assert(histogram_generator_);
-    
+
+    // Build per-buffer row-layer ids once (covers every row). The row filter
+    // uses the full layer id (panel visibility is per-layer). The layer
+    // lookup fed to the generator returns the color-mode *group key* - that
+    // way the generator produces one bucket per visible group (e.g. 5 in
+    // DSType mode) rather than per full-layer, and no merge step is needed
+    // downstream.
+    computeRowLayerIds();
+
+    HistogramGeneratorBuffer* buf_gen =
+        dynamic_cast<HistogramGeneratorBuffer*>(histogram_generator_.get());
+    traced_assert(buf_gen);
+
+    const unsigned int color_mode = view_->compass().colorMode();
+
+    buf_gen->setRowLayerLookup(
+        [this, color_mode](const std::string& dbc, unsigned int i) -> std::string
+        {
+            auto it = row_layer_ids_.find(dbc);
+            if (it == row_layer_ids_.end() || i >= it->second.size())
+                return {};
+            const std::string& full_id = it->second[i];
+            if (full_id.empty())
+                return {};
+            return groupKeyFor(full_id, color_mode);
+        });
+
+    if (!hidden_layer_ids_.empty())
+    {
+        buf_gen->setRowFilter(
+            [this](const std::string& dbc, unsigned int i) -> bool
+            {
+                auto it = row_layer_ids_.find(dbc);
+                if (it == row_layer_ids_.end() || i >= it->second.size())
+                    return true;   // no lookup -> allow (can't match a hidden id)
+                const std::string& lid = it->second[i];
+                if (lid.empty())
+                    return true;   // unmappable rows still contribute to scan nulls
+                return hidden_layer_ids_.count(lid) == 0;
+            });
+    }
+
     histogram_generator_->update();
     //histogram_generator_->print();
 
+    // Re-apply any zoom that was active before this regeneration, so a
+    // selection-triggered redrawData(true) doesn't reset the user's zoom.
+    // Cleared on data reload and on explicit resetZoomSlot, so this only
+    // fires for same-data redraws.
+    if (saved_zoom_range_.has_value())
+        histogram_generator_->zoom(saved_zoom_range_->first,
+                                   saved_zoom_range_->second);
+
     HistogramGeneratorBuffer* generator = dynamic_cast<HistogramGeneratorBuffer*>(histogram_generator_.get());
     traced_assert(generator);
-    
+
     //variable missing from buffer?
     if (generator->dataNotInBuffer())
         setVariableState(0, VariableState::MissingFromBuffer);
@@ -248,8 +419,21 @@ void HistogramViewDataWidget::compileRawDataFromGenerator()
     if (!histogram_generator_ || !variablesOk() || !histogram_generator_->hasValidResult())
         return;
 
-    //convert results to raw data
-    histogram_generator_->getResults().toRaw(histogram_raw_, dbContentColors(), ColorSelected);
+    // Color map keyed by the generator's group key (DSType / DBContent /
+    // Data Source / Data Source + Line - determined by color mode). All
+    // full-layer payloads that collapse to the same group share the same
+    // color by construction, so "first wins" is safe.
+    const unsigned int color_mode = view_->compass().colorMode();
+
+    std::map<std::string, QColor> group_colors;
+    for (const auto& p : payloads_)
+    {
+        if (!p) continue;
+        group_colors.try_emplace(groupKeyFor(p->persistenceId(), color_mode),
+                                 p->color());
+    }
+
+    histogram_generator_->getResults().toRaw(histogram_raw_, group_colors, ColorSelected);
 }
 
 /**
@@ -318,16 +502,23 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     QString x_axis_name = QString::fromStdString(x_axis_name_);
     QString y_axis_name = "Count";
 
+    // Legend visibility is decided later based on series count (see
+    // MaxLegendEntries below) - at a few layers it's still useful, but with
+    // many layers the layer panel is the better reference.
     chart->legend()->setAlignment(Qt::AlignBottom);
 
-    //create bar series
-    QBarSeries* chart_series = new QBarSeries();
+    //create stacked bar series (per-layer segments share each bin)
+    QStackedBarSeries* chart_series = new QStackedBarSeries();
     chart->addSeries(chart_series);
 
-    //create x axis
+    //create x axis; use setTitleText(" ") to reserve layout space for the axis
+    // title, then render the actual label via ChartView::setXAxisLabel() as a
+    // QGraphicsSimpleTextItem - Qt Charts truncates the real title to "..." when
+    // tick labels are rotated
     QBarCategoryAxis* chart_x_axis = new QBarCategoryAxis;
     chart_x_axis->setLabelsAngle(LabelAngleX);
-    chart_x_axis->setTitleText(x_axis_name);
+    chart_x_axis->setTitleText(" ");
+    chart_x_axis->setTitleBrush(Qt::transparent);
 
     chart->addAxis(chart_x_axis, Qt::AlignBottom);
     chart_series->attachAxis(chart_x_axis);
@@ -350,8 +541,29 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
         }
         else
         {
-            chart_y_axis = new QValueAxis;
-            chart_y_axis->setRange(0, (int)max_count);
+            int max_i = std::max(1, (int)std::ceil(max_count));
+
+            // pick a "nice" tick step from {1, 2, 5} x 10^n targeting ~8 ticks
+            double raw_step = max_i / 8.0;
+            double pow10    = std::pow(10.0, std::floor(std::log10(raw_step)));
+            double n        = raw_step / pow10;
+            double nice     = (n <= 1.0) ? 1.0 : (n <= 2.0) ? 2.0 : (n <= 5.0) ? 5.0 : 10.0;
+            int step        = std::max(1, (int)(nice * pow10));
+            int upper       = (max_i / step + 1) * step;
+
+            QValueAxis* tmp_chart_y_axis = new QValueAxis;
+            tmp_chart_y_axis->setRange(0, upper);
+            tmp_chart_y_axis->setLabelFormat("%d");
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+            tmp_chart_y_axis->setTickType(QValueAxis::TicksDynamic);
+            tmp_chart_y_axis->setTickAnchor(0.0);
+            tmp_chart_y_axis->setTickInterval(step);
+#else
+            // Qt < 5.12 lacks dynamic ticks; with range [0, upper] aligned to step,
+            // (upper/step)+1 evenly spaced ticks reproduces the desired anchoring.
+            tmp_chart_y_axis->setTickCount(upper / step + 1);
+#endif
+            chart_y_axis = tmp_chart_y_axis;
         }
         traced_assert(chart_y_axis);
 
@@ -363,23 +575,28 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
     if (has_data)
     {
-        //data available
-        chart->legend()->setVisible(true);
-
         unsigned int max_count = 0;
 
-        auto addCount = [ & ] (QBarSet* set, unsigned int count) 
-        {
-            if (count > max_count)
-                max_count = count;
+        // Log scale disallows zero, so zero-count bins need a tiny positive
+        // fallback to silence QLogValueAxis warnings. With stacked bars this
+        // fallback accumulates across all layers in a bin - at 10e-3 per
+        // layer the cumulative (N * 0.01) crossed the log axis min (0.1) and
+        // produced a visible "floor". 1e-12 keeps the cumulative well below
+        // any realistic axis min even for thousands of layers.
+        constexpr double LogZeroFallback = 1e-12;
 
+        auto addCount = [ & ] (QBarSet* set, unsigned int count)
+        {
             if (use_log_scale && count == 0)
-                *set << 10e-3; // Logarithms of zero and negative values are undefined.
+                *set << LogZeroFallback;
             else
                 *set << count;
         };
 
-        //generate a bar set for each DBContent
+        //generate a bar set for each layer; track per-bin stack totals so the
+        //y axis upper bound covers the summed bar height, not the per-layer max
+
+        std::vector<unsigned int> bin_totals;
 
         for (const auto& data_series : histogram_raw_.dataSeries())
         {
@@ -389,10 +606,23 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
             QBarSet* set = new QBarSet(bar_legend_name);
 
-            for (const auto& bin : histogram.getBins())
-                addCount(set, bin.count);
-            
+            const auto& bins = histogram.getBins();
+            if (bin_totals.size() < bins.size())
+                bin_totals.resize(bins.size(), 0);
+
+            for (size_t i = 0; i < bins.size(); ++i)
+            {
+                addCount(set, bins[i].count);
+                bin_totals[i] += bins[i].count;
+            }
+
             set->setColor(data_series.color);
+            // Remove the bar outline so adjacent same-colored stack segments
+            // (same DSType / DBContent under a coarse color mode) read as one
+            // solid block instead of a striped column.
+            QPen pen(data_series.color);
+            pen.setWidth(0);
+            set->setPen(pen);
             chart_series->append(set);
         }
 
@@ -403,6 +633,10 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
         chart_x_axis->append(categories);
 
+        for (unsigned int v : bin_totals)
+            if (v > max_count)
+                max_count = v;
+
         //to generate a safe range we set max count to 1
         max_count = std::max(max_count, (unsigned)1);
 
@@ -410,11 +644,9 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
         draw_state = ViewDataWidget::DrawState::DrawnContent;
     }
-    else 
+    else
     {
         //no data, generate empty display
-
-        chart->legend()->setVisible(false);
 
         //we need some bogus category in order to make the bar plot work
         chart_x_axis->append("Category"); 
@@ -439,6 +671,20 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     //create new chart view
     chart_view_.reset(new HistogramViewChartView(this, chart));
     chart_view_->setObjectName("chart_view");
+    chart_view_->setXAxisLabel(x_axis_name);
+
+    // Must run AFTER chart-view construction: the ChartView base constructor
+    // auto-sets legend visibility from marker labels (non-empty -> visible),
+    // which would otherwise override whatever we set earlier. Hide the
+    // legend when there are too many entries to be useful - the layer panel
+    // carries per-layer identity in that case.
+    {
+        constexpr int MaxLegendEntries = 8;
+        const bool show_legend = has_data
+                              && chart_series->count() > 0
+                              && chart_series->count() <= MaxLegendEntries;
+        chart->legend()->setVisible(show_legend);
+    }
 
     //    connect (chart_series_, &QBarSeries::clicked,
     //             chart_view_, &HistogramViewChartView::seriesPressedSlot);
@@ -465,9 +711,9 @@ void HistogramViewDataWidget::exportDataSlot(bool overwrite)
 
 /**
  */
-void HistogramViewDataWidget::exportDoneSlot(bool cancelled)
+void HistogramViewDataWidget::exportDoneSlot(bool canceled)
 {
-    emit exportDoneSignal(cancelled);
+    emit exportDoneSignal(canceled);
 }
 
 /**
@@ -492,11 +738,15 @@ void HistogramViewDataWidget::zoomToSubrange(unsigned int index1, unsigned int i
         //zoom to bin range and refill with data
         histogram_generator_->zoom(index1, index2);
 
+        //remember the zoom so a subsequent recompute (e.g. selection-driven
+        //redrawData(true)) can re-apply it after the generator is rebuilt
+        saved_zoom_range_ = std::make_pair(index1, index2);
+
         //update raw data and chart
         compileRawDataFromGenerator();
-        
+
         redrawData(false);
-    } 
+    }
 }
 
 /**
@@ -522,8 +772,8 @@ void HistogramViewDataWidget::invertSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
         {
@@ -545,8 +795,8 @@ void HistogramViewDataWidget::clearSelectionSlot()
 
     for (auto& buf_it : viewData())
     {
-        traced_assert(buf_it.second->has<bool>(DBContent::selected_var.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(DBContent::selected_var.name());
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
             selected_vec.set(cnt, false);
@@ -560,6 +810,9 @@ void HistogramViewDataWidget::clearSelectionSlot()
 void HistogramViewDataWidget::resetZoomSlot()
 {
     loginf;
+
+    //reset the preserved zoom so the upcoming redraw uses the full range
+    saved_zoom_range_.reset();
 
     if (histogram_generator_ && histogram_generator_->subRangeActive())
     {
@@ -650,7 +903,7 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
             bool y_axis_log = dynamic_cast<QLogValueAxis*>(chart_view_->chart()->axes(Qt::Vertical).first()) != nullptr;
 
-            chart_info[ "x_axis_label" ] = chart_view_->chart()->axes(Qt::Horizontal).first()->titleText().toStdString();
+            chart_info[ "x_axis_label" ] = x_axis_name_;
             chart_info[ "y_axis_label" ] = chart_view_->chart()->axes(Qt::Vertical).first()->titleText().toStdString();
             chart_info[ "y_axis_log"   ] = y_axis_log;
             chart_info[ "num_series"   ] = chart_view_->chart()->series().count();
@@ -662,7 +915,7 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
             auto series = chart_view_->chart()->series();
             for (auto s : series)
             {
-                QBarSeries* bar_series = dynamic_cast<QBarSeries*>(s);
+                QAbstractBarSeries* bar_series = dynamic_cast<QAbstractBarSeries*>(s);
                 traced_assert(bar_series);
 
                 nlohmann::json series_info;
@@ -705,3 +958,217 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
         }
     }
 }
+
+namespace
+{
+    /// Aggregate a single loaded buffer into per-layer row counts, keyed by
+    /// "<ds_type>:<ds_name>:L<n>:<dbcontent>". Mirrors the grouping logic used
+    /// by the table view layer panel.
+    struct LayerAgg
+    {
+        std::string  ds_type;
+        std::string  ds_name;
+        std::string  line;
+        std::string  dbcontent;
+        unsigned int count      = 0;
+        int          line_index = 0;
+    };
+}
+
+void HistogramViewDataWidget::rebuildLayerTree()
+{
+    if (!db_content_root_ || !layer_model_)
+        return;
+
+    auto& compass    = view_->compass();
+    auto& dbcont_man = compass.dbContentManager();
+    auto& ctx_mgr    = compass.dbContextManager();
+
+    std::map<std::string, LayerAgg> agg;
+
+    for (auto& buf_it : viewData())
+    {
+        const std::string& dbcontent_name = buf_it.first;
+        Buffer&            buffer         = *buf_it.second;
+        if (buffer.size() == 0)
+            continue;
+
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) ||
+            !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
+            continue;
+
+        const std::string ds_id_name = dbcont_man.metaGetVariable(
+            dbcontent_name, dbcontent_vars::meta_var_ds_id_).name();
+        const std::string line_id_name = dbcont_man.metaGetVariable(
+            dbcontent_name, dbcontent_vars::meta_var_line_id_).name();
+
+        if (!buffer.has<unsigned int>(ds_id_name) ||
+            !buffer.has<unsigned int>(line_id_name))
+            continue;
+
+        const auto& ds_ids   = buffer.get<unsigned int>(ds_id_name);
+        const auto& line_ids = buffer.get<unsigned int>(line_id_name);
+
+        const unsigned int n = buffer.size();
+        for (unsigned int i = 0; i < n; ++i)
+        {
+            if (ds_ids.isNull(i) || line_ids.isNull(i))
+                continue;
+
+            const unsigned int ds_id   = ds_ids.get(i);
+            const unsigned int line_id = line_ids.get(i);
+
+            std::string ds_type, ds_name;
+            if (ctx_mgr.hasDataSource(ds_id))
+            {
+                const auto* ds = ctx_mgr.dataSource(ds_id);
+                ds_type = ds->dsType();
+                ds_name = ds->name();
+            }
+            else
+            {
+                ds_type = "Other";
+                ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
+                        + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
+            }
+
+            const std::string line_str = Utils::String::lineStrFrom(line_id);
+            const std::string full_key = ds_type + ":" + ds_name + ":"
+                                       + line_str + ":" + dbcontent_name;
+
+            auto it = agg.find(full_key);
+            if (it == agg.end())
+            {
+                LayerAgg a;
+                a.ds_type    = ds_type;
+                a.ds_name    = ds_name;
+                a.line       = line_str;
+                a.dbcontent  = dbcontent_name;
+                a.count      = 1;
+                a.line_index = (line_str.size() >= 2 && line_str[0] == 'L')
+                             ? std::max(0, std::atoi(line_str.c_str() + 1) - 1)
+                             : 0;
+                agg.emplace(full_key, std::move(a));
+            }
+            else
+            {
+                it->second.count++;
+            }
+        }
+    }
+
+    std::vector<std::unique_ptr<HistogramLeafPayload>> new_payloads;
+    std::vector<DBContentRootItem::LeafEntry>          entries;
+    new_payloads.reserve(agg.size());
+    entries.reserve(agg.size());
+
+    for (const auto& kv : agg)
+    {
+        const std::string& full_key = kv.first;
+        const LayerAgg&    a        = kv.second;
+
+        QColor color = context::resolveSeriesColor(
+            a.ds_type, a.ds_name, a.line_index, a.dbcontent, compass);
+
+        new_payloads.emplace_back(std::make_unique<HistogramLeafPayload>(
+            full_key, a.count, color));
+
+        entries.push_back({a.ds_type, a.ds_name, a.line, a.dbcontent,
+                           new_payloads.back().get()});
+    }
+
+    layer_model_->refreshSubtree(db_content_root_, [&]() {
+        payloads_ = std::move(new_payloads);
+        return db_content_root_->buildChildrenFrom(entries);
+    });
+    db_content_root_->recomputeColorsRecursive();
+
+    if (!hidden_layer_ids_.empty())
+        layer_model_->applyPersistedHiddenIds(hidden_layer_ids_);
+
+    emit layerTreeRebuiltSignal();
+}
+
+void HistogramViewDataWidget::computeRowLayerIds()
+{
+    row_layer_ids_.clear();
+
+    auto& compass    = view_->compass();
+    auto& dbcont_man = compass.dbContentManager();
+    auto& ctx_mgr    = compass.dbContextManager();
+
+    for (auto& buf_it : viewData())
+    {
+        const std::string& dbcontent_name = buf_it.first;
+        Buffer&            buffer         = *buf_it.second;
+        const unsigned int n              = buffer.size();
+        if (n == 0)
+            continue;
+
+        // If a dbcontent has no ds_id/line_id we leave row_layer_ids_ with
+        // no entry for it - the generator falls back to the bare dbcontent
+        // as the group key (one bar per such dbcontent).
+        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) ||
+            !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
+            continue;
+
+        const std::string ds_id_name = dbcont_man.metaGetVariable(
+            dbcontent_name, dbcontent_vars::meta_var_ds_id_).name();
+        const std::string line_id_name = dbcont_man.metaGetVariable(
+            dbcontent_name, dbcontent_vars::meta_var_line_id_).name();
+
+        if (!buffer.has<unsigned int>(ds_id_name) ||
+            !buffer.has<unsigned int>(line_id_name))
+            continue;
+
+        const auto& ds_ids   = buffer.get<unsigned int>(ds_id_name);
+        const auto& line_ids = buffer.get<unsigned int>(line_id_name);
+
+        std::vector<std::string> per_row(n);
+
+        // Cache (ds_id, line_id) -> layer id to avoid a DataSourceManager
+        // lookup per row.
+        std::map<std::pair<unsigned int, unsigned int>, std::string> layer_id_cache;
+
+        for (unsigned int i = 0; i < n; ++i)
+        {
+            if (ds_ids.isNull(i) || line_ids.isNull(i))
+                continue;   // leave empty -> unmappable
+
+            const unsigned int ds_id   = ds_ids.get(i);
+            const unsigned int line_id = line_ids.get(i);
+
+            const auto cache_key = std::make_pair(ds_id, line_id);
+            auto cache_it = layer_id_cache.find(cache_key);
+            if (cache_it != layer_id_cache.end())
+            {
+                per_row[i] = cache_it->second;
+                continue;
+            }
+
+            std::string ds_type, ds_name;
+            if (ctx_mgr.hasDataSource(ds_id))
+            {
+                const auto* ds = ctx_mgr.dataSource(ds_id);
+                ds_type = ds->dsType();
+                ds_name = ds->name();
+            }
+            else
+            {
+                ds_type = "Other";
+                ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
+                        + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
+            }
+
+            std::string lid = ds_type + ":" + ds_name + ":"
+                            + Utils::String::lineStrFrom(line_id) + ":"
+                            + dbcontent_name;
+
+            layer_id_cache.emplace(cache_key, lid);
+            per_row[i] = std::move(lid);
+        }
+
+        row_layer_ids_.emplace(dbcontent_name, std::move(per_row));
+    }
+}
+

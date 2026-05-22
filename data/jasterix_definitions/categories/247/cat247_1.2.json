@@ -1,13 +1,13 @@
 {
-    "name":"cat247_1.2_record",
-    "type":"record",
-    "field_specification":{
-        "name":"FSPEC",
-        "type":"extendable_bits",
-        "reverse_bits":true,
-        "data_type":"bitfield"
+    "name": "cat247_1.2_record",
+    "type": "record",
+    "field_specification": {
+        "name": "FSPEC",
+        "type": "extendable_bits",
+        "reverse_bits": true,
+        "data_type": "bitfield"
     },
-    "uap":[
+    "uap": [
         "010",
         "015",
         "140",
@@ -17,96 +17,90 @@
         "RE",
         "FX"
     ],
-    "items":[
+    "items": [
         {
-            "number":"010",
-            "name":"Data Source Identifier",
-            "comment":"Identification of the radar station from which the data are received.",
-            "type":"item",
-            "data_fields":[
+            "number": "010",
+            "name": "Data Source Identifier",
+            "comment": "Identification of the radar station from which the data are received.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"SAC",
-                    "comment":"System Area Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SAC",
+                    "comment": "System Area Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 },
                 {
-                    "name":"SIC",
-                    "comment":"System Identification Code",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "SIC",
+                    "comment": "System Identification Code",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"015",
-            "name":"Service Identification",
-            "comment":"Identification of the service provided to one or more users.",
-            "type":"item",
-            "data_fields":[
+            "number": "015",
+            "name": "Service Identification",
+            "comment": "Identification of the service provided to one or more users.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Service Identification",
-                    "comment":"The service identification is allocated by the system",
-                    "type":"fixed_bytes",
-                    "length":1,
-                    "data_type":"uint"
+                    "name": "Service Identification",
+                    "comment": "The service identification is allocated by the system",
+                    "type": "fixed_bytes",
+                    "length": 1,
+                    "data_type": "uint"
                 }
             ]
         },
         {
-            "number":"140",
-            "name":"Time of Day",
-            "comment":"Absolute time stamping expressed as Co-ordinated Universal Time (UTC).",
-            "type":"item",
-            "data_fields":[
+            "number": "140",
+            "name": "Time of Day",
+            "comment": "Absolute time stamping expressed as Co-ordinated Universal Time (UTC).",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Time-of-Day",
-                    "comment":"Acceptable Range of values: 0<= Time-of-Day<=24 hrs",
-                    "type":"fixed_bytes",
-                    "length":3,
-                    "data_type":"uint",
-                    "lsb":0.0078125
+                    "name": "Time-of-Day",
+                    "comment": "Acceptable Range of values: 0<= Time-of-Day<=24 hrs",
+                    "type": "fixed_bytes",
+                    "length": 3,
+                    "data_type": "uint",
+                    "lsb": 0.0078125
                 }
             ]
         },
         {
-            "number":"550",
-            "name":"Category Version Number Report",
-            "comment":"Version number of Categories used.",
-            "type":"item",
-            "data_fields":[
+            "number": "550",
+            "name": "Category Version Number Report",
+            "comment": "Version number of Categories used.",
+            "type": "item",
+            "data_fields": [
                 {
-                    "name":"Category Version Number Report",
-                    "type":"repetitive",
-                    "repetition_item":{
-                        "name":"REP",
-                        "type":"fixed_bytes",
-                        "length":1,
-                        "data_type":"uint"
-                    },
-                    "items":[
+                    "name": "Category Version Number Report",
+                    "type": "repetitive",
+                    "items": [
                         {
-                            "name":"CAT",
-                            "comment":"ASTERIX Category [0..255]",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "CAT",
+                            "comment": "ASTERIX Category [0..255]",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         },
                         {
-                            "name":"Main version number",
-                            "comment":"range: [0..99]",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "Main version number",
+                            "comment": "range: [0..99]",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         },
                         {
-                            "name":"Sub version number",
-                            "comment":"range: [0..99]",
-                            "type":"fixed_bytes",
-                            "length":1,
-                            "data_type":"uint"
+                            "name": "Sub version number",
+                            "comment": "range: [0..99]",
+                            "type": "fixed_bytes",
+                            "length": 1,
+                            "data_type": "uint"
                         }
                     ]
                 }

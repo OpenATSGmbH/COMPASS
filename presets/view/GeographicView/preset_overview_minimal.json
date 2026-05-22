@@ -1,5 +1,5 @@
 {
-    "app_version": "0.9.2",
+    "app_version": "0.7.6",
     "category": "Default",
     "deployed": true,
     "description": "Gives an overview of the data, color by DBContent over the minimal 2D map.",
@@ -11,8 +11,6 @@
         "parameters": {
             "auto_label": false,
             "auto_lod": true,
-            "blend_mode_name": "contour",
-            "connect_height_none": true,
             "connect_last_layer": true,
             "current_lod": 2.9994983673095703,
             "declutter_labels": true,
@@ -31,6 +29,7 @@
             "groundspeed_period": 2,
             "height_offset_factor": 0.0,
             "height_scale_factor": 2.0,
+            "item_grouping": "Aircraft Address",
             "label_bg_color": "#000000",
             "label_config": {
                 "CAT001": {
@@ -110,7 +109,6 @@
             "label_opacity": 0.8999999761581421,
             "label_placement_forcedir": 2,
             "label_placement_method": 1,
-            "layer_mode": "DBContent:DS ID:Line ID:Aircraft Address",
             "map_name": "minimal_2d.earth",
             "map_opacity": 0.4000000059604645,
             "max_declutter_labels": 200,
@@ -138,91 +136,83 @@
             "use_online_messages": false,
             "use_utn_as_id": false
         },
-        "sub_configs": {
-            "GeometryStyleFactory": {
-                "GeometryStyleFactory0": {
-                    "parameters": {
-                        "current_sorting_variable": "DBContent",
-                        "current_style_preset": "Color by DBContent"
-                    },
-                    "sub_configs": {
-                        "GeometryRenderOrder": {},
-                        "GeometryStylePreset": {}
-                    }
-                }
+        "sub_configs": [
+            {
+                "class_name": "GeometryStyleFactory",
+                "instance_name": "GeometryStyleFactory0",
+                "parameters": {
+                    "current_sorting_variable": "DBContent",
+                    "current_style_preset": "Global Color Mode"
+                },
+                "sub_configs": []
             },
-            "GeographicViewDataSource": {
-                "GeographicViewDataSource0": {
-                    "parameters": null,
-                    "sub_configs": {
-                        "VariableOrderedSet": {
-                            "VariableOrderedSet0": {
-                                "parameters": {
-                                    "variable_definitions": [
-                                        [
-                                            "Meta",
-                                            "Record Number"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "DS ID"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Line ID"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Timestamp"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Aircraft Address"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Aircraft Identification"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Track Number"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Mode 3/A Code"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Mode C Code"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Latitude"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Longitude"
-                                        ],
-                                        [
-                                            "Meta",
-                                            "Type"
-                                        ],
-                                        [
-                                            "CAT062",
-                                            "TRI Record Numbers"
-                                        ]
-                                    ]
-                                }
-                            }
+            {
+                "class_name": "GeographicViewDataSource",
+                "instance_name": "GeographicViewDataSource0",
+                "parameters": {},
+                "sub_configs": [
+                    {
+                        "class_name": "VariableOrderedSet",
+                        "instance_name": "VariableOrderedSet0",
+                        "parameters": {
+                            "variable_definitions": [
+                                [
+                                    "Meta",
+                                    "Record Number"
+                                ],
+                                [
+                                    "Meta",
+                                    "DS ID"
+                                ],
+                                [
+                                    "Meta",
+                                    "Line ID"
+                                ],
+                                [
+                                    "Meta",
+                                    "Timestamp"
+                                ],
+                                [
+                                    "Meta",
+                                    "Aircraft Address"
+                                ],
+                                [
+                                    "Meta",
+                                    "Aircraft Identification"
+                                ],
+                                [
+                                    "Meta",
+                                    "Track Number"
+                                ],
+                                [
+                                    "Meta",
+                                    "Mode 3/A Code"
+                                ],
+                                [
+                                    "Meta",
+                                    "Mode C Code"
+                                ],
+                                [
+                                    "Meta",
+                                    "Latitude"
+                                ],
+                                [
+                                    "Meta",
+                                    "Longitude"
+                                ],
+                                [
+                                    "Meta",
+                                    "Type"
+                                ],
+                                [
+                                    "CAT062",
+                                    "TRI Record Numbers"
+                                ]
+                            ]
                         }
                     }
-                }
-            },
-            "GeographicViewWidget": {
-                "GeographicViewWidget0": {
-                    "parameters": null
-                }
+                ]
             }
-        }
+        ]
     }
 }

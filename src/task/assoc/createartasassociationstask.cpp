@@ -23,15 +23,18 @@
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/variable/metavariable.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 #include "jobmanager.h"
 #include "stringconv.h"
 #include "taskmanager.h"
 #include "viewmanager.h"
 
 #include <QApplication>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 
 using namespace std;
@@ -40,31 +43,23 @@ using namespace dbContent;
 
 const std::string CreateARTASAssociationsTask::DONE_PROPERTY_NAME = "artas_associations_created"; // really needed
 
-CreateARTASAssociationsTask::CreateARTASAssociationsTask(const std::string& class_id,
-                                                         const std::string& instance_id,
-                                                         TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_calc_artas_assoc.json")
+CreateARTASAssociationsTask::CreateARTASAssociationsTask(nlohmann::json& config,
+                                                         TaskManager* parent)
+    : Task(*parent),
+      Configurable(config, parent)
 {
     tooltip_ = "Allows creation of target report association based on ARTAS tracks and the TRI "
                "information.";
 
     registerParameter("current_data_source_name", &settings_.current_data_source_name_, Settings().current_data_source_name_);
     registerParameter("current_data_source_line_id", &settings_.current_data_source_line_id_, Settings().current_data_source_line_id_);
-
-    // time stuff
     registerParameter("end_track_time", &settings_.end_track_time_, Settings().end_track_time_);
-
     registerParameter("association_time_past", &settings_.association_time_past_, Settings().association_time_past_);
     registerParameter("association_time_future", &settings_.association_time_future_, Settings().association_time_future_);
-
     registerParameter("misses_acceptable_time", &settings_.misses_acceptable_time_, Settings().misses_acceptable_time_);
-
     registerParameter("associations_dubious_distant_time", &settings_.associations_dubious_distant_time_, Settings().associations_dubious_distant_time_);
     registerParameter("association_dubious_close_time_past", &settings_.association_dubious_close_time_past_, Settings().association_dubious_close_time_past_);
     registerParameter("association_dubious_close_time_future", &settings_.association_dubious_close_time_future_, Settings().association_dubious_close_time_future_);
-
-    // track flag stuff
     registerParameter("ignore_track_end_associations", &settings_.ignore_track_end_associations_, Settings().ignore_track_end_associations_);
     registerParameter("mark_track_end_associations_dubious", &settings_.mark_track_end_associations_dubious_, Settings().mark_track_end_associations_dubious_);
     registerParameter("ignore_track_coasting_associations", &settings_.ignore_track_coasting_associations_, Settings().ignore_track_coasting_associations_);
@@ -75,7 +70,7 @@ CreateARTASAssociationsTask::~CreateARTASAssociationsTask() {}
 
 void CreateARTASAssociationsTask::showDialog()
 {
-    CreateARTASAssociationsTaskDialog dialog(*this);
+    CreateARTASAssociationsTaskDialog dialog(*this, QApplication::activeWindow());
 
     if (dialog.exec() == QDialog::Rejected)
         return;
@@ -87,8 +82,8 @@ void CreateARTASAssociationsTask::showDialog()
 
 CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() const
 {
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    auto& ctx_man = manager().compass().dbContextManager();
 
     logdbg << "tracker " << dbcontent_man.existsDBContent("CAT062");
 
@@ -109,29 +104,30 @@ CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() con
 
     // no data sources
     logdbg << "num tracker data sources "
-           << ds_man.hasDataSourcesOfDBContent("CAT062");
+           << ctx_man.hasDataSourcesOfDBContent("CAT062");
 
-    if (!ds_man.hasDataSourcesOfDBContent("CAT062"))
+    if (!ctx_man.hasDataSourcesOfDBContent("CAT062"))
         return CreateARTASAssociationsTask::Error::NoDataSource;
 
     bool ds_found{false};
     unsigned int current_ds_id {0};
     unsigned int line_count = 0;
 
-    for (auto& ds_it : ds_man.dbDataSources())
+    for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
     {
-        if (!ds_it->numInsertedMap().count("CAT062")) // check if track data exists
+        if (ctx_man.numInserted(ds.id(), "CAT062") == 0) // check if track data exists
             continue;
 
-        if ((ds_it->hasShortName() &&
-             ds_it->shortName() == settings_.current_data_source_name_) ||
-                (ds_it->name() == settings_.current_data_source_name_))
+        if ((ds.hasShortName() &&
+             ds.shortName() == settings_.current_data_source_name_) ||
+                (ds.name() == settings_.current_data_source_name_))
         {
             ds_found = true;
-            current_ds_id = ds_it->id();
+            current_ds_id = ds.id();
 
-            line_count = ds_it->hasNumInserted("CAT062", settings_.current_data_source_line_id_) ? 
-                ds_it->numInsertedMap().at("CAT062").at(settings_.current_data_source_line_id_) : 0;
+            auto per_line = ctx_man.numInsertedPerLine(ds.id(), "CAT062");
+            line_count = per_line.count(settings_.current_data_source_line_id_) ?
+                per_line.at(settings_.current_data_source_line_id_) : 0;
 
             break;
         }
@@ -149,27 +145,34 @@ CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() con
 
     logdbg << "tracker vars";
 
-    bool has_needed_cat_62_vars = tracker_object.hasVariable(DBContent::var_cat062_tris_.name()) &&
-                                  tracker_object.hasVariable(DBContent::var_cat062_track_begin_.name()) &&
-                                  tracker_object.hasVariable(DBContent::var_cat062_coasting_.name()) &&
-                                  tracker_object.hasVariable(DBContent::var_cat062_track_end_.name());
+    bool has_needed_cat_62_vars = tracker_object.hasVariable(dbcontent_vars::var_cat062_tris_.name()) &&
+                                  tracker_object.hasVariable(dbcontent_vars::var_cat062_track_begin_.name()) &&
+                                  tracker_object.hasVariable(dbcontent_vars::var_cat062_coasting_.name()) &&
+                                  tracker_object.hasVariable(dbcontent_vars::var_cat062_track_end_.name());
     
     if (!has_needed_cat_62_vars)
         logerr << "needed CAT062 vars not available";
 
     traced_assert(has_needed_cat_62_vars);
 
-    bool has_needed_metavars = dbcontent_man.existsMetaVariable(DBContent::meta_var_rec_num_.name()) &&
-                               dbcontent_man.existsMetaVariable(DBContent::meta_var_ds_id_.name()) &&
-                               dbcontent_man.existsMetaVariable(DBContent::meta_var_timestamp_.name()) &&
-                               dbcontent_man.existsMetaVariable(DBContent::meta_var_track_num_.name()) &&
-                               dbcontent_man.existsMetaVariable(DBContent::meta_var_artas_hash_.name()) &&
-                               dbcontent_man.existsMetaVariable(DBContent::meta_var_utn_.name());
+    bool has_needed_metavars = dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_rec_num_.name()) &&
+                               dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_ds_id_.name()) &&
+                               dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_timestamp_.name()) &&
+                               dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_track_num_.name()) &&
+                               dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_artas_hash_.name()) &&
+                               dbcontent_man.existsMetaVariable(dbcontent_vars::meta_var_utn_.name());
 
     if (!has_needed_metavars)
         logerr << "needed metavars not available";
 
     traced_assert(has_needed_metavars);
+
+    // check that artas hash variable has actual data in the DB
+    if (!dbcontent_man.metaVariable(dbcontent_vars::meta_var_artas_hash_.name()).hasDBContent())
+    {
+        logerr << "ARTAS hash variable has no data in the database";
+        return CreateARTASAssociationsTask::Error::NoHashData;
+    }
 
     loginf << "no error";
 
@@ -201,69 +204,80 @@ void CreateARTASAssociationsTask::run()
     status_dialog_->setAssociationStatus("Loading Data");
     status_dialog_->show();
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
     dbcontent_man.clearData();
 
-    DataSourceManager& ds_man = COMPASS::instance().dataSourceManager();
+    auto& ctx_man = manager().compass().dbContextManager();
 
-    COMPASS::instance().viewManager().disableDataDistribution(true);
+    manager().compass().viewManager().disableDataDistribution(true);
+    manager().compass().dbContentManager().enableDataDistribution(false);
 
     connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &CreateARTASAssociationsTask::loadedDataDataSlot);
     connect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
             this, &CreateARTASAssociationsTask::loadingDoneSlot);
 
+    std::set<std::string> targets;
+    std::string cat062_clause;
+
     for (auto& dbcont_it : dbcontent_man)
     {
         if (!dbcont_it.second->hasData())
             continue;
-
         if (!dbcont_it.second->containsTargetReports() ||
-            dbcont_it.second->isReferenceContent()) // not covered by ARTAS
+            dbcont_it.second->isReferenceContent())
             continue;
 
-        VariableSet read_set = getReadSetFor(dbcont_it.first);
-
-        if (dbcont_it.first == "CAT062")
-        {
-            bool ds_found{false};
-            unsigned int current_ds_id;
-
-            for (auto& ds_it : ds_man.dbDataSources())
-            {
-                if (!ds_it->numInsertedMap().count("CAT062")) // check if track data exists
-                    continue;
-
-                if ((ds_it->hasShortName() &&
-                     ds_it->shortName() == settings_.current_data_source_name_) ||
-                        (ds_it->name() == settings_.current_data_source_name_))
-                {
-                    ds_found = true;
-                    current_ds_id = ds_it->id();
-                    break;
-                }
-            }
-
-            traced_assert(ds_found);
-            std::string custom_filter_clause {
-                dbcontent_man.metaGetVariable(dbcont_it.first, DBContent::meta_var_ds_id_).dbColumnName()
-                        + " in (" + std::to_string(current_ds_id) + ") AND " +
-                dbcontent_man.metaGetVariable(dbcont_it.first, DBContent::meta_var_line_id_).dbColumnName()
-                        + " in (" + std::to_string(settings_.current_data_source_line_id_) + ")"
-            };
-
-            dbcont_it.second->loadFiltered(read_set, custom_filter_clause);
-        }
-        else
-            dbcont_it.second->load(read_set, false, false);
-
+        targets.insert(dbcont_it.first);
     }
+
+    if (targets.count("CAT062"))
+    {
+        bool ds_found{false};
+        unsigned int current_ds_id{0};
+
+        for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
+        {
+            if (ctx_man.numInserted(ds.id(), "CAT062") == 0)
+                continue;
+
+            if ((ds.hasShortName() &&
+                 ds.shortName() == settings_.current_data_source_name_) ||
+                    (ds.name() == settings_.current_data_source_name_))
+            {
+                ds_found = true;
+                current_ds_id = ds.id();
+                break;
+            }
+        }
+
+        traced_assert(ds_found);
+
+        cat062_clause =
+            dbcontent_man.metaGetVariable("CAT062", dbcontent_vars::meta_var_ds_id_).dbColumnName()
+                + " in (" + std::to_string(current_ds_id) + ") AND " +
+            dbcontent_man.metaGetVariable("CAT062", dbcontent_vars::meta_var_line_id_).dbColumnName()
+                + " in (" + std::to_string(settings_.current_data_source_line_id_) + ")";
+    }
+
+    LoadRequest req;
+    req.dbcontents_           = targets;
+    req.apply_datasrc_filters_ = false;
+    req.apply_view_filters_    = false;
+    req.show_status_           = false;
+    req.cancellable_           = false;
+    req.read_set_ = [this](const std::string& name) { return getReadSetFor(name); };
+    req.custom_filter_clause_ = [cat062_clause](const std::string& name) -> std::string {
+        return name == "CAT062" ? cat062_clause : "";
+    };
+
+    dbcontent_man.load(req);
 }
 
 bool CreateARTASAssociationsTask::wasRun()
 {
-    return COMPASS::instance().dbInterface().hasProperty(DONE_PROPERTY_NAME)
-             && COMPASS::instance().dbInterface().getProperty(DONE_PROPERTY_NAME) == "1";
+    return manager().compass().dbInterface().hasProperty(DONE_PROPERTY_NAME)
+             && manager().compass().dbInterface().getProperty(DONE_PROPERTY_NAME) == "1";
 }
 
 void CreateARTASAssociationsTask::loadedDataDataSlot(
@@ -282,7 +296,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
     traced_assert(!create_job_);
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
             this, &CreateARTASAssociationsTask::loadedDataDataSlot);
@@ -291,10 +305,11 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
     dbcontent_man.clearData();
 
-    COMPASS::instance().viewManager().disableDataDistribution(false);
+    manager().compass().viewManager().disableDataDistribution(false);
+    manager().compass().dbContentManager().enableDataDistribution(true);
 
     create_job_ = std::make_shared<CreateARTASAssociationsJob>(
-                *this, COMPASS::instance().dbInterface(), data_);
+                *this, manager().compass().dbInterface(), data_);
 
     connect(create_job_.get(), &CreateARTASAssociationsJob::doneSignal, this,
             &CreateARTASAssociationsTask::createDoneSlot, Qt::QueuedConnection);
@@ -306,7 +321,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
             this, &CreateARTASAssociationsTask::saveAssociationsQuestionSlot,
             Qt::QueuedConnection);
 
-    JobManager::instance().addDBJob(create_job_);
+    manager().compass().jobManager().addDBJob(create_job_);
 
     status_dialog_->setAssociationStatus("In Progress");
 }
@@ -350,9 +365,9 @@ void CreateARTASAssociationsTask::createDoneSlot()
 
     if (save_associations_)
     {
-        COMPASS::instance().dbInterface().setProperty(DONE_PROPERTY_NAME, "1");
+        manager().compass().dbInterface().setProperty(DONE_PROPERTY_NAME, "1");
 
-        COMPASS::instance().dbInterface().saveProperties();
+        manager().compass().dbInterface().saveProperties();
 
         done_ = true;
     }
@@ -524,30 +539,30 @@ void CreateARTASAssociationsTask::markTrackCoastingAssociationsDubious(bool valu
 
 VariableSet CreateARTASAssociationsTask::getReadSetFor(const std::string& dbcontent_name)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = manager().compass().dbContentManager();
 
     VariableSet read_set;
 
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_));
 
     if (dbcontent_name == "CAT062")
     {
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_begin_));
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_end_));
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_coasting_));
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_begin_));
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_end_));
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_coasting_));
 
-        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat062_tris_));
-        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat062_tri_recnums_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat062_tris_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat062_tri_recnums_));
     }
     else if (dbcont_man.dbContent(dbcontent_name).containsTargetReports())
     {
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_artas_hash_));
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_artas_hash_));
     }
 
     // must be last for update process
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rec_num_));
 
     return read_set;
 }
@@ -570,11 +585,7 @@ void CreateARTASAssociationsTask::saveAssociationsQuestionSlot(QString question_
     status_dialog_->setDubiousAssociations(create_job_->dubiousAssociations());
     status_dialog_->setFoundDuplicates(create_job_->foundHashDuplicates());
 
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(nullptr, "Malformed Associations", question_str,
-                                  QMessageBox::Yes | QMessageBox::No);
-
-    save_associations_ = reply == QMessageBox::Yes;
+    save_associations_ = QuestionDialog::ask(nullptr, "Malformed Associations", question_str);
 
     create_job_->setSaveQuestionAnswer(save_associations_);
 }
@@ -586,3 +597,4 @@ void CreateARTASAssociationsTask::closeStatusDialogSlot()
     status_dialog_->close();
     status_dialog_ = nullptr;
 }
+

@@ -1,5 +1,5 @@
 {
-    "app_version": "0.9.2",
+    "app_version": "0.8.0",
     "category": "Default",
     "deployed": true,
     "description": "Data counts of Time of Day-Mode C Code grid cells.",
@@ -22,12 +22,6 @@
             "render_color_value_min": "",
             "value_type": 0
         },
-        "sub_configs": {
-            "GridViewWidget": {
-                "GridViewWidget0": {
-                    "parameters": null
-                }
-            }
-        }
+        "sub_configs": []
     }
 }

@@ -17,6 +17,8 @@
 
 #include "propertyvalueedit.h"
 
+#include "ui_test_common.h"
+
 #include <QLineEdit>
 #include <QHBoxLayout>
 #include <QValidator>
@@ -28,6 +30,7 @@ PropertyValueEdit::PropertyValueEdit(PropertyDataType dtype,
                                      QWidget* parent)
 :   QWidget  (parent  )
 ,   decimals_(decimals)
+,   dtype_   (static_cast<PropertyDataType>(-1))  // sentinel so setPropertyDataType always runs
 {
     auto layout = new QHBoxLayout;
     setLayout(layout);
@@ -36,6 +39,7 @@ PropertyValueEdit::PropertyValueEdit(PropertyDataType dtype,
     layout->setContentsMargins(0, 0, 0, 0);
 
     edit_ = new QLineEdit;
+    UI_TEST_OBJ_NAME(edit_, "edit");
     layout->addWidget(edit_);
 
     connect(edit_, &QLineEdit::textEdited, this, &PropertyValueEdit::onValueChanged);
@@ -184,3 +188,4 @@ void PropertyValueEdit::connectEdit(PropertyValueEdit* edit, bool is_min)
 
     connect(edit, &PropertyValueEdit::valueChanged, this, &PropertyValueEdit::checkValidity);
 }
+

@@ -1,94 +1,62 @@
-\subsubsection{Geometry Operations}
-\label{sec:geometry_operations}
+\subsubsection{Data Operations}
+\label{sec:data_operations}
 
-The geometry menu is triggered by clicking on the respective symbol of the layer.\\
+Two RMB context menus exist in the 'Layers' tab: the layer-tree menu (Data Operations) and the items-panel menu (Item Operations). Both share a set of Common Operations described at the end of this section. \\
 
-\paragraph{Common Layer Operations}
+\paragraph{Data Operations}
 \begin{figure}[H]
-    \includegraphics[width=5cm,frame]{figures/geoview_layer_context_menu.png}
+    \centering
+    \includegraphics[width=5.5cm,frame]{figures/geoview_layer_context_menu.png}
   \caption{Geographic View layer context menu}
 \end{figure}
 
-\iffalse
- \item Set Color: Open colour dialog to set the items colour
- \item Set Symbol: Set the items symbol to one of the following values:
-\begin{itemize}
- \item Cross
- \item Circle
- \item Square
- \item Triangle
-\end{itemize}
- \item Set Symbol Size: Set the symbols size
- \item Set Line Width: Set the line width
- \item Set Opacity: Set the items opacity
-\fi
+Opened by a RMB click on an entry in the layer tree. The header line shows the clicked scope: 'DSType "<name>"', 'Data Source "<name>"', 'Line "<name>"', or 'DBContent "<name>"'. Menu-specific entries:
 
 \begin{itemize}
- \item Hide: Disable display of this item
- \item Show: Enable display of this item
- \item Hide Children: Disable display of all children
- \item Show Children: Enable display of all children
- \item Hide Children Containing: Disable display of all children containing a specific DBContent
- \item Show Children Containing: Enable display of all children containing a specific DBContent
- \item Hide Siblings: Disable display of all sibling items (children of parent except this one)
- \item Show Siblings: Enable display of all sibling items (children of parent except this one)
- \item Clear Labels: Removes all labels
+ \item Show All Children / Hide All Children: Show or hide every direct child (group items only)
+ \item Show <scope> / Hide <scope>: Show or hide this node (e.g. 'Show DSType Radar')
 \end{itemize}
 
-\paragraph{Selection Operations}
+A tree-wide 'All' section is appended at the bottom of every layer context menu:
 
 \begin{itemize}
- \item Select Data: Select (only) target reports in the group
- \item Add Data to Selection: Add target reports in the group to selection
- \item Remove Data from Selection: Remove target reports in the group from selection
+ \item Show All / Hide All: Show or hide every entry in the tree
+ \item Expand All / Collapse All: Expand or collapse every row
 \end{itemize}
 
-\paragraph{ARTAS Target Report Usage Operations}
-If ARTAS Target Report Usage information was calculated, and the current layer contains system track updates, the following operations exist:
+\paragraph{Item Operations}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=9cm,frame]{figures/geoview_item_context_menu.png}
+  \caption{Geographic View item context menu}
+\end{figure}
+
+Opened by a RMB click on an entry in the items panel (the list below the layer tree, grouped by the current 'Item Mode'). Menu-specific entries:
 
 \begin{itemize}
- \item Show ARTAS Target Report Usage: Shows the target reports used by ARTAS in the group
- \item Clear ARTAS Target Report Usage: Hides the target reports used by ARTAS in the group
-\end{itemize} 
-
-
-\paragraph{Ground Lines Operations}
-If height information is used, the following operations exist:
-
-\begin{itemize}
- \item Show Ground Lines: Shows the connection lines to the ground for all target reports in the group.
- \item Clear Ground Lines: Clears the connection lines to the ground for all target reports in the group.
-\end{itemize} 
-
-
-\paragraph{Ground Speed Vector Operations}
-The following operations exist:
-
-\begin{itemize}
- \item Show Ground Speed Vectors: Shows ground speed vectors for all target reports in the group.
- \item Clear Ground Lines: Clears ground speed vectors for all target reports in the group.
-\end{itemize} 
-
-\paragraph{Position Accuracy Ellipses Operations}
-The following operations exist:
-
-\begin{itemize}
- \item Show Position Accuracy Ellipses: Shows position accuracy ellipses for all target reports in the group.
- \item Clear Position Accuracy Ellipses: Clears position accuracy ellipses for all target reports in the group.
-\end{itemize} 
-
-\paragraph{MLAT Remote Units Operations}
-If MLAT Remote Unit information is present (see \nameref{sec:ui_configure_ds_mlat_rus}), the following operations exist:
-
-\begin{itemize}
- \item Show MLAT Contributing RUs: Shows connection lines between target reports and the contributing MLAT Remote Units.
- \item Clear MLAT Contributing RUs: Clear connection lines between target reports and the contributing MLAT Remote Units.
+ \item Show <grouping> <item> / Hide <grouping> <item>: Show or hide the clicked item (e.g. 'Show Aircraft Address 0030C5'). Only shown when the click hits an item row.
+ \item Show All / Hide All: Show or hide every item in the panel
+ \item Show Others / Hide Others: Show or hide all sibling items. Only shown when the click hits an item row and at least 2 items exist.
+ \item Zoom to Data: Center the map on the clicked item's data extent
 \end{itemize}
 
-\paragraph{Special Root Geometry Layer Operations}
-This layer has special operations present:
+\paragraph{Common Operations}
+
+The following entries appear in both the Data Operations and Item Operations menus, applied to the clicked scope or item:
 
 \begin{itemize}
- \item Reset All Styles: Sets all style information to default (including make all data visible)
- \item Clear All Associations: Removes display of all shown associations of all data
+ \item Clear Labels: Remove all labels in scope
+ \item Select Data: Select (only) target reports in scope
+ \item Add Data to Selection: Add target reports in scope to the selection
+ \item Remove Data from Selection: Remove target reports in scope from the selection
+ \item Show Ground Speed Vectors / Clear Ground Speed Vectors
+ \item Show Position Accuracy Ellipses / Clear Position Accuracy Ellipses
+\end{itemize}
+
+Conditional entries:
+
+\begin{itemize}
+ \item Show / Clear ARTAS Target Report Usage: Only if ARTAS Target Report Usage information was calculated and the scope contains system track updates.
+ \item Show / Clear Ground Lines: Only if 'Use Height' is active. Shows / clears connection lines to the ground for all target reports in scope.
+ \item Show / Clear MLAT Contributing RUs: Only if MLAT Remote Unit information is present (see \nameref{sec:ui_configure_ds_mlat_rus}). Shows / clears connection lines between target reports and the contributing MLAT Remote Units.
 \end{itemize}

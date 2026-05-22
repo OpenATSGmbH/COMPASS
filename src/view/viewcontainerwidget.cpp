@@ -35,14 +35,20 @@
 
 using namespace Utils;
 
-ViewContainerWidget::ViewContainerWidget(const std::string& class_id,
-                                         const std::string& instance_id, 
-                                         ViewManager* view_manager)
+// ViewContainerWidget::ViewContainerWidget(const std::string& class_name,
+//                                          const std::string& instance_name,
+//                                          ViewManager* view_manager)
+//     : QWidget(nullptr),
+//       Configurable(class_name, instance_name, view_manager),
+//       view_manager_(*view_manager)
+
+ViewContainerWidget::ViewContainerWidget(nlohmann::json& config,
+                                         ViewManager& view_manager)
     : QWidget(nullptr),
-      Configurable(class_id, instance_id, view_manager),
-      view_manager_(*view_manager)
+      Configurable(config, &view_manager),
+      view_manager_(view_manager)
 {
-    logdbg << "instance " << instanceId();
+    logdbg << "instance " << instanceName();
 
     registerParameter("pos_x", &pos_x_, 0u);
     registerParameter("pos_y", &pos_y_, 0u);
@@ -51,7 +57,7 @@ ViewContainerWidget::ViewContainerWidget(const std::string& class_id,
     registerParameter("min_width", &min_width_, 1200u);
     registerParameter("min_height", &min_height_, 900u);
 
-    name_ = "Window" + std::to_string(String::getAppendedInt(instanceId()));
+    name_ = "Window" + std::to_string(String::getAppendedInt(instanceName()));
 
     //set a nice object name by which we can differentiate multiple windows in qt's object hierarchy
     UI_TEST_OBJ_NAME(this, QString::fromStdString(name_))
@@ -76,7 +82,7 @@ ViewContainerWidget::ViewContainerWidget(const std::string& class_id,
 
     createSubConfigurables();
 
-    if (COMPASS::instance().disableAddRemoveViews())
+    if (view_manager_.compass().disableAddRemoveViews())
         setWindowFlags(Qt::Window | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 
     show();
@@ -95,27 +101,28 @@ ViewContainerWidget::~ViewContainerWidget()
     loginf << "done";
 }
 
-void ViewContainerWidget::generateSubConfigurable(const std::string& class_id,
-                                                  const std::string& instance_id)
+void ViewContainerWidget::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id.compare("ViewContainer") == 0)
+    const auto& class_name = Configuration::getClassName(child_json);
+
+    if (class_name.compare("ViewContainer") == 0)
     {
         traced_assert(tab_widget_);
         traced_assert(!view_container_);
-        view_container_ = new ViewContainer(class_id, instance_id, this, &view_manager_,
-                                            tab_widget_, String::getAppendedInt(instanceId()));
+        view_container_ = new ViewContainer(child_json, view_manager_, this,
+                                            tab_widget_, String::getAppendedInt(instanceName()));
         traced_assert(view_container_);
     }
     else
-        throw std::runtime_error("ViewContainerWidget: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("ViewContainerWidget: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 void ViewContainerWidget::checkSubConfigurables()
 {
     if (!view_container_)
     {
-        generateSubConfigurable("ViewContainer", instanceId() + "ViewContainer0");
+        generateSubConfigurableFromConfig("ViewContainer", instanceName() + "ViewContainer0");
         traced_assert(view_container_);
     }
 }
@@ -124,29 +131,29 @@ ViewContainer& ViewContainerWidget::viewContainer() const { return *view_contain
 
 void ViewContainerWidget::closeEvent(QCloseEvent* event)
 {
-    loginf << "instance " << instanceId();
+    loginf << "instance " << instanceName();
 
-    view_manager_.removeContainerWidget(instanceId());
+    view_manager_.removeContainerWidget(instanceName());
     QWidget::closeEvent(event);
 }
 
 void ViewContainerWidget::moveEvent(QMoveEvent* event)
 {
-    logdbg << instanceId();
+    logdbg << instanceName();
     pos_x_ = event->pos().x();
     pos_y_ = event->pos().y();
 }
 
 void ViewContainerWidget::resizeEvent(QResizeEvent* event)
 {
-    logdbg << instanceId();
+    logdbg << instanceName();
     width_ = event->size().width();
     height_ = event->size().height();
 }
 
 void ViewContainerWidget::updateWindowTitle()
 {
-    std::string title = COMPASS::instance().versionString() + " " + name_;
+    std::string title = view_manager_.compass().versionString() + " " + name_;
     QWidget::setWindowTitle(title.c_str());
 }
 

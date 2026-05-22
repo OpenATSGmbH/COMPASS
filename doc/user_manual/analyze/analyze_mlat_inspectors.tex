@@ -1,0 +1,156 @@
+\section{MLAT Inspectors}
+\label{sec:analyze_mlat_inspectors}
+
+Inspectors shipped for the MLAT entry point. \\
+
+\subsection{Data Item Inspection}
+
+Per-Data-Source, per-CAT cumulative item tables drawn from the Data Context's ASTERIX info. Report-only, no map. \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-1.0cm}
+    \includegraphics[width=17cm]{figures/analyze_mlat_dataitem_settings.png}
+  \caption{Analyze MLAT Data Item Inspection inspector settings}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{7cm}|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Default} & \textbf{Range} \\ \hline
+    Categories to Include & Per-CAT checkbox & all enabled & True/False \\ \hline
+    \end{tabular}
+    \caption{Data Item Inspection settings}
+\end{table}
+\ \\
+
+\subsection{Sensor Coverage and Probability of Detection}
+
+Per-cell Probability of Detection (PD) on a 3D grid. Rendered as horizontal, altitude/longitude and altitude/latitude projections. \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-1.0cm}
+    \includegraphics[width=17cm]{figures/analyze_mlat_senscov_settings.png}
+  \caption{Analyze MLAT Sensor Coverage inspector settings}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{7cm}|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Default} & \textbf{Range} \\ \hline
+    PD Calculation Method & 'Time Difference' uses 'Update Interval'; 'Status Period Message Based' uses CAT019 system-status cycles. & Time Difference &  \\ \hline
+    Update Interval & Nominal expected update interval (Time Difference only). & 1.0 s & 0.05 -- 60 s \\ \hline
+    Use Miss Tolerance & Apply miss tolerance to detected gaps. & True & True/False \\ \hline
+    Miss Tolerance & Subtracted from each gap before counting missed slots. & 0.1 s & 0 -- 60 s \\ \hline
+    Value Acceptable (green) & PD at or above which a cell is green. & 0.95 & 0 -- 1 \\ \hline
+    Value Unacceptable (red) & PD at or below which a cell is red; values in between are yellow/orange. & 0.70 & 0 -- 1 \\ \hline
+    \end{tabular}
+    \caption{Sensor Coverage and Probability of Detection settings}
+\end{table}
+\ \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_senscov_res.png}
+  \caption{Sensor Coverage and PD: horizontal projection}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_senscov_res2.png}
+  \caption{Sensor Coverage and PD: altitude / longitude projection}
+\end{figure}
+
+\subsection{Position Accuracy [Pro]}
+
+Requires a Professional license. Three views, each rendered as the three standard projections:
+
+\begin{itemize}
+\item Reported Position Accuracy: position-accuracy reported by the MLAT source
+\item Horizontal Position Offset: offset of MLAT positions vs. RefTraj
+\item Reported Accuracy Consistency: ratio reported / observed (ideal 1.0)
+\end{itemize}
+\ \\
+
+For CAT020 sources providing both I020/500 and a REF Position Accuracy item, the reported views are rendered once per source. \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-1.0cm}
+    \includegraphics[width=17cm]{figures/analyze_mlat_accuracy_settings.png}
+  \caption{Analyze MLAT Position Accuracy inspector settings}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \hspace*{-1.5cm}
+    \begin{tabular}{|p{4.5cm}|p{7cm}|l|l|}
+    \hline
+    \textbf{Parameter Name} & \textbf{Description} & \textbf{Default} & \textbf{Range} \\ \hline
+    Position Accuracy Acceptable (green) & Reported accuracy / observed offset at or below which a cell is green. & 12.0 m & 0 -- 10000 m \\ \hline
+    Position Accuracy Unacceptable (red) & Value at or above which a cell is red; values in between are yellow/orange. & 60.0 m & 0 -- 10000 m \\ \hline
+    Consistency Lower Acceptable (green) & Lower band: ratio at or above this is green. & 0.8 & 0 -- 10 \\ \hline
+    Consistency Lower Unacceptable (red) & Lower band: ratio at or below this is red (sensor over-cautious). & 0.5 & 0 -- 10 \\ \hline
+    Consistency Upper Acceptable (green) & Upper band: ratio at or below this is green. & 1.25 & 0 -- 100 \\ \hline
+    Consistency Upper Unacceptable (red) & Upper band: ratio at or above this is red (sensor over-confident). & 2.0 & 0 -- 100 \\ \hline
+    \end{tabular}
+    \caption{Position Accuracy settings}
+\end{table}
+\ \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_posacc_res.png}
+  \caption{Position Accuracy: horizontal projection}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_posacc_res2.png}
+  \caption{Position Accuracy: altitude projection}
+\end{figure}
+
+\subsection{RU Coverage [Pro]}
+
+Requires a Professional license and at least one CAT020 source with contributing-receiver information. Per-RU coverage map plus a Dominant RU map; optional contested-areas variant for cells with close-to-equal RU shares. \\
+
+No per-inspector settings; uses the shared grid resolution and data source selection. \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_ru_cov.png}
+  \caption{RU Coverage: per-RU map}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/analyze_mlat_ru_dom.png}
+  \caption{RU Coverage: Dominant RU}
+\end{figure}
+
+\subsection{RU Effect [Pro]}
+
+Requires a Professional license and at least one CAT020 source with contributing-receiver information. Quantifies per-RU contribution to MLAT accuracy:
+
+\begin{itemize}
+\item Marginal effect table: per-RU error statistics with vs. without that RU
+\item Redundancy curve: error vs. number of contributing RUs
+\item Per-RU drill-down: dual histogram plus per-cell error heatmap for the selected RU
+\end{itemize}
+\ \\
+
+No per-inspector settings; uses the shared grid resolution and data source selection. \\

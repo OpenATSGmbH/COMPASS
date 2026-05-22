@@ -18,7 +18,6 @@
 #include "asterixjsonmappingjob.h"
 #include "asterixjsonparser.h"
 #include "buffer.h"
-#include "json_tools.h"
 #include "logger.h"
 
 #include <exception>
@@ -31,12 +30,10 @@ using namespace nlohmann;
 
 ASTERIXJSONMappingJob::ASTERIXJSONMappingJob(std::vector<std::unique_ptr<nlohmann::json>> data,
                                              const std::string& source_name,
-                                             const std::vector<std::string>& data_record_keys,
                                              const std::map<unsigned int, std::unique_ptr<ASTERIXJSONParser>>& parsers)
     : Job("ASTERIXJSONMappingJob"),
     data_(std::move(data)),
     source_name_(source_name),
-    data_record_keys_(data_record_keys),
     parsers_(parsers)
 {
     logdbg;
@@ -55,11 +52,16 @@ void ASTERIXJSONMappingJob::run_impl()
 
     started_ = true;
 
+    logdbg << "ASTERIXJSONMappingJob: run_impl: num parsers " << parsers_.size()
+           << " num data slices " << data_.size();
+
     string dbcontent_name;
 
     for (auto& parser_it : parsers_)
     {
         dbcontent_name = parser_it.second->dbContentName();
+        logdbg << "ASTERIXJSONMappingJob: run_impl: parser cat " << parser_it.first
+               << " dbcontent '" << dbcontent_name << "'";
 
         if (!buffers_.count(dbcontent_name))
             buffers_[dbcontent_name] = parser_it.second->getNewBuffer();
@@ -67,84 +69,63 @@ void ASTERIXJSONMappingJob::run_impl()
             parser_it.second->appendVariablesToBuffer(*buffers_.at(dbcontent_name));
     }
 
-    auto process_lambda = [this](nlohmann::json& record) 
-    {
-        //loginf << "UGA '" << record.dump(4) << "'";
-
-        if (this->obsolete_)
-            return;
-
-        if (record.count("error") && record.at("error") == true)
-            return; // skip target reports marked with errors            
-
-        unsigned int category{0};
-
-        if (!record.contains("category"))
-        {
-            logerr << "record without category '" << record.dump(4) << "', skipping";
-            return;
-        }
-
-        traced_assert(record.contains("category"));
-
-        category = record.at("category");
-
-        bool parsed{false};
-        bool parsed_any{false};
-
-        if (!parsers_.count(category))
-            return;
-
-        const unique_ptr<ASTERIXJSONParser>& parser = parsers_.at(category);
-
-        string dbcontent_name = parser->dbContentName();
-
-        logdbg << "mapping json: cat " << category;
-
-        std::shared_ptr<Buffer>& buffer = buffers_.at(dbcontent_name);
-        traced_assert(buffer);
-
-        try
-        {
-            logdbg << "obj " << dbcontent_name << " parsing JSON";
-
-            parsed = parser->parseJSON(record, *buffer);
-
-            logdbg << "obj " << dbcontent_name << " done";
-
-            parsed_any |= parsed;
-        }
-        catch (exception& e)
-        {
-            logerr << "caught exception '" << e.what() << "' in \n'"
-                       << record.dump(4) << "' parser dbcont " << dbcontent_name;
-
-            ++num_errors_;
-
-            return;
-        }
-
-        if (parsed_any)
-        {
-            category_mapped_counts_[category].first += 1;
-            ++num_mapped_;
-        }
-        else
-        {
-            category_mapped_counts_[category].second += 1;
-            ++num_not_mapped_;
-        }
-    };
-
+    // flat format: top-level keys are category numbers, values are objects with array columns
     for (auto& data_slice : data_)
     {
-        if (data_slice)
+        if (!data_slice || !data_slice->is_object())
+            continue;
+
+        if (this->obsolete_)
+            break;
+
+        for (auto it = data_slice->begin(); it != data_slice->end(); ++it)
         {
-            logdbg << "applying JSON function";
-            JSON::applyFunctionToValues(*data_slice.get(), data_record_keys_, data_record_keys_.begin(),
-                                        process_lambda, false);
+            if (this->obsolete_)
+                break;
+
+            unsigned int category = 0;
+            try
+            {
+                category = std::stoul(it.key());
+            }
+            catch (...)
+            {
+                continue; // skip non-numeric keys (e.g. metadata)
+            }
+
+            if (!parsers_.count(category))
+                continue;
+
+            const unique_ptr<ASTERIXJSONParser>& parser = parsers_.at(category);
+            string dbcontent_name = parser->dbContentName();
+
+            std::shared_ptr<Buffer>& buffer = buffers_.at(dbcontent_name);
+            traced_assert(buffer);
+
+            logdbg << "ASTERIXJSONMappingJob: cat " << category
+                   << " dbcontent " << dbcontent_name;
+
+            try
+            {
+                size_t mapped = parser->parseFlatJSON(it.value(), *buffer);
+
+                if (mapped > 0)
+                {
+                    category_mapped_counts_[category].first += mapped;
+                    num_mapped_ += mapped;
+                }
+            }
+            catch (exception& e)
+            {
+                logerr << "ASTERIXJSONMappingJob: caught exception '"
+                       << e.what() << "' for cat " << category;
+                ++num_errors_;
+            }
         }
     }
+
+    logdbg << "ASTERIXJSONMappingJob: run_impl:"
+           << " mapped " << num_mapped_ << " not_mapped " << num_not_mapped_ << " errors " << num_errors_;
 
     std::map<std::string, std::shared_ptr<Buffer>> not_empty_buffers;
 

@@ -18,139 +18,196 @@
 #include "configurable.h"
 
 #include "configuration.h"
-#include "configurationmanager.h"
 #include "stringconv.h"
 #include "logger.h"
 #include "traced_assert.h"
+#include "json.hpp"
 
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
+#include <stdexcept>
 
 using namespace std;
 using namespace Utils;
 
 const char Configurable::ConfigurablePathSeparator = '.';
 
-/**
- * \param class_id Class identifier
- * \param instance_id Instance identifier
- * \param parent Parent, default null (if Singleton)
- * \param configuration_filename special XML configuration filename, default ""
- *
- * Initializes members, adds itself to parent, retrieves filename from parent (if set). Registers
- * itself as child on either the parent or as root configurable, which at the same time sets the
- * configuration reference.
- *
- * \todo Extend registerParameter to template function.
- */
-Configurable::Configurable(const std::string& class_id, 
-                           const std::string& instance_id,
-                           Configurable* parent, 
-                           const std::string& root_configuration_filename,
-                           const nlohmann::json* config)
-    : class_id_    (class_id),
-      instance_id_ (instance_id),
-      key_id_      (keyID(class_id, instance_id)),
-      parent_      (parent),
-      is_transient_(config != nullptr)
-{
-    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_;
+// Legacy constructor removed - all Configurables must now use the json-backed constructor.
+// Configurable::Configurable(const std::string& class_name,
+//                            const std::string& instance_name,
+//                            Configurable* parent,
+//                            const std::string& root_configuration_filename,
+//                            const nlohmann::json* config)
+// { ... }
 
-    if (config)
+Configurable::Configurable(nlohmann::json& config_json, Configurable* parent)
+    : class_name_(Configuration::getClassName(config_json)),
+      instance_name_(Configuration::getInstanceName(config_json)),
+      key_id_(keyID(class_name_, instance_name_)),
+      parent_(parent),
+      path_str_(parent ? (parent->getPath() + ConfigurablePathSeparator + instance_name_) : instance_name_),
+      is_transient_(false)
+{
+    logdbg << "class_name '" << class_name_ << "' instance_name '" << instance_name_
+           << "' path_str_ '" << path_str_ << "'"
+           << " json type " << config_json.type_name();
+
+    // NOTE: Do NOT call setClassName/setInstanceName here. The keys are already present
+    // in config_json (getClassName/getInstanceName above just read them). Calling set*
+    // triggers nlohmann::json copy-and-swap which destroys the old string objects,
+    // invalidating any const std::string& references the caller obtained via
+    // getClassName/getInstanceName before passing config_json to this constructor.
+
+    try
     {
-        //init config from json => transient configurable
-        configuration_ = new Configuration(class_id_, instance_id_);
-        configuration_->parseJSONConfig(*config);
+        configuration_ = new Configuration(config_json);
     }
-    else
+    catch (const std::exception& e)
     {
-        //init from configurable hierarchy
-        if (parent)
-        {
-            parent_ = parent;
-            configuration_ = &parent_->registerSubConfigurable(*this);
-        }
-        else
-        {
-            is_root_ = true;
-            configuration_ = &ConfigurationManager::getInstance().registerRootConfigurable(*this);
-        }
+        logerr << "class_name '" << class_name_ << "' instance_name '" << instance_name_
+               << "' Configuration construction failed: " << e.what();
+        throw;
     }
 
     traced_assert(configuration_);
 
-    //connect to configuration to receive changes
-    changed_connection_ = configuration_->connectListener([ this ] (const std::vector<std::string>& params) { this->configurationChanged(params); });
+    changed_connection_ = configuration_->connectListener(
+        [this](const std::vector<std::string>& params) { this->configurationChanged(params); });
 
-    if (root_configuration_filename.size() != 0)
-    {
-        loginf << "got root filename " << root_configuration_filename;
+    if (parent_)
+        parent_->addChild(this);
 
-        configuration_->setConfigurationFilename(root_configuration_filename);
-    }
-
-    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_ << " end";
+    logdbg << "class_name '" << class_name_ << "' instance_name '" << instance_name_ << "' construction complete";
 }
 
-/**
- * If parent is set, unregisters from it using removeChildConfigurable, if not, calls
- * unregisterRootConfigurable.
- *
- * Displays warning message if undeleted sub-configurables exist.
- */
 Configurable::~Configurable()
 {
-    logdbg << "class_id " << class_id_ << " instance_id " << instance_id_;
+    logdbg << "class_name " << class_name_ << " instance_name " << instance_name_;
 
     //@TODO: most likely destroying a connection will disconnect both parties automatically...
     changed_connection_.disconnect();
 
+    // Remove from parent's children vector
     if (parent_)
+        parent_->removeChild(this);
+
+    // Drop own sub-config entry from parent's sub_config_storage_ so it doesn't get
+    // re-emitted on the next saveConfiguration() as an orphan shell. Bulk teardown/rebuild
+    // flows opt out via setTmpDisableRemoveConfigOnDelete(true). At app shutdown
+    // saveConfiguration() has already written the JSON file before the Configurable tree
+    // is torn down, so this in-memory removal does not affect on-disk persistence.
+    if (parent_ && !tmp_disable_remove_config_on_delete_)
     {
-        logdbg << "class_id " << class_id_ << " instance_id "
-               << instance_id_ << ": removal from parent";
-        
-        parent_->removeChildConfigurable(*this, !tmp_disable_remove_config_on_delete_);
-        // in case cfg to be used later, see ViewManager::resetToStartupConfiguration
+        // parent_ must still have a live Configuration at this point - if not, a child is
+        // outliving its parent's base ~Configurable, which is a destruction-order bug.
+        traced_assert(parent_->configuration_);
+
+        if (parent_->configuration_->findSubConfig(class_name_, instance_name_))
+        {
+            logdbg << "removing sub-config " << class_name_ << "/" << instance_name_
+                   << " from parent " << parent_->className() << "/" << parent_->instanceName();
+            parent_->configuration_->removeSubConfiguration(class_name_, instance_name_);
+        }
+        else
+        {
+            // Legitimate in e.g. Configuration::reconfigure() error recovery, which removes
+            // the entry before the partially-constructed child's destructor runs.
+            logdbg << "no sub-config entry for " << class_name_ << "/" << instance_name_
+                   << " in parent " << parent_->className() << "/" << parent_->instanceName()
+                   << " - already removed";
+        }
+    }
+    else if (parent_ && tmp_disable_remove_config_on_delete_)
+    {
+        logdbg << "keeping sub-config " << class_name_ << "/" << instance_name_
+               << " in parent " << parent_->className() << "/" << parent_->instanceName()
+               << " (tmp_disable_remove_config_on_delete_)";
     }
 
-    if (is_root_)
-        ConfigurationManager::getInstance().unregisterRootConfigurable(*this);
+    // We own the Configuration, delete it
+    delete configuration_;
+    configuration_ = nullptr;
 
-    if (children_.size() != 0)
+    logdbg << "done";
+}
+
+std::string Configurable::keyID(const std::string& class_name,
+                                const std::string& instance_name)
+{
+    return class_name + instance_name;
+}
+
+void Configurable::addChild(Configurable* child)
+{
+    traced_assert(child);
+    children_vec_.push_back(child);
+}
+
+void Configurable::removeChild(Configurable* child)
+{
+    auto it = std::find(children_vec_.begin(), children_vec_.end(), child);
+    if (it != children_vec_.end())
+        children_vec_.erase(it);
+}
+
+void Configurable::writeBackConfig()
+{
+    if (!configuration_)
+        return;
+
+    configuration_->writeBackToJson();
+}
+
+void Configurable::writeBackConfigRecursive()
+{
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+           << "' children " << children_vec_.size();
+
+    // Children first so nested sub_configs are complete
+    for (auto* child : children_vec_)
     {
-        logwrn << "class_id " << class_id_ << " instance_id "
-               << instance_id_ << " still " << children_.size() << " undeleted";
-
-        for (auto& child_it : children_)
+        if (child)
         {
-            logwrn << "class_id " << class_id_ << " instance_id "
-                   << instance_id_ << " undelete child ptr " << &child_it.second;
+            try
+            {
+                child->writeBackConfigRecursive();
+            }
+            catch (const std::exception& e)
+            {
+                logerr << "class '" << class_name_ << "' instance '" << instance_name_
+                       << "' child '" << child->className() << "/" << child->instanceName()
+                       << "' writeBackConfigRecursive failed: " << e.what();
+                throw;
+            }
         }
     }
 
-    if (is_transient_ && configuration_)
+    // Write own parameters
+    writeBackConfig();
+
+    // Rebuild sub_configs from storage into backing json
+    if (configuration_)
     {
-        //manually delete configuration
-        delete configuration_;
+        try
+        {
+            configuration_->rebuildSubConfigsToJson();
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "class '" << class_name_ << "' instance '" << instance_name_
+                   << "' rebuildSubConfigsToJson failed: " << e.what();
+            throw;
+        }
     }
+
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+           << "' writeBackConfigRecursive complete";
 }
 
-/**
- * Generates a unique key id from a given class id and instance id.
-*/
-std::string Configurable::keyID(const std::string& class_id,
-                                const std::string& instance_id)
-{
-    return class_id + instance_id;
-}
-
-/**
- * Registers a new parameter in the local config.
-*/
 template <typename T>
 void Configurable::registerParameter(const std::string& parameter_id, T* pointer, const T& default_value)
 {
-    logdbg << instance_id_ << ": parameter_id " << parameter_id;
+    logdbg << instance_name_ << ": parameter_id " << parameter_id;
 
     traced_assert(configuration_);
     traced_assert(pointer);
@@ -158,9 +215,6 @@ void Configurable::registerParameter(const std::string& parameter_id, T* pointer
     configuration_->registerParameter<T>(parameter_id, pointer, default_value);
 }
 
-/**
- * Returns a parameter config value stored in the local config.
-*/
 template <typename T>
 T Configurable::getParameterConfigValue(const std::string& parameter_id) const
 {
@@ -168,9 +222,6 @@ T Configurable::getParameterConfigValue(const std::string& parameter_id) const
     return configuration_->getParameterConfigValue<T>(parameter_id);
 }
 
-/**
- * Sets a parameter and handles notifications.
-*/
 template <typename T>
 void Configurable::setParameter(T& param, const T& value)
 {
@@ -182,219 +233,140 @@ void Configurable::setParameter(T& param, const T& value)
     notifyModifications();
 }
 
-/**
-*/
-Configuration& Configurable::registerSubConfigurable(Configurable& child, bool config_must_exist)
-{
-    logdbg << instance_id_ << ": child " << child.instanceId();
-
-    traced_assert(configuration_);
-
-    const std::string& key = child.keyId();
-
-    if (children_.find(key) != children_.end())
-    {
-        throw std::runtime_error("Configurable: registerSubConfigurable: child key '" + key +
-                                 "' already in use");
-    }
-
-    logdbg << instance_id_ << ": " << key;
-
-    children_.insert(std::pair<std::string, Configurable&>(key, child));
-
-    if (config_must_exist)
-        traced_assert(configuration_->hasSubConfiguration(child.classId(), child.instanceId()));
-
-    return configuration_->getOrCreateSubConfiguration(child.classId(), child.instanceId());
-}
-
-/**
-*/
-void Configurable::removeChildConfigurable(Configurable& child, bool remove_config)
-{
-    logdbg << instance_id_ << ": child " << child.instanceId();
-
-    traced_assert(configuration_);
-
-    const std::string& key = child.keyId();
-    traced_assert(children_.find(key) != children_.end());
-
-    logdbg << instance_id_ << ": " << key;
-
-    children_.erase(children_.find(key));
-
-    if (remove_config)
-        configuration_->removeSubConfiguration(child.classId(), child.instanceId());
-}
-
-/**
- * Also iteratively calls resetToDefault on all sub-configurables.
- */
 void Configurable::resetToDefault()
 {
-    logdbg << instance_id_;
+    logdbg << instance_name_;
 
     traced_assert(configuration_);
 
     configuration_->resetToDefault();
 
-    std::map<std::string, Configurable&>::iterator it;
-
-    for (it = children_.begin(); it != children_.end(); it++)
+    for (auto it : children_vec_)
     {
-        // loginf  << instance_id_ << ": child " << it->first;
-        it->second.resetToDefault();
+        // loginf  << instance_name_ << ": child " << it->first;
+        it->resetToDefault();
     }
 }
 
-/**
-*/
-Configuration& Configurable::addNewSubConfiguration(const std::string& class_id,
-                                                    const std::string& instance_id)
+nlohmann::json& Configurable::addNewSubConfiguration(const std::string& class_name,
+                                                     const std::string& instance_name)
 {
     traced_assert(configuration_);
-    return configuration_->addNewSubConfiguration(class_id, instance_id);
+    return configuration_->addNewSubConfiguration(class_name, instance_name);
 }
 
-/**
-*/
-Configuration& Configurable::addNewSubConfiguration(const std::string& class_id)
+nlohmann::json& Configurable::addNewSubConfiguration(const std::string& class_name)
 {
     traced_assert(configuration_);
-    return configuration_->addNewSubConfiguration(class_id);
+    return configuration_->addNewSubConfiguration(class_name);
 }
 
-/**
-*/
-Configuration& Configurable::addNewSubConfiguration(std::unique_ptr<Configuration>&& configuration)
+void Configurable::removeSubConfigurations(const std::string& class_name)
 {
     traced_assert(configuration_);
-    return configuration_->addNewSubConfiguration(std::move(configuration));
+    configuration_->removeSubConfigurations(class_name);
 }
 
-/**
- * Returns the given subconfiguration or asserts.
- */
-const Configuration& Configurable::getSubConfiguration(const std::string& class_id,
-                                                       const std::string& instance_id) const
+nlohmann::json& Configurable::ensureSubConfig(const std::string& class_name,
+                                              const std::string& instance_name)
 {
     traced_assert(configuration_);
-    return configuration_->getSubConfiguration(class_id, instance_id);
+
+    auto* existing = configuration_->findSubConfig(class_name, instance_name);
+    if (existing)
+        return *existing;
+
+    return configuration_->addNewSubConfiguration(class_name, instance_name);
 }
 
-/**
-*/
 void Configurable::writeJSON(nlohmann::json& parent_json, JSONExportType export_type) const
 {
     traced_assert(configuration_);
     configuration_->writeJSON(parent_json, export_type);
 }
 
-/**
-*/
+/// Builds a standalone JSON object with class_name, instance_name, parameters, and sub_configs.
+/// Important: sub_configs in the output are shallow copies from sub_config_storage_.
+/// Call writeBackConfigRecursive() first to ensure nested sub_configs within children
+/// are fully populated (e.g. after runtime-created grandchildren).
 void Configurable::generateJSON(nlohmann::json& target, JSONExportType export_type) const
 {
     traced_assert(configuration_);
     configuration_->generateJSON(target, export_type);
 }
 
-/**
-*/
 void Configurable::createSubConfigurables()
 {
     traced_assert(configuration_);
 
-    logdbg << "config instance " << configuration_->getInstanceId()
-           << " configurable instance " << instanceId();
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+           << "' storage buckets " << configuration_->subConfigStorage().size();
 
-    const auto& sub_configs = configuration_->subConfigurations();
-
-    //create from provided custom creation order first
-    auto custom_order = subConfigurableCreationOrder();
-    for (const auto& key : custom_order)
+    for (auto& [class_name, entries] : configuration_->subConfigStorage())
     {
-        //must be part of sub configurations
-        if (sub_configs.count(key) != 0)
+        logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+               << "' creating sub_configs for class '" << class_name
+               << "' (" << entries.size() << " entries)";
+
+        for (auto& ptr : entries)
         {
-            logdbg << "class_id '" << key.first << "' instance_id '" << key.second << "' (custom order)";
+            const std::string inst_id = Configuration::getInstanceName(*ptr);
 
-            traced_assert(!hasSubConfigurable(key.first, key.second));
-            generateSubConfigurable(key.first, key.second);
-        }
-    }
-    
-    // TODO what if map changed (deleting of config) during iteration
-    for (auto it = sub_configs.begin(); it != sub_configs.end(); it++)
-    {
-        //not yet created from manual order?
-        if (custom_order.empty() || std::find(custom_order.begin(), custom_order.end(), it->first) == custom_order.end())
-        {
-            logdbg << "class_id '"
-                   << it->first.first << "' instance_id '" << it->first.second << "'";
+            logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+                   << "' creating: class_name '" << class_name
+                   << "' instance_name '" << inst_id << "'";
 
-            if (hasSubConfigurable(it->first.first, it->first.second))
-                logerr << "class_id '" << it->first.first << "' instance_id '" << it->first.second << "' already exists";
+            traced_assert(!hasSubConfigurable(class_name, inst_id));
 
-            traced_assert(!hasSubConfigurable(it->first.first, it->first.second));
-            generateSubConfigurable(it->first.first, it->first.second);
+            try
+            {
+                generateSubConfigurable(*ptr);
+            }
+            catch (const std::exception& e)
+            {
+                logerr << "class '" << class_name_ << "' instance '" << instance_name_
+                       << "' generateSubConfigurable failed for class_name '" << class_name
+                       << "' instance_name '" << inst_id << "': " << e.what();
+                throw;
+            }
         }
     }
 
-    //check if every needed subconfigurable has been created yet
     checkSubConfigurables();
 
-    logdbg << "instance " << instance_id_ << " end";
+    logdbg << "class '" << class_name_ << "' instance '" << instance_name_
+           << "' createSubConfigurables complete, children=" << children_vec_.size();
 }
 
-/**
-*/
 void Configurable::checkSubConfigurables()
 {
-    logerr << "class " << class_id_ << " failed to override me";
 }
 
-/**
-*/
-void Configurable::generateSubConfigurable(const std::string& class_id,
-                                           const std::string& instance_id)
+// Old 2-param version removed - use the json-backed 3-param version
+// void Configurable::generateSubConfigurable(const std::string& class_name,
+//                                            const std::string& instance_name)
+// {
+//     loginf << "class " << class_name_ << " does not override ";
+// }
+
+void Configurable::generateSubConfigurable(nlohmann::json& child_json)
 {
-    loginf << "class " << class_id_ << " does not override ";
+    throw std::runtime_error("class "+class_name_+": generateSubConfigurable: not implemented");
 }
 
-/**
- * Adds the given config to the local configuration and generates the subconfigurable referenced by it.
-*/
-void Configurable::generateSubConfigurableFromConfig(std::unique_ptr<Configuration>&& config)
+
+void Configurable::generateSubConfigurableFromConfig(const std::string& class_name,
+                                                     const std::string& instance_name)
 {
-    traced_assert(config);
-
-    //note: this might add a unique instance id if yet missing in the passed config
-    const auto& added_config = addNewSubConfiguration(std::move(config));
-
-    //get class and instance id from added sub config
-    const auto& class_id    = added_config.getClassId();
-    const auto& instance_id = added_config.getInstanceId();
-
-    //generate sub configurable
-    generateSubConfigurable(class_id, instance_id);
+    auto& child_json = ensureSubConfig(class_name, instance_name);
+    generateSubConfigurable(child_json);
 }
 
-/**
- * Shortcut for adding an empty config using the given class and instance id, and generating the subconfigurable referenced by it.
- */
-void Configurable::generateSubConfigurableFromConfig(const std::string& class_id,
-                                                     const std::string& instance_id)
-{
-    generateSubConfigurableFromConfig(Configuration::create(class_id, instance_id));
-}
-
-/**
- * Generates a subconfigurable by cloning the given configurable via its json interface.
- */
 void Configurable::generateSubConfigurableFromJSON(const Configurable& configurable,
-                                                   const nlohmann::json& additional_data,
-                                                   const std::string& class_id)
+                                                   const nlohmann::json& additional_data)
 {
+    traced_assert(configuration_);
+
     //create json config from configurable
     nlohmann::json json_cfg;
     configurable.generateJSON(json_cfg);
@@ -403,28 +375,26 @@ void Configurable::generateSubConfigurableFromJSON(const Configurable& configura
     if (!additional_data.is_null())
         json_cfg.update(additional_data);
 
-    auto new_class_id = class_id.empty() ? configurable.classId() : class_id;
+    //add new subconfig entry in backing json
+    auto& child_json = addNewSubConfiguration(Configuration::getClassName(json_cfg));
 
-    //add new subconfig and parse json
-    Configuration& config = addNewSubConfiguration(new_class_id);
-    config.parseJSONConfig(json_cfg);
+    //merge the generated json into the new entry (parameters + sub_configs)
+    child_json.update(json_cfg);
 
-    //generate subconfigurable
-    generateSubConfigurable(config.getClassId(), config.getInstanceId());
+    generateSubConfigurable(child_json);
 }
 
-/**
-*/
-bool Configurable::hasSubConfigurable(const std::string& class_id, 
-                                      const std::string& instance_id) const
+bool Configurable::hasSubConfigurable(const std::string& class_name,
+                                      const std::string& instance_name) const
 {
     traced_assert(configuration_);
 
-    return (children_.find(keyID(class_id, instance_id)) != children_.end());
+    return std::any_of(children_vec_.begin(), children_vec_.end(),
+                       [&](const Configurable* c) {
+                           return c && c->className() == class_name && c->instanceName() == instance_name;
+                       });
 }
 
-/**
-*/
 std::pair<rtcommand::FindObjectErrCode, Configurable*> Configurable::findSubConfigurablePath(const std::string& path)
 {
     vector<string> parts = String::split(path, ConfigurablePathSeparator);
@@ -445,8 +415,6 @@ std::pair<rtcommand::FindObjectErrCode, Configurable*> Configurable::findSubConf
     return {rtcommand::FindObjectErrCode::NoError, child};
 }
 
-/**
-*/
 std::pair<rtcommand::FindObjectErrCode, Configurable*> Configurable::findSubConfigurableName(const std::string& name)
 {
     auto child = getApproximateChildNamed(name);
@@ -454,9 +422,11 @@ std::pair<rtcommand::FindObjectErrCode, Configurable*> Configurable::findSubConf
         return {rtcommand::FindObjectErrCode::NoError, child};
 
     //not found, try in children
-    for (auto& c : children_)
+    for (auto* c : children_vec_)
     {
-        auto res = c.second.findSubConfigurableName(name);
+        if (!c)
+            continue;
+        auto res = c->findSubConfigurableName(name);
         if (res.first == rtcommand::FindObjectErrCode::NoError)
             return res;
     }
@@ -464,73 +434,66 @@ std::pair<rtcommand::FindObjectErrCode, Configurable*> Configurable::findSubConf
     return {rtcommand::FindObjectErrCode::NotFound, nullptr};
 }
 
-/**
-*/
-Configurable* Configurable::getApproximateChildNamed (const std::string& approx_name)
+Configurable* Configurable::getApproximateChildNamed(const std::string& approx_name)
 {
     // find exact instance id
     std::string approx_name_lower = boost::algorithm::to_lower_copy(approx_name);
 
-    auto cb = [approx_name_lower](const std::pair<std::string, Configurable&>& child_iter)
+    for (auto* c : children_vec_)
     {
-        return (boost::algorithm::to_lower_copy(child_iter.second.instanceId()) == approx_name_lower); 
-    };
+        if (c && boost::algorithm::to_lower_copy(c->instanceName()) == approx_name_lower)
+            return c;
+    }
 
-    auto exact_instance_iter = std::find_if(children_.begin(), children_.end(), cb);
-
-    if (exact_instance_iter != children_.end())
-        return &exact_instance_iter->second;
-
-    // check if class_id, take first match
-
-    auto class_id_match_iter = std::find_if(children_.begin(), children_.end(),
-                            [approx_name_lower](const pair<std::string, Configurable&>& child_iter) -> bool {
-        return boost::algorithm::to_lower_copy(child_iter.second.classId()) == approx_name_lower; });
-
-    if (class_id_match_iter != children_.end())
+    // check if class_name, take first match
+    for (auto* c : children_vec_)
     {
-        loginf << "key_id " << key_id_ << " found approximate name '"
-               << approx_name << "' with child instance_id " << class_id_match_iter->second.instanceId();
-        return &class_id_match_iter->second;
+        if (c && boost::algorithm::to_lower_copy(c->className()) == approx_name_lower)
+        {
+            logdbg << "key_id " << key_id_ << " found approximate name '"
+                   << approx_name << "' with child instance_name " << c->instanceName();
+            return c;
+        }
     }
 
     return nullptr;
 }
 
-/**
-*/
-const Configurable& Configurable::getChild(const std::string& class_id,
-                                           const std::string& instance_id) const
+const Configurable& Configurable::getChild(const std::string& class_name,
+                                           const std::string& instance_name) const
 {
-    traced_assert(hasSubConfigurable(class_id, instance_id));
-    return children_.at(keyID(class_id, instance_id));
+    for (const auto* c : children_vec_)
+    {
+        if (c && c->className() == class_name && c->instanceName() == instance_name)
+            return *c;
+    }
+    throw std::runtime_error("Configurable::getChild: child '" + class_name + "/" + instance_name + "' not found");
 }
 
-/**
-*/
-Configurable& Configurable::getChild(const std::string& class_id,
-                                     const std::string& instance_id)
+Configurable& Configurable::getChild(const std::string& class_name,
+                                     const std::string& instance_name)
 {
-    traced_assert(hasSubConfigurable(class_id, instance_id));
-    return children_.at(keyID(class_id, instance_id));
+    for (auto* c : children_vec_)
+    {
+        if (c && c->className() == class_name && c->instanceName() == instance_name)
+            return *c;
+    }
+    throw std::runtime_error("Configurable::getChild: child '" + class_name + "/" + instance_name + "' not found");
 }
 
-/**
-*/
 void Configurable::setTmpDisableRemoveConfigOnDelete(bool value)
 {
     logdbg << "value " << value;
 
     tmp_disable_remove_config_on_delete_ = value;
 
-    for (auto it = children_.begin(); it != children_.end(); it++)
+    for (auto* c : children_vec_)
     {
-        it->second.setTmpDisableRemoveConfigOnDelete(value);
+        if (c)
+            c->setTmpDisableRemoveConfigOnDelete(value);
     }
 }
 
-/**
-*/
 Configurable::ReconfigureResult Configurable::reconfigure(const nlohmann::json& config,
                                                           std::vector<MissingKey>* missing_subconfig_keys,
                                                           std::vector<MissingKey>* missing_param_keys,
@@ -545,9 +508,6 @@ Configurable::ReconfigureResult Configurable::reconfigure(const nlohmann::json& 
                                        assert_on_error);
 }
 
-/**
- * Reacts on reconfigured configurations.
-*/
 void Configurable::configurationChanged(const std::vector<std::string>& changed_params)
 {
     traced_assert(configuration_);
@@ -556,26 +516,12 @@ void Configurable::configurationChanged(const std::vector<std::string>& changed_
     onConfigurationChanged(changed_params);
 }
 
-/**
- * Returns a unique path that can be used to find the configurable inside the configurable hierarchy.
-*/
 std::string Configurable::getPath() const
 {
-    std::string prefix;
-    if (parent_)
-    {
-        auto parent_path = parent_->getPath();
-        if (!parent_path.empty())
-            prefix = parent_path + ConfigurablePathSeparator;
-    }
-
-    return prefix + instance_id_;
+    return path_str_;
 }
 
-/**
- * Adds a new filtered class id to the export filter for the given export type.
- */
-void Configurable::addJSONExportFilter(JSONExportType export_type, 
+void Configurable::addJSONExportFilter(JSONExportType export_type,
                                        JSONExportFilterType filter_type,
                                        const std::string& id)
 {
@@ -583,10 +529,7 @@ void Configurable::addJSONExportFilter(JSONExportType export_type,
     configuration_->addJSONExportFilter(export_type, filter_type, id);
 }
 
-/**
- * Adds new filtered class ids to the export filter for the given export type.
- */
-void Configurable::addJSONExportFilter(JSONExportType export_type, 
+void Configurable::addJSONExportFilter(JSONExportType export_type,
                                        JSONExportFilterType filter_type,
                                        const std::vector<std::string>& ids)
 {
@@ -594,9 +537,6 @@ void Configurable::addJSONExportFilter(JSONExportType export_type,
     configuration_->addJSONExportFilter(export_type, filter_type, ids);
 }
 
-/**
- * Signals changes in the configurable and propagates to its parents.
- */
 void Configurable::notifyModifications()
 {
     //invoke my own modification callback
@@ -607,22 +547,14 @@ void Configurable::notifyModifications()
         parent_->notifyModifications();
 }
 
-/**
- * @brief Returns the mode describing how missing subconfigurables will be treated when calling reconfigure().
- * Standard value is MustExist, meaning that reconfigure() will fail on encountering a missing subconfigurable.
- */
-Configurable::MissingKeyMode Configurable::reconfigureSubConfigMode() const 
-{ 
-    return MissingKeyMode::MustExist; 
+Configurable::MissingKeyMode Configurable::reconfigureSubConfigMode() const
+{
+    return MissingKeyMode::MustExist;
 }
 
-/**
- * @brief Returns the mode describing how missing parameters will be treated when calling reconfigure().
- * Standard value is MustExist, meaning that reconfigure() will fail on encountering a missing parameter.
- */
-Configurable::MissingKeyMode Configurable::reconfigureParameterMode() const 
-{ 
-    return MissingKeyMode::MustExist; 
+Configurable::MissingKeyMode Configurable::reconfigureParameterMode() const
+{
+    return MissingKeyMode::MustExist;
 }
 
 namespace
@@ -651,11 +583,9 @@ namespace
     }
 }
 
-/**
- */
 Result Configurable::applyJSONSettings(const nlohmann::json& settings_json)
 {
-    loginf << "CONFIG:\n" << settings_json.dump(4);
+    logdbg << "CONFIG:\n" << settings_json.dump(4);
 
     std::string error;
     std::vector<Configuration::MissingKey> missing_subconfig_keys;
@@ -694,8 +624,6 @@ Result Configurable::applyJSONSettings(const nlohmann::json& settings_json)
     return Result::failed(error);
 }
 
-/**
- */
 Result Configurable::applyJSONStringSettings(const std::string& settings_json_str)
 {
     auto r = jsonFromString(settings_json_str);
@@ -704,13 +632,11 @@ Result Configurable::applyJSONStringSettings(const std::string& settings_json_st
 
     traced_assert(r.hasResult());
 
-    loginf << "configuration successfully parsed";
+    logdbg << "configuration successfully parsed";
 
     return applyJSONSettings(r.result());
 }
 
-/**
- */
 Result Configurable::applyJSONParameters(const nlohmann::json& params_json)
 {
     auto wrapper = nlohmann::json::object();
@@ -719,8 +645,6 @@ Result Configurable::applyJSONParameters(const nlohmann::json& params_json)
     return applyJSONSettings(wrapper);
 }
 
-/**
- */
 Result Configurable::applyJSONStringParameters(const std::string& params_json_str)
 {
     auto r = jsonFromString(params_json_str);
@@ -729,7 +653,7 @@ Result Configurable::applyJSONStringParameters(const std::string& params_json_st
 
     traced_assert(r.hasResult());
 
-    loginf << "configuration successfully parsed";
+    logdbg << "configuration successfully parsed";
 
     return applyJSONParameters(r.result());
 }

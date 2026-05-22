@@ -17,6 +17,7 @@
 
 #include "viewmanagerwidget.h"
 //#include "global.h"
+#include "compass.h"
 #include "jobmanager.h"
 #include "logger.h"
 //#include "viewcontainer.h"
@@ -59,8 +60,8 @@ ViewManagerWidget::ViewManagerWidget(ViewManager& view_manager)
 
     setLayout(layout_);
 
-    connect(&JobManager::instance(), SIGNAL(databaseBusy()), this, SLOT(databaseBusy()));
-    connect(&JobManager::instance(), SIGNAL(databaseIdle()), this, SLOT(databaseIdle()));
+    connect(&view_manager_.compass().jobManager(), SIGNAL(databaseBusy()), this, SLOT(databaseBusy()));
+    connect(&view_manager_.compass().jobManager(), SIGNAL(databaseIdle()), this, SLOT(databaseIdle()));
 
     update();
 
@@ -220,3 +221,4 @@ void ViewManagerWidget::update()
 //    loginf << "start" << variant.toString().toStdString();
 //    ViewManager::getInstance().addContainerWithTemplateView(variant.toString().toStdString());
 //}
+

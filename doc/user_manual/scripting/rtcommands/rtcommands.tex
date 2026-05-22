@@ -68,7 +68,7 @@ open_db "/home/mcphatty/data/hello_world2.db"
 and pressing ENTER. The reply then looks as follows.
 
 \begin{figure}[H]
-  \center
+  \centering
   \includegraphics[width=15cm,frame]{figures/netcat_example.png}
 %\caption{Example}
 \end{figure}
@@ -77,6 +77,85 @@ As one can see two JSON objects are sent back, the first one
 indicating that the command was successfully issued, the second one that the command 
 was successfully executed. As one can also see, the \textbf{open\_db} command does not 
 send back reply data, so the 'reply' variable is set to \textit{null}.
+
+\subsection{Quoting and Escaping Rules}
+
+Command arguments are parsed using POSIX shell-style tokenization.
+This means that double quotes (\texttt{"}), single quotes (\texttt{'}),
+and backslashes (\texttt{\textbackslash}) have special meaning and are
+\textbf{not} passed through literally. \\
+
+\textbf{Rules for string arguments:}
+\begin{itemize}
+    \item Arguments containing spaces must be wrapped in double quotes.
+    \item Inner double quotes must be escaped as \texttt{\textbackslash"}.
+    \item Braces \texttt{\{\}}, brackets \texttt{[]}, colons, semicolons,
+          pipes, and angle brackets are safe and do not need escaping.
+\end{itemize}
+
+\textbf{Restrictions:} The following characters \textbf{cannot} appear
+inside string argument values, as they interfere with shell-style tokenization:
+\begin{itemize}
+    \item Literal double quotes (\texttt{"}) --- even when escaped, they
+          conflict with the outer quoting required for multi-word arguments.
+    \item Literal single quotes (\texttt{'}) --- interpreted as shell
+          single-quoting delimiters.
+    \item Literal backslashes (\texttt{\textbackslash}) --- interpreted as
+          escape characters by the tokenizer.
+\end{itemize}
+
+\textbf{JSON arguments:} Several commands accept JSON strings as arguments
+(e.g. \textbf{set\_view\_point}, \textbf{set\_data\_sources},
+\textbf{evaluate}, \textbf{reconstruct\_references}).
+To pass a JSON object correctly: \\
+
+\begin{enumerate}
+    \item Wrap the entire JSON in outer double quotes.
+    \item Escape all inner double quotes as \texttt{\textbackslash"}.
+    \item Do \textbf{not} use string values that contain literal backslashes,
+          single quotes, or double quotes.
+\end{enumerate}
+
+\textbf{Examples:} \\
+
+\textit{Wrong} --- unquoted JSON, quotes will be stripped:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point {"id": 1, "name": "All", "status": "open"}
+\end{lstlisting}
+
+\textit{Correct} --- JSON wrapped in outer quotes with escaped inner quotes:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point "{\"id\": 1, \"name\": \"All\", \"status\": \"open\"}"
+\end{lstlisting}
+
+\textit{Wrong} --- single quotes in a JSON string value:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point "{\"name\": \"it's a test\"}"
+\end{lstlisting}
+
+\textit{Correct} --- avoid single quotes in values:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point "{\"name\": \"it is a test\"}"
+\end{lstlisting}
+
+\textit{Wrong} --- backslash in a JSON string value:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point "{\"path\": \"C:\\data\\file.db\"}"
+\end{lstlisting}
+
+\textit{Correct} --- avoid backslashes in values (use forward slashes):
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+set_view_point "{\"path\": \"C:/data/file.db\"}"
+\end{lstlisting}
+
+In Python, the escaping can be done programmatically: \\
+
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+import json
+vp = {"id": 1, "name": "All", "status": "open"}
+vp_escaped = '"' + json.dumps(vp).replace('"', '\\"') + '"'
+compass.interface.sendCommandAndUnpack('set_view_point ' + vp_escaped)
+\end{lstlisting}
 
 \subsection{Runtime Commands}
 
@@ -106,6 +185,10 @@ filename \dots given filename, e.g. "/data/file1.db" \\
 \textbf{delete\_all\_data\_sources} \\
 \textit{deletes all data sources in the configuration, which are not part of an opened database} \\
 
+\textbf{delete\_data} \\
+\textit{deletes data from the database} \\
+delete\_info \dots Delete info JSON array, e.g. '[{"dbcontent": "CAT021", "data\_sources": [{"ds\_id": 510, "line\_ids": [0, 1]}]}]' \\
+
 \textbf{evaluate} \\
 \textit{run evaluation} \\
 config \dots evaluation configuration as json string \\
@@ -122,11 +205,16 @@ mode \dots export mode, e.g. "PDF" \\
 \textit{export view points report after with given filename, e.g. "/data/db2/report.tex"} \\
 filename \dots given filename, e.g. "/data/db2/report.tex" \\
 
-\textbf{get\_cfg\_data\_sources} \\
-\textit{retrieves descriptions of data sources present in the configuration} \\
+\textbf{get\_data\_sources} \\
+\textit{retrieves descriptions of data sources in the active context} \\
 
-\textbf{get\_db\_data\_sources} \\
-\textit{retrieves descriptions of data sources present in the database} \\
+\textbf{get\_data\_source\_counts} \\
+\textit{retrieves per data source per dbcontent per line inserted record counts} \\
+The reply is a JSON object of the form
+\texttt{\{"<ds\_id>":\{"<dbcontent>":\{"<line\_id>":count\}\}\}} - one entry per
+data source that has had records inserted in the open database, useful to
+resolve a data source's actual DBContent at runtime (e.g. to drive the
+\textbf{evaluate} configuration). Empty object when no data is inserted yet. \\
 
 \textbf{get\_dbcontent\_data} \\
 \textit{retrieves dbcontent data from the database} \\
@@ -134,6 +222,15 @@ dbcontent \dots DBContent to retrieve data for \\
 variables \dots variables to retrieve data for \\
 utn \dots UTN to retrieve data for \\
 max\_size \dots maximum number of results rows \\
+
+\textbf{get\_eval\_standards} \\
+\textit{retrieves available evaluation standards with their requirement groups and requirements} \\
+The reply is a JSON object of the form
+\texttt{\{"standards":[\{"name":..,"groups":[\{"name":..,"requirements":[..]\}]\}]\}}
+covering every standard known to the evaluation calculator. Useful to populate
+the \textbf{evaluate} command's \texttt{config} JSON
+(\texttt{current\_standard}, \texttt{use\_grp\_in\_sector},
+\texttt{use\_requirement}). Does not require a database to be opened. \\
 
 \textbf{get\_existing\_reports} \\
 \textit{returns a list of names of all existing reports} \\
@@ -238,6 +335,7 @@ index \dots index in the recent file history \\
 
 \textbf{reconstruct\_references} \\
 \textit{reconstruct references} \\
+config \dots optional reconstructor configuration as JSON string, e.g. '\{"current\_reconstructor\_str": "Scoring + UMKalman"\}' \\
 disable\_sensors \dots optional list of sensor names to disable, e.g. "GPS Trail 1;GPS Trail 2" \\
 
 \textbf{set\_data\_sources} \\
@@ -248,6 +346,72 @@ data\_sources \dots Data sources JSON definition \\
 \textit{sets defined view point} \\
 view\_point \dots View point JSON definition \\
 See section \nameref{sec:appendix_view_points} for how the JSON definition has to be structured. \\
+
+\subsubsection{Data Context Commands}
+
+The following commands manage the active Data Context and its content. The corresponding GUI is documented in \nameref{sec:configure_data_context}. \\
+
+\textbf{create\_context} \\
+\textit{creates a new Data Context} \\
+name \dots name of the new context \\
+
+\textbf{set\_context} \\
+\textit{switches the active Data Context} \\
+name \dots name of the context to activate \\
+
+\textbf{delete\_context} \\
+\textit{deletes the named Data Context} \\
+name \dots name of the context to delete \\
+
+\textbf{list\_contexts} \\
+\textit{returns the list of available Data Context names} \\
+
+\textbf{get\_context\_info} \\
+\textit{returns active context metadata} \\
+
+\textbf{get\_context} \\
+\textit{returns the full named context as JSON} \\
+name \dots name of the context to retrieve \\
+
+\textbf{import\_ffts\_json} \\
+\textit{imports FFTs from a JSON file into the active context} \\
+filename \dots given filename, e.g. "/data/ffts.json" \\
+
+\textbf{delete\_all\_ffts} \\
+\textit{clears all FFTs from the active context} \\
+
+\textbf{import\_sectors\_gdal} \\
+\textit{imports sectors from a GDAL-supported file (SHP, GeoJSON, KML)} \\
+filename \dots input file, e.g. "/data/sectors.shp" \\
+layer \dots optional layer name within the input file \\
+color \dots optional hex color, e.g. "\#ff8000" \\
+exclude \dots optional flag, marks the imported sectors as exclude sectors \\
+
+\textbf{export\_sectors\_json} \\
+\textit{exports the sectors of the active context to JSON} \\
+filename \dots target filename, e.g. "/data/sectors.json" \\
+
+\textbf{delete\_all\_sectors} \\
+\textit{clears all sectors from the active context} \\
+
+\textbf{export\_data\_sources\_json} \\
+\textit{exports the data sources of the active context to JSON} \\
+filename \dots target filename, e.g. "/data/ds.json" \\
+
+\subsubsection{Analyze Commands}
+
+The following commands drive the Analyze Data Source task. See \nameref{chap:analyze} for the GUI counterpart. \\
+
+\textbf{analyze\_data\_source} \\
+\textit{runs the Analyze Data Source task for the given DSType} \\
+ds\_type \dots DSType to analyze, e.g. "MLAT" \\
+config \dots Analyze parameters as JSON string (analogous to the evaluate command's config) \\
+
+\textcolor{red}{\textbf{[TODO: confirm the analyze\_data\_source JSON payload shape against the most recent Portal schema in compass\_web/doc/analyses.md before release]}}
+
+\textbf{get\_analyze\_inspectors} \\
+\textit{returns the list of available inspectors for the given DSType, used to populate a configuration UI} \\
+ds\_type \dots DSType to query, e.g. "MLAT" \\
 
 %load_data
 %   load data
@@ -451,6 +615,7 @@ compass_instance.closeCOMPASS()
 As a result the script will output the retrieved result overview section of a pre-computed Evaluation report.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=18cm,frame]{figures/script_result.png}
   \caption{Script output}

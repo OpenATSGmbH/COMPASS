@@ -24,6 +24,8 @@
 #include "dbcontentmanager.h"
 #include "ui_test_common.h"
 
+#include <QApplication>
+#include <QEvent>
 #include <QPushButton>
 #include <QToolButton>
 #include <QLabel>
@@ -177,7 +179,7 @@ void ViewLoadStateWidget::setState(State state)
 void ViewLoadStateWidget::updateState()
 {
     //not needed in live running
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    if (view_widget_->getView()->viewManager().compass().appMode() == AppMode::LiveRunning)
         return;
 
     //return if we are in loading/drawing state (will be set back after those operations have finished)
@@ -186,7 +188,7 @@ void ViewLoadStateWidget::updateState()
         return;
 
     //ask widget for special states
-    bool needs_reload =  COMPASS::instance().viewManager().reloadNeeded();
+    bool needs_reload =  view_widget_->getView()->viewManager().compass().viewManager().reloadNeeded();
     bool needs_redraw =  view_widget_->getView()->updateNeeded();
     bool needs_data   = !view_widget_->getViewDataWidget()->hasData();
 
@@ -210,7 +212,7 @@ void ViewLoadStateWidget::updateState()
 void ViewLoadStateWidget::loadingStarted()
 {
     //not needed in live running
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    if (view_widget_->getView()->viewManager().compass().appMode() == AppMode::LiveRunning)
         return;
 
     setState(State::Loading);
@@ -222,7 +224,7 @@ void ViewLoadStateWidget::loadingStarted()
 void ViewLoadStateWidget::loadingDone()
 {
     //not needed in live running
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    if (view_widget_->getView()->viewManager().compass().appMode() == AppMode::LiveRunning)
         return;
 
     setState(State::None); //reset state
@@ -235,7 +237,7 @@ void ViewLoadStateWidget::loadingDone()
 void ViewLoadStateWidget::redrawStarted()
 {
     //not needed in live running
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    if (view_widget_->getView()->viewManager().compass().appMode() == AppMode::LiveRunning)
         return;
 
     setState(State::Drawing);
@@ -247,7 +249,7 @@ void ViewLoadStateWidget::redrawStarted()
 void ViewLoadStateWidget::redrawDone()
 {
     //not needed in live running
-    if (COMPASS::instance().appMode() == AppMode::LiveRunning)
+    if (view_widget_->getView()->viewManager().compass().appMode() == AppMode::LiveRunning)
         return;
 
     setState(State::None); //reset state
@@ -330,6 +332,17 @@ std::string ViewLoadStateWidget::buttonTextFromState(State state)
 /**
  * Returns a label color given a state.
 */
+void ViewLoadStateWidget::changeEvent(QEvent* event)
+{
+    QWidget::changeEvent(event);
+
+    // setState() bakes the foreground color into the widget's own palette via
+    // setPalette(); that override survives QApplication::setPalette() changes.
+    // Re-apply on PaletteChange so dark-mode toggling refreshes the text color.
+    if (event->type() == QEvent::PaletteChange)
+        setState(state_);
+}
+
 QColor ViewLoadStateWidget::colorFromState(State state)
 {
     switch (state)
@@ -339,12 +352,12 @@ QColor ViewLoadStateWidget::colorFromState(State state)
         case State::Drawing:
         case State::Loaded:
         case State::NoData:
-            return Qt::black;
+            return QApplication::palette().color(QPalette::WindowText);
         case State::ReloadRequired:
         case State::RedrawRequired:
             return Qt::red;
     }
-    return Qt::black;
+    return QApplication::palette().color(QPalette::WindowText);
 }
 
 /**

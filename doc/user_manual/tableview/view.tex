@@ -4,35 +4,63 @@
 A Table View displays DBContent data as text in tables to allow textual data inspection. When started, it presents itself in the following manner.
 
 \begin{figure}[H]
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/table_start.png}
+    \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/table_start.png}
   \caption{Table View startup}
   \label{fig:table_start}
 \end{figure}
 
 \section{Layout}
 
-On the left side a number of tabs exist, one for each type of DBContent and an additional 'All' tab, each of which contains a table. \\
+On the left side, the Table View shows a single unified table. Which DBContents, Data Sources and lines are displayed is controlled by the shared Layers Tree in the Configuration Panel (see \nameref{sec:layers_tree}). \\
 
-On the right side resides the configuration area, which allows configuring what data is loaded and how it is displayed.
-The \includegraphics[width=0.5cm,frame]{../../data/icons/refresh.png} 'Reload' button on the bottom can be used to trigger a reload of the view's data.\\
+On the right side resides the Configuration Panel, which contains the variable selection, view-specific options and the Layers Tree.
 
-Both areas can be resized and hidden if wanted.
+The \includegraphics[width=0.5cm,frame]{../../data/icons/refresh.png} 'Reload' button on the bottom can be used to trigger a reload of the view's data. \\
+
+Both areas can be resized and hidden if wanted. \\
+
+Please \textbf{note} that the earlier per-DBContent tabs and the separate 'All' tab have been replaced by this single unified table. The previous 'All' behavior is now the only mode of operation.
 
 \section{Data Loading}
 
 To load the data the 'Reload' button or the mechanism described in section \nameref{sec:ui_overview} can be used. To filter the dataset, the mechanism described in section \nameref{sec:filters} can be used. \\
 
 \begin{figure}[H]
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/table_loaded.png}
+    \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/table_loaded.png}
   \caption{Table View after loading}
 \end{figure}
 
-Once updated, the tables are filled with text representing the values of the chosen DBContent variables. 
-If a value is undefined its cell remains empty. For each type of DBContent a dedicated table is shown, as well as the 'All' table, where data from all DBContent types is shown collectively. \\
+Once updated, the table is filled with text representing the values of the chosen DBContent variables. If a value is undefined its cell remains empty. Target reports from multiple DBContents appear interleaved in the same sorted table, allowing cross-comparison workflows that were not possible with the previous per-tab layout. \\
 
-Please \textbf{note} that since a specific variable might only exist in certain DBContents, the number of columns in the various tables might differ.
+\begin{figure}[H]
+  \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/table_single.png}
+  \caption{Table View: single layer active}
+\end{figure}
+
+Please \textbf{note} that since a specific variable might only exist in certain DBContents, cells for rows where the variable does not exist remain empty.
+
+\section{Sorting}
+
+Each column header can be left-clicked to sort the table by that column. Clicking the same header again toggles the sort direction; clicking a different header switches the sort to that column. Only a single column is sorted at a time. \\
+
+\begin{figure}[H]
+  \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/table_sort.png}
+  \caption{Table View: Mode 3/A sorted}
+\end{figure}
+
+By default, the table is sorted by Timestamp descending. \\
+
+\section{Color Mode and Annotations}
+
+The Table View follows the global Color Mode setting (see \nameref{sec:color_mode}). Annotations are not shown in the Table View - the 'Annotations' group of the shared Layers Tree is empty in this view. \\
 
 \section{View Presets}
 
@@ -71,6 +99,7 @@ When pressing the 'Remove' button, a selected variable is removed. Pressing the 
 If Meta variables are used, they are displayed for all DBContents they exist in. If a DBContent variable is used, it is only displayed in its native content.
 
 \begin{figure}[H]
+    \centering
     \includegraphics[width=16cm,frame]{figures/table_add.png}
   \caption{Table View adding of variables}
 \end{figure}
@@ -84,21 +113,24 @@ When this checkbox is checked, only selected target reports are shown in the tab
 
 \subsection{Use Presentation}
 
-When this checkbox is checked, the so called presentation mode is used. In the database, the variables might have different units or data representations which are not easy to read. 
+When this checkbox is checked, the so called presentation mode is used. In the database, the variables might have different units or data representations which are not easy to read.
 For this purpose, a presentation mode was introduced to e.g. show a Mode A code as octal, or a Time of Day not in seconds since midnight but in HH:MM:SS.SS format. \\
 
-When the 'Use Presentation' checkbox is not checked, the original database values are presented (and exported).
+When the 'Use Presentation' checkbox is not checked, the original database values are presented (and exported). \\
 
-%TODO Now solved via a metavariable, maybe remove in the future
-%\subsection{Show Associations}
-%When this checkbox is checked, the associated UTNs are shown for each target report. If no UTN is shown, this target reports was never associated to an UTN, 
-%if several are shown (e.g. '1,2,4') this target report was used in several UTNs. \\
-%This checkbox can only be used if association information is present in the database.
+In particular, with Use Presentation enabled, the CAT020 'Contributing Receivers' column shows RU names (multi-line if needed) instead of numerical indexes, provided RU names are defined on the parent MLAT data source (see \nameref{sec:ui_configure_ds_mlat_rus}). When no RU names are defined, indexes remain. \\
+
+\begin{figure}[H]
+  \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/table_mlat_contrib.png}
+  \caption{Table View: MLAT Contributing Receivers with names}
+\end{figure}
 
 \subsection{Exporting}
 \label{sec:exporting}
 
-The data from the current table can be exported to a comma-separated value (CSV) text, either as file or copied to the clipboard. \\
+The data from the current table can be exported to a comma-separated value (CSV) text, either as file or copied to the clipboard. The export covers a single combined CSV containing all visible buffers, and reflects the current Layers Tree visibility and the active sort order. \\
 
 For this example a Mode 3/A code filter was used to load only target reports and system track updates from a single target. \\
 
@@ -107,6 +139,7 @@ To copy to the clipboard, select data to be copied in the table using the Shift 
 To export the complete loaded dataset, click the 'Export' button, so that a dialog is opened.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/table_export.png}
   \caption{Table View export}
@@ -119,6 +152,7 @@ After export, a dialog is shown indicating that the export was completed. \\
 The exported file can be opened in any editor, or for example imported into LibreOffice Calc.
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm]{figures/table_exported_calc.png}
   \caption{Table View export in LibreOffice Calc}

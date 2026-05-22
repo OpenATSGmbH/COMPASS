@@ -4,7 +4,7 @@ See:
 http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
 -->
 
-<map name="OpenStreetMap" type="projected" version="2">
+<map name="OpenStreetMap" type="projected">
 
     <options>
         <lighting>false</lighting>
@@ -17,11 +17,11 @@ http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
         </cache>
     </options>
     
-    <image name="osm_mapnik" driver="xyz">
+    <XYZImage name="osm_mapnik">
         <url>http://[abc].tile.openstreetmap.org/{z}/{x}/{y}.png</url>
         <profile>spherical-mercator</profile>
         <attribution>&#169;OpenStreetMap contributors</attribution>
-        
+
         <shader>
           <![CDATA[
              #version 330
@@ -46,6 +46,6 @@ http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
             
           ]]>
         </shader>        
-    </image>
+    </XYZImage>
 
 </map>

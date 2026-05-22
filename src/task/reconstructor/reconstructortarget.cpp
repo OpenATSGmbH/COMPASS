@@ -17,6 +17,8 @@
 
 #include "reconstructortarget.h"
 #include "reconstructorbase.h"
+#include "reconstructortask.h"
+#include "taskmanager.h"
 #include "compass.h"
 #include "dbcontentmanager.h"
 #include "dbcontent.h"
@@ -27,9 +29,9 @@
 #include "util/timeconv.h"
 #include "global.h"
 #include "kalman_chain.h"
-#include "fftmanager.h"
+#include "db_context_manager.h"
 #include "timeddataseries.h"
-#include "datasourcemanager.h"
+#include "datasourcebase.h" // for dbContent::DataSourceType enum
 
 #include <boost/optional/optional_io.hpp>
 
@@ -81,7 +83,7 @@ void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorIn
             other_age_ = 0.0;
             break;            
         default:
-            logerr << "unknown ds type " << DataSourceManager::stringFromType(tr.ds_type_);
+            logerr << "unknown ds type " << dbContent::DataSourceBase::dsTypeToString(tr.ds_type_);
             break;
     }    
 
@@ -501,7 +503,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
 
     if (!ecat_ || *ecat_ == 0) // check for FFT
     {
-        FFTManager& fft_man = COMPASS::instance().fftManager();
+        auto& ctx_man = reconstructor_.task().manager().compass().dbContextManager();
 
         boost::optional<float> baro_altitude_ft;
 
@@ -518,7 +520,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
         bool is_from_fft;
         float fft_altitude_ft;
 
-        std::tie(is_from_fft, fft_altitude_ft) = fft_man.isFromFFT(
+        std::tie(is_from_fft, fft_altitude_ft) = ctx_man.isFromFFT(
             tr.position_->latitude_, tr.position_->longitude_, tr.acad_, tr.dbcont_id_ == 1,
             mode_a_code, baro_altitude_ft);
 
@@ -1217,206 +1219,206 @@ ReconstructorTarget::ReferencePair ReconstructorTarget::refDataFor (ptime timest
 //    return {lower, upper};
 //}
 
-std::pair<dbContent::targetReport::Position, bool> ReconstructorTarget::interpolatedPosForTime (
-    ptime timestamp, time_duration d_max) const
-{
-    dbContent::targetReport::ReconstructorInfo* lower, *upper;
+// std::pair<dbContent::targetReport::Position, bool> ReconstructorTarget::interpolatedPosForTime (
+//     ptime timestamp, time_duration d_max) const
+// {
+//     dbContent::targetReport::ReconstructorInfo* lower, *upper;
 
-    tie(lower, upper) = dataFor(
-        timestamp, d_max,
-        [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) { return !tr.doNotUsePosition(); });
+//     tie(lower, upper) = dataFor(
+//         timestamp, d_max,
+//         [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) { return !tr.doNotUsePosition(); });
 
-    if (lower && !upper) // exact time
-    {
-        if (lower->position())
-            return {*lower->position(), true};
-        else
-            return {{}, false};
-    }
+//     if (lower && !upper) // exact time
+//     {
+//         if (lower->position())
+//             return {*lower->position(), true};
+//         else
+//             return {{}, false};
+//     }
 
-    if (!lower || !lower->position() || !upper || !upper->position())
-        return {{}, false};
+//     if (!lower || !lower->position() || !upper || !upper->position())
+//         return {{}, false};
 
-    dbContent::targetReport::Position& pos1 = *lower->position();
-    dbContent::targetReport::Position& pos2 = *upper->position();
-    float d_t = Time::partialSeconds(upper->timestamp_ - lower->timestamp_);
+//     dbContent::targetReport::Position& pos1 = *lower->position();
+//     dbContent::targetReport::Position& pos2 = *upper->position();
+//     float d_t = Time::partialSeconds(upper->timestamp_ - lower->timestamp_);
 
-    logdbg2 << "d_t " << d_t;
+//     logdbg2 << "d_t " << d_t;
 
-    traced_assert(d_t >= 0);
+//     traced_assert(d_t >= 0);
 
-    if (pos1.latitude_ == pos2.latitude_
-        && pos1.longitude_ == pos2.longitude_) // same pos
-        return {pos1, true};
+//     if (pos1.latitude_ == pos2.latitude_
+//         && pos1.longitude_ == pos2.longitude_) // same pos
+//         return {pos1, true};
 
-    if (lower == upper) // same time
-    {
-        logwrn << "ref has same time twice";
-        return {{}, false};
-    }
+//     if (lower == upper) // same time
+//     {
+//         logwrn << "ref has same time twice";
+//         return {{}, false};
+//     }
 
-    logdbg2 << "pos1 " << pos1.latitude_ << ", " << pos1.longitude_;
-    logdbg2 << "pos2 " << pos2.latitude_ << ", " << pos2.longitude_;
+//     logdbg2 << "pos1 " << pos1.latitude_ << ", " << pos1.longitude_;
+//     logdbg2 << "pos2 " << pos2.latitude_ << ", " << pos2.longitude_;
 
-    bool ok;
-    double x_pos, y_pos;
+//     bool ok;
+//     double x_pos, y_pos;
 
-    logdbg2 << "geo2cart";
+//     logdbg2 << "geo2cart";
 
-    tie(ok, x_pos, y_pos) = trafo_.distanceCart(
-        pos1.latitude_, pos1.longitude_, pos2.latitude_, pos2.longitude_);
+//     tie(ok, x_pos, y_pos) = trafo_.distanceCart(
+//         pos1.latitude_, pos1.longitude_, pos2.latitude_, pos2.longitude_);
 
-    if (!ok)
-    {
-        logerr << "error with latitude " << pos2.latitude_
-               << " longitude " << pos2.longitude_;
-        return {{}, false};
-    }
+//     if (!ok)
+//     {
+//         logerr << "error with latitude " << pos2.latitude_
+//                << " longitude " << pos2.longitude_;
+//         return {{}, false};
+//     }
 
-    logdbg2 << "offsets x " << fixed << x_pos
-           << " y " << fixed << y_pos << " dist " << fixed << sqrt(pow(x_pos,2)+pow(y_pos,2));
+//     logdbg2 << "offsets x " << fixed << x_pos
+//            << " y " << fixed << y_pos << " dist " << fixed << sqrt(pow(x_pos,2)+pow(y_pos,2));
 
-    double v_x = x_pos/d_t;
-    double v_y = y_pos/d_t;
-    logdbg2 << "v_x " << v_x << " v_y " << v_y;
+//     double v_x = x_pos/d_t;
+//     double v_y = y_pos/d_t;
+//     logdbg2 << "v_x " << v_x << " v_y " << v_y;
 
-    float d_t2 = Time::partialSeconds(timestamp - lower->timestamp_);
-    logdbg2 << "d_t2 " << d_t2;
+//     float d_t2 = Time::partialSeconds(timestamp - lower->timestamp_);
+//     logdbg2 << "d_t2 " << d_t2;
 
-    traced_assert(d_t2 >= 0);
+//     traced_assert(d_t2 >= 0);
 
-    x_pos = v_x * d_t2;
-    y_pos = v_y * d_t2;
+//     x_pos = v_x * d_t2;
+//     y_pos = v_y * d_t2;
 
-    logdbg2 << "interpolated offsets x " << x_pos << " y " << y_pos;
+//     logdbg2 << "interpolated offsets x " << x_pos << " y " << y_pos;
 
-    tie (ok, x_pos, y_pos) = trafo_.wgsAddCartOffset(pos1.latitude_, pos1.longitude_, x_pos, y_pos);
+//     tie (ok, x_pos, y_pos) = trafo_.wgsAddCartOffset(pos1.latitude_, pos1.longitude_, x_pos, y_pos);
 
-    //ret = ogr_cart2geo->Transform(1, &x_pos, &y_pos);
+//     //ret = ogr_cart2geo->Transform(1, &x_pos, &y_pos);
 
-    // x_pos long, y_pos lat
+//     // x_pos long, y_pos lat
 
-    logdbg2 << "interpolated lat " << x_pos << " long " << y_pos;
+//     logdbg2 << "interpolated lat " << x_pos << " long " << y_pos;
 
-    // calculate altitude
+//     // calculate altitude
 
-    // TODO no alt 4 u!
+//     // TODO no alt 4 u!
 
-    //    bool has_altitude = false;
-    //    float altitude = 0.0;
+//     //    bool has_altitude = false;
+//     //    float altitude = 0.0;
 
-    //    if (pos1.has_altitude_ && !pos2.has_altitude_)
-    //    {
-    //        has_altitude = true;
-    //        altitude = pos1.altitude_;
-    //    }
-    //    else if (!pos1.has_altitude_ && pos2.has_altitude_)
-    //    {
-    //        has_altitude = true;
-    //        altitude = pos2.altitude_;
-    //    }
-    //    else if (pos1.has_altitude_ && pos2.has_altitude_)
-    //    {
-    //        float v_alt = (pos2.altitude_ - pos1.altitude_)/d_t;
-    //        has_altitude = true;
-    //        altitude = pos1.altitude_ + v_alt*d_t2;
-    //    }
+//     //    if (pos1.has_altitude_ && !pos2.has_altitude_)
+//     //    {
+//     //        has_altitude = true;
+//     //        altitude = pos1.altitude_;
+//     //    }
+//     //    else if (!pos1.has_altitude_ && pos2.has_altitude_)
+//     //    {
+//     //        has_altitude = true;
+//     //        altitude = pos2.altitude_;
+//     //    }
+//     //    else if (pos1.has_altitude_ && pos2.has_altitude_)
+//     //    {
+//     //        float v_alt = (pos2.altitude_ - pos1.altitude_)/d_t;
+//     //        has_altitude = true;
+//     //        altitude = pos1.altitude_ + v_alt*d_t2;
+//     //    }
 
-    //    logdbg2 << "pos1 has alt "
-    //           << pos1.has_altitude_ << " alt " << pos1.altitude_
-    //           << " pos2 has alt " << pos2.has_altitude_ << " alt " << pos2.altitude_
-    //           << " interpolated has alt " << has_altitude << " alt " << altitude;
+//     //    logdbg2 << "pos1 has alt "
+//     //           << pos1.has_altitude_ << " alt " << pos1.altitude_
+//     //           << " pos2 has alt " << pos2.has_altitude_ << " alt " << pos2.altitude_
+//     //           << " interpolated has alt " << has_altitude << " alt " << altitude;
 
-    //            //        if (in_appimage_) // inside appimage
-    //            //            return {{y_pos, x_pos, has_altitude, true, altitude}, true};
-    //            //        else
-    //    return {{x_pos, y_pos, has_altitude, true, altitude}, true};
+//     //            //        if (in_appimage_) // inside appimage
+//     //            //            return {{y_pos, x_pos, has_altitude, true, altitude}, true};
+//     //            //        else
+//     //    return {{x_pos, y_pos, has_altitude, true, altitude}, true};
 
-    return {{x_pos, y_pos}, true};
-}
+//     return {{x_pos, y_pos}, true};
+// }
 
-std::pair<dbContent::targetReport::Position, bool> ReconstructorTarget::interpolatedPosForTimeFast (
-    ptime timestamp, time_duration d_max) const
-{
-    dbContent::targetReport::ReconstructorInfo* lower_rec_num, *upper_rec_num;
+// std::pair<dbContent::targetReport::Position, bool> ReconstructorTarget::interpolatedPosForTimeFast (
+//     ptime timestamp, time_duration d_max) const
+// {
+//     dbContent::targetReport::ReconstructorInfo* lower_rec_num, *upper_rec_num;
 
-    tie(lower_rec_num, upper_rec_num) = dataFor(
-        timestamp, d_max,
-        [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) { return !tr.doNotUsePosition(); });
+//     tie(lower_rec_num, upper_rec_num) = dataFor(
+//         timestamp, d_max,
+//         [ & ] (const dbContent::targetReport::ReconstructorInfo& tr) { return !tr.doNotUsePosition(); });
 
-    if (lower_rec_num && !upper_rec_num) // exact time
-    {
-        if (lower_rec_num->position())
-            return {*lower_rec_num->position(), true};
-        else
-            return {{}, false};
-    }
+//     if (lower_rec_num && !upper_rec_num) // exact time
+//     {
+//         if (lower_rec_num->position())
+//             return {*lower_rec_num->position(), true};
+//         else
+//             return {{}, false};
+//     }
 
-    if (!lower_rec_num || !lower_rec_num->position() || !upper_rec_num || !upper_rec_num->position())
-        return {{}, false};
+//     if (!lower_rec_num || !lower_rec_num->position() || !upper_rec_num || !upper_rec_num->position())
+//         return {{}, false};
 
-    dbContent::targetReport::Position& pos1 = *lower_rec_num->position();
-    dbContent::targetReport::Position& pos2 = *upper_rec_num->position();
-    float d_t = Time::partialSeconds(upper_rec_num->timestamp_ - lower_rec_num->timestamp_);
+//     dbContent::targetReport::Position& pos1 = *lower_rec_num->position();
+//     dbContent::targetReport::Position& pos2 = *upper_rec_num->position();
+//     float d_t = Time::partialSeconds(upper_rec_num->timestamp_ - lower_rec_num->timestamp_);
 
-    logdbg2 << "d_t " << d_t;
+//     logdbg2 << "d_t " << d_t;
 
-    traced_assert(d_t >= 0);
+//     traced_assert(d_t >= 0);
 
-    if (pos1.latitude_ == pos2.latitude_
-        && pos1.longitude_ == pos2.longitude_) // same pos
-        return {pos1, true};
+//     if (pos1.latitude_ == pos2.latitude_
+//         && pos1.longitude_ == pos2.longitude_) // same pos
+//         return {pos1, true};
 
-    if (lower_rec_num == upper_rec_num) // same time
-    {
-        logwrn << "ref has same time twice";
-        return {{}, false};
-    }
+//     if (lower_rec_num == upper_rec_num) // same time
+//     {
+//         logwrn << "ref has same time twice";
+//         return {{}, false};
+//     }
 
-    double v_lat = (pos2.latitude_ - pos1.latitude_)/d_t;
-    double v_long = (pos2.longitude_ - pos1.longitude_)/d_t;
-    logdbg2 << "v_x " << v_lat << " v_y " << v_long;
+//     double v_lat = (pos2.latitude_ - pos1.latitude_)/d_t;
+//     double v_long = (pos2.longitude_ - pos1.longitude_)/d_t;
+//     logdbg2 << "v_x " << v_lat << " v_y " << v_long;
 
-    float d_t2 = Time::partialSeconds(timestamp - lower_rec_num->timestamp_);
-    logdbg2 << "d_t2 " << d_t2;
+//     float d_t2 = Time::partialSeconds(timestamp - lower_rec_num->timestamp_);
+//     logdbg2 << "d_t2 " << d_t2;
 
-    traced_assert(d_t2 >= 0);
+//     traced_assert(d_t2 >= 0);
 
-    double int_lat = pos1.latitude_ + v_lat * d_t2;
-    double int_long = pos1.longitude_ + v_long * d_t2;
+//     double int_lat = pos1.latitude_ + v_lat * d_t2;
+//     double int_long = pos1.longitude_ + v_long * d_t2;
 
-    logdbg2 << "interpolated lat " << int_lat << " long " << int_long;
+//     logdbg2 << "interpolated lat " << int_lat << " long " << int_long;
 
-    // calculate altitude
-    //    bool has_altitude = false;
-    //    float altitude = 0.0;
+//     // calculate altitude
+//     //    bool has_altitude = false;
+//     //    float altitude = 0.0;
 
-    //    if (pos1.has_altitude_ && !pos2.has_altitude_)
-    //    {
-    //        has_altitude = true;
-    //        altitude = pos1.altitude_;
-    //    }
-    //    else if (!pos1.has_altitude_ && pos2.has_altitude_)
-    //    {
-    //        has_altitude = true;
-    //        altitude = pos2.altitude_;
-    //    }
-    //    else if (pos1.has_altitude_ && pos2.has_altitude_)
-    //    {
-    //        float v_alt = (pos2.altitude_ - pos1.altitude_)/d_t;
-    //        has_altitude = true;
-    //        altitude = pos1.altitude_ + v_alt*d_t2;
-    //    }
+//     //    if (pos1.has_altitude_ && !pos2.has_altitude_)
+//     //    {
+//     //        has_altitude = true;
+//     //        altitude = pos1.altitude_;
+//     //    }
+//     //    else if (!pos1.has_altitude_ && pos2.has_altitude_)
+//     //    {
+//     //        has_altitude = true;
+//     //        altitude = pos2.altitude_;
+//     //    }
+//     //    else if (pos1.has_altitude_ && pos2.has_altitude_)
+//     //    {
+//     //        float v_alt = (pos2.altitude_ - pos1.altitude_)/d_t;
+//     //        has_altitude = true;
+//     //        altitude = pos1.altitude_ + v_alt*d_t2;
+//     //    }
 
-    //    logdbg2 << "pos1 has alt "
-    //           << pos1.has_altitude_ << " alt " << pos1.altitude_
-    //           << " pos2 has alt " << pos2.has_altitude_ << " alt " << pos2.altitude_
-    //           << " interpolated has alt " << has_altitude << " alt " << altitude;
+//     //    logdbg2 << "pos1 has alt "
+//     //           << pos1.has_altitude_ << " alt " << pos1.altitude_
+//     //           << " pos2 has alt " << pos2.has_altitude_ << " alt " << pos2.altitude_
+//     //           << " interpolated has alt " << has_altitude << " alt " << altitude;
 
-    //    return {{int_lat, int_long, has_altitude, true, altitude}, true};
+//     //    return {{int_lat, int_long, has_altitude, true, altitude}, true};
 
-    return {{int_lat, int_long}, true};
-}
+//     return {{int_lat, int_long}, true};
+// }
 
 std::pair<boost::optional<dbContent::targetReport::Position>,
           boost::optional<dbContent::targetReport::PositionAccuracy>> ReconstructorTarget::interpolatedRefPosForTime (
@@ -2351,7 +2353,7 @@ void ReconstructorTarget::updateCounts()
 
 std::map <std::string, unsigned int> ReconstructorTarget::getDBContentCounts() const
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = reconstructor_.task().manager().compass().dbContentManager();
 
     std::map <std::string, unsigned int> counts;
 
@@ -2375,74 +2377,74 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     string dbcontent_name = "RefTraj";
     unsigned int dbcontent_id = 255;
 
-    DBContentManager& dbcontent_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcontent_man = reconstructor_.task().manager().compass().dbContentManager();
 
     PropertyList buffer_list;
 
     // basics
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sac_id_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sic_id_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sac_id_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sic_id_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_));
 
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_));
 
     // pos
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
 
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_bit_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_bit_));
 
     // track num begin, end
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_begin_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_end_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_begin_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_end_));
 
     // spd
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vx_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vy_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_));
 
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rocd_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rocd_));
 
     // accs
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ax_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ay_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ax_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ay_));
 
     // stddevs
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_x_stddev_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_y_stddev_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_xy_cov_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_xy_cov_));
 
     // secondary
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_));
 
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_));
 
     // yo mom so acc
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_long_acc_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_trans_acc_));
-    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_vert_rate_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_long_acc_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_trans_acc_));
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_vert_rate_));
 
     // contrib
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_adsb_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_mlat_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_radar_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_tracker_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_reftraj_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_other_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_adsb_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_mlat_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_radar_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_tracker_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_reftraj_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_other_age_));
 
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_num_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_));
 
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_primary_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modeac_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modes_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modes_));
 
     std::shared_ptr<Buffer> buffer_written = std::make_shared<Buffer>(buffer_list, dbcontent_name);
     std::shared_ptr<Buffer> buffer_glue    = std::make_shared<Buffer>(buffer_list, dbcontent_name);
@@ -2534,109 +2536,109 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     auto addRefDataToBuffer = [ & ] (Buffer* buffer, bool to_be_written)
     {
         NullableVector<unsigned int>& ds_id_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_).name());
         NullableVector<unsigned char>& sac_vec = buffer->get<unsigned char> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sac_id_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sac_id_).name());
         NullableVector<unsigned char>& sic_vec = buffer->get<unsigned char> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_sic_id_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_sic_id_).name());
         NullableVector<unsigned int>& line_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_).name());
 
         NullableVector<float>& tod_vec = buffer->get<float> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_).name());
         NullableVector<ptime>& ts_vec = buffer->get<ptime> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_).name());
 
         NullableVector<double>& lat_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_).name());
         NullableVector<double>& lon_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_).name());
         NullableVector<float>& mc_vec = buffer->get<float> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_).name());
 
         // track num begin, end
         NullableVector<bool>& track_begin_vec = buffer->get<bool> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_begin_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_begin_).name());
         NullableVector<bool>& track_end_vec = buffer->get<bool> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_end_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_end_).name());
         NullableVector<unsigned int>& track_num_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_).name());
 
         // speed, track angle
         NullableVector<double>& vx_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vx_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_).name());
         NullableVector<double>& vy_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_vy_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_).name());
 
         NullableVector<double>& speed_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_speed_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_).name());
         NullableVector<double>& track_angle_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_angle_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_).name());
 
         NullableVector<float>& rocd_vec = buffer->get<float> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rocd_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rocd_).name());
 
         // accs
         NullableVector<double>& ax_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ax_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ax_).name());
         NullableVector<double>& ay_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ay_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ay_).name());
 
         // stddevs
         NullableVector<double>& x_stddev_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_x_stddev_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_).name());
         NullableVector<double>& y_stddev_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_y_stddev_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_).name());
         NullableVector<double>& xy_cov_vec = buffer->get<double> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_xy_cov_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_xy_cov_).name());
 
         // ground bit
         NullableVector<bool>& gb_vec = buffer->get<bool> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ground_bit_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_bit_).name());
 
         NullableVector<unsigned int>& m3a_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_).name());
         NullableVector<unsigned int>& acad_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_).name());
         NullableVector<string>& acid_vec = buffer->get<string> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_).name());
 
         // mom
         NullableVector<unsigned char>& mom_long_acc_vec = buffer->get<unsigned char> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_long_acc_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_long_acc_).name());
         NullableVector<unsigned char>& mom_trans_acc_vec = buffer->get<unsigned char> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_trans_acc_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_trans_acc_).name());
         NullableVector<unsigned char>& mom_vert_rate_vec = buffer->get<unsigned char> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mom_vert_rate_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_vert_rate_).name());
 
         // contribution
         NullableVector<float>& cont_adsb_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_adsb_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_adsb_age_).name());
         NullableVector<float>& cont_mlat_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_mlat_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_mlat_age_).name());
         NullableVector<float>& cont_radar_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_radar_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_radar_age_).name());
         NullableVector<float>& cont_tracker_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_tracker_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_tracker_age_).name());
         NullableVector<float>& cont_reftraj_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_reftraj_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_reftraj_age_).name());
         NullableVector<float>& cont_other_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_other_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_other_age_).name());
 
         NullableVector<json>& cont_sources_vec = buffer->get<json>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_).name());
         NullableVector<unsigned int>& cont_source_num_vec = buffer->get<unsigned int>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_contrib_sources_num_).name());        
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_).name());        
 
         NullableVector<float>& cont_primary_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_primary_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_).name());
         NullableVector<float>& cont_modeac_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modeac_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_).name());
         NullableVector<float>& cont_modes_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, DBContent::var_reftraj_update_age_modes_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modes_).name());
 
         NullableVector<unsigned int>& utn_vec = buffer->get<unsigned int> (
-            dbcontent_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_).name());
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_).name());
 
         unsigned int buffer_cnt = 0;
 
@@ -2666,13 +2668,22 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
             if (!ref_ts_prev.is_not_a_date_time())
                 traced_assert(ref_it.second.t > ref_ts_prev);
 
-            // final filtering using max stddev
+            // final filtering using max stddev (air/ground)
             if (ref_calc_settings.filter_references_max_stddev_ &&
-                ref_it.second.x_stddev.has_value() && 
+                ref_it.second.x_stddev.has_value() &&
                 ref_it.second.y_stddev.has_value())
             {
                 double stddev_max = std::max(ref_it.second.x_stddev.value(), ref_it.second.y_stddev.value());
-                if (stddev_max > ref_calc_settings.filter_references_max_stddev_m_)
+
+                bool is_ground = targetCategory() != TargetBase::Category::Unknown
+                              && TargetBase::isGroundOnly(targetCategory());
+                if (!is_ground && gbs_series.hasValueAt(ref_it.second.t))
+                    is_ground = gbs_series.getValueAt(ref_it.second.t);
+
+                double stddev_limit = is_ground
+                                    ? ref_calc_settings.filter_references_max_stddev_m_ground_
+                                    : ref_calc_settings.filter_references_max_stddev_m_air_;
+                if (stddev_max > stddev_limit)
                     continue;
             }
 

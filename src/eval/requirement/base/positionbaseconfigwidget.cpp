@@ -120,3 +120,4 @@ void PositionBaseValueConfigWidget::minRefAccuracyEditSlot(QString value)
 }
 
 } // namespace EvaluationRequirement
+

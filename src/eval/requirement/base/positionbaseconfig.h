@@ -42,8 +42,8 @@ class PositionBaseProbConfig : public ProbabilityBaseConfig
 {
     Q_OBJECT
   public:
-    PositionBaseProbConfig(const std::string& class_id, const std::string& instance_id, Group& group,
-                           EvaluationStandard& standard, EvaluationCalculator& calculator);
+    PositionBaseProbConfig(nlohmann::json& config,
+                           Group* parent);
     virtual ~PositionBaseProbConfig();
 
     virtual void addToReport(std::shared_ptr<ResultReport::Report> report);
@@ -61,8 +61,8 @@ class PositionBaseValueConfig : public BaseConfig
 {
     Q_OBJECT
   public:
-    PositionBaseValueConfig(const std::string& class_id, const std::string& instance_id, Group& group,
-                            EvaluationStandard& standard, EvaluationCalculator& calculator);
+    PositionBaseValueConfig(nlohmann::json& config,
+                            Group* parent);
     virtual ~PositionBaseValueConfig();
 
     virtual void addToReport(std::shared_ptr<ResultReport::Report> report);

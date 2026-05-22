@@ -47,8 +47,8 @@ class ViewManager : public QObject, public Configurable
 
   signals:
     void selectionChangedSignal();
-    void unshowViewPointSignal (const ViewableDataConfig* vp);
-    void showViewPointSignal (const ViewableDataConfig* vp);
+    void unshowViewPointSignal (ViewableDataConfig* vp);
+    void showViewPointSignal (ViewableDataConfig* vp);
     void reloadStateChanged();
     void automaticUpdatesChanged();
     void presetEdited(ViewPresets::EditAction ea);
@@ -60,6 +60,7 @@ class ViewManager : public QObject, public Configurable
     void databaseClosedSlot();
 
     void loadingStartedSlot();
+    
     // all data contained, also new one. requires_reset true indicates that all shown info should be re-created,
     // e.g. when data in the beginning was removed, or order of previously emitted data was changed, etc.
     void loadedDataSlot (const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
@@ -74,8 +75,10 @@ class ViewManager : public QObject, public Configurable
         bool automatic_redraw = true;
     };
 
-    ViewManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    ViewManager(nlohmann::json& config, COMPASS& compass);
     virtual ~ViewManager();
+
+    COMPASS& compass() { return compass_; }
 
     void init(QTabWidget* main_tab_widget);
     void close();
@@ -88,13 +91,12 @@ class ViewManager : public QObject, public Configurable
 
     ViewContainerWidget* addNewContainerWidget();
 
-    // void deleteContainer (std::string instance_id);
-    void removeContainer(std::string instance_id);
-    void deleteContainerWidget(std::string instance_id);
-    void removeContainerWidget(std::string instance_id);
+    // void deleteContainer (std::string instance_name);
+    void removeContainer(std::string instance_name);
+    void deleteContainerWidget(std::string instance_name);
+    void removeContainerWidget(std::string instance_name);
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void viewShutdown(View* view, const std::string& err = "");
 
@@ -125,10 +127,18 @@ class ViewManager : public QObject, public Configurable
     void clearViewPoints();
     void addViewPoints(const std::vector <nlohmann::json>& viewpoints);
 
-    void setCurrentViewPoint (const ViewableDataConfig* viewable, 
+    void setCurrentViewPoint (ViewableDataConfig* viewable,
                               bool load_blocking = false);
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
+
+    /// For each view container, if the currently-selected tab's view does
+    /// not accept any annotation feature type present in `viewable`, switch
+    /// the container to the first view (in container order) that does. No
+    /// switch occurs when the current view is already compatible, when no
+    /// container holds a compatible view, or when the viewable has no
+    /// annotation features.
+    void activateCompatibleViewTabs(const ViewableDataConfig* viewable);
 
     void selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix_time::ptime ts_max);
 
@@ -136,9 +146,9 @@ class ViewManager : public QObject, public Configurable
 
     std::map<std::string, std::string> viewClassList() const;
 
-    unsigned int newViewNumber(const std::string& class_id);
-    std::string newViewInstanceId(const std::string& class_id);
-    std::string newViewName(const std::string& class_id);
+    unsigned int newViewNumber(const std::string& class_name);
+    std::string newViewInstanceId(const std::string& class_name);
+    std::string newViewName(const std::string& class_name);
 
     void disableDataDistribution(bool value);
     // disables propagation of data to the views. used when loading is performed for processing purposes
@@ -192,6 +202,14 @@ protected:
     bool processing_data_ = false;
     bool reload_needed_   = false;
 
+    // Diagnostic state for loading lifecycle:
+    //   loading_done_dispatched_: set true after a loadingDoneSlot body completes,
+    //     reset on loadingStartedSlot. Used to detect late loadedDataSlot calls.
+    //   current_dispatch_: name of slot currently inside its per-view loop, or
+    //     empty when idle. Logged when re-entry happens.
+    bool loading_done_dispatched_ = false;
+    std::string current_dispatch_;
+
     QTabWidget* main_tab_widget_{nullptr};
 
     std::map<std::string, ViewContainer*> containers_;
@@ -200,7 +218,7 @@ protected:
 
     std::unique_ptr<ViewPointsReportGenerator> view_points_report_gen_;
 
-    const ViewableDataConfig* current_viewable_ {nullptr};
+    ViewableDataConfig* current_viewable_ {nullptr};
     bool view_point_data_selected_ {false};
 
     unsigned int container_count_{0};

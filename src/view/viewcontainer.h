@@ -43,21 +43,27 @@ class ViewContainer : public QObject, public Configurable
     void addNewViewSlot();
 
   public:
-    ViewContainer(const std::string& class_id, const std::string& instance_id, Configurable* parent,
-                  ViewManager* view_manager, QTabWidget* tab_widget, int window_cnt);
+    ViewContainer(nlohmann::json& config, ViewManager& view_manager,
+                  Configurable* parent, QTabWidget* tab_widget, int window_cnt);
     virtual ~ViewContainer();
 
     const std::vector<std::unique_ptr<View>>& getViews() const;
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    ViewManager& viewManager() { return view_manager_; }
+
+    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     virtual std::string getWindowName();
     //static unsigned int getViewCount() { return view_count_; }
 
-    void addView(const std::string& class_id);
+    void addView(const std::string& class_name);
     void enableViewTab(QWidget* widget, bool value);
     void showView(QWidget* widget);
+
+    /// View whose central widget is the currently-selected tab in this
+    /// container; nullptr if the container is empty or the current tab does
+    /// not correspond to any owned view.
+    View* currentView() const;
 
     void resetToStartupConfiguration();
 

@@ -74,3 +74,4 @@ void RefTrajAccuracyFilterWidget::minValueEditedSlot(const QString& value)
     filter_.minValue(value_float);
 }
 
+

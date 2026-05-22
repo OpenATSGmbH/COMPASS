@@ -37,7 +37,8 @@ class AsyncTaskProgressWrapper;
 class ASTERIXDecoderBase
 {
 public:
-    ASTERIXDecoderBase(ASTERIXImportSource& source,
+    ASTERIXDecoderBase(ASTERIXImportTask& task,
+                       ASTERIXImportSource& source,
                        const ASTERIXImportTaskSettings* settings = nullptr);
     virtual ~ASTERIXDecoderBase();
 
@@ -68,7 +69,8 @@ public:
 
     nlohmann::json stateAsJSON() const;
 
-    static std::unique_ptr<ASTERIXDecoderBase> createDecoder(ASTERIXImportSource& source,
+    static std::unique_ptr<ASTERIXDecoderBase> createDecoder(ASTERIXImportTask& task,
+                                                             ASTERIXImportSource& source,
                                                              const ASTERIXImportTaskSettings* settings = nullptr);
 protected:
     ASTERIXDecodeJob* job() { return job_; }

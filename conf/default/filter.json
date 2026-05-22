@@ -1,377 +1,407 @@
 {
+    "class_name": "FilterManager",
+    "instance_name": "FilterManager0",
     "parameters": {
         "db_id": "",
-        "use_filters": true
+        "use_filters": false
     },
-    "sub_configs": {
-        "ACADFilter": {
-            "Aircraft Address": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "Aircraft Address",
-                    "values_str": "4C8070",
-                    "visible": false,
-                    "widget_visible": false
-                }
+    "sub_configs": [
+        {
+            "class_name": "ACADFilter",
+            "instance_name": "Aircraft Address",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "Aircraft Address",
+                "values_str": "4C8070",
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "ACIDFilter": {
-            "Aircraft Identification": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "Aircraft Identification",
-                    "values_str": "AEE",
-                    "visible": false,
-                    "widget_visible": false
-                }
+        {
+            "class_name": "ACIDFilter",
+            "instance_name": "Aircraft Identification",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "Aircraft Identification",
+                "values_str": "AEE",
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "ADSBQualityFilter": {
-            "ADSBQualityFilter": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "max_nacp": 5,
-                    "max_nic": 5,
-                    "max_nucp": 4,
-                    "max_sil_v1": 0,
-                    "max_sil_v2": 0,
-                    "min_nacp": 5,
-                    "min_nic": 5,
-                    "min_nucp": 4,
-                    "min_sil_v1": 0,
-                    "min_sil_v2": 0,
-                    "name": "ADSB Quality",
-                    "use_max_nacp": false,
-                    "use_max_nic": false,
-                    "use_max_nucp": false,
-                    "use_max_sil_v1": false,
-                    "use_max_sil_v2": true,
-                    "use_min_nacp": false,
-                    "use_min_nic": false,
-                    "use_min_nucp": false,
-                    "use_min_sil_v1": false,
-                    "use_min_sil_v2": true,
-                    "use_v0": false,
-                    "use_v1": false,
-                    "use_v2": true,
-                    "visible": false,
-                    "widget_visible": false
-                }
+        {
+            "class_name": "ADSBQualityFilter",
+            "instance_name": "ADSBQualityFilter",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "max_nacp": 5,
+                "max_nic": 5,
+                "max_nucp": 4,
+                "max_sil_v1": 0,
+                "max_sil_v2": 0,
+                "min_nacp": 5,
+                "min_nic": 5,
+                "min_nucp": 4,
+                "min_sil_v1": 0,
+                "min_sil_v2": 0,
+                "name": "ADSB Quality",
+                "use_max_nacp": false,
+                "use_max_nic": false,
+                "use_max_nucp": false,
+                "use_max_sil_v1": false,
+                "use_max_sil_v2": true,
+                "use_min_nacp": false,
+                "use_min_nic": false,
+                "use_min_nucp": false,
+                "use_min_sil_v1": false,
+                "use_min_sil_v2": true,
+                "use_v0": false,
+                "use_v1": false,
+                "use_v2": true,
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "DBFilter": {
-            "ADSBMOPS": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "ADSBMOPS",
-                    "visible": false,
-                    "widget_visible": false
-                },
-                "sub_configs": {
-                    "DBFilterCondition": {
-                        "ADSBMOPSCondition0": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": "IN",
-                                "reset_value": "0",
-                                "value": "0",
-                                "variable_dbcontent_name": "CAT021",
-                                "variable_name": "MOPS Version"
-                            }
-                        }
-                    }
-                }
+        {
+            "class_name": "DBFilter",
+            "instance_name": "ADSBMOPS",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "ADSBMOPS",
+                "visible": false,
+                "widget_visible": false
             },
-            "DBFilter1": {
-                "parameters": {
-                    "active": true,
-                    "is_custom": true,
-                    "name": "Ground Bit",
-                    "visible": false,
-                    "widget_visible": false
-                },
-                "sub_configs": {
-                    "DBFilterCondition": {
-                        "Ground BitCondition0": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": "=",
-                                "reset_value": "1",
-                                "value": "1",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Ground Bit"
-                            }
-                        }
+            "sub_configs": [
+                {
+                    "class_name": "DBFilterCondition",
+                    "instance_name": "ADSBMOPSCondition0",
+                    "parameters": {
+                        "absolute_value": false,
+                        "display_instance_id": false,
+                        "display_instance_name": false,
+                        "op_and": true,
+                        "operator": "IN",
+                        "reset_value": "0",
+                        "value": "0",
+                        "variable_dbcontent_name": "CAT021",
+                        "variable_name": "MOPS Version"
                     }
                 }
+            ]
+        },
+        {
+            "class_name": "DBFilter",
+            "instance_name": "DBFilter1",
+            "parameters": {
+                "active": false,
+                "is_custom": true,
+                "name": "Ground Bit",
+                "visible": false,
+                "widget_visible": false
             },
-            "Detection Type": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "Detection Type",
-                    "visible": false,
-                    "widget_visible": false
-                },
-                "sub_configs": {
-                    "DBFilterCondition": {
-                        "Radar Detection TypeCondition0": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": "IN",
-                                "reset_value": "1",
-                                "value": "1",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Type"
-                            }
-                        }
+            "sub_configs": [
+                {
+                    "class_name": "DBFilterCondition",
+                    "instance_name": "Ground BitCondition0",
+                    "parameters": {
+                        "absolute_value": false,
+                        "display_instance_id": false,
+                        "display_instance_name": false,
+                        "op_and": true,
+                        "operator": "=",
+                        "reset_value": "1",
+                        "value": "1",
+                        "variable_dbcontent_name": "Meta",
+                        "variable_name": "Ground Bit"
                     }
                 }
+            ]
+        },
+        {
+            "class_name": "DBFilter",
+            "instance_name": "Detection Type",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "Detection Type",
+                "visible": false,
+                "widget_visible": false
             },
-            "Position": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "Position",
-                    "visible": false,
-                    "widget_visible": false
-                },
-                "sub_configs": {
-                    "DBFilterCondition": {
-                        "Latitude Maximum": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": "<=",
-                                "reset_value": "MAX",
-                                "value": "45.958201",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Latitude"
-                            }
-                        },
-                        "Latitude Minimum": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": ">=",
-                                "reset_value": "MIN",
-                                "value": "45.524856",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Latitude"
-                            }
-                        },
-                        "Longitude Maximum": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": "<=",
-                                "reset_value": "MAX",
-                                "value": "16.295223",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Longitude"
-                            }
-                        },
-                        "Longitude Minimum": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": ">=",
-                                "reset_value": "MIN",
-                                "value": "15.843169",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Longitude"
-                            }
-                        }
+            "sub_configs": [
+                {
+                    "class_name": "DBFilterCondition",
+                    "instance_name": "Radar Detection TypeCondition0",
+                    "parameters": {
+                        "absolute_value": false,
+                        "display_instance_id": false,
+                        "display_instance_name": false,
+                        "op_and": true,
+                        "operator": "IN",
+                        "reset_value": "1",
+                        "value": "1",
+                        "variable_dbcontent_name": "Meta",
+                        "variable_name": "Type"
                     }
                 }
+            ]
+        },
+        {
+            "class_name": "DBFilter",
+            "instance_name": "Position",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "Position",
+                "visible": false,
+                "widget_visible": false
             },
-            "Time of Day": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "Time of Day",
-                    "visible": false,
-                    "widget_visible": false
+            "sub_configs": [
+                {
+                    "class_name": "DBFilterCondition",
+                    "instance_name": "Latitude Maximum",
+                    "parameters": {
+                        "absolute_value": false,
+                        "display_instance_id": false,
+                        "display_instance_name": false,
+                        "op_and": true,
+                        "operator": "<=",
+                        "reset_value": "MAX",
+                        "value": "45.958201",
+                        "variable_dbcontent_name": "Meta",
+                        "variable_name": "Latitude"
+                    }
                 },
-                "sub_configs": {
-                    "DBFilterCondition": {
-                        "Time of Day Maximum": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": "<=",
-                                "reset_value": "MAX",
-                                "value": "09:03:43.000",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Time of Day"
-                            }
-                        },
-                        "Time of Day Minimum": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": ">=",
-                                "reset_value": "MIN",
-                                "value": "08:00:23.398",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Time of Day"
-                            }
-                        }
+                {
+                    "class_name": "DBFilterCondition",
+                    "instance_name": "Latitude Minimum",
+                    "parameters": {
+                        "absolute_value": false,
+                        "display_instance_id": false,
+                        "display_instance_name": false,
+                        "op_and": true,
+                        "operator": ">=",
+                        "reset_value": "MIN",
+                        "value": "45.524856",
+                        "variable_dbcontent_name": "Meta",
+                        "variable_name": "Latitude"
+                    }
+                },
+                {
+                    "class_name": "DBFilterCondition",
+                    "instance_name": "Longitude Maximum",
+                    "parameters": {
+                        "absolute_value": false,
+                        "display_instance_id": false,
+                        "display_instance_name": false,
+                        "op_and": true,
+                        "operator": "<=",
+                        "reset_value": "MAX",
+                        "value": "16.295223",
+                        "variable_dbcontent_name": "Meta",
+                        "variable_name": "Longitude"
+                    }
+                },
+                {
+                    "class_name": "DBFilterCondition",
+                    "instance_name": "Longitude Minimum",
+                    "parameters": {
+                        "absolute_value": false,
+                        "display_instance_id": false,
+                        "display_instance_name": false,
+                        "op_and": true,
+                        "operator": ">=",
+                        "reset_value": "MIN",
+                        "value": "15.843169",
+                        "variable_dbcontent_name": "Meta",
+                        "variable_name": "Longitude"
                     }
                 }
+            ]
+        },
+        {
+            "class_name": "DBFilter",
+            "instance_name": "Time of Day",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "Time of Day",
+                "visible": false,
+                "widget_visible": false
             },
-            "Track Number": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "Track Number",
-                    "visible": false,
-                    "widget_visible": false
+            "sub_configs": [
+                {
+                    "class_name": "DBFilterCondition",
+                    "instance_name": "Time of Day Maximum",
+                    "parameters": {
+                        "absolute_value": false,
+                        "display_instance_id": false,
+                        "display_instance_name": false,
+                        "op_and": true,
+                        "operator": "<=",
+                        "reset_value": "MAX",
+                        "value": "09:03:43.000",
+                        "variable_dbcontent_name": "Meta",
+                        "variable_name": "Time of Day"
+                    }
                 },
-                "sub_configs": {
-                    "DBFilterCondition": {
-                        "Track Number Values": {
-                            "parameters": {
-                                "absolute_value": false,
-                                "display_instance_id": false,
-                                "op_and": true,
-                                "operator": "IN",
-                                "reset_value": "4227",
-                                "value": "4227",
-                                "variable_dbcontent_name": "Meta",
-                                "variable_name": "Track Number"
-                            }
-                        }
+                {
+                    "class_name": "DBFilterCondition",
+                    "instance_name": "Time of Day Minimum",
+                    "parameters": {
+                        "absolute_value": false,
+                        "display_instance_id": false,
+                        "display_instance_name": false,
+                        "op_and": true,
+                        "operator": ">=",
+                        "reset_value": "MIN",
+                        "value": "08:00:23.398",
+                        "variable_dbcontent_name": "Meta",
+                        "variable_name": "Time of Day"
                     }
                 }
+            ]
+        },
+        {
+            "class_name": "DBFilter",
+            "instance_name": "Track Number",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "Track Number",
+                "visible": false,
+                "widget_visible": false
+            },
+            "sub_configs": [
+                {
+                    "class_name": "DBFilterCondition",
+                    "instance_name": "Track Number Values",
+                    "parameters": {
+                        "absolute_value": false,
+                        "display_instance_id": false,
+                        "display_instance_name": false,
+                        "op_and": true,
+                        "operator": "IN",
+                        "reset_value": "4227",
+                        "value": "4227",
+                        "variable_dbcontent_name": "Meta",
+                        "variable_name": "Track Number"
+                    }
+                }
+            ]
+        },
+        {
+            "class_name": "ExcludedTimeWindowsFilter",
+            "instance_name": "ExcludedTimeWindowsFilter0",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "Excluded Time Windows",
+                "time_windows_json": [],
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "ExcludedTimeWindowsFilter": {
-            "ExcludedTimeWindowsFilter0": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "Excluded Time Windows",
-                    "time_windows_json": [],
-                    "visible": false,
-                    "widget_visible": false
-                }
+        {
+            "class_name": "MLATRUFilter",
+            "instance_name": "MLATRUFilter0",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "match_all": false,
+                "name": "MLAT RUs",
+                "rus_str": "nulL,kor,schas",
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "MLATRUFilter": {
-            "MLATRUFilter0": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "match_all": false,
-                    "name": "MLAT RUs",
-                    "rus_str": "nulL,kor,schas",
-                    "visible": false,
-                    "widget_visible": false
-                }
+        {
+            "class_name": "Mode3AFilter",
+            "instance_name": "Mode 3/A Codes",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "Mode 3/A Codes",
+                "values_str": "3771",
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "Mode3AFilter": {
-            "Mode 3/A Codes": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "Mode 3/A Codes",
-                    "values_str": "3771",
-                    "visible": false,
-                    "widget_visible": false
-                }
+        {
+            "class_name": "ModeCFilter",
+            "instance_name": "Mode C Codes",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "max_value": 3000.0,
+                "min_value": -1000.0,
+                "name": "Mode C Codes",
+                "null_wanted": false,
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "ModeCFilter": {
-            "Mode C Codes": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "max_value": 3000.0,
-                    "min_value": -1000.0,
-                    "name": "Mode C Codes",
-                    "null_wanted": false,
-                    "visible": false,
-                    "widget_visible": false
-                }
+        {
+            "class_name": "PrimaryOnlyFilter",
+            "instance_name": "Primary Only",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "Primary Only",
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "PrimaryOnlyFilter": {
-            "Primary Only": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "Primary Only",
-                    "visible": false,
-                    "widget_visible": false
-                }
+        {
+            "class_name": "RefTrajAccuracyFilter",
+            "instance_name": "RefTrajAccuracyFilter0",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "min_value": 30.0,
+                "name": "RefTraj Accuracy",
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "RefTrajAccuracyFilter": {
-            "RefTrajAccuracyFilter0": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "min_value": 30.0,
-                    "name": "RefTraj Accuracy",
-                    "visible": false,
-                    "widget_visible": false
-                }
+        {
+            "class_name": "TimestampFilter",
+            "instance_name": "TimestampFilter0",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "max_value": "2026-01-05 12:05:19.968",
+                "min_value": "2026-01-05 09:59:58.752",
+                "name": "Timestamp",
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "TimestampFilter": {
-            "TimestampFilter0": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "max_value": "2026-01-05 12:05:19.968",
-                    "min_value": "2026-01-05 09:59:58.752",
-                    "name": "Timestamp",
-                    "visible": false,
-                    "widget_visible": false
-                }
+        {
+            "class_name": "TrackerTrackNumberFilter",
+            "instance_name": "TrackerTrackNumberFilter0",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "Tracker Track Number",
+                "tracker_track_nums": {},
+                "visible": false,
+                "widget_visible": false
             }
         },
-        "TrackerTrackNumberFilter": {
-            "TrackerTrackNumberFilter0": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "Tracker Track Number",
-                    "tracker_track_nums": {},
-                    "visible": false,
-                    "widget_visible": false
-                }
-            }
-        },
-        "UTNFilter": {
-            "UTNFilter0": {
-                "parameters": {
-                    "active": false,
-                    "is_custom": false,
-                    "name": "UTNs",
-                    "utns_str": "0",
-                    "visible": false,
-                    "widget_visible": false
-                }
+        {
+            "class_name": "UTNFilter",
+            "instance_name": "UTNFilter0",
+            "parameters": {
+                "active": false,
+                "is_custom": false,
+                "name": "UTNs",
+                "utns_str": "0",
+                "visible": false,
+                "widget_visible": false
             }
         }
-    }
+    ]
 }

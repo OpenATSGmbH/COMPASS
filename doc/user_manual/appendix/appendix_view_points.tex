@@ -353,7 +353,7 @@ All possible filters existing in COMPASS can be set using view points, e.g.:
 
 The filter values have to be defined exactly as a user would enter them in the DBFilter conditions in the GUI. \\
 
-One exception are the data source filters, which need a 'active\_sources' condition list with integer values for all sources to be loaded, identified as number. Each source number is calculated by $SAC*255+SIC$. \\
+One exception are the data source filters, which need a 'active\_sources' condition list with integer values for all sources to be loaded, identified as number. Each source number is calculated by $SAC*256+SIC$. \\
 
 For the 'Tracker Track Number' filter, the data source condition is identified by its data source name. Using the dataset in the context information, the view point file can ensure that the same name is used. \\
 
@@ -416,7 +416,7 @@ A listed annotation can be shown or hidden by using the checkbox next to it. \\
 \textbf{Note} how the chosen 'name' and 'symbol\textunderscore color' reflect in the displayed annotation node.
 
 \begin{figure}[H]
-    \center
+    \centering
       \includegraphics[width=12cm]{figures/viewpoints_anno_example.png}
     \caption{View Point Annotations - Example} 
 \end{figure}
@@ -468,7 +468,7 @@ Depending on its type a feature may contain additional fields. Examples for the 
 \end{lstlisting}
 
 \begin{figure}[H]
-    \center
+    \centering
       \includegraphics[width=8cm]{figures/viewpoints_anno_example_points.png}
     \caption{View Point Annotations - Points} 
 \end{figure}
@@ -501,7 +501,7 @@ Two consecutive coordinates form an individual line, which means that the size o
 Here $[45.0, 18.0]$ and $[45.0, 20.0]$ form one line, and $[48.0, 20.0]$ and $[46.0, 19.0]$ another one.
 
 \begin{figure}[H]
-    \center
+    \centering
         \includegraphics[width=8cm]{figures/viewpoints_anno_example_lines.png}
     \caption{View Point Annotations - Lines} 
 \end{figure}
@@ -533,7 +533,7 @@ Here $[45.0, 18.0]$ and $[45.0, 20.0]$ form one line, and $[48.0, 20.0]$ and $[4
 The displayed line connects the given coordinates, one after another.
 
 \begin{figure}[H]
-    \center
+    \centering
         \includegraphics[width=8cm]{figures/viewpoints_anno_example_linestring.png}
     \caption{View Point Annotations - Line Strings} 
 \end{figure}
@@ -570,7 +570,7 @@ The displayed line connects the given coordinates, one after another.
 The 'sizes' of the ellipses are provided as value triples (Standard deviation X, Standard deviation Y, Covariance XY).
 
 \begin{figure}[H]
-    \center
+    \centering
         \includegraphics[width=8cm]{figures/viewpoints_anno_example_ellipses.png}
     \caption{View Point Annotations - Ellipses} 
 \end{figure}
@@ -596,7 +596,7 @@ The 'sizes' of the ellipses are provided as value triples (Standard deviation X,
 \end{lstlisting}
 
 \begin{figure}[H]
-    \center
+    \centering
         \includegraphics[width=10cm]{figures/viewpoints_anno_example_text.png}
     \caption{View Point Annotations - Text} 
 \end{figure}
@@ -676,7 +676,7 @@ At the moment only GeoTIFF files are supported.
 \textbf{Note} that the value '1.7976931348623157e+308' can be provided to signal an undefined grid cell, which will not be colored.
 
 \begin{figure}[H]
-    \center
+    \centering
         \includegraphics[width=15cm]{figures/viewpoints_anno_example_grid.png}
     \caption{View Point Annotations - Grid} 
 \end{figure}
@@ -745,7 +745,7 @@ displayed simultaneously in HistogramView.
 \end{lstlisting}
 
 \begin{figure}[H]
-    \center
+    \centering
         \includegraphics[width=15cm]{figures/viewpoints_anno_example_histogram.png}
     \caption{View Point Annotations - Histogram} 
 \end{figure}
@@ -790,7 +790,7 @@ The feature may contain multiple data series.
 \end{lstlisting}
 
 \begin{figure}[H]
-    \center
+    \centering
         \includegraphics[width=15cm]{figures/viewpoints_anno_example_scatter.png}
     \caption{View Point Annotations - Scatter Series} 
 \end{figure}
@@ -855,7 +855,7 @@ In order to show each geometrical primitive in a separate color, the 'color' tag
 This example will result in each point being displayed in a separate color.
 
 \begin{figure}[H]
-    \center
+    \centering
         \includegraphics[width=8cm]{figures/viewpoints_anno_example_colorvec.png}
     \caption{View Point Annotations - Color vectors} 
 \end{figure}
@@ -927,7 +927,7 @@ individually.
 \end{lstlisting}
 
 \begin{figure}[H]
-    \center
+    \centering
         \includegraphics[width=14cm]{figures/viewpoints_anno_example_nested.png}
     \caption{View Point Annotations - Nested Annotations} 
 \end{figure}
@@ -967,10 +967,10 @@ individually.
             "filename": "/home/yourpath/tracker2.ff",
             "date": "2021-01-02",
             "line_id": 1
-            }               
+            }
         ]
-    },    
-    "view_points": 
+    },
+    "view_points":
     [
         {
             "id": 1,

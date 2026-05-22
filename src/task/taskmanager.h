@@ -22,13 +22,15 @@
 #include "configurable.h"
 #include "taskdefs.h"
 #include "task.h"
-#include "taskresultswidget.h"
 #include "reportdefs.h"
+
+#include <memory>
 #include "result.h"
 
 #include <boost/optional.hpp>
 
 class COMPASS;
+class TaskResultsWidget;
 class CreateARTASAssociationsTask;
 class JSONImportTask;
 class GPSTrailImportTask;
@@ -36,8 +38,8 @@ class GPSTrailImportTask;
 class ASTERIXImportTask;
 class ViewPointsImportTask;
 class RadarPlotPositionCalculatorTask;
-class ManageSectorsTask;
 class ReconstructorTask;
+class AnalyzeDataSourceTask;
 class MainWindow;
 class TaskResult;
 class ViewableDataConfig;
@@ -72,11 +74,14 @@ public slots:
     void databaseClosedSlot();
 
 public:
-    TaskManager(const std::string& class_id, const std::string& instance_id, COMPASS* compass);
+    // TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
+    TaskManager(nlohmann::json& config, COMPASS& compass);
+
+    COMPASS& compass() { return compass_; }
 
     virtual ~TaskManager();
 
-    virtual void generateSubConfigurable(const std::string& class_id, const std::string& instance_id) override;
+    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void init();
     void shutdown();
@@ -92,15 +97,17 @@ public:
     JSONImportTask& jsonImporterTask() const;
     GPSTrailImportTask& gpsTrailImportTask() const;
     //GPSImportCSVTask& gpsImportCSVTask() const;
-    ManageSectorsTask& manageSectorsTask() const;
     RadarPlotPositionCalculatorTask& radarPlotPositionCalculatorTask() const;
     CreateARTASAssociationsTask& createArtasAssociationsTask() const;
     ReconstructorTask& reconstructReferencesTask() const;
+    AnalyzeDataSourceTask& analyzeDataSourceTask() const;
 
     TaskResultsWidget* widget();
 
     void beginTaskResultWriting(const std::string& name,
-                                task::TaskResultType type);
+                                task::TaskResultType type,
+                                bool clear_existing = true);
+    bool hasCurrentResult() const;
     std::shared_ptr<TaskResult>& currentResult();
     std::shared_ptr<ResultReport::Report>& currentReport();
     void endTaskResultWriting(bool store_result,
@@ -140,7 +147,7 @@ public:
 protected:
     virtual void checkSubConfigurables() override;
 
-    void addTask(const std::string& class_id, Task* task);
+    void addTask(const std::string& class_name, Task* task);
     MainWindow* getMainWindow();
 
     std::shared_ptr<TaskResult> getOrCreateResult(const std::string& name, 
@@ -149,16 +156,18 @@ protected:
     void clearResults();
     boost::optional<unsigned int> findResult(const std::string& name) const;
 
+    COMPASS& compass_;
+
     // tasks
     std::unique_ptr<ASTERIXImportTask> asterix_importer_task_;
     std::unique_ptr<ViewPointsImportTask> view_points_import_task_;
     std::unique_ptr<JSONImportTask> json_import_task_;
     std::unique_ptr<GPSTrailImportTask> gps_trail_import_task_;
     //std::unique_ptr<GPSImportCSVTask> gps_import_csv_task_;
-    std::unique_ptr<ManageSectorsTask> manage_sectors_task_;
     std::unique_ptr<RadarPlotPositionCalculatorTask> radar_plot_position_calculator_task_;
     std::unique_ptr<CreateARTASAssociationsTask> create_artas_associations_task_;
     std::unique_ptr<ReconstructorTask> reconstruct_references_task_;
+    std::unique_ptr<AnalyzeDataSourceTask> analyze_data_source_task_;
 
     std::map<std::string, Task*> tasks_;
 

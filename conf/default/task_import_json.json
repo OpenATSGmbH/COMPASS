@@ -1,4 +1,6 @@
 {
+    "class_name": "JSONImportTask",
+    "instance_name": "JSONImportTask0",
     "parameters": {
         "current_schema_name": "jASTERIX"
     }

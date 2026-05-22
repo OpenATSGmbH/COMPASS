@@ -35,6 +35,8 @@
 #include <QCoreApplication>
 #include <QApplication>
 #include <QThread>
+#include "questiondialog.h"
+
 #include <QMessageBox>
 
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -43,15 +45,13 @@ using namespace std;
 using namespace nlohmann;
 using namespace Utils;
 
-ViewPointsImportTask::ViewPointsImportTask(const std::string& class_id, const std::string& instance_id,
-                                           TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_import_view_points.json")
+ViewPointsImportTask::ViewPointsImportTask(nlohmann::json& config, TaskManager* parent)
+    : Task(*parent),
+      Configurable(config, parent)
 {
-    tooltip_ =
-            "Allows import of view points and associated datasets.";
+    tooltip_ = "Allows import of view points and associated datasets.";
 
-    createSubConfigurables(); // no thing
+    createSubConfigurables();
 
     current_error_ = "No filename set";
 
@@ -64,7 +64,7 @@ ViewPointsImportTask::~ViewPointsImportTask()
 
 void ViewPointsImportTask::showDialog()
 {
-    ViewPointsImportTaskDialog dialog (*this);
+    ViewPointsImportTaskDialog dialog (*this, QApplication::activeWindow());
 
     if (dialog.exec() == QDialog::Rejected)
         return;
@@ -79,13 +79,6 @@ void ViewPointsImportTask::showDialog()
 
 //     run();
 // }
-
-void ViewPointsImportTask::generateSubConfigurable(const std::string& class_id,
-                                                   const std::string& instance_id)
-{
-    throw std::runtime_error("ViewPointsImportTask: generateSubConfigurable: unknown class_id " +
-                             class_id);
-}
 
 void ViewPointsImportTask::importFilename(const std::string& filename)
 {
@@ -158,19 +151,14 @@ void ViewPointsImportTask::run()
     done_ = false;
     stopped_ = false;
 
-    DBInterface& db_interface = COMPASS::instance().dbInterface();
+    DBInterface& db_interface = manager().compass().dbInterface();
 
     // check and clear existing ones
     if(db_interface.existsViewPointsTable() && db_interface.viewPoints().size() && allow_user_interactions_)
     {
-        QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(
-                    nullptr, "Clear Existing View Points",
-                    "There are already view points defined in the database.\n\n"
-                    "Do you agree to delete all view points?",
-                    QMessageBox::Yes | QMessageBox::No);
-
-        if (reply == QMessageBox::Yes)
+        if (QuestionDialog::ask(nullptr, "Clear Existing View Points",
+                "There are already view points defined in the database.\n\n"
+                "Do you agree to delete all view points?"))
         {
             loginf << "deleting all view points";
         }
@@ -183,13 +171,13 @@ void ViewPointsImportTask::run()
         }
     }
 
-    COMPASS::instance().logInfo("ViewPoints Import") << "started, clearing previous viewpoints";
+    manager().compass().logInfo("ViewPoints Import") << "started, clearing previous viewpoints";
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-    COMPASS::instance().viewManager().loadViewPoints(current_data_);
+    manager().compass().viewManager().loadViewPoints(current_data_);
 
-    COMPASS::instance().logInfo("ViewPoints Import") << "imported";
+    manager().compass().logInfo("ViewPoints Import") << "imported";
 
     QApplication::restoreOverrideCursor();
 
@@ -200,7 +188,7 @@ void ViewPointsImportTask::run()
 
         if (context.contains(ViewPoint::VP_CONTEXT_DATASETS_KEY))
         {
-            COMPASS::instance().logInfo("ViewPoints Import") << "importing datasets";
+            manager().compass().logInfo("ViewPoints Import") << "importing datasets";
 
             for (auto& ds_it : context.at(ViewPoint::VP_CONTEXT_DATASETS_KEY).get<json::array_t>())
             {
@@ -288,11 +276,11 @@ void ViewPointsImportTask::run()
 
             Async::waitAndProcessEventsFor(50);
 
-            COMPASS::instance().logInfo("ViewPoints Import") << "importing datasets done";
+            manager().compass().logInfo("ViewPoints Import") << "importing datasets done";
         }
     }
 
-    COMPASS::instance().logInfo("ViewPoints Import") << "done";
+    manager().compass().logInfo("ViewPoints Import") << "done";
 
     done_ = true;
 
@@ -309,3 +297,4 @@ const nlohmann::json& ViewPointsImportTask::currentData() const
 {
     return current_data_;
 }
+

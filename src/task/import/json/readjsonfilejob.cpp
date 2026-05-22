@@ -400,3 +400,4 @@ void ReadJSONFileJob::cleanCommas()
         // /,(?!["{}[\]])/g  multiple commas
     }
 }
+

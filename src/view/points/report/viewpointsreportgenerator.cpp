@@ -29,7 +29,6 @@
 #include "global.h"
 #include "dbinterface.h"
 #include "dbconnection.h"
-#include "sqliteconnection.h"
 #include "files.h"
 #include "latexdocument.h"
 #include "latexvisitor.h"
@@ -50,9 +49,12 @@
 using namespace std;
 using namespace Utils;
 
-ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id, const std::string& instance_id,
-                                                     ViewManager& view_manager)
-    : Configurable(class_id, instance_id, &view_manager), view_manager_(view_manager)
+// ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_name, const std::string& instance_name,
+//                                                      ViewManager& view_manager)
+//     : Configurable(class_name, instance_name, &view_manager), view_manager_(view_manager)
+
+ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, ViewManager* parent)
+    : Configurable(config, parent), view_manager_(*parent)
 {
     registerParameter("author", &author_, std::string());
 
@@ -63,11 +65,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id
 
     registerParameter("abstract", &abstract_, std::string());
 
-    //@TODO: remove?
-    //const DBConnection* db_con = dynamic_cast<const DBConnection*>(&COMPASS::instance().dbInterface().connection());
-    //assert (db_con);
-
-    string current_filename = COMPASS::instance().lastDbFilename();
+    string current_filename = view_manager_.compass().lastDbFilename();
 
     report_path_ = Files::getDirectoryFromPath(current_filename)+"/report_"
                 + Files::getFilenameFromPath(current_filename) + "/";
@@ -87,7 +85,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id
     registerParameter("run_pdflatex", &run_pdflatex_, true);
     registerParameter("open_created_pdf", &open_created_pdf_, false);
 
-    pdflatex_found_ = System::exec("which pdflatex").size(); // empty if none
+    pdflatex_found_ = view_manager_.compass().pdflatexFound();
 
     if (!pdflatex_found_)
     {
@@ -97,17 +95,6 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(const std::string& class_id
 }
 
 
-void ViewPointsReportGenerator::generateSubConfigurable(const std::string& class_id,
-                                                        const std::string& instance_id)
-{
-    throw std::runtime_error("ViewPointsReportGenerator: generateSubConfigurable: unknown class_id " +
-                             class_id);
-}
-
-void ViewPointsReportGenerator::checkSubConfigurables()
-{
-    // move along sir
-}
 
 
 ViewPointsReportGeneratorDialog& ViewPointsReportGenerator::dialog()
@@ -127,7 +114,7 @@ void ViewPointsReportGenerator::run ()
 
     try
     {
-        LatexDocument doc (report_path_, report_filename_);
+        LatexDocument doc (view_manager_.compass(), report_path_, report_filename_);
         doc.title("View Points Report");
 
         if (author_.size())
@@ -166,7 +153,7 @@ void ViewPointsReportGenerator::run ()
             vp_ids = vp_widget->viewedViewPoints();
 
         string status_str, elapsed_time_str, remaining_time_str;
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        DBContentManager& dbcont_man = view_manager_.compass().dbContentManager();
 
         unsigned int vp_cnt = 0;
         unsigned int vp_size = vp_ids.size();
@@ -188,7 +175,7 @@ void ViewPointsReportGenerator::run ()
             }
 
             traced_assert(table_model->hasViewPoint(vp_id));
-            const ViewPoint& view_point = table_model->viewPoint(vp_id);
+            ViewPoint& view_point = table_model->viewPoint(vp_id);
 
             loginf << "setting vp " << vp_id;
             view_manager_.setCurrentViewPoint(&view_point);
@@ -240,7 +227,7 @@ void ViewPointsReportGenerator::run ()
         if (cancel_)
         {
             dialog_->setProgress(0, vp_size, 0);
-            dialog_->setStatus("Writing view points cancelled");
+            dialog_->setStatus("Writing view points canceled");
             dialog_->setRemainingTime(String::timeStringFromDouble(0, false));
 
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -281,8 +268,16 @@ void ViewPointsReportGenerator::run ()
                 elapsed_time_str = String::timeStringFromDouble(ms / 1000.0, false);
                 dialog_->setElapsedTime(elapsed_time_str);
 
-                while (command_out.find("Rerun to get outlines right") != std::string::npos
-                       || command_out.find("Rerun to get cross-references right") != std::string::npos)
+                auto hasFatalLatexError = [&command_out]()
+                {
+                    return command_out.find("! LaTeX Error")    != std::string::npos
+                        || command_out.find("! Emergency stop") != std::string::npos
+                        || command_out.find("Fatal error")      != std::string::npos;
+                };
+
+                while (!hasFatalLatexError()
+                       && (command_out.find("Rerun to get outlines right") != std::string::npos
+                           || command_out.find("Rerun to get cross-references right") != std::string::npos))
                 {
                     loginf << "re-running pdflatex";
                     dialog_->setStatus("Re-running pdflatex");
@@ -325,7 +320,7 @@ void ViewPointsReportGenerator::run ()
                 }
                 else // show warnings
                 {
-                    QMessageBox msgBox;
+                    QMessageBox msgBox(QApplication::activeWindow());
                     msgBox.setText("PDF Latex failed with warnings:\n\n"+QString(command_out.c_str()));
                     msgBox.exec();
                 }
@@ -342,9 +337,9 @@ void ViewPointsReportGenerator::run ()
 
         if (show_done_)
         {
-            QMessageBox msgBox;
+            QMessageBox msgBox(QApplication::activeWindow());
             if (cancel_)
-                msgBox.setText("Export View Points as PDF Cancelled");
+                msgBox.setText("Export View Points as PDF Canceled");
             else
                 msgBox.setText("Export View Points as PDF Done");
 
@@ -371,7 +366,7 @@ void ViewPointsReportGenerator::run ()
 
         QMessageBox m_warning(QMessageBox::Warning, "Export PDF Failed",
                               (string("Error message:\n")+e.what()).c_str(),
-                              QMessageBox::Ok);
+                              QMessageBox::Ok, QApplication::activeWindow());
         m_warning.exec();
     }
 }

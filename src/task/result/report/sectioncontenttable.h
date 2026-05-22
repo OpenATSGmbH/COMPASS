@@ -212,6 +212,9 @@ public:
     unsigned int numProxyColumns () const;
     std::vector<std::string> proxyHeadings() const;
 
+    void copyContent();
+    void copySelectedRow(bool export_headings);
+
     static boost::optional<QColor> cellTextColor(unsigned int style);
     static boost::optional<QColor> cellBGColor(unsigned int style);
     static std::string cellTextColorLatex(unsigned int style);
@@ -301,8 +304,7 @@ protected:
     const SectionContentTableWidget* getOrCreateTableWidget() const;
 
     void toggleShowUnused();
-    void copyContent();
-    
+
     void executeCallback(const std::string& name);
 
     void updateGroupColumns(bool update_widget = true);

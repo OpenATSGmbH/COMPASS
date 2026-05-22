@@ -18,24 +18,19 @@
 #include "jsonimporttask.h"
 #include "compass.h"
 #include "buffer.h"
-//#include "createartasassociationstask.h"
 #include "dbinterface.h"
-//#include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
-//#include "dbcontent/variable/variable.h"
 #include "files.h"
 #include "jobmanager.h"
 #include "jsonimporttaskdialog.h"
 #include "jsonmappingjob.h"
 #include "jsonparsejob.h"
 #include "jsonparsingschema.h"
-//#include "propertylist.h"
-//#include "radarplotpositioncalculatortask.h"
 #include "readjsonfilejob.h"
 #include "stringconv.h"
 #include "taskmanager.h"
 #include "asteriximporttask.h"
-#include "datasourcemanager.h"
+#include "db_context_manager.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -53,10 +48,11 @@ using namespace std;
 
 const unsigned int num_objects_chunk = 10000;
 
-JSONImportTask::JSONImportTask(const std::string& class_id, const std::string& instance_id,
-                               TaskManager& task_manager)
-    : Task(task_manager),
-      Configurable(class_id, instance_id, &task_manager, "task_import_json.json")
+JSONImportTask::JSONImportTask(nlohmann::json& config, TaskManager* parent)
+    : Task(*parent),
+      Configurable(config, parent),
+      compass_(parent->compass()),
+      dbcontent_man_(parent->compass().dbContentManager())
 {
     tooltip_ = "Allows importing of JSON data in several variants into the opened database.";
 
@@ -71,23 +67,29 @@ JSONImportTask::~JSONImportTask()
 {
 }
 
-void JSONImportTask::generateSubConfigurable(const std::string& class_id,
-                                             const std::string& instance_id)
+void JSONImportTask::generateSubConfigurable(nlohmann::json& child_json)
 {
-    if (class_id == "JSONParsingSchema")
-    {
-        std::string name = getSubConfiguration(class_id, instance_id).getParameterConfigValue<std::string>("name");
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
 
+    if (class_name == "JSONParsingSchema")
+    {
+        std::string name;
+        if (child_json.contains("parameters") && child_json["parameters"].contains("name"))
+            name = child_json["parameters"]["name"].get<std::string>();
+
+        traced_assert(name.size());
         traced_assert(schemas_.find(name) == schemas_.end());
 
-        logdbg << "generating schema " << instance_id
+        logdbg << "generating schema " << instance_name
                << " with name " << name;
 
-        schemas_[name] = make_shared<JSONParsingSchema>(class_id, instance_id, this);
+        auto schema = make_shared<JSONParsingSchema>(child_json, this, manager().compass());
+        schemas_[name] = std::move(schema);
     }
     else
-        throw std::runtime_error("JSONImporterTask: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("JSONImportTask: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 JSONImportTaskDialog* JSONImportTask::dialog()
@@ -254,7 +256,7 @@ void JSONImportTask::run()
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
 
-    COMPASS::instance().logInfo("JSON Import") << "started";
+    compass_.logInfo("JSON Import") << "started";
 
     traced_assert(canImportFile());
 
@@ -299,7 +301,7 @@ void JSONImportTask::run()
     connect(read_json_job_.get(), &ReadJSONFileJob::doneSignal, this,
             &JSONImportTask::readJSONFileDoneSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addBlockingJob(read_json_job_);
+    compass_.jobManager().addBlockingJob(read_json_job_);
 
     updateMsgBox();
 
@@ -374,14 +376,14 @@ void JSONImportTask::addReadJSONSlot()
 
     loginf << "starting parse job";
     json_parse_job_ =
-            std::make_shared<JSONParseJob>(std::move(objects), current_schema_name_, post_process_);
+            std::make_shared<JSONParseJob>(std::move(objects), current_schema_name_, file_line_id_, post_process_);
 
     connect(json_parse_job_.get(), &JSONParseJob::obsoleteSignal, this,
             &JSONImportTask::parseJSONObsoleteSlot, Qt::QueuedConnection);
     connect(json_parse_job_.get(), &JSONParseJob::doneSignal, this,
             &JSONImportTask::parseJSONDoneSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addNonBlockingJob(json_parse_job_);
+    compass_.jobManager().addNonBlockingJob(json_parse_job_);
 
     loginf << "updating message box";
     updateMsgBox();
@@ -439,7 +441,7 @@ void JSONImportTask::parseJSONDoneSlot()
 
         json_map_job = std::make_shared<JSONMappingJob>(
                     std::move(json_objects), keys, file_line_id_,
-                    COMPASS::instance().taskManager().asterixImporterTask().schema()->parsers());
+                    compass_.taskManager().asterixImporterTask().schema()->parsers());
 
         //loginf << "UGA2";
     }
@@ -468,7 +470,7 @@ void JSONImportTask::parseJSONDoneSlot()
 
     json_map_jobs_.push_back(json_map_job);
 
-    JobManager::instance().addNonBlockingJob(json_map_job);
+    compass_.jobManager().addNonBlockingJob(json_map_job);
 
     updateMsgBox();
 
@@ -537,13 +539,14 @@ void JSONImportTask::mapJSONDoneSlot()
     ts_calculator_.calculate(import_filename_,
                              boost::posix_time::ptime(boost::gregorian::day_clock::universal_day()), false,
                              false, 0,
-                             false, 0);
+                             false, 0,
+                             compass_);
 
     std::map<std::string, std::shared_ptr<Buffer>> job_buffers2 {ts_calculator_.buffers()};
     ts_calculator_.setProcessingDone();
 
     std::shared_ptr<ASTERIXPostprocessJob> postprocess_job =
-            make_shared<ASTERIXPostprocessJob>(std::move(job_buffers2));
+            make_shared<ASTERIXPostprocessJob>(std::move(job_buffers2), compass_);
 
     postprocess_jobs_.push_back(postprocess_job);
 
@@ -554,7 +557,7 @@ void JSONImportTask::mapJSONDoneSlot()
     connect(postprocess_job.get(), &ASTERIXPostprocessJob::doneSignal, this,
             &JSONImportTask::postprocessDoneSlot, Qt::QueuedConnection);
 
-    JobManager::instance().addNonBlockingJob(postprocess_job);
+    compass_.jobManager().addNonBlockingJob(postprocess_job);
 
     //insertData(std::move(job_buffers));
 
@@ -647,7 +650,7 @@ void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> j
         QThread::msleep(1);
     }
 
-    DBContentManager& dbcont_manager = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_manager = dbcontent_man_;
 
     if (!insert_slot_connected_)
     {
@@ -703,7 +706,7 @@ void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> j
 
 //    bool has_sac_sic = false;
 
-//    DBContentManager& dbcont_manager = COMPASS::instance().dbContentManager();
+//    DBContentManager& dbcont_manager = dbcontent_man_;
 
 //    for (auto& buf_it : job_buffers)
 //    {
@@ -875,7 +878,7 @@ void JSONImportTask::checkAllDone()
 
         double records_per_second = records_inserted_ / (diff.total_milliseconds() / 1000.0);
 
-        COMPASS::instance().logInfo("JSON Import")
+        compass_.logInfo("JSON Import")
             << "done after " << time_str
             << ", inserted " << records_inserted_ << " rec"
             << " with " << String::doubleToStringPrecision(records_per_second, 2) << " rec/s";
@@ -919,7 +922,7 @@ void JSONImportTask::updateMsgBox()
 
     if (!msg_box_)
     {
-        msg_box_.reset(new QMessageBox());
+        msg_box_.reset(new QMessageBox(QApplication::activeWindow()));
 
         loginf << "creating";
 
@@ -1056,15 +1059,16 @@ void JSONImportTask::insertDoneSlot()
     {
         loginf << "finalizing";
 
-        disconnect(&COMPASS::instance().dbContentManager(), &DBContentManager::insertDoneSignal,
+        disconnect(&dbcontent_man_, &DBContentManager::insertDoneSignal,
                    this, &JSONImportTask::insertDoneSlot);
         insert_slot_connected_ = false;
 
-        COMPASS::instance().dataSourceManager().saveDBDataSources();
-        emit COMPASS::instance().dataSourceManager().dataSourcesChangedSignal();
+        compass_.dbContextManager().writeContextToDB();
+        emit compass_.dbContextManager().dataSourcesChangedSignal();
 
         //emit doneSignal(name_); emitted in checkAllDone
     }
 
     loginf << "done";
 }
+

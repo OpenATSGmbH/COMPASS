@@ -39,25 +39,12 @@
 const int ViewWidget::DataWidgetStretch   = 3;
 const int ViewWidget::ConfigWidgetStretch = 1;
 
-/**
-@brief Constructor.
-@param class_id Configurable class id.
-@param instance_id Configurable instance id.
-@param config_parent Configurable parent.
-@param view The view the view widget is part of.
-@param parent The widgets parent.
-*/
-ViewWidget::ViewWidget(const std::string& class_id, 
-                       const std::string& instance_id,
-                       Configurable* config_parent, 
-                       View* view, 
-                       QWidget* parent)
-    : QWidget     (parent),
-      Configurable(class_id, instance_id, config_parent),
-      view_       (view)
+ViewWidget::ViewWidget(View* view, QWidget* parent)
+    : QWidget(parent),
+      view_  (view)
 {
     //generate and set a nice object name which can be used to identify the view widget in the object hierarchy
-    UI_TEST_OBJ_NAME(this, QString::fromStdString(view->instanceId()))
+    UI_TEST_OBJ_NAME(this, QString::fromStdString(view->instanceName()))
 
     setContentsMargins(0, 0, 0, 0);
 
@@ -75,7 +62,7 @@ ViewWidget::~ViewWidget()
     {
         traced_assert(view_);
 
-        QSettings settings("COMPASS", view_->instanceId().c_str());
+        QSettings settings("COMPASS", view_->instanceName().c_str());
         settings.setValue("mainSplitterSizes", main_splitter_->saveState());
     }
 }
@@ -104,7 +91,7 @@ void ViewWidget::createStandardLayout()
     main_layout->addLayout(top_layout);
 
     //create preset selection
-    if (COMPASS::instance().viewManager().viewPresetsEnabled())
+    if (view_->viewManager().compass().viewManager().viewPresetsEnabled())
     {
         preset_widget_ = new ViewPresetWidget(view_, this);
         preset_widget_->setFixedWidth(PresetSelectionWidth);
@@ -186,7 +173,7 @@ void ViewWidget::createStandardLayout()
     }
 
     //add main splitter to central layout and restore state from config
-    QSettings settings("COMPASS", view_->instanceId().c_str());
+    QSettings settings("COMPASS", view_->instanceName().c_str());
 
 #if 0
     main_splitter_->restoreState(settings.value("mainSplitterSizes").toByteArray());
@@ -262,6 +249,14 @@ void ViewWidget::init()
 
     //update view components after init is done
     updateComponents();
+}
+
+/**
+ */
+void ViewWidget::runPostInit()
+{
+    data_widget_->onInit();
+    config_widget_->onInit();
 }
 
 /**
@@ -406,14 +401,14 @@ bool ViewWidget::refreshView()
     {
         // reload required (most likely due to no data loaded yet) => reload view
         // viewRefreshed() emitted from triggered reload
-        COMPASS::instance().dbContentManager().load(); 
+        view_->viewManager().compass().dbContentManager().load(LoadRequest::standard()); 
     }
 #if 0
     else 
     {
         // fallback 1: be sceptical and reload in all other cases (will completely update the view)
         // viewRefreshed() emitted from triggered reload
-        COMPASS::instance().dbContentManager().load(); // fallback: just reload
+        view_->viewManager().compass().dbContentManager().load(LoadRequest::standard()); // fallback: just reload
     }
 #else
     else
@@ -639,4 +634,20 @@ void ViewWidget::uiRefresh()
 {
     //just refresh the view
     refreshView();
+}
+
+/**
+ */
+void ViewWidget::databaseOpened()
+{
+    if (data_widget_)
+        data_widget_->databaseOpened();
+}
+
+/**
+ */
+void ViewWidget::databaseClosed()
+{
+    if (data_widget_)
+        data_widget_->databaseClosed();
 }

@@ -33,9 +33,10 @@ using namespace std;
 namespace EvaluationRequirement
 {
 
-IdentificationFalseConfig::IdentificationFalseConfig(const std::string& class_id, const std::string& instance_id,
-                                                     Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : ProbabilityBaseConfig(class_id, instance_id, group, standard, calculator)
+IdentificationFalseConfig::IdentificationFalseConfig(
+        nlohmann::json& config,
+        Group* parent)
+    : ProbabilityBaseConfig(config, parent)
 {
     registerParameter("require_all_false", &require_all_false_, true);
 

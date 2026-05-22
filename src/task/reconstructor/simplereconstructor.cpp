@@ -16,8 +16,10 @@
  */
 
 #include "simplereconstructor.h"
+#include "reconstructortask.h"
 #include "simplereconstructorwidget.h"
 #include "compass.h"
+#include "taskmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableset.h"
@@ -31,11 +33,10 @@
 using namespace std;
 using namespace Utils;
 
-SimpleReconstructor::SimpleReconstructor(const std::string& class_id, 
-                                         const std::string& instance_id,
-                                         ReconstructorTask& task, 
-                                         std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator)
-    : ReconstructorBase(class_id, instance_id, task, std::move(acc_estimator))
+SimpleReconstructor::SimpleReconstructor(nlohmann::json& config,
+                                         std::unique_ptr<AccuracyEstimatorBase>&& acc_estimator,
+                                         ReconstructorTask* parent)
+    : ReconstructorBase(config, *parent, std::move(acc_estimator), parent)
     , associatior_   (*this)
     , ref_calculator_(*this)
 {
@@ -77,86 +78,86 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
 {
     dbContent::VariableSet read_set;
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
 
             // ds id
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_ds_id_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
 
             // line id
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_line_id_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_));
 
             // timestamp
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_timestamp_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_));
 
             // aircraft address
-    if (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acad_))
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acad_));
+    if (dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
 
             // aircraft id
-    if (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_acid_))
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_acid_));
+    if (dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_));
 
             // track num
-    if (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_num_))
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_num_));
+    if (dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
 
             // track end
-    if (dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_track_end_))
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_track_end_));
+    if (dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_end_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_end_));
 
             // mode 3a
-    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_m3a_))
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_m3a_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
 
             // mode c
-    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_mc_))
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_mc_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
 
     if (dbcontent_name == "CAT062")
     {
-        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
-        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat062_fl_measured_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_));
     }
 
             // latitude
-    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_latitude_))
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_latitude_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
 
             // longitude
-    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_longitude_))
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_longitude_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
 
             // assoc
-    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_utn_))
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_utn_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_));
 
             // rec num, must be last for update process
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
-    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_rec_num_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_rec_num_));
+    read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_rec_num_));
 
             // adsb mops
     if (dbcontent_name == "CAT021")
     {
-        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_mops_version_));
-        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat021_mops_version_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat021_mops_version_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat021_mops_version_));
 
-        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat021_ecat_));
-        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat021_ecat_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat021_ecat_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat021_ecat_));
     }
 
-    if(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_message_type_))
-        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_message_type_));
+    if(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_message_type_))
+        read_set.add(dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_message_type_));
 
     if (dbcontent_name == "CAT065")
     {
-        traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::var_cat065_batch_number_));
-        read_set.add(dbcont_man.getVariable(dbcontent_name, DBContent::var_cat065_batch_number_));
+        traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat065_batch_number_));
+        read_set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat065_batch_number_));
     }
 
-    read_set.add(dbContent::TargetReportAccessor::getReadSetFor(dbcontent_name));
+    read_set.add(dbContent::TargetReportAccessor::getReadSetFor(dbcontent_name, dbcont_man));
 
     return read_set;
 }
@@ -255,7 +256,7 @@ void SimpleReconstructor::processSlice_impl()
     if (cancelled_)
         return;
 
-    acc_estimator_->postProccessNewSlice(); // does nothing here
+    acc_estimator_->postProccessNewSlice();
 
     if (cancelled_)
         return;
@@ -269,3 +270,4 @@ void SimpleReconstructor::createAdditionalAnnotations()
 {
     ref_calculator_.createAnnotations();
 }
+

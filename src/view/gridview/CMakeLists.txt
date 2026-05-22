@@ -1,9 +1,9 @@
 
-include_directories (
+target_include_directories(compass_view PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_view
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/grid2d_defs.h"
         "${CMAKE_CURRENT_LIST_DIR}/grid2d.h"
@@ -16,6 +16,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/gridviewconfigwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/gridviewdatawidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/gridviewchart.h"
+        "${CMAKE_CURRENT_LIST_DIR}/gridleafpayload.h"
 
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/grid2d_defs.cpp"

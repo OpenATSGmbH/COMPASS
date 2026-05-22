@@ -19,6 +19,8 @@
 #include "util/timeconv.h"
 #include "timewindowcollectionwidget.h"
 #include "evaluationmanager.h"
+#include "compass.h"
+#include "dbcontent/dbcontentmanager.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -61,7 +63,15 @@ EvaluationTimestampConditionsDialog::EvaluationTimestampConditionsDialog(Evaluat
     connect(time_end_edit_, &QDateTimeEdit::dateTimeChanged, this, &EvaluationTimestampConditionsDialog::timeEndEditedSlot);
     form_layout->addRow("Timestamp End", time_end_edit_);
 
-    tw_widget_ = new TimeWindowCollectionWidget(eval_man.excludedTimeWindows());
+    auto& dbcont_man = eval_man.compass().dbContentManager();
+    auto min_max_func = [&dbcont_man]()
+        -> boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
+    {
+        if (dbcont_man.hasMinMaxTimestamp())
+            return dbcont_man.minMaxTimestamp();
+        return boost::none;
+    };
+    tw_widget_ = new TimeWindowCollectionWidget(eval_man.excludedTimeWindows(), min_max_func);
     form_layout->addRow("Excluded Time Windows", tw_widget_);
 
     main_layout->addLayout(form_layout);
@@ -156,3 +166,4 @@ void EvaluationTimestampConditionsDialog::timeEndEditedSlot (const QDateTime& da
 
     something_changed_flag_ = true;
 }
+

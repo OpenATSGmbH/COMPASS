@@ -50,7 +50,8 @@ void ASTERIXTimestampCalculator::calculate(
                std::string source_name,
                boost::posix_time::ptime date, bool reset_date_between_files,
                bool override_tod_active, float override_tod_offset,
-               bool ignore_time_jumps, bool do_timestamp_checks)
+               bool ignore_time_jumps, bool do_timestamp_checks,
+               COMPASS& compass)
 {
     logdbg;
 
@@ -71,13 +72,13 @@ void ASTERIXTimestampCalculator::calculate(
         }
 
         if (prev_source_name_.size()) // not for empty, first one
-            logLastTimestamp();
+            logLastTimestamp(compass);
 
         clearTimeStats();
 
         prev_source_name_ = source_name;
 
-        COMPASS::instance().logInfo("ASTERIX Import") << "decoding " << source_name;
+        compass.logInfo("ASTERIX Import") << "decoding " << source_name;
     }
 
     if (!current_date_set_) // init if first time
@@ -88,10 +89,10 @@ void ASTERIXTimestampCalculator::calculate(
         current_date_set_ = true;
     }
 
-    if (COMPASS::instance().sensorStatusTimeHack()) // required since resurf replay does not change CAT063 time
+    if (compass.sensorStatusTimeHack()) // required since resurf replay does not change CAT063 time
     {
         //@TODO: REMOVE HACK
-        DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+        DBContentManager& dbcont_man = compass.dbContentManager();
         unsigned int buffer_size;
         boost::optional<float> tod0_cat062;
         boost::optional<float> tod0_cat063;
@@ -99,10 +100,10 @@ void ASTERIXTimestampCalculator::calculate(
         {
             buffer_size = buf_it.second->size();
 
-            traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+            traced_assert(dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).existsIn(buf_it.first));
 
             dbContent::Variable& tod_var =
-                dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
+                dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
             Property tod_prop {tod_var.name(), tod_var.dataType()};
 
@@ -114,31 +115,32 @@ void ASTERIXTimestampCalculator::calculate(
             {
                 if (!tod_vec.isNull(index))
                 {
-                    float& tod_ref = tod_vec.getRef(index);
+                    float tod_val = tod_vec.get(index);
 
                     if (buf_it.first == "CAT062" && !tod0_cat062.has_value())
-                        tod0_cat062 = tod_ref;
+                        tod0_cat062 = tod_val;
                     else if (buf_it.first == "CAT063" && !tod0_cat063.has_value())
-                        tod0_cat063 = tod_ref;
+                        tod0_cat063 = tod_val;
 
                     if (buf_it.first == "CAT063" && tod0_cat062.has_value() && tod0_cat063.has_value())
                     {
-                        tod_ref += tod0_cat062.value() - tod0_cat063.value();
+                        tod_val += tod0_cat062.value() - tod0_cat063.value();
+                        tod_vec.set(index, tod_val);
                     }
                 }
             }
         }
     }
 
-    doADSBTimeProcessing();
+    doADSBTimeProcessing(compass);
 
     if (override_tod_active)
-        doTodOverride(override_tod_offset);
+        doTodOverride(override_tod_offset, compass);
 
     if (do_timestamp_checks) // out of sync issue during 24h replay
-        doFutureTimestampsCheck();
+        doFutureTimestampsCheck(compass);
 
-    doTimeStampCalculation(ignore_time_jumps);
+    doTimeStampCalculation(ignore_time_jumps, compass);
 
     boost::posix_time::time_duration time_diff = boost::posix_time::microsec_clock::local_time() - start_time;
     logdbg << "done after "
@@ -153,9 +155,9 @@ std::map<std::string, std::shared_ptr<Buffer>> ASTERIXTimestampCalculator::buffe
     return std::move(buffers_);
 }
 
-void ASTERIXTimestampCalculator::doADSBTimeProcessing()
+void ASTERIXTimestampCalculator::doADSBTimeProcessing(COMPASS& compass)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass.dbContentManager();
 
     string dbcontent_name = "CAT021";
 
@@ -168,11 +170,11 @@ void ASTERIXTimestampCalculator::doADSBTimeProcessing()
     if (!buffer_size)
         return;
 
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_));
 
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_));
+    traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_));
 
-    dbContent::Variable& tod_var = dbcont_man.metaGetVariable(dbcontent_name, DBContent::meta_var_time_of_day_);
+    dbContent::Variable& tod_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_time_of_day_);
 
     traced_assert(tod_var.dataType() == PropertyDataType::FLOAT);
 
@@ -195,17 +197,17 @@ void ASTERIXTimestampCalculator::doADSBTimeProcessing()
     NullableVector<float>* tort_vec {nullptr};
     NullableVector<float>* tod_dep_vec {nullptr};
 
-    if (buffer->has<float>(DBContent::var_cat021_toa_position_.name()))
-        toa_position_vec = &buffer->get<float>(DBContent::var_cat021_toa_position_.name());
+    if (buffer->has<float>(dbcontent_vars::var_cat021_toa_position_.name()))
+        toa_position_vec = &buffer->get<float>(dbcontent_vars::var_cat021_toa_position_.name());
 
-    if (buffer->has<float>(DBContent::var_cat021_tomr_position_.name()))
-        tomr_position_vec = &buffer->get<float>(DBContent::var_cat021_tomr_position_.name());
+    if (buffer->has<float>(dbcontent_vars::var_cat021_tomr_position_.name()))
+        tomr_position_vec = &buffer->get<float>(dbcontent_vars::var_cat021_tomr_position_.name());
 
-    if (buffer->has<float>(DBContent::var_cat021_tort_.name()))
-        tort_vec = &buffer->get<float>(DBContent::var_cat021_tort_.name());
+    if (buffer->has<float>(dbcontent_vars::var_cat021_tort_.name()))
+        tort_vec = &buffer->get<float>(dbcontent_vars::var_cat021_tort_.name());
 
-    if (buffer->has<float>(DBContent::var_cat021_tod_dep_.name()))
-        tod_dep_vec = &buffer->get<float>(DBContent::var_cat021_tod_dep_.name());
+    if (buffer->has<float>(dbcontent_vars::var_cat021_tod_dep_.name()))
+        tod_dep_vec = &buffer->get<float>(dbcontent_vars::var_cat021_tod_dep_.name());
 
     for (unsigned int index=0; index < buffer_size; index++)
     {
@@ -238,12 +240,12 @@ void ASTERIXTimestampCalculator::doADSBTimeProcessing()
     }
 }
 
-void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset)
+void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset, COMPASS& compass)
 {
-    loginf << "offset "
+    logdbg << "offset "
            << String::doubleToStringPrecision(override_tod_offset, 3);
 
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass.dbContentManager();
 
     unsigned int buffer_size;
 
@@ -251,10 +253,10 @@ void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset)
     {
         buffer_size = buf_it.second->size();
 
-        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).existsIn(buf_it.first));
 
         dbContent::Variable& tod_var =
-            dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
+            dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
         Property tod_prop {tod_var.name(), tod_var.dataType()};
 
@@ -266,18 +268,20 @@ void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset)
         {
             if (!tod_vec.isNull(index))
             {
-                float& tod_ref = tod_vec.getRef(index);
+                float tod_val = tod_vec.get(index);
 
-                tod_ref += override_tod_offset;
+                tod_val += override_tod_offset;
 
                 // check for out-of-bounds because of midnight-jump
-                while (tod_ref < 0.0f)
-                    tod_ref += tod_24h;
-                while (tod_ref > tod_24h)
-                    tod_ref -= tod_24h;
+                while (tod_val < 0.0f)
+                    tod_val += tod_24h;
+                while (tod_val > tod_24h)
+                    tod_val -= tod_24h;
 
-                traced_assert(tod_ref >= 0.0f);
-                traced_assert(tod_ref <= tod_24h);
+                traced_assert(tod_val >= 0.0f);
+                traced_assert(tod_val <= tod_24h);
+
+                tod_vec.set(index, tod_val);
             }
         }
     }
@@ -286,9 +290,9 @@ void ASTERIXTimestampCalculator::doTodOverride(float override_tod_offset)
 const double TMAX_FUTURE_OFFSET = 3*60.0;
 const double T24H_OFFSET = 5*60.0;
 
-void ASTERIXTimestampCalculator::doFutureTimestampsCheck()
+void ASTERIXTimestampCalculator::doFutureTimestampsCheck(COMPASS& compass)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass.dbContentManager();
 
     unsigned int buffer_size;
 
@@ -314,9 +318,9 @@ void ASTERIXTimestampCalculator::doFutureTimestampsCheck()
     {
         buffer_size = buf_it.second->size();
 
-        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).existsIn(buf_it.first));
 
-        dbContent::Variable& tod_var = dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
+        dbContent::Variable& tod_var = dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
         Property tod_prop {tod_var.name(), tod_var.dataType()};
 
@@ -380,9 +384,9 @@ void ASTERIXTimestampCalculator::doFutureTimestampsCheck()
     logdbg << "buf size " << cnt;
 }
 
-void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
+void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps, COMPASS& compass)
 {
-    DBContentManager& dbcont_man = COMPASS::instance().dbContentManager();
+    DBContentManager& dbcont_man = compass.dbContentManager();
 
     unsigned int buffer_size;
 
@@ -391,9 +395,9 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
         buffer_size = buf_it.second->size();
 
         // tod
-        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).existsIn(buf_it.first));
         dbContent::Variable& tod_var =
-            dbcont_man.metaVariable(DBContent::meta_var_time_of_day_.name()).getFor(buf_it.first);
+            dbcont_man.metaVariable(dbcontent_vars::meta_var_time_of_day_.name()).getFor(buf_it.first);
 
         Property tod_prop {tod_var.name(), tod_var.dataType()};
         traced_assert(buf_it.second->hasProperty(tod_prop));
@@ -401,9 +405,9 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
         NullableVector<float>& tod_vec = buf_it.second->get<float>(tod_var.name());
 
         // timestamp
-        traced_assert(dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).existsIn(buf_it.first));
+        traced_assert(dbcont_man.metaVariable(dbcontent_vars::meta_var_timestamp_.name()).existsIn(buf_it.first));
         dbContent::Variable& timestamp_var =
-            dbcont_man.metaVariable(DBContent::meta_var_timestamp_.name()).getFor(buf_it.first);
+            dbcont_man.metaVariable(dbcontent_vars::meta_var_timestamp_.name()).getFor(buf_it.first);
 
         Property timestamp_prop {timestamp_var.name(), timestamp_var.dataType()};
         traced_assert(!buf_it.second->hasProperty(timestamp_prop));
@@ -469,7 +473,7 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
                                << " detected time-jump from previous " << Time::toDateString(previous_date_)
                                << " to current " << Time::toDateString(current_date_);
 
-                        COMPASS::instance().logInfo("ASTERIX Import")
+                        compass.logInfo("ASTERIX Import")
                             << "ToD " << String::timeStringFromDouble(tod)
                             << " detected time-jump from previous " << Time::toDateString(previous_date_)
                             << " to current " << Time::toDateString(current_date_);
@@ -516,7 +520,7 @@ void ASTERIXTimestampCalculator::doTimeStampCalculation(bool ignore_time_jumps)
 
                     first_time_ = false;
 
-                    COMPASS::instance().logInfo("ASTERIX Import")
+                    compass.logInfo("ASTERIX Import")
                         << "first ToD " << String::timeStringFromDouble(tod_first_)
                         << " timestamp " << Time::toString(timestamp_first_);
                 }
@@ -580,11 +584,11 @@ void ASTERIXTimestampCalculator::clearTimeStats()
     last_reported_tod_ = -3600;
 }
 
-void ASTERIXTimestampCalculator::logLastTimestamp()
+void ASTERIXTimestampCalculator::logLastTimestamp(COMPASS& compass)
 {
     if (!first_time_ && !timestamp_last_.is_not_a_date_time())
     {
-        COMPASS::instance().logInfo("ASTERIX Import")
+        compass.logInfo("ASTERIX Import")
         << "last ToD " << String::timeStringFromDouble(tod_last_)
         << " timestamp " << Time::toString(timestamp_last_);
     }

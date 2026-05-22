@@ -4,8 +4,9 @@
 A Grid View displays DBContent data as 2-dimensional grid over two numerical variables, giving statistics over a third variable. When started, it presents itself in the following manner.
 
 \begin{figure}[H]
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/grid_start.png}
+    \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/grid_start.png}
   \caption{Grid View startup}
 \end{figure}
 
@@ -22,8 +23,9 @@ Both areas can be resized and hidden if desired.
 To load the data the mechanism described in section \nameref{sec:ui_overview} or the 'Reload' button can be used. To filter the dataset, the mechanism described in section \nameref{sec:filters} can be used. \\
 
 \begin{figure}[H]
-    \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/grid_loaded.png}
+    \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/grid_loaded.png}
   \caption{Grid View after loading data}
 \end{figure}
 
@@ -59,12 +61,6 @@ For the distributed variable it is also possible to select the empty variable in
 In this case, each data item with a valid X- and Y-variable will be sorted into the grid, 
 and only the grid counts will be visualized. This mode can e.g. be used to visualize traffic patterns.
 
-\begin{figure}[H]
-  \hspace*{-2cm}
-  \includegraphics[width=18cm,frame]{figures/grid_loaded_emptyvar.png}
-\caption{Grid View with empty variable selected}
-\end{figure}
-
 \section{Usage}
 
 \subsection{Toolbar}
@@ -78,8 +74,7 @@ Note that an active tool can always be ended by pressing the 'Escape' key.
   \begin{tabular}{ | l | l | l | l |}
     \hline
     \textbf{Icon} & \textbf{Shortcut} & \textbf{Text} &  \textbf{Description} \\ \hline
-    %\includegraphics[width=0.5cm,frame]{../../data/icons/select_action.png} & S & Select & Allows data selection \& de-selection \\ \hline
-    \includegraphics[width=0.5cm,frame]{../../data/icons/zoom_select_action.png} & R & Zoom to Rectangle & Allows zooming to the selected rectangle \\ \hline
+        \includegraphics[width=0.5cm,frame]{../../data/icons/zoom_select_action.png} & R & Zoom to Rectangle & Allows zooming to the selected rectangle \\ \hline
 
   \end{tabular}
   \caption{Toolbar: Available tools}
@@ -92,8 +87,6 @@ The others provide general actions by which the view can be modified.
   \begin{tabular}{ | l | l | l | l |}
     \hline
     \textbf{Icon} & \textbf{Shortcut} &\textbf{Text} &  \textbf{Description} \\ \hline
-    %\includegraphics[width=0.5cm,frame]{../../data/icons/select_invert.png} & & Invert Selection & Selects all de-selected \& vice versa \\ \hline
-    %\includegraphics[width=0.5cm,frame]{../../data/icons/select_delete.png} & & Delete Selection & De-selects all target reports \\ \hline
     \includegraphics[width=0.5cm,frame]{../../data/icons/zoom_home.png} & Space & Zoom to Home & Pans/zooms to show all existing data \\ \hline
   \end{tabular}
   \caption{Toolbar: Available actions}
@@ -106,26 +99,32 @@ The 'X' and 'Y' variables are used to determine the overall grid and the locatio
 the 'Distributed Variable' represents the values sorted into the grid cells.
 In all three cases such a variable can be any numerical variable. A reload operation might be required for the selection to take effect. \\
 
-If available, plottable grid data of active View Points can be visualized by checking the 'Show Annotations' box.
-If multiple grid annotations are present in a View Point, these individual plots can be selected using the 'Plot' combo box.
-Plottable annotations might further be grouped into so-called plot groups, which are listed under 'Plot Group'.
-The plot group can be switched in case multiple plot groups are available. \\
+The Config Tab includes the shared Layers Tree (see \nameref{sec:layers_tree}), which controls per-DBContent / per-Data-Source / per-line visibility for the grid input data. The dedicated per-view annotation tab that existed in earlier releases has been removed; plottable grid annotations of active View Points are now exposed under the 'Annotations' group of the Layers Tree. When multiple grid annotations are present, the 'Plot' and (if available) 'Plot Group' combo boxes are used to choose between them. \\
 
 Below the variable selection, several parameters can be used to further configure the displayed grid.
 
 \begin{itemize}
     \item \textbf{Value Type}: The statistical grid cell value to be displayed.
-    \item \textbf{Grid Resolution}: The number of grid cells displayed, both in X- and Y-direction. 
-    \item \textbf{Color Scale}: The color scheme used for colorization of grid cells.
+    \item \textbf{Grid Resolution}: The number of grid cells displayed, both in X- and Y-direction.
+    \item \textbf{Color Scale}: The color scheme used for colorization of grid cells. The following scales are available: 'Green2Red', 'Red2Green', 'Blue2Green2Red', 'Parula', 'Heat', 'Jet', 'Turbo', 'Hot', 'Monochrome Gray', 'Magma', 'Inferno', 'Plasma', 'Viridis', 'Cividis', 'Github', 'Monochrome Red', 'Monochrome Green', 'Monochrome Blue', 'Cubehelix', 'HSV' and 'Custom'.
     \item \textbf{Color Steps}: Number of discrete colors used for colorization of grid cells.
-    \item \textbf{Color Min. Value}: The value the lower end of the color scale is assigned to. 
+    \item \textbf{Color Min. Value}: The value the lower end of the color scale is assigned to.
         If not set, the minimum of all distributed values will be chosen.
-        If empty, a clue about the needed value format is shown (e.g. DOUBLE). 
-    \item \textbf{Color Max. Value}: The value the upper end of the color scale is assigned to. 
+        If empty, a clue about the needed value format is shown (e.g. DOUBLE).
+    \item \textbf{Color Max. Value}: The value the upper end of the color scale is assigned to.
         If not set, the maximum of all distributed values will be chosen.
-        If empty, a clue about the needed value format is shown (e.g. DOUBLE). 
+        If empty, a clue about the needed value format is shown (e.g. DOUBLE).
    \end{itemize}
    \ \\
+
+\begin{figure}[H]
+  \centering
+    \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/grid_colorbox.png}
+  \caption{Grid View: Color Scale combo box}
+\end{figure}
+
+Please \textbf{note} that the Grid View's Color Scale maps the distributed Z variable and takes priority over the global Color Mode (see \nameref{sec:color_mode}) for the rendered grid cells. The Color Mode still drives the per-layer color used in the Layers Tree and outside of the gridded area. \\
 
 \textbf{Note} that the 'Value Type' selection may be locked and set to 'Count' in case the empty variable is selected 
 as the distributed variable. \\
@@ -133,6 +132,7 @@ as the distributed variable. \\
 \textit{Example}: The following example illustrates how the coloring can be adjusted using minimum and maximum color limits. \\
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/grid_modec_mean_nolimits.png}
   \caption{Grid View showing the mean Mode C Code per grid cell}
@@ -151,6 +151,7 @@ between custom values. The 'Color Min. Value' and 'Color Max. Value' parameters 
 show that the mean of the variable 'Mode C Code' demands a floating point value (FLOAT). 
 
 \begin{figure}[H]
+    \centering
     \hspace*{-2cm}
     \includegraphics[width=18cm,frame]{figures/grid_modec_mean_limits.png}
   \caption{Grid View showing the mean Mode C Code per grid cell with active color limits}
@@ -180,13 +181,13 @@ If this option is chosen, a dialog opens, which prompts the user to select the G
 select a name for the exported grid item.
 
 \begin{figure}[H]
-    \center
-    \includegraphics[width=6cm,frame]{figures/grid_export_geographic.png}
+    \centering
+    \includegraphics[width=6cm]{figures/grid_export_geographic.png}
   \caption{Exporting grids to Geographic View}
 \end{figure}
 
 The grid will be exported to the selected Geographic View, and listed under \textit{Annotations}$\rightarrow$\textit{Grids} in Geographic View's 'Layers' tab.
-Refer to section \ref{sec:geo_annotation_ops} for how to handle grid items in GeographicView.
+Refer to section \nameref{sec:geo_annotation_ops} for how to handle grid items in GeographicView.
 
 \subsubsection{Export to GeoTIFF}
 

@@ -33,8 +33,8 @@ namespace EvaluationRequirement
 class DubiousTargetConfig : public ProbabilityBaseConfig
 {
 public:
-    DubiousTargetConfig(const std::string& class_id, const std::string& instance_id,
-                       Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    DubiousTargetConfig(nlohmann::json& config,
+                        Group* parent);
     virtual ~DubiousTargetConfig();
 
     std::shared_ptr<Base> createRequirement() override;

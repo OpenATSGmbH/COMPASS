@@ -33,6 +33,15 @@ class ViewableDataConfig;
 */
 class VariableView : public View
 {
+    Q_OBJECT
+
+signals:
+    /// Emitted whenever annotations_ is repopulated or cleared. Subscribers
+    /// (e.g. data widgets) refresh the annotations subtree of their layer
+    /// panel from annotations() / currentAnnotationGroupIdx() /
+    /// currentAnnotationIdx().
+    void annotationsChangedSignal();
+
 public:
     struct Annotation
     {
@@ -46,10 +55,7 @@ public:
         std::vector<Annotation> annotations;
     };
 
-    VariableView(const std::string& class_id, 
-                 const std::string& instance_id,
-                 ViewContainer* w,
-                 ViewManager& view_manager);
+    VariableView(nlohmann::json& config, ViewContainer* parent);
     virtual ~VariableView();
 
     virtual void loadingDone() override final;
@@ -79,11 +85,11 @@ public:
     bool hasCurrentAnnotation() const;
 
     bool hasViewPoint () { return current_view_point_ != nullptr; }
-    const ViewableDataConfig& viewPoint() { traced_assert(hasViewPoint()); return *current_view_point_; }
+    ViewableDataConfig& viewPoint() { traced_assert(hasViewPoint()); return *current_view_point_; }
 
 public slots:
-    virtual void unshowViewPointSlot (const ViewableDataConfig* vp) override final;
-    virtual void showViewPointSlot (const ViewableDataConfig* vp) override final;
+    virtual void unshowViewPointSlot (ViewableDataConfig* vp) override final;
+    virtual void showViewPointSlot (ViewableDataConfig* vp) override final;
 
 protected:
     friend class ViewVariable;
@@ -105,8 +111,8 @@ protected:
     virtual void preVariableChangedEvent(int idx, const std::string& dbcont, const std::string& name) {}
     virtual void postVariableChangedEvent(int idx) {}
 
-    virtual void unshowViewPoint(const ViewableDataConfig* vp) {}
-    virtual void showViewPoint(const ViewableDataConfig* vp) {}
+    virtual void unshowViewPoint(ViewableDataConfig* vp) {}
+    virtual void showViewPoint(ViewableDataConfig* vp) {}
 
     virtual bool refreshScreenOnNeededReload() const override { return true; }
 
@@ -118,11 +124,11 @@ private:
 
     void clearAnnotations();
     void scanViewPointForAnnotations();
-    void onShowAnnotationChanged(bool update_config_widget);
+    void onShowAnnotationChanged();
     void onEvalResultsChanged();
 
-    void showVariables(bool force, bool update_config);
-    void showAnnotation(bool force, bool update_config);
+    void showVariables(bool force);
+    void showAnnotation(bool force);
 
     std::vector<std::unique_ptr<ViewVariable>> variables_;
 
@@ -131,5 +137,5 @@ private:
     int                          current_annotation_idx_       = -1;
     bool                         show_annotation_              = false;
 
-    const ViewableDataConfig* current_view_point_ {nullptr};
+    ViewableDataConfig* current_view_point_ {nullptr};
 };

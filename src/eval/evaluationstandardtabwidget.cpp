@@ -115,6 +115,8 @@ EvaluationStandardTabWidget::EvaluationStandardTabWidget(EvaluationCalculator& c
     setLayout(main_layout);
 }
 
+EvaluationStandardTabWidget::~EvaluationStandardTabWidget() = default;
+
 /**
  */
 void EvaluationStandardTabWidget::changedStandardsSlot()
@@ -156,7 +158,7 @@ void EvaluationStandardTabWidget::addStandardSlot ()
         if (!name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Standard Failed",
-                                  "Standard has to have a non-empty name.", QMessageBox::Ok);
+                                  "Standard has to have a non-empty name.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -164,7 +166,7 @@ void EvaluationStandardTabWidget::addStandardSlot ()
         if (calculator_.hasStandard(name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "Adding Standard Failed",
-                                  "Standard with this name already exists.", QMessageBox::Ok);
+                                  "Standard with this name already exists.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -192,7 +194,7 @@ void EvaluationStandardTabWidget::renameStandardSlot ()
         if (!new_name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "Renaming Standard Failed",
-                                  "Standard with empty name not possible.", QMessageBox::Ok);
+                                  "Standard with empty name not possible.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -200,7 +202,7 @@ void EvaluationStandardTabWidget::renameStandardSlot ()
         if (calculator_.hasStandard(new_name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "Renaming Standard Failed",
-                                  "Standard with this name already exists.", QMessageBox::Ok);
+                                  "Standard with this name already exists.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -227,7 +229,7 @@ void EvaluationStandardTabWidget::copyStandardSlot ()
         if (!new_name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "Copying Standard Failed",
-                                  "Standard with empty name not possible.", QMessageBox::Ok);
+                                  "Standard with empty name not possible.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -235,7 +237,7 @@ void EvaluationStandardTabWidget::copyStandardSlot ()
         if (calculator_.hasStandard(new_name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "Copying Standard Failed",
-                                  "Standard with this name already exists.", QMessageBox::Ok);
+                                  "Standard with this name already exists.", QMessageBox::Ok, this);
             m_warning.exec();
             return;
         }
@@ -316,3 +318,4 @@ void EvaluationStandardTabWidget::updateStandardWidget()
         standards_layout_->addWidget(widget);
     }
 }
+

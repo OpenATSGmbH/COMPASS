@@ -39,8 +39,8 @@
 
 /**
  */
-EvaluationDialog::EvaluationDialog(EvaluationCalculator& calculator)
-:   calculator_(calculator)
+EvaluationDialog::EvaluationDialog(EvaluationCalculator& calculator, QWidget* parent)
+:   QDialog(parent), calculator_(calculator)
 {
     setWindowTitle("Evaluation");
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);

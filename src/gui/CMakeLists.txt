@@ -1,13 +1,9 @@
+add_library(compass_gui "")
 
-include_directories (
-    "${CMAKE_CURRENT_LIST_DIR}"
-    )
-
-target_sources(compass
+target_sources(compass_gui
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/invalidqlineedit.h"
-        "${CMAKE_CURRENT_LIST_DIR}/textfielddoublevalidator.h"
         "${CMAKE_CURRENT_LIST_DIR}/textfieldhexvalidator.h"
         "${CMAKE_CURRENT_LIST_DIR}/textfieldoctvalidator.h"
         "${CMAKE_CURRENT_LIST_DIR}/rangeedit.h"
@@ -26,6 +22,7 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/timewindowcollectionwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowdialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/noscrollqspinbox.h"
+        "${CMAKE_CURRENT_LIST_DIR}/questiondialog.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rangeedit.cpp"
@@ -42,4 +39,16 @@ target_sources(compass
         "${CMAKE_CURRENT_LIST_DIR}/popupmenu.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowcollectionwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowdialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/questiondialog.cpp"
 )
+
+target_include_directories(compass_gui PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
+
+target_link_libraries(compass_gui
+    PUBLIC
+        compass_core
+        Qt5::Widgets
+        Qt5::Charts
+)
+
+compass_automoc(compass_gui)

@@ -1,21 +1,23 @@
 {
+    "class_name": "ProjectionManager",
+    "instance_name": "ProjectionManager0",
     "parameters": {
         "current_projection_name": "RS2G"
     },
-    "sub_configs": {
-        "OGRProjection": {
-            "OGRProjection0": {
-                "parameters": {
-                    "name": "OGR"
-                }
+    "sub_configs": [
+        {
+            "class_name": "OGRProjection",
+            "instance_name": "OGRProjection0",
+            "parameters": {
+                "name": "OGR"
             }
         },
-        "RS2GProjection": {
-            "RS2GProjection0": {
-                "parameters": {
-                    "name": "RS2G"
-                }
+        {
+            "class_name": "RS2GProjection",
+            "instance_name": "RS2GProjection0",
+            "parameters": {
+                "name": "RS2G"
             }
         }
-    }
+    ]
 }

@@ -18,6 +18,8 @@
 #include "eval/requirement/base/baseconfig.h"
 #include "eval/requirement/group.h"
 #include "eval/requirement/base/comparisontype.h"
+#include "evaluationstandard.h"
+#include "evaluationcalculator.h"
 #include "logger.h"
 
 #include "task/result/report/report.h"
@@ -63,10 +65,13 @@ std::string comparisonTypeLongString(COMPARISON_TYPE type)
 }
 
 BaseConfig::BaseConfig(
-        const std::string& class_id, const std::string& instance_id,
-        Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator)
-    : Configurable(class_id, instance_id, &group), EvaluationStandardTreeItem(&group),
-      group_(group), standard_(standard), calculator_(calculator)
+        nlohmann::json& config,
+        Group* parent)
+    : Configurable(config, parent),
+      EvaluationStandardTreeItem(parent),
+      group_(*parent),
+      standard_(*group_.parentConfigurable()),
+      calculator_(*standard_.parentConfigurable())
 {
     registerParameter("use", &use_, true);
     registerParameter("name", &name_, std::string());
@@ -77,6 +82,11 @@ BaseConfig::BaseConfig(
     traced_assert(short_name_.size());
 
     createSubConfigurables();
+}
+
+Group* BaseConfig::parentConfigurable() const
+{
+    return static_cast<Group*>(Configurable::parentConfigurable());
 }
 
 BaseConfig::~BaseConfig()
@@ -96,12 +106,6 @@ bool BaseConfig::used() const
 bool BaseConfig::checkable() const
 {
     return true;
-}
-
-void BaseConfig::generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id)
-{
-    traced_assert(false);
 }
 
 std::string BaseConfig::name() const
@@ -199,3 +203,4 @@ void BaseConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 }
 
 }
+

@@ -30,12 +30,8 @@
 
 /**
  */
-ScatterPlotViewWidget::ScatterPlotViewWidget(const std::string& class_id, 
-                                             const std::string& instance_id,
-                                             Configurable* config_parent, 
-                                             ScatterPlotView* view,
-                                             QWidget* parent)
-:   VariableViewWidget(class_id, instance_id, config_parent, view, parent)
+ScatterPlotViewWidget::ScatterPlotViewWidget(ScatterPlotView* view, QWidget* parent)
+:   VariableViewWidget(view, parent)
 {
     auto data_widget = new ScatterPlotViewDataWidget(this);
     setDataWidget(data_widget);
@@ -55,7 +51,7 @@ ScatterPlotViewWidget::ScatterPlotViewWidget(const std::string& class_id,
         a->setEnabled(data_widget->isDrawn() && view->showsVariables());
     };
 
-    getViewToolSwitcher()->addTool(Tool::SP_NAVIGATE_TOOL, "Navigate", {}, QIcon(), Qt::OpenHandCursor);
+    getViewToolSwitcher()->addTool(Tool::SP_NAVIGATE_TOOL, "Navigate", {}, QIcon(), Qt::ArrowCursor);
     getViewToolSwitcher()->addTool(Tool::SP_SELECT_TOOL, "Select", Qt::Key_S, getIcon("select_action.png"), Qt::CrossCursor);
     getViewToolSwitcher()->addTool(Tool::SP_ZOOM_RECT_TOOL, "Zoom to Rectangle", Qt::Key_R, getIcon("zoom_select_action.png"), Qt::CrossCursor);
 

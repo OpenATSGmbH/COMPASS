@@ -33,8 +33,8 @@ namespace EvaluationRequirement
 class TrackAngleConfig : public ProbabilityBaseConfig
 {
 public:
-    TrackAngleConfig(const std::string& class_id, const std::string& instance_id,
-                Group& group, EvaluationStandard& standard, EvaluationCalculator& calculator);
+    TrackAngleConfig(nlohmann::json& config,
+                     Group* parent);
     virtual ~TrackAngleConfig();
 
     std::shared_ptr<Base> createRequirement() override;

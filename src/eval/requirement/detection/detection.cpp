@@ -16,6 +16,7 @@
  */
 
 #include "eval/requirement/detection/detection.h"
+#include "eval/requirement/detection/detection_pd_helpers.h"
 #include "eval/results/detection/detection.h"
 #include "eval/standard/evaluationstandard.h"
 
@@ -664,18 +665,24 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
 
 /**
 */
+PDHelpers::MissTestParams Detection::missTestParams() const
+{
+    PDHelpers::MissTestParams p;
+    p.update_interval_s  = update_interval_s_;
+    p.use_miss_tolerance = use_miss_tolerance_;
+    p.miss_tolerance_s   = miss_tolerance_s_;
+    p.use_min_gap_length = use_min_gap_length_;
+    p.min_gap_length_s   = min_gap_length_s_;
+    p.use_max_gap_length = use_max_gap_length_;
+    p.max_gap_length_s   = max_gap_length_s_;
+    return p;
+}
+
+/**
+*/
 bool Detection::isMiss (float d_tod) const
 {
-    if (use_miss_tolerance_)
-        d_tod -= miss_tolerance_s_;
-
-    if (use_min_gap_length_ && d_tod < min_gap_length_s_) // supress gaps smaller as min gap length
-        return false;
-
-    if (use_max_gap_length_ && d_tod > max_gap_length_s_) // supress gaps larger as max gap length
-        return false;
-
-    return d_tod > update_interval_s_;
+    return PDHelpers::isMiss(d_tod, missTestParams());
 }
 
 /**
@@ -683,11 +690,7 @@ bool Detection::isMiss (float d_tod) const
 unsigned int Detection::getNumMisses(float d_tod) const
 {
     traced_assert(isMiss(d_tod));
-
-    if (use_miss_tolerance_)
-        d_tod -= miss_tolerance_s_;
-
-    return floor(d_tod/update_interval_s_);
+    return PDHelpers::numMisses(d_tod, missTestParams());
 }
 
 }

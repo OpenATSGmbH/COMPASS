@@ -49,7 +49,7 @@ dbContent::Variable* HistogramGeneratorBuffer::currentVariable(const std::string
     {
         if (!meta_variable_->existsIn(db_content))
         {
-            logwrn << "meta var does not exist in dbcontent '" << db_content << "'";
+            logdbg << "meta var does not exist in dbcontent '" << db_content << "'";
             return nullptr;
         }
         data_var = &meta_variable_->getFor(db_content);
@@ -85,10 +85,14 @@ bool HistogramGeneratorBuffer::select_impl(unsigned int bin0, unsigned int bin1)
 
     bool ok = true;
 
-    //run selection on all buffers
+    //run selection on all buffers. Use a non-short-circuiting accumulator so
+    //a single buffer returning false doesn't skip the rest (which would
+    //leave most of the data unselected when the variable doesn't map to
+    //every dbcontent).
     for (auto& elem : *buffer_data_)
     {
-        ok = ok && selectBuffer(elem.first, *elem.second, bin0, bin1, select_min_max, select_null, add_to_selection);
+        if (!selectBuffer(elem.first, *elem.second, bin0, bin1, select_min_max, select_null, add_to_selection))
+            ok = false;
     }
 
     return ok;

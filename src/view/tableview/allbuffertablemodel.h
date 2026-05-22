@@ -17,59 +17,69 @@
 
 #pragma once
 
-#include <QAbstractTableModel>
+#include "basetablemodel.h"
 
-#include "boost/date_time/posix_time/ptime.hpp"
+#include <QColor>
+#include <QIcon>
 
+#include <map>
 #include <memory>
+#include <optional>
+#include <set>
+#include <string>
+#include <utility>
 
-class TableView;
-class Buffer;
-class DBContent;
 class AllBufferCSVExportJob;
-class TableViewDataSource;
 class AllBufferTableWidget;
 
-class AllBufferTableModel : public QAbstractTableModel
+class AllBufferTableModel : public BaseBufferTableModel
 {
     Q_OBJECT
 
-  signals:
-    void exportDoneSignal(bool cancelled);
-
   public slots:
-    void setChangedSlot();
-    void exportJobObsoleteSlot();
-    void exportJobDoneSlot();
+    void setChangedSlot() override;
 
   public:
-    AllBufferTableModel(TableView& view, AllBufferTableWidget* table_widget, TableViewDataSource& data_source);
+    AllBufferTableModel(TableView& view, AllBufferTableWidget* table_widget,
+                        TableViewDataSource& data_source);
     virtual ~AllBufferTableModel();
 
-    int rowCount(const QModelIndex& parent = QModelIndex()) const;
-    int columnCount(const QModelIndex& parent = QModelIndex()) const;
-    virtual Qt::ItemFlags flags(const QModelIndex& index) const;
-    virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
-    virtual bool setData(const QModelIndex& index, const QVariant& value, int role);
-    virtual QVariant headerData(int section, Qt::Orientation orientation,
-                                int role = Qt::DisplayRole) const;
+    using BaseBufferTableModel::setData;
 
-    void clearData();
+    void clearData() override;
     void setData(std::map<std::string, std::shared_ptr<Buffer>> buffers);
 
-    void saveAsCSV(const std::string& file_name);
+    void saveAsCSV(const std::string& file_name) override;
+    void rebuild() override;
 
-    void reset();
+    std::pair<int,int> getSelectedRows(); // min, max selected row
 
-    void rebuild();
+    /// Installs a layer-level filter keyed by "<ds_type>:<ds_name>:L<n>:<dbcont>".
+    /// nullopt = no filter (all rows shown). An empty set filters everything out.
+    /// The filter is consulted inside buildRowIndexes(); callers must trigger a
+    /// rebuild() (or setData()) after changing this to refresh the view.
+    void setAllowedLayerIds(std::optional<std::set<std::string>> ids);
 
-    std::pair<int,int> getSelectedRows(); // min, max, selected row
+    /// Per-layer color map used to render the icon prefix column. Invalid
+    /// QColor entries render as empty space (for non-target-report layers).
+    /// Keys not present in the map render empty too.
+    void setLayerColors(std::map<std::string, QColor> layer_colors);
 
   protected:
-    TableView& view_;
-    AllBufferTableWidget* table_widget_{nullptr};
-    TableViewDataSource& data_source_;
+    unsigned int dataRowCount() const override;
+    RowData resolveRow(int row) const override;
+    unsigned int prefixColumnCount() const override;
+    unsigned int dataColumnCount() const override;
+    QVariant prefixColumnData(unsigned int col, const RowData& row_data) const override;
+    QVariant prefixColumnDecoration(unsigned int col, const RowData& row_data) const override;
+    QVariant prefixColumnHeader(unsigned int col) const override;
+    bool resolveVariable(unsigned int data_col, const std::string& dbcontent_name,
+                         dbContent::Variable*& out_var) const override;
+    QVariant dataColumnHeader(unsigned int data_col) const override;
+    void applyRowPermutation(const std::vector<unsigned int>& perm) override;
+    void sortRowIndexes() override;
 
+  private:
     std::map<std::string, std::shared_ptr<Buffer>> buffers_;
 
     std::shared_ptr<AllBufferCSVExportJob> export_job_;
@@ -77,11 +87,29 @@ class AllBufferTableModel : public QAbstractTableModel
     std::map<unsigned int, std::string> number_to_dbcont_;
     std::map<std::string, unsigned int> dbcont_to_number_;
 
-    std::multimap<boost::posix_time::ptime, std::pair<unsigned int, unsigned int>> time_to_indexes_;
-    // timestamp -> [dbcont num,index]
-    std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> dbcont num,index
+    std::vector<std::pair<unsigned int, unsigned int>> row_indexes_;  // row index -> [dbcont num, buffer index]
 
-    void updateTimeIndexes();
-    void rebuildRowIndexes();
+    /// Per-row layer-id index, parallel to row_indexes_. Each entry indexes
+    /// into layer_id_pool_. Computed once in buildRowIndexes() and reordered
+    /// via applyRowPermutation() - avoids per-cell-paint DBContent / data
+    /// source lookups in prefixColumnDecoration().
+    std::vector<unsigned int> row_layer_index_;
+    std::vector<std::string>  layer_id_pool_;   // 0 = "" (unknown)
+
+    std::optional<std::set<std::string>> allowed_layer_ids_;
+    std::map<std::string, QColor>        layer_colors_;
+
+    /// Cache: (layer_id, is_selected) -> QIcon. Cleared whenever layer_colors_
+    /// changes. "" key is used for rows without a known layer color.
+    mutable std::map<std::pair<std::string, bool>, QIcon> icon_cache_;
+
+    /// Cache: (data_col, dbcontent_name) -> Variable*. nullptr means "tried
+    /// and not applicable" (a meta variable not present for this dbcontent,
+    /// or the column belongs to a different dbcontent). Cleared in
+    /// setChangedSlot() when the data source variable set changes.
+    mutable std::map<std::pair<unsigned int, std::string>, dbContent::Variable*> variable_cache_;
+
+    QIcon iconFor(const std::string& layer_id, bool selected) const;
+
+    void buildRowIndexes();
 };
-

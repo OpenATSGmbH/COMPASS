@@ -1,0 +1,749 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "dbcontentitemprovider.h"
+#include "dbcontentdatastore.h"
+#include "dbcontentaccessor.h"
+#include "dbcontentmanager.h"
+#include "targetmodel.h"
+#include "targetreportaccessor.h"
+#include "targetreportdefs.h"
+
+#include "compass.h"
+#include "db_context_manager.h"
+
+#include "stringconv.h"
+#include "traced_assert.h"
+
+const std::string DBContentItemProvider::GroupingStrNone            = "None";
+const std::string DBContentItemProvider::GroupingStrAircraftAddress = "Aircraft Address";
+const std::string DBContentItemProvider::GroupingStrAircraftID      = "Aircraft Identification";
+const std::string DBContentItemProvider::GroupingStrTrackNumber     = "Track Number";
+const std::string DBContentItemProvider::GroupingStrMode3ACode      = "Mode 3/A Code";
+const std::string DBContentItemProvider::GroupingStrUTN             = "UTN";
+
+const DBContentItemProvider::Grouping DBContentItemProvider::DefaultGrouping = DBContentItemProvider::Grouping::AircraftAddress;
+
+const std::string DBContentItemProvider::DsTypeOther = "Other";
+
+/**
+ * Constructs the item provider and connects to the given data store's signals,
+ * so that item groups are kept in sync with data store changes.
+ */
+DBContentItemProvider::DBContentItemProvider(DBContentDataStore& data_store, 
+                                             Grouping grouping,
+                                             bool auto_update)
+:   data_store_      (data_store)
+,   context_manager_ (data_store.dbcManager().compass().dbContextManager())
+,   grouping_        (grouping)
+{
+    if (auto_update)
+    {
+        connect(&data_store_, &DBContentDataStore::dataChangedSignal, this, &DBContentItemProvider::dataChanged, Qt::QueuedConnection);
+    }
+}
+
+/**
+ */
+DBContentItemProvider::~DBContentItemProvider() = default;
+
+/**
+ * Converts a grouping mode to a human-readable string representation.
+ * Returns "None" for Grouping::None and unrecognized values.
+ */
+std::string DBContentItemProvider::groupingToString(Grouping grouping)
+{
+    switch (grouping)
+    {
+        case Grouping::AircraftAddress: return GroupingStrAircraftAddress;
+        case Grouping::AircraftID:      return GroupingStrAircraftID;
+        case Grouping::TrackNumber:     return GroupingStrTrackNumber;
+        case Grouping::Mode3ACode:      return GroupingStrMode3ACode;
+        case Grouping::UTN:             return GroupingStrUTN;
+        case Grouping::None:            return GroupingStrNone;
+        default:                        return GroupingStrNone;
+    }
+}
+
+/**
+ * Parses a string representation of a grouping mode and returns the corresponding enum value.
+ * Returns Grouping::None for unrecognized strings.
+ */
+DBContentItemProvider::Grouping DBContentItemProvider::groupingFromString(const std::string& str)
+{
+    if (str == GroupingStrAircraftAddress) return Grouping::AircraftAddress;
+    if (str == GroupingStrAircraftID)      return Grouping::AircraftID;
+    if (str == GroupingStrTrackNumber)     return Grouping::TrackNumber;
+    if (str == GroupingStrMode3ACode)      return Grouping::Mode3ACode;
+    if (str == GroupingStrUTN)             return Grouping::UTN;
+    if (str == GroupingStrNone)            return Grouping::None;
+
+    return Grouping::None;
+}
+
+/**
+ * Returns true if str matches any known grouping display string.
+ */
+bool DBContentItemProvider::isGroupingString(const std::string& str)
+{
+    return str == GroupingStrAircraftAddress
+        || str == GroupingStrAircraftID
+        || str == GroupingStrTrackNumber
+        || str == GroupingStrMode3ACode
+        || str == GroupingStrUTN
+        || str == GroupingStrNone;
+}
+
+/**
+ */
+bool DBContentItemProvider::isTargetSpecific(Grouping grouping)
+{
+    return grouping == Grouping::AircraftAddress ||
+           grouping == Grouping::AircraftID      ||
+           grouping == Grouping::TrackNumber     ||
+           grouping == Grouping::UTN;
+}
+
+/**
+ */
+bool DBContentItemProvider::isNumeric(Grouping grouping)
+{
+    return grouping == Grouping::UTN         ||
+           grouping == Grouping::Mode3ACode;
+}
+
+/**
+ */
+std::vector<DBContentItemProvider::Grouping> DBContentItemProvider::getGroupings(unsigned int flags)
+{
+    std::vector<Grouping> groupings;
+
+    if (flags & GroupingFlags::GroupingNone)
+        groupings.push_back(Grouping::None);
+    if (flags & GroupingFlags::GroupingAircraftAddress)
+        groupings.push_back(Grouping::AircraftAddress);
+    if (flags & GroupingFlags::GroupingAircraftID)
+        groupings.push_back(Grouping::AircraftID);
+    if (flags & GroupingFlags::GroupingTrackNumber)
+        groupings.push_back(Grouping::TrackNumber);
+    if (flags & GroupingFlags::GroupingMode3ACode)
+        groupings.push_back(Grouping::Mode3ACode);
+    if (flags & GroupingFlags::GroupingUTN)
+        groupings.push_back(Grouping::UTN);
+
+    return groupings;
+}
+
+/**
+ */
+const DBContentItemProvider::ItemLocations& DBContentItemProvider::itemLocations(const nlohmann::json& item_id) const
+{
+    traced_assert(item_locations_.count(item_id));
+    return item_locations_.at(item_id);
+}
+
+/**
+ * Sets the grouping mode used to partition buffer rows into items.
+ * Triggers a full rebuild of all item groups if the grouping changes.
+ */
+void DBContentItemProvider::setGrouping(Grouping grouping, 
+                                        bool run_update)
+{
+    if (grouping_ == grouping)
+        return;
+
+    grouping_ = grouping;
+
+    if (run_update)
+        updateInternal(true);
+
+    emit groupingChangedSignal();
+}
+
+/**
+ *  Converts the current grouping mode to a string representation.
+ */
+std::string DBContentItemProvider::groupingAsString() const
+{
+    return DBContentItemProvider::groupingToString(grouping_);
+}
+
+/**
+ */
+bool DBContentItemProvider::groupingIsNumeric() const
+{
+    return DBContentItemProvider::isNumeric(grouping_);
+}
+
+/**
+ */
+bool DBContentItemProvider::groupingIsTargetSpecific() const
+{
+    return DBContentItemProvider::isTargetSpecific(grouping_);
+}
+
+/**
+ * Public synchronous reset hook (called by views' clearData_impl() etc.).
+ */
+void DBContentItemProvider::reset()
+{
+    resetData();
+}
+
+/**
+ * Internal reset: wipes provider state and notifies subclasses + observers.
+ * Used both by the public reset() and by dataChanged(ids, reset=true) so the
+ * reset + per-content rebuild can run atomically in one event-loop turn.
+ */
+void DBContentItemProvider::resetData()
+{
+    emit dataAboutToBeResetSignal();
+
+    reset_impl();
+
+    item_groups_.clear();
+    item_locations_.clear();
+    item_visibility_.clear();
+    item_colors_.clear();
+
+    emit dataResetSignal();
+}
+
+/**
+ */
+bool DBContentItemProvider::itemVisible(const nlohmann::json& item_id) const
+{
+    auto it = item_visibility_.find(item_id);
+    return (it != item_visibility_.end()) ? it->second : true;
+}
+
+/**
+ */
+void DBContentItemProvider::setItemVisible(const nlohmann::json& item_id, bool visible)
+{
+    bool changed = setItemVisibleSilent(item_id, visible);
+
+    setItemVisible_impl(item_id, visible);
+
+    if (changed)
+        emit itemVisibilityChangedSignal();
+}
+
+/**
+ */
+void DBContentItemProvider::setItemsVisible(const std::vector<nlohmann::json>& item_ids, bool visible)
+{
+    bool any_changed = false;
+    for (const auto& id : item_ids)
+        any_changed |= setItemVisibleSilent(id, visible);
+
+    setItemsVisible_impl(item_ids, visible);
+
+    if (any_changed)
+        emit itemVisibilityChangedSignal();
+}
+
+/**
+ */
+void DBContentItemProvider::setAllItemsVisible(bool visible)
+{
+    bool any_changed = false;
+    for (const auto& [id, _] : item_locations_)
+        any_changed |= setItemVisibleSilent(id, visible);
+
+    setAllItemsVisible_impl(visible);
+
+    if (any_changed)
+        emit itemVisibilityChangedSignal();
+}
+
+/**
+ */
+void DBContentItemProvider::setSiblingItemsVisible(const nlohmann::json& item_id, bool visible)
+{
+    std::vector<nlohmann::json> siblings;
+    siblings.reserve(item_locations_.size());
+
+    bool any_changed = false;
+    for (const auto& [id, _] : item_locations_)
+    {
+        if (id == item_id)
+            continue;
+        siblings.push_back(id);
+        any_changed |= setItemVisibleSilent(id, visible);
+    }
+
+    setItemsVisible_impl(siblings, visible);
+
+    if (any_changed)
+        emit itemVisibilityChangedSignal();
+}
+
+/**
+ */
+QColor DBContentItemProvider::itemColor(const nlohmann::json& item_id) const
+{
+    auto it = item_colors_.find(item_id);
+    if (it == item_colors_.end())
+        return QColor();
+    return it->second;
+}
+
+/**
+ */
+void DBContentItemProvider::setShowItemColors(bool show)
+{
+    if (show_item_colors_ == show)
+        return;
+    show_item_colors_ = show;
+    emit showItemColorsChangedSignal();
+}
+
+/**
+ */
+QColor DBContentItemProvider::colorFromItemId(const nlohmann::json& item_id)
+{
+    if (item_id.is_null())
+        return QColor();
+
+    QColor base = QColor::fromRgb(Utils::String::hash(item_id.dump()));
+
+    constexpr qreal kMinLightness = 0.55;
+    qreal h = 0.0, s = 0.0, l = 0.0, a = 0.0;
+    base.getHslF(&h, &s, &l, &a);
+    if (l < kMinLightness)
+        base = QColor::fromHslF(h, s, kMinLightness, a);
+
+    return base;
+}
+
+/**
+ */
+bool DBContentItemProvider::setItemVisibleSilent(const nlohmann::json& item_id, bool visible)
+{
+    auto it = item_visibility_.find(item_id);
+    if (it == item_visibility_.end())
+    {
+        // Defaulted to true; only insert when we deviate.
+        if (visible)
+            return false;
+        item_visibility_[item_id] = false;
+        return true;
+    }
+    if (it->second == visible)
+        return false;
+    it->second = visible;
+    return true;
+}
+
+/**
+ * Creates a function that extracts a grouping key (as JSON) from a buffer row index,
+ * based on the current grouping mode. Returns a null JSON value for rows where the
+ * grouping field is not set. These null-keyed rows are collected into a single unnamed group.
+ */
+std::function<nlohmann::json(unsigned int)> DBContentItemProvider::createGroupFunc(dbContent::TargetReportAccessor& accessor) const
+{
+    std::function<nlohmann::json(unsigned int)> func;
+
+    if (grouping_ == Grouping::AircraftAddress)
+    {
+        func = [ &accessor ] (unsigned int idx)
+        {
+            auto acad = accessor.acad(idx);
+            if (!acad.has_value())
+                return nlohmann::json();
+            return nlohmann::json(acad.value());
+        };
+    }
+    else if (grouping_ == Grouping::AircraftID)
+    {
+        func = [ &accessor ] (unsigned int idx)
+        {
+            auto acid = accessor.acid(idx);
+            if (!acid.has_value())
+                return nlohmann::json();
+            return nlohmann::json(acid.value());
+        };
+    }
+    else if (grouping_ == Grouping::TrackNumber)
+    {
+        auto ctx_man = &context_manager_;
+
+        func = [ &accessor, ctx_man ] (unsigned int idx)
+        {
+            auto ds_id   = accessor.dsID(idx);
+            auto line_id = accessor.lineID(idx);
+            auto tn      = accessor.trackNumber(idx);
+
+            if (!tn.has_value())
+                return nlohmann::json();
+
+            traced_assert(ctx_man->hasDataSource(ds_id));
+            const auto& ds = ctx_man->dataSource(ds_id);
+            traced_assert(ds);
+
+            std::string ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
+
+            return nlohmann::json::array({ds_name, line_id, tn.value()});
+        };
+    }
+    else if (grouping_ == Grouping::Mode3ACode)
+    {
+        func = [ &accessor ] (unsigned int idx)
+        {
+            auto modea = accessor.modeACode(idx);
+            if (!modea.has_value())
+                return nlohmann::json();
+            return nlohmann::json(modea.value().code_);
+        };
+    }
+    else if (grouping_ == Grouping::UTN)
+    {
+        func = [ &accessor ] (unsigned int idx)
+        {
+            auto utn = accessor.utn(idx);
+            if (!utn.has_value())
+                return nlohmann::json();
+            return nlohmann::json(utn.value());
+        };
+    }
+    else // Grouping::None - all rows share a single null key (one group per ds/line)
+    {
+        func = [ &accessor ] (unsigned int idx)
+        {
+            return nlohmann::json();
+        };
+    }
+
+    traced_assert(func);
+
+    return func;
+}
+
+/**
+ * Unified data-changed slot. Performs (optional reset) -> rebuild each id in
+ * dbc_ids -> (optional finalize) inside a single event-loop turn, so listeners
+ * that paint (e.g. OSG) cannot observe the empty intermediate state between
+ * the wipe and the rebuild.
+ *
+ *   reset = drop all prior provider state first (full dataset replacement)
+ *   last  = run finalize work (heavy: dataRefreshed_impl, downstream signal)
+ *           after rebuilding. Live tick events always pass last=true.
+ */
+void DBContentItemProvider::dataChanged(const std::vector<unsigned int>& dbc_ids, bool reset, bool last)
+{
+    if (reset)
+        resetData();
+
+    for (auto dbc_id : dbc_ids)
+        rebuildContent(dbc_id);
+
+    if (last)
+        contentRebuilt();
+
+    dataChanged_impl();
+}
+
+/**
+ * Rebuilds item groups for the given DBContent type after its data has changed.
+ * Notifies subclasses before and after the rebuild via dataToBeChanged_impl() and
+ * dataChanged_impl(), passing the range of newly appended groups in item_groups_.
+ * For each (ds_id, line_id) combination, rows are partitioned into items by the
+ * grouping key extracted via createGroupFunc(). The resulting item groups are
+ * appended to item_groups_.
+ */
+void DBContentItemProvider::rebuildContent(unsigned int dbc_id)
+{
+    auto dbc_name = data_store_.dbcManager().dbContentWithId(dbc_id);
+
+    // queued signal may arrive after data store was reset - nothing to do
+    if (!data_store_.indices().count(dbc_id))
+        return;
+
+    const auto& indices = data_store_.indices().at(dbc_id);
+
+    auto tr_acc = data_store_.targetReportAccessor(dbc_id);
+    auto buffer = data_store_.buffer(dbc_id);
+
+    traced_assert(tr_acc);
+    traced_assert(buffer);
+
+    contentToBeRebuilt_impl(dbc_id);
+
+    auto group_func = createGroupFunc(*tr_acc);
+    traced_assert(group_func);
+
+    for (const auto& ds_it : indices)
+    {
+        for (const auto& line_it : ds_it.second)
+        {
+            traced_assert(line_it.second);
+
+            auto group = std::make_unique<dbContent::ItemGroup>();
+            group->dbc_id   = dbc_id;
+            group->ds_id    = ds_it.first;
+            group->line_id  = line_it.first;
+
+            group->accessor = tr_acc;
+            group->buffer   = buffer;
+
+            size_t gidx = item_groups_.size();
+
+            // partition row indices by their grouping key
+            std::map<nlohmann::json, std::vector<unsigned int>> item_indices_map;
+
+            for (auto idx : *line_it.second)
+            {
+                // collect item id of buffer index
+                auto item_id = group_func(idx);
+                
+                auto& item_indices = item_indices_map[ item_id ];
+                item_indices.push_back(idx);
+            }
+
+            group->items.reserve(item_indices_map.size());
+
+            for (const auto& item_indices_it : item_indices_map)
+            {
+                size_t idx0 = group->indices.size();
+
+                //insert item indices into group indices
+                group->indices.insert(group->indices.end(), 
+                                      item_indices_it.second.begin(), 
+                                      item_indices_it.second.end());
+
+                size_t idx1 = group->indices.size();
+
+                //collect item
+                dbContent::Item item;
+                item.item_id   = item_indices_it.first;
+                item.idx_begin = idx0;
+                item.idx_end   = idx1;
+
+                size_t item_idx = group->items.size();
+
+                item_locations_[ item.item_id ].emplace_back(group.get(), item_idx);
+
+                if (!item_colors_.count(item.item_id))
+                    item_colors_[ item.item_id ] = colorFromItemId(item.item_id);
+
+                group->items.push_back(item);
+            }
+
+            setGroupIDNames(*group);
+
+            group->group_index = gidx;
+
+            item_groups_.push_back(std::move(group));
+
+            rebuildContent_impl(dbc_id, gidx);
+
+            emit dataChangedSignal(dbc_id, gidx);
+        }
+    }
+}
+
+/**
+ */
+void DBContentItemProvider::setGroupIDNames(dbContent::ItemGroup& group) const
+{
+    // dbcontent name
+    group.dbc_name = data_store_.dbcManager().dbContentWithId(group.dbc_id);
+
+    // ds name + type
+    if (context_manager_.hasDataSource(group.ds_id))
+    {
+        const auto* ds = context_manager_.dataSource(group.ds_id);
+        group.ds_name = ds->hasShortName() ? ds->shortName() : ds->name();
+        group.ds_type = ds->dsType();
+    }
+    else
+    {
+        group.ds_name = std::to_string(group.ds_id);
+        group.ds_type = DsTypeOther;
+    }
+
+    // line name
+    group.line_name = Utils::String::lineStrFrom(group.line_id);
+}
+
+/**
+ * Internal finalize: runs the subclass dataRefreshed_impl() hook and emits the
+ * provider-level dataRefreshedSignal for downstream consumers (e.g.
+ * DBContentItemModel). Called from dataChanged() when last=true so reset +
+ * rebuild + finalize complete atomically in one event-loop turn.
+ */
+void DBContentItemProvider::contentRebuilt()
+{
+    contentRebuilt_impl();
+
+    loginf << groupingAsString();
+
+    emit dataRefreshedSignal();
+}
+
+/**
+ * Rebuilds all item groups from scratch by resetting state and re-processing
+ * every DBContent type currently held in the data store.
+ */
+void DBContentItemProvider::update()
+{
+    updateInternal(false);
+}
+
+/**
+ * Rebuilds all item groups from scratch by resetting state and re-processing
+ * every DBContent type currently held in the data store.
+ */
+void DBContentItemProvider::updateInternal(bool grouping_changed)
+{
+    resetData();
+
+    for (const auto& it : data_store_.buffers())
+        rebuildContent(it.first);
+
+    contentRebuilt();
+
+    update_impl(grouping_changed);
+}
+
+/**
+ * Converts the current grouping mode to a string representation.
+ */
+std::string DBContentItemProvider::toString() const
+{
+    std::stringstream ss;
+
+    ss << "Grouping: " << groupingAsString() << "\n";
+
+    for (const auto& group : item_groups_)
+    {
+        const auto dbc_name   = data_store_.dbcManager().dbContentWithId(group->dbc_id);
+
+        std::string ds_name = "unknown";
+        if (context_manager_.hasDataSource(group->ds_id))
+            ds_name = context_manager_.dataSource(group->ds_id)->name();
+
+        size_t n_items   = group->items.size();
+        size_t n_indices = group->indices.size();
+
+        std::string item_info;
+
+        if (n_items > 2)
+        {
+            item_info += group->items.front().item_id.is_null() ? "null," : "";
+            item_info += group->items.front().item_id.is_null() ? group->items[ 1 ].item_id.dump(0) : group->items[ 0 ].item_id.dump(0);
+            item_info += "-";
+            item_info += group->items.back().item_id.dump(0);
+        }
+        else if (n_items == 2)
+        {
+            item_info += group->items.front().item_id.is_null() ? "null," : "";
+            item_info += group->items.front().item_id.is_null() ? "" : group->items[ 0 ].item_id.dump(0);
+            item_info += group->items.front().item_id.is_null() ? "" : "-";
+            item_info += group->items[ 1 ].item_id.dump(0);
+        }
+        else if (n_items == 1)
+        {
+            item_info = group->items.front().item_id.is_null() ? "null" : group->items[ 0 ].item_id.dump(0);
+        }
+        else
+        {
+            item_info = "empty";
+        }
+        
+        ss << dbc_name << " " << ds_name << " " << "Line " << group->line_id << ": " 
+           << n_indices << " indices, " << n_items << " item(s) " << item_info << "\n";
+    }
+
+    return ss.str();
+}
+
+/**
+ */
+std::string DBContentItemProvider::itemName(const nlohmann::json& item_id) const
+{
+    if (grouping_ == Grouping::None)
+        return "All Data";
+    
+    if (item_id.is_null())
+        return "None";
+
+    if (grouping_ == Grouping::AircraftAddress)
+    {
+        return Utils::String::hexStringFromInt(item_id.get<unsigned int>(), 6, '0', true);   
+    }
+    else if (grouping_ == Grouping::AircraftID)
+    {
+        std::string acid = item_id.get<std::string>();
+        acid.erase(std::remove(acid.begin(), acid.end(), ' '), acid.end());
+        return acid;
+    }
+    else if (grouping_ == Grouping::TrackNumber)
+    {
+        traced_assert(item_id.is_array() && item_id.size() == 3);
+        auto ds  = item_id.at(0).get<std::string>();
+        auto lid = item_id.at(1).get<unsigned int>();
+        auto tn  = item_id.at(2).get<unsigned int>();
+
+        return ds + " " + Utils::String::lineStrFrom(lid) + " TN " + std::to_string(tn);
+    }
+
+    if (item_id.is_string())
+        return item_id.get<std::string>();
+
+    return item_id.dump(0);
+}
+
+/**
+ */
+std::string DBContentItemProvider::itemBestAvailableIdentification(const nlohmann::json& item_id) const
+{
+    if (grouping_ != Grouping::UTN || item_id.is_null() || !item_id.is_number_unsigned())
+        return {};
+
+    const auto* target_model = data_store_.dbcManager().targetModel();
+    if (!target_model)
+        return {};
+
+    auto utn = item_id.get<unsigned int>();
+    if (!target_model->existsTarget(utn))
+        return {};
+
+    return target_model->target(utn).getBestAvailableIdentifications();
+}
+
+/**
+ */
+nlohmann::json DBContentItemProvider::itemSortValue(const nlohmann::json& item_id) const
+{
+    if (item_id.is_null())
+        return item_id;
+
+    if (grouping_ == Grouping::AircraftAddress)
+    {
+        return Utils::String::hexStringFromInt(item_id.get<unsigned int>(), 6, '0', true);
+    }
+    else if (grouping_ == Grouping::AircraftID)
+    {
+        std::string acid = item_id.get<std::string>();
+        acid.erase(std::remove(acid.begin(), acid.end(), ' '), acid.end());
+        return acid;
+    }
+
+    return item_id;
+}

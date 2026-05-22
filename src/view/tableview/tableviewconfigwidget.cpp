@@ -17,19 +17,26 @@
 
 #include "tableviewconfigwidget.h"
 #include "tableviewwidget.h"
+#include "tableviewdatawidget.h"
 #include "tableview.h"
 //#include "tableviewsetconfigwidget.h"
 
 #include "ui_test_common.h"
 
+#include "compass.h"
 #include "logger.h"
 #include "viewwidget.h"
 #include "dbcontent/variable/variableorderedsetwidget.h"
+
+#include "dbcontentlayer.h"
+#include "viewlayerpanelwidget.h"
+#include "viewlayertreemodel.h"
 
 #include <QCheckBox>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QTreeView>
 #include <QVBoxLayout>
 #include <QTabWidget>
 #include <QListWidget>
@@ -81,8 +88,26 @@ TableViewConfigWidget::TableViewConfigWidget(TableViewWidget* view_widget, QWidg
                 this, &TableViewConfigWidget::toggleIgnoreNonTargetReports);
         cfg_layout->addWidget(ignore_non_target_reports_check_);
 
-        cfg_layout->addStretch();
-        
+        color_mode_label_ = new QLabel(this);
+        color_mode_label_->setText("Color Mode: " + colorModeText(view_->compass().colorMode()));
+        cfg_layout->addWidget(color_mode_label_);
+
+        connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+                this, &TableViewConfigWidget::colorModeChangedSlot);
+
+        // Layer panel - fills remaining vertical space below the checkboxes.
+        // No addStretch() anymore: the panel's tree view is the stretchy child.
+        layer_panel_     = new ViewLayerPanelWidget({}, false, this);
+        db_content_root_ = layer_panel_->model()->dbContentRootItem();
+
+        auto* data_widget = view_widget->getViewDataWidget();
+        data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
+
+        connect(data_widget, &TableViewDataWidget::layerTreeRebuiltSignal,
+                this, &TableViewConfigWidget::applyDefaultExpansionSlot);
+
+        cfg_layout->addWidget(layer_panel_);
+
         cfg_widget->setLayout(cfg_layout);
 
         getTabWidget()->addTab(cfg_widget, "Config");
@@ -130,17 +155,45 @@ void TableViewConfigWidget::exportSlot()
     emit exportSignal();
 }
 
-void TableViewConfigWidget::exportDoneSlot(bool cancelled)
+void TableViewConfigWidget::exportDoneSlot(bool canceled)
 {
     traced_assert(export_button_);
 
     export_button_->setDisabled(false);
 
-    if (!cancelled)
+    if (!canceled)
     {
-        QMessageBox msgBox;
+        QMessageBox msgBox(this);
         msgBox.setText("Export complete.");
         msgBox.exec();
+    }
+}
+
+void TableViewConfigWidget::colorModeChangedSlot(unsigned int mode)
+{
+    traced_assert(color_mode_label_);
+    color_mode_label_->setText("Color Mode: " + colorModeText(mode));
+
+    applyDefaultExpansionSlot();
+}
+
+void TableViewConfigWidget::applyDefaultExpansionSlot()
+{
+    if (!db_content_root_ || !layer_panel_)
+        return;
+    db_content_root_->applyDefaultExpansionForColorMode(
+        layer_panel_->treeView(), view_->compass().colorMode());
+}
+
+QString TableViewConfigWidget::colorModeText(unsigned int mode)
+{
+    switch (mode)
+    {
+        case 0: return "DSType";
+        case 1: return "DBContent";
+        case 2: return "Data Source";
+        case 3: return "Data Source + Line";
+        default: return "Unknown";
     }
 }
 
@@ -169,3 +222,4 @@ void TableViewConfigWidget::viewInfoJSON_impl(nlohmann::json& info) const
     info[ "use_presentation"   ] = presentation_check_->isChecked();
     info[ "ignore_non_target_reports"   ] = ignore_non_target_reports_check_->isChecked();
 }
+

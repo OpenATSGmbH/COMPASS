@@ -17,7 +17,7 @@
 
 #include "jsonimporttaskwidget.h"
 
-//#include "compass.h"
+#include "compass.h"
 //#include "dbcontent/dbcontent.h"
 //#include "dbcontent/dbcontentcombobox.h"
 //#include "dbcontent/dbcontentmanager.h"
@@ -236,7 +236,7 @@ void JSONImportTaskWidget::addSchemaSlot()
         if (!name.size())
         {
             QMessageBox m_warning(QMessageBox::Warning, "JSON Parsing Schema Adding Failed",
-                                  "A schema name must be set.", QMessageBox::Ok);
+                                  "A schema name must be set.", QMessageBox::Ok, this);
 
             m_warning.exec();
             return;
@@ -245,7 +245,7 @@ void JSONImportTaskWidget::addSchemaSlot()
         if (task_.hasSchema(name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "JSON Parsing Schema Adding Failed",
-                                  "Schema with this name is already defined.", QMessageBox::Ok);
+                                  "Schema with this name is already defined.", QMessageBox::Ok, this);
 
             m_warning.exec();
             return;
@@ -253,10 +253,10 @@ void JSONImportTaskWidget::addSchemaSlot()
 
         std::string instance = "JSONParsingSchema" + name + "0";
 
-        auto config = Configuration::create("JSONParsingSchema", instance);
-        config->addParameter<std::string>("name", name);
+        auto& child_json = task_.addNewSubConfiguration("JSONParsingSchema", instance);
+        child_json[Configuration::ParameterSection]["name"] = name;
 
-        task_.generateSubConfigurableFromConfig(std::move(config));
+        task_.generateSubConfigurable(child_json);
         updateSchemasBox();
     }
 }
@@ -268,7 +268,7 @@ void JSONImportTaskWidget::removeSchemaSlot()
     if (!task_.currentSchemaName().size())
     {
         QMessageBox m_warning(QMessageBox::Warning, "JSON File Deletion Failed",
-                              "Please select a file in the list.", QMessageBox::Ok);
+                              "Please select a file in the list.", QMessageBox::Ok, this);
         m_warning.exec();
         return;
     }
@@ -340,13 +340,13 @@ void JSONImportTaskWidget::addObjectParserSlot()
     if (!task_.hasCurrentSchema())
     {
         QMessageBox m_warning(QMessageBox::Warning, "JSON Object Parser Adding Failed",
-                              "No current JSON Parsing Schema is selected.", QMessageBox::Ok);
+                              "No current JSON Parsing Schema is selected.", QMessageBox::Ok, this);
 
         m_warning.exec();
         return;
     }
 
-    dbContent::SelectDBContentDialog dialog;
+    dbContent::SelectDBContentDialog dialog(task_.compass().dbContentManager());
 
     int ret = dialog.exec();
 
@@ -361,7 +361,7 @@ void JSONImportTaskWidget::addObjectParserSlot()
         if (!dbcontent_name.size() || current->hasObjectParser(dbcontent_name))
         {
             QMessageBox m_warning(QMessageBox::Warning, "JSON Object Parser Adding Failed",
-                                  "Object parser name empty or already defined.", QMessageBox::Ok);
+                                  "Object parser name empty or already defined.", QMessageBox::Ok, this);
 
             m_warning.exec();
             return;
@@ -369,10 +369,10 @@ void JSONImportTaskWidget::addObjectParserSlot()
 
         std::string instance = "JSONObjectParser" + dbcontent_name + "0";
 
-        auto config = Configuration::create("JSONObjectParser", instance);
-        config->addParameter<std::string>("dbcontent_name", dbcontent_name);
+        auto& child_json = current->addNewSubConfiguration("JSONObjectParser", instance);
+        child_json[Configuration::ParameterSection]["dbcontent_name"] = dbcontent_name;
 
-        current->generateSubConfigurableFromConfig(std::move(config));
+        current->generateSubConfigurable(child_json);
         updateParserBox();
     }
 }
@@ -453,7 +453,7 @@ void JSONImportTaskWidget::testImportSlot()
     if (!task_.canImportFile())
     {
         QMessageBox m_warning(QMessageBox::Warning, "JSON File Test Import Failed",
-                              "Please select a file in the list.", QMessageBox::Ok);
+                              "Please select a file in the list.", QMessageBox::Ok, this);
         m_warning.exec();
         return;
     }
@@ -496,3 +496,4 @@ void JSONImportTaskWidget::updateParserBox()
         }
     }
 }
+

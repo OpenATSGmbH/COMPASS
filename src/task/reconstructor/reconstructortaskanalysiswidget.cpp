@@ -21,7 +21,7 @@
 #include "timeconv.h"
 #include "logger.h"
 #include "compass.h"
-#include "datasourcemanager.h"
+#include "taskmanager.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -39,7 +39,7 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
     ReconstructorTask& task, bool probimm_reconst, QWidget *parent)
     : QWidget{parent}, task_(task), probimm_reconst_(probimm_reconst)
 {
-    bool add_debug_stuff = !COMPASS::isAppImage() || COMPASS::instance().expertMode();
+    bool add_debug_stuff = !COMPASS::isAppImage() || task_.manager().compass().expertMode();
 
     QFormLayout* combo_layout = new QFormLayout;
     //combo_layout->setMargin(0);
@@ -127,28 +127,28 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
     if (add_debug_stuff)
         combo_layout->addRow("Write Debug Reconstruction View Points", debug_write_reconstruction_viewpoints_check_);
 
-    //analyse options
+    //analyze options
 
     analyze_check_= new QCheckBox();
     connect(analyze_check_, &QCheckBox::clicked,
             this, [ = ] (bool ok) { task_.debugSettings().analyze_ = ok; });
 
     if (probimm_reconst_)
-        combo_layout->addRow("Analyse Reconstruction", analyze_check_);
+        combo_layout->addRow("Analyze Reconstruction", analyze_check_);
 
     analyze_association_check_= new QCheckBox();
     connect(analyze_association_check_, &QCheckBox::clicked,
             this, [ = ] (bool ok) { task_.debugSettings().analyze_association_ = ok; });
 
     if (probimm_reconst_)
-        combo_layout->addRow("Analyse Association", analyze_association_check_);
+        combo_layout->addRow("Analyze Association", analyze_association_check_);
 
     analyze_outliers_check_ = new QCheckBox();
     connect(analyze_outliers_check_, &QCheckBox::clicked,
             this, [ = ] (bool ok) { task_.debugSettings().analyze_outlier_detection_ = ok; });
 
     if (probimm_reconst_)
-        combo_layout->addRow("Analyse Outlier Detection", analyze_outliers_check_);
+        combo_layout->addRow("Analyze Outlier Detection", analyze_outliers_check_);
 
     // acc est
 
@@ -157,21 +157,21 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
             this, [ = ] (bool ok) { task_.debugSettings().analyze_accuracy_estimation_ = ok; });
 
     if (probimm_reconst_)
-        combo_layout->addRow("Analyse Accuracy Estimation", analyze_accuracy_est_check_);
+        combo_layout->addRow("Analyze Accuracy Estimation", analyze_accuracy_est_check_);
 
     analyze_bias_correction_check_ = new QCheckBox();
     connect(analyze_bias_correction_check_, &QCheckBox::clicked,
             this, [ = ] (bool ok) { task_.debugSettings().analyze_bias_correction_ = ok; });
 
     if (probimm_reconst_)
-        combo_layout->addRow("Analyse Bias Correction", analyze_bias_correction_check_);
+        combo_layout->addRow("Analyze Bias Correction", analyze_bias_correction_check_);
 
     analyze_geo_altitude_correction_check_ = new QCheckBox();
     connect(analyze_geo_altitude_correction_check_, &QCheckBox::clicked,
             this, [ = ] (bool ok) { task_.debugSettings().analyze_geo_altitude_correction_ = ok; });
 
     if (probimm_reconst_)
-        combo_layout->addRow("Analyse Geo.Altitude Correction", analyze_geo_altitude_correction_check_);
+        combo_layout->addRow("Analyze Geo.Altitude Correction", analyze_geo_altitude_correction_check_);
 
     // statistics options
 
@@ -237,7 +237,7 @@ void ReconstructorTaskAnalysisWidget::updateValues()
 {
     loginf;
 
-    bool add_debug_stuff = !COMPASS::isAppImage() || COMPASS::instance().expertMode();
+    bool add_debug_stuff = !COMPASS::isAppImage() || task_.manager().compass().expertMode();
 
     if (!add_debug_stuff) // disable everything not shown in the settings, to be on the safe side
     {
@@ -427,3 +427,4 @@ void ReconstructorTaskAnalysisWidget::timestampsChanged()
         loginf << "set ts max to "
                << Utils::Time::toString(ts_max.value());
 }
+

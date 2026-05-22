@@ -1,0 +1,116 @@
+\subsubsection{Sector Layers}
+\label{sec:ui_configure_sectors}
+
+The 'Sector Layers' group lists all sector layers of the active Data Context, with the individual sectors of each layer listed underneath. Selecting a sector in the tree opens the sector edit widget on the right. \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-1cm}
+    \includegraphics[width=17cm]{figures/data_context_edit_sectors.png}
+  \caption{Data Context: Sector detail widget}
+\end{figure}
+
+Sectors are stored as 2.5D polygons (a 2D polygon in WGS84 plus an optional altitude range). They are recommended for evaluation purposes and where altitude information is of use. For 2D display-only polygons it is recommended to add such information to the used map files, as described in \nameref{sec:appendix_maps}. \\
+
+Please \textbf{note} that at least one sector has to be defined to use the evaluation feature. \\
+
+\paragraph{Sector Edit Widget}
+\label{sec:ui_configure_sectors_manage}
+
+The detail widget on the right exposes the editable attributes of the selected sector:
+
+\begin{itemize}
+\item Name: Name of the sector, editable
+\item Layer: Name of the layer the sector is grouped in, editable through a combo box of existing layer names (a new layer name can be entered to create a new layer)
+\item Exclude: Whether the sector is an 'Exclude' sector
+\item Color: Color to be used in displays, opened via a color picker
+\item Altitude Minimum: Minimum altitude in feet, editable, can be empty
+\item Altitude Maximum: Maximum altitude in feet, editable, can be empty
+\item Number of Points: Number of points in the polygon, read-only
+\end{itemize}
+\ \\
+
+Each change is stored immediately. \\
+
+An 'Exclude' sector is a special case where e.g. a sector layer 'Example' has at least one normal sector 'Area', giving the 2.5D polygon in which surveillance data of interest exists. To exclude target reports in a specific subregion inside the bigger 'Area' sector, one or several smaller sectors can be added (again into sector layer 'Example') and marked as 'Exclude' sectors (preferably using a different color). \\
+
+\paragraph{Sector Layers Tree Actions}
+
+Right-clicking the 'Sector Layers' group offers:
+
+\begin{itemize}
+\item Import from File...: Imports sectors from a GIS file (see below)
+\item Import Air Space...: Imports sectors from a Air Space JSON file
+\item Import JSON...: Imports a previously exported sector JSON file
+\item Export JSON...: Exports all sectors of the active context as JSON file
+\item Delete All: Removes all sectors from the active context after a confirmation prompt
+\end{itemize}
+\ \\
+
+Right-clicking an individual sector layer offers:
+\begin{itemize}
+\item Delete Layer: Deletes all sectors of the layer after a confirmation prompt
+\end{itemize}
+\ \\
+
+Right-clicking an individual sector offers:
+\begin{itemize}
+\item Move to Layer...: Prompts for a new layer name and moves the sector there
+\item Delete: Deletes the sector after a confirmation prompt
+\end{itemize}
+\ \\
+
+\paragraph{Import from File}
+
+Files are read using the GDAL library, which supports a number of GIS file formats. Common supported file formats are:
+
+\begin{itemize}
+\item ESRI Shapefile
+\item GeoJSON
+\item GML
+\end{itemize}
+\ \\
+
+Please \textbf{note} that only polygonal information is added, and all information is assumed to be stored in the WGS-84 coordinate system. \\
+
+After selecting a file, all encapsulated polygons or multi-polygons are parsed and the 'Import Sector' dialog is shown:
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=6cm]{figures/configure_sectors_import_dialog.png}
+  \caption{Import Sector Dialog}
+\end{figure}
+
+The following options exist:
+\begin{itemize}
+\item Sector Layer: Layer into which the new sectors will be grouped (pre-filled with the file's base name)
+\item Exclude: Whether the imported sectors will be marked as 'Exclude' sectors
+\item Color: Color to be used
+\end{itemize}
+\ \\
+
+After confirming the dialog, the sectors are added to the active context and become visible in the tree. \\
+
+\paragraph{Import Air Space}
+
+When available, the 'Import Air Space...' action opens a dedicated dialog that parses an Air Space JSON file (file format described in \nameref{sec:appendix_airspace}) and shows all contained sectors in a checkable list:
+
+\begin{figure}[H]
+  \centering
+        \includegraphics[width=12cm]{figures/data_context_edit_airspace.png}
+  \caption{Import Air Space Dialog}
+\end{figure}
+
+The dialog provides:
+
+\begin{itemize}
+\item Layer name: Target layer for all imported sectors (pre-filled with the file's base name)
+\item Sector list: One row per sector with check box, sector name, number of points, minimum altitude and maximum altitude
+\item Import: Imports all checked sectors into the chosen layer; sectors whose name already exists in the target layer are skipped and reported separately
+\item Cancel: Closes the dialog without importing
+\end{itemize}
+\ \\
+
+\paragraph{Import/Export of Sectors}
+
+The 'Import JSON...' and 'Export JSON...' actions read and write the full sector definition of the active context as JSON file. It is recommended to export all sectors after creation, for later usage (e.g. in another database or context).

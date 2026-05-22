@@ -45,12 +45,8 @@ HistogramView::Settings::Settings()
 
 /**
  */
-HistogramView::HistogramView(const std::string& 
-                             class_id, 
-                             const std::string& instance_id,
-                             ViewContainer* w, 
-                             ViewManager& view_manager)
-:   VariableView(class_id, instance_id, w, view_manager)
+HistogramView::HistogramView(nlohmann::json& config, ViewContainer* parent)
+:   VariableView(config, parent)
 {
     registerParameter(ParamUseLogScale, &settings_.use_log_scale, Settings().use_log_scale);
 
@@ -64,7 +60,7 @@ HistogramView::HistogramView(const std::string&
                                                         PropertyDataType::FLOAT,
                                                         PropertyDataType::DOUBLE };
 
-    addVariable("data_var", "", "data_var", META_OBJECT_NAME, DBContent::meta_var_timestamp_.name(), true, true, false, valid_types);
+    addVariable("data_var", "", "data_var", META_OBJECT_NAME, dbcontent_vars::meta_var_timestamp_.name(), true, true, false, valid_types);
 
     // create sub done in init
 }
@@ -124,24 +120,20 @@ bool HistogramView::init_impl()
 
 /**
  */
-void HistogramView::generateSubConfigurable(const std::string& class_id,
-                                            const std::string& instance_id)
+void HistogramView::generateSubConfigurable(nlohmann::json& child_json)
 {
-    logdbg << "class_id " << class_id << " instance_id "
-           << instance_id;
-    if (class_id == "HistogramViewDataSource")
+    const auto& class_name = Configuration::getClassName(child_json);
+    const auto& instance_name = Configuration::getInstanceName(child_json);
+    logdbg << "class_name " << class_name << " instance_name "
+           << instance_name;
+    if (class_name == "HistogramViewDataSource")
     {
         traced_assert(!data_source_);
-        data_source_ = new HistogramViewDataSource(class_id, instance_id, this);
-    }
-    else if (class_id == "HistogramViewWidget")
-    {
-        widget_ = new HistogramViewWidget(class_id, instance_id, this, this, central_widget_);
-        setWidget(widget_);
+        data_source_ = new HistogramViewDataSource(child_json, this);
     }
     else
-        throw std::runtime_error("HistogramView: generateSubConfigurable: unknown class_id " +
-                                 class_id);
+        throw std::runtime_error("HistogramView: generateSubConfigurable: unknown class_name " +
+                                 class_name);
 }
 
 /**
@@ -150,12 +142,13 @@ void HistogramView::checkSubConfigurables()
 {
     if (!data_source_)
     {
-        generateSubConfigurable("HistogramViewDataSource", "HistogramViewDataSource0");
+        generateSubConfigurableFromConfig("HistogramViewDataSource", "HistogramViewDataSource0");
     }
 
     if (!widget_)
     {
-        generateSubConfigurable("HistogramViewWidget", "HistogramViewWidget0");
+        widget_ = new HistogramViewWidget(this, central_widget_);
+        setWidget(widget_);
     }
 }
 
@@ -275,3 +268,4 @@ void HistogramView::viewInfoJSON_impl(nlohmann::json& info) const
 
     info[ "use_log_scale"] = settings_.use_log_scale;
 }
+

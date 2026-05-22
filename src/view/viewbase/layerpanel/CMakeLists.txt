@@ -1,0 +1,30 @@
+
+target_include_directories(compass_view PUBLIC
+    "${CMAKE_CURRENT_LIST_DIR}"
+    )
+
+target_sources(compass_view
+    PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/layertreeitem.h"
+        "${CMAKE_CURRENT_LIST_DIR}/layertreemodel.h"
+        "${CMAKE_CURRENT_LIST_DIR}/layertreedefs.h"
+        "${CMAKE_CURRENT_LIST_DIR}/layertreeitemdelegate.h"
+        "${CMAKE_CURRENT_LIST_DIR}/layerpanelwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentlayer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/annotationsrootitem.h"
+        "${CMAKE_CURRENT_LIST_DIR}/annotationgroupitem.h"
+        "${CMAKE_CURRENT_LIST_DIR}/annotationleafitem.h"
+        "${CMAKE_CURRENT_LIST_DIR}/viewlayertreemodel.h"
+        "${CMAKE_CURRENT_LIST_DIR}/viewlayerpanelwidget.h"
+    PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/layertreeitem.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/layertreemodel.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/layertreeitemdelegate.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/layerpanelwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dbcontentlayer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/annotationsrootitem.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/annotationgroupitem.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/annotationleafitem.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/viewlayertreemodel.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/viewlayerpanelwidget.cpp"
+)

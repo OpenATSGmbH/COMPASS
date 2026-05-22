@@ -26,6 +26,8 @@
 
 class Job;
 class ViewableDataConfig;
+class HistogramView;
+class DBContentManager;
 
 class HistogramViewDataSource : public QObject, public Configurable
 {
@@ -37,14 +39,13 @@ class HistogramViewDataSource : public QObject, public Configurable
     void updateDataSignal(DBContent& object, std::shared_ptr<Buffer> buffer);
 
   public:
-    /// @brief Constructor
-    HistogramViewDataSource(const std::string& class_id, const std::string& instance_id,
-                          Configurable* parent);
+    // HistogramViewDataSource(const std::string& class_name, const std::string& instance_name,
+    //                       Configurable* parent);
+    HistogramViewDataSource(nlohmann::json& config, HistogramView* parent);
     /// @brief Destructor
     virtual ~HistogramViewDataSource();
 
-    virtual void generateSubConfigurable(const std::string& class_id,
-                                         const std::string& instance_id);
+    virtual void generateSubConfigurable(nlohmann::json& child_json);
 
     /// @brief Returns variable read list
     dbContent::VariableOrderedSet* getSet()
@@ -52,10 +53,12 @@ class HistogramViewDataSource : public QObject, public Configurable
         traced_assert(set_);
         return set_;
     }
-    void unshowViewPoint (const ViewableDataConfig* vp); // vp can be nullptr
-    void showViewPoint (const ViewableDataConfig* vp);
+    void unshowViewPoint (ViewableDataConfig* vp); // vp can be nullptr
+    void showViewPoint (ViewableDataConfig* vp);
 
   protected:
+    HistogramView* view_ = nullptr;
+
     /// Variable read list
     dbContent::VariableOrderedSet* set_{nullptr};
 

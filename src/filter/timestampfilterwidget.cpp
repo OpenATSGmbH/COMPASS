@@ -20,10 +20,14 @@
 #include "logger.h"
 
 #include <QFormLayout>
+#include <QGridLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QCheckBox>
 #include <QDateTimeEdit>
+#include <QPushButton>
+#include <QWidget>
 
 using namespace std;
 using namespace Utils;
@@ -44,6 +48,32 @@ TimestampFilterWidget::TimestampFilterWidget(TimestampFilter& filter)
     connect(max_edit_, &QDateTimeEdit::dateTimeChanged, this, &TimestampFilterWidget::maxDateTimeChanged);
 
     addNameValuePair("Timestamp <=", max_edit_);
+
+    QWidget* step_widget = new QWidget();
+    QHBoxLayout* step_layout = new QHBoxLayout();
+    step_layout->setContentsMargins(0, 0, 0, 0);
+    step_layout->setSpacing(2);
+
+    const int step_minutes[] = {-60, -45, -30, -15, 15, 30, 45, 60};
+    int idx = 0;
+    for (int delta : step_minutes)
+    {
+        if (delta > 0 && step_minutes[idx - 1] < 0)
+            step_layout->addStretch();
+
+        QString text = delta > 0 ? QString("+%1m").arg(delta) : QString("%1m").arg(delta);
+        QPushButton* button = new QPushButton(text);
+        button->setIcon(QIcon());
+        button->setToolTip(QString("Shift window by %1 minutes").arg(delta));
+        button->setFixedWidth(40);
+        connect(button, &QPushButton::clicked, this, [this, delta]() { filter_.shiftWindow(delta); });
+        step_layout->addWidget(button);
+        step_buttons_.push_back({delta, button});
+        ++idx;
+    }
+
+    step_widget->setLayout(step_layout);
+    addNameValuePair("Step", step_widget);
 
     update();
 }
@@ -68,7 +98,15 @@ void TimestampFilterWidget::update()
     max_edit_->setDateTime(QDateTime::fromString(Time::toString(filter_.maxValue()).c_str(),
                                                  Time::QT_DATETIME_FORMAT.c_str()));
 
+    updateStepButtons();
+
     update_active_ = false;
+}
+
+void TimestampFilterWidget::updateStepButtons()
+{
+    for (auto& entry : step_buttons_)
+        entry.second->setEnabled(filter_.canShiftWindow(entry.first));
 }
 
 
@@ -81,6 +119,7 @@ void TimestampFilterWidget::minDateTimeChanged(const QDateTime& datetime)
            << datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString();
 
     filter_.minValue(Time::fromString(datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString()), false);
+    updateStepButtons();
 }
 
 void TimestampFilterWidget::maxDateTimeChanged(const QDateTime& datetime)
@@ -92,4 +131,6 @@ void TimestampFilterWidget::maxDateTimeChanged(const QDateTime& datetime)
            << datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString();
 
     filter_.maxValue(Time::fromString(datetime.toString(Time::QT_DATETIME_FORMAT.c_str()).toStdString()), false);
+    updateStepButtons();
 }
+

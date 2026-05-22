@@ -18,6 +18,7 @@
 #pragma once
 
 #include <QChartView>
+#include <QGraphicsSimpleTextItem>
 
 #include <memory>
 
@@ -55,7 +56,8 @@ public:
     void setDataBounds(const QRectF& r);
     void setSelectionAxes(SelectionAxes axes) { selection_axes_ = axes; }
 
-    void addLegendOnlyItem(const QString& name, const QColor& color); 
+    void addLegendOnlyItem(const QString& name, const QColor& color);
+    void setXAxisLabel(const QString& label);
 
     virtual void onToolChanged();
 
@@ -64,10 +66,12 @@ public slots:
     virtual void seriesReleasedSlot(const QPointF& point);
 
 protected:
+    virtual void resizeEvent(QResizeEvent* event) override;
     virtual void paintEvent(QPaintEvent* e) override final;
     virtual void mousePressEvent(QMouseEvent* event) override final;
     virtual void mouseMoveEvent(QMouseEvent* event) override final;
     virtual void mouseReleaseEvent(QMouseEvent* event) override final;
+    virtual void changeEvent(QEvent* event) override;
 
     virtual bool handleMousePress(Qt::MouseButtons buttons, const QPointF& widget_pos) = 0;
     virtual bool handleMouseRelease(Qt::MouseButtons buttons, const QPointF& widget_pos, bool update_pos) = 0;
@@ -97,6 +101,8 @@ protected:
 
 private:
     void createDisplayElements(QtCharts::QChart* chart);
+    void updateXAxisLabelPosition();
+    void applyPaletteTheme();
 
     void clearSelection();
     void updateSelectionBox(const QRectF& region);
@@ -115,4 +121,9 @@ private:
     bool                         enable_selection_ = false;
     SelectionStyle               selection_style_  = SelectionStyle::RubberBand;
     SelectionAxes                selection_axes_   = SelectionAxes::XY;
+
+    // Custom x-axis label rendered as a QGraphicsSimpleTextItem, used instead of
+    // QAbstractAxis::setTitleText() which gets truncated by Qt Charts' internal
+    // layout when tick labels are rotated (e.g. 85 degrees).
+    QGraphicsSimpleTextItem*     x_axis_label_item_ = nullptr;
 };

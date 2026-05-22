@@ -1,0 +1,122 @@
+\section{Appendix: Air Space}
+\label{sec:appendix_airspace}
+
+This appendix describes the JSON format consumed by the 'Import Air Space...' action of the Data Context Sectors editor (see \nameref{sec:ui_configure_sectors}). The format differs from the COMPASS native sector JSON (covered by 'Import JSON...' / 'Export JSON...') in that it carries altitude bounds per sector and allows a single level of nesting (a top-level entry can act as a layer that groups sub-sectors). \\
+
+\subsection{Top Level}
+
+The file consists of a single object with one key, which contains an array of sectors:
+
+\begin{lstlisting}
+{
+    "air_space_sector_definition": {
+        "air_space_sectors": [
+            ...
+        ]
+    }
+}
+\end{lstlisting}
+
+Each element of the 'air\_space\_sectors' array is a sector object as described below. All numeric values are encoded as JSON strings. \\
+
+\subsection{Sector Object}
+
+Each sector object provides the following fields:
+
+\begin{itemize}
+\item name: Sector name (string)
+\item own\_volume: '1' if the sector defines its own polygon volume, '0' otherwise (string)
+\item used\_for\_checking: '1' if the sector is intended to be used as a checking volume, '0' otherwise (string)
+\item own\_height\_min: Lower altitude bound in feet (string)
+\item own\_height\_max: Upper altitude bound in feet (string)
+\item geographic\_points: Array of polygon vertices, each carrying an integer 'index' (string), 'latitude' (WGS-84 degrees, string) and 'longitude' (WGS-84 degrees, string). Vertices are ordered by ascending index value.
+\item air\_space\_sectors: Optional array of nested sector objects, turning the parent into a layer that groups them. Only a single level of nesting is supported.
+\end{itemize}
+\ \\
+
+Please \textbf{note} that all numeric fields are stored as JSON strings, not as JSON numbers. Altitude bounds are given in feet. \\
+
+\subsection{Flat Example}
+
+The following example defines a single sector 'Upper' with four polygon vertices and an altitude band between 28500 ft and 60000 ft:
+
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+{
+    "air_space_sector_definition": {
+        "air_space_sectors": [
+            {
+                "name": "Upper",
+                "own_volume": "1",
+                "used_for_checking": "0",
+                "own_height_min": "28500.000000",
+                "own_height_max": "60000.000000",
+                "geographic_points": [
+                    { "index": "0", "latitude": "47.025600",
+                      "longitude":  "8.636990" },
+                    { "index": "1", "latitude": "47.191700",
+                      "longitude":  "8.560150" },
+                    { "index": "2", "latitude": "48.199100",
+                      "longitude":  "9.366450" },
+                    { "index": "3", "latitude": "45.708300",
+                      "longitude": "14.571000" }
+                ]
+            }
+        ]
+    }
+}
+\end{lstlisting}
+
+\subsection{Nested Example}
+
+A top-level entry may carry an 'air\_space\_sectors' array of its own, in which case it is treated as a layer and its children become the sectors of that layer. In the example below, the layer 'TMAs' groups two terminal sectors: \\
+
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+{
+    "air_space_sector_definition": {
+        "air_space_sectors": [
+            {
+                "name": "TMAs",
+                "own_volume": "1",
+                "used_for_checking": "0",
+                "own_height_min": "0.000000",
+                "own_height_max": "24500.000000",
+                "geographic_points": [ ... ],
+                "air_space_sectors": [
+                    {
+                        "name": "TMAVienna",
+                        "own_volume": "1",
+                        "used_for_checking": "0",
+                        "own_height_min": "0.000000",
+                        "own_height_max": "24500.000000",
+                        "geographic_points": [
+                            { "index": "0", "latitude": "48.110000",
+                              "longitude": "16.570000" },
+                            { "index": "1", "latitude": "48.250000",
+                              "longitude": "16.720000" },
+                            { "index": "2", "latitude": "48.300000",
+                              "longitude": "16.350000" }
+                        ]
+                    },
+                    {
+                        "name": "TMAGraz",
+                        "own_volume": "1",
+                        "used_for_checking": "0",
+                        "own_height_min": "0.000000",
+                        "own_height_max": "16500.000000",
+                        "geographic_points": [
+                            { "index": "0", "latitude": "47.000000",
+                              "longitude": "15.430000" },
+                            { "index": "1", "latitude": "47.080000",
+                              "longitude": "15.520000" },
+                            { "index": "2", "latitude": "47.020000",
+                              "longitude": "15.290000" }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
+\end{lstlisting}
+
+When such a file is loaded via 'Import Air Space...', each top-level sector and each nested sector appears as a row in the import dialog's sector tree, where individual sectors can be (de)selected before being added to the active Data Context under the user-chosen layer name. \\

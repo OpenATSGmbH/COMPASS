@@ -46,6 +46,11 @@
 #include "colorscaleselection.h"
 #include "propertyvalueedit.h"
 
+#include "dbcontentlayer.h"
+#include "viewlayerpanelwidget.h"
+#include "viewlayertreemodel.h"
+#include "annotationsrootitem.h"
+
 #include <QComboBox>
 #include <QLineEdit>
 #include <QSpinBox>
@@ -55,14 +60,34 @@
 #include <QMenu>
 #include <QFormLayout>
 #include <QFileDialog>
+#include <QHeaderView>
 #include <QLabel>
+#include <QTreeView>
 
 using namespace Utils;
 using namespace dbContent;
 
+namespace
+{
+    /// Sum aggregator for integer-valued custom columns - ignores invalid
+    /// entries and returns an invalid QVariant if no valid value was found.
+    QVariant sumULongLong(const std::vector<QVariant>& vals)
+    {
+        unsigned long long sum = 0;
+        bool any = false;
+        for (const auto& v : vals)
+        {
+            bool ok = false;
+            unsigned long long n = v.toULongLong(&ok);
+            if (ok) { sum += n; any = true; }
+        }
+        return any ? QVariant((qulonglong)sum) : QVariant();
+    }
+}
+
 /**
 */
-GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget, 
+GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
                                            QWidget* parent)
 :   VariableViewConfigWidget(view_widget, view_widget->getView(), parent)
 {
@@ -182,7 +207,82 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
     updateDistributedVariable();
     updateUIFromSource();
 
+    // Color mode label + layer panel at the bottom of the config pane.
+    // DBContent leaves have no color (grid layers aren't color-coded) but the
+    // icon column is still reserved so the sibling Annotations root can show
+    // the compass icon. The label tracks the current color mode so the
+    // default expansion depth (which follows the color mode) is discoverable.
+    {
+        color_mode_label_ = new QLabel(this);
+        color_mode_label_->setText("Color Mode: " + colorModeText(view_->compass().colorMode()));
+        config_layout->addWidget(color_mode_label_);
+
+        connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+                this, &GridViewConfigWidget::colorModeChangedSlot);
+
+        LayerColumnSpec null_col;
+        null_col.header           = "# Null";
+        null_col.default_width    = 70;
+        null_col.resize_mode      = QHeaderView::Interactive;
+        null_col.alignment        = Qt::AlignRight | Qt::AlignVCenter;
+        null_col.group_aggregator = &sumULongLong;
+
+        layer_panel_     = new ViewLayerPanelWidget({ null_col }, view_->canShowAnnotations(), this);
+        db_content_root_ = layer_panel_->model()->dbContentRootItem();
+
+        auto* data_widget = view_widget->getViewDataWidget();
+        data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
+
+        // Visibility toggle -> recompute grid (only checked layers contribute).
+        connect(layer_panel_->model(), &LayerTreeModel::hiddenChangedSignal,
+                data_widget, &GridViewDataWidget::layersChangedSlot);
+
+        // Tree was rebuilt -> re-apply default expansion.
+        connect(data_widget, &GridViewDataWidget::layerTreeRebuiltSignal,
+                this, &GridViewConfigWidget::applyDefaultExpansionSlot);
+
+        config_layout->addWidget(layer_panel_);
+    }
+
     //showSwitch(0, true);
+}
+
+/**
+*/
+void GridViewConfigWidget::applyDefaultExpansionSlot()
+{
+    if (!db_content_root_ || !layer_panel_)
+        return;
+
+    // Mirror the expansion the other views use - drive depth from the active
+    // COMPASS color mode so the level that differentiates colors in other
+    // views stays visible here too.
+    db_content_root_->applyDefaultExpansionForColorMode(
+        layer_panel_->treeView(), view_->compass().colorMode());
+}
+
+/**
+*/
+void GridViewConfigWidget::colorModeChangedSlot(unsigned int mode)
+{
+    traced_assert(color_mode_label_);
+    color_mode_label_->setText("Color Mode: " + colorModeText(mode));
+
+    applyDefaultExpansionSlot();
+}
+
+/**
+*/
+QString GridViewConfigWidget::colorModeText(unsigned int mode)
+{
+    switch (mode)
+    {
+        case 0: return "DSType";
+        case 1: return "DBContent";
+        case 2: return "Data Source";
+        case 3: return "Data Source + Line";
+        default: return "Unknown";
+    }
 }
 
 /**
@@ -279,7 +379,7 @@ void GridViewConfigWidget::updateExport()
     bool enable_export = false;
     std::string tooltip;
 
-    if (showsAnnotation())
+    if (view_->showsAnnotation())
     {
         //annotation shown => allow export on users discretion
         enable_export = false;
@@ -293,10 +393,10 @@ void GridViewConfigWidget::updateExport()
 
         traced_assert(var_sel_x && var_sel_y);
 
-        auto& dbc_man = COMPASS::instance().dbContentManager();
+        auto& dbc_man = view_->compass().dbContentManager();
 
-        const auto& metavar_lon = dbc_man.metaVariable(DBContent::meta_var_longitude_.name());
-        const auto& metavar_lat = dbc_man.metaVariable(DBContent::meta_var_latitude_.name());
+        const auto& metavar_lon = dbc_man.metaVariable(dbcontent_vars::meta_var_longitude_.name());
+        const auto& metavar_lat = dbc_man.metaVariable(dbcontent_vars::meta_var_latitude_.name());
 
         bool has_lon = var_sel_x->hasMetaVariable() && &var_sel_x->selectedMetaVariable() == &metavar_lon;
         bool has_lat = var_sel_y->hasMetaVariable() && &var_sel_y->selectedMetaVariable() == &metavar_lat;
@@ -450,7 +550,7 @@ void GridViewConfigWidget::updateVariableDataType()
 */
 void GridViewConfigWidget::updateUIFromSource()
 {
-    bool shows_anno = showsAnnotation();
+    bool shows_anno = view_->showsAnnotation();
 
     grid_resolution_box_->setVisible(!shows_anno);
     grid_resolution_placeh_label_->setVisible(shows_anno);
@@ -491,9 +591,10 @@ namespace
     /**
     */
     boost::optional<ExportGeoViewConfig> getExportGeoViewConfig(QWidget* parent,
-                                                                const std::string& default_name)
+                                                                const std::string& default_name,
+                                                                COMPASS& compass)
     {
-        auto geo_views = COMPASS::instance().viewManager().viewsOfType<GeographicView>();
+        auto geo_views = compass.viewManager().viewsOfType<GeographicView>();
 
         QDialog dlg(parent);
         dlg.setWindowTitle("Export to GeographicView");
@@ -586,7 +687,7 @@ void GridViewConfigWidget::exportToGeographicView()
 
     std::string name = exportName();
 
-    auto export_config = getExportGeoViewConfig(this, name);
+    auto export_config = getExportGeoViewConfig(this, name, view_->compass());
     if (!export_config.has_value())
         return;
 
@@ -623,7 +724,7 @@ void GridViewConfigWidget::exportToGeoTiff()
         return;
     }
 
-    std::string fn_default = COMPASS::instance().lastUsedPath() + "/" + exportName() + ".tif";
+    std::string fn_default = view_->compass().lastUsedPath() + "/" + exportName() + ".tif";
 
     auto fn = QFileDialog::getSaveFileName(this, "Export to GeoTIFF", QString::fromStdString(fn_default), "*.tif");
     if (fn.isEmpty())

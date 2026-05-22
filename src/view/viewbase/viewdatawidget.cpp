@@ -317,7 +317,7 @@ ViewDataWidget::DrawState ViewDataWidget::redrawData(bool recompute, bool notify
         if (nanCount().has_value() && nanCount().value() > 0)
         {
             logerr << "start" << nanCount().value() << " inf value(s) detected "
-                   << "in view " << getWidget()->getView()->instanceId();
+                   << "in view " << getWidget()->getView()->instanceName();
         }
     }
 
@@ -445,4 +445,18 @@ void ViewDataWidget::addNanCount(size_t n)
         count_nan_ = 0;
 
     count_nan_.value() += n;
+}
+
+/**
+ */
+void ViewDataWidget::databaseOpened()
+{
+    databaseOpened_impl();
+}
+
+/**
+ */
+void ViewDataWidget::databaseClosed()
+{
+    databaseClosed_impl();
 }

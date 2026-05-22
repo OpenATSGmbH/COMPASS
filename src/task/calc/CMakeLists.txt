@@ -1,9 +1,9 @@
 
-include_directories (
+target_include_directories(compass_task PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
     )
 
-target_sources(compass
+target_sources(compass_task
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/radarplotpositioncalculatortask.h"
         "${CMAKE_CURRENT_LIST_DIR}/radarplotpositioncalculatortaskwidget.h"
