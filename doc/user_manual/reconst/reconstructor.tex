@@ -235,23 +235,9 @@ During reconstruction with the Probabilistic + IMM reconstructor, range and azim
 
 The behavior is enabled by the 'Correct Radar Biases' checkbox in the reconstructor configuration UI; when disabled, no bias is estimated, applied or persisted. See \nameref{sec:reconst_config}.
 
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Probabilistic + IMM configuration widget with the 'Correct Radar Biases' checkbox highlighted]}}\vspace{1.5cm}}}
-  \caption{Reconstructor: Correct Radar Biases toggle}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Data Context dialog showing the persisted radar bias values for a radar Data Source after a reconstructor run]}}\vspace{1.5cm}}}
-  \caption{Data Context: persisted radar bias values}
-\end{figure}
-
 \subsubsection{Simple Reconstructor Improvements for Primary-Only Data}
 
 The basic Scoring + UMKalman reconstructor has been improved in handling primary-only (PSR) and Mode A/C-only radar association and reconstruction. This affects internal scoring and association decisions only; no additional user-facing controls have been added. \\
-
-\textcolor{red}{\textbf{[TODO: confirm whether any user-facing controls were added for the PSR/AC reconstructor improvements; if not, leave this paragraph as-is]}}
 
 \subsubsection{Probabilistic Position Matching}
 
