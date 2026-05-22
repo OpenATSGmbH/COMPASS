@@ -199,7 +199,7 @@ run\_filter \dots run evaluation filter before evaluation \\
 \textit{export existing report} \\
 report \dots report name, e.g. "EUROCAE ED-87E Evaluation" \\
 dir \dots export directory, e.g. "/data/db2/" \\
-mode \dots export mode, e.g. "PDF" \\
+mode \dots export mode, one of "DocX", "JSON", "Latex", "PDF" \\
 
 \textbf{export\_view\_points\_report} \\
 \textit{export view points report after with given filename, e.g. "/data/db2/report.tex"} \\
@@ -218,8 +218,8 @@ resolve a data source's actual DBContent at runtime (e.g. to drive the
 
 \textbf{get\_dbcontent\_data} \\
 \textit{retrieves dbcontent data from the database} \\
-dbcontent \dots DBContent to retrieve data for \\
-variables \dots variables to retrieve data for \\
+dbcontent \dots DBContent to retrieve data for, e.g. "CAT021" \\
+variables \dots variables to retrieve data for, '|'-separated, e.g. "pos\_lat\_deg|pos\_lon\_deg" \\
 utn \dots UTN to retrieve data for \\
 max\_size \dots maximum number of results rows \\
 
@@ -265,6 +265,7 @@ line \dots imports ASTERIX file with given line e.g. "L2" \\
 date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
 time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
 
 \textbf{import\_asterix\_files} \\
 \textit{imports multiple ASTERIX files with given filenames, e.g. '/data/file1.ff;/data/file2.ff'} \\
@@ -274,12 +275,14 @@ line \dots imports ASTERIX file with given line e.g. "L2" \\
 date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
 time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
 
 \textbf{import\_asterix\_network} \\
 \textit{imports ASTERIX from defined network UDP streams} \\
 time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
-max\_lines \dots maximum number of lines per data source during ASTERIX network import, 1..4 \\
+max\_lines (-m) \dots maximum number of lines per data source during ASTERIX network import, 1..4 \\
 ignore\_future\_ts \dots ignore future timestamps \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
 
 \textbf{import\_asterix\_network\_stop} \\
 \textit{stops import ASTERIX from network} \\
@@ -291,6 +294,16 @@ line \dots imports ASTERIX file with given line e.g. "L2" \\
 date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
 time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
+
+\textbf{import\_asterix\_pcap\_files} \\
+\textit{imports multiple ASTERIX PCAP files with given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'} \\
+filenames \dots given filenames, e.g. '/data/file1.pcap;/data/file2.pcap' \\
+line \dots imports ASTERIX PCAP file with given line e.g. "L2" \\
+date \dots imports ASTERIX PCAP file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
+time\_offset \dots imports ASTERIX PCAP file with given Time of Day override, in HH:MM:SS.ZZZ \\
+ignore\_time\_jumps \dots ignore 24h time jumps \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
 
 \textbf{import\_data\_sources} \\
 \textit{imports data sources JSON file with given filename, e.g. '/data/ds1.json'} \\
@@ -307,6 +320,7 @@ date \dots optional override date, e.g. "2025-01-01" \\
 mode3a \dots optional mode3a code in octal, e.g.  \\
 address \dots optional aircraft address in hex, e.g. "0xffffff" \\
 id \dots optional aircraft identification, e.g. "ENTE" \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
 
 \textbf{import\_json} \\
 \textit{imports JSON file with given filename, e.g. "/data/file1.json"} \\
@@ -319,6 +333,9 @@ filename \dots given filename, e.g. "/data/file1.json" \\
 \textbf{import\_view\_points} \\
 \textit{imports view points JSON file with given filename, e.g. '/data/file1.json'} \\
 filename \dots given filename, e.g. "/data/file1.json" \\
+
+\textbf{load\_data} \\
+\textit{loads data for the currently selected dbcontents and variables from the open database into memory} \\
 
 \textbf{open\_db} \\
 \textit{opens existing database file with given filename, e.g. "/data/file1.db"} \\
@@ -407,14 +424,20 @@ The following commands drive the Analyze Data Source task. See \nameref{chap:ana
 ds\_type \dots DSType to analyze, e.g. "MLAT" \\
 config \dots Analyze parameters as JSON string (analogous to the evaluate command's config) \\
 
-\textcolor{red}{\textbf{[TODO: confirm the analyze\_data\_source JSON payload shape against the most recent Portal schema in compass\_web/doc/analyses.md before release]}}
-
 \textbf{get\_analyze\_inspectors} \\
 \textit{returns the list of available inspectors for the given DSType, used to populate a configuration UI} \\
 ds\_type \dots DSType to query, e.g. "MLAT" \\
 
-%load_data
-%   load data
+\subsubsection{Geographic View Commands}
+
+The following commands control the Geographic View. \\
+
+\textbf{set\_map} \\
+\textit{sets the map of the latest geographic view} \\
+map\_name \dots map file name, e.g. "openstreetmap\_2d.earth" \\
+
+\textbf{get\_maps} \\
+\textit{returns available map file names} \\
 
 %get_events
 %   retrieves the currently logged events
@@ -511,7 +534,7 @@ via the \textbf{get\_report} command as desired. \\
 
 \textit{Example}: \\
 
-\textbf{get\_report} -{}-section="test Evaluation" "Report:Results:Sectors:Mandatory DOI:Sum" \\
+\textbf{get\_report} "test Evaluation" -{}-section="Report:Results:Sectors:Mandatory DOI:Sum" \\
 
 Fetched JSON data: \\
 
@@ -563,15 +586,18 @@ from compass_interface import COMPASSInstance
 
 import json
 
-binary = 'home/user/path_to_binary'
+binary = '/home/user/path_to_binary'
 
-compass_instance = COMPASSInstance() 
+compass_instance = COMPASSInstance()
 
-ok, error = compass_instance.runCOMPASS(binary = binary,
-                                        wait_for_commands = True, # wait until commands can be received
-                                        no_cfg_save = True)       # do not save config on close
+r = compass_instance.runCOMPASS(binary = binary,
+                                wait_for_commands = True, # wait until commands can be received
+                                no_cfg_save = True)       # do not save config on close
 
-# handle any errors
+# handle any errors, e.g.
+# if not r:
+#     print('error:', r.error)
+#     sys.exit(1)
 
 # ready to send commands!
 \end{lstlisting}
@@ -583,19 +609,26 @@ Sending commands:
 # open database
 filename = '/home/user/path_to_db_file'
 
-# escape quotes for filename argument
-# the reply variable will hold the command's reply data as a python dictionary
-reply, ok, err = compass_instance.interface.sendCommandAndUnpack('open_db \"' + filename + '\"')
+# wrap filename in quotes so spaces are tolerated
+# the r.value attribute will hold the command's reply data as a python dictionary
+r = compass_instance.interface.sendCommandAndUnpack('open_db "' + filename + '"')
 
-# handle any errors 
+# handle any errors, e.g.
+# if not r:
+#     print('error:', r.error)
+#     sys.exit(1)
 
 # get result overview section of existing evaluation report
 report_name = 'test Evaluation'
 section     = 'Report:Results:Overview:Results'
 
-reply, ok, err = compass_instance.interface.sendCommandAndUnpack('get_report \"{}\" \"{}\"'.format(report_name, section))
+r = compass_instance.interface.sendCommandAndUnpack('get_report "{}" --section="{}"'.format(report_name, section))
 
-# handle any errors 
+# handle any errors, e.g.
+# if not r:
+#     print('error:', r.error)
+#     sys.exit(1)
+reply = r.value
 
 # the reply will contain the result overview section of the evaluated test standard as a json object
 # we can print it to view the reply result
