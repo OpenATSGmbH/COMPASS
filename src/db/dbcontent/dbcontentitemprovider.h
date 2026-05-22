@@ -131,10 +131,14 @@ public:
 protected:
     std::string toString() const;
 
+    void updateInternal(bool grouping_changed);
+
     virtual void reset_impl() {}
-    virtual void dataToBeChanged_impl(unsigned int dbc_id) {}
-    virtual void dataChanged_impl(unsigned int dbc_id, size_t group_idx) {}
-    virtual void dataRefreshed_impl() {}
+    virtual void contentToBeRebuilt_impl(unsigned int dbc_id) {}
+    virtual void rebuildContent_impl(unsigned int dbc_id, size_t group_idx) {}
+    virtual void contentRebuilt_impl() {}
+    virtual void dataChanged_impl() {}
+    virtual void update_impl(bool grouping_changed) {}
 
     /// Subclass propagates a visibility change to the backing store
     /// (e.g. layer per-item-range hidden flags). Cache is already updated
@@ -153,9 +157,9 @@ protected:
     std::vector<std::unique_ptr<dbContent::ItemGroup>>& itemGroups() { return item_groups_; }
 
 private:
-    void doReset();
+    void resetData();
     void rebuildContent(unsigned int dbc_id);
-    void doRefreshed();
+    void contentRebuilt();
 
     void dataChanged(const std::vector<unsigned int>& dbc_ids, bool reset, bool last);
 

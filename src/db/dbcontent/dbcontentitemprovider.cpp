@@ -169,7 +169,7 @@ void DBContentItemProvider::setGrouping(Grouping grouping,
     grouping_ = grouping;
 
     if (run_update)
-        update();
+        updateInternal(true);
 
     emit groupingChangedSignal();
 }
@@ -201,7 +201,7 @@ bool DBContentItemProvider::groupingIsTargetSpecific() const
  */
 void DBContentItemProvider::reset()
 {
-    doReset();
+    resetData();
 }
 
 /**
@@ -209,7 +209,7 @@ void DBContentItemProvider::reset()
  * Used both by the public reset() and by dataChanged(ids, reset=true) so the
  * reset + per-content rebuild can run atomically in one event-loop turn.
  */
-void DBContentItemProvider::doReset()
+void DBContentItemProvider::resetData()
 {
     emit dataAboutToBeResetSignal();
 
@@ -447,13 +447,15 @@ std::function<nlohmann::json(unsigned int)> DBContentItemProvider::createGroupFu
 void DBContentItemProvider::dataChanged(const std::vector<unsigned int>& dbc_ids, bool reset, bool last)
 {
     if (reset)
-        doReset();
+        resetData();
 
     for (auto dbc_id : dbc_ids)
         rebuildContent(dbc_id);
 
     if (last)
-        doRefreshed();
+        contentRebuilt();
+
+    dataChanged_impl();
 }
 
 /**
@@ -480,7 +482,7 @@ void DBContentItemProvider::rebuildContent(unsigned int dbc_id)
     traced_assert(tr_acc);
     traced_assert(buffer);
 
-    dataToBeChanged_impl(dbc_id);
+    contentToBeRebuilt_impl(dbc_id);
 
     auto group_func = createGroupFunc(*tr_acc);
     traced_assert(group_func);
@@ -548,7 +550,7 @@ void DBContentItemProvider::rebuildContent(unsigned int dbc_id)
 
             item_groups_.push_back(std::move(group));
 
-            dataChanged_impl(dbc_id, gidx);
+            rebuildContent_impl(dbc_id, gidx);
 
             emit dataChangedSignal(dbc_id, gidx);
         }
@@ -585,9 +587,9 @@ void DBContentItemProvider::setGroupIDNames(dbContent::ItemGroup& group) const
  * DBContentItemModel). Called from dataChanged() when last=true so reset +
  * rebuild + finalize complete atomically in one event-loop turn.
  */
-void DBContentItemProvider::doRefreshed()
+void DBContentItemProvider::contentRebuilt()
 {
-    dataRefreshed_impl();
+    contentRebuilt_impl();
 
     loginf << groupingAsString();
 
@@ -600,12 +602,23 @@ void DBContentItemProvider::doRefreshed()
  */
 void DBContentItemProvider::update()
 {
-    doReset();
+    updateInternal(false);
+}
+
+/**
+ * Rebuilds all item groups from scratch by resetting state and re-processing
+ * every DBContent type currently held in the data store.
+ */
+void DBContentItemProvider::updateInternal(bool grouping_changed)
+{
+    resetData();
 
     for (const auto& it : data_store_.buffers())
         rebuildContent(it.first);
 
-    doRefreshed();
+    contentRebuilt();
+
+    update_impl(grouping_changed);
 }
 
 /**
