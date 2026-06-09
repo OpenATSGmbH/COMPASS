@@ -1758,20 +1758,22 @@ void DBContextManager::databaseOpenedSlot()
 
         if (db_ctx.name() != activeContext().name())
         {
+            const string db_name = db_ctx.name();
+
             // DB was saved with a different context - align to it before loading counts
-            loginf << "DB context '" << db_ctx.name() << "' differs from active '"
+            loginf << "DB context '" << db_name << "' differs from active '"
                    << activeContext().name() << "' - switching to DB context";
 
-            if (!hasContext(db_ctx.name()))
+            if (!hasContext(db_name))
             {
                 // context doesn't exist on disk - create from DB data
-                loginf << "context '" << db_ctx.name() << "' not found on disk, creating from DB";
+                loginf << "context '" << db_name << "' not found on disk, creating from DB";
                 db_ctx.modified(DBContext::currentTimestamp());
                 DBContextSerializer::save(db_ctx, basePath());
-                contexts_[db_ctx.name()] = std::move(db_ctx);
+                contexts_[db_name] = std::move(db_ctx);
             }
 
-            setActiveContext(db_ctx.name());
+            setActiveContext(db_name);
             loadCountsFromDB();
             loadAsterixInfoFromDB();
         }
