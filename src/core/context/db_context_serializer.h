@@ -19,6 +19,7 @@
 
 #include <json_fwd.hpp>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,9 @@ class DBContext;
  *       sectors.json
  *
  * Each section file has a "version" string (e.g. "1.0") for backwards-compatible upgrades.
+ *
+ * On I/O, archive or data errors these methods throw std::runtime_error (and JSON parse/lookup
+ * failures surface as nlohmann::json exceptions) so callers can handle them.
  */
 class DBContextSerializer
 {
@@ -83,14 +87,29 @@ public:
                                  const std::string& name,
                                  const std::string& zip_filepath);
 
-    /// Import a context from a zip archive, returns the context name found inside.
-    /// Overwrites the context folder if it already exists.
+    /// Import a context from a zip archive into base_path, returns the context name found inside.
+    /// Validates the archive first (via tryImportContextZip), so a corrupt or unloadable archive
+    /// throws before any partial context is written. Overwrites the context folder if it already
+    /// exists. Throws std::runtime_error on failure.
     static std::string importContextZip(const std::string& base_path,
                                         const std::string& zip_filepath);
+
+    /// Non-throwing variant: extracts the archive into a temporary directory, loads the context
+    /// from it, then wipes the temp directory. Nothing is written to any context store. Returns
+    /// the loaded context on success, or std::nullopt on any failure (logged via logerr). If
+    /// error is non-null, it receives a human-readable failure message on error (left untouched
+    /// on success).
+    static std::optional<DBContext> tryImportContextZip(const std::string& zip_filepath,
+                                                        std::string* error = nullptr);
 
 private:
     /// Get the directory path for a named context
     static std::string contextDir(const std::string& base_path, const std::string& name);
+
+    /// Extracts a zip archive into base_path/<name>/ and returns the context name found inside.
+    /// Overwrites an existing folder. Throws std::runtime_error on I/O or archive errors.
+    static std::string importContextZipInternal(const std::string& base_path,
+                                                const std::string& zip_filepath);
 };
 
 } // namespace context

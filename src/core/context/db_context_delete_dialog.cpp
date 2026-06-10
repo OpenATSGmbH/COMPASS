@@ -171,7 +171,18 @@ void DBContextDeleteDialog::deleteSlot()
     for (const auto& name : to_delete)
     {
         loginf << "deleting context '" << name << "'";
-        manager_.deleteContext(name);
+        try
+        {
+            manager_.deleteContext(name);
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "deleteContext failed: " << e.what();
+            QMessageBox::critical(this, "Delete Context Failed",
+                                  "Could not delete context '" + QString::fromStdString(name)
+                                      + "'.");
+            return;
+        }
     }
 
     // if active was deleted, select another

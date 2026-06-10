@@ -105,7 +105,17 @@ void DBContextCreateDialog::createSlot()
 
     std::string name = name_edit_->text().trimmed().toStdString();
 
-    manager_.createContext(name);
+    try
+    {
+        manager_.createContext(name);
+    }
+    catch (const std::exception& e)
+    {
+        logerr << "createContext failed: " << e.what();
+        QMessageBox::critical(this, "Create Context Failed", "Could not create the context.");
+        return;
+    }
+
     manager_.setActiveContext(name);
     created_name_ = name;
 

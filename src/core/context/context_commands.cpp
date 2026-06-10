@@ -76,13 +76,21 @@ bool RTCommandCreateContext::run_impl()
 {
     auto& ctx_man = compass_->dbContextManager();
 
-    if (ctx_man.hasContext(name_))
+    try
     {
-        loginf << "context '" << name_ << "' already exists, deleting first";
-        ctx_man.deleteContext(name_);
-    }
+        if (ctx_man.hasContext(name_))
+        {
+            loginf << "context '" << name_ << "' already exists, deleting first";
+            ctx_man.deleteContext(name_);
+        }
 
-    ctx_man.createContext(name_);
+        ctx_man.createContext(name_);
+    }
+    catch (const exception& e)
+    {
+        setResultMessage(string("Create failed: ") + e.what());
+        return false;
+    }
 
     loginf << "created context '" << name_ << "'";
 
@@ -168,7 +176,15 @@ bool RTCommandDeleteContext::run_impl()
         return false;
     }
 
-    ctx_man.deleteContext(name_);
+    try
+    {
+        ctx_man.deleteContext(name_);
+    }
+    catch (const exception& e)
+    {
+        setResultMessage(string("Delete failed: ") + e.what());
+        return false;
+    }
 
     loginf << "deleted context '" << name_ << "'";
 
@@ -335,7 +351,15 @@ bool RTCommandDeleteAllSectors::run_impl()
         return false;
     }
 
-    ctx_man.deleteAllSectors();
+    try
+    {
+        ctx_man.deleteAllSectors();
+    }
+    catch (const exception& e)
+    {
+        setResultMessage(string("Delete failed: ") + e.what());
+        return false;
+    }
 
     return true;
 }
@@ -354,7 +378,15 @@ bool RTCommandDeleteAllFFTs::run_impl()
         return false;
     }
 
-    ctx_man.deleteAllFFTs();
+    try
+    {
+        ctx_man.deleteAllFFTs();
+    }
+    catch (const exception& e)
+    {
+        setResultMessage(string("Delete failed: ") + e.what());
+        return false;
+    }
 
     return true;
 }
@@ -381,34 +413,42 @@ bool RTCommandImportSectorsGDAL::run_impl()
         return false;
     }
 
-    auto sectors = sector_utils::parseGDALFile(filename_);
-    if (sectors.empty())
+    try
     {
-        setResultMessage("No sectors found in file '" + filename_ + "'");
+        auto sectors = sector_utils::parseGDALFile(filename_);
+        if (sectors.empty())
+        {
+            setResultMessage("No sectors found in file '" + filename_ + "'");
+            return false;
+        }
+
+        string layer = layer_name_;
+        if (layer.empty())
+        {
+            // use filename without extension as layer name
+            auto pos = filename_.find_last_of("/\\");
+            string basename = (pos != string::npos) ? filename_.substr(pos + 1) : filename_;
+            auto dot = basename.find_last_of('.');
+            layer = (dot != string::npos) ? basename.substr(0, dot) : basename;
+        }
+
+        QColor color = color_str_.empty() ? QColor("#4c88ff") : QColor(QString::fromStdString(color_str_));
+
+        for (const auto& sec : sectors)
+            ctx_man.createSector(sec.name, layer, exclude_, color, sec.points);
+
+        loginf << "imported " << sectors.size() << " sectors from GDAL file into layer '" << layer << "'";
+
+        nlohmann::json j;
+        j["imported_count"] = sectors.size();
+        j["layer"] = layer;
+        setJSONReply(j);
+    }
+    catch (const exception& e)
+    {
+        setResultMessage(string("Import failed: ") + e.what());
         return false;
     }
-
-    string layer = layer_name_;
-    if (layer.empty())
-    {
-        // use filename without extension as layer name
-        auto pos = filename_.find_last_of("/\\");
-        string basename = (pos != string::npos) ? filename_.substr(pos + 1) : filename_;
-        auto dot = basename.find_last_of('.');
-        layer = (dot != string::npos) ? basename.substr(0, dot) : basename;
-    }
-
-    QColor color = color_str_.empty() ? QColor("#4c88ff") : QColor(QString::fromStdString(color_str_));
-
-    for (const auto& sec : sectors)
-        ctx_man.createSector(sec.name, layer, exclude_, color, sec.points);
-
-    loginf << "imported " << sectors.size() << " sectors from GDAL file into layer '" << layer << "'";
-
-    nlohmann::json j;
-    j["imported_count"] = sectors.size();
-    j["layer"] = layer;
-    setJSONReply(j);
 
     return true;
 }

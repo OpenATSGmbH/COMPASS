@@ -49,6 +49,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <stdexcept>
 
 using namespace std;
 using namespace nlohmann;
@@ -243,10 +244,24 @@ void DBContextManager::saveContext(const string& name)
 
     auto& ctx = contexts_.at(name);
     ctx.modified(DBContext::currentTimestamp());
-    DBContextSerializer::save(ctx, basePath());
 
-    if (compass_.dbOpened())
-        writeContextToDB();
+    // saveContext persists an active context that the caller has already mutated in memory, so a
+    // failure here leaves in-memory state diverged from disk (and the DB) with no way for the
+    // caller to repair it. treat it as a fatal invariant violation rather than a recoverable,
+    // divergence-hiding exception.
+    try
+    {
+        DBContextSerializer::save(ctx, basePath());
+
+        if (compass_.dbOpened())
+            writeContextToDB();
+    }
+    catch (const std::exception& e)
+    {
+        string msg = string("DBContextManager: saveContext: failed to persist context '") + name
+                     + "': " + e.what();
+        traced_assert_msg(false, msg.c_str());
+    }
 
     loginf << "saved context '" << name << "'";
 }
@@ -2094,9 +2109,7 @@ void DBContextManager::deleteAllSectors()
 
     activeContext().sectors().clear();
 
-    saveContext(activeContextName());
-    if (compass_.dbOpened())
-        writeContextToDB();
+    saveContext(activeContextName()); // also writes to the DB when one is open
 
     rebuildSectorLayers();
 
@@ -2310,10 +2323,19 @@ void DBContextManager::importSensors(const string& filepath)
     traced_assert(hasActiveContext());
 
     ifstream ifs(filepath);
-    traced_assert(ifs.is_open());
+    if (!ifs.is_open())
+        throw runtime_error("DBContextManager: importSensors: cannot open '" + filepath + "'");
 
     json j;
-    ifs >> j;
+    try
+    {
+        ifs >> j;
+    }
+    catch (const json::exception& e)
+    {
+        throw runtime_error("DBContextManager: importSensors: parse error in '" + filepath
+                            + "': " + e.what());
+    }
 
     // support legacy format (content_type: "data_sources", content_version: "0.2")
     json data_arr;
@@ -2324,13 +2346,21 @@ void DBContextManager::importSensors(const string& filepath)
     else
     {
         logerr << "unsupported sensor import format";
-        return;
+        throw runtime_error("DBContextManager: importSensors: unsupported import format in '"
+                            + filepath + "'");
     }
 
-    auto& ctx = activeContext();
+    // parse everything first so a malformed entry cannot leave a half-imported context
+    std::vector<DataSource> parsed;
+    parsed.reserve(data_arr.size());
     for (const auto& ds_j : data_arr)
+        parsed.push_back(DataSource::fromJSON(ds_j));
+
+    // commit: color assignment is incremental (each source spaced against the ones already
+    // present), so keep autoAssignColors + add together here
+    auto& ctx = activeContext();
+    for (auto& ds : parsed)
     {
-        auto ds = DataSource::fromJSON(ds_j);
         autoAssignColors(ds);
         ctx.addOrReplaceDataSource(std::move(ds));
     }
@@ -2347,10 +2377,19 @@ void DBContextManager::importFFTs(const string& filepath)
     traced_assert(hasActiveContext());
 
     ifstream ifs(filepath);
-    traced_assert(ifs.is_open());
+    if (!ifs.is_open())
+        throw runtime_error("DBContextManager: importFFTs: cannot open '" + filepath + "'");
 
     json j;
-    ifs >> j;
+    try
+    {
+        ifs >> j;
+    }
+    catch (const json::exception& e)
+    {
+        throw runtime_error("DBContextManager: importFFTs: parse error in '" + filepath
+                            + "': " + e.what());
+    }
 
     json data_arr;
     if (j.contains("data"))
@@ -2360,12 +2399,19 @@ void DBContextManager::importFFTs(const string& filepath)
     else
     {
         logerr << "unsupported FFT import format";
-        return;
+        throw runtime_error("DBContextManager: importFFTs: unsupported import format in '"
+                            + filepath + "'");
     }
 
-    auto& ctx = activeContext();
+    // parse everything first so a malformed entry cannot leave a half-imported context
+    std::vector<FFT> parsed;
+    parsed.reserve(data_arr.size());
     for (const auto& fft_j : data_arr)
-        ctx.ffts().push_back(FFT::fromJSON(fft_j));
+        parsed.push_back(FFT::fromJSON(fft_j));
+
+    auto& ctx = activeContext();
+    for (auto& fft : parsed)
+        ctx.ffts().push_back(std::move(fft));
 
     saveContext(active_context_name_);
 
@@ -2379,10 +2425,19 @@ void DBContextManager::importSectors(const string& filepath)
     traced_assert(hasActiveContext());
 
     ifstream ifs(filepath);
-    traced_assert(ifs.is_open());
+    if (!ifs.is_open())
+        throw runtime_error("DBContextManager: importSectors: cannot open '" + filepath + "'");
 
     json j;
-    ifs >> j;
+    try
+    {
+        ifs >> j;
+    }
+    catch (const json::exception& e)
+    {
+        throw runtime_error("DBContextManager: importSectors: parse error in '" + filepath
+                            + "': " + e.what());
+    }
 
     json data_arr;
     if (j.contains("data"))
@@ -2392,10 +2447,13 @@ void DBContextManager::importSectors(const string& filepath)
     else
     {
         logerr << "unsupported sector import format";
-        return;
+        throw runtime_error("DBContextManager: importSectors: unsupported import format in '"
+                            + filepath + "'");
     }
 
-    auto& ctx = activeContext();
+    // parse everything first so a malformed entry cannot leave a half-imported context
+    std::vector<std::shared_ptr<Sector>> parsed;
+    parsed.reserve(data_arr.size());
     for (const auto& sec_j : data_arr)
     {
         unsigned int id = sec_j.at("id");
@@ -2403,12 +2461,14 @@ void DBContextManager::importSectors(const string& filepath)
         string layer = sec_j.at("layer_name");
         auto sector = make_shared<Sector>(id, name, layer, false);
         sector->readJSON(sec_j);
-        ctx.sectors().push_back(sector);
+        parsed.push_back(sector);
     }
 
-    saveContext(active_context_name_);
-    if (compass_.dbOpened())
-        writeContextToDB();
+    auto& ctx = activeContext();
+    for (auto& sector : parsed)
+        ctx.sectors().push_back(sector);
+
+    saveContext(active_context_name_); // also writes to the DB when one is open
 
     rebuildSectorLayers();
 
@@ -2430,7 +2490,9 @@ void DBContextManager::exportSensors(const string& filepath)
     j["data"] = arr;
 
     ofstream ofs(filepath);
-    traced_assert(ofs.is_open());
+    if (!ofs.is_open())
+        throw runtime_error("DBContextManager: exportSensors: cannot open '" + filepath
+                            + "' for writing");
     ofs << j.dump(4);
 
     loginf << "exported " << arr.size() << " sensors to " << filepath;
@@ -2449,7 +2511,9 @@ void DBContextManager::exportFFTs(const string& filepath)
     j["data"] = arr;
 
     ofstream ofs(filepath);
-    traced_assert(ofs.is_open());
+    if (!ofs.is_open())
+        throw runtime_error("DBContextManager: exportFFTs: cannot open '" + filepath
+                            + "' for writing");
     ofs << j.dump(4);
 
     loginf << "exported " << arr.size() << " FFTs to " << filepath;
@@ -2468,7 +2532,9 @@ void DBContextManager::exportSectors(const string& filepath)
     j["data"] = arr;
 
     ofstream ofs(filepath);
-    traced_assert(ofs.is_open());
+    if (!ofs.is_open())
+        throw runtime_error("DBContextManager: exportSectors: cannot open '" + filepath
+                            + "' for writing");
     ofs << j.dump(4);
 
     loginf << "exported " << arr.size() << " sectors to " << filepath;
@@ -2483,8 +2549,14 @@ void DBContextManager::exportContext(const string& name, const string& filepath)
 void DBContextManager::importContext(const string& filepath)
 {
     DBContext ctx = DBContextSerializer::load(filepath);
-    traced_assert(!ctx.name().empty());
-    traced_assert(!hasContext(ctx.name()));
+
+    if (ctx.name().empty())
+        throw runtime_error("DBContextManager: importContext: imported context has no name in '"
+                            + filepath + "'");
+
+    if (hasContext(ctx.name()))
+        throw runtime_error("DBContextManager: importContext: a context named '" + ctx.name()
+                            + "' already exists");
 
     DBContextSerializer::save(ctx, basePath());
     string name = ctx.name();
