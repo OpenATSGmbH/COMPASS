@@ -55,8 +55,10 @@ pipeline {
                     // Fresh clone experimental_src: try expBranch, fallback to devel
                     sh 'rm -rf experimental_src'
                     sh "git clone --depth 1 --branch ${expBranch} https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src || git clone --depth 1 --branch devel https://${GITHUB_TOKEN}@github.com/hpuhr/experimental_src.git experimental_src"
-                    // Fresh clone jASTERIX
-                    sh "rm -rf ../jasterix && git clone --depth 1 --branch ${jasterixBranch} https://github.com/hpuhr/jASTERIX.git ../jasterix"
+                    // Fresh clone jASTERIX into the branch workspace - a shared
+                    // sibling dir races with concurrent branch builds (rm -rf
+                    // while another build compiles in it)
+                    sh "rm -rf jasterix && git clone --depth 1 --branch ${jasterixBranch} https://github.com/hpuhr/jASTERIX.git jasterix"
                 }
             }
         }
@@ -69,7 +71,7 @@ pipeline {
                     sh """
                         docker run --rm \
                             -v \$(pwd):/workspace/compass \
-                            -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
+                            -v \$(pwd)/jasterix:/workspace/jasterix \
                             -w /workspace/compass/docker \
                             ${DOCKER_IMAGE} \
                             bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh ${cleanFlag} ${asanFlag} && ./build_compass.sh ${cleanFlag} ${asanFlag}'
@@ -89,7 +91,7 @@ pipeline {
                     sh """
                         docker run --rm --init \
                             -v \$(pwd):/workspace/compass \
-                            -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
+                            -v \$(pwd)/jasterix:/workspace/jasterix \
                             -w /workspace/compass \
                             ${DOCKER_IMAGE} \
                             bash -c '${lsanEnv}MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_deb10/bin/compass_tests'
@@ -105,7 +107,7 @@ pipeline {
                     sh """
                         docker run --rm \
                             -v \$(pwd):/workspace/compass \
-                            -v \$(dirname \$(pwd))/jasterix:/workspace/jasterix \
+                            -v \$(pwd)/jasterix:/workspace/jasterix \
                             -v ${CI_DIR}:${CI_DIR} \
                             -w /workspace/compass \
                             ${DOCKER_IMAGE} \
