@@ -1267,6 +1267,10 @@ void DBContentManager::finishInserting()
         }
     }
 
+    // min/max timestamps/positions are up to date now - announce per inserted chunk,
+    // e.g. updates the timestamps shown in the data sources tool during import
+    emit dbContentStatusChanged();
+
     logdbg << "min/max took "
            << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
            << " full " << String::timeStringFromDouble((microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);

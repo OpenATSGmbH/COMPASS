@@ -1463,6 +1463,10 @@ void ASTERIXImportTask::insertData()
     {
         loginf << "connecting slot";
 
+        // must be queued: insertDoneSignal is emitted in DBContentManager::finishInserting()
+        // before the min/max timestamps/positions are computed and set as DB properties.
+        // A direct connection would run insertDoneSlot (and the finalization with
+        // saveProperties) on stale values.
         connect(&dbcont_manager, &DBContentManager::insertDoneSignal,
                 this, &ASTERIXImportTask::insertDoneSlot, Qt::QueuedConnection);
         insert_slot_connected_ = true;
@@ -1697,7 +1701,7 @@ void ASTERIXImportTask::checkAllDone()
             compass_.dbContextManager().saveAsterixInfoToDB();
         }
 
-        emit dbcontent_man_.dbContentStatusChanged();
+        // dbContentStatusChanged emitted by DBContentManager::finishInserting()
         compass_.dbInterface().saveProperties();
 
         logRAMUsage("finalize before malloc_trim");
