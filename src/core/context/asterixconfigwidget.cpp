@@ -287,11 +287,14 @@ void ASTERIXConfigWidget::refEditionChangedSlot(const std::string& cat_str,
 
     ctx_mgr_.setAsterixRef(cat, ed_str, jasterix_->category(cat)->defaultEdition());
 
-    traced_assert(ref_edit_buttons_.count(cat));
-    if (ed_str.size())
-        ref_edit_buttons_.at(cat)->setDisabled(false);
-    else
-        ref_edit_buttons_.at(cat)->setDisabled(true);
+    traced_assert(!decode_editable_ || ref_edit_buttons_.count(cat));
+    if (ref_edit_buttons_.count(cat))
+    {
+        if (ed_str.size())
+            ref_edit_buttons_.at(cat)->setDisabled(false);
+        else
+            ref_edit_buttons_.at(cat)->setDisabled(true);
+    }
 
     emit decodingConfigChangedSignal();
 }
@@ -307,12 +310,15 @@ void ASTERIXConfigWidget::spfEditionChangedSlot(const std::string& cat_str,
 
     ctx_mgr_.setAsterixSpf(cat, ed_str, jasterix_->category(cat)->defaultEdition());
 
-    traced_assert(spf_edit_buttons_.count(cat));
-    if (ed_str.size())
-        spf_edit_buttons_.at(cat)->setDisabled(false);
-    else
-        spf_edit_buttons_.at(cat)->setDisabled(true);
-
+    traced_assert(!decode_editable_ || spf_edit_buttons_.count(cat));
+    if (spf_edit_buttons_.count(cat))
+    {
+        if (ed_str.size())
+            spf_edit_buttons_.at(cat)->setDisabled(false);
+        else
+            spf_edit_buttons_.at(cat)->setDisabled(true);
+    }
+    
     emit decodingConfigChangedSignal();
 }
 
