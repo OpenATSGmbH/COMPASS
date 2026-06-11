@@ -139,9 +139,21 @@ public:
     /// effective-hidden state. Empty ids are skipped.
     std::set<std::string> persistedHiddenIds() const;
 
-    /// For every descendant leaf whose persistenceId() is in `ids`, set
-    /// hidden=true. Group hidden state is untouched.
+    /// For every descendant item (group or leaf) whose persistenceId() is in
+    /// `ids`, set hidden=true.
     void applyPersistedHiddenIds(const std::set<std::string>& ids);
+
+    // ---- hidden-state memory -----------------------------------------------
+
+    /// Remembered effective-hidden ids (item hidden itself or via an unchecked
+    /// ancestor group). Kept current on every hiddenChangedSignal and after
+    /// each refreshSubtree(); meant for data filtering (e.g. skip hidden
+    /// layers when aggregating). In-memory only - cleared on database close
+    /// via clearStoredHiddenState().
+    const std::set<std::string>& storedHiddenIds() const { return stored_hidden_ids_; }
+
+    /// Forget the remembered hidden state (called on database close).
+    void clearStoredHiddenState();
 
     // ---- icon-change re-queries ------------------------------------------
 
@@ -150,6 +162,8 @@ public:
     void notifyIconChanged(LayerTreeItem* item);
 
 private:
+    void captureHiddenState();
+
     QVariant aggregateColumnFor(LayerTreeItem* item, int column,
                                 const LayerColumnSpec& spec) const;
     void collectChildValues(LayerTreeItem* item, int column,
@@ -161,4 +175,8 @@ private:
 
     std::unique_ptr<LayerTreeItem>  root_item_;
     std::vector<LayerColumnSpec>    custom_columns_;
+
+    std::set<std::string> stored_hidden_ids_;        // effective-hidden ids, see storedHiddenIds()
+    std::set<std::string> stored_unchecked_ids_;     // own-hidden (unchecked checkbox) ids, restored in refreshSubtree()
+    bool applying_hidden_state_ = false;             // guards captureHiddenState() re-entry
 };

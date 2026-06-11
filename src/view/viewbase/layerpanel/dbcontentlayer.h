@@ -91,6 +91,11 @@ public:
 
     DBContentLayerLevel level() const { return level_; }
 
+    /// Stable path-based id ("group:<DSType>[/<DS>[/<Line>]]") so group-level
+    /// unchecks can be restored across tree rebuilds. Empty for the root
+    /// level - the root item itself survives rebuilds.
+    std::string persistenceId() const override;
+
     /// Recompute color_ from direct children: common valid color, or invalid
     /// if children disagree. Assumes children's colors are up-to-date.
     void recomputeColorFromDirectChildren();

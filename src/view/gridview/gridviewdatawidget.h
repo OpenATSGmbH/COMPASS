@@ -23,7 +23,6 @@
 #include "colormap.h"
 
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -101,6 +100,8 @@ public:
     /// triggering.
     void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
 
+    LayerTreeModel* layerTreeModel() override { return layer_model_; }
+
 signals:
     /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
     /// The config widget uses this to re-apply default expansion.
@@ -144,13 +145,15 @@ private:
     DrawState updateChart(QtCharts::QChart* chart);
 
     /// Rebuild grid_ / grid_layers_ / value ranges by iterating the current
-    /// stash and accumulating only groups that are NOT in hidden_series_.
-    /// Safe to call on a layer toggle - touches neither the stash nor the
-    /// layer tree, so DBContentLeafItem payload pointers stay valid.
+    /// stash and accumulating only groups not hidden in the layer panel
+    /// (the layer model's storedHiddenIds()). Safe to call on a layer toggle -
+    /// touches neither the stash nor the layer tree, so DBContentLeafItem
+    /// payload pointers stay valid.
     void buildGridFromStash();
 
     /// Rebuild the DBContent subtree in the layer panel from payloads_.
-    /// Re-applies hidden_series_ on the new tree. Emits layerTreeRebuiltSignal.
+    /// refreshSubtree re-applies the stored hidden state on the new tree.
+    /// Emits layerTreeRebuiltSignal.
     void rebuildLayerTree();
 
     GridView* view_   = nullptr;
@@ -188,13 +191,9 @@ private:
 
     std::vector<std::unique_ptr<GridLeafPayload>> payloads_;
 
-    /// Set of series keys currently hidden by the user. Consulted by
-    /// processStash() to skip aggregation of unchecked layers.
-    std::set<std::string> hidden_series_;
-
-    /// Re-entry guard for layersChangedSlot. rebuildLayerTree() eventually
-    /// calls applyPersistedHiddenIds() which re-emits hiddenChangedSignal -
-    /// without this guard, the post-load tree rebuild would recurse through
-    /// the slot.
+    /// Re-entry guard for layersChangedSlot. rebuildLayerTree() refreshes the
+    /// subtree, which re-applies the stored hidden state and re-emits
+    /// hiddenChangedSignal - without this guard, the post-load tree rebuild
+    /// would recurse through the slot.
     bool in_layer_recompute_{false};
 };

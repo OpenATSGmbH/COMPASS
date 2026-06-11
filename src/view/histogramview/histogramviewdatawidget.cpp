@@ -152,14 +152,11 @@ void HistogramViewDataWidget::attachLayerPanel(DBContentRootItem* root,
     if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
         annotations_root_ = vlm->annotationsRootItem();
 
-    // Visibility toggle -> capture the new hidden set, then trigger a full
-    // redraw so the histogram is rebuilt without the hidden layers.
+    // Visibility toggle -> trigger a full redraw so the histogram is rebuilt
+    // without the hidden layers (the hidden set itself is captured/restored
+    // by LayerTreeModel).
     connect(layer_model_, &LayerTreeModel::hiddenChangedSignal,
-            this, [this]() {
-                if (layer_model_)
-                    hidden_layer_ids_ = layer_model_->persistedHiddenIds();
-                redrawData(true);
-            });
+            this, [this]() { redrawData(true); });
 
     // Color-mode change -> resolveSeriesColor outputs differ -> rebuild
     // payloads (leaf icon + panel group colors) AND redraw the chart so
@@ -367,10 +364,13 @@ void HistogramViewDataWidget::updateFromVariables()
             return groupKeyFor(full_id, color_mode);
         });
 
-    if (!hidden_layer_ids_.empty())
+    const std::set<std::string> hidden_layer_ids =
+        layer_model_ ? layer_model_->storedHiddenIds() : std::set<std::string>{};
+
+    if (!hidden_layer_ids.empty())
     {
         buf_gen->setRowFilter(
-            [this](const std::string& dbc, unsigned int i) -> bool
+            [this, hidden_layer_ids](const std::string& dbc, unsigned int i) -> bool
             {
                 auto it = row_layer_ids_.find(dbc);
                 if (it == row_layer_ids_.end() || i >= it->second.size())
@@ -378,7 +378,7 @@ void HistogramViewDataWidget::updateFromVariables()
                 const std::string& lid = it->second[i];
                 if (lid.empty())
                     return true;   // unmappable rows still contribute to scan nulls
-                return hidden_layer_ids_.count(lid) == 0;
+                return hidden_layer_ids.count(lid) == 0;
             });
     }
 
@@ -1077,14 +1077,12 @@ void HistogramViewDataWidget::rebuildLayerTree()
                            new_payloads.back().get()});
     }
 
+    // refreshSubtree re-applies the stored hidden state to the fresh leaves.
     layer_model_->refreshSubtree(db_content_root_, [&]() {
         payloads_ = std::move(new_payloads);
         return db_content_root_->buildChildrenFrom(entries);
     });
     db_content_root_->recomputeColorsRecursive();
-
-    if (!hidden_layer_ids_.empty())
-        layer_model_->applyPersistedHiddenIds(hidden_layer_ids_);
 
     emit layerTreeRebuiltSignal();
 }
