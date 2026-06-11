@@ -143,103 +143,105 @@ void ASTERIXConfigWidget::updateCategories()
     ref_edit_buttons_.clear();
     spf_edit_buttons_.clear();
 
-    for (auto& cat_it : jasterix_->categories())
+    if (ctx_mgr_.hasActiveContext())
     {
-        unsigned int category = cat_it.first;
-        const std::shared_ptr<Category> cat = cat_it.second;
-
-        logdbg << "cat " << category;
-
-        auto* cfg = ctx_mgr_.asterixConfig(category);
-        if (!cfg)
-            continue;
-
-        QCheckBox* cat_check = new QCheckBox(String::categoryString(category).c_str());
-        cat_check->setProperty("category", category);
-        if (decode_editable_)
+        for (auto& cat_it : jasterix_->categories())
         {
-            cat_check->setChecked(decode_getter_(category));
-            connect(cat_check, &QCheckBox::clicked, this, &ASTERIXConfigWidget::categoryCheckedSlot);
+            unsigned int category = cat_it.first;
+            const std::shared_ptr<Category> cat = cat_it.second;
+
+            logdbg << "cat " << category;
+
+            auto* cfg = ctx_mgr_.asterixConfig(category);
+            if (!cfg)
+                continue;
+
+            QCheckBox* cat_check = new QCheckBox(String::categoryString(category).c_str());
+            cat_check->setProperty("category", category);
+            if (decode_editable_)
+            {
+                cat_check->setChecked(decode_getter_(category));
+                connect(cat_check, &QCheckBox::clicked, this, &ASTERIXConfigWidget::categoryCheckedSlot);
+            }
+            else
+            {
+                cat_check->setChecked(true);
+                cat_check->setEnabled(false);
+            }
+            categories_grid_->addWidget(cat_check, row, 0);
+
+            ASTERIXEditionComboBox* ed_combo = new ASTERIXEditionComboBox(cat);
+            if (cat->editions().count(cfg->edition()))
+                ed_combo->setEdition(cfg->edition());
+            connect(ed_combo, &ASTERIXEditionComboBox::changedEdition, this,
+                    &ASTERIXConfigWidget::editionChangedSlot);
+            categories_grid_->addWidget(ed_combo, row, 1);
+
+            if (decode_editable_)
+            {
+                QPushButton* ed_edit = new QPushButton();
+                ed_edit->setIcon(edit_icon);
+                ed_edit->setFixedSize(UI_ICON_SIZE);
+                ed_edit->setFlat(UI_ICON_BUTTON_FLAT);
+                connect(ed_edit, &QPushButton::clicked, this,
+                        &ASTERIXConfigWidget::categoryEditionEditSlot);
+                ed_edit->setProperty("category", category);
+                categories_grid_->addWidget(ed_edit, row, 2);
+            }
+
+            // ref
+            ASTERIXREFEditionComboBox* ref_combo = new ASTERIXREFEditionComboBox(cat);
+            if (cfg->ref().size() && cat->refEditions().count(cfg->ref()))
+                ref_combo->setREFEdition(cfg->ref());
+            connect(ref_combo, &ASTERIXREFEditionComboBox::changedREFSignal, this,
+                    &ASTERIXConfigWidget::refEditionChangedSlot);
+            categories_grid_->addWidget(ref_combo, row, 3);
+
+            if (decode_editable_)
+            {
+                QPushButton* ref_edit = new QPushButton();
+                ref_edit->setIcon(edit_icon);
+                ref_edit->setFixedSize(UI_ICON_SIZE);
+                ref_edit->setFlat(UI_ICON_BUTTON_FLAT);
+                connect(ref_edit, &QPushButton::clicked, this,
+                        &ASTERIXConfigWidget::categoryREFEditionEditSlot);
+                ref_edit->setProperty("category", category);
+
+                if (!ref_combo->isEnabled())
+                    ref_edit->setDisabled(true);
+
+                categories_grid_->addWidget(ref_edit, row, 4);
+                ref_edit_buttons_[category] = ref_edit;
+            }
+
+            // spf
+            ASTERIXSPFEditionComboBox* spf_combo = new ASTERIXSPFEditionComboBox(cat);
+            if (cfg->spf().size() && cat->spfEditions().count(cfg->spf()))
+                spf_combo->setSPFEdition(cfg->spf());
+            connect(spf_combo, &ASTERIXSPFEditionComboBox::changedSPFSignal, this,
+                    &ASTERIXConfigWidget::spfEditionChangedSlot);
+            categories_grid_->addWidget(spf_combo, row, 5);
+
+            if (decode_editable_)
+            {
+                QPushButton* spf_edit = new QPushButton();
+                spf_edit->setIcon(edit_icon);
+                spf_edit->setFixedSize(UI_ICON_SIZE);
+                spf_edit->setFlat(UI_ICON_BUTTON_FLAT);
+                connect(spf_edit, &QPushButton::clicked, this,
+                        &ASTERIXConfigWidget::categorySPFEditionEditSlot);
+                spf_edit->setProperty("category", category);
+
+                if (!spf_combo->isEnabled())
+                    spf_edit->setDisabled(true);
+
+                categories_grid_->addWidget(spf_edit, row, 6);
+                spf_edit_buttons_[category] = spf_edit;
+            }
+
+            row++;
         }
-        else
-        {
-            cat_check->setChecked(true);
-            cat_check->setEnabled(false);
-        }
-        categories_grid_->addWidget(cat_check, row, 0);
-
-        ASTERIXEditionComboBox* ed_combo = new ASTERIXEditionComboBox(cat);
-        if (cat->editions().count(cfg->edition()))
-            ed_combo->setEdition(cfg->edition());
-        connect(ed_combo, &ASTERIXEditionComboBox::changedEdition, this,
-                &ASTERIXConfigWidget::editionChangedSlot);
-        categories_grid_->addWidget(ed_combo, row, 1);
-
-        if (decode_editable_)
-        {
-            QPushButton* ed_edit = new QPushButton();
-            ed_edit->setIcon(edit_icon);
-            ed_edit->setFixedSize(UI_ICON_SIZE);
-            ed_edit->setFlat(UI_ICON_BUTTON_FLAT);
-            connect(ed_edit, &QPushButton::clicked, this,
-                    &ASTERIXConfigWidget::categoryEditionEditSlot);
-            ed_edit->setProperty("category", category);
-            categories_grid_->addWidget(ed_edit, row, 2);
-        }
-
-        // ref
-        ASTERIXREFEditionComboBox* ref_combo = new ASTERIXREFEditionComboBox(cat);
-        if (cfg->ref().size() && cat->refEditions().count(cfg->ref()))
-            ref_combo->setREFEdition(cfg->ref());
-        connect(ref_combo, &ASTERIXREFEditionComboBox::changedREFSignal, this,
-                &ASTERIXConfigWidget::refEditionChangedSlot);
-        categories_grid_->addWidget(ref_combo, row, 3);
-
-        if (decode_editable_)
-        {
-            QPushButton* ref_edit = new QPushButton();
-            ref_edit->setIcon(edit_icon);
-            ref_edit->setFixedSize(UI_ICON_SIZE);
-            ref_edit->setFlat(UI_ICON_BUTTON_FLAT);
-            connect(ref_edit, &QPushButton::clicked, this,
-                    &ASTERIXConfigWidget::categoryREFEditionEditSlot);
-            ref_edit->setProperty("category", category);
-
-            if (!ref_combo->isEnabled())
-                ref_edit->setDisabled(true);
-
-            categories_grid_->addWidget(ref_edit, row, 4);
-            ref_edit_buttons_[category] = ref_edit;
-        }
-
-        // spf
-        ASTERIXSPFEditionComboBox* spf_combo = new ASTERIXSPFEditionComboBox(cat);
-        if (cfg->spf().size() && cat->spfEditions().count(cfg->spf()))
-            spf_combo->setSPFEdition(cfg->spf());
-        connect(spf_combo, &ASTERIXSPFEditionComboBox::changedSPFSignal, this,
-                &ASTERIXConfigWidget::spfEditionChangedSlot);
-        categories_grid_->addWidget(spf_combo, row, 5);
-
-        if (decode_editable_)
-        {
-            QPushButton* spf_edit = new QPushButton();
-            spf_edit->setIcon(edit_icon);
-            spf_edit->setFixedSize(UI_ICON_SIZE);
-            spf_edit->setFlat(UI_ICON_BUTTON_FLAT);
-            connect(spf_edit, &QPushButton::clicked, this,
-                    &ASTERIXConfigWidget::categorySPFEditionEditSlot);
-            spf_edit->setProperty("category", category);
-
-            if (!spf_combo->isEnabled())
-                spf_edit->setDisabled(true);
-
-            categories_grid_->addWidget(spf_edit, row, 6);
-            spf_edit_buttons_[category] = spf_edit;
-        }
-
-        row++;
     }
-
 }
 
 void ASTERIXConfigWidget::categoryCheckedSlot()

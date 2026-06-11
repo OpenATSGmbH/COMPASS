@@ -1086,8 +1086,8 @@ void DBContextEditDialog::exportZipSlot()
     catch (const std::exception& e)
     {
         logerr << "exportContextZip failed: " << e.what();
-        QMessageBox::critical(this, "Export Failed",
-                              "Could not export the context to the selected file.");
+        QMessageBox::critical(this, "Error",
+                              "Exporting context failed.");
     }
 }
 
@@ -1135,7 +1135,7 @@ void DBContextEditDialog::importZipSlot()
         catch (const std::exception& e)
         {
             logerr << "deleteContext (overwrite) failed: " << e.what();
-            QMessageBox::critical(this, "Import Failed",
+            QMessageBox::critical(this, "Error",
                                   "Could not replace the existing context.");
             return;
         }
@@ -1150,8 +1150,8 @@ void DBContextEditDialog::importZipSlot()
     catch (const std::exception& e)
     {
         logerr << "importContextZip failed: " << e.what();
-        QMessageBox::critical(this, "Import Failed",
-                              "Could not import the context from the selected archive.");
+        QMessageBox::critical(this, "Error",
+                              "Importing context failed.");
     }
 }
 
