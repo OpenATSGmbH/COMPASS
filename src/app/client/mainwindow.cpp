@@ -1020,6 +1020,10 @@ void MainWindow::importAsterixFromNetworkSlot()
 
     ASTERIXImportTask& task = compass_.taskManager().asterixImporterTask();
 
+    // manual start: re-enable interactions before the source change, so the
+    // network probe runs again even if a previous rt-command import disabled them
+    task.allowUserInteractions(true);
+
     task.source().setSourceType(ASTERIXImportSource::SourceType::NetASTERIX);
 
     task.runDialog(this);
