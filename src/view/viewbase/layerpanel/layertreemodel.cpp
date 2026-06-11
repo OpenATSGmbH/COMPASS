@@ -28,6 +28,12 @@ LayerTreeModel::LayerTreeModel(QObject* parent)
 
     connect(this, &LayerTreeModel::hiddenChangedSignal,
             this, [this]{ emit layoutChanged(); });
+
+    // Keep the hidden-state memory current on every visibility change.
+    // Connected here, before any view-side hiddenChangedSignal handlers
+    // attach, so those handlers see an up-to-date storedHiddenIds().
+    connect(this, &LayerTreeModel::hiddenChangedSignal,
+            this, &LayerTreeModel::captureHiddenState);
 }
 
 LayerTreeModel::~LayerTreeModel() = default;
@@ -114,6 +120,21 @@ void LayerTreeModel::refreshSubtree(LayerTreeItem* parent,
             parent->appendChild(std::move(c));
         endInsertRows();
     }
+
+    // Restore remembered unchecked state on the freshly built items - new
+    // items default to visible/checked. Applying the own-hidden ids (groups
+    // and leaves alike) reproduces the literal checkbox states; descendants
+    // of an unchecked group follow via effectiveHidden(). Guarded so the
+    // hiddenChangedSignal emitted by the apply does not run a redundant
+    // mid-apply capture; the capture afterwards re-syncs both stored sets to
+    // the new tree (e.g. picks up new leaves under a restored group).
+    if (!stored_unchecked_ids_.empty())
+    {
+        applying_hidden_state_ = true;
+        applyPersistedHiddenIds(stored_unchecked_ids_);
+        applying_hidden_state_ = false;
+    }
+    captureHiddenState();
 
     emit subtreeRefreshedSignal(parent);
 }
@@ -295,23 +316,76 @@ void LayerTreeModel::applyPersistedHiddenIds(const std::set<std::string>& ids)
     if (ids.empty())
         return;
 
-    // Mutate hidden_ on matching leaves in place; emit layoutChanged so views
-    // re-render without the header losing section widths (which a full
-    // modelReset would trigger).
-    emit layoutAboutToBeChanged();
-
+    // Collect first so the layout/hidden signals are skipped entirely when no
+    // shown item matches (ids may refer to layers absent from the current load).
+    std::vector<LayerTreeItem*> to_hide;
     std::function<void(LayerTreeItem*)> walk = [&](LayerTreeItem* it)
     {
         const std::string id = it->persistenceId();
-        if (!id.empty() && ids.count(id))
-            it->setHidden(true, /*emit_signal=*/false);
+        if (!id.empty() && !it->hidden() && ids.count(id))
+            to_hide.push_back(it);
         for (int i = 0; i < it->childCount(); ++i)
             walk(it->child(i));
     };
     walk(root_item_.get());
 
+    if (to_hide.empty())
+        return;
+
+    // Mutate hidden_ on matching items in place; emit layoutChanged so views
+    // re-render without the header losing section widths (which a full
+    // modelReset would trigger).
+    emit layoutAboutToBeChanged();
+
+    for (auto* it : to_hide)
+        it->setHidden(true, /*emit_signal=*/false);
+
     emit layoutChanged();
     emit hiddenChangedSignal();
+}
+
+/**
+ * Keeps the two stored hidden sets aligned with the tree's checked state:
+ * own-hidden ids (stored_unchecked_ids_, the literal checkbox states restored
+ * in refreshSubtree) and effective-hidden ids (stored_hidden_ids_, consumed
+ * by view-side data filters). Merge semantics: ids with an item in the
+ * current tree are re-captured from that item's state; stored ids without a
+ * matching item (e.g. a data source not part of the current load) are kept,
+ * so their unchecked state survives until the next load that contains them -
+ * or until clearStoredHiddenState().
+ */
+void LayerTreeModel::captureHiddenState()
+{
+    if (applying_hidden_state_)
+        return;
+
+    std::function<void(LayerTreeItem*)> walk = [&](LayerTreeItem* it)
+    {
+        const std::string id = it->persistenceId();
+        if (!id.empty())
+        {
+            if (it->hidden())
+                stored_unchecked_ids_.insert(id);
+            else
+                stored_unchecked_ids_.erase(id);
+
+            if (it->effectiveHidden())
+                stored_hidden_ids_.insert(id);
+            else
+                stored_hidden_ids_.erase(id);
+        }
+        for (int i = 0; i < it->childCount(); ++i)
+            walk(it->child(i));
+    };
+    walk(root_item_.get());
+}
+
+/**
+ */
+void LayerTreeModel::clearStoredHiddenState()
+{
+    stored_hidden_ids_.clear();
+    stored_unchecked_ids_.clear();
 }
 
 void LayerTreeModel::notifyIconChanged(LayerTreeItem* item)

@@ -20,8 +20,6 @@
 #include "viewdatawidget.h"
 
 #include <memory>
-#include <set>
-#include <string>
 #include <vector>
 
 class TableView;
@@ -69,6 +67,8 @@ public:
     /// layer tree model used for hidden-state round-tripping.
     void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
 
+    LayerTreeModel* layerTreeModel() override { return layer_model_; }
+
 protected:
     virtual void toolChanged_impl(int mode) override;
     virtual void loadingStarted_impl() override;
@@ -91,8 +91,6 @@ protected:
     LayerTreeModel*    layer_model_    {nullptr};   // owned by LayerPanelWidget
 
     std::vector<std::unique_ptr<TableLeafPayload>> payloads_;
-
-    std::set<std::string> hidden_layer_ids_;  // transient: remember unchecked layers across reloads
 
 private:
     /// Rebuild payloads_ from the loaded buffers and repopulate the DBContent

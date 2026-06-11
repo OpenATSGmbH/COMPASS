@@ -1852,6 +1852,7 @@ void DBContextManager::databaseOpenedSlot()
                 case DBContextConflictDialog::UseDatabase:
                     loginf << "conflict resolved: using database definition";
                     contexts_[active_context_name_] = db_ctx;
+                    invalidateDataSourceCache();
                     DBContextSerializer::save(db_ctx, basePath());
                     rebuildSectorLayers();
                     break;
@@ -1870,8 +1871,7 @@ void DBContextManager::databaseOpenedSlot()
                     merge_dlg.exec();
 
                     contexts_[active_context_name_] = merge_dlg.mergedContext();
-                    saveContext(active_context_name_);
-                    writeContextToDB();
+                    saveContext(active_context_name_); // also writes to the DB when one is open
                     rebuildSectorLayers();
                     break;
                 }

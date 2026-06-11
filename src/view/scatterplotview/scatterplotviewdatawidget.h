@@ -20,7 +20,6 @@
 #include "variableviewstashdatawidget.h"
 
 #include <memory>
-#include <set>
 #include <vector>
 
 #include "scatterseries.h"
@@ -79,6 +78,8 @@ public:
     /// and the layer tree model used for hidden-state round-tripping.
     void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
 
+    LayerTreeModel* layerTreeModel() override { return layer_model_; }
+
 signals:
     /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
     /// The config widget uses this to re-apply default expansion.
@@ -125,7 +126,8 @@ private:
     boost::optional<std::pair<double, double>> getAxisRange(QtCharts::QAbstractAxis* axis) const;
 
     /// Rebuild payloads_ from scatter_series_ and repopulate the DBContent
-    /// subtree. Re-applies hidden_series_. Emits layerTreeRebuiltSignal.
+    /// subtree. refreshSubtree re-applies the stored hidden state. Emits
+    /// layerTreeRebuiltSignal.
     void rebuildLayerTree();
 
     ScatterPlotView*           view_       {nullptr};
@@ -166,6 +168,4 @@ private:
     // data outside that range).
     int last_drawn_anno_group_idx_{-1};
     int last_drawn_anno_idx_      {-1};
-
-    std::set<std::string> hidden_series_;  // transient: remember unchecked series across reloads
 };

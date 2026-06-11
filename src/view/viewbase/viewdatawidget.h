@@ -31,6 +31,7 @@
 class ViewWidget;
 class ViewToolSwitcher;
 class Buffer;
+class LayerTreeModel;
 
 namespace dbContent
 {
@@ -76,6 +77,10 @@ public:
 
     void databaseOpened();
     void databaseClosed();
+
+    /// The view's layer panel tree model, if any. Lets the base class manage
+    /// per-database-session layer state (e.g. forget hidden layers on close).
+    virtual LayerTreeModel* layerTreeModel() { return nullptr; }
 
     virtual void isExporting(bool ok) { is_exporting_ = ok; }
     bool isExporting() const { return is_exporting_; }
