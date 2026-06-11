@@ -1553,7 +1553,19 @@ void DBContentManager::addInsertedDataToChache()
         //label_generator_->addVariables(buf_it->first, read_set);
 
         //sensor status
-        // TODO: addSensorStatusVariables - to be migrated to DBContextManager
+        if (compass_.appMode() == AppMode::LiveRunning)
+        {
+            if (buf_it->first == "CAT063")
+            {
+                traced_assert(canGetVariable(buf_it->first, dbcontent_vars::var_cat063_con_       ));
+                traced_assert(canGetVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sac_));
+                traced_assert(canGetVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sic_));
+
+                read_set.add(getVariable(buf_it->first, dbcontent_vars::var_cat063_con_       ));
+                read_set.add(getVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sac_));
+                read_set.add(getVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sic_));
+            }
+        }
 
         // for (unsigned int i = 0; i < read_set.getSize(); ++i)
         //     loginf << buf_it->first << " " << read_set.getVariable(i).name() << " (" << read_set.getVariable(i).dbColumnName() << ")";

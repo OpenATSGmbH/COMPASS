@@ -300,6 +300,8 @@ DataSourcesStatusToolWidget::ActiveTrackerLines DataSourcesStatusToolWidget::act
 {
     const std::string DBCName = "CAT063";
 
+    bool check_inserted = false;
+
     ActiveTrackerLines tracker_lines;
 
     if (ctx_man_.hasActiveContext())
@@ -310,7 +312,7 @@ DataSourcesStatusToolWidget::ActiveTrackerLines DataSourcesStatusToolWidget::act
                 continue;
 
             //no cat063 content?
-            if (ctx_man_.numInserted(db_ds.id(), DBCName) == 0)
+            if (check_inserted && ctx_man_.numInserted(db_ds.id(), DBCName) == 0)
                 continue;
 
             auto& lines = tracker_lines[ db_ds.id() ];
@@ -319,7 +321,7 @@ DataSourcesStatusToolWidget::ActiveTrackerLines DataSourcesStatusToolWidget::act
             {
                 //add if line has inserted data
                 auto per_line = ctx_man_.numInsertedPerLine(db_ds.id(), DBCName);
-                if (!per_line.count(line_id) || per_line.at(line_id) == 0)
+                if (check_inserted && (!per_line.count(line_id) || per_line.at(line_id) == 0))
                     continue;
 
                 lines.push_back(line_id);
@@ -337,6 +339,7 @@ void DataSourcesStatusToolWidget::updateTrackerSelection()
     //determine active tracker lines
     //caching: skip if tracker lines to be added did not change since the last update
     auto tracker_lines = activeTrackerLines();
+
     if (tracker_lines == current_tracker_lines_)
         return;
 
