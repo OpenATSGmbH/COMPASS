@@ -123,9 +123,9 @@ void DBContextRenameDialog::renameSlot()
     }
     catch (const std::exception& e)
     {
-        logerr << "renameContext failed: " << e.what();
-        QMessageBox::critical(this, "Rename Context Failed", "Could not rename the context.");
-        return;
+        logerr << "Renaming context failed: " << e.what();
+        QMessageBox::critical(this, "Error", "Renaming context failed.");
+        reject();
     }
 
     loginf << "renamed context '" << old_name << "' to '" << new_name << "'";

@@ -129,9 +129,9 @@ void DBContextCopyDialog::copySlot()
     }
     catch (const std::exception& e)
     {
-        logerr << "duplicateContext failed: " << e.what();
-        QMessageBox::critical(this, "Copy Context Failed", "Could not copy the context.");
-        return;
+        logerr << "Copying context failed: " << e.what();
+        QMessageBox::critical(this, "Error", "Copying context failed.");
+        reject();
     }
 
     loginf << "copied context '" << source << "' as '" << dest << "'";

@@ -175,7 +175,17 @@ void DBContextManager::deleteContext(const string& name)
 {
     traced_assert(hasContext(name));
 
-    DBContextSerializer::deleteContext(basePath(), name);
+    try
+    {
+        DBContextSerializer::deleteContext(basePath(), name);
+    }
+    catch(const std::exception& e)
+    {
+        string msg = string("DBContextManager: deleteContext: failed to delete context '") + name
+                     + "': " + e.what();
+        traced_assert_msg(false, msg.c_str());
+    }
+    
     contexts_.erase(name);
 
     if (active_context_name_ == name)

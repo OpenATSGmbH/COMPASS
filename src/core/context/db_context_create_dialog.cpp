@@ -111,9 +111,9 @@ void DBContextCreateDialog::createSlot()
     }
     catch (const std::exception& e)
     {
-        logerr << "createContext failed: " << e.what();
-        QMessageBox::critical(this, "Create Context Failed", "Could not create the context.");
-        return;
+        logerr << "Creating context failed: " << e.what();
+        QMessageBox::critical(this, "Error", "Creating new context failed.");
+        reject();
     }
 
     manager_.setActiveContext(name);
