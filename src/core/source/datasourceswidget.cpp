@@ -991,8 +991,6 @@ int DataSourcesWidget::generateContent(bool force_rebuild)
         auto item = dynamic_cast<DataSourceTypeItem*>(tree_widget_->topLevelItem(cnt));
         traced_assert(item);
 
-        
-
         changes += generateDataSourceType(item, ds_type_name);
 
         ++cnt;

@@ -289,6 +289,7 @@ protected:
     unsigned int read_chunk_size_;
 
     std::map<std::string, std::string> properties_;
+    bool properties_dirty_ {false}; // in-memory properties differ from db, saveProperties() pending
     std::map<std::string, std::set<std::string>> dbcolumn_content_flags_; // dbtable -> dbcols with content
 
     bool insert_mt_ = false;

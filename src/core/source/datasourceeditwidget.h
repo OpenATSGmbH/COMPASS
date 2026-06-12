@@ -79,6 +79,8 @@ public slots:
     void addNetLinesSlot();
     void netLineEditedSlot(const QString& value_str);
 
+    void commitPendingEditSlot();
+
     void deleteSlot();
 
 public:
@@ -113,6 +115,11 @@ protected:
     context::DataSource* current_ds_ {nullptr};
     std::string last_used_path_;
     bool read_only_ {false};
+
+    // set while line-edit changes are written to the data source but the
+    // update callback (context save, tree rebuild) is still outstanding -
+    // committed on editingFinished via commitPendingEditSlot()
+    bool update_pending_ {false};
 
     QTabWidget* tab_widget_ {nullptr};
 
@@ -199,6 +206,8 @@ protected:
     std::map<std::string, int> tab_map_;
 
     context::DataSource& currentDataSource();
+
+    void scheduleUpdate();
 
     QVBoxLayout* createTab(const std::string& name, bool has_scroll_area);
     int tabIndex(const std::string& name) const;

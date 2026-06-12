@@ -656,6 +656,10 @@ void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> j
     {
         loginf << "connecting slot";
 
+        // must be queued: insertDoneSignal is emitted in DBContentManager::finishInserting()
+        // before the min/max timestamps/positions are computed and set as DB properties.
+        // A direct connection would run insertDoneSlot (and the finalization with
+        // saveProperties) on stale values.
         connect(&dbcont_manager, &DBContentManager::insertDoneSignal,
                 this, &JSONImportTask::insertDoneSlot, Qt::QueuedConnection);
         insert_slot_connected_ = true;
@@ -1064,6 +1068,7 @@ void JSONImportTask::insertDoneSlot()
         insert_slot_connected_ = false;
 
         compass_.dbContextManager().writeContextToDB();
+        compass_.dbInterface().saveProperties(); // persist min/max timestamps & positions
         emit compass_.dbContextManager().dataSourcesChangedSignal();
 
         //emit doneSignal(name_); emitted in checkAllDone

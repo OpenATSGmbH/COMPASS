@@ -34,6 +34,24 @@ DBContentGroupItem::DBContentGroupItem(const std::string& name, DBContentLayerLe
 {
 }
 
+std::string DBContentGroupItem::persistenceId() const
+{
+    if (level_ == DBContentLayerLevel::Root)
+        return {};
+
+    // Names along the parent chain (DSType / DS / Line) are stable across
+    // rebuilds, so the joined path identifies the same group in the new tree.
+    std::string path;
+    for (const LayerTreeItem* it = this; it; it = it->parentItem())
+    {
+        const auto* group = dynamic_cast<const DBContentGroupItem*>(it);
+        if (!group || group->level() == DBContentLayerLevel::Root)
+            break;
+        path = group->name() + (path.empty() ? "" : "/") + path;
+    }
+    return "group:" + path;
+}
+
 void DBContentGroupItem::recomputeColorFromDirectChildren()
 {
     QColor common;

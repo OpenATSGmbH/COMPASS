@@ -548,7 +548,17 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
     {
         QString path = QFileDialog::getOpenFileName(this, "Import Sensors", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
-        manager_.importSensors(path.toStdString());
+        try
+        {
+            manager_.importSensors(path.toStdString());
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "importSensors failed: " << e.what();
+            QMessageBox::critical(this, "Import Sensors Failed",
+                                  "Could not import sensors from the selected file.");
+            return;
+        }
         rebuildTree();
     });
 
@@ -556,7 +566,16 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
     {
         QString path = QFileDialog::getSaveFileName(this, "Export Sensors", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
-        manager_.exportSensors(path.toStdString());
+        try
+        {
+            manager_.exportSensors(path.toStdString());
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "exportSensors failed: " << e.what();
+            QMessageBox::critical(this, "Export Sensors Failed",
+                                  "Could not export sensors to the selected file.");
+        }
     });
 
     menu.addSeparator();
@@ -678,7 +697,17 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
     {
         QString path = QFileDialog::getOpenFileName(this, "Import Sectors (JSON)", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
-        manager_.importSectors(path.toStdString());
+        try
+        {
+            manager_.importSectors(path.toStdString());
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "importSectors failed: " << e.what();
+            QMessageBox::critical(this, "Import Sectors Failed",
+                                  "Could not import sectors from the selected file.");
+            return;
+        }
         rebuildTree();
     });
 
@@ -686,7 +715,16 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
     {
         QString path = QFileDialog::getSaveFileName(this, "Export Sectors", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
-        manager_.exportSectors(path.toStdString());
+        try
+        {
+            manager_.exportSectors(path.toStdString());
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "exportSectors failed: " << e.what();
+            QMessageBox::critical(this, "Export Sectors Failed",
+                                  "Could not export sectors to the selected file.");
+        }
     });
 
     menu.addSeparator();
@@ -929,7 +967,17 @@ void DBContextEditDialog::showFFTsGroupMenu()
     {
         QString path = QFileDialog::getOpenFileName(this, "Import FFTs", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
-        manager_.importFFTs(path.toStdString());
+        try
+        {
+            manager_.importFFTs(path.toStdString());
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "importFFTs failed: " << e.what();
+            QMessageBox::critical(this, "Import FFTs Failed",
+                                  "Could not import FFTs from the selected file.");
+            return;
+        }
         rebuildTree();
     });
 
@@ -937,7 +985,16 @@ void DBContextEditDialog::showFFTsGroupMenu()
     {
         QString path = QFileDialog::getSaveFileName(this, "Export FFTs", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
-        manager_.exportFFTs(path.toStdString());
+        try
+        {
+            manager_.exportFFTs(path.toStdString());
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "exportFFTs failed: " << e.what();
+            QMessageBox::critical(this, "Export FFTs Failed",
+                                  "Could not export FFTs to the selected file.");
+        }
     });
 
     menu.addSeparator();
@@ -1022,7 +1079,16 @@ void DBContextEditDialog::exportZipSlot()
 
     loginf << "exporting context '" << name << "' to " << filepath.toStdString();
 
-    manager_.exportContextZip(name, filepath.toStdString());
+    try
+    {
+        manager_.exportContextZip(name, filepath.toStdString());
+    }
+    catch (const std::exception& e)
+    {
+        logerr << "exportContextZip failed: " << e.what();
+        QMessageBox::critical(this, "Error",
+                              "Exporting context failed.");
+    }
 }
 
 void DBContextEditDialog::importZipSlot()
@@ -1042,35 +1108,51 @@ void DBContextEditDialog::importZipSlot()
     // read context name from the zip meta file
     std::string zip_path = filepath.toStdString();
 
-    // extract to a temp dir to read the name
-    std::string temp_base = "/tmp/compass_ctx_import_" +
-        std::to_string(QApplication::applicationPid());
-    boost::filesystem::create_directories(temp_base);
+    // try to read context from zip
+    std::string err;
+    auto ctx = DBContextSerializer::tryImportContextZip(zip_path, &err);
 
-    std::string ctx_name = DBContextSerializer::importContextZip(temp_base, zip_path);
-    boost::filesystem::remove_all(temp_base);
-
-    if (ctx_name.empty())
+    if (!ctx.has_value())
     {
-        logerr << "could not determine context name from zip";
+        logerr << "could not read context from zip: " << err;
+        QMessageBox::critical(this, "Error", "Could not read context from zip archive.");
         return;
     }
 
     // check if context already exists
-    if (manager_.hasContext(ctx_name))
+    if (manager_.hasContext(ctx->name()))
     {
         if (!QuestionDialog::ask(this, "Overwrite Context",
-                "A context named '" + QString::fromStdString(ctx_name) +
+                "A context named '" + QString::fromStdString(ctx->name()) +
                 "' already exists.\n\nOverwrite it with the imported version?"))
             return;
 
         // delete the existing context folder on disk
-        DBContextSerializer::deleteContext(manager_.basePath(), ctx_name);
+        try
+        {
+            DBContextSerializer::deleteContext(manager_.basePath(), ctx->name());
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "deleteContext (overwrite) failed: " << e.what();
+            QMessageBox::critical(this, "Error",
+                                  "Could not replace the existing context.");
+            return;
+        }
     }
 
     loginf << "importing context from " << zip_path;
 
-    manager_.importContextZip(zip_path);
+    try
+    {
+        manager_.importContextZip(zip_path);
+    }
+    catch (const std::exception& e)
+    {
+        logerr << "importContextZip failed: " << e.what();
+        QMessageBox::critical(this, "Error",
+                              "Importing context failed.");
+    }
 }
 
 } // namespace context

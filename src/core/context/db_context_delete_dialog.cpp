@@ -18,6 +18,7 @@
 #include "db_context_delete_dialog.h"
 #include "db_context_manager.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QCheckBox>
 #include <QLabel>
@@ -168,13 +169,28 @@ void DBContextDeleteDialog::deleteSlot()
     }
 
     // delete
+    bool errors = false;
     for (const auto& name : to_delete)
     {
         loginf << "deleting context '" << name << "'";
-        manager_.deleteContext(name);
+        try
+        {
+            manager_.deleteContext(name);
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "Deleting context " << name << " failed: " << e.what();
+            errors = true;
+        }
     }
 
-    // if active was deleted, select another
+    if (errors)
+    {
+        QMessageBox::critical(this, "Error",
+                                    "One or more contexts could not be deleted");
+        reject();
+    }
+
     if (active_deleted && !manager_.contextNames().empty())
         manager_.setActiveContext(manager_.contextNames().front());
 

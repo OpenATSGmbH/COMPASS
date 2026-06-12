@@ -1267,6 +1267,10 @@ void DBContentManager::finishInserting()
         }
     }
 
+    // min/max timestamps/positions are up to date now - announce per inserted chunk,
+    // e.g. updates the timestamps shown in the data sources tool during import
+    emit dbContentStatusChanged();
+
     logdbg << "min/max took "
            << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
            << " full " << String::timeStringFromDouble((microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
@@ -1549,7 +1553,19 @@ void DBContentManager::addInsertedDataToChache()
         //label_generator_->addVariables(buf_it->first, read_set);
 
         //sensor status
-        // TODO: addSensorStatusVariables - to be migrated to DBContextManager
+        if (compass_.appMode() == AppMode::LiveRunning)
+        {
+            if (buf_it->first == "CAT063")
+            {
+                traced_assert(canGetVariable(buf_it->first, dbcontent_vars::var_cat063_con_       ));
+                traced_assert(canGetVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sac_));
+                traced_assert(canGetVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sic_));
+
+                read_set.add(getVariable(buf_it->first, dbcontent_vars::var_cat063_con_       ));
+                read_set.add(getVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sac_));
+                read_set.add(getVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sic_));
+            }
+        }
 
         // for (unsigned int i = 0; i < read_set.getSize(); ++i)
         //     loginf << buf_it->first << " " << read_set.getVariable(i).name() << " (" << read_set.getVariable(i).dbColumnName() << ")";
