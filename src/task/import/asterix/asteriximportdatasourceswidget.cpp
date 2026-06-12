@@ -294,7 +294,14 @@ void ASTERIXImportDataSourcesWidget::rebuildTree()
 
     // tree items about to be deleted - drop the dangling pointer
     last_committed_item_ = nullptr;
-    tree_widget_->clear();
+
+    {
+        // block signals so clearing the selection does not run
+        // onTreeSelectionChanged, which would reset selected_ds_id_ /
+        // selected_category_ before they can be restored below
+        QSignalBlocker blocker(tree_widget_);
+        tree_widget_->clear();
+    }
 
     auto report_warnings = [this](bool any) {
         if (any != has_warnings_)
@@ -811,24 +818,29 @@ void ASTERIXImportDataSourcesWidget::addToContextClicked()
     const std::string  name    = transient_ds_->name();
     const std::string  ds_type = transient_ds_->dsType();
 
-    // create the new DS in the context (auto-assigns color)
-    auto& new_ds = ctx_man.createDataSource(sac, sic, name, ds_type);
+    // everything stored in info() - position, ranges, accuracies, bias,
+    // MLAT remote units, network lines - plus an explicit short name if set
+    const nlohmann::json info  = transient_ds_->info();
+    const bool has_short_name  = transient_ds_->hasShortName();
+    const std::string  short_name = has_short_name ? transient_ds_->shortName() : std::string();
 
-    // copy the fields the edit widget commonly sets (everything stored in
-    // info() - position, ranges, accuracies, bias, MLAT remote units,
-    // network lines - plus an explicit short name if set). Color stays
-    // whatever createDataSource auto-assigned.
-    new_ds.info(transient_ds_->info());
-    if (transient_ds_->hasShortName())
-        new_ds.shortName(transient_ds_->shortName());
-
-    ctx_man.saveContext(ctx_man.activeContextName());
-
-    // tear down transient state BEFORE rebuildAll so the prompt logic
-    // does not fire when find_match restores selection
+    // tear down transient state BEFORE createDataSource - it emits
+    // dataSourcesChangedSignal, which rebuilds the tree and restores the
+    // selection, and the prompt logic must not fire then
     transient_editing_ = false;
     transient_ds_.reset();
     banner_widget_->hide();
+
+    // create the new DS in the context (auto-assigns color)
+    auto& new_ds = ctx_man.createDataSource(sac, sic, name, ds_type);
+
+    // copy the fields the edit widget commonly sets. Color stays whatever
+    // createDataSource auto-assigned.
+    new_ds.info(info);
+    if (has_short_name)
+        new_ds.shortName(short_name);
+
+    ctx_man.saveContext(ctx_man.activeContextName());
 
     // keep selection on the same DS (now in its real DSType group)
     selected_ds_id_ = Utils::Number::dsIdFrom(sac, sic);
