@@ -27,7 +27,11 @@
 
 #include <json.hpp>
 
+#include <stdexcept>
+
 #include <fstream>
+#include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -49,17 +53,28 @@ namespace
 json readJSONFile(const string& filepath)
 {
     ifstream ifs(filepath);
-    traced_assert(ifs.is_open());
+    if (!ifs.is_open())
+        throw runtime_error("DBContextSerializer: readJSONFile: cannot open '" + filepath + "'");
 
     json j;
-    ifs >> j;
+    try
+    {
+        ifs >> j;
+    }
+    catch (const json::exception& e)
+    {
+        throw runtime_error("DBContextSerializer: readJSONFile: parse error in '" + filepath
+                            + "': " + e.what());
+    }
     return j;
 }
 
 void writeJSONFile(const string& filepath, const json& j)
 {
     ofstream ofs(filepath);
-    traced_assert(ofs.is_open());
+    if (!ofs.is_open())
+        throw runtime_error("DBContextSerializer: writeJSONFile: cannot open '" + filepath
+                            + "' for writing");
 
     ofs << j.dump(4);
 }
@@ -178,7 +193,8 @@ DBContext DBContextSerializer::load(const string& context_dir)
     // context_meta.json
     {
         string path = context_dir + "/" + META_FILENAME;
-        traced_assert(fs::exists(path));
+        if (!fs::exists(path))
+            throw runtime_error("DBContextSerializer: load: missing meta file '" + path + "'");
 
         json meta = readJSONFile(path);
         meta = upgradeSection(meta, "meta");
@@ -347,7 +363,9 @@ bool DBContextSerializer::contextExists(const string& base_path, const string& n
 void DBContextSerializer::deleteContext(const string& base_path, const string& name)
 {
     string dir = contextDir(base_path, name);
-    traced_assert(fs::exists(dir));
+    if (!fs::exists(dir))
+        throw runtime_error("DBContextSerializer: deleteContext: context dir does not exist '"
+                            + dir + "'");
     fs::remove_all(dir);
 
     loginf << "deleted context '" << name << "'";
@@ -360,16 +378,38 @@ void DBContextSerializer::renameContext(const string& base_path,
     string old_dir = contextDir(base_path, old_name);
     string new_dir = contextDir(base_path, new_name);
 
-    traced_assert(fs::exists(old_dir));
-    traced_assert(!fs::exists(new_dir));
+    if (!fs::exists(old_dir))
+        throw runtime_error("DBContextSerializer: renameContext: source context does not exist '"
+                            + old_dir + "'");
+    if (fs::exists(new_dir))
+        throw runtime_error("DBContextSerializer: renameContext: target context already exists '"
+                            + new_dir + "'");
 
-    fs::rename(old_dir, new_dir);
+    // point of no return: rename is atomic (it either fully succeeds or fully fails and leaves
+    // both dirs untouched), so a failure here is safe to surface as a recoverable error.
+    boost::system::error_code ec;
+    fs::rename(old_dir, new_dir, ec);
+    if (ec)
+        throw runtime_error("DBContextSerializer: renameContext: failed to rename '" + old_dir
+                            + "' to '" + new_dir + "': " + ec.message());
 
-    // update the meta file to reflect the new name
-    string meta_path = new_dir + "/" + META_FILENAME;
-    json meta = readJSONFile(meta_path);
-    meta["name"] = new_name;
-    writeJSONFile(meta_path, meta);
+    // the directory has been moved; its meta file must now be updated to the new name. failing
+    // here would leave a half-renamed context (dir = new_name, meta name = old_name) that the
+    // caller cannot repair and would be misread as "rename failed". treat any failure as a fatal
+    // invariant violation rather than a recoverable, half-state-hiding exception.
+    try
+    {
+        string meta_path = new_dir + "/" + META_FILENAME;
+        json meta = readJSONFile(meta_path);
+        meta["name"] = new_name;
+        writeJSONFile(meta_path, meta);
+    }
+    catch (const std::exception& e)
+    {
+        string msg = string("DBContextSerializer: renameContext: directory renamed but meta "
+                            "update failed: ") + e.what();
+        traced_assert_msg(false, msg.c_str());
+    }
 
     loginf << "renamed context '" << old_name << "' to '" << new_name << "'";
 }
@@ -379,7 +419,9 @@ void DBContextSerializer::exportContextZip(const string& base_path,
                                            const string& zip_filepath)
 {
     string ctx_dir = contextDir(base_path, name);
-    traced_assert(fs::exists(ctx_dir));
+    if (!fs::exists(ctx_dir))
+        throw runtime_error("DBContextSerializer: exportContextZip: context dir does not exist '"
+                            + ctx_dir + "'");
 
     // collect all files in the context directory
     vector<string> files;
@@ -389,10 +431,16 @@ void DBContextSerializer::exportContextZip(const string& base_path,
             files.push_back(entry.path().string());
     }
 
-    struct archive* a = archive_write_new();
+    // RAII guard: releases the archive handle on every exit path (success, throw, early return)
+    std::unique_ptr<struct archive, int (*)(struct archive*)> a_guard(archive_write_new(),
+                                                                      archive_write_free);
+    struct archive* a = a_guard.get();
     archive_write_set_format_zip(a);
+
     int r = archive_write_open_filename(a, zip_filepath.c_str());
-    traced_assert(r == ARCHIVE_OK);
+    if (r != ARCHIVE_OK)
+        throw runtime_error("DBContextSerializer: exportContextZip: cannot open archive '"
+                            + zip_filepath + "'");
 
     for (const auto& file_path : files)
     {
@@ -401,41 +449,61 @@ void DBContextSerializer::exportContextZip(const string& base_path,
 
         // read file contents
         ifstream ifs(file_path, ios::binary | ios::ate);
-        traced_assert(ifs.is_open());
+        if (!ifs.is_open())
+            throw runtime_error("DBContextSerializer: exportContextZip: cannot read '"
+                                + file_path + "'");
         auto size = ifs.tellg();
         ifs.seekg(0);
         vector<char> buf(size);
         ifs.read(buf.data(), size);
 
-        struct archive_entry* entry = archive_entry_new();
-        archive_entry_set_pathname(entry, rel_path.c_str());
-        archive_entry_set_size(entry, size);
-        archive_entry_set_filetype(entry, AE_IFREG);
-        archive_entry_set_perm(entry, 0644);
+        std::unique_ptr<struct archive_entry, void (*)(struct archive_entry*)> entry(
+            archive_entry_new(), archive_entry_free);
+        archive_entry_set_pathname(entry.get(), rel_path.c_str());
+        archive_entry_set_size(entry.get(), size);
+        archive_entry_set_filetype(entry.get(), AE_IFREG);
+        archive_entry_set_perm(entry.get(), 0644);
 
-        archive_write_header(a, entry);
-        archive_write_data(a, buf.data(), buf.size());
-        archive_entry_free(entry);
+        if (archive_write_header(a, entry.get()) != ARCHIVE_OK)
+        {
+            const char* err = archive_error_string(a);
+            throw runtime_error("DBContextSerializer: exportContextZip: write header failed for '"
+                                + rel_path + "': " + (err ? err : "unknown error"));
+        }
+
+        if (archive_write_data(a, buf.data(), buf.size()) < 0)
+        {
+            const char* err = archive_error_string(a);
+            throw runtime_error("DBContextSerializer: exportContextZip: write data failed for '"
+                                + rel_path + "': " + (err ? err : "unknown error"));
+        }
     }
 
     archive_write_close(a);
-    archive_write_free(a);
+    // a_guard frees the handle on scope exit
 
     loginf << "exported context '" << name << "' to " << zip_filepath
            << " (" << files.size() << " files)";
 }
 
-string DBContextSerializer::importContextZip(const string& base_path,
-                                             const string& zip_filepath)
+string DBContextSerializer::importContextZipInternal(const string& base_path,
+                                                     const string& zip_filepath)
 {
-    traced_assert(fs::exists(zip_filepath));
+    if (!fs::exists(zip_filepath))
+        throw runtime_error("DBContextSerializer: importContextZipInternal: archive does not exist '"
+                            + zip_filepath + "'");
 
-    struct archive* a = archive_read_new();
+    // RAII guard: releases the archive handle on every exit path (success, throw, early return)
+    std::unique_ptr<struct archive, int (*)(struct archive*)> a_guard(archive_read_new(),
+                                                                      archive_read_free);
+    struct archive* a = a_guard.get();
     archive_read_support_format_zip(a);
     archive_read_support_filter_all(a);
 
     int r = archive_read_open_filename(a, zip_filepath.c_str(), 10240);
-    traced_assert(r == ARCHIVE_OK);
+    if (r != ARCHIVE_OK)
+        throw runtime_error("DBContextSerializer: importContextZipInternal: cannot open archive '"
+                            + zip_filepath + "'");
 
     // determine context name from first entry (should be "<name>/something")
     string context_name;
@@ -471,7 +539,9 @@ string DBContextSerializer::importContextZip(const string& base_path,
 
         string out_path = out_dir + "/" + file_name;
         ofstream ofs(out_path, ios::binary);
-        traced_assert(ofs.is_open());
+        if (!ofs.is_open())
+            throw runtime_error("DBContextSerializer: importContextZipInternal: cannot write '"
+                                + out_path + "'");
 
         const void* buff;
         size_t size;
@@ -481,13 +551,61 @@ string DBContextSerializer::importContextZip(const string& base_path,
     }
 
     archive_read_close(a);
-    archive_read_free(a);
+    // a_guard frees the handle on scope exit
 
-    traced_assert(!context_name.empty());
+    if (context_name.empty())
+        throw runtime_error("DBContextSerializer: importContextZipInternal: no context found in "
+                            "archive '" + zip_filepath + "'");
 
     loginf << "imported context '" << context_name << "' from " << zip_filepath;
 
     return context_name;
+}
+
+string DBContextSerializer::importContextZip(const string& base_path, const string& zip_filepath)
+{
+    // validate first: extract to a temp dir and load it. only if that succeeds do we extract for
+    // real into base_path, so a corrupt or unloadable archive never leaves a partial context.
+    string error;
+    if (!tryImportContextZip(zip_filepath, &error))
+        throw runtime_error("DBContextSerializer: importContextZip: " + error);
+
+    return importContextZipInternal(base_path, zip_filepath);
+}
+
+std::optional<DBContext> DBContextSerializer::tryImportContextZip(const string& zip_filepath,
+                                                                  string* error)
+{
+    // extract into a throwaway temp directory, load from it, then wipe it. on any failure the
+    // temp directory is removed and nullopt is returned - nothing is written to a context store.
+    fs::path temp_dir = fs::temp_directory_path() / fs::unique_path("compass_ctx_import_%%%%%%%%");
+
+    try
+    {
+        fs::create_directories(temp_dir);
+
+        string name    = importContextZipInternal(temp_dir.string(), zip_filepath);
+        DBContext ctx  = load((temp_dir / name).string());
+
+        boost::system::error_code ec;
+        fs::remove_all(temp_dir, ec); // best-effort cleanup, errors ignored
+
+        loginf << "tryImportContextZip: imported context '" << name << "' from " << zip_filepath;
+        return ctx;
+    }
+    catch (const std::exception& e)
+    {
+        logerr << "DBContextSerializer: tryImportContextZip: failed to import '" << zip_filepath
+               << "': " << e.what();
+
+        if (error)
+            *error = e.what();
+
+        boost::system::error_code ec;
+        fs::remove_all(temp_dir, ec); // best-effort cleanup, errors ignored
+
+        return std::nullopt;
+    }
 }
 
 } // namespace context

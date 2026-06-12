@@ -409,15 +409,13 @@ void TableViewDataWidget::rebuildLayerTree()
                            new_payloads.back().get()});
     }
 
-    // Scoped subtree refresh - keeps the header widths untouched.
+    // Scoped subtree refresh - keeps the header widths untouched. Also
+    // re-applies the stored hidden state to the fresh leaves.
     layer_model_->refreshSubtree(db_content_root_, [&]() {
         payloads_ = std::move(new_payloads);
         return db_content_root_->buildChildrenFrom(entries);
     });
     db_content_root_->recomputeColorsRecursive();
-
-    if (!hidden_layer_ids_.empty())
-        layer_model_->applyPersistedHiddenIds(hidden_layer_ids_);
 
     // Push initial allowed set to the model so the first redraw filters correctly.
     pushLayerStateToModel();
@@ -429,10 +427,6 @@ void TableViewDataWidget::pushLayerStateToModel()
 {
     if (!all_buffer_table_widget_)
         return;
-
-    // Capture hidden keys snapshot for viewpoint round-trip across reloads.
-    if (layer_model_)
-        hidden_layer_ids_ = layer_model_->persistedHiddenIds();
 
     auto* model = all_buffer_table_widget_->allBufferTableModel();
     if (!model)

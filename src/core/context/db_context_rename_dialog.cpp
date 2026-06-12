@@ -25,6 +25,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QMessageBox>
 
 namespace context
 {
@@ -116,7 +117,16 @@ void DBContextRenameDialog::renameSlot()
     std::string old_name = manager_.activeContextName();
     std::string new_name = name_edit_->text().trimmed().toStdString();
 
-    manager_.renameContext(old_name, new_name);
+    try
+    {
+        manager_.renameContext(old_name, new_name);
+    }
+    catch (const std::exception& e)
+    {
+        logerr << "Renaming context failed: " << e.what();
+        QMessageBox::critical(this, "Error", "Renaming context failed.");
+        reject();
+    }
 
     loginf << "renamed context '" << old_name << "' to '" << new_name << "'";
 

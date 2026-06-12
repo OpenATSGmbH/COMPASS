@@ -252,9 +252,6 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
     });
     db_content_root_->recomputeColorsRecursive();
 
-    if (!hidden_series_.empty())
-        layer_model_->applyPersistedHiddenIds(hidden_series_);
-
     emit layerTreeRebuiltSignal();
 }
 
@@ -805,11 +802,6 @@ void ScatterPlotViewDataWidget::resetZoomSlot()
 */
 void ScatterPlotViewDataWidget::updateChartSlot()
 {
-    // remember which series are hidden so we can restore after reload
-    if (layer_model_)
-        hidden_series_ = layer_model_->persistedHiddenIds();
-    loginf << "captured " << hidden_series_.size() << " hidden series";
-
     //remember current axis ranges if available
     bool has_axes0 = chart_view_ && 
                      chart_view_->chart() &&

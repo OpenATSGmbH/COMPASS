@@ -32,7 +32,6 @@
 
 #include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -94,6 +93,8 @@ public:
     /// Provides the DBContent root item (owned by the panel's model) and the
     /// layer tree model used for future hidden-state round-tripping.
     void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
+
+    LayerTreeModel* layerTreeModel() override { return layer_model_; }
 
 signals:
     void exportDoneSignal(bool canceled);
@@ -157,8 +158,6 @@ protected:
     AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
 
     std::vector<std::unique_ptr<HistogramLeafPayload>> payloads_;
-
-    std::set<std::string> hidden_layer_ids_;  // persisted hidden layer ids from the layer panel
 
     /// Current zoom bin range [first, second], valid only while zoom is
     /// active. Captured on zoomToSubrange and re-applied after a generator

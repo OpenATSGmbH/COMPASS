@@ -75,6 +75,14 @@ void DataSourceEditWidget::createUI()
     createRemoteUnitsTab();
     createNetworkTab();
 
+    // line-edit changes are written to the data source on every keystroke
+    // (textEdited), but the update callback is deferred until editing of the
+    // field is finished - otherwise e.g. the import dialog tree rebuilds and
+    // the detail panel resets after each typed character
+    for (auto* edit : findChildren<QLineEdit*>())
+        connect(edit, &QLineEdit::editingFinished,
+                this, &DataSourceEditWidget::commitPendingEditSlot);
+
     updateContent();
 }
 
@@ -623,6 +631,8 @@ void DataSourceEditWidget::createNetworkTab()
 
 void DataSourceEditWidget::show(context::DataSource& ds, const std::string& last_used_path)
 {
+    update_pending_ = false; // drop any pending update of the previous data source
+
     current_ds_ = &ds;
     last_used_path_ = last_used_path;
 
@@ -634,6 +644,8 @@ void DataSourceEditWidget::show(context::DataSource& ds, const std::string& last
 void DataSourceEditWidget::clear()
 {
     loginf;
+
+    update_pending_ = false;
 
     current_ds_ = nullptr;
     last_used_path_.clear();
@@ -669,7 +681,7 @@ void DataSourceEditWidget::nameEditedSlot(const QString& value)
     traced_assert(current_ds_);
     currentDataSource().name(text);
 
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 void DataSourceEditWidget::shortNameEditedSlot(const QString& value)
@@ -683,7 +695,7 @@ void DataSourceEditWidget::shortNameEditedSlot(const QString& value)
     traced_assert(current_ds_);
     currentDataSource().shortName(text);
 
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 void DataSourceEditWidget::dsTypeEditedSlot(const QString& value)
@@ -717,7 +729,7 @@ traced_assert(current_ds_);
         if (currentDataSource().hasUpdateInterval())
         {
             currentDataSource().removeUpdateInterval();
-            update_ds_func_(currentDataSource().id());
+            scheduleUpdate();
         }
 
         return;
@@ -727,7 +739,7 @@ traced_assert(current_ds_);
 
 traced_assert(current_ds_);
     currentDataSource().updateInterval(value);
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 void DataSourceEditWidget::detectionTypeChangedSlot(int index)
@@ -795,7 +807,7 @@ void DataSourceEditWidget::latitudeEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().latitude(value);
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
@@ -820,7 +832,7 @@ void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().longitude(value);
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 void DataSourceEditWidget::pdEditedSlot(const QString& value_str)
@@ -840,7 +852,7 @@ void DataSourceEditWidget::pdEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().probabilityOfDetection(value);
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 void DataSourceEditWidget::clutterRateEditedSlot(const QString& value_str)
@@ -860,7 +872,7 @@ void DataSourceEditWidget::clutterRateEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().clutterRate(value);
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
@@ -872,7 +884,7 @@ void DataSourceEditWidget::altitudeEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().altitude(value);
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 void DataSourceEditWidget::addRadarRangesSlot()
@@ -905,7 +917,7 @@ void DataSourceEditWidget::radarRangeEditedSlot(const QString& value_str)
         }
 
         currentDataSource().removeRadarRange(key);
-        update_ds_func_(currentDataSource().id());
+        scheduleUpdate();
 
         return;
     }
@@ -916,7 +928,7 @@ void DataSourceEditWidget::radarRangeEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().radarRange(key, value);
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 
@@ -933,7 +945,7 @@ void DataSourceEditWidget::radarAccuraciesEditedSlot(const QString& value_str)
 
 traced_assert(current_ds_);
     currentDataSource().radarAccuracy(key, value);
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 void DataSourceEditWidget::addRadarBiasSlot()
@@ -960,7 +972,7 @@ void DataSourceEditWidget::radarBiasEditedSlot(const QString& value_str)
 
     traced_assert(current_ds_);
     currentDataSource().radarBias(key, value);
-    update_ds_func_(currentDataSource().id());
+    scheduleUpdate();
 }
 
 void DataSourceEditWidget::addMLATRemoteUnitsSlot()
@@ -1259,7 +1271,7 @@ void DataSourceEditWidget::netLineEditedSlot(const QString& value_str)
         else if (item == "MCast IP")
             ds.info()["network_lines"][line_key]["mcast_ip"] = value;
         else // Sender IP
-            ds.info()["network_lines"][line_key]["listen_ip"] = value;
+            ds.info()["network_lines"][line_key]["sender_ip"] = value;
     }
     else // MCast Port
     {
@@ -1270,7 +1282,27 @@ void DataSourceEditWidget::netLineEditedSlot(const QString& value_str)
         ds.info()["network_lines"][line_key]["mcast_port"] = value;
     }
 
-    update_ds_func_(ds.id());
+    scheduleUpdate();
+}
+
+void DataSourceEditWidget::scheduleUpdate()
+{
+    update_pending_ = true;
+}
+
+void DataSourceEditWidget::commitPendingEditSlot()
+{
+    if (!update_pending_)
+        return;
+
+    update_pending_ = false;
+
+    if (!current_ds_)
+        return;
+
+    loginf << "id " << currentDataSource().id();
+
+    update_ds_func_(currentDataSource().id());
 }
 
 void DataSourceEditWidget::deleteSlot()

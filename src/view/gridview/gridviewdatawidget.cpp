@@ -293,13 +293,16 @@ void GridViewDataWidget::buildGridFromStash()
 
     loginf << "created grid of " << grid_->numCellsX() << "x" << grid_->numCellsY();
 
+    const std::set<std::string> hidden_series =
+        layer_model_ ? layer_model_->storedHiddenIds() : std::set<std::string>{};
+
     for (const auto& dbc_values : getStash().groupedStashes())
     {
         const std::string& group_key = dbc_values.first;
         const auto&        gds       = dbc_values.second;
 
         // Skip groups the user has hidden in the layer panel.
-        if (hidden_series_.count(group_key))
+        if (hidden_series.count(group_key))
             continue;
 
         const auto& x_values = gds.variable_stashes[ 0 ].values;
@@ -419,18 +422,16 @@ void GridViewDataWidget::rebuildLayerTree()
         entries.push_back({ds_type, ds_name, line_tok, dbcontent, p.get()});
     }
 
-    // Re-entry guard: applyPersistedHiddenIds emits hiddenChangedSignal which
-    // routes back to layersChangedSlot. Without this guard a data load with
-    // non-empty hidden_series_ would trigger a recursive recompute.
+    // Re-entry guard: refreshSubtree re-applies the stored hidden state to the
+    // fresh leaves, which emits hiddenChangedSignal and routes back to
+    // layersChangedSlot. Without this guard a data load with stored hidden
+    // layers would trigger a recursive recompute.
     const bool was_guarded = in_layer_recompute_;
     in_layer_recompute_ = true;
 
     layer_model_->refreshSubtree(db_content_root_, [&]() {
         return db_content_root_->buildChildrenFrom(entries);
     });
-
-    if (!hidden_series_.empty())
-        layer_model_->applyPersistedHiddenIds(hidden_series_);
 
     in_layer_recompute_ = was_guarded;
 
@@ -455,11 +456,6 @@ void GridViewDataWidget::layersChangedSlot()
         return;
 
     in_layer_recompute_ = true;
-
-    if (layer_model_)
-        hidden_series_ = layer_model_->persistedHiddenIds();
-
-    loginf << "captured " << hidden_series_.size() << " hidden series";
 
     // Match the scatter plot pattern: a layer toggle only re-aggregates and
     // re-renders. Do NOT call redrawData(true) - that resets the stash and

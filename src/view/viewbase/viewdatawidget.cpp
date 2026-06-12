@@ -19,6 +19,7 @@
 #include "viewwidget.h"
 #include "view.h"
 #include "viewtoolswitcher.h"
+#include "layertreemodel.h"
 #include "logger.h"
 #include "buffer.h"
 #include "variable.h"
@@ -458,5 +459,9 @@ void ViewDataWidget::databaseOpened()
  */
 void ViewDataWidget::databaseClosed()
 {
+    //hidden-layer memory is per database session - forget it on close
+    if (auto* layer_model = layerTreeModel())
+        layer_model->clearStoredHiddenState();
+
     databaseClosed_impl();
 }

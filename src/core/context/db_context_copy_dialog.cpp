@@ -26,6 +26,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QMessageBox>
 
 namespace context
 {
@@ -122,7 +123,16 @@ void DBContextCopyDialog::copySlot()
     std::string source = source_combo_->currentText().toStdString();
     std::string dest = name_edit_->text().trimmed().toStdString();
 
-    manager_.duplicateContext(source, dest);
+    try
+    {
+        manager_.duplicateContext(source, dest);
+    }
+    catch (const std::exception& e)
+    {
+        logerr << "Copying context failed: " << e.what();
+        QMessageBox::critical(this, "Error", "Copying context failed.");
+        reject();
+    }
 
     loginf << "copied context '" << source << "' as '" << dest << "'";
 

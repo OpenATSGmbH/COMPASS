@@ -143,6 +143,7 @@ void DBInterface::reset()
 {
     properties_loaded_ = false;
     properties_.clear();
+    properties_dirty_ = false;
 
     dbcolumn_content_flags_.clear();
 
@@ -366,6 +367,7 @@ void DBInterface::closeDB()
 
         properties_loaded_ = false;
         properties_.clear();
+        properties_dirty_ = false;
 
         dbcolumn_content_flags_.clear();
     }
@@ -1023,7 +1025,12 @@ size_t DBInterface::count(const string& table)
  */
 void DBInterface::setProperty(const string& id, const string& value)
 {
+    auto it = properties_.find(id);
+    if (it != properties_.end() && it->second == value)
+        return;
+
     properties_[id] = value;
+    properties_dirty_ = true;
 }
 
 /**
@@ -1040,6 +1047,7 @@ void DBInterface::removeProperty(const std::string& id)
 {
     traced_assert(hasProperty(id));
     properties_.erase(id);
+    properties_dirty_ = true;
 }
 
 /**
@@ -1113,6 +1121,7 @@ void DBInterface::loadProperties()
         }
 
         properties_loaded_ = true;
+        properties_dirty_ = false;
     }
 }
 
@@ -1137,13 +1146,22 @@ void DBInterface::setContentIn(const std::string& table_name, const std::string&
         return;
 
     if (!dbcolumn_content_flags_[table_name].count(column_name))
+    {
         dbcolumn_content_flags_[table_name].insert(column_name);
+        properties_dirty_ = true; // serialized into properties in saveProperties()
+    }
 }
 
 /**
  */
 void DBInterface::saveProperties()
 {
+    if (!properties_dirty_)
+    {
+        logdbg << "skipped, not dirty";
+        return;
+    }
+
     loginf << "num " << properties_.size();
 
     if (!db_instance_)
@@ -1171,6 +1189,8 @@ void DBInterface::saveProperties()
             execute(sql);
         }
     }
+
+    properties_dirty_ = false;
 
     logdbg << "done";
 }

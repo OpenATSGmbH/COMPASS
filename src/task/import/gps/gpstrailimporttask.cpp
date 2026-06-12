@@ -910,8 +910,12 @@ void GPSTrailImportTask::run()
 
     loginf << "inserting data";
 
+    // must be queued: insertDoneSignal is emitted in DBContentManager::finishInserting()
+    // before the min/max timestamps/positions are computed and set as DB properties.
+    // A direct connection would run insertDoneSlot (saveProperties) on stale values.
     connect(&dbcontent_man, &DBContentManager::insertDoneSignal,
-            this, &GPSTrailImportTask::insertDoneSlot, Qt::UniqueConnection);
+            this, &GPSTrailImportTask::insertDoneSlot,
+            Qt::ConnectionType(Qt::QueuedConnection | Qt::UniqueConnection));
 
     dbcontent_man.insertData({{dbcontent_name, buffer_}});
 }
@@ -930,7 +934,8 @@ void GPSTrailImportTask::insertDoneSlot()
             this, &GPSTrailImportTask::insertDoneSlot);
 
     manager().compass().dbContextManager().saveCountsToDB();
-    emit manager().compass().dbContentManager().dbContentStatusChanged();
+    manager().compass().dbInterface().saveProperties(); // persist min/max timestamps & positions
+    // dbContentStatusChanged emitted by DBContentManager::finishInserting()
 
     manager().compass().logInfo("GPS Trail NMEA Import") << "done with " << gps_fixes_.size() << " GPS fixes";
 

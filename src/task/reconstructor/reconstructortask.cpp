@@ -983,8 +983,12 @@ void ReconstructorTask::writeDataSlice()
         if (!write_initialized_)
         {
             //wire needed write connection(s)
+            // must be queued: insertDoneSignal is emitted in DBContentManager::finishInserting()
+            // before the min/max timestamps/positions are computed and set as DB properties.
+            // A direct connection would run writeDoneSlot (and on the last slice
+            // endReconstruction with saveProperties) on stale values.
             connect(&dbcontent_man, &DBContentManager::insertDoneSignal,
-                    this, &ReconstructorTask::writeDoneSlot);
+                    this, &ReconstructorTask::writeDoneSlot, Qt::QueuedConnection);
 
             write_initialized_ = true;
         }

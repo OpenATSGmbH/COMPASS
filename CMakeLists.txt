@@ -3,7 +3,7 @@ message("  Path: ${COMPASS_PATH}")
 
 SET(CMAKE_EXPORT_COMPILE_COMMANDS, ON)
 
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.28)
 
 set ( CMAKE_BUILD_TYPE RelWithDebInfo ) #Debug RelWithDebInfo Release
 
@@ -71,7 +71,7 @@ endfunction()
 #add_definitions(${Qt5Widgets_DEFINITIONS})
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
-find_package (Boost 1.73.0 REQUIRED COMPONENTS regex system program_options filesystem iostreams thread stacktrace_backtrace)
+find_package (Boost 1.73.0 REQUIRED COMPONENTS regex program_options filesystem iostreams thread stacktrace_backtrace)
 message("  Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
 message("  Boost_LIBRARIES: ${Boost_LIBRARIES}")
 
