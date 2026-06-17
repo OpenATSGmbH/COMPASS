@@ -25,7 +25,7 @@ Each Dockerfile bakes in an `OS_NAME` env var (`deb10` / `deb9`) used by the bui
 | `build_jasterix.sh [--clean]` | Build and install jASTERIX. Incremental by default, `--clean` removes build dir first. |
 | `build_compass.sh [--clean]` | Build and install COMPASS. Incremental by default, `--clean` removes build dir first. |
 | `deploy_compass.sh` | Package COMPASS into an AppImage using linuxdeploy |
-| `deploy_jasterix.sh` | Package jASTERIX into an AppImage using linuxdeployqt |
+| `deploy_jasterix.sh` | Package jASTERIX into an AppImage using linuxdeploy |
 | `build_toe.sh` | Build TOE (unrelated helper project) |
 | `deploy_toe.sh` | Package TOE into an AppImage |
 | `run_bench.sh` | Run SQLite benchmark |
