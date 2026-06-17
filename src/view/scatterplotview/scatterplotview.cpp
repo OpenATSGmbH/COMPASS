@@ -214,7 +214,7 @@ void ScatterPlotView::useConnectionLines(bool value, bool redraw)
 
 /**
 */
-void ScatterPlotView::updateSelection()
+void ScatterPlotView::updateSelection_impl()
 {
     loginf;
     traced_assert(widget_);

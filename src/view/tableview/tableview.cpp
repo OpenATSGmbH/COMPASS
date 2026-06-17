@@ -199,7 +199,7 @@ void TableView::accept(LatexVisitor& v)
     v.visit(this);
 }
 
-void TableView::updateSelection()
+void TableView::updateSelection_impl()
 {
     loginf;
     traced_assert(widget_);

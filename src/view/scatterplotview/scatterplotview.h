@@ -81,7 +81,7 @@ protected:
     friend class LatexVisitor;
 
     virtual void checkSubConfigurables() override;
-    virtual void updateSelection() override;
+    virtual void updateSelection_impl() override;
 
     virtual bool init_impl() override;
     virtual void viewInfoJSON_impl(nlohmann::json& info) const override;

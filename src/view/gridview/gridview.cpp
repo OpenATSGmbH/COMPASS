@@ -154,7 +154,7 @@ void GridView::accept(LatexVisitor& v)
 
 /**
 */
-void GridView::updateSelection()
+void GridView::updateSelection_impl()
 {
     loginf;
     traced_assert(widget_);
