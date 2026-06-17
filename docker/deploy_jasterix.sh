@@ -1,29 +1,29 @@
+#!/bin/bash
+
+# exit when any command fails
+set -e
+
+echo "os: '$OS_NAME'"
+
 export ARCH=x86_64
 export APPIMAGE_EXTRACT_AND_RUN=1
+export NO_STRIP=1
 
-cd /app/workspace/jasterix/
+cd ${WORKSPACE_BASE:-/app/workspace}/jasterix/
+mkdir -p appimage/appdir/bin/
+cp /usr/bin/jasterix_client appimage/appdir/bin/
+mkdir -p appimage/appdir/lib/
+cp /usr/lib/libjasterix.a appimage/appdir/lib/
 
-# fresh AppDir - linuxdeploy populates usr/bin, usr/lib itself
-rm -rf appimage/appdir/*/
-mkdir -p appimage/appdir/
+cd ${WORKSPACE_BASE:-/app/workspace}/compass/docker/linuxdeploy/
+./linuxdeploy-x86_64.AppImage --appdir ${WORKSPACE_BASE:-/app/workspace}/jasterix/appimage/appdir --executable=/usr/bin/jasterix_client --desktop-file=${WORKSPACE_BASE:-/app/workspace}/jasterix/appimage/jasterix.desktop --icon-file=${WORKSPACE_BASE:-/app/workspace}/jasterix/appimage/atsdb.png --output appimage
 
-# build the AppImage with the same linuxdeploy used for COMPASS
-# (jASTERIX is a non-Qt CLI tool, so no qt/gtk plugins are needed)
-export OUTPUT=jASTERIX_client-x86_64.AppImage
+mv jASTERIX*.AppImage ${WORKSPACE_BASE:-/app/workspace}/jasterix/jASTERIX_client_$OS_NAME-x86_64.AppImage
 
-/app/workspace/compass/docker/linuxdeploy/linuxdeploy-x86_64.AppImage \
-    --appdir appimage/appdir \
-    --executable=/usr/bin/jasterix_client \
-    --desktop-file=appimage/appdir/jasterix.desktop \
-    --icon-file=appimage/appdir/atsdb.png \
-    --output appimage \
-    --verbosity=2
-
-cd definitions/
+cd ${WORKSPACE_BASE:-/app/workspace}/jasterix/definitions/
 zip -r ../jasterix_definitions.zip .
 
 cd ../analyze/
 zip -r ../analyze.zip . -x ".*" -x "__*" -x "*/__*"
 
-
-cd /app/workspace/compass/docker
+cd ${WORKSPACE_BASE:-/app/workspace}/compass/docker

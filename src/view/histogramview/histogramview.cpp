@@ -217,7 +217,7 @@ void HistogramView::useLogScale(bool use_log_scale, bool notify_changes)
 
 /**
  */
-void HistogramView::updateSelection()
+void HistogramView::updateSelection_impl()
 {
     loginf;
     traced_assert(widget_);
