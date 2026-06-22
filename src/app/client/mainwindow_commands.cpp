@@ -459,7 +459,9 @@ bool RTCommandAnalyzeDataSource::run_impl()
         return false;
     }
 
-    AnalyzeDataSourceTask& task = compass_->taskManager().analyzeDataSourceTask();
+    AnalyzeDataSourceTask& task = (ds_type_ == "ADSB")
+        ? compass_->taskManager().analyzeADSBDataSourceTask()
+        : compass_->taskManager().analyzeMLATDataSourceTask();
 
     if (task.dsType() != ds_type_)
     {
@@ -506,6 +508,14 @@ void RTCommandAnalyzeDataSource::assignVariables_impl(const VariablesMap& variab
 {
     RTCOMMAND_GET_VAR_OR_THROW(variables, "ds_type", std::string, ds_type_)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
+
+    // The completion signal is hardcoded to the MLAT task instance in the
+    // constructor. Redirect it to the ADS-B task instance so the wait condition
+    // (set up before run_impl) spies on the right object's doneSignal and the
+    // command completes - letting any queued follow-up such as --quit run.
+    // Must happen here at configure time, before the runner registers the spy.
+    if (ds_type_ == "ADSB")
+        condition.setSignal("compass.taskmanager.analyzeadsbdatasourcetask.doneSignal", -1);
 }
 
 // load data

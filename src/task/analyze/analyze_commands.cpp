@@ -57,7 +57,9 @@ bool RTCommandGetAnalyzeInspectors::run_impl()
         return false;
     }
 
-    AnalyzeDataSourceTask& task = s_compass->taskManager().analyzeDataSourceTask();
+    AnalyzeDataSourceTask& task = (ds_type_ == "ADSB")
+        ? s_compass->taskManager().analyzeADSBDataSourceTask()
+        : s_compass->taskManager().analyzeMLATDataSourceTask();
 
     if (task.dsType() != ds_type_)
     {
@@ -71,7 +73,9 @@ bool RTCommandGetAnalyzeInspectors::run_impl()
 
 bool RTCommandGetAnalyzeInspectors::checkResult_impl()
 {
-    AnalyzeDataSourceTask& task = s_compass->taskManager().analyzeDataSourceTask();
+    AnalyzeDataSourceTask& task = (ds_type_ == "ADSB")
+        ? s_compass->taskManager().analyzeADSBDataSourceTask()
+        : s_compass->taskManager().analyzeMLATDataSourceTask();
 
     nlohmann::json inspectors_array = nlohmann::json::array();
 

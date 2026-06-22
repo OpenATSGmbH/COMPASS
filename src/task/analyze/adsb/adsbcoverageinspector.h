@@ -1,0 +1,127 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+#include "datasourceinspectorbase.h"
+#include "inspectorsettingsbase.h"
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
+
+class TargetReport3DGrid;
+
+class ADSBCoverageInspectorSettings : public InspectorSettingsBase
+{
+public:
+    ADSBCoverageInspectorSettings(nlohmann::json& config_json, Configurable* parent);
+    ~ADSBCoverageInspectorSettings() override = default;
+
+    std::string inspectorClassName() const override { return "ADSBCoverageInspector"; }
+
+    // ADS-B has no Remote Units and no CAT019-style cycle messages, so the
+    // cadence is always time-difference against a nominal Update Interval.
+    float update_interval_s_ = 1.0f;   // UI; ADS-B airborne position nominal cadence.
+
+    // Miss test (mirrors the detection requirement, simplified to miss tolerance only).
+    bool  use_miss_tolerance_ = true;
+    float miss_tolerance_s_   = 0.1f;
+
+    // Reference-period construction: a gap larger than this in the loaded
+    // reference chain starts a new period.
+    float ref_max_time_diff_s_ = 4.0f;
+
+    // PD color thresholds: green at/above acceptable, red at/below unacceptable,
+    // orange in between. Values are PD ratios (0..1).
+    float pd_acceptable_above_    = 0.95f;
+    float pd_unacceptable_below_  = 0.70f;
+};
+
+/**
+ * Feature 2 (ADS-B): operational Probability of Detection per cell of the
+ * shared 3D grid (lat/lon/baro_alt) using RefTraj as ground truth, broken
+ * down per transponder (24-bit ICAO aircraft address).
+ *
+ * The aggregate per-cell algorithm is identical to the MLAT coverage
+ * inspector (time-difference slot-walk, gap construction, miss test). In
+ * addition, the per-target #EUI / #MUI totals are accumulated per aircraft
+ * address so the report can surface individual transponders with coverage
+ * gaps that an aggregate map averages away. See
+ * src/task/analyze/readme_analysis_adsb.md (Feature 2).
+ */
+class ADSBCoverageInspector : public DataSourceInspectorBase
+{
+public:
+    ADSBCoverageInspector(AnalyzeDataSourceTask& task, ADSBCoverageInspectorSettings& settings);
+    ~ADSBCoverageInspector() override;
+
+    std::string className() const override { return "ADSBCoverageInspector"; }
+    std::string name()      const override { return "Sensor Coverage"; }
+    std::string dsType()    const override { return "ADSB"; }
+    std::string description() const override
+    {
+        return "Per-cell Probability of Detection on a 3D grid (lat/lon/baro_alt), "
+               "broken down per transponder. Reference Trajectory is the only ground truth.";
+    }
+
+    bool requiresReferenceTrajectory() const override { return true; }
+    bool requiresLoadedDataset()       const override { return true; }
+
+    std::set<std::string> testDBContentNames() const override;
+
+    bool prerequisitesMet(std::string& reason_out) const override;
+
+    void compute(AnalysisDataset* dataset) override;
+    void writeReport(ResultReport::Section& root) override;
+
+private:
+    /// One transponder (aircraft address) row in the per-transponder table.
+    struct TransponderRow
+    {
+        unsigned int  acad     = 0;
+        bool          has_acad = false;
+        std::string   callsign;
+        std::uint64_t eui      = 0;
+        std::uint64_t mui      = 0;
+    };
+
+    /// Aggregated result of the per-target slot-walk. Populated by `compute()`
+    /// (worker-thread safe) and consumed by `writeReport()` (main thread).
+    struct ComputeResult
+    {
+        bool   valid              = false;
+        std::string error;
+        unsigned int targets_walked = 0;
+        unsigned int targets_no_ref = 0;
+        unsigned int targets_no_tst = 0;
+        std::uint64_t total_eui    = 0;
+        std::uint64_t total_mui    = 0;
+        double sector_pd           = 0.0;
+        std::size_t cells_with_eui = 0;
+        double median_per_cell_pd  = 0.0;
+        double p5_per_cell_pd      = 0.0;
+        bool   has_worst_cell      = false;
+        double worst_cell_pd       = 1.0;
+
+        std::vector<TransponderRow> transponders;  // sorted by PD ascending
+    };
+
+    ComputeResult                      result_;
+    std::unique_ptr<TargetReport3DGrid> grid_;
+};

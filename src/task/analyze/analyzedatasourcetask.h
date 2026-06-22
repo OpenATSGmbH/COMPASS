@@ -40,10 +40,14 @@ class AnalysisDataset;
 class MLATDataItemInspectorSettings;
 class MLATCoverageInspectorSettings;
 
+class ADSBDataItemInspectorSettings;
+class ADSBCoverageInspectorSettings;
+
 #if USE_EXPERIMENTAL_SOURCE == true
 class MLATAccuracyInspectorSettings;
 class MLATRUCoverageInspectorSettings;
 class MLATRUEffectInspectorSettings;
+class ADSBAccuracyInspectorSettings;
 #endif
 
 namespace ResultReport { class Section; }
@@ -53,7 +57,14 @@ class AnalyzeDataSourceTask : public Task, public Configurable
     Q_OBJECT
 
 public:
-    AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent);
+    /// `ds_type_default` binds this task instance to a DSType ("MLAT" or "ADSB"):
+    /// it sets the default for the `ds_type` parameter and selects which
+    /// inspector set is registered. `object_name` distinguishes the two
+    /// instances (one per DSType menu entry). The defaults preserve the
+    /// original MLAT-only behavior.
+    AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent,
+                          const std::string& ds_type_default = "MLAT",
+                          const std::string& object_name = "AnalyzeDataSourceTask");
     ~AnalyzeDataSourceTask() override;
 
     void generateSubConfigurable(nlohmann::json& child_json) override;
@@ -71,7 +82,7 @@ public:
 
     void showDialog();
 
-    /// DSType this task analyzes (currently always "MLAT").
+    /// DSType this task instance analyzes ("MLAT" or "ADSB").
     const std::string& dsType() const { return ds_type_; }
 
     /// Per-data-source enable flags (test side).
@@ -155,10 +166,14 @@ public:
     MLATDataItemInspectorSettings& dataItemSettings() const;
     MLATCoverageInspectorSettings& coverageSettings()  const;
 
+    ADSBDataItemInspectorSettings& adsbDataItemSettings() const;
+    ADSBCoverageInspectorSettings& adsbCoverageSettings() const;
+
 #if USE_EXPERIMENTAL_SOURCE == true
     MLATAccuracyInspectorSettings&   accuracySettings()   const;
     MLATRUCoverageInspectorSettings& ruCoverageSettings() const;
     MLATRUEffectInspectorSettings&   ruEffectSettings()   const;
+    ADSBAccuracyInspectorSettings&   adsbAccuracySettings() const;
 #endif
 
     /// True if the active license enables Professional features.
@@ -190,10 +205,14 @@ private:
     std::unique_ptr<MLATDataItemInspectorSettings> data_item_settings_;
     std::unique_ptr<MLATCoverageInspectorSettings> coverage_settings_;
 
+    std::unique_ptr<ADSBDataItemInspectorSettings> adsb_data_item_settings_;
+    std::unique_ptr<ADSBCoverageInspectorSettings> adsb_coverage_settings_;
+
 #if USE_EXPERIMENTAL_SOURCE == true
     std::unique_ptr<MLATAccuracyInspectorSettings>   accuracy_settings_;
     std::unique_ptr<MLATRUCoverageInspectorSettings> ru_coverage_settings_;
     std::unique_ptr<MLATRUEffectInspectorSettings>   ru_effect_settings_;
+    std::unique_ptr<ADSBAccuracyInspectorSettings>   adsb_accuracy_settings_;
 #endif
 
     std::vector<std::unique_ptr<DataSourceInspectorBase>> inspectors_;

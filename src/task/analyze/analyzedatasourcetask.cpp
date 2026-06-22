@@ -23,6 +23,8 @@
 #include "inspectorsettingsbase.h"
 #include "mlatdataiteminspector.h"
 #include "mlatcoverageinspector.h"
+#include "adsbdataiteminspector.h"
+#include "adsbcoverageinspector.h"
 
 #include <array>
 #include <cmath>
@@ -31,6 +33,7 @@
 #include "mlataccuracyinspector.h"
 #include "mlatrucoverageinspector.h"
 #include "mlatrueffectinspector.h"
+#include "adsbaccuracyinspector.h"
 #endif
 
 #include "compass.h"
@@ -65,12 +68,14 @@
 #include <chrono>
 #include <future>
 
-AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent)
+AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent,
+                                             const std::string& ds_type_default,
+                                             const std::string& object_name)
     : Task(*parent), Configurable(config, parent)
 {
-    setObjectName("AnalyzeDataSourceTask");
+    setObjectName(QString::fromStdString(object_name));
 
-    registerParameter("ds_type", &ds_type_, std::string("MLAT"));
+    registerParameter("ds_type", &ds_type_, ds_type_default);
     registerParameter("use_data_sources",           &use_data_sources_,           nlohmann::json::object());
     registerParameter("use_data_sources_lines",     &use_data_sources_lines_,     nlohmann::json::object());
     registerParameter("use_reference_data_sources", &use_reference_data_sources_, nlohmann::json::object());
@@ -87,7 +92,10 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
 
     createSubConfigurables();
 
-    init_analyze_commands(compass());
+    // The runtime-command registry is process-global; initialize it once from
+    // the primary (MLAT) instance to avoid a double registration.
+    if (ds_type_ == "MLAT")
+        init_analyze_commands(compass());
 }
 
 AnalyzeDataSourceTask::~AnalyzeDataSourceTask() = default;
@@ -108,6 +116,18 @@ void AnalyzeDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
         coverage_settings_.reset(new MLATCoverageInspectorSettings(child_json, this));
         traced_assert(coverage_settings_);
     }
+    else if (class_name == "ADSBDataItemInspectorSettings")
+    {
+        traced_assert(!adsb_data_item_settings_);
+        adsb_data_item_settings_.reset(new ADSBDataItemInspectorSettings(child_json, this));
+        traced_assert(adsb_data_item_settings_);
+    }
+    else if (class_name == "ADSBCoverageInspectorSettings")
+    {
+        traced_assert(!adsb_coverage_settings_);
+        adsb_coverage_settings_.reset(new ADSBCoverageInspectorSettings(child_json, this));
+        traced_assert(adsb_coverage_settings_);
+    }
 #if USE_EXPERIMENTAL_SOURCE == true
     else if (class_name == "MLATAccuracyInspectorSettings")
     {
@@ -127,6 +147,12 @@ void AnalyzeDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
         ru_effect_settings_.reset(new MLATRUEffectInspectorSettings(child_json, this));
         traced_assert(ru_effect_settings_);
     }
+    else if (class_name == "ADSBAccuracyInspectorSettings")
+    {
+        traced_assert(!adsb_accuracy_settings_);
+        adsb_accuracy_settings_.reset(new ADSBAccuracyInspectorSettings(child_json, this));
+        traced_assert(adsb_accuracy_settings_);
+    }
 #endif
     else
     {
@@ -137,6 +163,30 @@ void AnalyzeDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
 
 void AnalyzeDataSourceTask::checkSubConfigurables()
 {
+    // Each task instance is bound to one DSType and only creates that DSType's
+    // inspector-settings sub-configs. generateSubConfigurable() above still
+    // accepts any known class name so a persisted child of either set loads.
+    if (ds_type_ == "ADSB")
+    {
+        if (!adsb_data_item_settings_)
+            generateSubConfigurableFromConfig("ADSBDataItemInspectorSettings",
+                                              "ADSBDataItemInspectorSettings0");
+        traced_assert(adsb_data_item_settings_);
+
+        if (!adsb_coverage_settings_)
+            generateSubConfigurableFromConfig("ADSBCoverageInspectorSettings",
+                                              "ADSBCoverageInspectorSettings0");
+        traced_assert(adsb_coverage_settings_);
+
+#if USE_EXPERIMENTAL_SOURCE == true
+        if (!adsb_accuracy_settings_)
+            generateSubConfigurableFromConfig("ADSBAccuracyInspectorSettings",
+                                              "ADSBAccuracyInspectorSettings0");
+        traced_assert(adsb_accuracy_settings_);
+#endif
+        return;
+    }
+
     if (!data_item_settings_)
         generateSubConfigurableFromConfig("MLATDataItemInspectorSettings",
                                           "MLATDataItemInspectorSettings0");
@@ -216,6 +266,17 @@ Result AnalyzeDataSourceTask::applyJSONParameters(const nlohmann::json& params_j
 void AnalyzeDataSourceTask::registerInspectors()
 {
     inspectors_.clear();
+
+    if (ds_type_ == "ADSB")
+    {
+        inspectors_.emplace_back(new ADSBDataItemInspector(*this, *adsb_data_item_settings_));
+        inspectors_.emplace_back(new ADSBCoverageInspector(*this, *adsb_coverage_settings_));
+
+#if USE_EXPERIMENTAL_SOURCE == true
+        inspectors_.emplace_back(new ADSBAccuracyInspector(*this, *adsb_accuracy_settings_));
+#endif
+        return;
+    }
 
     inspectors_.emplace_back(new MLATDataItemInspector(*this, *data_item_settings_));
     inspectors_.emplace_back(new MLATCoverageInspector(*this, *coverage_settings_));
@@ -503,6 +564,18 @@ MLATCoverageInspectorSettings& AnalyzeDataSourceTask::coverageSettings() const
     return *coverage_settings_;
 }
 
+ADSBDataItemInspectorSettings& AnalyzeDataSourceTask::adsbDataItemSettings() const
+{
+    traced_assert(adsb_data_item_settings_);
+    return *adsb_data_item_settings_;
+}
+
+ADSBCoverageInspectorSettings& AnalyzeDataSourceTask::adsbCoverageSettings() const
+{
+    traced_assert(adsb_coverage_settings_);
+    return *adsb_coverage_settings_;
+}
+
 #if USE_EXPERIMENTAL_SOURCE == true
 MLATAccuracyInspectorSettings& AnalyzeDataSourceTask::accuracySettings() const
 {
@@ -520,6 +593,12 @@ MLATRUEffectInspectorSettings& AnalyzeDataSourceTask::ruEffectSettings() const
 {
     traced_assert(ru_effect_settings_);
     return *ru_effect_settings_;
+}
+
+ADSBAccuracyInspectorSettings& AnalyzeDataSourceTask::adsbAccuracySettings() const
+{
+    traced_assert(adsb_accuracy_settings_);
+    return *adsb_accuracy_settings_;
 }
 #endif
 
