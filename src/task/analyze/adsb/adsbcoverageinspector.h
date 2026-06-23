@@ -142,8 +142,21 @@ private:
         double worst_cell_pd       = 1.0;
 
         std::vector<TransponderRow> transponders;  // sorted by PD ascending
+        std::size_t type_groups_dropped = 0;
+    };
+
+    /// One MOPS-version or target-type group: aggregate PD plus a grid holding
+    /// only that group's slots, rendered as a summary heat-map.
+    struct Group
+    {
+        std::string   label;
+        std::uint64_t eui = 0;
+        std::uint64_t mui = 0;
+        std::unique_ptr<TargetReport3DGrid> grid;
     };
 
     ComputeResult                      result_;
     std::unique_ptr<TargetReport3DGrid> grid_;
+    std::vector<Group>                 mops_groups_;
+    std::vector<Group>                 type_groups_;
 };

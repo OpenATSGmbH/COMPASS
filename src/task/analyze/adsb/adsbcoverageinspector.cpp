@@ -21,6 +21,7 @@
 #include "targetreport3dgrid.h"
 
 #include "compass.h"
+#include "dbcontent/dbcontentmanager.h"
 #include "logger.h"
 #include "number.h"
 #include "section.h"
@@ -29,6 +30,7 @@
 #include "stringconv.h"
 #include "targetposition.h"
 #include "dbcontent/target/targetreportchain.h"
+#include "dbcontent/target/targetbase.h"
 
 #include "eval/requirement/detection/detection_pd_helpers.h"
 
@@ -143,6 +145,10 @@ time_duration durationFromSeconds(double s)
 // continuously tracked) and excluded from the measured-cadence statistics.
 constexpr double kMaxUpdateIntervalS = 300.0;
 
+// Cap on the number of target-type groups rendered as figures (the rest are
+// dropped, with a note in the report). MOPS versions are at most three.
+constexpr std::size_t kMaxTypeGroups = 12;
+
 std::string formatNumber(double v, int prec = 4)
 {
     std::ostringstream os;
@@ -190,21 +196,44 @@ std::vector<ptime> gatherTestTimestamps(unsigned int utn,
     return out;
 }
 
-// Transponder identity (24-bit ICAO aircraft address) for a target: the most
-// common acad across the target's CAT021 test reports, plus the first non-empty
-// callsign seen. A CAT021 target almost always carries a single acad; the vote
-// guards against the rare mixed-association case.
+// Transponder identity for a target: the most common acad across the target's
+// CAT021 test reports, the first non-empty callsign, and the dominant MOPS
+// version (used to route the target's slots into the per-MOPS summary grid). A
+// CAT021 target almost always carries a single acad; the vote guards against
+// the rare mixed-association case. The emitter category is taken from the
+// reconstructed target, not voted here.
 struct TransponderId
 {
     bool         has_acad = false;
     unsigned int acad     = 0;
     std::string  callsign;
+    bool         has_mops = false;
+    unsigned int mops     = 0;
 };
+
+template <typename K>
+K dominantVote(const std::map<K, unsigned int>& votes, bool& has, K fallback)
+{
+    unsigned int best = 0;
+    K out = fallback;
+    has = false;
+    for (const auto& kv : votes)
+    {
+        if (kv.second > best)
+        {
+            best = kv.second;
+            out  = kv.first;
+            has  = true;
+        }
+    }
+    return out;
+}
 
 TransponderId transponderIdOf(unsigned int utn, AnalysisDataset& dataset)
 {
     TransponderId out;
     std::map<unsigned int, unsigned int> acad_votes;
+    std::map<unsigned int, unsigned int> mops_votes;
 
     for (const auto& dbc : dataset.testDbContentsPresent())
     {
@@ -217,6 +246,10 @@ TransponderId transponderIdOf(unsigned int utn, AnalysisDataset& dataset)
             auto a = chain.acad(id);
             if (a.has_value())
                 ++acad_votes[*a];
+            auto m = chain.mopsVersion(id);
+            if (m.has_value())
+                ++mops_votes[*m];
+
             if (out.callsign.empty())
             {
                 auto c = chain.acid(id);
@@ -230,16 +263,8 @@ TransponderId transponderIdOf(unsigned int utn, AnalysisDataset& dataset)
         }
     }
 
-    unsigned int best_count = 0;
-    for (const auto& kv : acad_votes)
-    {
-        if (kv.second > best_count)
-        {
-            best_count   = kv.second;
-            out.acad     = kv.first;
-            out.has_acad = true;
-        }
-    }
+    out.acad = dominantVote<unsigned int>(acad_votes, out.has_acad, 0);
+    out.mops = dominantVote<unsigned int>(mops_votes, out.has_mops, 0);
     return out;
 }
 
@@ -251,7 +276,7 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
                                 const std::vector<RefPeriod>& periods,
                                 const std::vector<ptime>& tst_ts_sorted,
                                 AnalysisDataset& dataset,
-                                TargetReport3DGrid& grid,
+                                const std::vector<TargetReport3DGrid*>& grids,
                                 const Settings& settings)
 {
     const auto miss_params = missParamsFromSettings(settings);
@@ -275,7 +300,8 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
             auto ca = refCellAt(dataset, utn, t_slot, d_max);
             if (ca.valid)
             {
-                grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
+                for (auto* g : grids)
+                    g->addEUI(ca.lat, ca.lon, ca.alt_ft);
                 ++eui;
             }
         }
@@ -314,7 +340,8 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
                 auto ca = refCellAt(dataset, utn, t_miss, d_max);
                 if (ca.valid)
                 {
-                    grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
+                    for (auto* g : grids)
+                        g->addMUI(ca.lat, ca.lon, ca.alt_ft);
                     ++mui;
                 }
             }
@@ -352,6 +379,22 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
 
     grid_.reset(new TargetReport3DGrid(sizing.cell_size_m, sizing.cell_size_ft, ref_lat));
     auto& grid = *grid_;
+
+    auto makeGrid = [&]() {
+        return std::unique_ptr<TargetReport3DGrid>(
+            new TargetReport3DGrid(sizing.cell_size_m, sizing.cell_size_ft, ref_lat));
+    };
+
+    // Per-MOPS-version and per-target-type summary grids + PD counters. The
+    // target type is the reconstructed target category, not the raw report ECAT.
+    struct GroupCounts { std::uint64_t eui = 0; std::uint64_t mui = 0; };
+    std::map<unsigned int, std::unique_ptr<TargetReport3DGrid>> mops_grids;
+    std::map<unsigned int, GroupCounts>                         mops_counts;
+    std::map<int, std::unique_ptr<TargetReport3DGrid>>          type_grids;  // Category int
+    std::map<int, GroupCounts>                                  type_counts;
+    std::map<int, std::string>                                  type_label;
+
+    auto& dbcont_man = task_.compass().dbContentManager();
 
     const time_duration ref_max_gap = durationFromSeconds(settings.ref_max_time_diff_s_);
     const time_duration min_period_duration = boost::posix_time::seconds(1);
@@ -409,10 +452,42 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
 
         ++targets_walked;
 
-        auto counts = walkTargetTimeDifferenceCounted(
-            utn, periods, tst_ts_sorted, *dataset, grid, settings);
-
         auto tid = transponderIdOf(utn, *dataset);
+
+        // Resolved target type (reconstructed target category), used to route
+        // the target's slots into the per-target-type summary grid.
+        TargetBase::Category type_cat = TargetBase::Category::Unknown;
+        if (dbcont_man.existsTarget(utn))
+            type_cat = dbcont_man.emitterCategory(utn);
+        int type_key = static_cast<int>(type_cat);
+
+        // Route this target's slots into the aggregate grid plus its MOPS and
+        // target-type summary grids (one dominant value per transponder).
+        std::vector<TargetReport3DGrid*> grids{&grid};
+        if (tid.has_mops)
+        {
+            auto& g = mops_grids[tid.mops];
+            if (!g)
+                g = makeGrid();
+            grids.push_back(g.get());
+        }
+        auto& tg = type_grids[type_key];
+        if (!tg)
+            tg = makeGrid();
+        grids.push_back(tg.get());
+        type_label[type_key] = TargetBase::toString(type_cat);
+
+        auto counts = walkTargetTimeDifferenceCounted(
+            utn, periods, tst_ts_sorted, *dataset, grids, settings);
+
+        if (tid.has_mops)
+        {
+            mops_counts[tid.mops].eui += counts.first;
+            mops_counts[tid.mops].mui += counts.second;
+        }
+        type_counts[type_key].eui += counts.first;
+        type_counts[type_key].mui += counts.second;
+
         TransponderRow* row = nullptr;
         if (tid.has_acad)
         {
@@ -525,6 +600,41 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
               [&](const TransponderRow& a, const TransponderRow& b) {
                   return pdOf(a) < pdOf(b);
               });
+
+    // Materialize summary groups (move grids out, attach aggregate counters).
+    for (auto& kv : mops_grids)
+    {
+        Group grp;
+        grp.label = "MOPS v" + std::to_string(kv.first);
+        grp.eui   = mops_counts[kv.first].eui;
+        grp.mui   = mops_counts[kv.first].mui;
+        grp.grid  = std::move(kv.second);
+        mops_groups_.push_back(std::move(grp));
+    }
+
+    // Target-type groups: keep the busiest kMaxTypeGroups by #EUI.
+    std::vector<int> type_keys;
+    type_keys.reserve(type_grids.size());
+    for (auto& kv : type_grids)
+        type_keys.push_back(kv.first);
+    std::sort(type_keys.begin(), type_keys.end(), [&](int a, int b) {
+        return type_counts[a].eui > type_counts[b].eui;
+    });
+    for (std::size_t i = 0; i < type_keys.size(); ++i)
+    {
+        int catk = type_keys[i];
+        if (i >= kMaxTypeGroups)
+        {
+            ++result_.type_groups_dropped;
+            continue;
+        }
+        Group grp;
+        grp.label = type_label[catk];
+        grp.eui   = type_counts[catk].eui;
+        grp.mui   = type_counts[catk].mui;
+        grp.grid  = std::move(type_grids[catk]);
+        type_groups_.push_back(std::move(grp));
+    }
 }
 
 namespace
@@ -770,6 +880,49 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
         attachPDFigure(section, "PD - Altitude/Longitude", altlon, settings);
         attachPDFigure(section, "PD - Altitude/Latitude",  altlat, settings);
     }
+
+    // Summary breakdowns by MOPS version and by target type: per group, a PD
+    // counter row plus a horizontal PD map. These replace infeasible
+    // per-transponder figures (one per aircraft address).
+    auto pdRatio = [](std::uint64_t eui, std::uint64_t mui) -> double {
+        if (eui == 0) return 1.0;
+        return (static_cast<double>(eui) - static_cast<double>(mui))
+               / static_cast<double>(eui);
+    };
+
+    auto writeGroupBreakdown = [&](const std::string& title,
+                                   const std::string& key_header,
+                                   std::vector<Group>& groups,
+                                   std::size_t dropped) {
+        if (groups.empty())
+            return;
+
+        auto& gsec = section.addSubSection(title);
+
+        auto& gtbl = gsec.addTable("Overview", 4,
+                                   {key_header, "#EUI", "#MUI", "PD"}, false);
+        for (const auto& g : groups)
+            gtbl.addRow({g.label, std::to_string(g.eui), std::to_string(g.mui),
+                         formatNumber(pdRatio(g.eui, g.mui))});
+        if (dropped > 0)
+            gtbl.addRow({"(" + std::to_string(dropped) + " more, not shown)",
+                         "-", "-", "-"});
+
+        for (auto& g : groups)
+        {
+            if (!g.grid)
+                continue;
+            auto& gsub = gsec.addSubSection(g.label);
+            auto proj = g.grid->projectionLayer(
+                TargetReport3DGrid::Projection::Horizontal,
+                pdScalar, pdSampleCount, "pd");
+            attachPDFigure(gsub, g.label + " - PD - Horizontal", proj, settings);
+        }
+    };
+
+    writeGroupBreakdown("PD by MOPS Version", "MOPS Version", mops_groups_, 0);
+    writeGroupBreakdown("PD by Target Type", "Target Type",
+                        type_groups_, result_.type_groups_dropped);
 
     loginf << "ADSBCoverageInspector: walked " << result_.targets_walked << " target(s), "
            << result_.transponders.size() << " transponder(s), "

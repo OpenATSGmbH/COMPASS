@@ -636,12 +636,6 @@ void buildADSBAccuracySettings(QFormLayout* form,
     auto* factor = makeFloatSpin(1.0, 100.0, 0.5, 2, "", s.min_factor_of_interest_);
     bind_float(factor, &s.min_factor_of_interest_);
     form->addRow("Dubious Factor Threshold", factor);
-
-    auto* risky_cb = new QCheckBox();
-    risky_cb->setChecked(s.include_risky_adsb_);
-    QObject::connect(risky_cb, &QCheckBox::toggled,
-                     [&s](bool on) { s.include_risky_adsb_ = on; });
-    form->addRow("Include Risky ADS-B", risky_cb);
 }
 #endif
 
