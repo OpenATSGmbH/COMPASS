@@ -541,6 +541,18 @@ void buildCoverageSettings(QFormLayout* form,
     QObject::connect(unacc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                      [&s](double v) { s.pd_unacceptable_below_ = static_cast<float>(v); });
     form->addRow("Value Unacceptable (red)", unacc_spin);
+
+    auto* hbins_spin = new QSpinBox();
+    hbins_spin->setRange(1, 100);
+    hbins_spin->setValue(s.ui_hist_num_bins_);
+    QObject::connect(hbins_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.ui_hist_num_bins_ = v; });
+    form->addRow("Histogram Bins", hbins_spin);
+
+    auto* hmax_spin = makeFloatSpin(0.0, 600.0, 1.0, 1, " s", s.ui_hist_max_s_);
+    QObject::connect(hmax_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.ui_hist_max_s_ = static_cast<float>(v); });
+    form->addRow("Histogram Max Interval (0 = auto)", hmax_spin);
 }
 
 #if USE_EXPERIMENTAL_SOURCE == true
@@ -706,6 +718,18 @@ void buildADSBCoverageSettings(QFormLayout* form,
     QObject::connect(unacc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                      [&s](double v) { s.pd_unacceptable_below_ = static_cast<float>(v); });
     form->addRow("Value Unacceptable (red)", unacc_spin);
+
+    auto* hbins_spin = new QSpinBox();
+    hbins_spin->setRange(1, 100);
+    hbins_spin->setValue(s.ui_hist_num_bins_);
+    QObject::connect(hbins_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.ui_hist_num_bins_ = v; });
+    form->addRow("Histogram Bins", hbins_spin);
+
+    auto* hmax_spin = makeFloatSpin(0.0, 600.0, 1.0, 1, " s", s.ui_hist_max_s_);
+    QObject::connect(hmax_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.ui_hist_max_s_ = static_cast<float>(v); });
+    form->addRow("Histogram Max Interval (0 = auto)", hmax_spin);
 }
 
 }

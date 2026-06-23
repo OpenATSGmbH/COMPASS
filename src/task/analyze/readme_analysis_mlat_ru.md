@@ -95,7 +95,7 @@ Analyze MLAT Data Source                          << result root
 |     Settings recap (cadence source, nominal update interval,
 |       miss-test parameters, grid resolution, color thresholds).
 |     Summary table: total expected updates, total missed updates,
-|       sector-aggregate Probability of Detection, worst cell.
+|       overall Probability of Detection, worst cell.
 |     Figure: Probability of Detection - horizontal projection.
 |     Figure: Probability of Detection - altitude / longitude projection.
 |     Figure: Probability of Detection - altitude / latitude projection.
@@ -176,7 +176,7 @@ Always calculated. Computes per-cell PD across a configurable 3D grid, using Ref
 
 **Report output:**
 - Three projection images
-- Summary table: total #EUI, total #MUI, sector-aggregate PD, worst cell location/PD
+- Summary table: total #EUI, total #MUI, overall PD, worst cell location/PD
 
 Algorithmic details are in the [Design](#design) section.
 

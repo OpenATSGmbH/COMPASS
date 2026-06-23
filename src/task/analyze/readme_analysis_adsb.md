@@ -92,7 +92,7 @@ Analyze ADS-B Data Source                         << result root
 |     Settings recap (nominal update interval, miss-test parameters,
 |       grid resolution, color thresholds).
 |     Aggregate summary table: total expected updates, total missed
-|       updates, sector-aggregate Probability of Detection, worst cell.
+|       updates, overall Probability of Detection, worst cell.
 |     Per-transponder table: aircraft address, callsign, ECAT,
 |       MOPS version, expected updates, missed updates, PD
 |       (sortable; ascending-PD highlights weak transponders).
@@ -163,7 +163,7 @@ Always calculated. Computes operational PD across a configurable 3D grid, using 
 
 **Report output:**
 - Three aggregate projection images.
-- Aggregate summary table: total #EUI, total #MUI, sector-aggregate PD, worst cell.
+- Aggregate summary table: total #EUI, total #MUI, overall PD, worst cell.
 - Per-transponder table: aircraft address, callsign, ECAT, MOPS version, #EUI, #MUI, PD.
 
 Algorithmic details are in the [Design](#pd-computation-feature-2) section.

@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 class TargetReport3DGrid;
 
@@ -56,6 +57,12 @@ public:
     // orange in between. Values are PD ratios (0..1).
     float pd_acceptable_above_    = 0.95f;
     float pd_unacceptable_below_  = 0.70f;
+
+    // Update-interval histogram. `ui_hist_max_s_` is the upper edge; intervals
+    // at or above it fold into a single overflow bin (so long detection breaks
+    // do not stretch the axis). 0 = auto-derive a rounded-up max from the data.
+    int   ui_hist_num_bins_ = 20;
+    float ui_hist_max_s_    = 15.0f;
 };
 
 /**
@@ -105,7 +112,24 @@ private:
         unsigned int targets_no_tst = 0;
         std::uint64_t total_eui    = 0;
         std::uint64_t total_mui    = 0;
-        double sector_pd           = 0.0;
+        double overall_pd          = 0.0;
+
+        // Measured per-target inter-report interval (the actual update cadence),
+        // to help the operator pick a representative nominal Update Interval.
+        std::size_t ui_num_intervals = 0;
+        double ui_median_s = 0.0;
+        double ui_p10_s    = 0.0;
+        double ui_p90_s    = 0.0;
+        double ui_mean_s   = 0.0;
+
+        // Update-interval histogram: per-bin counts over [0, ui_hist_max_s] with
+        // width ui_hist_bin_width; ui_hist_overflow holds the count of intervals
+        // at or above ui_hist_max_s (the single overflow bin).
+        double ui_hist_max_s      = 0.0;
+        double ui_hist_bin_width  = 0.0;
+        std::vector<std::uint32_t> ui_hist_bins;
+        std::uint32_t ui_hist_overflow = 0;
+
         std::size_t cells_with_eui = 0;
         double median_per_cell_pd  = 0.0;
         double p5_per_cell_pd      = 0.0;

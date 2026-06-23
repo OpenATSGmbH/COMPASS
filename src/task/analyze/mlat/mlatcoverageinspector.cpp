@@ -23,6 +23,7 @@
 
 #include "compass.h"
 #include "logger.h"
+#include "number.h"
 #include "section.h"
 #include "sectioncontenttable.h"
 #include "sectioncontenttext.h"
@@ -40,11 +41,15 @@
 #include "colorlegend.h"
 
 #include "viewpointgenerator.h"
+#include "histogram_raw.h"
 #include "plotmetadata.h"
 
 #include "json.hpp"
 
+#include <QColor>
+
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/optional.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -55,6 +60,8 @@
 
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
+using Utils::Number::mean;
+using Utils::Number::percentile;
 
 MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& config_json,
                                                              Configurable* parent)
@@ -70,6 +77,9 @@ MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& con
 
     registerParameter("pd_acceptable_above",   &pd_acceptable_above_,   pd_acceptable_above_);
     registerParameter("pd_unacceptable_below", &pd_unacceptable_below_, pd_unacceptable_below_);
+
+    registerParameter("ui_hist_num_bins", &ui_hist_num_bins_, ui_hist_num_bins_);
+    registerParameter("ui_hist_max_s",    &ui_hist_max_s_,    ui_hist_max_s_);
 }
 
 MLATCoverageInspector::MLATCoverageInspector(AnalyzeDataSourceTask& task,
@@ -132,19 +142,9 @@ time_duration durationFromSeconds(double s)
     return boost::posix_time::microseconds(us);
 }
 
-double percentile(std::vector<double> v, double p)
-{
-    if (v.empty())
-        return 0.0;
-    std::sort(v.begin(), v.end());
-    if (p <= 0.0) return v.front();
-    if (p >= 1.0) return v.back();
-    double idx = p * (v.size() - 1);
-    size_t lo = static_cast<size_t>(std::floor(idx));
-    size_t hi = static_cast<size_t>(std::ceil(idx));
-    double w = idx - lo;
-    return v[lo] * (1.0 - w) + v[hi] * w;
-}
+// Inter-report intervals above this are treated as coverage gaps (target not
+// continuously tracked) and excluded from the measured-cadence statistics.
+constexpr double kMaxUpdateIntervalS = 300.0;
 
 std::string formatNumber(double v, int prec = 4)
 {
@@ -424,6 +424,9 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     unsigned int targets_no_ref = 0;
     unsigned int targets_no_tst = 0;
 
+    // Measured update cadence: consecutive inter-report intervals per target.
+    std::vector<double> intervals;
+
     const auto utns = dataset->utns();
 
     for (auto utn : utns)
@@ -456,6 +459,13 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         if (tst_ts_sorted.empty())
             ++targets_no_tst;
 
+        for (std::size_t i = 1; i < tst_ts_sorted.size(); ++i)
+        {
+            double dt = partialSeconds(tst_ts_sorted[i] - tst_ts_sorted[i - 1]);
+            if (dt > 0.0 && dt <= kMaxUpdateIntervalS)
+                intervals.push_back(dt);
+        }
+
         ++targets_walked;
 
         if (use_status_method)
@@ -487,7 +497,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
             worst_set = true;
         }
     }
-    double sector_pd = total_eui > 0
+    double overall_pd = total_eui > 0
                            ? (static_cast<double>(total_eui) - static_cast<double>(total_mui))
                                  / static_cast<double>(total_eui)
                            : 0.0;
@@ -498,12 +508,52 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     result_.targets_no_tst     = targets_no_tst;
     result_.total_eui          = total_eui;
     result_.total_mui          = total_mui;
-    result_.sector_pd          = sector_pd;
+    result_.overall_pd         = overall_pd;
     result_.cells_with_eui     = per_cell_pd.size();
     result_.median_per_cell_pd = percentile(per_cell_pd, 0.5);
     result_.p5_per_cell_pd     = percentile(per_cell_pd, 0.05);
     result_.has_worst_cell     = worst_set;
     result_.worst_cell_pd      = worst_pd;
+
+    result_.ui_num_intervals   = intervals.size();
+    if (!intervals.empty())
+    {
+        result_.ui_median_s = percentile(intervals, 0.5);
+        result_.ui_p10_s    = percentile(intervals, 0.1);
+        result_.ui_p90_s    = percentile(intervals, 0.9);
+        result_.ui_mean_s   = mean(intervals);
+
+        // Histogram: bins over [0, max], plus one overflow bin for >= max so
+        // long detection breaks do not stretch the axis. max = configured value
+        // or, when <= 0, a rounded-up value derived from the data (P99).
+        double hist_max = settings.ui_hist_max_s_ > 0.0f
+                              ? static_cast<double>(settings.ui_hist_max_s_)
+                              : std::ceil(percentile(intervals, 0.99));
+        if (hist_max <= 0.0)
+            hist_max = 15.0;
+        const unsigned int nbins =
+            static_cast<unsigned int>(std::max(1, settings.ui_hist_num_bins_));
+        const double w = hist_max / static_cast<double>(nbins);
+
+        std::vector<std::uint32_t> bins(nbins, 0);
+        std::uint32_t overflow = 0;
+        for (double dt : intervals)
+        {
+            if (dt >= hist_max)
+            {
+                ++overflow;
+                continue;
+            }
+            unsigned int b = static_cast<unsigned int>(std::floor(dt / w));
+            if (b >= nbins)
+                b = nbins - 1;
+            ++bins[b];
+        }
+        result_.ui_hist_max_s     = hist_max;
+        result_.ui_hist_bin_width = w;
+        result_.ui_hist_bins      = std::move(bins);
+        result_.ui_hist_overflow  = overflow;
+    }
 }
 
 namespace
@@ -613,7 +663,7 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
             "Three projections of the per-cell PD are rendered: a top-down "
             "horizontal map and two vertical profiles (altitude over "
             "longitude, altitude over latitude). The summary tabulates the "
-            "sector-aggregate PD and the per-cell distribution (median, 5th "
+            "overall PD and the per-cell distribution (median, 5th "
             "percentile, worst cell). Cells with no expected updates are "
             "blank.\n"
             "Use the report to locate coverage holes against the published "
@@ -676,12 +726,62 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     summary.addRow({"Targets w/o test data", std::to_string(result_.targets_no_tst)});
     summary.addRow({"Total expected slots (#EUI)", std::to_string(result_.total_eui)});
     summary.addRow({"Total missed slots (#MUI)",   std::to_string(result_.total_mui)});
-    summary.addRow({"Sector-aggregate PD",         formatNumber(result_.sector_pd)});
+    summary.addRow({"Overall PD",                  formatNumber(result_.overall_pd)});
     summary.addRow({"Cells with EUI",              std::to_string(result_.cells_with_eui)});
     summary.addRow({"Median per-cell PD",          formatNumber(result_.median_per_cell_pd)});
     summary.addRow({"P5 per-cell PD",              formatNumber(result_.p5_per_cell_pd)});
     if (result_.has_worst_cell)
         summary.addRow({"Worst cell PD (>=5 EUI)", formatNumber(result_.worst_cell_pd)});
+
+    // Measured update cadence: the actual per-target inter-report interval,
+    // independent of the configured nominal UI. Use it to pick an Update
+    // Interval that matches the sensor (set UI at or above the median, near the
+    // P90, to avoid counting the sensor's own cadence as missed updates).
+    {
+        auto& ui_tbl = section.addTable("Calculated Update Interval", 2,
+                                        {"Property", "Value"}, false);
+        if (result_.ui_num_intervals > 0)
+        {
+            ui_tbl.addRow({"Calculated UI Median (s)", formatNumber(result_.ui_median_s, 3)});
+            ui_tbl.addRow({"Calculated UI P10 (s)",    formatNumber(result_.ui_p10_s, 3)});
+            ui_tbl.addRow({"Calculated UI P90 (s)",    formatNumber(result_.ui_p90_s, 3)});
+            ui_tbl.addRow({"Calculated UI Mean (s)",   formatNumber(result_.ui_mean_s, 3)});
+            ui_tbl.addRow({"Update interval samples",  std::to_string(result_.ui_num_intervals)});
+        }
+        else
+        {
+            ui_tbl.addRow({"Calculated UI Median (s)", "-"});
+        }
+    }
+
+    // Update-interval histogram figure.
+    if (!result_.ui_hist_bins.empty())
+    {
+        RawHistogram h;
+        const double w = result_.ui_hist_bin_width;
+        for (unsigned int i = 0; i < result_.ui_hist_bins.size(); ++i)
+        {
+            std::string lmin = formatNumber(i * w, 2);
+            std::string lmax = formatNumber((i + 1) * w, 2);
+            h.addBin(RawHistogramBin(result_.ui_hist_bins[i], lmin + "-" + lmax,
+                                     RawHistogramBin::Tag::Standard, lmin, lmax));
+        }
+        std::string ov_lbl = ">=" + formatNumber(result_.ui_hist_max_s, 2);
+        h.addBin(RawHistogramBin(result_.ui_hist_overflow, ov_lbl,
+                                 RawHistogramBin::Tag::OutOfRange, ov_lbl, ""));
+
+        const std::string fig = "Update Interval Histogram";
+        auto vp = std::make_unique<ViewPointGenVP>(fig, 0, "Histogram");
+        vp->noDataLoaded(true);
+        auto* anno = vp->annotations().getOrCreateAnnotation("Update Interval");
+        anno->addFeature(new ViewPointGenFeatureHistogram(
+            h, "Update Interval", QColor(0, 128, 192), boost::optional<bool>(),
+            PlotMetadata("Sensor Coverage", fig, "Update Interval (s)", "Count")));
+
+        nlohmann::json vp_json;
+        vp->toJSON(vp_json);
+        section.addFigure(fig, ResultReport::SectionContentViewable(vp_json));
+    }
 
     if (grid_)
     {
@@ -701,5 +801,5 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
 
     loginf << "MLATCoverageInspector: walked " << result_.targets_walked << " target(s), "
            << result_.total_eui << " EUI, " << result_.total_mui
-           << " MUI, sector PD " << result_.sector_pd;
+           << " MUI, overall PD " << result_.overall_pd;
 }
