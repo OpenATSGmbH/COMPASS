@@ -114,18 +114,18 @@ Analyze ADS-B Data Source                         << result root
 +-- Position Accuracy                             << Feature 3
       About text.
       Settings recap (grid resolution, position-accuracy color,
-        consistency color, dubious factor threshold; risky always
-        assessed).
-      Summary table: test reports walked / without RefTraj / without
-        position / risky (no QI, still assessed), transponder count,
-        median/mean/P95 offset, mean/median reported std-dev,
-        mean/median consistency ratio, cells with samples.
+        consistency color, dubious factor threshold; reports w/o QI
+        assessed for offset only).
+      Summary table: test reports walked / ignored (no position) /
+        ignored (no RefTraj) / w/o quality indicator (offset only),
+        transponder count, median/mean/P95 offset, mean/median reported
+        std-dev, mean/median consistency ratio, cells with samples.
       Per-Transponder Accuracy table: aircraft address, callsign, MOPS
-        version, dominant QI, samples, median offset, P95 offset, mean
-        reported, consistency factor (sorted by factor descending).
-      Dubious Transponders sub-table: one row per (aircraft address, QI)
-        whose consistency factor exceeds the threshold (default 3.0),
-        with QI label, factor, median offset and median reported.
+        version, dominant QI, samples, no-QI count, median offset, P95
+        offset, mean reported, consistency factor (sorted by factor desc).
+      Transponder Consistency (worst first) table: one row per (aircraft
+        address, QI) with a computable factor, sorted by consistency factor
+        descending, with a Dubious flag for rows >= threshold (default 3.0).
       Accuracy Grids index table (Quantity, Projection, Min/Mean/Max),
         linking to each figure.
       One sub-section per view (Horizontal Position Offset, Reported
@@ -197,7 +197,7 @@ Algorithmic details are in the [Design](#pd-computation-feature-2) section.
 
 **Reported accuracy from quality indicators.** ADS-B does not carry a Cartesian standard deviation in the target report (unlike MLAT's I020/500). The reported `tr_std_dev` is obtained from the target report chain's position-accuracy accessor (`tst_chain.posAccuracy(id)` -> `x_stddev_`, `y_stddev_`), as the Cartesian magnitude `sqrt(sx^2 + sy^2)`. The QI-to-stddev derivation itself (NACp primary for MOPS v1/v2, NIC fallback, NUCp for v0, the `/2.45` 95%-to-1-sigma conversion, and the SIL penalty) lives **inside** that accessor / `AccuracyTables` (see the [adsb_accuracy skill](../../../.claude/skills/adsb_accuracy/SKILL.md)), not in the inspector, so the offline analysis and the online estimator agree by construction. A report whose accessor yields no usable, finite, positive std-dev is treated as having no reported accuracy.
 
-**Grouping is per (aircraft address, quality-indicator).** Each target report's `(distance, reported std-dev)` is bucketed per cell of the shared grid and, per transponder, under a `(acad, qi_key)` sub-bucket (the "unknown" acad bucket is keyed -1). The `qi_key` is `(type, value)` with type one of NACp / NUCp / NIC / risky, derived from the chain's `mopsVersion`, `nacp` and `nucpNic` accessors the same way `ADSBAccuracyEstimator::qiKey` derives it (NACp when present and non-zero; otherwise NIC for MOPS v1/v2 or NUCp for v0; otherwise risky). Keeping NACp and NIC apart even at the same numeric level, and splitting a transponder that changes equipage mid-recording into separate QI states, is what feeds the per-QI dubious detail below. The per-transponder table row aggregates the QI sub-buckets back to one row per aircraft address, showing the dominant MOPS version and dominant QI label.
+**Grouping is per (aircraft address, quality-indicator).** Each target report's `(distance, reported std-dev)` is bucketed per cell of the shared grid and, per transponder, under a `(acad, qi_key)` sub-bucket (the "unknown" acad bucket is keyed -1). The `qi_key` is `(type, value)` with type one of NACp / NUCp / NIC / no-QI, derived from the chain's `mopsVersion`, `nacp` and `nucpNic` accessors the same way `ADSBAccuracyEstimator::qiKey` derives it (NACp when present and non-zero; otherwise NIC for MOPS v1/v2 or NUCp for v0; otherwise no-QI). Keeping NACp and NIC apart even at the same numeric level, and splitting a transponder that changes equipage mid-recording into separate QI states, is what feeds the per-QI dubious detail below. The per-transponder table row aggregates the QI sub-buckets back to one row per aircraft address, showing the dominant MOPS version and dominant QI label.
 
 **Per-target-report quantities collected:**
 - `distance_m` - horizontal Cartesian distance (via `Transformation::distanceL2Cart`) between the ADS-B reported position and the mapped reference position at the same timestamp (max reference time difference 2 s).
@@ -215,7 +215,7 @@ Bucketing for the spatial views: `cell_of(ADS-B reported position)` on `TargetRe
 
 **Per-transponder output (the ADS-B-specific breakdown):**
 - A Per-Transponder Accuracy table keyed by aircraft address: callsign, dominant MOPS version, dominant QI label, sample count, median offset, P95 offset, mean reported std-dev, consistency factor. Sorted by consistency factor descending (most dubious first; rows without a factor sort to the end).
-- A **Dubious Transponders** sub-table: one row per `(aircraft address, qi_key)` whose per-QI consistency factor (`median(distance) / median(reported)` within that QI state) exceeds `min_factor_of_interest_` (default 3.0). The QI label, factor, median offset and median reported are shown, so a transponder that misreports in one equipage state is isolated rather than averaged away. This is the report-side equivalent of `ADSBAccuracyEstimator::doACADsOfInterest()`.
+- A **Transponder Consistency (worst first)** table: one row per `(aircraft address, qi_key)` with a computable per-QI consistency factor (`median(distance) / median(reported)` within that QI state), sorted by factor descending - the full ranked list of contributing targets. A `Dubious` column flags the rows at or above `min_factor_of_interest_` (default 3.0); those flagged rows are the report-side equivalent of `ADSBAccuracyEstimator::doACADsOfInterest()`. Keying by QI isolates equipage changes - a transponder that misreports in one state is not averaged away. The Summary reports the total number of `(transponder, QI)` states and how many are dubious.
 
 **Spatial breakdowns:** rendered as summary heat-maps grouped by MOPS version and by reconstructed target type (see [Group breakdowns](#group-breakdowns-features-2-and-3)), not per transponder - one figure per aircraft address would be thousands of figures.
 
@@ -223,7 +223,7 @@ Bucketing for the spatial views: `cell_of(ADS-B reported position)` on `TargetRe
 
 **Color scales (configurable):**
 - Reported Position Accuracy and Horizontal Position Offset: Green2Red, green below `pos_acc_acceptable_below_m_` (12 m), red above `pos_acc_unacceptable_above_m_` (60 m).
-- Reported Accuracy Consistency: Blue2Green2Red, banded by `consistency_lower_unacceptable_below_` (0.5) / `consistency_lower_acceptable_above_` (0.8) / `consistency_upper_acceptable_below_` (1.25) / `consistency_upper_unacceptable_above_` (2.0).
+- Reported Accuracy Consistency: a green-centered ramp in 10 discrete bands - blue (over-cautious) at `consistency_lower_unacceptable_below_` (default 0.2 = 1/5x), green at the ideal 1.0, red (over-confident) at `consistency_upper_unacceptable_above_` (default 5.0 = 5x). 1.0 stays green regardless of the endpoints (blue->green is interpolated below 1.0, green->red above), so the scale extends well past 2.0 without pushing the ideal off-center.
 
 **Report output:**
 - For each aggregate view: three projection images (horizontal plus two altitude cuts) under a per-view sub-section.
@@ -232,9 +232,14 @@ Bucketing for the spatial views: `cell_of(ADS-B reported position)` on `TargetRe
 
 ---
 
-### Risky ADS-B handling
+### Reports without a usable quality indicator
 
-Risky ADS-B reports (no usable reported accuracy - the `posAccuracy()` accessor returns no finite positive std-dev, the practical signature of missing / zero quality indicators) are **always assessed**; there is no toggle. They contribute to the **offset** statistics (HPO and per-transponder median / P95 offset) and fall into the `risky` `qi_key` bucket, but contribute no reported std-dev and therefore no consistency ratio. The operator always sees their observed offsets without a meaningful reported accuracy. Feature 2 PD is likewise unaffected by risk classification - a risky report is still a delivered report.
+A report whose `posAccuracy()` accessor returns no finite positive std-dev (the practical signature of a missing or zero quality indicator, e.g. NACp 0) is **still assessed as far as possible**: its position offset against RefTraj is computable, so it contributes to the **offset** statistics (HPO and per-transponder median / P95 offset). It carries no reported accuracy, so it adds no Reported Position Accuracy value and no consistency ratio, and its `qi_key` type is `no QI` (which yields no consistency row). These reports are not silently dropped - they are counted separately:
+
+- Summary: `Reports w/o quality indicator (offset only)` (alongside the fully-ignored `no position` and `no RefTraj match` counts).
+- Per-transponder accuracy table: a `No QI` column gives the per-transponder count.
+
+Feature 2 PD is unaffected - a delivered report is delivered regardless of its quality indicator.
 
 ---
 
@@ -355,7 +360,7 @@ The originally proposed "branch on `ds_type_`" (shape 1) was implemented. `Analy
 - [x] `ADSBAccuracyInspector::compute()` in `experimental_src/analysis/adsb/`:
   - Per associated CAT021 target report: compute `distance_m` to the mapped reference position; read `tr_std_dev` from `posAccuracy()`.
   - Bucket per cell on `TargetReport3DGrid` (means) and per `(aircraft address, qi_key)` (median offset, P95 offset, median/mean reported, consistency factor).
-  - Always assess risky ADS-B (no toggle): risky reports contribute to offset statistics under the `risky` qi_key.
+  - Reports without a usable quality indicator are still assessed for offset (no toggle); they contribute to offset statistics under the `no-QI` qi_key and are counted separately in the Summary and per-transponder table.
   - Render three aggregate views x three projections; emit per-transponder table + dubious-transponders sub-table (factor > 3.0).
 - [x] Group per `(aircraft_address, qi_key)` (NACp / NUCp / NIC kept apart) via the `Chain::mopsVersion` / `nacp` / `nucpNic` accessors.
 - [x] MOPS-version / dominant-QI columns in the per-transponder table and per-QI detail in the dubious sub-table.
@@ -363,7 +368,7 @@ The originally proposed "branch on `ds_type_`" (shape 1) was implemented. `Analy
 
 ### Deferred / out of scope (this release)
 
-- [ ] Full `isRiskyADSB()` risk classification (the shipped predicate is "no usable reported std-dev").
+- [ ] Finer breakdown of the "no quality indicator" count by cause (NACp 0 vs missing MOPS vs no QI item at all). The shipped predicate is simply "the position-accuracy accessor yields no usable std-dev"; the reconstruction's `isRiskyADSB()` classification is intentionally not replicated in the analysis.
 - [ ] Velocity accuracy (NACv / NUCr) analysis - this feature set covers position only.
 - [ ] Geometric-height accuracy (GVA) analysis and a geometric-vs-barometric altitude comparison.
 - [ ] Per-ground-station breakdown (would require a receiver identifier ADS-B target reports do not generally carry).
