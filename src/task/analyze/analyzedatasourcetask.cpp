@@ -87,6 +87,12 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     registerParameter("cell_size_ft",               &cell_size_ft_,               cell_size_ft_);
     registerParameter("max_cells_per_axis",         &max_cells_per_axis_,         max_cells_per_axis_);
 
+    registerParameter("use_ground_only",            &use_ground_only_,            use_ground_only_);
+    registerParameter("use_min_fl",                 &use_min_fl_,                 use_min_fl_);
+    registerParameter("min_fl",                     &min_fl_,                     min_fl_);
+    registerParameter("use_max_fl",                 &use_max_fl_,                 use_max_fl_);
+    registerParameter("max_fl",                     &max_fl_,                     max_fl_);
+
     tooltip_ = "Analyze a chosen data source from multiple angles "
                "(data items, sensor coverage / PD, position accuracy).";
 
@@ -799,6 +805,15 @@ void AnalyzeDataSourceTask::run()
     info.addRow({"Professional license",
                  professionalLicenseEnabled() ? std::string("enabled")
                                               : std::string("disabled")});
+    info.addRow({"Use ground only", use_ground_only_ ? "yes" : "no"});
+    {
+        std::string fl;
+        if (use_min_fl_) fl += "min FL " + std::to_string(static_cast<int>(min_fl_));
+        if (use_max_fl_) fl += (fl.empty() ? "" : ", ") + std::string("max FL ")
+                               + std::to_string(static_cast<int>(max_fl_));
+        if (fl.empty()) fl = "none";
+        info.addRow({"Flight level filter", fl});
+    }
 
     advanceStep("Preparing result...");
 
@@ -809,6 +824,15 @@ void AnalyzeDataSourceTask::run()
         advanceStep("Loading combined dataset...");
 
         dataset.reset(new AnalysisDataset(compass()));
+
+        AnalysisDataset::ScopeFilter scope_filter;
+        scope_filter.ground_only = use_ground_only_;
+        scope_filter.use_min_fl  = use_min_fl_;
+        scope_filter.min_fl      = min_fl_;
+        scope_filter.use_max_fl  = use_max_fl_;
+        scope_filter.max_fl      = max_fl_;
+        dataset->setScopeFilter(scope_filter);
+
         std::string error;
         if (!dataset->load(selectedDataSourceIDs(), line_id_tst_,
                            selectedReferenceDataSourceIDs(), line_id_ref_,

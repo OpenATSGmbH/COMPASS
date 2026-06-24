@@ -365,6 +365,78 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
 
     outer->addWidget(tst_box, 1);
 
+    // -- Scope Filter ------------------------------------------------------
+    // Per-report inside test applied when the combined dataset is built;
+    // restricts every grid inspector to on-ground reports and/or a flight-level
+    // band (FL = barometric altitude / 100).
+    auto* scope_box    = new QGroupBox("Scope Filter");
+    auto* scope_form   = new QFormLayout(scope_box);
+
+    auto* ground_cb = new QCheckBox();
+    ground_cb->setChecked(task_.useGroundOnly());
+    ground_cb->setToolTip("Keep only reports that are on the ground "
+                          "(ground bit set, or a ground-only target type).");
+    connect(ground_cb, &QCheckBox::toggled, this, [this](bool on) {
+        if (updating_ui_) return;
+        task_.setUseGroundOnly(on);
+    });
+    scope_form->addRow("Use Ground Only", ground_cb);
+
+    auto makeFLSpin = [](float value) {
+        auto* s = new QDoubleSpinBox();
+        s->setRange(0.0, 999.0);
+        s->setDecimals(0);
+        s->setSingleStep(5.0);
+        s->setValue(value);
+        return s;
+    };
+
+    auto* min_fl_cb   = new QCheckBox();
+    min_fl_cb->setChecked(task_.useMinFL());
+    auto* min_fl_spin = makeFLSpin(task_.minFL());
+    min_fl_spin->setEnabled(task_.useMinFL());
+    min_fl_cb->setToolTip("Keep only reports at or above this flight level.");
+    connect(min_fl_cb, &QCheckBox::toggled, this, [this, min_fl_spin](bool on) {
+        if (updating_ui_) return;
+        task_.setUseMinFL(on);
+        min_fl_spin->setEnabled(on);
+    });
+    connect(min_fl_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double v) {
+        if (updating_ui_) return;
+        task_.setMinFL(static_cast<float>(v));
+    });
+    {
+        auto* row = new QHBoxLayout();
+        row->addWidget(min_fl_cb);
+        row->addWidget(min_fl_spin, 1);
+        scope_form->addRow("Minimum Flight Level", row);
+    }
+
+    auto* max_fl_cb   = new QCheckBox();
+    max_fl_cb->setChecked(task_.useMaxFL());
+    auto* max_fl_spin = makeFLSpin(task_.maxFL());
+    max_fl_spin->setEnabled(task_.useMaxFL());
+    max_fl_cb->setToolTip("Keep only reports at or below this flight level.");
+    connect(max_fl_cb, &QCheckBox::toggled, this, [this, max_fl_spin](bool on) {
+        if (updating_ui_) return;
+        task_.setUseMaxFL(on);
+        max_fl_spin->setEnabled(on);
+    });
+    connect(max_fl_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double v) {
+        if (updating_ui_) return;
+        task_.setMaxFL(static_cast<float>(v));
+    });
+    {
+        auto* row = new QHBoxLayout();
+        row->addWidget(max_fl_cb);
+        row->addWidget(max_fl_spin, 1);
+        scope_form->addRow("Maximum Flight Level", row);
+    }
+
+    outer->addWidget(scope_box);
+
     return w;
 }
 

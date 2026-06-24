@@ -72,6 +72,8 @@ Tree behavior:
 
 Run validation: clicking Run is rejected if no data source is selected, if no inspector is ticked, or if any ticked inspector has unmet prerequisites. The dialog reports the offending row and reason.
 
+**Scope filter** (Data Source page, shared by all DSTypes): a "Use Ground Only" checkbox and optional "Minimum / Maximum Flight Level" checkboxes + values restrict which target reports enter the combined dataset, so every grid inspector (PD, accuracy, RU) sees only the in-scope reports. It is applied once when the dataset is built (`AnalysisDataset`), as a per-report position + ground-bit inside test modeled on the evaluation's `EvaluationTargetData::computeSectorInsideInfo` / `Sector::isInside`: a report is on the ground when its ground bit is set or its reconstructed target type is ground-only, and the flight-level band compares the barometric altitude (FL = feet / 100) against the bounds, skipping the FL check when altitude is absent (as `Sector::isInside` does). Both the reference (RefTraj) and the test reports are filtered, so reference periods and observed reports stay consistent. Because the filter needs the ground bit, the dataset load uses an explicit read set (like `EvaluationManager`) that includes it; the "Ground Bit" meta-variable resolves to `ground_bit` for CAT010/020/021 and to `surface_target` for RefTraj/CAT062. A real `SectorLayer::isInside` can be AND-ed into the same inside test later to produce per-sector results.
+
 ---
 
 ## Result Report Structure

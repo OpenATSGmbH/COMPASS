@@ -128,6 +128,19 @@ public:
     void setCellSizeFeet(float v);
     void setMaxCellsPerAxis(unsigned int v);
 
+    /// Shared per-report scope filter (ground-only / flight-level band),
+    /// applied when the combined dataset is built (all grid inspectors).
+    bool  useGroundOnly() const { return use_ground_only_; }
+    bool  useMinFL()      const { return use_min_fl_; }
+    float minFL()         const { return min_fl_; }
+    bool  useMaxFL()      const { return use_max_fl_; }
+    float maxFL()         const { return max_fl_; }
+    void  setUseGroundOnly(bool v) { use_ground_only_ = v; }
+    void  setUseMinFL(bool v)      { use_min_fl_ = v; }
+    void  setMinFL(float v)        { min_fl_ = v; }
+    void  setUseMaxFL(bool v)      { use_max_fl_ = v; }
+    void  setMaxFL(float v)        { max_fl_ = v; }
+
     /// Effective cell sizes for an inspector: the configured horizontal and
     /// vertical cell sizes, multiplied by an integer factor on the 1-2-5
     /// ladder (1, 2, 5, 10, 20, 50, ...) only as much as is needed to keep
@@ -201,6 +214,12 @@ private:
     float        cell_size_m_        = 20.0f;
     float        cell_size_ft_       = 100.0f;
     unsigned int max_cells_per_axis_ = 1000;
+
+    bool         use_ground_only_    = false;
+    bool         use_min_fl_         = false;
+    float        min_fl_             = 0.0f;
+    bool         use_max_fl_         = false;
+    float        max_fl_             = 600.0f;
 
     std::unique_ptr<MLATDataItemInspectorSettings> data_item_settings_;
     std::unique_ptr<MLATCoverageInspectorSettings> coverage_settings_;

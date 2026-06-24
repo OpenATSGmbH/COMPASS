@@ -68,7 +68,7 @@ The configuration dialog is the shared `AnalyzeDataSourceDialog`, opened from th
 +----------------------------------------------------------------------------+
 ```
 
-The Data Source node reuses `DataSourcesUseWidget` filtered to CAT021 data sources.
+The Data Source node reuses `DataSourcesUseWidget` filtered to CAT021 data sources. It also carries the shared **Scope Filter** (Use Ground Only, Minimum / Maximum Flight Level) - see [readme_analysis_mlat_ru.md](readme_analysis_mlat_ru.md#configuration-dialog). For ground ADS-B work, "Use Ground Only" keeps only on-ground reports (ground bit set, or a ground-only target type); ground state on the reference comes from RefTraj's `surface_target` via the "Ground Bit" meta-variable.
 
 ---
 
@@ -82,7 +82,8 @@ Analyze ADS-B Data Source                         << result root
 +-- Overview                                       << framework-owned
 |     Run Configuration table: DSType, selected data sources (count
 |     + names), test line, selected reference data sources, reference
-|     line, professional-license state.
+|     line, professional-license state, scope filter (use ground only,
+|     flight-level band).
 |
 +-- Data Item Analysis                            << Feature 1
 |     About text.
