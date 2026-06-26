@@ -68,7 +68,7 @@ The configuration dialog is the shared `AnalyzeDataSourceDialog`, opened from th
 +----------------------------------------------------------------------------+
 ```
 
-The Data Source node reuses `DataSourcesUseWidget` filtered to CAT021 data sources. It also carries the shared **Scope Filter** (Use Ground Only, Minimum / Maximum Flight Level) - see [readme_analysis_mlat_ru.md](readme_analysis_mlat_ru.md#configuration-dialog). For ground ADS-B work, "Use Ground Only" keeps only on-ground reports (ground bit set, or a ground-only target type); ground state on the reference comes from RefTraj's `surface_target` via the "Ground Bit" meta-variable.
+The Data Source node reuses `DataSourcesUseWidget` filtered to CAT021 data sources. It also carries the shared **Scope Filter** (Use Ground Only, Minimum / Maximum Flight Level, Limit by Sectors) - see [readme_analysis_mlat_ru.md](readme_analysis_mlat_ru.md#configuration-dialog). For ground ADS-B work, "Use Ground Only" keeps only on-ground reports (ground bit set, or a ground-only target type); ground state on the reference comes from RefTraj's `surface_target` via the "Ground Bit" meta-variable. "Limit by Sectors" keeps only reports inside the selected sector layers, using the evaluation's exact `SectorLayer::isInside` test - useful for scoping the analysis to a coverage domain or a surface area (runway / taxiway / apron). Independently of that toggle, the Sensor Coverage and Position Accuracy inspectors emit a **per-sector overview table** ("PD by Sector" / "Accuracy by Sector": one row per selected sector plus an "All (in scope)" reference row), so coverage and surface accuracy can be compared area by area. See [readme_analysis_mlat_ru.md](readme_analysis_mlat_ru.md#configuration-dialog).
 
 ---
 

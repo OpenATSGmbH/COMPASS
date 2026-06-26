@@ -29,6 +29,7 @@
 #include "sectioncontenttext.h"
 #include "stringconv.h"
 #include "targetposition.h"
+#include "sectorlayer.h"
 #include "dbcontent/target/targetreportchain.h"
 #include "dbcontent/target/targetbase.h"
 
@@ -268,6 +269,18 @@ TransponderId transponderIdOf(unsigned int utn, AnalysisDataset& dataset)
     return out;
 }
 
+// Per-sector slot accumulation: a report slot is attributed to every selected
+// sector layer it lies in (evaluation's exact SectorLayer::isInside). `eui` /
+// `mui` accumulate across targets; `touched` is reset per target so the caller
+// can add the target's aircraft address once per sector.
+struct SectorWalkAccum
+{
+    const std::vector<std::shared_ptr<SectorLayer>>* layers = nullptr;
+    std::vector<std::uint64_t> eui;
+    std::vector<std::uint64_t> mui;
+    std::vector<char>          touched;
+};
+
 // Time-difference walk per target, counting the #EUI / #MUI attributed to this
 // target while also attributing them to the shared grid cells. Mirrors the MLAT
 // coverage walk; the returned pair feeds the per-transponder breakdown.
@@ -277,13 +290,33 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
                                 const std::vector<ptime>& tst_ts_sorted,
                                 AnalysisDataset& dataset,
                                 const std::vector<TargetReport3DGrid*>& grids,
-                                const Settings& settings)
+                                const Settings& settings,
+                                SectorWalkAccum* sec)
 {
     const auto miss_params = missParamsFromSettings(settings);
     const time_duration d_max = boost::posix_time::seconds(60);
 
     std::uint64_t eui = 0;
     std::uint64_t mui = 0;
+
+    auto accumSectors = [&](const CellAttribution& ca, bool is_miss) {
+        if (!sec || !sec->layers)
+            return;
+        dbContent::TargetPosition pos;
+        pos.latitude_     = ca.lat;
+        pos.longitude_    = ca.lon;
+        pos.has_altitude_ = true;
+        pos.altitude_     = ca.alt_ft;
+        for (std::size_t i = 0; i < sec->layers->size(); ++i)
+        {
+            const auto& L = (*sec->layers)[i];
+            if (L && L->isInside(pos, false, false))
+            {
+                if (is_miss) ++sec->mui[i]; else ++sec->eui[i];
+                sec->touched[i] = 1;
+            }
+        }
+    };
 
     for (const auto& period : periods)
     {
@@ -303,6 +336,7 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
                 for (auto* g : grids)
                     g->addEUI(ca.lat, ca.lon, ca.alt_ft);
                 ++eui;
+                accumSectors(ca, false);
             }
         }
 
@@ -343,6 +377,7 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
                     for (auto* g : grids)
                         g->addMUI(ca.lat, ca.lon, ca.alt_ft);
                     ++mui;
+                    accumSectors(ca, true);
                 }
             }
         }
@@ -395,6 +430,16 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
     std::map<int, std::string>                                  type_label;
 
     auto& dbcont_man = task_.compass().dbContentManager();
+
+    // Per-sector breakdown (over the selected sector layers, independent of the
+    // limit-by-sectors toggle). A slot is attributed to every sector it is in.
+    auto sector_layers = task_.scopeSectorLayers();
+    SectorWalkAccum sec;
+    sec.layers = &sector_layers;
+    sec.eui.assign(sector_layers.size(), 0);
+    sec.mui.assign(sector_layers.size(), 0);
+    sec.touched.assign(sector_layers.size(), 0);
+    std::vector<std::set<unsigned int>> sector_acads(sector_layers.size());
 
     const time_duration ref_max_gap = durationFromSeconds(settings.ref_max_time_diff_s_);
     const time_duration min_period_duration = boost::posix_time::seconds(1);
@@ -477,8 +522,10 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
         grids.push_back(tg.get());
         type_label[type_key] = TargetBase::toString(type_cat);
 
+        std::fill(sec.touched.begin(), sec.touched.end(), 0);
+
         auto counts = walkTargetTimeDifferenceCounted(
-            utn, periods, tst_ts_sorted, *dataset, grids, settings);
+            utn, periods, tst_ts_sorted, *dataset, grids, settings, &sec);
 
         if (tid.has_mops)
         {
@@ -487,6 +534,11 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
         }
         type_counts[type_key].eui += counts.first;
         type_counts[type_key].mui += counts.second;
+
+        // Record this transponder under each sector its slots touched.
+        for (std::size_t si = 0; si < sector_layers.size(); ++si)
+            if (sec.touched[si])
+                sector_acads[si].insert(tid.has_acad ? tid.acad : 0u);
 
         TransponderRow* row = nullptr;
         if (tid.has_acad)
@@ -634,6 +686,23 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
         grp.mui   = type_counts[catk].mui;
         grp.grid  = std::move(type_grids[catk]);
         type_groups_.push_back(std::move(grp));
+    }
+
+    // Per-sector rows (over the selected sector layers).
+    for (std::size_t si = 0; si < sector_layers.size(); ++si)
+    {
+        if (!sector_layers[si])
+            continue;
+        SectorRow r;
+        r.label            = sector_layers[si]->name();
+        r.num_transponders = sector_acads[si].size();
+        r.eui              = sec.eui[si];
+        r.mui              = sec.mui[si];
+        r.pd               = sec.eui[si] > 0
+            ? (static_cast<double>(sec.eui[si]) - static_cast<double>(sec.mui[si]))
+                  / static_cast<double>(sec.eui[si])
+            : 0.0;
+        result_.sectors.push_back(std::move(r));
     }
 }
 
@@ -865,6 +934,25 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
                    std::to_string(r.eui),
                    std::to_string(r.mui),
                    formatNumber(pd)});
+    }
+
+    // Per-sector overview (selected sector layers). "All" is the aggregate
+    // reference; sectors can overlap, so the rows need not sum to "All".
+    if (!result_.sectors.empty())
+    {
+        auto& st = section.addTable("PD by Sector", 5,
+                                    {"Sector", "Transponders", "#EUI", "#MUI", "PD"}, false);
+        st.addRow({"All (in scope)",
+                   std::to_string(result_.transponders.size()),
+                   std::to_string(result_.total_eui),
+                   std::to_string(result_.total_mui),
+                   formatNumber(result_.overall_pd)});
+        for (const auto& r : result_.sectors)
+            st.addRow({r.label,
+                       std::to_string(r.num_transponders),
+                       std::to_string(r.eui),
+                       std::to_string(r.mui),
+                       formatNumber(r.pd)});
     }
 
     if (grid_)

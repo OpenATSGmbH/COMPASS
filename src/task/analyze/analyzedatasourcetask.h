@@ -34,6 +34,7 @@ class TaskManager;
 class COMPASS;
 class DataSourceInspectorBase;
 class InspectorSettingsBase;
+class SectorLayer;
 
 class AnalysisDataset;
 
@@ -141,6 +142,19 @@ public:
     void  setUseMaxFL(bool v)      { use_max_fl_ = v; }
     void  setMaxFL(float v)        { max_fl_ = v; }
 
+    /// Limit the analysis to reports inside the selected sector layers (precise
+    /// per-report inside test, as in the evaluation). When off, all data is used.
+    bool  limitBySectors() const { return limit_by_sectors_; }
+    void  setLimitBySectors(bool v) { limit_by_sectors_ = v; }
+    /// Per sector-layer "used" flag (defaults to true for an unlisted layer).
+    bool  useSector(const std::string& layer_name) const;
+    void  setUseSector(const std::string& layer_name, bool value);
+    /// Names of the currently selected (used) sector layers that still exist.
+    std::vector<std::string> selectedSectorLayers() const;
+    /// The selected sector layers resolved to objects, for the per-sector
+    /// result breakdown (independent of `limit_by_sectors_`).
+    std::vector<std::shared_ptr<SectorLayer>> scopeSectorLayers() const;
+
     /// Effective cell sizes for an inspector: the configured horizontal and
     /// vertical cell sizes, multiplied by an integer factor on the 1-2-5
     /// ladder (1, 2, 5, 10, 20, 50, ...) only as much as is needed to keep
@@ -220,6 +234,9 @@ private:
     float        min_fl_             = 0.0f;
     bool         use_max_fl_         = false;
     float        max_fl_             = 600.0f;
+
+    bool           limit_by_sectors_ = false;
+    nlohmann::json used_sectors_;     // sector-layer name -> bool (unlisted = true)
 
     std::unique_ptr<MLATDataItemInspectorSettings> data_item_settings_;
     std::unique_ptr<MLATCoverageInspectorSettings> coverage_settings_;

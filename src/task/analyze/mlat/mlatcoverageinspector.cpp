@@ -30,6 +30,7 @@
 #include "stringconv.h"
 #include "system.h"
 #include "targetposition.h"
+#include "sectorlayer.h"
 #include "dbcontent/target/targetreportchain.h"
 
 #include "eval/requirement/detection/detection_pd_helpers.h"
@@ -164,6 +165,38 @@ struct CellAttribution
     double alt_ft = 0.0;
 };
 
+// Per-sector slot accumulation: a slot is attributed to every selected sector
+// layer it lies in (evaluation's exact SectorLayer::isInside). `eui`/`mui`
+// accumulate across targets; `touched` is reset per target so the caller can
+// count each target once per sector.
+struct SectorWalkAccum
+{
+    const std::vector<std::shared_ptr<SectorLayer>>* layers = nullptr;
+    std::vector<std::uint64_t> eui;
+    std::vector<std::uint64_t> mui;
+    std::vector<char>          touched;
+
+    void accum(const CellAttribution& ca, bool is_miss)
+    {
+        if (!layers)
+            return;
+        dbContent::TargetPosition pos;
+        pos.latitude_     = ca.lat;
+        pos.longitude_    = ca.lon;
+        pos.has_altitude_ = true;
+        pos.altitude_     = ca.alt_ft;
+        for (std::size_t i = 0; i < layers->size(); ++i)
+        {
+            const auto& L = (*layers)[i];
+            if (L && L->isInside(pos, false, false))
+            {
+                if (is_miss) ++mui[i]; else ++eui[i];
+                touched[i] = 1;
+            }
+        }
+    }
+};
+
 // Look up the reference position for `(utn, t)` and unpack it into the
 // counter-attribution coordinates used by `TargetReport3DGrid`.
 CellAttribution refCellAt(AnalysisDataset& dataset,
@@ -217,7 +250,8 @@ void walkTargetTimeDifference(unsigned int utn,
                               const std::vector<ptime>& tst_ts_sorted,
                               AnalysisDataset& dataset,
                               TargetReport3DGrid& grid,
-                              const Settings& settings)
+                              const Settings& settings,
+                              SectorWalkAccum* sec)
 {
     const auto miss_params = missParamsFromSettings(settings);
 
@@ -238,7 +272,10 @@ void walkTargetTimeDifference(unsigned int utn,
                                       k * settings.update_interval_s_);
             auto ca = refCellAt(dataset, utn, t_slot, d_max);
             if (ca.valid)
+            {
                 grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
+                if (sec) sec->accum(ca, false);
+            }
         }
 
         // Test timestamps inside [period.begin, period.end].
@@ -277,7 +314,10 @@ void walkTargetTimeDifference(unsigned int utn,
                     break;
                 auto ca = refCellAt(dataset, utn, t_miss, d_max);
                 if (ca.valid)
+                {
                     grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
+                    if (sec) sec->accum(ca, true);
+                }
             }
         }
     }
@@ -346,7 +386,8 @@ void walkTargetStatusMessage(unsigned int utn,
                              const std::vector<ptime>& cycles_sorted,
                              AnalysisDataset& dataset,
                              TargetReport3DGrid& grid,
-                             const Settings& /*settings*/)
+                             const Settings& /*settings*/,
+                             SectorWalkAccum* sec)
 {
     const time_duration d_max = boost::posix_time::seconds(60);
 
@@ -361,8 +402,12 @@ void walkTargetStatusMessage(unsigned int utn,
             if (!ca.valid)
                 continue;
             grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
+            if (sec) sec->accum(ca, false);
             if (ev.is_miss)
+            {
                 grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
+                if (sec) sec->accum(ca, true);
+            }
         }
     }
 }
@@ -420,6 +465,16 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         durationFromSeconds(settings.ref_max_time_diff_s_);
     const time_duration min_period_duration = boost::posix_time::seconds(1);
 
+    // Per-sector breakdown (over the selected sector layers, independent of the
+    // limit-by-sectors toggle). A slot is attributed to every sector it is in.
+    auto sector_layers = task_.scopeSectorLayers();
+    SectorWalkAccum sec;
+    sec.layers = &sector_layers;
+    sec.eui.assign(sector_layers.size(), 0);
+    sec.mui.assign(sector_layers.size(), 0);
+    sec.touched.assign(sector_layers.size(), 0);
+    std::vector<std::size_t> sector_target_count(sector_layers.size(), 0);
+
     unsigned int targets_walked = 0;
     unsigned int targets_no_ref = 0;
     unsigned int targets_no_tst = 0;
@@ -468,12 +523,18 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
 
         ++targets_walked;
 
+        std::fill(sec.touched.begin(), sec.touched.end(), 0);
+
         if (use_status_method)
             walkTargetStatusMessage(utn, periods, tst_ts_sorted,
-                                    status_cycles, *dataset, grid, settings);
+                                    status_cycles, *dataset, grid, settings, &sec);
         else
             walkTargetTimeDifference(utn, periods, tst_ts_sorted,
-                                     *dataset, grid, settings);
+                                     *dataset, grid, settings, &sec);
+
+        for (std::size_t si = 0; si < sector_layers.size(); ++si)
+            if (sec.touched[si])
+                ++sector_target_count[si];
     }
 
     auto horizontal = grid.projectHorizontal();
@@ -553,6 +614,23 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         result_.ui_hist_bin_width = w;
         result_.ui_hist_bins      = std::move(bins);
         result_.ui_hist_overflow  = overflow;
+    }
+
+    // Per-sector rows (over the selected sector layers).
+    for (std::size_t si = 0; si < sector_layers.size(); ++si)
+    {
+        if (!sector_layers[si])
+            continue;
+        SectorRow r;
+        r.label       = sector_layers[si]->name();
+        r.num_targets = sector_target_count[si];
+        r.eui         = sec.eui[si];
+        r.mui         = sec.mui[si];
+        r.pd          = sec.eui[si] > 0
+            ? (static_cast<double>(sec.eui[si]) - static_cast<double>(sec.mui[si]))
+                  / static_cast<double>(sec.eui[si])
+            : 0.0;
+        result_.sectors.push_back(std::move(r));
     }
 }
 
@@ -781,6 +859,25 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
         nlohmann::json vp_json;
         vp->toJSON(vp_json);
         section.addFigure(fig, ResultReport::SectionContentViewable(vp_json));
+    }
+
+    // Per-sector overview (selected sector layers). "All" is the aggregate
+    // reference; sectors can overlap, so the rows need not sum to "All".
+    if (!result_.sectors.empty())
+    {
+        auto& st = section.addTable("PD by Sector", 5,
+                                    {"Sector", "Targets", "#EUI", "#MUI", "PD"}, false);
+        st.addRow({"All (in scope)",
+                   std::to_string(result_.targets_walked),
+                   std::to_string(result_.total_eui),
+                   std::to_string(result_.total_mui),
+                   formatNumber(result_.overall_pd)});
+        for (const auto& r : result_.sectors)
+            st.addRow({r.label,
+                       std::to_string(r.num_targets),
+                       std::to_string(r.eui),
+                       std::to_string(r.mui),
+                       formatNumber(r.pd)});
     }
 
     if (grid_)

@@ -55,6 +55,7 @@
 #include <type_traits>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 namespace ResultReport
 {
@@ -2156,6 +2157,34 @@ SectionContentTableWidget::SectionContentTableWidget(SectionContentTable* conten
     
     table_view_->resizeColumnsToContents();
     table_view_->resizeRowsToContents();
+
+    // Size the table to its content height (header + rows) so it neither gets
+    // compressed to a few pixels in a busy section nor balloons to fill the
+    // pane when nearly empty. Capped at a row limit; beyond that the table
+    // scrolls internally rather than growing without bound.
+    {
+        const int rows  = proxy_model_->rowCount();
+        const int row_h = rows > 0
+            ? std::max(table_view_->verticalHeader()->sectionSize(0),
+                       table_view_->verticalHeader()->defaultSectionSize())
+            : table_view_->verticalHeader()->defaultSectionSize();
+        const int hdr_h = table_view_->horizontalHeader()->sizeHint().height();
+
+        const int kMaxRows  = 20;            // cap; beyond this the table scrolls
+        const int body_rows = std::min(rows, kMaxRows);
+        // Total height of the (capped) rows; use the exact sum when within cap.
+        const int rows_h = (rows <= kMaxRows)
+            ? table_view_->verticalHeader()->length()
+            : body_rows * row_h;
+        const int hbar   = table_view_->horizontalScrollBar()->sizeHint().height();
+        const int total  = hdr_h + rows_h + hbar + 2 * table_view_->frameWidth() + 2;
+
+        // Fix the height to the content so the section lays the table out at its
+        // natural size rather than stretching or squeezing it.
+        table_view_->setMinimumHeight(total);
+        table_view_->setMaximumHeight(total);
+    }
+
     table_view_->verticalScrollBar()->installEventFilter(this);
     table_view_->horizontalScrollBar()->installEventFilter(this);
 

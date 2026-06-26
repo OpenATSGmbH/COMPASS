@@ -30,6 +30,7 @@
 
 #include "compass.h"
 #include "db_context_manager.h"
+#include "sectorlayer.h"
 #include "data_source.h"
 
 #include <QCheckBox>
@@ -433,6 +434,55 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
         row->addWidget(max_fl_cb);
         row->addWidget(max_fl_spin, 1);
         scope_form->addRow("Maximum Flight Level", row);
+    }
+
+    // Limit by sectors: precise per-report inside test (as in the evaluation)
+    // against the selected sector layers; when off, all data is used.
+    {
+        const auto& layers = task_.compass().dbContextManager().sectorLayers();
+
+        auto* sectors_cb = new QCheckBox();
+        sectors_cb->setChecked(task_.limitBySectors());
+        sectors_cb->setEnabled(!layers.empty());
+        sectors_cb->setToolTip(layers.empty()
+            ? "No sector layers are defined in the data context."
+            : "Keep only reports inside the selected sector layers.");
+        scope_form->addRow("Limit by Sectors", sectors_cb);
+
+        auto* sectors_box  = new QGroupBox("Sectors");
+        auto* sectors_lay  = new QVBoxLayout(sectors_box);
+        sectors_box->setEnabled(task_.limitBySectors() && !layers.empty());
+
+        if (layers.empty())
+        {
+            sectors_lay->addWidget(new QLabel("(none defined)"));
+        }
+        else
+        {
+            for (const auto& layer : layers)
+            {
+                if (!layer)
+                    continue;
+                const std::string name = layer->name();
+                auto* cb = new QCheckBox(QString::fromStdString(name));
+                cb->setChecked(task_.useSector(name));
+                connect(cb, &QCheckBox::toggled, this, [this, name](bool on) {
+                    if (updating_ui_) return;
+                    task_.setUseSector(name, on);
+                    updateRunEnabled();
+                });
+                sectors_lay->addWidget(cb);
+            }
+        }
+
+        connect(sectors_cb, &QCheckBox::toggled, this, [this, sectors_box](bool on) {
+            if (updating_ui_) return;
+            task_.setLimitBySectors(on);
+            sectors_box->setEnabled(on);
+            updateRunEnabled();
+        });
+
+        scope_form->addRow(sectors_box);
     }
 
     outer->addWidget(scope_box);
@@ -927,6 +977,9 @@ void AnalyzeDataSourceDialog::updateRunEnabled()
         }
         can_run = any_enabled;
     }
+    // Limit by sectors requires at least one selected sector layer.
+    if (can_run && task_.limitBySectors() && task_.selectedSectorLayers().empty())
+        can_run = false;
     run_button_->setEnabled(can_run);
 }
 

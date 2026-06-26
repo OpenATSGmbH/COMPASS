@@ -26,6 +26,7 @@
 #include "dbcontent/dbcontentstatusinfo.h"
 #include "dbcontent/target/targetbase.h"
 #include "dbcontent/variable/variableset.h"
+#include "sectorlayer.h"
 #include "targetposition.h"
 #include "idbvariableresolver.h"
 #include "loadrequest.h"
@@ -316,20 +317,24 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
     const ScopeFilter& sf = scope_filter_;
 
     // Per-report inside test (mirrors EvaluationTargetData::computeSectorInsideInfo):
-    // a report is in scope when its ground state and barometric flight level pass
-    // the configured constraints. `gb_vec` / `mc_vec` are the (optional) ground-bit
-    // and Mode-C vectors for the dbcontent; pass nullptr when absent.
-    auto inScope = [&sf](const NullableVector<bool>* gb_vec,
+    // a report is in scope when its ground state, barometric flight level and
+    // sector membership pass the configured constraints. `lat/lon/mc/gb` are the
+    // (optional) position, Mode-C and ground-bit vectors; pass nullptr when absent.
+    auto inScope = [&sf](const NullableVector<double>* lat_vec,
+                         const NullableVector<double>* lon_vec,
                          const NullableVector<float>* mc_vec,
+                         const NullableVector<bool>* gb_vec,
                          unsigned int idx,
                          bool target_ground_only) -> bool
     {
         if (!sf.active())
             return true;
 
-        bool on_ground = target_ground_only;
-        if (!on_ground && gb_vec && !gb_vec->isNull(idx))
-            on_ground = gb_vec->get(idx);
+        boost::optional<bool> ground_bit;
+        if (gb_vec && !gb_vec->isNull(idx))
+            ground_bit = gb_vec->get(idx);
+
+        bool on_ground = target_ground_only || (ground_bit.has_value() && ground_bit.value());
 
         if (sf.ground_only && !on_ground)
             return false;
@@ -342,6 +347,39 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
             if (sf.use_min_fl && fl < sf.min_fl)
                 return false;
             if (sf.use_max_fl && fl > sf.max_fl)
+                return false;
+        }
+
+        // Sector membership: keep only reports inside any selected sector layer,
+        // using the evaluation's exact inside test
+        // (SectorLayer::isInside(pos, has_gb, gb_set)).
+        if (sf.limit_by_sectors && !sf.sectors.empty())
+        {
+            if (!lat_vec || !lon_vec || lat_vec->isNull(idx) || lon_vec->isNull(idx))
+                return false;
+
+            dbContent::TargetPosition pos;
+            pos.latitude_  = lat_vec->get(idx);
+            pos.longitude_ = lon_vec->get(idx);
+            if (mc_vec && !mc_vec->isNull(idx))
+            {
+                pos.has_altitude_ = true;
+                pos.altitude_     = mc_vec->get(idx);
+            }
+
+            const bool has_gb = ground_bit.has_value();
+            const bool gb_set = ground_bit.has_value() ? ground_bit.value() : false;
+
+            bool inside = false;
+            for (const auto& sl : sf.sectors)
+            {
+                if (sl && sl->isInside(pos, has_gb, gb_set))
+                {
+                    inside = true;
+                    break;
+                }
+            }
+            if (!inside)
                 return false;
         }
         return true;
@@ -362,6 +400,10 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
         const bool has_lon = accessor_->hasMetaVar<double>(kReferenceDBContent, meta_var_longitude_);
         const bool has_mc  = accessor_->hasMetaVar<float>(kReferenceDBContent, meta_var_mc_);
 
+        NullableVector<double>* ref_lat_vec = has_lat
+            ? &accessor_->getMetaVar<double>(kReferenceDBContent, meta_var_latitude_) : nullptr;
+        NullableVector<double>* ref_lon_vec = has_lon
+            ? &accessor_->getMetaVar<double>(kReferenceDBContent, meta_var_longitude_) : nullptr;
         NullableVector<float>* ref_mc_vec = has_mc
             ? &accessor_->getMetaVar<float>(kReferenceDBContent, meta_var_mc_) : nullptr;
         NullableVector<bool>* ref_gb_vec =
@@ -380,7 +422,7 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
             unsigned int utn = utn_vec.get(i);
             ptime ts         = ts_vec.get(i);
 
-            if (!inScope(ref_gb_vec, ref_mc_vec, i, targetGroundOnly(utn)))
+            if (!inScope(ref_lat_vec, ref_lon_vec, ref_mc_vec, ref_gb_vec, i, targetGroundOnly(utn)))
                 continue;
 
             addToReferenceChain(utn, ts, i);
@@ -456,6 +498,12 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
         auto& utn_vec   = accessor_->getMetaVar<unsigned int>(dbcontent_name, meta_var_utn_);
         auto& ds_id_vec = accessor_->getMetaVar<unsigned int>(dbcontent_name, meta_var_ds_id_);
 
+        NullableVector<double>* tst_lat_vec =
+            accessor_->hasMetaVar<double>(dbcontent_name, meta_var_latitude_)
+            ? &accessor_->getMetaVar<double>(dbcontent_name, meta_var_latitude_) : nullptr;
+        NullableVector<double>* tst_lon_vec =
+            accessor_->hasMetaVar<double>(dbcontent_name, meta_var_longitude_)
+            ? &accessor_->getMetaVar<double>(dbcontent_name, meta_var_longitude_) : nullptr;
         NullableVector<float>* tst_mc_vec =
             accessor_->hasMetaVar<float>(dbcontent_name, meta_var_mc_)
             ? &accessor_->getMetaVar<float>(dbcontent_name, meta_var_mc_) : nullptr;
@@ -477,7 +525,7 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
             unsigned int utn = utn_vec.get(i);
             ptime ts         = ts_vec.get(i);
 
-            if (!inScope(tst_gb_vec, tst_mc_vec, i, targetGroundOnly(utn)))
+            if (!inScope(tst_lat_vec, tst_lon_vec, tst_mc_vec, tst_gb_vec, i, targetGroundOnly(utn)))
                 continue;
 
             addToTestChain(utn, dbcontent_name, ts, i);

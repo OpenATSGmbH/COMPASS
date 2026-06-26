@@ -107,6 +107,17 @@ private:
         std::uint64_t mui      = 0;
     };
 
+    /// One sector row in the "PD by Sector" overview table. The "All" reference
+    /// row reuses the aggregate ComputeResult.
+    struct SectorRow
+    {
+        std::string   label;
+        std::size_t   num_transponders = 0;
+        std::uint64_t eui = 0;
+        std::uint64_t mui = 0;
+        double        pd  = 0.0;
+    };
+
     /// Aggregated result of the per-target slot-walk. Populated by `compute()`
     /// (worker-thread safe) and consumed by `writeReport()` (main thread).
     struct ComputeResult
@@ -143,6 +154,8 @@ private:
 
         std::vector<TransponderRow> transponders;  // sorted by PD ascending
         std::size_t type_groups_dropped = 0;
+
+        std::vector<SectorRow> sectors;  // per selected sector layer
     };
 
     /// One MOPS-version or target-type group: aggregate PD plus a grid holding

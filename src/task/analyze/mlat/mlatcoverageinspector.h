@@ -101,6 +101,17 @@ public:
     ~MLATCoverageInspector() override;
 
 private:
+    /// One sector row in the "PD by Sector" overview table. The "All" reference
+    /// row reuses the aggregate ComputeResult.
+    struct SectorRow
+    {
+        std::string   label;
+        std::size_t   num_targets = 0;
+        std::uint64_t eui = 0;
+        std::uint64_t mui = 0;
+        double        pd  = 0.0;
+    };
+
     /// Aggregated result of the per-target slot-walk. Populated by `compute()`
     /// (worker-thread safe) and consumed by `writeReport()` (main thread).
     struct ComputeResult
@@ -135,6 +146,8 @@ private:
         double p5_per_cell_pd      = 0.0;
         bool   has_worst_cell      = false;
         double worst_cell_pd       = 1.0;
+
+        std::vector<SectorRow> sectors;  // per selected sector layer
     };
 
     ComputeResult                      result_;

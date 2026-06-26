@@ -40,6 +40,7 @@
 #include "mainwindow.h"
 #include "taskmanager.h"
 #include "db_context_manager.h"
+#include "sectorlayer.h"
 #include "data_source.h"
 #include "license.h"
 #include "licensemanager.h"
@@ -92,6 +93,9 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     registerParameter("min_fl",                     &min_fl_,                     min_fl_);
     registerParameter("use_max_fl",                 &use_max_fl_,                 use_max_fl_);
     registerParameter("max_fl",                     &max_fl_,                     max_fl_);
+
+    registerParameter("limit_by_sectors",           &limit_by_sectors_,           limit_by_sectors_);
+    registerParameter("used_sectors",               &used_sectors_,               nlohmann::json::object());
 
     tooltip_ = "Analyze a chosen data source from multiple angles "
                "(data items, sensor coverage / PD, position accuracy).";
@@ -614,6 +618,42 @@ bool AnalyzeDataSourceTask::professionalLicenseEnabled() const
         license::License::Component::ComponentProbIMMReconstructor);
 }
 
+bool AnalyzeDataSourceTask::useSector(const std::string& layer_name) const
+{
+    if (used_sectors_.contains(layer_name))
+        return used_sectors_.at(layer_name).get<bool>();
+    return true;  // unlisted layers default to used
+}
+
+void AnalyzeDataSourceTask::setUseSector(const std::string& layer_name, bool value)
+{
+    used_sectors_[layer_name] = value;
+}
+
+std::vector<std::string> AnalyzeDataSourceTask::selectedSectorLayers() const
+{
+    std::vector<std::string> out;
+    auto& ctx = compass().dbContextManager();
+    for (const auto& layer : ctx.sectorLayers())
+    {
+        if (layer && useSector(layer->name()))
+            out.push_back(layer->name());
+    }
+    return out;
+}
+
+std::vector<std::shared_ptr<SectorLayer>> AnalyzeDataSourceTask::scopeSectorLayers() const
+{
+    std::vector<std::shared_ptr<SectorLayer>> out;
+    auto& ctx = compass().dbContextManager();
+    for (const auto& layer : ctx.sectorLayers())
+    {
+        if (layer && useSector(layer->name()))
+            out.push_back(layer);
+    }
+    return out;
+}
+
 COMPASS& AnalyzeDataSourceTask::compass() const
 {
     return task_manager_.compass();
@@ -814,6 +854,17 @@ void AnalyzeDataSourceTask::run()
         if (fl.empty()) fl = "none";
         info.addRow({"Flight level filter", fl});
     }
+    {
+        std::string sec = "no";
+        if (limit_by_sectors_)
+        {
+            sec.clear();
+            for (const auto& name : selectedSectorLayers())
+                sec += (sec.empty() ? "" : ", ") + name;
+            if (sec.empty()) sec = "yes (none selected)";
+        }
+        info.addRow({"Limit by sectors", sec});
+    }
 
     advanceStep("Preparing result...");
 
@@ -831,6 +882,14 @@ void AnalyzeDataSourceTask::run()
         scope_filter.min_fl      = min_fl_;
         scope_filter.use_max_fl  = use_max_fl_;
         scope_filter.max_fl      = max_fl_;
+        scope_filter.limit_by_sectors = limit_by_sectors_;
+        if (limit_by_sectors_)
+        {
+            auto& ctx = compass().dbContextManager();
+            for (const auto& name : selectedSectorLayers())
+                if (ctx.hasSectorLayer(name))
+                    scope_filter.sectors.push_back(ctx.sectorLayer(name));
+        }
         dataset->setScopeFilter(scope_filter);
 
         std::string error;

@@ -30,6 +30,8 @@
 
 class COMPASS;
 
+class SectorLayer;
+
 namespace dbContent
 {
 class DBContentAccessor;
@@ -73,7 +75,17 @@ public:
         bool  use_max_fl  = false;
         float max_fl      = 600.0f;
 
-        bool active() const { return ground_only || use_min_fl || use_max_fl; }
+        // When set, keep only reports inside any of these sector layers, using
+        // the same per-report inside test as the evaluation
+        // (SectorLayer::isInside(pos, has_gb, gb_set)).
+        bool limit_by_sectors = false;
+        std::vector<std::shared_ptr<SectorLayer>> sectors;
+
+        bool active() const
+        {
+            return ground_only || use_min_fl || use_max_fl
+                   || (limit_by_sectors && !sectors.empty());
+        }
     };
 
     explicit AnalysisDataset(COMPASS& compass);
