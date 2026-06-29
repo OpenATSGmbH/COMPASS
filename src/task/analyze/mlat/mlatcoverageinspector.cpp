@@ -20,6 +20,7 @@
 #include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
 #include "targetreport3dgrid.h"
+#include "movementui.h"
 
 #include "compass.h"
 #include "logger.h"
@@ -63,6 +64,10 @@ using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
 using Utils::Number::mean;
 using Utils::Number::percentile;
+using analysis::MovementUI;
+using analysis::SpeedSamples;
+using analysis::gatherTestSpeeds;
+using analysis::gatherRefSpeeds;
 
 MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& config_json,
                                                              Configurable* parent)
@@ -70,6 +75,10 @@ MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& con
 {
     registerParameter("pd_method_int",   &pd_method_int_,   pd_method_int_);
     registerParameter("update_interval_s", &update_interval_s_, update_interval_s_);
+    registerParameter("update_interval_standing_s", &update_interval_standing_s_,
+                      update_interval_standing_s_);
+    registerParameter("standing_speed_max_mps", &standing_speed_max_mps_,
+                      standing_speed_max_mps_);
 
     registerParameter("use_miss_tolerance", &use_miss_tolerance_, use_miss_tolerance_);
     registerParameter("miss_tolerance_s",   &miss_tolerance_s_,   miss_tolerance_s_);
@@ -113,18 +122,6 @@ namespace
 using Settings = MLATCoverageInspectorSettings;
 using EvaluationRequirement::PDHelpers::MissTestParams;
 using EvaluationRequirement::PDHelpers::RefPeriod;
-
-MissTestParams missParamsFromSettings(const Settings& s)
-{
-    MissTestParams p;
-    p.update_interval_s  = s.update_interval_s_;
-    p.use_miss_tolerance = s.use_miss_tolerance_;
-    p.miss_tolerance_s   = s.miss_tolerance_s_;
-    // min/max gap filters not exposed on the inspector: the dataset
-    // already restricts the load to selected sources, so out-of-coverage
-    // gating from the detection requirement is not needed here.
-    return p;
-}
 
 double partialSeconds(const time_duration& d)
 {
@@ -251,31 +248,34 @@ void walkTargetTimeDifference(unsigned int utn,
                               AnalysisDataset& dataset,
                               TargetReport3DGrid& grid,
                               const Settings& settings,
+                              const analysis::MovementUI& mv,
                               SectorWalkAccum* sec)
 {
-    const auto miss_params = missParamsFromSettings(settings);
-
     const time_duration d_max = boost::posix_time::seconds(60);
 
     for (const auto& period : periods)
     {
         const double period_s = partialSeconds(period.end - period.begin);
-        if (period_s <= 0.0 || settings.update_interval_s_ <= 0.0f)
+        if (period_s <= 0.0)
             continue;
 
-        const unsigned int n_slots = static_cast<unsigned int>(
-            std::floor(period_s / settings.update_interval_s_));
-
-        for (unsigned int k = 0; k < n_slots; ++k)
+        // Expected slots: step adaptively by the local update interval, so a
+        // standing target (which the MLAT system updates less often) is expected
+        // less often instead of accruing false misses.
+        std::size_t guard = 0;
+        const std::size_t max_iter = 50'000'000;
+        for (ptime t_slot = period.begin; t_slot < period.end; )
         {
-            ptime t_slot = addSeconds(period.begin,
-                                      k * settings.update_interval_s_);
             auto ca = refCellAt(dataset, utn, t_slot, d_max);
             if (ca.valid)
             {
                 grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
                 if (sec) sec->accum(ca, false);
             }
+            double ui = mv.uiAt(t_slot);
+            if (ui <= 0.0 || ++guard > max_iter)
+                break;
+            t_slot = addSeconds(t_slot, ui);
         }
 
         // Test timestamps inside [period.begin, period.end].
@@ -300,6 +300,17 @@ void walkTargetTimeDifference(unsigned int utn,
             const float gap_s =
                 static_cast<float>(partialSeconds(gap_end - gap_start));
 
+            // Expected cadence inside the gap follows the target's movement at
+            // the gap start (moving vs standing update interval).
+            const double gap_ui = mv.uiAt(gap_start);
+            if (gap_ui <= 0.0)
+                continue;
+
+            MissTestParams miss_params;
+            miss_params.update_interval_s  = static_cast<float>(gap_ui);
+            miss_params.use_miss_tolerance = settings.use_miss_tolerance_;
+            miss_params.miss_tolerance_s   = settings.miss_tolerance_s_;
+
             if (!EvaluationRequirement::PDHelpers::isMiss(gap_s, miss_params))
                 continue;
 
@@ -308,8 +319,7 @@ void walkTargetTimeDifference(unsigned int utn,
 
             for (unsigned int m = 0; m < n_misses; ++m)
             {
-                ptime t_miss = addSeconds(gap_start,
-                                          (m + 1) * settings.update_interval_s_);
+                ptime t_miss = addSeconds(gap_start, (m + 1) * gap_ui);
                 if (t_miss >= gap_end)
                     break;
                 auto ca = refCellAt(dataset, utn, t_miss, d_max);
@@ -329,7 +339,8 @@ namespace mlatcoverage_internal
 std::vector<CycleEvent> evaluateCyclesInPeriod(
     const EvaluationRequirement::PDHelpers::RefPeriod& period,
     const std::vector<ptime>& cycles_sorted,
-    const std::vector<ptime>& tst_ts_sorted)
+    const std::vector<ptime>& tst_ts_sorted,
+    const analysis::MovementUI* mv)
 {
     std::vector<CycleEvent> out;
 
@@ -342,15 +353,38 @@ std::vector<CycleEvent> evaluateCyclesInPeriod(
 
     out.reserve(static_cast<std::size_t>(std::distance(cyc_begin, cyc_end)));
 
-    for (auto it = cyc_begin; it != cyc_end; ++it)
+    const double standing_ui = mv ? mv->ui_standing : 0.0;
+
+    for (auto it = cyc_begin; it != cyc_end; )
     {
         ptime t_cycle = *it;
-        auto next_it = std::next(it);
-        ptime t_window_end =
-            (next_it != cyc_end) ? *next_it : period.end;
+
+        // Standing targets are expected only once per standing UI, not every
+        // cycle; the window then spans that interval and the cycles inside it
+        // are skipped (a standing target legitimately reports less often than
+        // the cycle rate). Moving targets keep the per-cycle window.
+        const bool standing = mv && standing_ui > 0.0 && mv->standingAt(t_cycle);
+
+        ptime t_window_end;
+        if (standing)
+        {
+            t_window_end = t_cycle
+                + boost::posix_time::microseconds(
+                      static_cast<long long>(std::llround(standing_ui * 1.0e6)));
+            if (t_window_end > period.end)
+                t_window_end = period.end;
+        }
+        else
+        {
+            auto next_it = std::next(it);
+            t_window_end = (next_it != cyc_end) ? *next_it : period.end;
+        }
 
         if (t_window_end <= t_cycle)
+        {
+            ++it;
             continue;
+        }
 
         auto tst_lo = std::lower_bound(tst_ts_sorted.begin(),
                                        tst_ts_sorted.end(),
@@ -362,6 +396,11 @@ std::vector<CycleEvent> evaluateCyclesInPeriod(
         ev.t_cycle = t_cycle;
         ev.is_miss = !has_test;
         out.push_back(ev);
+
+        if (standing)
+            it = std::lower_bound(it, cyc_end, t_window_end);  // skip covered cycles
+        else
+            ++it;
     }
 
     return out;
@@ -387,6 +426,7 @@ void walkTargetStatusMessage(unsigned int utn,
                              AnalysisDataset& dataset,
                              TargetReport3DGrid& grid,
                              const Settings& /*settings*/,
+                             const analysis::MovementUI& mv,
                              SectorWalkAccum* sec)
 {
     const time_duration d_max = boost::posix_time::seconds(60);
@@ -394,7 +434,7 @@ void walkTargetStatusMessage(unsigned int utn,
     for (const auto& period : periods)
     {
         auto events = mlatcoverage_internal::evaluateCyclesInPeriod(
-            period, cycles_sorted, tst_ts_sorted);
+            period, cycles_sorted, tst_ts_sorted, &mv);
 
         for (const auto& ev : events)
         {
@@ -525,12 +565,24 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
 
         std::fill(sec.touched.begin(), sec.touched.end(), 0);
 
+        // Movement classification for the time-difference walk: MLAT-reported
+        // ground speed where available, RefTraj speed as fallback.
+        SpeedSamples test_spd = gatherTestSpeeds(utn, *dataset);
+        SpeedSamples ref_spd  = gatherRefSpeeds(ref_chain);
+        MovementUI mv;
+        mv.test         = &test_spd;
+        mv.ref          = &ref_spd;
+        mv.standing_max = settings.standing_speed_max_mps_;
+        mv.ui_moving    = settings.update_interval_s_;
+        mv.ui_standing  = settings.update_interval_standing_s_;
+        mv.window_s     = std::max(6.0, 2.0 * settings.update_interval_standing_s_);
+
         if (use_status_method)
             walkTargetStatusMessage(utn, periods, tst_ts_sorted,
-                                    status_cycles, *dataset, grid, settings, &sec);
+                                    status_cycles, *dataset, grid, settings, mv, &sec);
         else
             walkTargetTimeDifference(utn, periods, tst_ts_sorted,
-                                     *dataset, grid, settings, &sec);
+                                     *dataset, grid, settings, mv, &sec);
 
         for (std::size_t si = 0; si < sector_layers.size(); ++si)
             if (sec.touched[si])
@@ -760,7 +812,17 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     {
         std::ostringstream os;
         os << settings.update_interval_s_ << " s";
-        recap.addRow({"Nominal update interval (UI)", os.str()});
+        recap.addRow({"Update interval (moving)", os.str()});
+    }
+    {
+        std::ostringstream os;
+        os << settings.update_interval_standing_s_ << " s";
+        recap.addRow({"Update interval (standing)", os.str()});
+    }
+    {
+        std::ostringstream os;
+        os << settings.standing_speed_max_mps_ << " m/s";
+        recap.addRow({"Standing speed threshold", os.str()});
     }
     recap.addRow({"Use miss tolerance", settings.use_miss_tolerance_ ? "yes" : "no"});
     {

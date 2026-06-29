@@ -638,8 +638,29 @@ void buildCoverageSettings(QFormLayout* form,
     QObject::connect(ui_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                      [&s](double v) { s.update_interval_s_ = static_cast<float>(v); });
 
+    auto* ui_stand_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_standing_s_);
+    QObject::connect(ui_stand_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.update_interval_standing_s_ = static_cast<float>(v); });
+
+    auto* stand_spd_spin = makeFloatSpin(0.0, 50.0, 0.1, 2, " m/s", s.standing_speed_max_mps_);
+    QObject::connect(stand_spd_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.standing_speed_max_mps_ = static_cast<float>(v); });
+
+    // Standing UI/threshold only apply to the time-difference method.
+    auto on_method_standing = [ui_stand_spin, stand_spd_spin, method_combo](int) {
+        bool td = method_combo->currentData().toInt()
+                  == static_cast<int>(MLATCoverageInspectorSettings::PDMethod::TimeDifference);
+        ui_stand_spin->setEnabled(td);
+        stand_spd_spin->setEnabled(td);
+    };
+    QObject::connect(method_combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     on_method_standing);
+    on_method_standing(0);
+
     form->addRow("PD Calculation Method", method_combo);
-    form->addRow("Update Interval", ui_spin);
+    form->addRow("Update Interval (Moving)", ui_spin);
+    form->addRow("Update Interval (Standing)", ui_stand_spin);
+    form->addRow("Standing Speed Threshold", stand_spd_spin);
 
     auto* miss_cb  = new QCheckBox();
     miss_cb->setChecked(s.use_miss_tolerance_);

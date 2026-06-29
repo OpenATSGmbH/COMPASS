@@ -42,7 +42,16 @@ public:
     PDMethod pdMethod() const
     { return static_cast<PDMethod>(pd_method_int_); }
 
-    float update_interval_s_ = 1.0f;   // UI; Time Difference only.
+    float update_interval_s_ = 1.0f;   // moving UI; Time Difference only.
+
+    // Motion-adaptive cadence (Time Difference only): a standing target (MLAT
+    // reports it less often) is expected at the slower standing UI instead of
+    // accruing false misses. A slot is standing when the reported ground speed
+    // (RefTraj speed as fallback) is below `standing_speed_max_mps_`; unknown
+    // speed counts as moving. MLAT surface cadence is fast, so the standing UI
+    // is shorter than the ADS-B equivalent.
+    float update_interval_standing_s_ = 2.0f;   // standing UI
+    float standing_speed_max_mps_     = 0.5f;   // ground speed below this = standing
 
     // Miss test (mirrors the detection requirement, simplified to miss tolerance only).
     bool  use_miss_tolerance_ = true;

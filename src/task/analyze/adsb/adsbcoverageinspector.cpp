@@ -19,6 +19,7 @@
 #include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
 #include "targetreport3dgrid.h"
+#include "movementui.h"
 
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -67,6 +68,10 @@ using boost::posix_time::time_duration;
 using dbContent::TargetReport::Chain;
 using Utils::Number::mean;
 using Utils::Number::percentile;
+using analysis::MovementUI;
+using analysis::SpeedSamples;
+using analysis::gatherTestSpeeds;
+using analysis::gatherRefSpeeds;
 
 ADSBCoverageInspectorSettings::ADSBCoverageInspectorSettings(nlohmann::json& config_json,
                                                              Configurable* parent)
@@ -190,112 +195,6 @@ std::vector<ptime> gatherTestTimestamps(unsigned int utn,
             out.push_back(kv.first);
     }
     std::sort(out.begin(), out.end());
-    return out;
-}
-
-// Time-sorted (timestamp, ground speed [m/s]) samples for a target. Speed is
-// NaN where the report carried no ground speed. Used to classify each PD slot
-// as standing or moving.
-struct SpeedSamples
-{
-    std::vector<ptime>  ts;
-    std::vector<double> sp;  // m/s, NaN if unknown
-};
-
-// Ground speed nearest to `t` within `window_s`. Returns NaN if the nearest
-// in-window sample has no usable speed (the caller then tries another source).
-double nearestSpeed(const SpeedSamples& s, ptime t, double window_s)
-{
-    if (s.ts.empty())
-        return std::numeric_limits<double>::quiet_NaN();
-
-    auto it = std::lower_bound(s.ts.begin(), s.ts.end(), t);
-    // Candidate indices: the lower_bound and its predecessor (nearest two).
-    double best_dt = std::numeric_limits<double>::max();
-    double best_sp = std::numeric_limits<double>::quiet_NaN();
-    auto consider = [&](std::size_t idx) {
-        double dt = std::abs(partialSeconds(s.ts[idx] - t));
-        if (dt <= window_s && std::isfinite(s.sp[idx]) && dt < best_dt)
-        {
-            best_dt = dt;
-            best_sp = s.sp[idx];
-        }
-    };
-    if (it != s.ts.end())
-        consider(static_cast<std::size_t>(it - s.ts.begin()));
-    if (it != s.ts.begin())
-        consider(static_cast<std::size_t>((it - 1) - s.ts.begin()));
-    return best_sp;
-}
-
-// Movement-aware update-interval selector: standing when ADS-B-reported ground
-// speed (RefTraj speed as fallback) is below the threshold; unknown speed counts
-// as moving (matches ReconstructorInfo::isMoving()).
-struct MovementUI
-{
-    const SpeedSamples* test = nullptr;
-    const SpeedSamples* ref  = nullptr;
-    double window_s      = 10.0;
-    double standing_max  = 0.5;
-    double ui_moving     = 1.0;
-    double ui_standing   = 5.0;
-
-    double speedAt(ptime t) const
-    {
-        double s = test ? nearestSpeed(*test, t, window_s)
-                        : std::numeric_limits<double>::quiet_NaN();
-        if (std::isfinite(s))
-            return s;
-        return ref ? nearestSpeed(*ref, t, window_s)
-                   : std::numeric_limits<double>::quiet_NaN();
-    }
-
-    bool standingAt(ptime t) const
-    {
-        double s = speedAt(t);
-        return std::isfinite(s) && s < standing_max;
-    }
-
-    double uiAt(ptime t) const { return standingAt(t) ? ui_standing : ui_moving; }
-};
-
-SpeedSamples gatherTestSpeeds(unsigned int utn, AnalysisDataset& dataset)
-{
-    std::vector<std::pair<ptime, double>> rows;
-    for (const auto& dbc : dataset.testDbContentsPresent())
-    {
-        if (!dataset.hasTestChain(utn, dbc))
-            continue;
-        auto& chain = dataset.testChain(utn, dbc);
-        for (const auto& kv : chain.timestampIndexes())
-        {
-            Chain::DataID id(kv.first);
-            auto gs = chain.groundSpeed(id);
-            rows.emplace_back(kv.first, gs.has_value()
-                              ? static_cast<double>(*gs)
-                              : std::numeric_limits<double>::quiet_NaN());
-        }
-    }
-    std::sort(rows.begin(), rows.end(),
-              [](const auto& a, const auto& b) { return a.first < b.first; });
-    SpeedSamples out;
-    out.ts.reserve(rows.size());
-    out.sp.reserve(rows.size());
-    for (const auto& r : rows) { out.ts.push_back(r.first); out.sp.push_back(r.second); }
-    return out;
-}
-
-SpeedSamples gatherRefSpeeds(Chain& ref_chain)
-{
-    SpeedSamples out;  // timestampIndexes() is time-sorted
-    for (const auto& kv : ref_chain.timestampIndexes())
-    {
-        Chain::DataID id(kv.first);
-        auto gs = ref_chain.groundSpeed(id);
-        out.ts.push_back(kv.first);
-        out.sp.push_back(gs.has_value() ? static_cast<double>(*gs)
-                                        : std::numeric_limits<double>::quiet_NaN());
-    }
     return out;
 }
 

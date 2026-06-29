@@ -374,6 +374,7 @@ When the user selects "CAT019 cycle" as cadence source:
 
 - Slot timestamps come from CAT019 start-of-cycle / system-status messages instead of `t_begin + k * UI`.
 - Each CAT019-defined cycle inside a reference period contributes one #EUI to the cell of the reference position at the cycle timestamp; the cycle is a #MUI for that cell if no test report falls in it.
+- **Standing targets:** the same motion-adaptive logic as the time-difference method applies. A CAT019 cycle is system-wide; a standing target legitimately produces a position less often than the cycle rate (it emits fewer replies). So when the reference/test ground speed at a cycle is below `standing_speed_max_mps_`, that target is expected only once per `update_interval_standing_s_` rather than every cycle: the cycle opens an expected opportunity whose window spans the standing interval, and the cycles inside it are skipped (neither #EUI nor #MUI). The number of skipped cycles follows from the cycle period (e.g. a 1 s cycle and a 5 s standing interval excuse ~4 of every 5 cycles). Moving targets keep the per-cycle expectation. Implemented in `evaluateCyclesInPeriod` (see `mlatcoveragehelpers.h`), shared movement classifier in [movementui.h](movementui.h).
 - Fallback: if CAT019 is missing or partial, the inspector falls back to time-difference and logs a warning. Without this, #EUI is silently under-counted in the affected windows and PD is biased upward (see [readme_detection.md](../../../eval/requirement/detection/readme_detection.md), §2.4).
 
 ### Altitude axis
