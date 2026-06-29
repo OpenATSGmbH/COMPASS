@@ -37,7 +37,14 @@ public:
 
     // ADS-B has no Remote Units and no CAT019-style cycle messages, so the
     // cadence is always time-difference against a nominal Update Interval.
-    float update_interval_s_ = 1.0f;   // UI; ADS-B airborne position nominal cadence.
+    // Surface squitter is motion-adaptive: aircraft transmit at the moving rate
+    // while taxiing and drop to a slower rate when stopped, so a standing target
+    // is "expected" less often. A slot is standing when the ADS-B-reported ground
+    // speed (RefTraj speed as fallback) is below `standing_speed_max_mps_`; such
+    // slots use `update_interval_standing_s_` instead of the moving `update_interval_s_`.
+    float update_interval_s_          = 1.0f;   // moving nominal UI
+    float update_interval_standing_s_ = 5.0f;   // standing nominal UI
+    float standing_speed_max_mps_     = 0.5f;   // ground speed below this = standing
 
     // Miss test (mirrors the detection requirement, simplified to miss tolerance only).
     bool  use_miss_tolerance_ = true;

@@ -56,6 +56,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
+#include <limits>
 #include <map>
 #include <set>
 #include <sstream>
@@ -72,6 +73,10 @@ ADSBCoverageInspectorSettings::ADSBCoverageInspectorSettings(nlohmann::json& con
     : InspectorSettingsBase(config_json, parent)
 {
     registerParameter("update_interval_s", &update_interval_s_, update_interval_s_);
+    registerParameter("update_interval_standing_s", &update_interval_standing_s_,
+                      update_interval_standing_s_);
+    registerParameter("standing_speed_max_mps", &standing_speed_max_mps_,
+                      standing_speed_max_mps_);
 
     registerParameter("use_miss_tolerance", &use_miss_tolerance_, use_miss_tolerance_);
     registerParameter("miss_tolerance_s",   &miss_tolerance_s_,   miss_tolerance_s_);
@@ -115,15 +120,6 @@ namespace
 using Settings = ADSBCoverageInspectorSettings;
 using EvaluationRequirement::PDHelpers::MissTestParams;
 using EvaluationRequirement::PDHelpers::RefPeriod;
-
-MissTestParams missParamsFromSettings(const Settings& s)
-{
-    MissTestParams p;
-    p.update_interval_s  = s.update_interval_s_;
-    p.use_miss_tolerance = s.use_miss_tolerance_;
-    p.miss_tolerance_s   = s.miss_tolerance_s_;
-    return p;
-}
 
 double partialSeconds(const time_duration& d)
 {
@@ -194,6 +190,112 @@ std::vector<ptime> gatherTestTimestamps(unsigned int utn,
             out.push_back(kv.first);
     }
     std::sort(out.begin(), out.end());
+    return out;
+}
+
+// Time-sorted (timestamp, ground speed [m/s]) samples for a target. Speed is
+// NaN where the report carried no ground speed. Used to classify each PD slot
+// as standing or moving.
+struct SpeedSamples
+{
+    std::vector<ptime>  ts;
+    std::vector<double> sp;  // m/s, NaN if unknown
+};
+
+// Ground speed nearest to `t` within `window_s`. Returns NaN if the nearest
+// in-window sample has no usable speed (the caller then tries another source).
+double nearestSpeed(const SpeedSamples& s, ptime t, double window_s)
+{
+    if (s.ts.empty())
+        return std::numeric_limits<double>::quiet_NaN();
+
+    auto it = std::lower_bound(s.ts.begin(), s.ts.end(), t);
+    // Candidate indices: the lower_bound and its predecessor (nearest two).
+    double best_dt = std::numeric_limits<double>::max();
+    double best_sp = std::numeric_limits<double>::quiet_NaN();
+    auto consider = [&](std::size_t idx) {
+        double dt = std::abs(partialSeconds(s.ts[idx] - t));
+        if (dt <= window_s && std::isfinite(s.sp[idx]) && dt < best_dt)
+        {
+            best_dt = dt;
+            best_sp = s.sp[idx];
+        }
+    };
+    if (it != s.ts.end())
+        consider(static_cast<std::size_t>(it - s.ts.begin()));
+    if (it != s.ts.begin())
+        consider(static_cast<std::size_t>((it - 1) - s.ts.begin()));
+    return best_sp;
+}
+
+// Movement-aware update-interval selector: standing when ADS-B-reported ground
+// speed (RefTraj speed as fallback) is below the threshold; unknown speed counts
+// as moving (matches ReconstructorInfo::isMoving()).
+struct MovementUI
+{
+    const SpeedSamples* test = nullptr;
+    const SpeedSamples* ref  = nullptr;
+    double window_s      = 10.0;
+    double standing_max  = 0.5;
+    double ui_moving     = 1.0;
+    double ui_standing   = 5.0;
+
+    double speedAt(ptime t) const
+    {
+        double s = test ? nearestSpeed(*test, t, window_s)
+                        : std::numeric_limits<double>::quiet_NaN();
+        if (std::isfinite(s))
+            return s;
+        return ref ? nearestSpeed(*ref, t, window_s)
+                   : std::numeric_limits<double>::quiet_NaN();
+    }
+
+    bool standingAt(ptime t) const
+    {
+        double s = speedAt(t);
+        return std::isfinite(s) && s < standing_max;
+    }
+
+    double uiAt(ptime t) const { return standingAt(t) ? ui_standing : ui_moving; }
+};
+
+SpeedSamples gatherTestSpeeds(unsigned int utn, AnalysisDataset& dataset)
+{
+    std::vector<std::pair<ptime, double>> rows;
+    for (const auto& dbc : dataset.testDbContentsPresent())
+    {
+        if (!dataset.hasTestChain(utn, dbc))
+            continue;
+        auto& chain = dataset.testChain(utn, dbc);
+        for (const auto& kv : chain.timestampIndexes())
+        {
+            Chain::DataID id(kv.first);
+            auto gs = chain.groundSpeed(id);
+            rows.emplace_back(kv.first, gs.has_value()
+                              ? static_cast<double>(*gs)
+                              : std::numeric_limits<double>::quiet_NaN());
+        }
+    }
+    std::sort(rows.begin(), rows.end(),
+              [](const auto& a, const auto& b) { return a.first < b.first; });
+    SpeedSamples out;
+    out.ts.reserve(rows.size());
+    out.sp.reserve(rows.size());
+    for (const auto& r : rows) { out.ts.push_back(r.first); out.sp.push_back(r.second); }
+    return out;
+}
+
+SpeedSamples gatherRefSpeeds(Chain& ref_chain)
+{
+    SpeedSamples out;  // timestampIndexes() is time-sorted
+    for (const auto& kv : ref_chain.timestampIndexes())
+    {
+        Chain::DataID id(kv.first);
+        auto gs = ref_chain.groundSpeed(id);
+        out.ts.push_back(kv.first);
+        out.sp.push_back(gs.has_value() ? static_cast<double>(*gs)
+                                        : std::numeric_limits<double>::quiet_NaN());
+    }
     return out;
 }
 
@@ -291,9 +393,9 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
                                 AnalysisDataset& dataset,
                                 const std::vector<TargetReport3DGrid*>& grids,
                                 const Settings& settings,
+                                const MovementUI& mv,
                                 SectorWalkAccum* sec)
 {
-    const auto miss_params = missParamsFromSettings(settings);
     const time_duration d_max = boost::posix_time::seconds(60);
 
     std::uint64_t eui = 0;
@@ -321,15 +423,16 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
     for (const auto& period : periods)
     {
         const double period_s = partialSeconds(period.end - period.begin);
-        if (period_s <= 0.0 || settings.update_interval_s_ <= 0.0f)
+        if (period_s <= 0.0)
             continue;
 
-        const unsigned int n_slots = static_cast<unsigned int>(
-            std::floor(period_s / settings.update_interval_s_));
-
-        for (unsigned int k = 0; k < n_slots; ++k)
+        // Expected slots: step adaptively by the local update interval (standing
+        // targets are expected less often), so the cadence matches how the
+        // aircraft actually squitters.
+        std::size_t guard = 0;
+        const std::size_t max_iter = 50'000'000;
+        for (ptime t_slot = period.begin; t_slot < period.end; )
         {
-            ptime t_slot = addSeconds(period.begin, k * settings.update_interval_s_);
             auto ca = refCellAt(dataset, utn, t_slot, d_max);
             if (ca.valid)
             {
@@ -338,6 +441,10 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
                 ++eui;
                 accumSectors(ca, false);
             }
+            double ui = mv.uiAt(t_slot);
+            if (ui <= 0.0 || ++guard > max_iter)
+                break;
+            t_slot = addSeconds(t_slot, ui);
         }
 
         auto first = std::lower_bound(tst_ts_sorted.begin(),
@@ -360,6 +467,17 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
                 continue;
             const float gap_s = static_cast<float>(partialSeconds(gap_end - gap_start));
 
+            // Expected cadence inside the gap is set by the target's movement at
+            // the gap start (the last report there carries its own ground speed).
+            const double gap_ui = mv.uiAt(gap_start);
+            if (gap_ui <= 0.0)
+                continue;
+
+            MissTestParams miss_params;
+            miss_params.update_interval_s  = static_cast<float>(gap_ui);
+            miss_params.use_miss_tolerance = settings.use_miss_tolerance_;
+            miss_params.miss_tolerance_s   = settings.miss_tolerance_s_;
+
             if (!EvaluationRequirement::PDHelpers::isMiss(gap_s, miss_params))
                 continue;
 
@@ -368,7 +486,7 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
 
             for (unsigned int m = 0; m < n_misses; ++m)
             {
-                ptime t_miss = addSeconds(gap_start, (m + 1) * settings.update_interval_s_);
+                ptime t_miss = addSeconds(gap_start, (m + 1) * gap_ui);
                 if (t_miss >= gap_end)
                     break;
                 auto ca = refCellAt(dataset, utn, t_miss, d_max);
@@ -524,8 +642,20 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
 
         std::fill(sec.touched.begin(), sec.touched.end(), 0);
 
+        // Movement classification: ADS-B-reported ground speed where available,
+        // RefTraj speed as fallback.
+        SpeedSamples test_spd = gatherTestSpeeds(utn, *dataset);
+        SpeedSamples ref_spd  = gatherRefSpeeds(ref_chain);
+        MovementUI mv;
+        mv.test         = &test_spd;
+        mv.ref          = &ref_spd;
+        mv.standing_max = settings.standing_speed_max_mps_;
+        mv.ui_moving    = settings.update_interval_s_;
+        mv.ui_standing  = settings.update_interval_standing_s_;
+        mv.window_s     = std::max(6.0, 2.0 * settings.update_interval_standing_s_);
+
         auto counts = walkTargetTimeDifferenceCounted(
-            utn, periods, tst_ts_sorted, *dataset, grids, settings, &sec);
+            utn, periods, tst_ts_sorted, *dataset, grids, settings, mv, &sec);
 
         if (tid.has_mops)
         {
@@ -795,9 +925,13 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
             "ADS-B report stream long enough to swallow a cadence slot "
             "contributes a missed update at the location where the report "
             "was expected.\n"
-            "ADS-B has no Remote Units and no system-status cycle messages, "
-            "so the cadence is always the configured nominal Update Interval "
-            "together with a miss tolerance.\n"
+            "ADS-B has no Remote Units and no system-status cycle messages, so "
+            "the cadence is the configured nominal Update Interval together with "
+            "a miss tolerance. Surface squitter is motion-adaptive: a slot is "
+            "expected at the moving interval while the target moves and at the "
+            "(slower) standing interval when its reported ground speed is below "
+            "the standing threshold, so stationary aircraft are not counted as "
+            "missing simply because they squitter less often.\n"
             "Three projections of the per-cell PD are rendered: a top-down "
             "horizontal map and two vertical profiles (altitude over "
             "longitude, altitude over latitude). The summary tabulates the "
@@ -816,7 +950,17 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
     {
         std::ostringstream os;
         os << settings.update_interval_s_ << " s";
-        recap.addRow({"Nominal update interval (UI)", os.str()});
+        recap.addRow({"Update interval (moving)", os.str()});
+    }
+    {
+        std::ostringstream os;
+        os << settings.update_interval_standing_s_ << " s";
+        recap.addRow({"Update interval (standing)", os.str()});
+    }
+    {
+        std::ostringstream os;
+        os << settings.standing_speed_max_mps_ << " m/s";
+        recap.addRow({"Standing speed threshold", os.str()});
     }
     recap.addRow({"Use miss tolerance", settings.use_miss_tolerance_ ? "yes" : "no"});
     {
