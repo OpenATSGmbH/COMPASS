@@ -814,35 +814,14 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
     {
         auto& intro = section.addText("About");
         intro.addText(
-            "Probability of Detection (PD) of the selected ADS-B sources per "
-            "cell of a three-dimensional grid in latitude, longitude and "
-            "barometric flight level, using the Reference Trajectory as "
-            "ground truth, with an additional breakdown per transponder. PD "
-            "is the fraction of expected updates the system actually "
-            "delivered: each target's reference track contributes expected "
-            "updates at the nominal Update Interval, and each gap in the "
-            "ADS-B report stream long enough to swallow a cadence slot "
-            "contributes a missed update at the location where the report "
-            "was expected.\n"
-            "ADS-B has no Remote Units and no system-status cycle messages, so "
-            "the cadence is the configured nominal Update Interval together with "
-            "a miss tolerance. Surface squitter is motion-adaptive: a slot is "
-            "expected at the moving interval while the target moves and at the "
-            "(slower) standing interval when its reported ground speed is below "
-            "the standing threshold, so stationary aircraft are not counted as "
-            "missing simply because they squitter less often.\n"
-            "Three projections of the per-cell PD are rendered: a top-down "
-            "horizontal map and two vertical profiles (altitude over "
-            "longitude, altitude over latitude). The summary tabulates the "
-            "overall PD and the per-cell distribution. The "
-            "per-transponder table lists each aircraft address with its "
-            "expected and missed updates and resulting PD, so individual "
-            "transponders with coverage gaps (intermittent or low-power "
-            "transmitters) can be spotted where an aggregate map averages "
-            "them away.\n"
-            "Use the report to locate coverage holes against the published "
-            "service volume and to identify individual aircraft whose ADS-B "
-            "performance is degraded.");
+            "Probability of Detection (PD) of the selected ADS-B sources "
+            "against the Reference Trajectory, per grid cell and per transponder.");
+        intro.addList({
+            "Three PD maps: horizontal, and vertical over longitude and over latitude.",
+            "Summary table: overall PD and the per-cell spread.",
+            "Per-transponder table: each aircraft address with its expected updates, missed updates and PD.",
+            "Measured update interval: table and histogram.",
+            "PD broken down by MOPS version and by target type."});
     }
 
     auto& recap = section.addTable("Settings", 2, {"Setting", "Value"}, false);

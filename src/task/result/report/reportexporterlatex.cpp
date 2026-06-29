@@ -346,8 +346,54 @@ Result ReportExporterLatex::exportText_impl(SectionContentText& text,
 
     auto& latex_section = latex_doc_->getSection(it->second);
 
-    for (const auto& txt_it : text.texts())
-        latex_section.addText(txt_it);
+    // Render the structured blocks: paragraphs as escaped text, bullet /
+    // numbered lists as itemize / enumerate, notes as a framed colored box.
+    // Item / paragraph content is escaped; the LaTeX commands are emitted raw.
+    using BlockType = SectionContentText::BlockType;
+    using NoteLevel = SectionContentText::NoteLevel;
+
+    auto renderList = [](const SectionContentText::Block& block, const char* env) {
+        std::string latex = std::string("\\begin{") + env + "}\n";
+        for (const auto& item : block.items)
+            latex += "\\item " + Utils::String::latexString(item) + "\n";
+        latex += std::string("\\end{") + env + "}\n";
+        return latex;
+    };
+
+    for (const auto& block : text.blocks())
+    {
+        switch (block.type)
+        {
+            case BlockType::Paragraph:
+                if (!block.items.empty())
+                    latex_section.addText(Utils::String::latexString(block.items.front()) + "\n");
+                break;
+
+            case BlockType::BulletList:
+                latex_section.addText(renderList(block, "itemize"));
+                break;
+
+            case BlockType::OrderedList:
+                latex_section.addText(renderList(block, "enumerate"));
+                break;
+
+            case BlockType::Note:
+            {
+                const bool warn = block.note_level == NoteLevel::Warning;
+                const char* frame = warn ? "e0b4b0" : "b8c6e8";
+                const char* bg    = warn ? "fdecea" : "eef3ff";
+                const char* label = warn ? "Warning: " : "Note: ";
+                const std::string txt = block.items.empty() ? std::string()
+                                                            : Utils::String::latexString(block.items.front());
+                std::string latex =
+                    "\\par\\noindent\\fcolorbox[HTML]{" + std::string(frame) + "}{" + bg + "}{%\n"
+                    "\\parbox{\\dimexpr\\linewidth-2\\fboxsep-2\\fboxrule\\relax}{\\textbf{"
+                    + label + "}" + txt + "}}\\par\\medskip\n";
+                latex_section.addText(latex);
+                break;
+            }
+        }
+    }
 
     return Result::succeeded();
 }

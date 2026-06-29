@@ -67,24 +67,13 @@ void ADSBDataItemInspector::writeReport(ResultReport::Section& root)
     {
         auto& intro = section.addText("About");
         intro.addText(
-            "ASTERIX data-item usage per selected data source. For each "
-            "category in scope (CAT021 for ADS-B by default), one table "
-            "lists every item defined in the configured edition with the "
-            "number of records that carried it and the observed min / max "
-            "of its value. Records are counted cumulatively across every "
-            "import into the open database, not just the most recent file. "
-            "Items defined in the edition but never seen are listed with a "
-            "count of zero in red.\n"
-            "Three operational questions are answered: which optional items "
-            "the transponders populate (e.g. I021/210 MOPS Version, I021/090 "
-            "Quality Indicators, I021/140 Geometric Height), in what value "
-            "ranges, and which defined items go unused. Use the report for "
-            "source-acceptance testing, for conformance checks against a "
-            "delivery specification, and to identify items that are present "
-            "in some recordings but missing in others.\n"
-            "The per-file ASTERIX Import report covers a single decode; "
-            "this section aggregates over the entire database, restricted "
-            "to the data sources selected for this analysis.");
+            "Which CAT021 data items the selected sources actually send, "
+            "counted cumulatively across all imports into the open database.");
+        intro.addList({
+            "Summary table: per source, the categories present and total record count.",
+            "Per source: one table per category, each item with its record count and observed min / max.",
+            "Items defined in the edition but never sent are listed with count 0 (red).",
+            "Example: I021/210 MOPS Version, count 152340, min 1, max 2."});
     }
 
     auto& compass = task_.compass();

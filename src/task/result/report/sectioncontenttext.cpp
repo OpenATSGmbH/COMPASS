@@ -34,12 +34,90 @@
 namespace ResultReport
 {
 
-const std::string SectionContentText::FieldTexts = "texts";
+const std::string SectionContentText::FieldTexts  = "texts";
+const std::string SectionContentText::FieldBlocks = "blocks";
+
+namespace
+{
+// Block-type <-> JSON string mapping (stable, human-readable in the export).
+std::string blockTypeToString(SectionContentText::BlockType t)
+{
+    switch (t)
+    {
+        case SectionContentText::BlockType::Paragraph:   return "paragraph";
+        case SectionContentText::BlockType::BulletList:  return "bullet_list";
+        case SectionContentText::BlockType::OrderedList: return "ordered_list";
+        case SectionContentText::BlockType::Note:        return "note";
+    }
+    return "paragraph";
+}
+
+SectionContentText::BlockType blockTypeFromString(const std::string& s)
+{
+    if (s == "bullet_list")  return SectionContentText::BlockType::BulletList;
+    if (s == "ordered_list") return SectionContentText::BlockType::OrderedList;
+    if (s == "note")         return SectionContentText::BlockType::Note;
+    return SectionContentText::BlockType::Paragraph;
+}
+
+std::string noteLevelToString(SectionContentText::NoteLevel l)
+{
+    return l == SectionContentText::NoteLevel::Warning ? "warning" : "info";
+}
+
+SectionContentText::NoteLevel noteLevelFromString(const std::string& s)
+{
+    return s == "warning" ? SectionContentText::NoteLevel::Warning
+                          : SectionContentText::NoteLevel::Info;
+}
+
+// Convert the legacy flat "texts" array into structured blocks, honoring the
+// historic '- ' bullet convention so already-persisted reports keep rendering
+// as lists. Used only when reading legacy JSON that has no "blocks" field.
+std::vector<SectionContentText::Block> blocksFromLegacyTexts(
+    const std::vector<std::string>& texts)
+{
+    using Block     = SectionContentText::Block;
+    using BlockType = SectionContentText::BlockType;
+
+    std::vector<Block> blocks;
+    Block* list = nullptr; // open bullet-list block, if any
+
+    for (const auto& text : texts)
+    {
+        const QStringList lines = QString::fromStdString(text).split('\n');
+        for (const QString& raw : lines)
+        {
+            const QString line = raw.trimmed();
+            if (line.isEmpty())
+            {
+                list = nullptr;
+                continue;
+            }
+            if (line.startsWith("- "))
+            {
+                if (!list)
+                {
+                    blocks.push_back(Block{BlockType::BulletList, {}, {}});
+                    list = &blocks.back();
+                }
+                list->items.push_back(line.mid(2).toStdString());
+            }
+            else
+            {
+                list = nullptr;
+                blocks.push_back(Block{BlockType::Paragraph, {}, {line.toStdString()}});
+            }
+        }
+    }
+    return blocks;
+}
+}
 
 /**
  */
 SectionContentText::SectionContentText(unsigned int id,
-                                       const std::string& name, 
+                                       const std::string& name,
                                        Section* parent_section)
 :   SectionContent(ContentType::Text, id, name, parent_section)
 {
@@ -56,7 +134,40 @@ SectionContentText::SectionContentText(Section* parent_section)
  */
 void SectionContentText::addText(const std::string& text)
 {
-    texts_.push_back(text);
+    // Split on '\n' into one paragraph per non-empty line.
+    const QStringList lines = QString::fromStdString(text).split('\n');
+    for (const QString& raw : lines)
+    {
+        const QString line = raw.trimmed();
+        if (line.isEmpty())
+            continue;
+        blocks_.push_back(Block{BlockType::Paragraph, {}, {line.toStdString()}});
+    }
+}
+
+/**
+ */
+void SectionContentText::addList(const std::vector<std::string>& items)
+{
+    if (items.empty())
+        return;
+    blocks_.push_back(Block{BlockType::BulletList, {}, items});
+}
+
+/**
+ */
+void SectionContentText::addOrderedList(const std::vector<std::string>& items)
+{
+    if (items.empty())
+        return;
+    blocks_.push_back(Block{BlockType::OrderedList, {}, items});
+}
+
+/**
+ */
+void SectionContentText::addNote(const std::string& text, NoteLevel level)
+{
+    blocks_.push_back(Block{BlockType::Note, level, {text}});
 }
 
 /**
@@ -106,53 +217,55 @@ protected:
     }
 };
 
-// Build an HTML rendering of `texts`. Each entry is split on '\n'; a line
-// beginning with "- " becomes a list item (consecutive ones grouped into a
-// single <ul>), every other non-empty line becomes its own <p>. All line
-// content is HTML-escaped so existing plain-prose callers stay safe.
-QString textsToHtml(const std::vector<std::string>& texts)
+// Build an HTML rendering of the structured blocks: paragraphs become <p>,
+// bullet lists <ul>, numbered lists <ol>, notes a tinted box. All content is
+// HTML-escaped.
+QString blocksToHtml(const std::vector<SectionContentText::Block>& blocks)
 {
-    QString html;
-    bool in_list = false;
+    using BlockType = SectionContentText::BlockType;
+    using NoteLevel = SectionContentText::NoteLevel;
 
-    auto close_list = [&]() {
-        if (in_list)
-        {
-            html += "</ul>";
-            in_list = false;
-        }
+    auto esc = [](const std::string& s) {
+        return QString::fromStdString(s).toHtmlEscaped();
     };
 
-    for (const auto& text : texts)
+    QString html;
+
+    for (const auto& block : blocks)
     {
-        QString s = QString::fromStdString(text);
-        const QStringList lines = s.split('\n');
-        for (const QString& raw : lines)
+        switch (block.type)
         {
-            const QString line = raw.trimmed();
-            if (line.isEmpty())
+            case BlockType::Paragraph:
+                if (!block.items.empty())
+                    html += "<p style='margin-top:0; margin-bottom:12px;'>"
+                          + esc(block.items.front()) + "</p>";
+                break;
+
+            case BlockType::BulletList:
+            case BlockType::OrderedList:
             {
-                close_list();
-                continue;
+                const char* tag = block.type == BlockType::BulletList ? "ul" : "ol";
+                html += QString("<%1 style='margin-top:4px; margin-bottom:10px;'>").arg(tag);
+                for (const auto& item : block.items)
+                    html += "<li style='margin-bottom:2px;'>" + esc(item) + "</li>";
+                html += QString("</%1>").arg(tag);
+                break;
             }
-            if (line.startsWith("- "))
+
+            case BlockType::Note:
             {
-                if (!in_list)
-                {
-                    html += "<ul style='margin-top:4px; margin-bottom:10px;'>";
-                    in_list = true;
-                }
-                html += "<li style='margin-bottom:2px;'>"
-                      + line.mid(2).toHtmlEscaped() + "</li>";
-            }
-            else
-            {
-                close_list();
-                html += "<p style='margin-top:0; margin-bottom:12px;'>"
-                      + line.toHtmlEscaped() + "</p>";
+                const bool warn = block.note_level == NoteLevel::Warning;
+                const char* bg     = warn ? "#fdecea" : "#eef3ff";
+                const char* border = warn ? "#e0b4b0" : "#b8c6e8";
+                const char* label  = warn ? "Warning: " : "Note: ";
+                const std::string txt = block.items.empty() ? std::string() : block.items.front();
+                html += QString("<div style='margin:6px 0; padding:6px 10px; "
+                                "background:%1; border:1px solid %2;'>"
+                                "<b>%3</b>%4</div>")
+                            .arg(bg).arg(border).arg(label).arg(esc(txt));
+                break;
             }
         }
-        close_list();
     }
     return html;
 }
@@ -171,26 +284,88 @@ void SectionContentText::addContentUI(QVBoxLayout* layout,
         return;
     }
 
-    if (texts_.empty())
+    if (blocks_.empty())
         return;
 
     auto* view = new FittingTextView;
-    view->setHtml(textsToHtml(texts_));
+    view->setHtml(blocksToHtml(blocks_));
     layout->addWidget(view);
 }
 
 /**
  */
-const std::vector<std::string>& SectionContentText::texts() const
+const std::vector<SectionContentText::Block>& SectionContentText::blocks() const
 {
-    return texts_;
+    return blocks_;
+}
+
+/**
+ */
+std::vector<std::string> SectionContentText::texts() const
+{
+    std::vector<std::string> out;
+    for (const auto& block : blocks_)
+    {
+        switch (block.type)
+        {
+            case BlockType::Paragraph:
+            case BlockType::Note:
+                if (!block.items.empty())
+                    out.push_back(block.items.front());
+                break;
+            case BlockType::BulletList:
+            case BlockType::OrderedList:
+                for (const auto& item : block.items)
+                    out.push_back("- " + item);
+                break;
+        }
+    }
+    return out;
 }
 
 /**
  */
 void SectionContentText::clearContent_impl()
 {
-    texts_.clear();
+    blocks_.clear();
+}
+
+namespace
+{
+// Serialize / deserialize the structured blocks.
+nlohmann::json blocksToJSON(const std::vector<SectionContentText::Block>& blocks)
+{
+    nlohmann::json arr = nlohmann::json::array();
+    for (const auto& block : blocks)
+    {
+        nlohmann::json jb;
+        jb["type"]  = blockTypeToString(block.type);
+        jb["items"] = block.items;
+        if (block.type == SectionContentText::BlockType::Note)
+            jb["level"] = noteLevelToString(block.note_level);
+        arr.push_back(std::move(jb));
+    }
+    return arr;
+}
+
+std::vector<SectionContentText::Block> blocksFromJSON(const nlohmann::json& arr)
+{
+    std::vector<SectionContentText::Block> blocks;
+    if (!arr.is_array())
+        return blocks;
+
+    for (const auto& jb : arr)
+    {
+        SectionContentText::Block block;
+        block.type = blockTypeFromString(jb.value("type", std::string("paragraph")));
+        if (jb.contains("items") && jb.at("items").is_array())
+            block.items = jb.at("items").get<std::vector<std::string>>();
+        if (block.type == SectionContentText::BlockType::Note)
+            block.note_level = noteLevelFromString(jb.value("level", std::string("info")));
+        blocks.push_back(std::move(block));
+    }
+    return blocks;
+}
 }
 
 /**
@@ -200,7 +375,8 @@ void SectionContentText::toJSON_impl(nlohmann::json& j) const
     //call base
     SectionContent::toJSON_impl(j);
 
-    j[ FieldTexts ] = texts_;
+    j[ FieldBlocks ] = blocksToJSON(blocks_);
+    j[ FieldTexts ]  = texts(); // legacy flat view for backward compatibility
 }
 
 /**
@@ -210,22 +386,34 @@ bool SectionContentText::fromJSON_impl(const nlohmann::json& j)
     //call base
     if (!SectionContent::fromJSON_impl(j))
         return false;
-    
-    if (!j.is_object() ||
-        !j.contains(FieldTexts))
+
+    if (!j.is_object())
     {
         logerr << "section content text does not obtain needed fields";
         return false;
     }
 
-    texts_ = j[ FieldTexts ].get<std::vector<std::string>>();
+    if (j.contains(FieldBlocks))
+    {
+        blocks_ = blocksFromJSON(j.at(FieldBlocks));
+        return true;
+    }
 
-    return true;
+    // legacy report without structured blocks: parse the flat "texts" array,
+    // honoring the historic '- ' bullet convention.
+    if (j.contains(FieldTexts))
+    {
+        blocks_ = blocksFromLegacyTexts(j.at(FieldTexts).get<std::vector<std::string>>());
+        return true;
+    }
+
+    logerr << "section content text does not obtain needed fields";
+    return false;
 }
 
 /**
  */
-Result SectionContentText::toJSONDocument_impl(nlohmann::json& j, 
+Result SectionContentText::toJSONDocument_impl(nlohmann::json& j,
                                                const std::string* resource_dir,
                                                ReportExportMode export_style) const
 {
@@ -234,7 +422,8 @@ Result SectionContentText::toJSONDocument_impl(nlohmann::json& j,
     if (!r.ok())
         return r;
 
-    j[ FieldTexts ] = texts_;
+    j[ FieldBlocks ] = blocksToJSON(blocks_);
+    j[ FieldTexts ]  = texts();
 
     return Result::succeeded();
 }
