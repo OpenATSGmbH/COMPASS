@@ -415,8 +415,16 @@ Result ReportExporterLatex::writePDF() const
 
     loginf << "result '" << command_out << "'";
 
+    // Only a genuine LaTeX error fails the export. pdflatex emits plenty of
+    // benign warnings (Underfull/Overfull hbox, package "First Aid" notes,
+    // "Rerun to get cross-references right") that the awk filter above also
+    // captures; those must not abort a successfully generated PDF.
+    if (hasFatalError())
+        return Result::failed("PDF Latex failed:\n\n" + std::string(command_out.c_str()));
+
     if (command_out.size())
-        return Result::failed("PDF Latex failed with warnings:\n\n" + std::string(command_out.c_str()));
+        logwrn << "writePDF: pdflatex completed with non-fatal warnings:\n"
+               << command_out;
 
     if (settings().open_created_file && hasInteraction())
     {
