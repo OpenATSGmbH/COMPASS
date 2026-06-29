@@ -209,6 +209,7 @@ public:
     LogStore& logStore();
 
     const nlohmann::json& unspecificACIDs() const { return unspecific_acids_; }
+    bool isUnspecificACID(const std::string& acid) const;
 
     bool sensorStatusTimeHack() const;
     void sensorStatusTimeHack(bool value);
