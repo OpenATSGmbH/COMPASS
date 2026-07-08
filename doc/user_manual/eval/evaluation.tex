@@ -41,6 +41,17 @@ To give a few examples of what this could mean:
 
 Also, since target secondary attributes are used in the 'Reconstruct References' task, errors in these attributes might also lead to imperfect data association, which could in turn result in wrong evaluation results in some requirements.
 
+\subsubsection{Minimum Reference Accuracy}
+\label{sec:eval_min_ref_acc}
+
+For the position requirements, the accuracy of the reference itself is checked before a test target report is evaluated. The position standard deviation of the reference at the interpolation time is derived from the two reference updates surrounding the test target report, using the worse of the two values (each value being the larger of the X and Y component standard deviations). \\
+
+If this reference standard deviation is larger than the 'Minimum Reference Accuracy [m]' value defined in the respective requirement, the reference is considered too inaccurate to judge the test data at that time. The test target report is then skipped, counting neither as passed nor as failed, and is listed in the requirement results as '\#RefPosIn' (number and percentage of updates with inaccurate reference position). \\
+
+The value is therefore an upper limit on the acceptable reference position standard deviation. The default value of 10 meters means that only test target reports for which the reference is accurate to a standard deviation of 10 meters or better are checked. Lowering the value makes the evaluation stricter regarding reference quality, but excludes more test data, while raising it includes more test data at the cost of accepting a less accurate reference. \\
+
+The value can be changed per requirement in the 'Standard' tab, in the configuration of the respective position requirement.
+
 \section{Overview}
 \label{sec:eval_overview} 
 
@@ -97,7 +108,7 @@ At the top, the 'Data Selection' can be performed, by selecting:
 \end{itemize}
 \ \\
 
-\textbf{Note}: CAT001 and CAT048 cannot be selected as reference data. Reference accuracy filtering requires a maximum X/Y standard deviation, which these categories do not provide. They can still be used as test data. \\
+\textbf{Note}: CAT001 and CAT048 cannot be selected as reference data. Reference accuracy filtering (see \nameref{sec:eval_min_ref_acc}) requires a maximum X/Y standard deviation, which these categories do not provide. They can still be used as test data. \\
 
 As noted before, usage of appropriate reference data is of paramount importance. \\
 

@@ -2232,6 +2232,14 @@ void DBContextManager::rebuildSectorLayers()
         }
         else
         {
+            // override a duplicate sector name in the same layer (last one wins) instead of
+            // aborting - self-heals contexts that ended up with duplicate sectors
+            if ((*iter)->hasSector(s->name()))
+            {
+                logwrn << "duplicate sector '" << s->name() << "' in layer '" << layer_name
+                       << "', overriding previous";
+                (*iter)->removeSector((*iter)->sector(s->name()));
+            }
             (*iter)->addSector(s);
         }
 
@@ -2421,7 +2429,14 @@ void DBContextManager::importFFTs(const string& filepath)
 
     auto& ctx = activeContext();
     for (auto& fft : parsed)
-        ctx.ffts().push_back(std::move(fft));
+    {
+        // override an existing FFT with the same name instead of duplicating it
+        auto& fs = ctx.ffts();
+        fs.erase(std::remove_if(fs.begin(), fs.end(),
+                                [&fft](const FFT& f){ return f.name() == fft.name(); }),
+                 fs.end());
+        fs.push_back(std::move(fft));
+    }
 
     saveContext(active_context_name_);
 
@@ -2476,7 +2491,16 @@ void DBContextManager::importSectors(const string& filepath)
 
     auto& ctx = activeContext();
     for (auto& sector : parsed)
-        ctx.sectors().push_back(sector);
+    {
+        // override an existing sector with the same name in the same layer instead of duplicating it
+        auto& secs = ctx.sectors();
+        secs.erase(std::remove_if(secs.begin(), secs.end(),
+                                  [&sector](const std::shared_ptr<Sector>& s)
+                                  { return s->name() == sector->name()
+                                        && s->layerName() == sector->layerName(); }),
+                   secs.end());
+        secs.push_back(sector);
+    }
 
     saveContext(active_context_name_); // also writes to the DB when one is open
 

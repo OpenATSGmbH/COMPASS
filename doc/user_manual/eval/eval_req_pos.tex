@@ -14,6 +14,7 @@ The 'Position Across' requirement is used to calculate the probability of a targ
 \begin{itemize}  
 \item Probability [1]: Probability of acceptable across-track position
 \item Probability Check Type: $\geq$
+\item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
 \item Maximum Absolute Value [m]: Maximum absolute across-track position difference between the test and the reference, in meters
 \end{itemize}
 \ \\
@@ -96,6 +97,7 @@ The 'Position Along' requirement is used to calculate the probability of a targe
 \begin{itemize}  
 \item Probability [1]: Probability of acceptable along-track position
 \item Probability Check Type: $\geq$
+\item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
 \item Maximum Absolute Value [m]: Maximum absolute along-track position difference between the test and the reference, in meters
 \end{itemize}
 \ \\
@@ -193,6 +195,7 @@ The 'Failed Values are of Interest' checkbox define if the target reports passin
 \begin{itemize}  
 \item Probability [1]: Probability of correct position
 \item Probability Check Type: $\geq$
+\item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
 \item Threshold Value [m]: Maximum allowed distance from test target report to reference
 \item Threshold Value Check Type: $\leq$, distance must be less or equal the given threshold
 \item Failed Values are of Interest: Checked, the distances of interest are the ones not passing the check
@@ -204,6 +207,7 @@ The 'Failed Values are of Interest' checkbox define if the target reports passin
 \begin{itemize}  
 \item Probability [1]: Probability of false position
 \item Probability Check Type: $\leq$
+\item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
 \item Threshold Value [m]: Minimum distance from test target report to reference
 \item Threshold Value Check Type: $\geq$, distance must be greater or equal the given threshold
 \item Failed Values are of Interest: Not checked, the distances of interest are the ones passing the check
@@ -287,7 +291,8 @@ The 'Position Distance' requirement is used to calculate if the RMS position err
 
 The offset of the position (test vs. linear interpolated reference position) is used to calculate the RMS error distance for a number of target reports. The requirement is failed if the the calculated RMS value is larger than the defined threshold. \\
 
-\begin{itemize}  
+\begin{itemize}
+\item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
 \item Threshold Value [m]: Maximum allowed RMS
 \end{itemize}
 
@@ -369,6 +374,7 @@ The 'Position Latency' requirement is used to calculate the probability of a tar
 \begin{itemize}  
 \item Probability [1]: Probability of acceptable position latency
 \item Probability Check Type: $\geq$
+\item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
 \item Maximum Absolute Value [s]: Maximum absolute latency, in seconds
 \end{itemize}
 \ \\
@@ -457,8 +463,9 @@ for the calculated probability CP. The CP must be greater or equal than the
 defined ’Probability’ for the requirement to pass.
 \ \\
 
-\begin{itemize}  
-\item Maximum Absolute Value [m]: Maximum azimuth offset allowed 
+\begin{itemize}
+\item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
+\item Maximum Absolute Value [m]: Maximum azimuth offset allowed
 \end{itemize}
 
 \subsubsection{Result Values}
@@ -542,8 +549,9 @@ for the calculated probability CP. The CP must be greater or equal than the
 defined ’Probability’ for the requirement to pass.
 \ \\
 
-\begin{itemize}  
-\item Maximum Absolute Value [m]: Maximum range offset allowed 
+\begin{itemize}
+\item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
+\item Maximum Absolute Value [m]: Maximum range offset allowed
 \end{itemize}
 
 \subsubsection{Result Values}
