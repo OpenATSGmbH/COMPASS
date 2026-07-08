@@ -191,7 +191,7 @@ delete\_info \dots Delete info JSON array, e.g. '[{"dbcontent": "CAT021", "data\
 
 \textbf{evaluate} \\
 \textit{run evaluation} \\
-config \dots evaluation configuration as json string \\
+config \dots evaluation configuration as json string. Note that 'dbcontent\_name\_ref' cannot be CAT001 or CAT048, as these do not provide the maximum X/Y standard deviation required for reference accuracy filtering \\
 result \dots name under which the evaluation result will be stored \\
 run\_filter \dots run evaluation filter before evaluation \\
 
@@ -265,7 +265,7 @@ line \dots imports ASTERIX file with given line e.g. "L2" \\
 date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
 time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
-config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_asterix\_files} \\
 \textit{imports multiple ASTERIX files with given filenames, e.g. '/data/file1.ff;/data/file2.ff'} \\
@@ -275,14 +275,14 @@ line \dots imports ASTERIX file with given line e.g. "L2" \\
 date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
 time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
-config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_asterix\_network} \\
 \textit{imports ASTERIX from defined network UDP streams} \\
 time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 max\_lines (-m) \dots maximum number of lines per data source during ASTERIX network import, 1..4 \\
 ignore\_future\_ts \dots ignore future timestamps \\
-config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_asterix\_network\_stop} \\
 \textit{stops import ASTERIX from network} \\
@@ -294,7 +294,7 @@ line \dots imports ASTERIX file with given line e.g. "L2" \\
 date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
 time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
-config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_asterix\_pcap\_files} \\
 \textit{imports multiple ASTERIX PCAP files with given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'} \\
@@ -303,7 +303,7 @@ line \dots imports ASTERIX PCAP file with given line e.g. "L2" \\
 date \dots imports ASTERIX PCAP file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
 time\_offset \dots imports ASTERIX PCAP file with given Time of Day override, in HH:MM:SS.ZZZ \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
-config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
+config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_data\_sources} \\
 \textit{imports data sources JSON file with given filename, e.g. '/data/ds1.json'} \\
@@ -363,6 +363,82 @@ data\_sources \dots Data sources JSON definition \\
 \textit{sets defined view point} \\
 view\_point \dots View point JSON definition \\
 See section \nameref{sec:appendix_view_points} for how the JSON definition has to be structured. \\
+
+\subsubsection{ASTERIX Import Configuration Parameters}
+\label{sec:rtcommand_asterix_import_config}
+
+The 'config' argument of the ASTERIX import commands ('import\_asterix\_file', 'import\_asterix\_files', 'import\_asterix\_network', 'import\_asterix\_pcap\_file', 'import\_asterix\_pcap\_files') accepts a JSON string of import parameter overrides. The same parameters can be provided on the command line using the '-{}-import\_asterix\_parameters' option, see \nameref{sec:cli_import_asterix_parameters}. \\
+
+A rectangular position filter (given as minimum and maximum latitude and longitude, in degrees) combined with a Mode C filter looks like this:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+'{
+  "filter_position_rec_active": true,
+  "filter_rec_latitude_min": 49.686,
+  "filter_rec_latitude_max": 50.3898,
+  "filter_rec_longitude_min": 8.0115,
+  "filter_rec_longitude_max": 9.1129,
+  "filter_modec_active": true,
+  "filter_modec_max": 500,
+  "filter_modec_min": -10000
+}'
+\end{lstlisting}
+\ \\
+
+Alternatively, a circular position filter can be used, given as a center latitude and longitude (in degrees) and a range (in nautical miles):
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+'{
+  "filter_position_circ_active": true,
+  "filter_circ_latitude": 47.26,
+  "filter_circ_longitude": 11.34,
+  "filter_circ_range": 40.0
+}'
+\end{lstlisting}
+\ \\
+
+A Time of Day override adds a fixed offset (in seconds, may be negative) to the decoded Time of Day of every record:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+'{
+  "override_tod_active": true,
+  "override_tod_offset": 3600.0
+}'
+\end{lstlisting}
+\ \\
+
+A Time of Day filter keeps only records within the given time window, given as minimum and maximum Time of Day in seconds since midnight (e.g. 36000 for 10:00:00, 43200 for 12:00:00):
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+'{
+  "filter_tod_active": true,
+  "filter_tod_min": 36000.0,
+  "filter_tod_max": 43200.0
+}'
+\end{lstlisting}
+\ \\
+
+A Mode C filter keeps only records within the given altitude window, given as minimum and maximum Mode C altitude in feet:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+'{
+  "filter_modec_active": true,
+  "filter_modec_min": -10000.0,
+  "filter_modec_max": 50000.0
+}'
+\end{lstlisting}
+\ \\
+
+Please note that the parameter naming must be exactly as in the 'task\_import\_asterix.json', with the following additional non-configuration parameters:
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+'{
+  "override_tod_active": true,
+  "filter_tod_active": true,
+  "filter_position_rec_active": true,
+  "filter_position_circ_active": true,
+  "filter_modec_active": true,
+  "file_line_id": 0, // 0...3
+  "date_str": "YYYY-mm-DD",
+  "network_ignore_future_ts": true,
+  "obfuscate_secondary_info": true
+}'
+\end{lstlisting}
+\ \\
 
 \subsubsection{Data Context Commands}
 

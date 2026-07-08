@@ -209,53 +209,9 @@ For one or a number of categories, the following options can be set:
 Please note that the naming must be exactly as in the GUI, otherwise the application quits with an error message.
 
 \subsubsection{-{}-import\_asterix\_parameters}
+\label{sec:cli_import_asterix_parameters}
 
-When an Import ASTERIX task is started the given configuration overrides are used, all parameters can be set using a JSON string. \\
-
-A rectangular position filter (given as minimum and maximum latitude and longitude, in degrees) combined with a Mode C filter looks like this:
-\begin{lstlisting}[basicstyle=\small\ttfamily]
-'{
-  "filter_position_rec_active": true,
-  "filter_rec_latitude_min": 49.686,
-  "filter_rec_latitude_max": 50.3898,
-  "filter_rec_longitude_min": 8.0115,
-  "filter_rec_longitude_max": 9.1129,
-  "filter_modec_active": true,
-  "filter_modec_max": 500,
-  "filter_modec_min": -10000
-}'
-\end{lstlisting}
-\ \\
-
-Alternatively, a circular position filter can be used, given as a center latitude and longitude (in degrees) and a range (in nautical miles):
-\begin{lstlisting}[basicstyle=\small\ttfamily]
-'{
-  "filter_position_circ_active": true,
-  "filter_circ_latitude": 47.26,
-  "filter_circ_longitude": 11.34,
-  "filter_circ_range": 40.0
-}'
-\end{lstlisting}
-\ \\
-
-Please note that the parameter naming must be exactly as in the 'task\_import\_asterix.json', with the following additional non-configuration parameters:
-\begin{lstlisting}[basicstyle=\small\ttfamily]
-'{
-  "override_tod_active": true,
-  "filter_tod_active": true,
-  "filter_position_rec_active": true,
-  "filter_position_circ_active": true,
-  "filter_modec_active": true,
-  "file_line_id": 0, // 0...3
-  "date_str": "YYYY-mm-DD",
-  "network_ignore_future_ts": true,
-  "obfuscate_secondary_info": true
-}'
-\end{lstlisting}
-\ \\
-
-The same parameters can also be passed to the runtime command interface, using the '-{}-config' option of the 'import\_asterix\_file', 'import\_asterix\_files', 'import\_asterix\_pcap\_file' and 'import\_asterix\_pcap\_files' commands, e.g. \\
-'import\_asterix\_file /data/file.ff -{}-config=`\{"filter\_position\_rec\_active": true, "filter\_rec\_latitude\_min": 49.686\}`'.
+When an Import ASTERIX task is started the given configuration overrides are applied, provided as a JSON string. This is the same set of parameters used by the 'config' argument of the ASTERIX import runtime commands; the available parameters, their units, and examples are described in \nameref{sec:rtcommand_asterix_import_config}.
 
 
 \subsubsection{-{}-import\_json filename}
@@ -378,6 +334,8 @@ In a nice formatting such a string can look like this:
 }'
 \end{lstlisting}
 \ \\
+
+Please note that 'dbcontent\_name\_ref' cannot be set to CAT001 or CAT048; these categories do not provide the maximum X/Y standard deviation required for reference accuracy filtering and are rejected as reference data. \\
 
 The configuration of such parameters is rather complex, and it is recommended to contact the author if detailed information is needed.
 
