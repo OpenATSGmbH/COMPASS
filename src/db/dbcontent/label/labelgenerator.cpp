@@ -93,7 +93,11 @@ std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcont
     unsigned int lod = override_lod.has_value() ? override_lod.value() : round(config_.current_lod_);
 
     std::shared_ptr<Buffer> buffer = buffers.at(dbcontent_name);
-    traced_assert(buffer_index < buffer->size());
+    if (buffer_index >= buffer->size())
+    {
+        logerr << "buffer index of dbcontent '" << dbcontent_name << "' out of range";
+        return tmp;
+    }
 
     using namespace dbContent;
 
@@ -225,7 +229,7 @@ std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcont
 std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbcontent_name, unsigned int buffer_index)
 {
     std::vector<std::string> tmp;
-
+    
     std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.loadedData();
     if (!buffers.count(dbcontent_name))
     {
@@ -236,7 +240,11 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
     DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
 
     std::shared_ptr<Buffer> buffer = buffers.at(dbcontent_name);
-    traced_assert(buffer_index < buffer->size());
+    if (buffer_index >= buffer->size())
+    {
+        logerr << "buffer index of dbcontent '" << dbcontent_name << "' out of range";
+        return tmp;
+    }
 
     using namespace dbContent;
 
@@ -247,7 +255,6 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
 
     tmp.push_back("Variable");
     tmp.push_back("Value");
-    //tmp.push_back("Description");
     tmp.push_back("Unit");
 
     // do common label parts

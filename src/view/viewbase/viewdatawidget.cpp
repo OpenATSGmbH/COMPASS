@@ -245,7 +245,7 @@ void ViewDataWidget::loadingDone_impl()
 }
 
 /**
- * UPdates the data using the given buffers.
+ * Updates the data using the given buffers.
  */
 void ViewDataWidget::updateData(const BufferData& data, bool requires_reset)
 {
