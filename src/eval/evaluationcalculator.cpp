@@ -356,6 +356,17 @@ Result EvaluationCalculator::canEvaluate() const
         return Result::failed("Please select reference data sources");
     }
 
+    //reference needs the maximum X/Y standard deviation used for reference accuracy filtering
+    //(not available for e.g. CAT001/CAT048), otherwise it cannot be used as reference
+    if (!eval_man_.dbContentManager().metaCanGetVariable(
+            settings_.dbcontent_name_ref_, dbcontent_vars::meta_var_max_stddev_xy_))
+    {
+        logerr << "reference dbcontent '" << settings_.dbcontent_name_ref_
+               << "' has no maximum X/Y standard deviation";
+        return Result::failed("Reference data '" + settings_.dbcontent_name_ref_
+                              + "' cannot be used as reference (no position accuracy available)");
+    }
+
     //needs selected test data sources
     if (!hasSelectedTestDataSources())
     {
@@ -1016,7 +1027,9 @@ void EvaluationCalculator::copyCurrentStandard (const std::string& new_name)
     nlohmann::json data;
     data["parameters"]["name"] = new_name;
 
-    Configurable::generateSubConfigurableFromJSON(currentStandard(), data);
+    std::string instance = getConfiguration().newInstanceID("EvaluationStandard");
+
+    Configurable::generateSubConfigurableFromJSON(currentStandard(), instance, data);
 
     setCurrentStandardName(new_name);
 
@@ -1074,9 +1087,9 @@ void EvaluationCalculator::addStandard(const std::string& name)
 
     traced_assert(!hasStandard(name));
 
-    std::string instance = "EvaluationStandard" + name + "0";
-
-    auto& child_json = addNewSubConfiguration("EvaluationStandard", instance);
+    // allocate a unique instance id independent of the display name, so a later rename
+    // of this standard cannot free up a name that a future addStandard would reuse
+    auto& child_json = addNewSubConfiguration("EvaluationStandard");
     child_json[Configuration::ParameterSection]["name"] = name;
 
     generateSubConfigurable(child_json);

@@ -83,8 +83,8 @@ In the 'Main' tab, the main configuration settings can be set. \\
 At the top, the 'Data Selection' can be performed, by selecting:
 \begin{itemize}  
 \item Reference Data:
-\begin{itemize}  
-\item DBContent: Any DBContent existing in the database
+\begin{itemize}
+\item DBContent: Any DBContent existing in the database, except CAT001 and CAT048 (see note below)
 \item Data source checkboxes: Which data sources to use
 \item Line ID: Which line to use from the data sources
 \end{itemize}
@@ -96,6 +96,8 @@ At the top, the 'Data Selection' can be performed, by selecting:
 \end{itemize}
 \end{itemize}
 \ \\
+
+\textbf{Note}: CAT001 and CAT048 cannot be selected as reference data. Reference accuracy filtering requires a maximum X/Y standard deviation, which these categories do not provide. They can still be used as test data. \\
 
 As noted before, usage of appropriate reference data is of paramount importance. \\
 

@@ -86,8 +86,11 @@ public:
     void generateSubConfigurableFromConfig(const std::string& class_name,
                                            const std::string& instance_name);
     /// Clones the given configurable's JSON representation, merges additional_data,
-    /// adds it as a sub-config entry, and generates the child configurable from it.
+    /// adds it as a sub-config entry under the given unique instance name, and
+    /// generates the child configurable from it. The instance name must be unique
+    /// among the existing sub-configurables of the same class.
     void generateSubConfigurableFromJSON(const Configurable& configurable,
+                                         const std::string& new_instance_name,
                                          const nlohmann::json& additional_data = nlohmann::json());
     bool hasSubConfigurable(const std::string& class_name, const std::string& instance_name) const;
     /// Walks a dot-separated path of instance/class names to find a descendant.
