@@ -212,18 +212,28 @@ Please note that the naming must be exactly as in the GUI, otherwise the applica
 
 When an Import ASTERIX task is started the given configuration overrides are used, all parameters can be set using a JSON string. \\
 
-In a nice formatting the string looks like this:
+A rectangular position filter (given as minimum and maximum latitude and longitude, in degrees) combined with a Mode C filter looks like this:
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 '{
-{
-  "filter_position_active": true,
-  "filter_latitude_min": 49.686,
-  "filter_latitude_max": 50.3898,
-  "filter_longitude_min": 8.0115,
-  "filter_longitude_max": 9.1129,
+  "filter_position_rec_active": true,
+  "filter_rec_latitude_min": 49.686,
+  "filter_rec_latitude_max": 50.3898,
+  "filter_rec_longitude_min": 8.0115,
+  "filter_rec_longitude_max": 9.1129,
   "filter_modec_active": true,
   "filter_modec_max": 500,
   "filter_modec_min": -10000
+}'
+\end{lstlisting}
+\ \\
+
+Alternatively, a circular position filter can be used, given as a center latitude and longitude (in degrees) and a range (in nautical miles):
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+'{
+  "filter_position_circ_active": true,
+  "filter_circ_latitude": 47.26,
+  "filter_circ_longitude": 11.34,
+  "filter_circ_range": 40.0
 }'
 \end{lstlisting}
 \ \\
@@ -233,7 +243,8 @@ Please note that the parameter naming must be exactly as in the 'task\_import\_a
 '{
   "override_tod_active": true,
   "filter_tod_active": true,
-  "filter_position_active": true,
+  "filter_position_rec_active": true,
+  "filter_position_circ_active": true,
   "filter_modec_active": true,
   "file_line_id": 0, // 0...3
   "date_str": "YYYY-mm-DD",
@@ -242,6 +253,9 @@ Please note that the parameter naming must be exactly as in the 'task\_import\_a
 }'
 \end{lstlisting}
 \ \\
+
+The same parameters can also be passed to the runtime command interface, using the '-{}-config' option of the 'import\_asterix\_file', 'import\_asterix\_files', 'import\_asterix\_pcap\_file' and 'import\_asterix\_pcap\_files' commands, e.g. \\
+'import\_asterix\_file /data/file.ff -{}-config=`\{"filter\_position\_rec\_active": true, "filter\_rec\_latitude\_min": 49.686\}`'.
 
 
 \subsubsection{-{}-import\_json filename}
