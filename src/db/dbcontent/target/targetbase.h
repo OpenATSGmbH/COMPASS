@@ -25,6 +25,7 @@
 #include <boost/optional.hpp>
 
 #include <string>
+#include <vector>
 
 
 class TargetBase
@@ -117,6 +118,26 @@ public:
         case Category::FFT: return "FFT";
         default: return "Unknown";
         }
+    }
+
+    // All categories in display order
+    static const std::vector<Category>& allCategories() {
+        static const std::vector<Category> categories = {
+            Category::Unknown,
+            Category::LightAircraft,
+            Category::SmallAircraft,
+            Category::MediumAircraft,
+            Category::HighVortexLargeAircraft,
+            Category::HeavyAircraft,
+            Category::HighSpeedManoeuvrable,
+            Category::Rotocraft,
+            Category::OtherAirborne,
+            Category::AnyAircraft,
+            Category::Vehicle,
+            Category::Obstacle,
+            Category::FFT
+        };
+        return categories;
     }
 
     static Category fromString(const std::string& name) {

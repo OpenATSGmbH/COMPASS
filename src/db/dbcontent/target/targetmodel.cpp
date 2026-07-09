@@ -693,6 +693,18 @@ unsigned int TargetModel::size() const
 
 /**
  */
+std::set<Target::Category> TargetModel::existingCategories() const
+{
+    std::set<Target::Category> categories;
+
+    for (auto target_it = target_data_.begin(); target_it != target_data_.end(); ++target_it)
+        categories.insert(target_it->targetCategory());
+
+    return categories;
+}
+
+/**
+ */
 // void TargetModel::removeDBContentFromTargets(const std::string& dbcont_name)
 // {
 //     for (auto target_it = target_data_.begin(); target_it != target_data_.end(); ++target_it)

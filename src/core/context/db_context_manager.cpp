@@ -1836,13 +1836,27 @@ void DBContextManager::databaseOpenedSlot()
                     }
                 }
 
-                DBContextConflictDialog dlg(active_context_name_, d,
-                                           activeContext().modified(), db_ctx.modified(),
-                                           db_has_sensor_data,
-                                           QApplication::activeWindow());
-                dlg.exec();
+                DBContextConflictDialog::Resolution resolution;
 
-                switch (dlg.resolution())
+                if (!compass_.allowUserInteractions())
+                {
+                    // automated processing (CLI / runtime command): do not open a modal dialog,
+                    // keep the configuration context and write it to the database
+                    logwrn << "context '" << active_context_name_
+                           << "' differs from database during automated processing, using configuration";
+                    resolution = DBContextConflictDialog::UseFile;
+                }
+                else
+                {
+                    DBContextConflictDialog dlg(active_context_name_, d,
+                                               activeContext().modified(), db_ctx.modified(),
+                                               db_has_sensor_data,
+                                               QApplication::activeWindow());
+                    dlg.exec();
+                    resolution = dlg.resolution();
+                }
+
+                switch (resolution)
                 {
                 case DBContextConflictDialog::UseFile:
                     loginf << "conflict resolved: using configuration";
