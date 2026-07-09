@@ -2777,11 +2777,11 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
 
 /**
  */
-void DBInterface::updateBuffer(const std::string& table_name, 
+void DBInterface::updateBuffer(const std::string& table_name,
                                const std::string& key_col,
-                               shared_ptr<Buffer> buffer, 
-                               int from_index, 
-                               int to_index)
+                               shared_ptr<Buffer> buffer,
+                               const boost::optional<size_t>& idx_from,
+                               const boost::optional<size_t>& idx_to)
 {
     logdbg << "table " << table_name << " buffer size " << buffer->size() << " key " << key_col;
 
@@ -2801,7 +2801,7 @@ void DBInterface::updateBuffer(const std::string& table_name,
         boost::mutex::scoped_lock locker(instance_mutex_);
         #endif
 
-        res = db_instance_->defaultConnection().updateBuffer(table_name, buffer, key_col, from_index, to_index);
+        res = db_instance_->defaultConnection().updateBuffer(table_name, buffer, key_col, idx_from, idx_to);
     }
 
     if (!res.ok())

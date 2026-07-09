@@ -161,6 +161,11 @@ public:
     bool expertMode() const;
     void expertMode(bool expert_mode);
 
+    // false while automated processing (CLI / runtime commands) runs - code must not open
+    // modal GUI dialogs when this is false, but resolve non-interactively instead
+    bool allowUserInteractions() const { return allow_user_interactions_; }
+    void allowUserInteractions(bool value) { allow_user_interactions_ = value; }
+
     bool isShutDown() const;
     bool isRunning() const;
 
@@ -229,6 +234,7 @@ protected:
     bool db_opened_{false};
     bool db_inmem_{false};
     bool expert_mode_ {false};
+    bool allow_user_interactions_ {true};
     bool pdflatex_found_ {false};
 
     bool dark_mode_ {false};

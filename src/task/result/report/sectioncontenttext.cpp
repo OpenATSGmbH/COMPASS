@@ -206,7 +206,10 @@ public:
         return { w, static_cast<int>(document()->size().height()) + 2 };
     }
 
-    QSize minimumSizeHint() const override { return sizeHint(); }
+    // The minimum width must not track the current viewport width: that would
+    // ratchet the minimum to the widest layout ever shown and keep the report
+    // pane from shrinking again. Height still follows the document height.
+    QSize minimumSizeHint() const override { return { 0, sizeHint().height() }; }
 
 protected:
     void resizeEvent(QResizeEvent* e) override
