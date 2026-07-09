@@ -36,6 +36,9 @@ EvaluationTargetFilter::EvaluationTargetFilter(nlohmann::json& config, Evaluatio
     registerParameter("remove_short_targets_min_duration", &remove_short_targets_min_duration_, 60.0);
     // psr
     registerParameter("remove_psr_only_targets", &remove_psr_only_targets_, true);
+    // target categories
+    registerParameter("exclude_target_categories", &exclude_target_categories_, false);
+    registerParameter("exclude_target_category_values", &exclude_target_category_values_, json::object());
     // ma
     registerParameter("remove_modeac_onlys", &remove_modeac_onlys_, false);
     registerParameter("filter_mode_a_codes", &filter_mode_a_codes_, false);
@@ -64,6 +67,7 @@ void EvaluationTargetFilter::setUse(dbContent::TargetCache& target_data)
 
     std::set<std::pair<int,int>> remove_mode_as = filterModeACodeData();
     std::set<unsigned int> remove_tas = filterTargetAddressData();
+    std::set<TargetBase::Category> exclude_categories = excludeTargetCategoryData();
 
     bool tmp_match;
 
@@ -91,6 +95,12 @@ void EvaluationTargetFilter::setUse(dbContent::TargetCache& target_data)
         {
             use = false;
             comment = "Primary only";
+        }
+
+        if (use && exclude_target_categories_ && exclude_categories.count(target_it->targetCategory()))
+        {
+            use = false;
+            comment = "Target Type " + TargetBase::toString(target_it->targetCategory());
         }
 
         if (use && remove_modeac_onlys_ && target_it->isModeACOnly())
@@ -276,6 +286,58 @@ void EvaluationTargetFilter::removePsrOnlyTargets(bool value)
     loginf << "value " << value;
 
     remove_psr_only_targets_ = value;
+}
+
+/**
+ */
+bool EvaluationTargetFilter::excludeTargetCategories() const
+{
+    return exclude_target_categories_;
+}
+
+/**
+ */
+void EvaluationTargetFilter::excludeTargetCategories(bool value)
+{
+    loginf << "value " << value;
+
+    exclude_target_categories_ = value;
+}
+
+/**
+ */
+bool EvaluationTargetFilter::excludeTargetCategory(TargetBase::Category category) const
+{
+    string category_name = TargetBase::toString(category);
+
+    if (!exclude_target_category_values_.contains(category_name))
+        return false;
+
+    return exclude_target_category_values_.at(category_name);
+}
+
+/**
+ */
+void EvaluationTargetFilter::excludeTargetCategory(TargetBase::Category category, bool value)
+{
+    loginf << "category " << TargetBase::toString(category) << " value " << value;
+
+    exclude_target_category_values_[TargetBase::toString(category)] = value;
+}
+
+/**
+ */
+std::set<TargetBase::Category> EvaluationTargetFilter::excludeTargetCategoryData() const
+{
+    std::set<TargetBase::Category> data;
+
+    for (auto category : TargetBase::allCategories())
+    {
+        if (excludeTargetCategory(category))
+            data.insert(category);
+    }
+
+    return data;
 }
 
 /**

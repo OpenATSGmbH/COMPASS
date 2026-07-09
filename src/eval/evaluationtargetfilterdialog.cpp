@@ -30,6 +30,7 @@
 #include <QLineEdit>
 #include <QCheckBox>
 #include <QFormLayout>
+#include <QTabWidget>
 
 using namespace std;
 
@@ -56,7 +57,11 @@ EvaluationTargetFilterDialog::EvaluationTargetFilterDialog(
 
     QVBoxLayout* main_layout = new QVBoxLayout();
 
-    // config stuff
+    QTabWidget* tab_widget = new QTabWidget();
+
+    // main tab
+    QWidget* main_tab = new QWidget();
+    QVBoxLayout* main_tab_layout = new QVBoxLayout();
     QFormLayout* config_layout = new QFormLayout();
 
     // shorts
@@ -86,6 +91,42 @@ EvaluationTargetFilterDialog::EvaluationTargetFilterDialog(
             &EvaluationTargetFilterDialog::removePSROnlyTargetsSlot);
 
     config_layout->addRow("Remove Primary-Only Targets", remove_psr_only_targets_check_);
+
+    // target types
+    exclude_target_types_check_ = new QCheckBox();
+    exclude_target_types_check_->setChecked(target_filter_.excludeTargetCategories());
+    connect(exclude_target_types_check_, &QCheckBox::clicked, this,
+            &EvaluationTargetFilterDialog::excludeTargetTypesSlot);
+
+    config_layout->addRow("Exclude Target Types", exclude_target_types_check_);
+
+    std::set<dbContent::Target::Category> existing_categories = model_.existingCategories();
+
+    for (auto category : TargetBase::allCategories())
+    {
+        string category_name = TargetBase::toString(category);
+
+        QCheckBox* tmp = new QCheckBox();
+        tmp->setChecked(target_filter_.excludeTargetCategory(category));
+        tmp->setEnabled(existing_categories.count(category));
+        tmp->setProperty("category_name", category_name.c_str());
+        connect(tmp, &QCheckBox::clicked, this,
+                &EvaluationTargetFilterDialog::excludeSpecificTargetTypeSlot);
+
+        exclude_target_type_checks_[category_name] = tmp;
+
+        config_layout->addRow(("\tExclude "+category_name).c_str(), tmp);
+    }
+
+    main_tab_layout->addLayout(config_layout);
+    main_tab_layout->addStretch();
+    main_tab->setLayout(main_tab_layout);
+    tab_widget->addTab(main_tab, "Main");
+
+    // mode a/c/s tab
+    QWidget* mode_tab = new QWidget();
+    QVBoxLayout* mode_tab_layout = new QVBoxLayout();
+    config_layout = new QFormLayout();
 
     // ma
     remove_mode_ac_only_check_ = new QCheckBox();
@@ -156,6 +197,16 @@ EvaluationTargetFilterDialog::EvaluationTargetFilterDialog(
 
     config_layout->addRow("\tTarget Addresses (hex)", remove_ta_edit_);
 
+    mode_tab_layout->addLayout(config_layout);
+    mode_tab_layout->addStretch();
+    mode_tab->setLayout(mode_tab_layout);
+    tab_widget->addTab(mode_tab, "Mode A/C/S");
+
+    // dbcontent detection tab
+    QWidget* dbcont_tab = new QWidget();
+    QVBoxLayout* dbcont_tab_layout = new QVBoxLayout();
+    config_layout = new QFormLayout();
+
     // dbconts
     remove_dbcont_check_ = new QCheckBox();
     remove_dbcont_check_->setChecked(target_filter_.removeNotDetectedDBContents());
@@ -178,9 +229,12 @@ EvaluationTargetFilterDialog::EvaluationTargetFilterDialog(
         config_layout->addRow(("\tNon-Detection of "+dbcont_it.first).c_str(), tmp);
     }
 
-    main_layout->addLayout(config_layout);
+    dbcont_tab_layout->addLayout(config_layout);
+    dbcont_tab_layout->addStretch();
+    dbcont_tab->setLayout(dbcont_tab_layout);
+    tab_widget->addTab(dbcont_tab, "DBContent Detection");
 
-    main_layout->addStretch();
+    main_layout->addWidget(tab_widget);
 
     // buttons
 
@@ -239,6 +293,24 @@ void EvaluationTargetFilterDialog::removeSTMinDurationEditedSlot()
 void EvaluationTargetFilterDialog::removePSROnlyTargetsSlot(bool checked)
 {
     target_filter_.removePsrOnlyTargets(checked);
+}
+
+void EvaluationTargetFilterDialog::excludeTargetTypesSlot(bool checked)
+{
+    target_filter_.excludeTargetCategories(checked);
+}
+
+void EvaluationTargetFilterDialog::excludeSpecificTargetTypeSlot(bool checked)
+{
+    QCheckBox* tmp = dynamic_cast<QCheckBox*>(sender());
+    traced_assert(tmp);
+
+    QVariant data = tmp->property("category_name");
+    traced_assert(data.isValid());
+
+    string category_name = data.toString().toStdString();
+
+    target_filter_.excludeTargetCategory(TargetBase::fromString(category_name), checked);
 }
 
 void EvaluationTargetFilterDialog::removeModeACOnlyTargetsSlot(bool checked)
