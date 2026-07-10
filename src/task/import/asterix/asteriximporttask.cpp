@@ -1607,6 +1607,38 @@ void ASTERIXImportTask::checkAllDone()
            << " queued insert " << queued_insert_buffers_.size()
            << " insert active " << insert_active_;
 
+    // drain: once decoding and the map/ts/postprocess pipeline are done, no future chunk
+    // can grow the accumulation, so flush any remainder for insertion. required since the
+    // final postprocessDoneSlot can run while decode_job_ is still set (its doneSignal
+    // queued but not yet delivered) and then postpones the flush waiting for a next chunk
+    // that never comes
+    if (!stopped_
+        && decode_job_ == nullptr
+        && !json_map_jobs_.size()
+        && !ts_calculator_.processing()
+        && !postprocess_jobs_.size()
+        && accumulated_buffers_.size())
+    {
+        loginf << "flushing remaining accumulated buffers after pipeline drain";
+
+        // the postponed accumulation already decremented the packet count,
+        // insertDoneSlot decrements once per queued insert
+        ++num_packets_in_processing_;
+
+        queued_insert_buffers_.push_back(std::move(accumulated_buffers_));
+        accumulated_buffers_.clear();
+
+        if (!insert_active_
+            && !compass_.dbExportInProgress()
+            && !dbcontent_man_.loadInProgress())
+        {
+            insertData(); // calls checkAllDone again when done via insertDoneSlot
+            return;
+        }
+
+        // insert active: insertDoneSlot picks up the queued buffers and calls checkAllDone again
+    }
+
     if (!all_done_
         && decode_job_ == nullptr
         && !json_map_jobs_.size()
@@ -2051,6 +2083,40 @@ void ASTERIXImportTask::buildResultReport(const boost::posix_time::ptime& end_ti
                 rec_t.addRow({ds_label, ds_type, records_text},
                              ResultReport::SectionContentViewable(),
                              ds_link);
+            }
+        }
+
+        // Skipped categories: found in the recording during the probe but not
+        // decoded (no specification available or decoding disabled). Aggregated
+        // over the file itself and its used sections.
+        {
+            std::map<unsigned int, ASTERIXSkippedCategoryInfo> skipped = fi.skipped_categories;
+            for (const auto& sec : fi.sections)
+            {
+                if (!sec.used)
+                    continue;
+                for (const auto& cat_it : sec.skipped_categories)
+                {
+                    auto& info = skipped[cat_it.first];
+                    info.data_blocks += cat_it.second.data_blocks;
+                    info.bytes       += cat_it.second.bytes;
+                    if (info.reason.empty())
+                        info.reason = cat_it.second.reason;
+                }
+            }
+
+            if (!skipped.empty())
+            {
+                if (!file_section.hasTable("Skipped Categories"))
+                    file_section.addTable("Skipped Categories", 4,
+                                          {"Category", "Data Blocks", "Size", "Reason"}, false);
+                auto& skip_t = file_section.getTable("Skipped Categories");
+
+                for (const auto& cat_it : skipped)
+                    skip_t.addRow({"CAT" + Utils::String::categoryString(cat_it.first),
+                                   static_cast<long long>(cat_it.second.data_blocks),
+                                   formatBytes(cat_it.second.bytes),
+                                   cat_it.second.reason});
             }
         }
 
