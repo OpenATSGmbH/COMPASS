@@ -61,6 +61,25 @@ struct ASTERIXImportFileError
 };
 
 /**
+ * Counts for an ASTERIX category found in a recording but skipped during decoding,
+ * either because no category specification exists or because decoding is disabled.
+ */
+struct ASTERIXSkippedCategoryInfo
+{
+    /// Parses the "skipped_categories" part of a jASTERIX analysis result.
+    /// Returns an empty map if none is contained.
+    static std::map<unsigned int, ASTERIXSkippedCategoryInfo> fromAnalysisInfo(
+        const nlohmann::json& analysis_info);
+
+    /// Compiles a short per-category listing, e.g. "CAT030 (no specification), CAT062 (decoding disabled)".
+    static std::string asString(const std::map<unsigned int, ASTERIXSkippedCategoryInfo>& skipped);
+
+    size_t      data_blocks = 0; // number of data blocks found for this category
+    size_t      bytes       = 0; // total size of these data blocks in bytes
+    std::string reason;          // why the category was skipped
+};
+
+/**
  * Subsection of a file to be imported.
  * Used for files in which multiple ASTERIX data is packed (e.g. PCAP).
  */
@@ -77,6 +96,8 @@ struct ASTERIXImportFileSection
     size_t                 total_size_bytes = 0; // total size of this section in bytes
 
     std::map<unsigned int, size_t> records_per_category; // record count per ASTERIX category
+
+    std::map<unsigned int, ASTERIXSkippedCategoryInfo> skipped_categories; // categories found but not decoded
 
     ASTERIXImportFileError error;                // error information (e.g. decoding)
     std::string            warning;              // warning
@@ -110,6 +131,8 @@ struct ASTERIXImportFileInfo
     std::string            contentinfo;
 
     std::map<unsigned int, size_t> records_per_category; // record count per ASTERIX category
+
+    std::map<unsigned int, ASTERIXSkippedCategoryInfo> skipped_categories; // categories found but not decoded
 
     Sections                sections;
     boost::optional<size_t> total_size_bytes;

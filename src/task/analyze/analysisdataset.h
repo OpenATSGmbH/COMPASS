@@ -30,9 +30,12 @@
 
 class COMPASS;
 
+class SectorLayer;
+
 namespace dbContent
 {
 class DBContentAccessor;
+class VariableSet;
 }
 
 /**
@@ -55,8 +58,41 @@ class DBContentAccessor;
 class AnalysisDataset
 {
 public:
+    /**
+     * Per-report scope filter, modeled on the evaluation's inside test
+     * (`EvaluationTargetData::computeSectorInsideInfo` -> `Sector::isInside`):
+     * a target report is in scope when its position + ground bit pass the
+     * altitude band and on-ground constraints. Flight levels are in FL (= feet
+     * / 100), matching `Sector::min_altitude_` semantics once scaled. A real
+     * `SectorLayer::isInside(pos, has_gb, gb_set)` can be AND-ed in here later
+     * to produce per-sector results without changing the call sites.
+     */
+    struct ScopeFilter
+    {
+        bool  ground_only = false;   // keep only on-ground reports
+        bool  use_min_fl  = false;
+        float min_fl      = 0.0f;    // flight level (FL = feet / 100)
+        bool  use_max_fl  = false;
+        float max_fl      = 600.0f;
+
+        // When set, keep only reports inside any of these sector layers, using
+        // the same per-report inside test as the evaluation
+        // (SectorLayer::isInside(pos, has_gb, gb_set)).
+        bool limit_by_sectors = false;
+        std::vector<std::shared_ptr<SectorLayer>> sectors;
+
+        bool active() const
+        {
+            return ground_only || use_min_fl || use_max_fl
+                   || (limit_by_sectors && !sectors.empty());
+        }
+    };
+
     explicit AnalysisDataset(COMPASS& compass);
     ~AnalysisDataset();
+
+    /// Set the per-report scope filter; must be called before `load()`.
+    void setScopeFilter(const ScopeFilter& filter) { scope_filter_ = filter; }
 
     /**
      * Configure load filters and block-load the requested dbcontents.
@@ -153,7 +189,17 @@ private:
     void addToTestChain(unsigned int utn, const std::string& dbcontent,
                         boost::posix_time::ptime ts, unsigned int idx);
 
+    /// True if the target's reconstructed category is ground-only (cached).
+    bool targetGroundOnly(unsigned int utn) const;
+
+    /// Build the per-DBContent read set (all variables the inspectors consume:
+    /// position, altitude, ground bit, acad/acid, XY std-dev, ADS-B quality
+    /// indicators, contributing receivers). Mirrors EvaluationManager::addVariables.
+    dbContent::VariableSet buildReadSet(const std::string& dbcontent_name) const;
+
     COMPASS& compass_;
+    ScopeFilter scope_filter_;
+    mutable std::map<unsigned int, bool> ground_only_cache_;
     std::shared_ptr<dbContent::DBContentAccessor> accessor_;
 
     static constexpr const char* kReferenceDBContent = "RefTraj";

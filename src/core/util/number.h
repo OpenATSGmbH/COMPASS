@@ -94,6 +94,14 @@ extern double calculateIQR(std::vector<double> data);
 extern double calculateMAD(std::vector<double> data);
 extern std::tuple<double,double,double> getMedianStatistics (const std::vector<double>& values);
 
+/// Linear-interpolation percentile. `p` is a fraction in [0,1]; values outside
+/// are clamped to min/max. Returns 0.0 for an empty input (callers that care
+/// about emptiness should check first). Does not modify the caller's vector.
+extern double percentile(std::vector<double> data, double p);
+
+/// Arithmetic mean. Returns 0.0 for an empty input.
+extern double mean(const std::vector<double>& data);
+
 extern std::pair<unsigned int, unsigned int> computeGeoWindowResolution(
     double lat_min, double lat_max, double lon_min, double lon_max,
     double grid_max_resolution  = 0.001, unsigned int max_num_cells = 500);

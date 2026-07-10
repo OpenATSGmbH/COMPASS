@@ -100,7 +100,8 @@ public:
     RadarPlotPositionCalculatorTask& radarPlotPositionCalculatorTask() const;
     CreateARTASAssociationsTask& createArtasAssociationsTask() const;
     ReconstructorTask& reconstructReferencesTask() const;
-    AnalyzeDataSourceTask& analyzeDataSourceTask() const;
+    AnalyzeDataSourceTask& analyzeMLATDataSourceTask() const;
+    AnalyzeDataSourceTask& analyzeADSBDataSourceTask() const;
 
     TaskResultsWidget* widget();
 
@@ -167,7 +168,8 @@ protected:
     std::unique_ptr<RadarPlotPositionCalculatorTask> radar_plot_position_calculator_task_;
     std::unique_ptr<CreateARTASAssociationsTask> create_artas_associations_task_;
     std::unique_ptr<ReconstructorTask> reconstruct_references_task_;
-    std::unique_ptr<AnalyzeDataSourceTask> analyze_data_source_task_;
+    std::unique_ptr<AnalyzeDataSourceTask> analyze_mlat_data_source_task_;
+    std::unique_ptr<AnalyzeDataSourceTask> analyze_adsb_data_source_task_;
 
     std::map<std::string, Task*> tasks_;
 

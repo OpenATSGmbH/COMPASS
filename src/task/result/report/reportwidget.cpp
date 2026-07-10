@@ -92,6 +92,26 @@ ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
 
     results_widget_ = new QStackedWidget();
 
+    // A QStackedWidget sizes to the largest page, so after a large section has
+    // been opened every other page (e.g. a single-figure sub-section) inherits
+    // that height, and a page with a wide table pins the minimum width of all
+    // later pages (pushing right-aligned buttons out of view). Make only the
+    // current page contribute to the size hint, so the scroll area tracks the
+    // page actually shown.
+    connect(results_widget_, &QStackedWidget::currentChanged, this, [this](int idx) {
+        for (int i = 0; i < results_widget_->count(); ++i)
+        {
+            QWidget* w = results_widget_->widget(i);
+            if (!w)
+                continue;
+            w->setSizePolicy(i == idx ? QSizePolicy::Preferred : QSizePolicy::Ignored,
+                             i == idx ? QSizePolicy::Preferred : QSizePolicy::Ignored);
+        }
+        if (QWidget* cur = results_widget_->widget(idx))
+            cur->adjustSize();
+        results_widget_->adjustSize();
+    });
+
     scroll_area->setWidget(results_widget_);
 
     main_layout->addWidget(scroll_area);

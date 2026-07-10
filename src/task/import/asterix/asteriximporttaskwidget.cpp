@@ -493,7 +493,8 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         };
 
         auto buildTooltip = [](const std::string& info,
-                               const std::map<unsigned int, size_t>& rpc) -> QString
+                               const std::map<unsigned int, size_t>& rpc,
+                               const std::map<unsigned int, ASTERIXSkippedCategoryInfo>& skipped) -> QString
         {
             QString tip;
             if (!info.empty())
@@ -511,6 +512,17 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
                     total += kv.second;
                 }
                 tip += QString("\nTotal: %1 records").arg(total);
+            }
+            if (!skipped.empty())
+            {
+                if (!tip.isEmpty())
+                    tip += "\n\n";
+                for (const auto& kv : skipped)
+                    tip += QString("CAT%1: %2 data blocks skipped (%3)\n")
+                               .arg(kv.first, 3, 10, QChar('0'))
+                               .arg(kv.second.data_blocks)
+                               .arg(QString::fromStdString(kv.second.reason));
+                tip.chop(1); // trailing newline
             }
             return tip;
         };
@@ -550,7 +562,8 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
             if (!file_info.hasSections())
             {
                 // recording: file row owns categories and tooltip
-                QString tip = buildTooltip("", file_info.records_per_category);
+                QString tip = buildTooltip("", file_info.records_per_category,
+                                           file_info.skipped_categories);
                 if (!tip.isEmpty())
                     item->setToolTip(1, tip);
                 addCategoriesChild(item, file_info.contentinfo);
@@ -583,7 +596,8 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
                 else if (is_network)
                     sec_item->setFlags(Qt::ItemIsEnabled);
 
-                QString tip = buildTooltip(section.info, section.records_per_category);
+                QString tip = buildTooltip(section.info, section.records_per_category,
+                                           section.skipped_categories);
                 if (!tip.isEmpty())
                     sec_item->setToolTip(1, tip);
 

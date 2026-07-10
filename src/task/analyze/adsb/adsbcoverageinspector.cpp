@@ -15,24 +15,24 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mlatcoverageinspector.h"
-#include "mlatcoveragehelpers.h"
+#include "adsbcoverageinspector.h"
 #include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
 #include "targetreport3dgrid.h"
 #include "movementui.h"
 
 #include "compass.h"
+#include "dbcontent/dbcontentmanager.h"
 #include "logger.h"
 #include "number.h"
 #include "section.h"
 #include "sectioncontenttable.h"
 #include "sectioncontenttext.h"
 #include "stringconv.h"
-#include "system.h"
 #include "targetposition.h"
 #include "sectorlayer.h"
 #include "dbcontent/target/targetreportchain.h"
+#include "dbcontent/target/targetbase.h"
 
 #include "eval/requirement/detection/detection_pd_helpers.h"
 
@@ -50,18 +50,22 @@
 
 #include <QColor>
 
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/optional.hpp>
+
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
+#include <limits>
+#include <map>
 #include <set>
 #include <sstream>
 #include <utility>
 
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
+using dbContent::TargetReport::Chain;
 using Utils::Number::mean;
 using Utils::Number::percentile;
 using analysis::MovementUI;
@@ -69,11 +73,10 @@ using analysis::SpeedSamples;
 using analysis::gatherTestSpeeds;
 using analysis::gatherRefSpeeds;
 
-MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& config_json,
+ADSBCoverageInspectorSettings::ADSBCoverageInspectorSettings(nlohmann::json& config_json,
                                                              Configurable* parent)
     : InspectorSettingsBase(config_json, parent)
 {
-    registerParameter("pd_method_int",   &pd_method_int_,   pd_method_int_);
     registerParameter("update_interval_s", &update_interval_s_, update_interval_s_);
     registerParameter("update_interval_standing_s", &update_interval_standing_s_,
                       update_interval_standing_s_);
@@ -92,20 +95,20 @@ MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& con
     registerParameter("ui_hist_max_s",    &ui_hist_max_s_,    ui_hist_max_s_);
 }
 
-MLATCoverageInspector::MLATCoverageInspector(AnalyzeDataSourceTask& task,
-                                             MLATCoverageInspectorSettings& settings)
+ADSBCoverageInspector::ADSBCoverageInspector(AnalyzeDataSourceTask& task,
+                                             ADSBCoverageInspectorSettings& settings)
     : DataSourceInspectorBase(task, settings)
 {
 }
 
-MLATCoverageInspector::~MLATCoverageInspector() = default;
+ADSBCoverageInspector::~ADSBCoverageInspector() = default;
 
-std::set<std::string> MLATCoverageInspector::testDBContentNames() const
+std::set<std::string> ADSBCoverageInspector::testDBContentNames() const
 {
-    return {"CAT020", "CAT010"};
+    return {"CAT021"};
 }
 
-bool MLATCoverageInspector::prerequisitesMet(std::string& reason_out) const
+bool ADSBCoverageInspector::prerequisitesMet(std::string& reason_out) const
 {
     reason_out.clear();
 
@@ -119,7 +122,7 @@ bool MLATCoverageInspector::prerequisitesMet(std::string& reason_out) const
 
 namespace
 {
-using Settings = MLATCoverageInspectorSettings;
+using Settings = ADSBCoverageInspectorSettings;
 using EvaluationRequirement::PDHelpers::MissTestParams;
 using EvaluationRequirement::PDHelpers::RefPeriod;
 
@@ -144,6 +147,10 @@ time_duration durationFromSeconds(double s)
 // continuously tracked) and excluded from the measured-cadence statistics.
 constexpr double kMaxUpdateIntervalS = 300.0;
 
+// Cap on the number of target-type groups rendered as figures (the rest are
+// dropped, with a note in the report). MOPS versions are at most three.
+constexpr std::size_t kMaxTypeGroups = 12;
+
 std::string formatNumber(double v, int prec = 4)
 {
     std::ostringstream os;
@@ -151,9 +158,6 @@ std::string formatNumber(double v, int prec = 4)
     return os.str();
 }
 
-// Coordinates of the grid cell to attribute a counter to. `valid == false`
-// when `mappedRefPos()` could not interpolate the reference for the query
-// timestamp (no usable bracket within `d_max`).
 struct CellAttribution
 {
     bool   valid  = false;
@@ -162,40 +166,6 @@ struct CellAttribution
     double alt_ft = 0.0;
 };
 
-// Per-sector slot accumulation: a slot is attributed to every selected sector
-// layer it lies in (evaluation's exact SectorLayer::isInside). `eui`/`mui`
-// accumulate across targets; `touched` is reset per target so the caller can
-// count each target once per sector.
-struct SectorWalkAccum
-{
-    const std::vector<std::shared_ptr<SectorLayer>>* layers = nullptr;
-    std::vector<std::uint64_t> eui;
-    std::vector<std::uint64_t> mui;
-    std::vector<char>          touched;
-
-    void accum(const CellAttribution& ca, bool is_miss)
-    {
-        if (!layers)
-            return;
-        dbContent::TargetPosition pos;
-        pos.latitude_     = ca.lat;
-        pos.longitude_    = ca.lon;
-        pos.has_altitude_ = true;
-        pos.altitude_     = ca.alt_ft;
-        for (std::size_t i = 0; i < layers->size(); ++i)
-        {
-            const auto& L = (*layers)[i];
-            if (L && L->isInside(pos, false, false))
-            {
-                if (is_miss) ++mui[i]; else ++eui[i];
-                touched[i] = 1;
-            }
-        }
-    }
-};
-
-// Look up the reference position for `(utn, t)` and unpack it into the
-// counter-attribution coordinates used by `TargetReport3DGrid`.
 CellAttribution refCellAt(AnalysisDataset& dataset,
                           unsigned int utn,
                           ptime t,
@@ -212,8 +182,6 @@ CellAttribution refCellAt(AnalysisDataset& dataset,
     return out;
 }
 
-// Gather and sort all test timestamps for `utn` across the test dbcontents
-// present in the dataset.
 std::vector<ptime> gatherTestTimestamps(unsigned int utn,
                                         AnalysisDataset& dataset)
 {
@@ -230,28 +198,126 @@ std::vector<ptime> gatherTestTimestamps(unsigned int utn,
     return out;
 }
 
-// Time-difference walk per target.
-//
-// For each reference period:
-//   - attribute one #EUI per UI slot, at the cell of the reference position
-//     at slot timestamp `period.begin + k * UI`;
-//   - walk the test timestamps that fall inside `[period.begin, period.end]`
-//     and form gaps (period.begin -> first test, between consecutive tests,
-//     last test -> period.end; or `period` itself when no tests are inside);
-//   - for each gap that passes the miss test, attribute one #MUI per missed
-//     UI slot at the cell of the reference position at the slot timestamp.
-//
-// Both per-cell counters live on `grid`; the caller aggregates them.
-void walkTargetTimeDifference(unsigned int utn,
-                              const std::vector<RefPeriod>& periods,
-                              const std::vector<ptime>& tst_ts_sorted,
-                              AnalysisDataset& dataset,
-                              TargetReport3DGrid& grid,
-                              const Settings& settings,
-                              const analysis::MovementUI& mv,
-                              SectorWalkAccum* sec)
+// Transponder identity for a target: the most common acad across the target's
+// CAT021 test reports, the first non-empty callsign, and the dominant MOPS
+// version (used to route the target's slots into the per-MOPS summary grid). A
+// CAT021 target almost always carries a single acad; the vote guards against
+// the rare mixed-association case. The emitter category is taken from the
+// reconstructed target, not voted here.
+struct TransponderId
+{
+    bool         has_acad = false;
+    unsigned int acad     = 0;
+    std::string  callsign;
+    bool         has_mops = false;
+    unsigned int mops     = 0;
+};
+
+template <typename K>
+K dominantVote(const std::map<K, unsigned int>& votes, bool& has, K fallback)
+{
+    unsigned int best = 0;
+    K out = fallback;
+    has = false;
+    for (const auto& kv : votes)
+    {
+        if (kv.second > best)
+        {
+            best = kv.second;
+            out  = kv.first;
+            has  = true;
+        }
+    }
+    return out;
+}
+
+TransponderId transponderIdOf(unsigned int utn, AnalysisDataset& dataset)
+{
+    TransponderId out;
+    std::map<unsigned int, unsigned int> acad_votes;
+    std::map<unsigned int, unsigned int> mops_votes;
+
+    for (const auto& dbc : dataset.testDbContentsPresent())
+    {
+        if (!dataset.hasTestChain(utn, dbc))
+            continue;
+        auto& chain = dataset.testChain(utn, dbc);
+        for (const auto& kv : chain.timestampIndexes())
+        {
+            Chain::DataID id(kv.first);
+            auto a = chain.acad(id);
+            if (a.has_value())
+                ++acad_votes[*a];
+            auto m = chain.mopsVersion(id);
+            if (m.has_value())
+                ++mops_votes[*m];
+
+            if (out.callsign.empty())
+            {
+                auto c = chain.acid(id);
+                if (c.has_value())
+                {
+                    std::string s = Utils::String::trim(*c);
+                    if (!s.empty())
+                        out.callsign = s;
+                }
+            }
+        }
+    }
+
+    out.acad = dominantVote<unsigned int>(acad_votes, out.has_acad, 0);
+    out.mops = dominantVote<unsigned int>(mops_votes, out.has_mops, 0);
+    return out;
+}
+
+// Per-sector slot accumulation: a report slot is attributed to every selected
+// sector layer it lies in (evaluation's exact SectorLayer::isInside). `eui` /
+// `mui` accumulate across targets; `touched` is reset per target so the caller
+// can add the target's aircraft address once per sector.
+struct SectorWalkAccum
+{
+    const std::vector<std::shared_ptr<SectorLayer>>* layers = nullptr;
+    std::vector<std::uint64_t> eui;
+    std::vector<std::uint64_t> mui;
+    std::vector<char>          touched;
+};
+
+// Time-difference walk per target, counting the #EUI / #MUI attributed to this
+// target while also attributing them to the shared grid cells. Mirrors the MLAT
+// coverage walk; the returned pair feeds the per-transponder breakdown.
+std::pair<std::uint64_t, std::uint64_t>
+walkTargetTimeDifferenceCounted(unsigned int utn,
+                                const std::vector<RefPeriod>& periods,
+                                const std::vector<ptime>& tst_ts_sorted,
+                                AnalysisDataset& dataset,
+                                const std::vector<TargetReport3DGrid*>& grids,
+                                const Settings& settings,
+                                const MovementUI& mv,
+                                SectorWalkAccum* sec)
 {
     const time_duration d_max = boost::posix_time::seconds(60);
+
+    std::uint64_t eui = 0;
+    std::uint64_t mui = 0;
+
+    auto accumSectors = [&](const CellAttribution& ca, bool is_miss) {
+        if (!sec || !sec->layers)
+            return;
+        dbContent::TargetPosition pos;
+        pos.latitude_     = ca.lat;
+        pos.longitude_    = ca.lon;
+        pos.has_altitude_ = true;
+        pos.altitude_     = ca.alt_ft;
+        for (std::size_t i = 0; i < sec->layers->size(); ++i)
+        {
+            const auto& L = (*sec->layers)[i];
+            if (L && L->isInside(pos, false, false))
+            {
+                if (is_miss) ++sec->mui[i]; else ++sec->eui[i];
+                sec->touched[i] = 1;
+            }
+        }
+    };
 
     for (const auto& period : periods)
     {
@@ -259,9 +325,9 @@ void walkTargetTimeDifference(unsigned int utn,
         if (period_s <= 0.0)
             continue;
 
-        // Expected slots: step adaptively by the local update interval, so a
-        // standing target (which the MLAT system updates less often) is expected
-        // less often instead of accruing false misses.
+        // Expected slots: step adaptively by the local update interval (standing
+        // targets are expected less often), so the cadence matches how the
+        // aircraft actually squitters.
         std::size_t guard = 0;
         const std::size_t max_iter = 50'000'000;
         for (ptime t_slot = period.begin; t_slot < period.end; )
@@ -269,8 +335,10 @@ void walkTargetTimeDifference(unsigned int utn,
             auto ca = refCellAt(dataset, utn, t_slot, d_max);
             if (ca.valid)
             {
-                grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
-                if (sec) sec->accum(ca, false);
+                for (auto* g : grids)
+                    g->addEUI(ca.lat, ca.lon, ca.alt_ft);
+                ++eui;
+                accumSectors(ca, false);
             }
             double ui = mv.uiAt(t_slot);
             if (ui <= 0.0 || ++guard > max_iter)
@@ -278,7 +346,6 @@ void walkTargetTimeDifference(unsigned int utn,
             t_slot = addSeconds(t_slot, ui);
         }
 
-        // Test timestamps inside [period.begin, period.end].
         auto first = std::lower_bound(tst_ts_sorted.begin(),
                                       tst_ts_sorted.end(), period.begin);
         auto last  = std::upper_bound(tst_ts_sorted.begin(),
@@ -297,11 +364,10 @@ void walkTargetTimeDifference(unsigned int utn,
             ptime gap_end   = walk[i + 1];
             if (gap_end <= gap_start)
                 continue;
-            const float gap_s =
-                static_cast<float>(partialSeconds(gap_end - gap_start));
+            const float gap_s = static_cast<float>(partialSeconds(gap_end - gap_start));
 
-            // Expected cadence inside the gap follows the target's movement at
-            // the gap start (moving vs standing update interval).
+            // Expected cadence inside the gap is set by the target's movement at
+            // the gap start (the last report there carries its own ground speed).
             const double gap_ui = mv.uiAt(gap_start);
             if (gap_ui <= 0.0)
                 continue;
@@ -325,135 +391,20 @@ void walkTargetTimeDifference(unsigned int utn,
                 auto ca = refCellAt(dataset, utn, t_miss, d_max);
                 if (ca.valid)
                 {
-                    grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
-                    if (sec) sec->accum(ca, true);
+                    for (auto* g : grids)
+                        g->addMUI(ca.lat, ca.lon, ca.alt_ft);
+                    ++mui;
+                    accumSectors(ca, true);
                 }
             }
         }
     }
+
+    return {eui, mui};
 }
 }  // anonymous namespace
 
-namespace mlatcoverage_internal
-{
-std::vector<CycleEvent> evaluateCyclesInPeriod(
-    const EvaluationRequirement::PDHelpers::RefPeriod& period,
-    const std::vector<ptime>& cycles_sorted,
-    const std::vector<ptime>& tst_ts_sorted,
-    const analysis::MovementUI* mv)
-{
-    std::vector<CycleEvent> out;
-
-    auto cyc_begin = std::lower_bound(cycles_sorted.begin(),
-                                      cycles_sorted.end(),
-                                      period.begin);
-    auto cyc_end   = std::upper_bound(cycles_sorted.begin(),
-                                      cycles_sorted.end(),
-                                      period.end);
-
-    out.reserve(static_cast<std::size_t>(std::distance(cyc_begin, cyc_end)));
-
-    const double standing_ui = mv ? mv->ui_standing : 0.0;
-
-    for (auto it = cyc_begin; it != cyc_end; )
-    {
-        ptime t_cycle = *it;
-
-        // Standing targets are expected only once per standing UI, not every
-        // cycle; the window then spans that interval and the cycles inside it
-        // are skipped (a standing target legitimately reports less often than
-        // the cycle rate). Moving targets keep the per-cycle window.
-        const bool standing = mv && standing_ui > 0.0 && mv->standingAt(t_cycle);
-
-        ptime t_window_end;
-        if (standing)
-        {
-            t_window_end = t_cycle
-                + boost::posix_time::microseconds(
-                      static_cast<long long>(std::llround(standing_ui * 1.0e6)));
-            if (t_window_end > period.end)
-                t_window_end = period.end;
-        }
-        else
-        {
-            auto next_it = std::next(it);
-            t_window_end = (next_it != cyc_end) ? *next_it : period.end;
-        }
-
-        if (t_window_end <= t_cycle)
-        {
-            ++it;
-            continue;
-        }
-
-        auto tst_lo = std::lower_bound(tst_ts_sorted.begin(),
-                                       tst_ts_sorted.end(),
-                                       t_cycle);
-        const bool has_test =
-            (tst_lo != tst_ts_sorted.end() && *tst_lo < t_window_end);
-
-        CycleEvent ev;
-        ev.t_cycle = t_cycle;
-        ev.is_miss = !has_test;
-        out.push_back(ev);
-
-        if (standing)
-            it = std::lower_bound(it, cyc_end, t_window_end);  // skip covered cycles
-        else
-            ++it;
-    }
-
-    return out;
-}
-}  // namespace mlatcoverage_internal
-
-namespace
-{
-
-// Status-message walk per target.
-//
-// For each reference period and each cycle timestamp inside it, attribute
-// one #EUI to the cell of the reference position at the cycle timestamp;
-// if no test report falls in the cycle window `[t_cycle, t_next_cycle)`
-// for this target, also attribute one #MUI to the same cell.
-//
-// No miss test, no gap math -- the cycle stream defines the cadence
-// directly (readme_analysis_mlat_ru.md, "CAT019 period-based variant").
-void walkTargetStatusMessage(unsigned int utn,
-                             const std::vector<RefPeriod>& periods,
-                             const std::vector<ptime>& tst_ts_sorted,
-                             const std::vector<ptime>& cycles_sorted,
-                             AnalysisDataset& dataset,
-                             TargetReport3DGrid& grid,
-                             const Settings& /*settings*/,
-                             const analysis::MovementUI& mv,
-                             SectorWalkAccum* sec)
-{
-    const time_duration d_max = boost::posix_time::seconds(60);
-
-    for (const auto& period : periods)
-    {
-        auto events = mlatcoverage_internal::evaluateCyclesInPeriod(
-            period, cycles_sorted, tst_ts_sorted, &mv);
-
-        for (const auto& ev : events)
-        {
-            auto ca = refCellAt(dataset, utn, ev.t_cycle, d_max);
-            if (!ca.valid)
-                continue;
-            grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
-            if (sec) sec->accum(ca, false);
-            if (ev.is_miss)
-            {
-                grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
-                if (sec) sec->accum(ca, true);
-            }
-        }
-    }
-}
-}  // anonymous namespace
-
-void MLATCoverageInspector::compute(AnalysisDataset* dataset)
+void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
 {
     result_ = ComputeResult{};
     grid_.reset();
@@ -461,11 +412,11 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     if (!dataset)
         return;
 
-    auto& settings = static_cast<MLATCoverageInspectorSettings&>(settings_);
+    auto& settings = static_cast<ADSBCoverageInspectorSettings&>(settings_);
 
     if (!dataset->hasPositionExtent())
     {
-        logwrn << "MLATCoverageInspector: dataset has no reference positions, skipping";
+        logwrn << "ADSBCoverageInspector: dataset has no reference positions, skipping";
         return;
     }
 
@@ -474,36 +425,28 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     auto sizing = task_.clampedCellSizes(*dataset);
     if (sizing.horizontal_clamped || sizing.vertical_clamped)
     {
-        loginf << "MLATCoverageInspector: cell sizes clamped to fit max "
-               << task_.maxCellsPerAxis() << " cells/axis -- "
-               << "horizontal " << task_.cellSizeMeters() << " m x"
-               << sizing.horizontal_multiplier << " = " << sizing.cell_size_m << " m, "
-               << "vertical " << task_.cellSizeFeet() << " ft x"
-               << sizing.vertical_multiplier   << " = " << sizing.cell_size_ft << " ft";
+        loginf << "ADSBCoverageInspector: cell sizes clamped to fit max "
+               << task_.maxCellsPerAxis() << " cells/axis";
     }
 
     grid_.reset(new TargetReport3DGrid(sizing.cell_size_m, sizing.cell_size_ft, ref_lat));
     auto& grid = *grid_;
 
-    const bool use_status_method =
-        settings.pdMethod() ==
-        MLATCoverageInspectorSettings::PDMethod::StatusPeriodMessage;
+    auto makeGrid = [&]() {
+        return std::unique_ptr<TargetReport3DGrid>(
+            new TargetReport3DGrid(sizing.cell_size_m, sizing.cell_size_ft, ref_lat));
+    };
 
-    const auto& status_cycles = dataset->statusCycles();
+    // Per-MOPS-version and per-target-type summary grids + PD counters. The
+    // target type is the reconstructed target category, not the raw report ECAT.
+    struct GroupCounts { std::uint64_t eui = 0; std::uint64_t mui = 0; };
+    std::map<unsigned int, std::unique_ptr<TargetReport3DGrid>> mops_grids;
+    std::map<unsigned int, GroupCounts>                         mops_counts;
+    std::map<int, std::unique_ptr<TargetReport3DGrid>>          type_grids;  // Category int
+    std::map<int, GroupCounts>                                  type_counts;
+    std::map<int, std::string>                                  type_label;
 
-    if (use_status_method && status_cycles.empty())
-    {
-        result_.error =
-            "Status-Period-Message PD method selected, but no CAT019 "
-            "start-of-cycle messages were loaded. The DB has no usable "
-            "status content; switch to Time-Difference or import CAT019.";
-        logwrn << result_.error;
-        return;
-    }
-
-    const time_duration ref_max_gap =
-        durationFromSeconds(settings.ref_max_time_diff_s_);
-    const time_duration min_period_duration = boost::posix_time::seconds(1);
+    auto& dbcont_man = task_.compass().dbContentManager();
 
     // Per-sector breakdown (over the selected sector layers, independent of the
     // limit-by-sectors toggle). A slot is attributed to every sector it is in.
@@ -513,11 +456,19 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     sec.eui.assign(sector_layers.size(), 0);
     sec.mui.assign(sector_layers.size(), 0);
     sec.touched.assign(sector_layers.size(), 0);
-    std::vector<std::size_t> sector_target_count(sector_layers.size(), 0);
+    std::vector<std::set<unsigned int>> sector_acads(sector_layers.size());
+
+    const time_duration ref_max_gap = durationFromSeconds(settings.ref_max_time_diff_s_);
+    const time_duration min_period_duration = boost::posix_time::seconds(1);
 
     unsigned int targets_walked = 0;
     unsigned int targets_no_ref = 0;
     unsigned int targets_no_tst = 0;
+
+    // Per-transponder accumulation, keyed by acad (and an "unknown" bucket).
+    std::map<unsigned int, TransponderRow> by_acad;
+    TransponderRow unknown_row;
+    unknown_row.has_acad = false;
 
     // Measured update cadence: consecutive inter-report intervals per target.
     std::vector<double> intervals;
@@ -563,10 +514,35 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
 
         ++targets_walked;
 
+        auto tid = transponderIdOf(utn, *dataset);
+
+        // Resolved target type (reconstructed target category), used to route
+        // the target's slots into the per-target-type summary grid.
+        TargetBase::Category type_cat = TargetBase::Category::Unknown;
+        if (dbcont_man.existsTarget(utn))
+            type_cat = dbcont_man.emitterCategory(utn);
+        int type_key = static_cast<int>(type_cat);
+
+        // Route this target's slots into the aggregate grid plus its MOPS and
+        // target-type summary grids (one dominant value per transponder).
+        std::vector<TargetReport3DGrid*> grids{&grid};
+        if (tid.has_mops)
+        {
+            auto& g = mops_grids[tid.mops];
+            if (!g)
+                g = makeGrid();
+            grids.push_back(g.get());
+        }
+        auto& tg = type_grids[type_key];
+        if (!tg)
+            tg = makeGrid();
+        grids.push_back(tg.get());
+        type_label[type_key] = TargetBase::toString(type_cat);
+
         std::fill(sec.touched.begin(), sec.touched.end(), 0);
 
-        // Movement classification for the time-difference walk: MLAT-reported
-        // ground speed where available, RefTraj speed as fallback.
+        // Movement classification: ADS-B-reported ground speed where available,
+        // RefTraj speed as fallback.
         SpeedSamples test_spd = gatherTestSpeeds(utn, *dataset);
         SpeedSamples ref_spd  = gatherRefSpeeds(ref_chain);
         MovementUI mv;
@@ -577,16 +553,37 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         mv.ui_standing  = settings.update_interval_standing_s_;
         mv.window_s     = std::max(6.0, 2.0 * settings.update_interval_standing_s_);
 
-        if (use_status_method)
-            walkTargetStatusMessage(utn, periods, tst_ts_sorted,
-                                    status_cycles, *dataset, grid, settings, mv, &sec);
-        else
-            walkTargetTimeDifference(utn, periods, tst_ts_sorted,
-                                     *dataset, grid, settings, mv, &sec);
+        auto counts = walkTargetTimeDifferenceCounted(
+            utn, periods, tst_ts_sorted, *dataset, grids, settings, mv, &sec);
 
+        if (tid.has_mops)
+        {
+            mops_counts[tid.mops].eui += counts.first;
+            mops_counts[tid.mops].mui += counts.second;
+        }
+        type_counts[type_key].eui += counts.first;
+        type_counts[type_key].mui += counts.second;
+
+        // Record this transponder under each sector its slots touched.
         for (std::size_t si = 0; si < sector_layers.size(); ++si)
             if (sec.touched[si])
-                ++sector_target_count[si];
+                sector_acads[si].insert(tid.has_acad ? tid.acad : 0u);
+
+        TransponderRow* row = nullptr;
+        if (tid.has_acad)
+        {
+            row = &by_acad[tid.acad];
+            row->acad     = tid.acad;
+            row->has_acad = true;
+        }
+        else
+        {
+            row = &unknown_row;
+        }
+        if (row->callsign.empty() && !tid.callsign.empty())
+            row->callsign = tid.callsign;
+        row->eui += counts.first;
+        row->mui += counts.second;
     }
 
     auto horizontal = grid.projectHorizontal();
@@ -668,17 +665,69 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         result_.ui_hist_overflow  = overflow;
     }
 
+    // Materialize the per-transponder rows, sorted by ascending PD so the
+    // weakest transponders sort to the top.
+    for (auto& kv : by_acad)
+        result_.transponders.push_back(kv.second);
+    if (unknown_row.eui > 0 || unknown_row.mui > 0)
+        result_.transponders.push_back(unknown_row);
+
+    auto pdOf = [](const TransponderRow& r) -> double {
+        if (r.eui == 0) return 1.0;
+        return (static_cast<double>(r.eui) - static_cast<double>(r.mui))
+               / static_cast<double>(r.eui);
+    };
+    std::sort(result_.transponders.begin(), result_.transponders.end(),
+              [&](const TransponderRow& a, const TransponderRow& b) {
+                  return pdOf(a) < pdOf(b);
+              });
+
+    // Materialize summary groups (move grids out, attach aggregate counters).
+    for (auto& kv : mops_grids)
+    {
+        Group grp;
+        grp.label = "MOPS v" + std::to_string(kv.first);
+        grp.eui   = mops_counts[kv.first].eui;
+        grp.mui   = mops_counts[kv.first].mui;
+        grp.grid  = std::move(kv.second);
+        mops_groups_.push_back(std::move(grp));
+    }
+
+    // Target-type groups: keep the busiest kMaxTypeGroups by #EUI.
+    std::vector<int> type_keys;
+    type_keys.reserve(type_grids.size());
+    for (auto& kv : type_grids)
+        type_keys.push_back(kv.first);
+    std::sort(type_keys.begin(), type_keys.end(), [&](int a, int b) {
+        return type_counts[a].eui > type_counts[b].eui;
+    });
+    for (std::size_t i = 0; i < type_keys.size(); ++i)
+    {
+        int catk = type_keys[i];
+        if (i >= kMaxTypeGroups)
+        {
+            ++result_.type_groups_dropped;
+            continue;
+        }
+        Group grp;
+        grp.label = type_label[catk];
+        grp.eui   = type_counts[catk].eui;
+        grp.mui   = type_counts[catk].mui;
+        grp.grid  = std::move(type_grids[catk]);
+        type_groups_.push_back(std::move(grp));
+    }
+
     // Per-sector rows (over the selected sector layers).
     for (std::size_t si = 0; si < sector_layers.size(); ++si)
     {
         if (!sector_layers[si])
             continue;
         SectorRow r;
-        r.label       = sector_layers[si]->name();
-        r.num_targets = sector_target_count[si];
-        r.eui         = sec.eui[si];
-        r.mui         = sec.mui[si];
-        r.pd          = sec.eui[si] > 0
+        r.label            = sector_layers[si]->name();
+        r.num_transponders = sector_acads[si].size();
+        r.eui              = sec.eui[si];
+        r.mui              = sec.mui[si];
+        r.pd               = sec.eui[si] > 0
             ? (static_cast<double>(sec.eui[si]) - static_cast<double>(sec.mui[si]))
                   / static_cast<double>(sec.eui[si])
             : 0.0;
@@ -688,7 +737,6 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
 
 namespace
 {
-// Per-cell PD scalar: only cells with #EUI > 0 contribute.
 std::optional<double> pdScalar(const TargetReport3DGrid::Cell& c)
 {
     if (c.num_eui == 0)
@@ -705,14 +753,11 @@ std::uint64_t pdSampleCount(const TargetReport3DGrid::Cell& c)
 void attachPDFigure(ResultReport::Section& section,
                     const std::string& fig_name,
                     TargetReport3DGrid::ProjectionResult& proj,
-                    const MLATCoverageInspectorSettings& settings)
+                    const ADSBCoverageInspectorSettings& settings)
 {
     if (!proj.valid || !proj.layer)
         return;
 
-    // Three discrete color bands so unacceptable / orange-between /
-    // acceptable map directly to the three render colors. The explicit value
-    // range on the color map is required for colorLegend() to emit entries.
     const std::pair<double, double> range(settings.pd_unacceptable_below_,
                                           settings.pd_acceptable_above_);
 
@@ -730,15 +775,10 @@ void attachPDFigure(ResultReport::Section& section,
 
     auto* anno = vp->annotations().getOrCreateAnnotation("PD");
 
-    // Note: ViewPointGenFeatureGeoImage / ViewPointGenFeatureGrid take
-    // ownership of the layer payload via copy; the unique_ptr in `proj`
-    // keeps the Grid2DLayer alive until end of scope.
     if (proj.x_axis_label == "Longitude (deg)" && proj.y_axis_label == "Latitude (deg)")
     {
         auto rendered = Grid2DLayerRenderer::render(*proj.layer, rs);
 
-        // Reverse so the color-map's "good" end (green for PD) ends up at the
-        // top of the legend tree, matching operator expectation.
         auto raw = rs.color_map.colorLegend(
             /*add_sel_color=*/false,
             /*add_null_color=*/false,
@@ -750,8 +790,6 @@ void attachPDFigure(ResultReport::Section& section,
 
         anno->addFeature(new ViewPointGenFeatureGeoImage(rendered.first, rendered.second, legend));
 
-        // Frame the Geographic View on the populated region of the rendered
-        // raster instead of falling back to the full loaded-data extent.
         QRectF vp_roi = Grid2DLayerRenderer::geoROIOfOpaquePixels(
             rendered.first, rendered.second);
         if (!vp_roi.isEmpty())
@@ -768,47 +806,25 @@ void attachPDFigure(ResultReport::Section& section,
 }
 }
 
-void MLATCoverageInspector::writeReport(ResultReport::Section& root)
+void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
 {
-    auto& settings = static_cast<MLATCoverageInspectorSettings&>(settings_);
+    auto& settings = static_cast<ADSBCoverageInspectorSettings&>(settings_);
     auto& section  = root.addSubSection(name());
 
     {
         auto& intro = section.addText("About");
         intro.addText(
-            "Probability of Detection (PD) of the selected MLAT sensors per "
-            "cell of a three-dimensional grid in latitude, longitude and "
-            "barometric flight level, using the Reference Trajectory as "
-            "ground truth. PD is the fraction of expected updates the sensor "
-            "actually delivered: each target's reference track contributes "
-            "expected updates at the configured cadence, and each gap in the "
-            "MLAT report stream long enough to swallow a cadence slot "
-            "contributes a missed update at the location where the report "
-            "was expected.\n"
-            "Cadence source is operator-selected. Time Difference uses a "
-            "fixed nominal Update Interval together with the EUROCAE ED-117 "
-            "miss tolerance. Status Period Message follows the MLAT system's "
-            "own start-of-cycle messages from CAT019 directly, with no "
-            "tolerance.\n"
-            "Three projections of the per-cell PD are rendered: a top-down "
-            "horizontal map and two vertical profiles (altitude over "
-            "longitude, altitude over latitude). The summary tabulates the "
-            "overall PD and the per-cell distribution (median, 5th "
-            "percentile, worst cell). Cells with no expected updates are "
-            "blank.\n"
-            "Use the report to locate coverage holes against the published "
-            "service volume, to assess PD compliance with ED-117 / ED-116 "
-            "thresholds, and to compare the actual horizontal and vertical "
-            "coverage geometry against the system design.");
+            "Probability of Detection (PD) of the selected ADS-B sources "
+            "against the Reference Trajectory, per grid cell and per transponder.");
+        intro.addList({
+            "Three PD maps: horizontal, and vertical over longitude and over latitude.",
+            "Summary table: overall PD and the per-cell spread.",
+            "Per-transponder table: each aircraft address with its expected updates, missed updates and PD.",
+            "Measured update interval: table and histogram.",
+            "PD broken down by MOPS version and by target type."});
     }
 
     auto& recap = section.addTable("Settings", 2, {"Setting", "Value"}, false);
-    recap.addRow({"PD calculation method",
-                  settings.pdMethod() ==
-                          MLATCoverageInspectorSettings::PDMethod::TimeDifference
-                      ? std::string("Time Difference")
-                      : std::string("Status Period Message Based\n"
-                                    "(CAT019 cycles)")});
     {
         std::ostringstream os;
         os << settings.update_interval_s_ << " s";
@@ -864,6 +880,7 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     summary.addRow({"Targets walked",        std::to_string(result_.targets_walked)});
     summary.addRow({"Targets w/o RefTraj",   std::to_string(result_.targets_no_ref)});
     summary.addRow({"Targets w/o test data", std::to_string(result_.targets_no_tst)});
+    summary.addRow({"Transponders",          std::to_string(result_.transponders.size())});
     summary.addRow({"Total expected slots (#EUI)", std::to_string(result_.total_eui)});
     summary.addRow({"Total missed slots (#MUI)",   std::to_string(result_.total_mui)});
     summary.addRow({"Overall PD",                  formatNumber(result_.overall_pd)});
@@ -873,10 +890,10 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     if (result_.has_worst_cell)
         summary.addRow({"Worst cell PD (>=5 EUI)", formatNumber(result_.worst_cell_pd)});
 
-    // Measured update cadence: the actual per-target inter-report interval,
+    // Measured update cadence: the actual per-transponder inter-report interval,
     // independent of the configured nominal UI. Use it to pick an Update
-    // Interval that matches the sensor (set UI at or above the median, near the
-    // P90, to avoid counting the sensor's own cadence as missed updates).
+    // Interval that matches the feed (set UI at or above the median, near the
+    // P90, to avoid counting the feed's own cadence as missed updates).
     {
         auto& ui_tbl = section.addTable("Calculated Update Interval", 2,
                                         {"Property", "Value"}, false);
@@ -923,20 +940,38 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
         section.addFigure(fig, ResultReport::SectionContentViewable(vp_json));
     }
 
+    // Per-transponder table.
+    auto& tt = section.addTable("Per-Transponder PD", 5,
+                                {"Aircraft Address", "Callsign", "#EUI", "#MUI", "PD"}, false);
+    for (const auto& r : result_.transponders)
+    {
+        std::string acad_str = r.has_acad
+            ? Utils::String::hexStringFromInt(static_cast<int>(r.acad), 6, '0')
+            : std::string("(unknown)");
+        double pd = r.eui == 0 ? 1.0
+                              : (static_cast<double>(r.eui) - static_cast<double>(r.mui))
+                                    / static_cast<double>(r.eui);
+        tt.addRow({acad_str,
+                   r.callsign.empty() ? std::string("-") : r.callsign,
+                   std::to_string(r.eui),
+                   std::to_string(r.mui),
+                   formatNumber(pd)});
+    }
+
     // Per-sector overview (selected sector layers). "All" is the aggregate
     // reference; sectors can overlap, so the rows need not sum to "All".
     if (!result_.sectors.empty())
     {
         auto& st = section.addTable("PD by Sector", 5,
-                                    {"Sector", "Targets", "#EUI", "#MUI", "PD"}, false);
+                                    {"Sector", "Transponders", "#EUI", "#MUI", "PD"}, false);
         st.addRow({"All (in scope)",
-                   std::to_string(result_.targets_walked),
+                   std::to_string(result_.transponders.size()),
                    std::to_string(result_.total_eui),
                    std::to_string(result_.total_mui),
                    formatNumber(result_.overall_pd)});
         for (const auto& r : result_.sectors)
             st.addRow({r.label,
-                       std::to_string(r.num_targets),
+                       std::to_string(r.num_transponders),
                        std::to_string(r.eui),
                        std::to_string(r.mui),
                        formatNumber(r.pd)});
@@ -946,10 +981,8 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     {
         auto horiz  = grid_->projectionLayer(TargetReport3DGrid::Projection::Horizontal,
                                              pdScalar, pdSampleCount, "pd");
-
         auto altlon = grid_->projectionLayer(TargetReport3DGrid::Projection::AltLon,
                                              pdScalar, pdSampleCount, "pd");
-
         auto altlat = grid_->projectionLayer(TargetReport3DGrid::Projection::AltLat,
                                              pdScalar, pdSampleCount, "pd");
 
@@ -958,7 +991,51 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
         attachPDFigure(section, "PD - Altitude/Latitude",  altlat, settings);
     }
 
-    loginf << "MLATCoverageInspector: walked " << result_.targets_walked << " target(s), "
+    // Summary breakdowns by MOPS version and by target type: per group, a PD
+    // counter row plus a horizontal PD map. These replace infeasible
+    // per-transponder figures (one per aircraft address).
+    auto pdRatio = [](std::uint64_t eui, std::uint64_t mui) -> double {
+        if (eui == 0) return 1.0;
+        return (static_cast<double>(eui) - static_cast<double>(mui))
+               / static_cast<double>(eui);
+    };
+
+    auto writeGroupBreakdown = [&](const std::string& title,
+                                   const std::string& key_header,
+                                   std::vector<Group>& groups,
+                                   std::size_t dropped) {
+        if (groups.empty())
+            return;
+
+        auto& gsec = section.addSubSection(title);
+
+        auto& gtbl = gsec.addTable("Overview", 4,
+                                   {key_header, "#EUI", "#MUI", "PD"}, false);
+        for (const auto& g : groups)
+            gtbl.addRow({g.label, std::to_string(g.eui), std::to_string(g.mui),
+                         formatNumber(pdRatio(g.eui, g.mui))});
+        if (dropped > 0)
+            gtbl.addRow({"(" + std::to_string(dropped) + " more, not shown)",
+                         "-", "-", "-"});
+
+        for (auto& g : groups)
+        {
+            if (!g.grid)
+                continue;
+            auto& gsub = gsec.addSubSection(g.label);
+            auto proj = g.grid->projectionLayer(
+                TargetReport3DGrid::Projection::Horizontal,
+                pdScalar, pdSampleCount, "pd");
+            attachPDFigure(gsub, g.label + " - PD - Horizontal", proj, settings);
+        }
+    };
+
+    writeGroupBreakdown("PD by MOPS Version", "MOPS Version", mops_groups_, 0);
+    writeGroupBreakdown("PD by Target Type", "Target Type",
+                        type_groups_, result_.type_groups_dropped);
+
+    loginf << "ADSBCoverageInspector: walked " << result_.targets_walked << " target(s), "
+           << result_.transponders.size() << " transponder(s), "
            << result_.total_eui << " EUI, " << result_.total_mui
            << " MUI, overall PD " << result_.overall_pd;
 }

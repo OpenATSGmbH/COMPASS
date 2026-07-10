@@ -83,6 +83,7 @@ public:
     static const std::string ResourceFolderIcons;
 
     static const std::string ExportImageFormat;
+    static const int         ExportImageQuality;
     static const std::string ExportTableFormat;
     static const std::string ExportTextFormat;
 

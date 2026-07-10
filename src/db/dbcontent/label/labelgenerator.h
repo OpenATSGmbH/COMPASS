@@ -169,6 +169,12 @@ protected:
 
     std::string getMode3AText (const std::string& dbcontent_name,
                                unsigned int buffer_index, std::shared_ptr<Buffer>& buffer);
+
+    // Classifies a raw ACID into the space-stripped usable_id (if specific) or
+    // fallback_id (if unspecific, e.g. "00000000"), without overwriting an
+    // already-filled slot. Lets labels demote unspecific ACIDs below ACAD/Mode 3/A.
+    void classifyIdentification(const std::string& raw_acid,
+                                std::string& usable_id, std::string& fallback_id) const;
     std::string getModeCText (const std::string& dbcontent_name,
                               unsigned int buffer_index, std::shared_ptr<Buffer>& buffer);
 

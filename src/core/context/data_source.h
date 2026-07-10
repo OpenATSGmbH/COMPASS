@@ -68,10 +68,13 @@ public:
     bool hasPosition() const;
     double latitude() const;
     void latitude(double value);
+    bool hasLatitude() const;
     double longitude() const;
     void longitude(double value);
+    bool hasLongitude() const;
     double altitude() const;
     void altitude(double value);
+    bool hasAltitude() const;
 
     bool groundOnly() const;
     void groundOnly(bool value);

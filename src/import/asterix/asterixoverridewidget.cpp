@@ -174,10 +174,10 @@ ASTERIXOverrideWidget::ASTERIXOverrideWidget(ASTERIXImportTask& task, QWidget* p
 
     ++row;
 
-    grid->addWidget(new QLabel("Center Latitude [deg]"), row, 1);
+    grid->addWidget(new QLabel("Center Longitude [deg]"), row, 1);
 
     filter_circ_longitude_edit_ = new QLineEdit();
-    filter_circ_longitude_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 10));
+    filter_circ_longitude_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 10));
     connect(filter_circ_longitude_edit_, &QLineEdit::textEdited, this, &ASTERIXOverrideWidget::circLongitudeEditedSlot);
     grid->addWidget(filter_circ_longitude_edit_, row, 2);
 

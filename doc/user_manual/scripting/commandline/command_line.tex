@@ -209,39 +209,9 @@ For one or a number of categories, the following options can be set:
 Please note that the naming must be exactly as in the GUI, otherwise the application quits with an error message.
 
 \subsubsection{-{}-import\_asterix\_parameters}
+\label{sec:cli_import_asterix_parameters}
 
-When an Import ASTERIX task is started the given configuration overrides are used, all parameters can be set using a JSON string. \\
-
-In a nice formatting the string looks like this:
-\begin{lstlisting}[basicstyle=\small\ttfamily]
-'{
-{
-  "filter_position_active": true,
-  "filter_latitude_min": 49.686,
-  "filter_latitude_max": 50.3898,
-  "filter_longitude_min": 8.0115,
-  "filter_longitude_max": 9.1129,
-  "filter_modec_active": true,
-  "filter_modec_max": 500,
-  "filter_modec_min": -10000
-}'
-\end{lstlisting}
-\ \\
-
-Please note that the parameter naming must be exactly as in the 'task\_import\_asterix.json', with the following additional non-configuration parameters:
-\begin{lstlisting}[basicstyle=\small\ttfamily]
-'{
-  "override_tod_active": true,
-  "filter_tod_active": true,
-  "filter_position_active": true,
-  "filter_modec_active": true,
-  "file_line_id": 0, // 0...3
-  "date_str": "YYYY-mm-DD",
-  "network_ignore_future_ts": true,
-  "obfuscate_secondary_info": true
-}'
-\end{lstlisting}
-\ \\
+When an Import ASTERIX task is started the given configuration overrides are applied, provided as a JSON string. This is the same set of parameters used by the 'config' argument of the ASTERIX import runtime commands; the available parameters, their units, and examples are described in \nameref{sec:rtcommand_asterix_import_config}.
 
 
 \subsubsection{-{}-import\_json filename}
@@ -364,6 +334,8 @@ In a nice formatting such a string can look like this:
 }'
 \end{lstlisting}
 \ \\
+
+Please note that 'dbcontent\_name\_ref' cannot be set to CAT001 or CAT048; these categories do not provide the maximum X/Y standard deviation required for reference accuracy filtering and are rejected as reference data. \\
 
 The configuration of such parameters is rather complex, and it is recommended to contact the author if detailed information is needed.
 

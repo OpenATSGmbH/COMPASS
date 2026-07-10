@@ -217,17 +217,18 @@ string toTimeString(const boost::posix_time::ptime& value, bool show_digits)
 {
     ostringstream date_stream; // thread_local wrong string
 
-    // thread-safe static locale setup
-    static std::locale custom_locale(std::locale::classic(), new boost::posix_time::time_facet(show_digits ? time_str_format.c_str() : time_str_format_nodigits.c_str()));
+    // thread-safe static locale setup for both variants
+    static std::locale custom_locale_digits   (std::locale::classic(), new boost::posix_time::time_facet(time_str_format.c_str()         ));
+    static std::locale custom_locale_no_digits(std::locale::classic(), new boost::posix_time::time_facet(time_str_format_nodigits.c_str()));
 
-    // static std::locale custom_locale(std::locale::classic(), new boost::posix_time::time_facet(str_format.c_str()));
-    date_stream.imbue(custom_locale);
+    date_stream.imbue(show_digits ? custom_locale_digits : custom_locale_no_digits);
     date_stream << value;
 
     //loginf << "UGA1 " << Time::toString(value) << " " << date_stream.str();
 
     string tmp = date_stream.str();
 
+    //erase 3 of the 6 millisecond digits
     if (show_digits)
         tmp.erase(tmp.length()-3);
 

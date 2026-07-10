@@ -44,6 +44,9 @@ public slots:
     void removeSTMinDurationEditedSlot();
     // psr
     void removePSROnlyTargetsSlot(bool checked);
+    // target types
+    void excludeTargetTypesSlot(bool checked);
+    void excludeSpecificTargetTypeSlot(bool checked);
     // ma
     void removeModeACOnlyTargetsSlot(bool checked);
     void removeModeASlot(bool checked);
@@ -77,6 +80,9 @@ protected:
     QLineEdit* remove_st_min_duration_edit_ {nullptr};
 
     QCheckBox* remove_psr_only_targets_check_ {nullptr};
+
+    QCheckBox* exclude_target_types_check_ {nullptr};
+    std::map<std::string, QCheckBox*> exclude_target_type_checks_;
 
     QCheckBox* remove_mode_ac_only_check_ {nullptr};
     QCheckBox* remove_mode_a_check_ {nullptr};

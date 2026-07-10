@@ -24,6 +24,9 @@
 #include "dbcontent/dbcontentaccessor.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentstatusinfo.h"
+#include "dbcontent/target/targetbase.h"
+#include "dbcontent/variable/variableset.h"
+#include "sectorlayer.h"
 #include "targetposition.h"
 #include "idbvariableresolver.h"
 #include "loadrequest.h"
@@ -163,6 +166,10 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
     req.dbcontents_.insert(test_dbcontents.begin(), test_dbcontents.end());
     req.apply_view_filters_ = false;
     req.show_status_        = false;
+    // Explicit read set: load every variable the inspectors and the scope
+    // filter consume (in particular the ground bit, which the default read set
+    // omits). Mirrors EvaluationManager attaching its own read set.
+    req.read_set_ = [this](const std::string& name) { return buildReadSet(name); };
 
     auto& view_man = compass_.viewManager();
 
@@ -209,6 +216,96 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
     return true;
 }
 
+dbContent::VariableSet AnalysisDataset::buildReadSet(const std::string& name) const
+{
+    using namespace dbcontent_vars;
+
+    auto& m = compass_.dbContentManager();
+    dbContent::VariableSet rs;
+
+    auto addMeta = [&](const auto& mv) {
+        if (m.metaCanGetVariable(name, mv))
+            rs.add(m.metaGetVariable(name, mv));
+    };
+    auto addVar = [&](const auto& v) {
+        if (m.canGetVariable(name, v))
+            rs.add(m.getVariable(name, v));
+    };
+
+    // identity / time / position (mirrors EvaluationManager::addVariables; the
+    // Chain finalize step requires Mode-3A / Mode-C, so the set must be complete)
+    addMeta(meta_var_rec_num_);
+    addMeta(meta_var_ds_id_);
+    addMeta(meta_var_line_id_);
+    addMeta(meta_var_utn_);
+    addMeta(meta_var_timestamp_);
+    addMeta(meta_var_latitude_);
+    addMeta(meta_var_longitude_);
+    addMeta(meta_var_max_stddev_xy_);
+    addMeta(meta_var_acad_);
+    addMeta(meta_var_acid_);        // callsign
+
+    // flight level / Mode-C
+    addMeta(meta_var_mc_);          // barometric altitude (flight level filter)
+    addMeta(meta_var_mc_g_);
+    addMeta(meta_var_mc_v_);
+    addVar(var_cat062_baro_alt_);
+    addVar(var_cat062_fl_measured_);
+
+    // Mode-3A (Chain::updateModeACodes)
+    addMeta(meta_var_m3a_);
+    addMeta(meta_var_m3a_g_);
+    addMeta(meta_var_m3a_v_);
+
+    addMeta(meta_var_track_num_);
+
+    // ground state: CAT0xx ground_bit, RefTraj surface_target
+    addMeta(meta_var_ground_bit_);
+
+    // velocity / acceleration / vertical rate / moms
+    addMeta(meta_var_ground_speed_);
+    addMeta(meta_var_track_angle_);
+    addMeta(meta_var_ax_);
+    addMeta(meta_var_ay_);
+    addMeta(meta_var_rocd_);
+    addMeta(meta_var_mom_long_acc_);
+    addMeta(meta_var_mom_trans_acc_);
+    addMeta(meta_var_mom_vert_rate_);
+    addMeta(meta_var_track_coasting_);
+
+    // reported position accuracy (XY std-dev path: CAT020 / CAT010 / RefTraj)
+    addMeta(meta_var_x_stddev_);
+    addMeta(meta_var_y_stddev_);
+    addMeta(meta_var_xy_cov_);
+
+    // ADS-B quality indicators (CAT021 accuracy path + qi_key grouping)
+    addVar(var_cat021_mops_version_);
+    addVar(var_cat021_nacp_);
+    addVar(var_cat021_nucp_nic_);
+
+    // contributing receivers (CAT020 RU inspectors)
+    addVar(var_cat020_contrib_recv_);
+
+    return rs;
+}
+
+bool AnalysisDataset::targetGroundOnly(unsigned int utn) const
+{
+    auto it = ground_only_cache_.find(utn);
+    if (it != ground_only_cache_.end())
+        return it->second;
+
+    bool ground_only = false;
+    auto& dbcont_man = compass_.dbContentManager();
+    if (dbcont_man.existsTarget(utn))
+    {
+        auto cat = dbcont_man.emitterCategory(utn);
+        ground_only = (cat != TargetBase::Category::Unknown) && TargetBase::isGroundOnly(cat);
+    }
+    ground_only_cache_[utn] = ground_only;
+    return ground_only;
+}
+
 void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
                                   const std::set<unsigned int>& ref_ds_ids,
                                   const std::set<std::string>& test_dbcontents)
@@ -216,6 +313,77 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
     using namespace dbcontent_vars;
 
     bool first_position = true;
+
+    const ScopeFilter& sf = scope_filter_;
+
+    // Per-report inside test (mirrors EvaluationTargetData::computeSectorInsideInfo):
+    // a report is in scope when its ground state, barometric flight level and
+    // sector membership pass the configured constraints. `lat/lon/mc/gb` are the
+    // (optional) position, Mode-C and ground-bit vectors; pass nullptr when absent.
+    auto inScope = [&sf](const NullableVector<double>* lat_vec,
+                         const NullableVector<double>* lon_vec,
+                         const NullableVector<float>* mc_vec,
+                         const NullableVector<bool>* gb_vec,
+                         unsigned int idx,
+                         bool target_ground_only) -> bool
+    {
+        if (!sf.active())
+            return true;
+
+        boost::optional<bool> ground_bit;
+        if (gb_vec && !gb_vec->isNull(idx))
+            ground_bit = gb_vec->get(idx);
+
+        bool on_ground = target_ground_only || (ground_bit.has_value() && ground_bit.value());
+
+        if (sf.ground_only && !on_ground)
+            return false;
+
+        // Altitude band in flight levels (FL = feet / 100). When the altitude is
+        // absent the FL check is skipped, as in Sector::isInside.
+        if ((sf.use_min_fl || sf.use_max_fl) && mc_vec && !mc_vec->isNull(idx))
+        {
+            double fl = static_cast<double>(mc_vec->get(idx)) / 100.0;
+            if (sf.use_min_fl && fl < sf.min_fl)
+                return false;
+            if (sf.use_max_fl && fl > sf.max_fl)
+                return false;
+        }
+
+        // Sector membership: keep only reports inside any selected sector layer,
+        // using the evaluation's exact inside test
+        // (SectorLayer::isInside(pos, has_gb, gb_set)).
+        if (sf.limit_by_sectors && !sf.sectors.empty())
+        {
+            if (!lat_vec || !lon_vec || lat_vec->isNull(idx) || lon_vec->isNull(idx))
+                return false;
+
+            dbContent::TargetPosition pos;
+            pos.latitude_  = lat_vec->get(idx);
+            pos.longitude_ = lon_vec->get(idx);
+            if (mc_vec && !mc_vec->isNull(idx))
+            {
+                pos.has_altitude_ = true;
+                pos.altitude_     = mc_vec->get(idx);
+            }
+
+            const bool has_gb = ground_bit.has_value();
+            const bool gb_set = ground_bit.has_value() ? ground_bit.value() : false;
+
+            bool inside = false;
+            for (const auto& sl : sf.sectors)
+            {
+                if (sl && sl->isInside(pos, has_gb, gb_set))
+                {
+                    inside = true;
+                    break;
+                }
+            }
+            if (!inside)
+                return false;
+        }
+        return true;
+    };
 
     // Reference (RefTraj): take rows from the configured ref DS that are
     // associated to a UTN.
@@ -232,6 +400,16 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
         const bool has_lon = accessor_->hasMetaVar<double>(kReferenceDBContent, meta_var_longitude_);
         const bool has_mc  = accessor_->hasMetaVar<float>(kReferenceDBContent, meta_var_mc_);
 
+        NullableVector<double>* ref_lat_vec = has_lat
+            ? &accessor_->getMetaVar<double>(kReferenceDBContent, meta_var_latitude_) : nullptr;
+        NullableVector<double>* ref_lon_vec = has_lon
+            ? &accessor_->getMetaVar<double>(kReferenceDBContent, meta_var_longitude_) : nullptr;
+        NullableVector<float>* ref_mc_vec = has_mc
+            ? &accessor_->getMetaVar<float>(kReferenceDBContent, meta_var_mc_) : nullptr;
+        NullableVector<bool>* ref_gb_vec =
+            accessor_->hasMetaVar<bool>(kReferenceDBContent, meta_var_ground_bit_)
+            ? &accessor_->getMetaVar<bool>(kReferenceDBContent, meta_var_ground_bit_) : nullptr;
+
         unsigned int n = ts_vec.contentSize();
         for (unsigned int i = 0; i < n; ++i)
         {
@@ -243,6 +421,10 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
 
             unsigned int utn = utn_vec.get(i);
             ptime ts         = ts_vec.get(i);
+
+            if (!inScope(ref_lat_vec, ref_lon_vec, ref_mc_vec, ref_gb_vec, i, targetGroundOnly(utn)))
+                continue;
+
             addToReferenceChain(utn, ts, i);
             ++num_ref_records_total_;
 
@@ -316,6 +498,19 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
         auto& utn_vec   = accessor_->getMetaVar<unsigned int>(dbcontent_name, meta_var_utn_);
         auto& ds_id_vec = accessor_->getMetaVar<unsigned int>(dbcontent_name, meta_var_ds_id_);
 
+        NullableVector<double>* tst_lat_vec =
+            accessor_->hasMetaVar<double>(dbcontent_name, meta_var_latitude_)
+            ? &accessor_->getMetaVar<double>(dbcontent_name, meta_var_latitude_) : nullptr;
+        NullableVector<double>* tst_lon_vec =
+            accessor_->hasMetaVar<double>(dbcontent_name, meta_var_longitude_)
+            ? &accessor_->getMetaVar<double>(dbcontent_name, meta_var_longitude_) : nullptr;
+        NullableVector<float>* tst_mc_vec =
+            accessor_->hasMetaVar<float>(dbcontent_name, meta_var_mc_)
+            ? &accessor_->getMetaVar<float>(dbcontent_name, meta_var_mc_) : nullptr;
+        NullableVector<bool>* tst_gb_vec =
+            accessor_->hasMetaVar<bool>(dbcontent_name, meta_var_ground_bit_)
+            ? &accessor_->getMetaVar<bool>(dbcontent_name, meta_var_ground_bit_) : nullptr;
+
         unsigned int n = ts_vec.contentSize();
         bool any_added = false;
         for (unsigned int i = 0; i < n; ++i)
@@ -329,6 +524,9 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
 
             unsigned int utn = utn_vec.get(i);
             ptime ts         = ts_vec.get(i);
+
+            if (!inScope(tst_lat_vec, tst_lon_vec, tst_mc_vec, tst_gb_vec, i, targetGroundOnly(utn)))
+                continue;
 
             addToTestChain(utn, dbcontent_name, ts, i);
             ++num_tst_records_total_;

@@ -506,6 +506,14 @@ void MainWindow::createMenus ()
             this, &MainWindow::analyzeMLATDataSourceSlot);
     analyze_menu_->addAction(analyze_mlat_action);
 
+    QAction* analyze_adsb_action = new QAction("ADS-B");
+    analyze_adsb_action->setToolTip(
+        "Analyze one or more ADS-B (CAT021) data sources from multiple angles "
+        "(data items, sensor coverage / PD per transponder, position accuracy per transponder)");
+    connect(analyze_adsb_action, &QAction::triggered,
+            this, &MainWindow::analyzeADSBDataSourceSlot);
+    analyze_menu_->addAction(analyze_adsb_action);
+
     QAction* eval_action = new QAction("Evaluate");
     eval_action->setToolTip("Evaluate test against reference data according to defined standards");
     connect(eval_action, &QAction::triggered, this, &MainWindow::evaluateSlot);
@@ -586,7 +594,7 @@ void MainWindow::updateMenus()
         if (db_open)
         {
             auto& ctx = compass_.dbContextManager();
-            for (auto ds_id : compass_.taskManager().analyzeDataSourceTask()
+            for (auto ds_id : compass_.taskManager().analyzeMLATDataSourceTask()
                                   .referenceDataSourceCandidateIDs())
             {
                 if (ctx.hasNumInserted(ds_id))
@@ -1122,7 +1130,14 @@ void MainWindow::analyzeMLATDataSourceSlot()
 {
     loginf;
 
-    compass_.taskManager().analyzeDataSourceTask().showDialog();
+    compass_.taskManager().analyzeMLATDataSourceTask().showDialog();
+}
+
+void MainWindow::analyzeADSBDataSourceSlot()
+{
+    loginf;
+
+    compass_.taskManager().analyzeADSBDataSourceTask().showDialog();
 }
 
 void MainWindow::evaluateSlot()

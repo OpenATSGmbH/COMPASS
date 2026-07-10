@@ -63,9 +63,29 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
 
     dbcont_lay->addWidget(new QLabel("DBContent"), 0, 0);
 
-    dbcont_combo_ = new DBContentComboBox(calculator_.manager().compass().dbContentManager(), false, true);
-    dbcont_combo_->setObjectName(dbcontent_name_);
-    connect (dbcont_combo_, &DBContentComboBox::changedObject, 
+    // CAT001 and CAT048 lack the maximum X/Y standard deviation used for reference accuracy
+    // filtering, so they cannot be used as reference data
+    std::set<std::string> excluded_dbcontents;
+    if (title_ == "Reference Data")
+        excluded_dbcontents = {"CAT001", "CAT048"};
+
+    dbcont_combo_ = new DBContentComboBox(calculator_.manager().compass().dbContentManager(),
+                                          false, true, excluded_dbcontents);
+
+    if (dbcont_combo_->findText(dbcontent_name_.c_str()) >= 0)
+    {
+        dbcont_combo_->setObjectName(dbcontent_name_);
+    }
+    else // persisted selection is no longer selectable (e.g. CAT001/CAT048 for reference), adopt the first available
+    {
+        dbcontent_name_ = dbcont_combo_->getObjectName();
+        if (title_ == "Reference Data")
+            calculator_.dbContentNameRef(dbcontent_name_);
+        else
+            calculator_.dbContentNameTst(dbcontent_name_);
+    }
+
+    connect (dbcont_combo_, &DBContentComboBox::changedObject,
         this, &EvaluationDataSourceWidget::dbContentNameChangedSlot);
 
     dbcont_lay->addWidget(dbcont_combo_, 0, 1);

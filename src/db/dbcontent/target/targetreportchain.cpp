@@ -551,6 +551,54 @@ boost::optional<unsigned int> Chain::acad(const DataID& id) const
     return ta_vec.get(index_ext);
 }
 
+boost::optional<unsigned int> Chain::mopsVersion(const DataID& id) const
+{
+    if (!accessor_->hasVar<unsigned char>(dbcontent_name_, dbcontent_vars::var_cat021_mops_version_))
+        return {};
+
+    unsigned int index_ext = indexFromDataID(id).idx_external;
+
+    NullableVector<unsigned char>& vec = accessor_->getVar<unsigned char>(
+                dbcontent_name_, dbcontent_vars::var_cat021_mops_version_);
+
+    if (vec.isNull(index_ext))
+        return {};
+
+    return static_cast<unsigned int>(vec.get(index_ext));
+}
+
+boost::optional<unsigned int> Chain::nacp(const DataID& id) const
+{
+    if (!accessor_->hasVar<unsigned char>(dbcontent_name_, dbcontent_vars::var_cat021_nacp_))
+        return {};
+
+    unsigned int index_ext = indexFromDataID(id).idx_external;
+
+    NullableVector<unsigned char>& vec = accessor_->getVar<unsigned char>(
+                dbcontent_name_, dbcontent_vars::var_cat021_nacp_);
+
+    if (vec.isNull(index_ext))
+        return {};
+
+    return static_cast<unsigned int>(vec.get(index_ext));
+}
+
+boost::optional<unsigned int> Chain::nucpNic(const DataID& id) const
+{
+    if (!accessor_->hasVar<unsigned char>(dbcontent_name_, dbcontent_vars::var_cat021_nucp_nic_))
+        return {};
+
+    unsigned int index_ext = indexFromDataID(id).idx_external;
+
+    NullableVector<unsigned char>& vec = accessor_->getVar<unsigned char>(
+                dbcontent_name_, dbcontent_vars::var_cat021_nucp_nic_);
+
+    if (vec.isNull(index_ext))
+        return {};
+
+    return static_cast<unsigned int>(vec.get(index_ext));
+}
+
 boost::optional<bool> Chain::groundBit(const DataID& id) const
 {
     if (!accessor_->hasMetaVar<bool>(dbcontent_name_, dbcontent_vars::meta_var_ground_bit_))

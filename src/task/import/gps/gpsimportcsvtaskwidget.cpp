@@ -256,6 +256,8 @@ void GPSImportCSVTaskWidget::mode3AEditedSlot(const QString& value)
 
     traced_assert(mode_3a_code_edit_);
 
+    TextFieldDoubleValidator::displayValidityAsColor(mode_3a_code_edit_, task_.manager().compass().lineEditInvalidStyle());
+
     if (mode_3a_code_edit_->hasAcceptableInput())
         task_.mode3aCode(String::intFromOctalString(value.toStdString()));
 }
@@ -273,6 +275,8 @@ void GPSImportCSVTaskWidget::targetAddressEditedSlot(const QString& value)
     loginf << "value " << value.toStdString();
 
     traced_assert(target_address_edit_);
+
+    TextFieldDoubleValidator::displayValidityAsColor(target_address_edit_, task_.manager().compass().lineEditInvalidStyle());
 
     if (target_address_edit_->hasAcceptableInput())
         task_.targetAddress(String::intFromHexString(value.toStdString()));

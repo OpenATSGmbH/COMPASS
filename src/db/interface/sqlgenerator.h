@@ -139,7 +139,8 @@ public:
     std::string getSelectDBInfoStatement(const std::string& name);
     std::string getDeleteDBInfoStatement(const std::string& name);
 
-    std::shared_ptr<DBCommand> getTableSelectMinMaxNormalStatement(const DBContent& object);
+    // Dead code (no callers), commented out - see sqlgenerator.cpp
+    //std::shared_ptr<DBCommand> getTableSelectMinMaxNormalStatement(const DBContent& object);
 
     std::string configurePragma(const db::SQLPragma& pragma);
 

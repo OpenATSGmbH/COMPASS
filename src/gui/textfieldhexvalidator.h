@@ -32,7 +32,7 @@ public:
     QValidator::State validate(QString &input, int &pos) const
     {
         if (!input.size())
-            return QValidator::Acceptable;
+            return QValidator::Intermediate;
 
         if (input.size() > (int) max_length_ )
             return QValidator::Invalid;

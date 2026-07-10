@@ -86,6 +86,7 @@ public slots:
     void reconstructReferencesSlot();
     void evaluateSlot();
     void analyzeMLATDataSourceSlot();
+    void analyzeADSBDataSourceSlot();
 
     void quitRequestedSlot();
     void showAddViewMenuSlot();

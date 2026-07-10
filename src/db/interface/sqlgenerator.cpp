@@ -72,6 +72,9 @@ string SQLGenerator::getCreateTableStatement(const DBContent& object)
         if (!v->dbColumnName().size()) // if only db expression
             continue;
 
+        if (v->dbExpression().size()) // derived on read via expression, no physical column needed
+            continue;
+
         column_infos.push_back(DBTableColumnInfo(v->dbColumnName(), v->dataType(), v->isKey()));
     }
 
@@ -363,46 +366,49 @@ string SQLGenerator::getCountStatement(const string& table)
 
 /**
  */
-shared_ptr<DBCommand> SQLGenerator::getTableSelectMinMaxNormalStatement(const DBContent& object)
-{
-    logdbg << "start for table " << object.dbTableName();
-
-    stringstream ss;
-
-    shared_ptr<DBCommand> command(new DBCommand());
-    traced_assert(command);
-
-    PropertyList command_list;
-
-    ss << "SELECT ";
-
-    bool first = true;
-
-    for (auto& var_it : object.variables())
-    {
-        logdbg << "current name "
-               << var_it.first;
-
-        if (!first)
-            ss << ",";
-
-        ss << "MIN(" << var_it.second->dbColumnName() << "),MAX(" << var_it.second->dbColumnName() << ")";
-
-        command_list.addProperty(var_it.second->dbColumnName() + "MIN", PropertyDataType::STRING);
-        command_list.addProperty(var_it.second->dbColumnName() + "MAX", PropertyDataType::STRING);
-
-        first = false;
-    }
-
-    ss << " FROM " << object.dbTableName() << ";";
-
-    command->set(ss.str());
-    command->list(command_list);
-
-    logdbg << "sql '" << ss.str() << "'";
-
-    return command;
-}
+// Dead code (no callers). Also unsafe now that expression-backed variables no longer get a
+// physical column: it emits MIN/MAX over dbColumnName() directly, which does not exist for
+// derived variables. Commented out rather than fixed - re-add via dbColumnOrExpression() if needed.
+// shared_ptr<DBCommand> SQLGenerator::getTableSelectMinMaxNormalStatement(const DBContent& object)
+// {
+//     logdbg << "start for table " << object.dbTableName();
+//
+//     stringstream ss;
+//
+//     shared_ptr<DBCommand> command(new DBCommand());
+//     traced_assert(command);
+//
+//     PropertyList command_list;
+//
+//     ss << "SELECT ";
+//
+//     bool first = true;
+//
+//     for (auto& var_it : object.variables())
+//     {
+//         logdbg << "current name "
+//                << var_it.first;
+//
+//         if (!first)
+//             ss << ",";
+//
+//         ss << "MIN(" << var_it.second->dbColumnName() << "),MAX(" << var_it.second->dbColumnName() << ")";
+//
+//         command_list.addProperty(var_it.second->dbColumnName() + "MIN", PropertyDataType::STRING);
+//         command_list.addProperty(var_it.second->dbColumnName() + "MAX", PropertyDataType::STRING);
+//
+//         first = false;
+//     }
+//
+//     ss << " FROM " << object.dbTableName() << ";";
+//
+//     command->set(ss.str());
+//     command->list(command_list);
+//
+//     logdbg << "sql '" << ss.str() << "'";
+//
+//     return command;
+// }
 
 /**
  */

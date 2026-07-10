@@ -118,7 +118,8 @@ public:
     void insertBuffer(const std::string& table_name, std::shared_ptr<Buffer> buffer);
     
     void updateBuffer(const std::string& table_name, const std::string& key_col, std::shared_ptr<Buffer> buffer,
-                      int from_index = -1, int to_index = -1);  // no indexes means full buffer
+                      const boost::optional<size_t>& idx_from = boost::none,
+                      const boost::optional<size_t>& idx_to = boost::none);  // no indexes means full buffer
 
     void prepareRead(const DBContent& dbcontent, dbContent::VariableSet read_list,
                      std::string custom_filter_clause,

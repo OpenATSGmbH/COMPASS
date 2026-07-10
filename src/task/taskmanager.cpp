@@ -148,10 +148,18 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
     }
     else if (class_name == "AnalyzeDataSourceTask")
     {
-        traced_assert(!analyze_data_source_task_);
-        analyze_data_source_task_.reset(new AnalyzeDataSourceTask(child_json, this));
-        traced_assert(analyze_data_source_task_);
-        addTask(class_name, analyze_data_source_task_.get());
+        traced_assert(!analyze_mlat_data_source_task_);
+        analyze_mlat_data_source_task_.reset(new AnalyzeDataSourceTask(child_json, this));
+        traced_assert(analyze_mlat_data_source_task_);
+        addTask(class_name, analyze_mlat_data_source_task_.get());
+    }
+    else if (class_name == "AnalyzeADSBDataSourceTask")
+    {
+        traced_assert(!analyze_adsb_data_source_task_);
+        analyze_adsb_data_source_task_.reset(
+            new AnalyzeDataSourceTask(child_json, this, "ADSB", "AnalyzeADSBDataSourceTask"));
+        traced_assert(analyze_adsb_data_source_task_);
+        addTask(class_name, analyze_adsb_data_source_task_.get());
     }
     else if (class_name == "ReportExport")
     {
@@ -228,10 +236,17 @@ void TaskManager::checkSubConfigurables()
         traced_assert(reconstruct_references_task_);
     }
 
-    if (!analyze_data_source_task_)
+    if (!analyze_mlat_data_source_task_)
     {
         generateSubConfigurableFromConfig("AnalyzeDataSourceTask", "AnalyzeDataSourceTask0");
-        traced_assert(analyze_data_source_task_);
+        traced_assert(analyze_mlat_data_source_task_);
+    }
+
+    if (!analyze_adsb_data_source_task_)
+    {
+        generateSubConfigurableFromConfig("AnalyzeADSBDataSourceTask",
+                                          "AnalyzeADSBDataSourceTask0");
+        traced_assert(analyze_adsb_data_source_task_);
     }
 
     if (!report_export_)
@@ -277,7 +292,8 @@ void TaskManager::shutdown()
     radar_plot_position_calculator_task_ = nullptr;
     create_artas_associations_task_ = nullptr;
     reconstruct_references_task_ = nullptr;
-    analyze_data_source_task_ = nullptr;
+    analyze_mlat_data_source_task_ = nullptr;
+    analyze_adsb_data_source_task_ = nullptr;
 }
 
 /**
@@ -358,10 +374,18 @@ ReconstructorTask& TaskManager::reconstructReferencesTask() const
 
 /**
  */
-AnalyzeDataSourceTask& TaskManager::analyzeDataSourceTask() const
+AnalyzeDataSourceTask& TaskManager::analyzeMLATDataSourceTask() const
 {
-    traced_assert(analyze_data_source_task_);
-    return *analyze_data_source_task_;
+    traced_assert(analyze_mlat_data_source_task_);
+    return *analyze_mlat_data_source_task_;
+}
+
+/**
+ */
+AnalyzeDataSourceTask& TaskManager::analyzeADSBDataSourceTask() const
+{
+    traced_assert(analyze_adsb_data_source_task_);
+    return *analyze_adsb_data_source_task_;
 }
 
 /**

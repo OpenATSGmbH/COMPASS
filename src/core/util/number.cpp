@@ -484,6 +484,27 @@ double calculateMedian(std::vector<double> data) {
     }
 }
 
+double percentile(std::vector<double> data, double p) {
+    if (data.empty())
+        return 0.0;
+    std::sort(data.begin(), data.end());
+    if (p <= 0.0) return data.front();
+    if (p >= 1.0) return data.back();
+    double idx = p * (data.size() - 1);
+    size_t lo = static_cast<size_t>(std::floor(idx));
+    size_t hi = static_cast<size_t>(std::ceil(idx));
+    double w = idx - lo;
+    return data[lo] * (1.0 - w) + data[hi] * w;
+}
+
+double mean(const std::vector<double>& data) {
+    if (data.empty())
+        return 0.0;
+    double s = 0.0;
+    for (double x : data) s += x;
+    return s / data.size();
+}
+
 // Function to calculate the interquartile range (IQR)
 double calculateIQR(std::vector<double> data) {
     size_t size = data.size();

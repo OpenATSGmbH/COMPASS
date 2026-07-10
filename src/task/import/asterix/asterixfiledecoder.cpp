@@ -107,9 +107,16 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
         return false;
     }
 
+    //store categories found in the recording but skipped during decoding
+    file_info.skipped_categories = ASTERIXSkippedCategoryInfo::fromAnalysisInfo(*analysis_info);
+
     if (!num_records) // no data
     {
-        error = "Decoding failed";
+        if (!file_info.skipped_categories.empty())
+            error = "Only skipped categories: "
+                    + ASTERIXSkippedCategoryInfo::asString(file_info.skipped_categories);
+        else
+            error = "Decoding failed";
         return false;
     }
 
@@ -126,6 +133,10 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
     {
         //no sensor => continue
         if (!sac_sic.value().is_object())
+            continue;
+
+        //skipped-category info => not a sensor
+        if (sac_sic.key() == "skipped_categories")
             continue;
 
         //check if there is a valid sac sic
@@ -183,6 +194,10 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
     //compile information string
     for (const auto& cat : categories)
         information += (information.empty() ? "" : ", ") + cat;
+
+    for (const auto& cat_it : file_info.skipped_categories)
+        information += (information.empty() ? "" : ", ")
+                       + String::categoryString(cat_it.first) + " (skipped)";
 
     //store errors
     if (has_no_sac_sic && has_no_sac_sic_critical)

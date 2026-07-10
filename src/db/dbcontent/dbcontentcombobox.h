@@ -19,6 +19,9 @@
 
 #include <QComboBox>
 
+#include <set>
+#include <string>
+
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "global.h"
@@ -31,7 +34,8 @@ class DBContentComboBox : public QComboBox
     void changedObject();
 
   public:
-    DBContentComboBox(DBContentManager& dbcont_man, bool allow_meta, bool target_report_only, QWidget* parent = nullptr)
+    DBContentComboBox(DBContentManager& dbcont_man, bool allow_meta, bool target_report_only,
+                      const std::set<std::string>& excluded_dbcontents = {}, QWidget* parent = nullptr)
         : QComboBox(parent), allow_meta_(allow_meta)
     {
         traced_assert(dbcont_man.size());
@@ -41,6 +45,9 @@ class DBContentComboBox : public QComboBox
         for (auto& dbcont_it : dbcont_man)
         {
             if (target_report_only && !dbcont_it.second->containsTargetReports())
+                continue;
+
+            if (excluded_dbcontents.count(dbcont_it.first))
                 continue;
 
             addItem(dbcont_it.first.c_str());

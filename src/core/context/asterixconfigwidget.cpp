@@ -32,6 +32,7 @@
 #include <QCheckBox>
 #include <QDesktopServices>
 #include <QGridLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QUrl>
@@ -59,6 +60,30 @@ ASTERIXConfigWidget::ASTERIXConfigWidget(context::DBContextManager& ctx_mgr,
     updateCategories();
 
     main_layout_->addLayout(categories_grid_);
+
+    if (decode_editable_)
+    {
+        QHBoxLayout* select_layout = new QHBoxLayout();
+
+        QPushButton* select_all_button = new QPushButton("Select All");
+        select_all_button->setIcon(QIcon());
+        select_all_button->setToolTip("Enable decoding of all categories");
+        connect(select_all_button, &QPushButton::clicked,
+                this, [this]() { setAllCategoriesDecoded(true); });
+        select_layout->addWidget(select_all_button);
+
+        QPushButton* select_none_button = new QPushButton("Select None");
+        select_none_button->setIcon(QIcon());
+        select_none_button->setToolTip("Disable decoding of all categories");
+        connect(select_none_button, &QPushButton::clicked,
+                this, [this]() { setAllCategoriesDecoded(false); });
+        select_layout->addWidget(select_none_button);
+
+        select_layout->addStretch(1);
+
+        main_layout_->addLayout(select_layout);
+    }
+
     main_layout_->addStretch();
 
     setLayout(main_layout_);
@@ -140,6 +165,7 @@ void ASTERIXConfigWidget::updateCategories()
 
     int row = 1;
 
+    category_checkboxes_.clear();
     ref_edit_buttons_.clear();
     spf_edit_buttons_.clear();
 
@@ -169,6 +195,7 @@ void ASTERIXConfigWidget::updateCategories()
                 cat_check->setEnabled(false);
             }
             categories_grid_->addWidget(cat_check, row, 0);
+            category_checkboxes_[category] = cat_check;
 
             ASTERIXEditionComboBox* ed_combo = new ASTERIXEditionComboBox(cat);
             if (cat->editions().count(cfg->edition()))
@@ -242,6 +269,23 @@ void ASTERIXConfigWidget::updateCategories()
             row++;
         }
     }
+}
+
+void ASTERIXConfigWidget::setAllCategoriesDecoded(bool decode)
+{
+    if (!decode_editable_)
+        return;
+
+    loginf << "decode " << decode;
+
+    for (auto& check_it : category_checkboxes_)
+    {
+        check_it.second->setChecked(decode);
+        decode_setter_(check_it.first, decode);
+    }
+
+    if (category_checkboxes_.size())
+        emit decodingConfigChangedSignal();
 }
 
 void ASTERIXConfigWidget::categoryCheckedSlot()

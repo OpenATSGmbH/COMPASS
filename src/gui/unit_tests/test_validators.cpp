@@ -120,11 +120,11 @@ TEST_CASE("TextFieldHexValidator enforces max length", "[gui][validator][hex]")
     CHECK(validate(v, "1234567") == QValidator::Invalid);
 }
 
-TEST_CASE("TextFieldHexValidator accepts empty string", "[gui][validator][hex]")
+TEST_CASE("TextFieldHexValidator treats empty string as intermediate", "[gui][validator][hex]")
 {
     TextFieldHexValidator v(6);
 
-    CHECK(validate(v, "") == QValidator::Acceptable);
+    CHECK(validate(v, "") == QValidator::Intermediate);
 }
 
 // ─── TextFieldOctValidator ──────────────────────────────────────────────────
@@ -155,9 +155,9 @@ TEST_CASE("TextFieldOctValidator enforces max length", "[gui][validator][oct]")
     CHECK(validate(v, "77777") == QValidator::Invalid);
 }
 
-TEST_CASE("TextFieldOctValidator accepts empty string", "[gui][validator][oct]")
+TEST_CASE("TextFieldOctValidator treats empty string as intermediate", "[gui][validator][oct]")
 {
     TextFieldOctValidator v(4);
 
-    CHECK(validate(v, "") == QValidator::Acceptable);
+    CHECK(validate(v, "") == QValidator::Intermediate);
 }
