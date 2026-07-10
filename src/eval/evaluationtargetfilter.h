@@ -47,6 +47,13 @@ class EvaluationTargetFilter : public Configurable
     bool removePsrOnlyTargets() const;
     void removePsrOnlyTargets(bool value);
 
+    bool excludeTargetCategories() const;
+    void excludeTargetCategories(bool value);
+
+    bool excludeTargetCategory(TargetBase::Category category) const;
+    void excludeTargetCategory(TargetBase::Category category, bool value);
+    std::set<TargetBase::Category> excludeTargetCategoryData() const;
+
     bool filterModeACodes() const;
     void filterModeACodes(bool value);
     bool filterModeACodeBlacklist() const;
@@ -91,6 +98,9 @@ class EvaluationTargetFilter : public Configurable
 
     bool remove_psr_only_targets_ {true};
     bool remove_modeac_onlys_ {false};
+
+    bool exclude_target_categories_ {false};
+    nlohmann::json exclude_target_category_values_;
 
     bool filter_mode_a_codes_{false};
     bool filter_mode_a_code_blacklist_{true};

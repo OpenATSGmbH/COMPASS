@@ -72,6 +72,14 @@ Tree behavior:
 
 Run validation: clicking Run is rejected if no data source is selected, if no inspector is ticked, or if any ticked inspector has unmet prerequisites. The dialog reports the offending row and reason.
 
+**Scope filter** (Data Source page, shared by all DSTypes): restricts which target reports enter the combined dataset, so every grid inspector (PD, accuracy, RU) sees only the in-scope reports. Three independent, AND-combined constraints:
+
+- **Use Ground Only** - keep only on-ground reports (ground bit set, or reconstructed target type is ground-only).
+- **Minimum / Maximum Flight Level** - keep reports whose barometric altitude (FL = feet / 100) is within the band; the FL check is skipped when altitude is absent (as `Sector::isInside` does).
+- **Limit by Sectors** - keep only reports inside the selected sector layers. The sector list mirrors the reconstruction dialog's widget (a checkbox per sector layer); when the box is ticked with no layer selected the Run button is disabled. A report is in scope if it is inside **any** selected layer (union).
+
+It is applied once when the dataset is built (`AnalysisDataset`), as a per-report position + ground-bit inside test modeled on the evaluation's `EvaluationTargetData::computeSectorInsideInfo`. The sector test is the evaluation's exact call - `SectorLayer::isInside(pos, has_gb, gb_set)` with `has_gb = ground_bit.has_value()`, `gb_set = ground_bit.value_or(false)` - so sector altitude bands and ground handling behave identically to the evaluation. Both the reference (RefTraj) and the test reports are filtered, so reference periods and observed reports stay consistent. Because the filter needs the ground bit (and position) on every report, the dataset load uses an explicit read set (like `EvaluationManager`) that includes them; the "Ground Bit" meta-variable resolves to `ground_bit` for CAT010/020/021 and to `surface_target` for RefTraj/CAT062. The sector constraint above is the *scope* use of sectors (limit the dataset to selected areas). Independently, each grid inspector also emits a **per-sector results breakdown**: a "PD by Sector" (coverage) / "Accuracy by Sector" (accuracy) overview table with one row per selected sector plus an "All (in scope)" reference row. The breakdown ranges over the selected sector layers whether or not the Limit toggle is on (Limit restricts the dataset; the table splits whatever is in it). A report is attributed to every sector it lies in (same `SectorLayer::isInside` test), so - because sectors can overlap - the per-sector rows need not sum to the "All" row. Columns are the headline metrics only (coverage: targets, #EUI, #MUI, PD; accuracy: samples, targets, median/P95 offset, median reported, median consistency, no-accuracy count); the per-transponder / per-QI tables are not multiplied per sector.
+
 ---
 
 ## Result Report Structure
@@ -95,7 +103,7 @@ Analyze MLAT Data Source                          << result root
 |     Settings recap (cadence source, nominal update interval,
 |       miss-test parameters, grid resolution, color thresholds).
 |     Summary table: total expected updates, total missed updates,
-|       sector-aggregate Probability of Detection, worst cell.
+|       overall Probability of Detection, worst cell.
 |     Figure: Probability of Detection - horizontal projection.
 |     Figure: Probability of Detection - altitude / longitude projection.
 |     Figure: Probability of Detection - altitude / latitude projection.
@@ -176,7 +184,7 @@ Always calculated. Computes per-cell PD across a configurable 3D grid, using Ref
 
 **Report output:**
 - Three projection images
-- Summary table: total #EUI, total #MUI, sector-aggregate PD, worst cell location/PD
+- Summary table: total #EUI, total #MUI, overall PD, worst cell location/PD
 
 Algorithmic details are in the [Design](#design) section.
 
@@ -366,6 +374,7 @@ When the user selects "CAT019 cycle" as cadence source:
 
 - Slot timestamps come from CAT019 start-of-cycle / system-status messages instead of `t_begin + k * UI`.
 - Each CAT019-defined cycle inside a reference period contributes one #EUI to the cell of the reference position at the cycle timestamp; the cycle is a #MUI for that cell if no test report falls in it.
+- **Standing targets:** the same motion-adaptive logic as the time-difference method applies. A CAT019 cycle is system-wide; a standing target legitimately produces a position less often than the cycle rate (it emits fewer replies). So when the reference/test ground speed at a cycle is below `standing_speed_max_mps_`, that target is expected only once per `update_interval_standing_s_` rather than every cycle: the cycle opens an expected opportunity whose window spans the standing interval, and the cycles inside it are skipped (neither #EUI nor #MUI). The number of skipped cycles follows from the cycle period (e.g. a 1 s cycle and a 5 s standing interval excuse ~4 of every 5 cycles). Moving targets keep the per-cycle expectation. Implemented in `evaluateCyclesInPeriod` (see `mlatcoveragehelpers.h`), shared movement classifier in [movementui.h](movementui.h).
 - Fallback: if CAT019 is missing or partial, the inspector falls back to time-difference and logs a warning. Without this, #EUI is silently under-counted in the affected windows and PD is biased upward (see [readme_detection.md](../../../eval/requirement/detection/readme_detection.md), §2.4).
 
 ### Altitude axis

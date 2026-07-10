@@ -59,7 +59,25 @@ LabelGenerator::~LabelGenerator()
 {
 }
 
-std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcontent_name, 
+void LabelGenerator::classifyIdentification(const std::string& raw_acid,
+                                            std::string& usable_id, std::string& fallback_id) const
+{
+    string value = raw_acid;
+    value.erase(std::remove(value.begin(), value.end(), ' '), value.end());
+
+    if (dbcont_manager_.compass().isUnspecificACID(raw_acid))
+    {
+        if (fallback_id.empty())
+            fallback_id = value;
+    }
+    else
+    {
+        if (usable_id.empty())
+            usable_id = value;
+    }
+}
+
+std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcontent_name,
                                                        unsigned int buffer_index,
                                                        const std::optional<unsigned int>& override_lod)
 {
@@ -75,7 +93,11 @@ std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcont
     unsigned int lod = override_lod.has_value() ? override_lod.value() : round(config_.current_lod_);
 
     std::shared_ptr<Buffer> buffer = buffers.at(dbcontent_name);
-    traced_assert(buffer_index < buffer->size());
+    if (buffer_index >= buffer->size())
+    {
+        logerr << "buffer index of dbcontent '" << dbcontent_name << "' out of range";
+        return tmp;
+    }
 
     using namespace dbContent;
 
@@ -112,25 +134,36 @@ std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcont
         {
             main_id = to_string(buffer->get<unsigned int>(utn_var.name()).get(buffer_index));
         }
-        else if (acid_var && buffer->has<string>(acid_var->name())
-                 && !buffer->get<string>(acid_var->name()).isNull(buffer_index))
+        else
         {
-            main_id = buffer->get<string>(acid_var->name()).get(buffer_index);
-            main_id.erase(std::remove(main_id.begin(), main_id.end(), ' '), main_id.end());
+            // identification hierarchy: ACID > flight-plan ACID > ACAD > Mode 3/A.
+            // an unspecific ACID (e.g. "00000000") is demoted below ACAD/Mode 3/A,
+            // but still shown if no other identification is available.
+
+            string usable_id, fallback_id;
+
+            if (acid_var && buffer->has<string>(acid_var->name())
+                    && !buffer->get<string>(acid_var->name()).isNull(buffer_index))
+                classifyIdentification(buffer->get<string>(acid_var->name()).get(buffer_index),
+                                       usable_id, fallback_id);
+
+            if (usable_id.empty() && acid_fpl_var && buffer->has<string>(acid_fpl_var->name())
+                    && !buffer->get<string>(acid_fpl_var->name()).isNull(buffer_index))
+                classifyIdentification(buffer->get<string>(acid_fpl_var->name()).get(buffer_index),
+                                       usable_id, fallback_id);
+
+            if (usable_id.size())
+                main_id = usable_id;
+            else if (acad_var && buffer->has<unsigned int>(acad_var->name()) &&
+                     !buffer->get<unsigned int>(acad_var->name()).isNull(buffer_index))
+                main_id = acad_var->getAsSpecialRepresentationString(
+                            buffer->get<unsigned int>(acad_var->name()).get(buffer_index));
+            else if (buffer->has<unsigned int>(m3a_var.name()) &&
+                     !buffer->get<unsigned int>(m3a_var.name()).isNull(buffer_index))
+                main_id = getMode3AText(dbcontent_name, buffer_index, buffer);
+            else if (fallback_id.size()) // nothing else available, use the unspecific ACID
+                main_id = fallback_id;
         }
-        else if (acid_fpl_var && buffer->has<string>(acid_fpl_var->name())
-                 && !buffer->get<string>(acid_fpl_var->name()).isNull(buffer_index))
-        {
-            main_id = buffer->get<string>(acid_fpl_var->name()).get(buffer_index);
-            main_id.erase(std::remove(main_id.begin(), main_id.end(), ' '), main_id.end());
-        }
-        else if (acad_var && buffer->has<unsigned int>(acad_var->name()) &&
-                 !buffer->get<unsigned int>(acad_var->name()).isNull(buffer_index))
-            main_id = acad_var->getAsSpecialRepresentationString(
-                        buffer->get<unsigned int>(acad_var->name()).get(buffer_index));
-        else if (buffer->has<unsigned int>(m3a_var.name()) &&
-                 !buffer->get<unsigned int>(m3a_var.name()).isNull(buffer_index))
-            main_id = getMode3AText(dbcontent_name, buffer_index, buffer);
 
         tmp.push_back(main_id);
     }
@@ -196,7 +229,7 @@ std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcont
 std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbcontent_name, unsigned int buffer_index)
 {
     std::vector<std::string> tmp;
-
+    
     std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.loadedData();
     if (!buffers.count(dbcontent_name))
     {
@@ -207,7 +240,11 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
     DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
 
     std::shared_ptr<Buffer> buffer = buffers.at(dbcontent_name);
-    traced_assert(buffer_index < buffer->size());
+    if (buffer_index >= buffer->size())
+    {
+        logerr << "buffer index of dbcontent '" << dbcontent_name << "' out of range";
+        return tmp;
+    }
 
     using namespace dbContent;
 
@@ -218,7 +255,6 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
 
     tmp.push_back("Variable");
     tmp.push_back("Value");
-    //tmp.push_back("Description");
     tmp.push_back("Unit");
 
     // do common label parts
@@ -264,32 +300,43 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
                 value = to_string(buffer->get<unsigned int>(utn_var.name()).get(buffer_index));
                 value += " ("+utn_var.name()+")";
             }
-            else if (acid_var && buffer->has<string>(acid_var->name())
-                     && !buffer->get<string>(acid_var->name()).isNull(buffer_index))
+            else
             {
-                value = buffer->get<string>(acid_var->name()).get(buffer_index);
-                value.erase(std::remove(value.begin(), value.end(), ' '), value.end());
-                value += " ("+acid_var->name()+")";
-            }
-            else if (acid_fpl_var && buffer->has<string>(acid_fpl_var->name())
-                     && !buffer->get<string>(acid_fpl_var->name()).isNull(buffer_index))
-            {
-                value = buffer->get<string>(acid_fpl_var->name()).get(buffer_index);
-                value.erase(std::remove(value.begin(), value.end(), ' '), value.end());
-                value += " ("+acid_fpl_var->name()+")";
-            }
-            else if (acad_var && buffer->has<unsigned int>(acad_var->name()) &&
-                     !buffer->get<unsigned int>(acad_var->name()).isNull(buffer_index))
-            {
-                value = acad_var->getAsSpecialRepresentationString(
-                            buffer->get<unsigned int>(acad_var->name()).get(buffer_index));
-                value += " ("+acad_var->name()+")";
-            }
-            else if (buffer->has<unsigned int>(m3a_var.name()) &&
-                     !buffer->get<unsigned int>(m3a_var.name()).isNull(buffer_index))
-            {
-                value = getMode3AText(dbcontent_name, buffer_index, buffer);
-                value += " ("+m3a_var.name()+")";
+                // identification hierarchy: ACID > flight-plan ACID > ACAD > Mode 3/A.
+                // an unspecific ACID (e.g. "00000000") is demoted below ACAD/Mode 3/A,
+                // but still shown if no other identification is available.
+
+                string usable_id, fallback_id, usable_name, fallback_name;
+
+                auto apply = [&](const string& raw, const string& vname) {
+                    bool had_usable   = !usable_id.empty();
+                    bool had_fallback = !fallback_id.empty();
+                    classifyIdentification(raw, usable_id, fallback_id);
+                    if (!had_usable && !usable_id.empty())     usable_name   = vname;
+                    if (!had_fallback && !fallback_id.empty()) fallback_name = vname;
+                };
+
+                if (acid_var && buffer->has<string>(acid_var->name())
+                        && !buffer->get<string>(acid_var->name()).isNull(buffer_index))
+                    apply(buffer->get<string>(acid_var->name()).get(buffer_index), acid_var->name());
+
+                if (usable_id.empty() && acid_fpl_var && buffer->has<string>(acid_fpl_var->name())
+                        && !buffer->get<string>(acid_fpl_var->name()).isNull(buffer_index))
+                    apply(buffer->get<string>(acid_fpl_var->name()).get(buffer_index), acid_fpl_var->name());
+
+                if (usable_id.size())
+                    value = usable_id + " ("+usable_name+")";
+                else if (acad_var && buffer->has<unsigned int>(acad_var->name()) &&
+                         !buffer->get<unsigned int>(acad_var->name()).isNull(buffer_index))
+                    value = acad_var->getAsSpecialRepresentationString(
+                                buffer->get<unsigned int>(acad_var->name()).get(buffer_index))
+                            + " ("+acad_var->name()+")";
+                else if (buffer->has<unsigned int>(m3a_var.name()) &&
+                         !buffer->get<unsigned int>(m3a_var.name()).isNull(buffer_index))
+                    value = getMode3AText(dbcontent_name, buffer_index, buffer)
+                            + " ("+m3a_var.name()+")";
+                else if (fallback_id.size()) // nothing else available, use the unspecific ACID
+                    value = fallback_id + " ("+fallback_name+")";
             }
 
             tmp.push_back(varname);

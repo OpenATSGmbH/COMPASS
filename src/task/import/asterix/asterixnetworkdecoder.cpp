@@ -386,10 +386,17 @@ void ASTERIXNetworkDecoder::checkDecoding_impl(bool force_recompute,
             continue;
         }
 
+        //store categories found in the stream but skipped during decoding
+        sec.skipped_categories = ASTERIXSkippedCategoryInfo::fromAnalysisInfo(*analysis_info);
+
         if (!num_records)
         {
             sec.error.errtype = ASTERIXImportFileError::ErrorType::DecodingFailed;
-            sec.error.errinfo = "No records decoded";
+            if (!sec.skipped_categories.empty())
+                sec.error.errinfo = "Only skipped categories: "
+                                    + ASTERIXSkippedCategoryInfo::asString(sec.skipped_categories);
+            else
+                sec.error.errinfo = "No records decoded";
             if (progress) progress->increment(1, true);
             continue;
         }
@@ -401,6 +408,8 @@ void ASTERIXNetworkDecoder::checkDecoding_impl(bool force_recompute,
         for (const auto& sac_sic : analysis_info->items())
         {
             if (!sac_sic.value().is_object())
+                continue;
+            if (sac_sic.key() == "skipped_categories")
                 continue;
             for (const auto& category : sac_sic.value().items())
             {
@@ -418,6 +427,11 @@ void ASTERIXNetworkDecoder::checkDecoding_impl(bool force_recompute,
         std::string content;
         for (const auto& c : categories)
             content += (content.empty() ? "" : ", ") + c;
+
+        for (const auto& cat_it : sec.skipped_categories)
+            content += (content.empty() ? "" : ", ")
+                       + String::categoryString(cat_it.first) + " (skipped)";
+
         sec.contentinfo = content;
 
         if (progress) progress->increment(1, true);

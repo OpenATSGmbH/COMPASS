@@ -23,6 +23,8 @@
 #include "inspectorsettingsbase.h"
 #include "mlatdataiteminspector.h"
 #include "mlatcoverageinspector.h"
+#include "adsbdataiteminspector.h"
+#include "adsbcoverageinspector.h"
 
 #include <array>
 #include <cmath>
@@ -31,12 +33,14 @@
 #include "mlataccuracyinspector.h"
 #include "mlatrucoverageinspector.h"
 #include "mlatrueffectinspector.h"
+#include "adsbaccuracyinspector.h"
 #endif
 
 #include "compass.h"
 #include "mainwindow.h"
 #include "taskmanager.h"
 #include "db_context_manager.h"
+#include "sectorlayer.h"
 #include "data_source.h"
 #include "license.h"
 #include "licensemanager.h"
@@ -65,12 +69,14 @@
 #include <chrono>
 #include <future>
 
-AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent)
+AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent,
+                                             const std::string& ds_type_default,
+                                             const std::string& object_name)
     : Task(*parent), Configurable(config, parent)
 {
-    setObjectName("AnalyzeDataSourceTask");
+    setObjectName(QString::fromStdString(object_name));
 
-    registerParameter("ds_type", &ds_type_, std::string("MLAT"));
+    registerParameter("ds_type", &ds_type_, ds_type_default);
     registerParameter("use_data_sources",           &use_data_sources_,           nlohmann::json::object());
     registerParameter("use_data_sources_lines",     &use_data_sources_lines_,     nlohmann::json::object());
     registerParameter("use_reference_data_sources", &use_reference_data_sources_, nlohmann::json::object());
@@ -82,12 +88,24 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     registerParameter("cell_size_ft",               &cell_size_ft_,               cell_size_ft_);
     registerParameter("max_cells_per_axis",         &max_cells_per_axis_,         max_cells_per_axis_);
 
+    registerParameter("use_ground_only",            &use_ground_only_,            use_ground_only_);
+    registerParameter("use_min_fl",                 &use_min_fl_,                 use_min_fl_);
+    registerParameter("min_fl",                     &min_fl_,                     min_fl_);
+    registerParameter("use_max_fl",                 &use_max_fl_,                 use_max_fl_);
+    registerParameter("max_fl",                     &max_fl_,                     max_fl_);
+
+    registerParameter("limit_by_sectors",           &limit_by_sectors_,           limit_by_sectors_);
+    registerParameter("used_sectors",               &used_sectors_,               nlohmann::json::object());
+
     tooltip_ = "Analyze a chosen data source from multiple angles "
                "(data items, sensor coverage / PD, position accuracy).";
 
     createSubConfigurables();
 
-    init_analyze_commands(compass());
+    // The runtime-command registry is process-global; initialize it once from
+    // the primary (MLAT) instance to avoid a double registration.
+    if (ds_type_ == "MLAT")
+        init_analyze_commands(compass());
 }
 
 AnalyzeDataSourceTask::~AnalyzeDataSourceTask() = default;
@@ -108,6 +126,18 @@ void AnalyzeDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
         coverage_settings_.reset(new MLATCoverageInspectorSettings(child_json, this));
         traced_assert(coverage_settings_);
     }
+    else if (class_name == "ADSBDataItemInspectorSettings")
+    {
+        traced_assert(!adsb_data_item_settings_);
+        adsb_data_item_settings_.reset(new ADSBDataItemInspectorSettings(child_json, this));
+        traced_assert(adsb_data_item_settings_);
+    }
+    else if (class_name == "ADSBCoverageInspectorSettings")
+    {
+        traced_assert(!adsb_coverage_settings_);
+        adsb_coverage_settings_.reset(new ADSBCoverageInspectorSettings(child_json, this));
+        traced_assert(adsb_coverage_settings_);
+    }
 #if USE_EXPERIMENTAL_SOURCE == true
     else if (class_name == "MLATAccuracyInspectorSettings")
     {
@@ -127,6 +157,12 @@ void AnalyzeDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
         ru_effect_settings_.reset(new MLATRUEffectInspectorSettings(child_json, this));
         traced_assert(ru_effect_settings_);
     }
+    else if (class_name == "ADSBAccuracyInspectorSettings")
+    {
+        traced_assert(!adsb_accuracy_settings_);
+        adsb_accuracy_settings_.reset(new ADSBAccuracyInspectorSettings(child_json, this));
+        traced_assert(adsb_accuracy_settings_);
+    }
 #endif
     else
     {
@@ -137,6 +173,30 @@ void AnalyzeDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
 
 void AnalyzeDataSourceTask::checkSubConfigurables()
 {
+    // Each task instance is bound to one DSType and only creates that DSType's
+    // inspector-settings sub-configs. generateSubConfigurable() above still
+    // accepts any known class name so a persisted child of either set loads.
+    if (ds_type_ == "ADSB")
+    {
+        if (!adsb_data_item_settings_)
+            generateSubConfigurableFromConfig("ADSBDataItemInspectorSettings",
+                                              "ADSBDataItemInspectorSettings0");
+        traced_assert(adsb_data_item_settings_);
+
+        if (!adsb_coverage_settings_)
+            generateSubConfigurableFromConfig("ADSBCoverageInspectorSettings",
+                                              "ADSBCoverageInspectorSettings0");
+        traced_assert(adsb_coverage_settings_);
+
+#if USE_EXPERIMENTAL_SOURCE == true
+        if (!adsb_accuracy_settings_)
+            generateSubConfigurableFromConfig("ADSBAccuracyInspectorSettings",
+                                              "ADSBAccuracyInspectorSettings0");
+        traced_assert(adsb_accuracy_settings_);
+#endif
+        return;
+    }
+
     if (!data_item_settings_)
         generateSubConfigurableFromConfig("MLATDataItemInspectorSettings",
                                           "MLATDataItemInspectorSettings0");
@@ -216,6 +276,17 @@ Result AnalyzeDataSourceTask::applyJSONParameters(const nlohmann::json& params_j
 void AnalyzeDataSourceTask::registerInspectors()
 {
     inspectors_.clear();
+
+    if (ds_type_ == "ADSB")
+    {
+        inspectors_.emplace_back(new ADSBDataItemInspector(*this, *adsb_data_item_settings_));
+        inspectors_.emplace_back(new ADSBCoverageInspector(*this, *adsb_coverage_settings_));
+
+#if USE_EXPERIMENTAL_SOURCE == true
+        inspectors_.emplace_back(new ADSBAccuracyInspector(*this, *adsb_accuracy_settings_));
+#endif
+        return;
+    }
 
     inspectors_.emplace_back(new MLATDataItemInspector(*this, *data_item_settings_));
     inspectors_.emplace_back(new MLATCoverageInspector(*this, *coverage_settings_));
@@ -503,6 +574,18 @@ MLATCoverageInspectorSettings& AnalyzeDataSourceTask::coverageSettings() const
     return *coverage_settings_;
 }
 
+ADSBDataItemInspectorSettings& AnalyzeDataSourceTask::adsbDataItemSettings() const
+{
+    traced_assert(adsb_data_item_settings_);
+    return *adsb_data_item_settings_;
+}
+
+ADSBCoverageInspectorSettings& AnalyzeDataSourceTask::adsbCoverageSettings() const
+{
+    traced_assert(adsb_coverage_settings_);
+    return *adsb_coverage_settings_;
+}
+
 #if USE_EXPERIMENTAL_SOURCE == true
 MLATAccuracyInspectorSettings& AnalyzeDataSourceTask::accuracySettings() const
 {
@@ -521,12 +604,54 @@ MLATRUEffectInspectorSettings& AnalyzeDataSourceTask::ruEffectSettings() const
     traced_assert(ru_effect_settings_);
     return *ru_effect_settings_;
 }
+
+ADSBAccuracyInspectorSettings& AnalyzeDataSourceTask::adsbAccuracySettings() const
+{
+    traced_assert(adsb_accuracy_settings_);
+    return *adsb_accuracy_settings_;
+}
 #endif
 
 bool AnalyzeDataSourceTask::professionalLicenseEnabled() const
 {
     return compass().licenseManager().componentEnabled(
         license::License::Component::ComponentProbIMMReconstructor);
+}
+
+bool AnalyzeDataSourceTask::useSector(const std::string& layer_name) const
+{
+    if (used_sectors_.contains(layer_name))
+        return used_sectors_.at(layer_name).get<bool>();
+    return true;  // unlisted layers default to used
+}
+
+void AnalyzeDataSourceTask::setUseSector(const std::string& layer_name, bool value)
+{
+    used_sectors_[layer_name] = value;
+}
+
+std::vector<std::string> AnalyzeDataSourceTask::selectedSectorLayers() const
+{
+    std::vector<std::string> out;
+    auto& ctx = compass().dbContextManager();
+    for (const auto& layer : ctx.sectorLayers())
+    {
+        if (layer && useSector(layer->name()))
+            out.push_back(layer->name());
+    }
+    return out;
+}
+
+std::vector<std::shared_ptr<SectorLayer>> AnalyzeDataSourceTask::scopeSectorLayers() const
+{
+    std::vector<std::shared_ptr<SectorLayer>> out;
+    auto& ctx = compass().dbContextManager();
+    for (const auto& layer : ctx.sectorLayers())
+    {
+        if (layer && useSector(layer->name()))
+            out.push_back(layer);
+    }
+    return out;
 }
 
 COMPASS& AnalyzeDataSourceTask::compass() const
@@ -720,6 +845,26 @@ void AnalyzeDataSourceTask::run()
     info.addRow({"Professional license",
                  professionalLicenseEnabled() ? std::string("enabled")
                                               : std::string("disabled")});
+    info.addRow({"Use ground only", use_ground_only_ ? "yes" : "no"});
+    {
+        std::string fl;
+        if (use_min_fl_) fl += "min FL " + std::to_string(static_cast<int>(min_fl_));
+        if (use_max_fl_) fl += (fl.empty() ? "" : ", ") + std::string("max FL ")
+                               + std::to_string(static_cast<int>(max_fl_));
+        if (fl.empty()) fl = "none";
+        info.addRow({"Flight level filter", fl});
+    }
+    {
+        std::string sec = "no";
+        if (limit_by_sectors_)
+        {
+            sec.clear();
+            for (const auto& name : selectedSectorLayers())
+                sec += (sec.empty() ? "" : ", ") + name;
+            if (sec.empty()) sec = "yes (none selected)";
+        }
+        info.addRow({"Limit by sectors", sec});
+    }
 
     advanceStep("Preparing result...");
 
@@ -730,6 +875,23 @@ void AnalyzeDataSourceTask::run()
         advanceStep("Loading combined dataset...");
 
         dataset.reset(new AnalysisDataset(compass()));
+
+        AnalysisDataset::ScopeFilter scope_filter;
+        scope_filter.ground_only = use_ground_only_;
+        scope_filter.use_min_fl  = use_min_fl_;
+        scope_filter.min_fl      = min_fl_;
+        scope_filter.use_max_fl  = use_max_fl_;
+        scope_filter.max_fl      = max_fl_;
+        scope_filter.limit_by_sectors = limit_by_sectors_;
+        if (limit_by_sectors_)
+        {
+            auto& ctx = compass().dbContextManager();
+            for (const auto& name : selectedSectorLayers())
+                if (ctx.hasSectorLayer(name))
+                    scope_filter.sectors.push_back(ctx.sectorLayer(name));
+        }
+        dataset->setScopeFilter(scope_filter);
+
         std::string error;
         if (!dataset->load(selectedDataSourceIDs(), line_id_tst_,
                            selectedReferenceDataSourceIDs(), line_id_ref_,

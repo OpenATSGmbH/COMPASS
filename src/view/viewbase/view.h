@@ -159,7 +159,8 @@ public slots:
     COMPASS& compass() const;
 
 protected:
-    virtual void updateSelection() = 0;
+    void updateSelection();
+
     virtual bool init_impl() { return true; }
 
     virtual void onConfigurationChanged(const std::vector<std::string>& changed_params) override final;
@@ -177,6 +178,8 @@ protected:
 
     virtual void databaseOpened_impl() {}
     virtual void databaseClosed_impl() {}
+
+    virtual void updateSelection_impl() = 0;
 
     void constructWidget();
     void setWidget(ViewWidget* widget);

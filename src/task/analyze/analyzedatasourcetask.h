@@ -34,16 +34,21 @@ class TaskManager;
 class COMPASS;
 class DataSourceInspectorBase;
 class InspectorSettingsBase;
+class SectorLayer;
 
 class AnalysisDataset;
 
 class MLATDataItemInspectorSettings;
 class MLATCoverageInspectorSettings;
 
+class ADSBDataItemInspectorSettings;
+class ADSBCoverageInspectorSettings;
+
 #if USE_EXPERIMENTAL_SOURCE == true
 class MLATAccuracyInspectorSettings;
 class MLATRUCoverageInspectorSettings;
 class MLATRUEffectInspectorSettings;
+class ADSBAccuracyInspectorSettings;
 #endif
 
 namespace ResultReport { class Section; }
@@ -53,7 +58,14 @@ class AnalyzeDataSourceTask : public Task, public Configurable
     Q_OBJECT
 
 public:
-    AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent);
+    /// `ds_type_default` binds this task instance to a DSType ("MLAT" or "ADSB"):
+    /// it sets the default for the `ds_type` parameter and selects which
+    /// inspector set is registered. `object_name` distinguishes the two
+    /// instances (one per DSType menu entry). The defaults preserve the
+    /// original MLAT-only behavior.
+    AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent,
+                          const std::string& ds_type_default = "MLAT",
+                          const std::string& object_name = "AnalyzeDataSourceTask");
     ~AnalyzeDataSourceTask() override;
 
     void generateSubConfigurable(nlohmann::json& child_json) override;
@@ -71,7 +83,7 @@ public:
 
     void showDialog();
 
-    /// DSType this task analyzes (currently always "MLAT").
+    /// DSType this task instance analyzes ("MLAT" or "ADSB").
     const std::string& dsType() const { return ds_type_; }
 
     /// Per-data-source enable flags (test side).
@@ -117,6 +129,32 @@ public:
     void setCellSizeFeet(float v);
     void setMaxCellsPerAxis(unsigned int v);
 
+    /// Shared per-report scope filter (ground-only / flight-level band),
+    /// applied when the combined dataset is built (all grid inspectors).
+    bool  useGroundOnly() const { return use_ground_only_; }
+    bool  useMinFL()      const { return use_min_fl_; }
+    float minFL()         const { return min_fl_; }
+    bool  useMaxFL()      const { return use_max_fl_; }
+    float maxFL()         const { return max_fl_; }
+    void  setUseGroundOnly(bool v) { use_ground_only_ = v; }
+    void  setUseMinFL(bool v)      { use_min_fl_ = v; }
+    void  setMinFL(float v)        { min_fl_ = v; }
+    void  setUseMaxFL(bool v)      { use_max_fl_ = v; }
+    void  setMaxFL(float v)        { max_fl_ = v; }
+
+    /// Limit the analysis to reports inside the selected sector layers (precise
+    /// per-report inside test, as in the evaluation). When off, all data is used.
+    bool  limitBySectors() const { return limit_by_sectors_; }
+    void  setLimitBySectors(bool v) { limit_by_sectors_ = v; }
+    /// Per sector-layer "used" flag (defaults to true for an unlisted layer).
+    bool  useSector(const std::string& layer_name) const;
+    void  setUseSector(const std::string& layer_name, bool value);
+    /// Names of the currently selected (used) sector layers that still exist.
+    std::vector<std::string> selectedSectorLayers() const;
+    /// The selected sector layers resolved to objects, for the per-sector
+    /// result breakdown (independent of `limit_by_sectors_`).
+    std::vector<std::shared_ptr<SectorLayer>> scopeSectorLayers() const;
+
     /// Effective cell sizes for an inspector: the configured horizontal and
     /// vertical cell sizes, multiplied by an integer factor on the 1-2-5
     /// ladder (1, 2, 5, 10, 20, 50, ...) only as much as is needed to keep
@@ -155,10 +193,14 @@ public:
     MLATDataItemInspectorSettings& dataItemSettings() const;
     MLATCoverageInspectorSettings& coverageSettings()  const;
 
+    ADSBDataItemInspectorSettings& adsbDataItemSettings() const;
+    ADSBCoverageInspectorSettings& adsbCoverageSettings() const;
+
 #if USE_EXPERIMENTAL_SOURCE == true
     MLATAccuracyInspectorSettings&   accuracySettings()   const;
     MLATRUCoverageInspectorSettings& ruCoverageSettings() const;
     MLATRUEffectInspectorSettings&   ruEffectSettings()   const;
+    ADSBAccuracyInspectorSettings&   adsbAccuracySettings() const;
 #endif
 
     /// True if the active license enables Professional features.
@@ -187,13 +229,26 @@ private:
     float        cell_size_ft_       = 100.0f;
     unsigned int max_cells_per_axis_ = 1000;
 
+    bool         use_ground_only_    = false;
+    bool         use_min_fl_         = false;
+    float        min_fl_             = 0.0f;
+    bool         use_max_fl_         = false;
+    float        max_fl_             = 600.0f;
+
+    bool           limit_by_sectors_ = false;
+    nlohmann::json used_sectors_;     // sector-layer name -> bool (unlisted = true)
+
     std::unique_ptr<MLATDataItemInspectorSettings> data_item_settings_;
     std::unique_ptr<MLATCoverageInspectorSettings> coverage_settings_;
+
+    std::unique_ptr<ADSBDataItemInspectorSettings> adsb_data_item_settings_;
+    std::unique_ptr<ADSBCoverageInspectorSettings> adsb_coverage_settings_;
 
 #if USE_EXPERIMENTAL_SOURCE == true
     std::unique_ptr<MLATAccuracyInspectorSettings>   accuracy_settings_;
     std::unique_ptr<MLATRUCoverageInspectorSettings> ru_coverage_settings_;
     std::unique_ptr<MLATRUEffectInspectorSettings>   ru_effect_settings_;
+    std::unique_ptr<ADSBAccuracyInspectorSettings>   adsb_accuracy_settings_;
 #endif
 
     std::vector<std::unique_ptr<DataSourceInspectorBase>> inspectors_;

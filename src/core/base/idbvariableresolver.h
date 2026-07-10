@@ -154,7 +154,7 @@ namespace dbcontent_vars
     inline const Property meta_var_y_stddev_        {"Y StdDev", PropertyDataType::DOUBLE};
     inline const Property meta_var_xy_cov_          {"X/Y Covariance", PropertyDataType::DOUBLE};
 
-    inline const Property meta_var_max_stddev_xy_  {"X/Y Covariance", PropertyDataType::DOUBLE};
+    inline const Property meta_var_max_stddev_xy_  {"X/Y StdDev Max", PropertyDataType::DOUBLE};
 
     inline const Property meta_var_latitude_stddev_   {"Latitude StdDev", PropertyDataType::DOUBLE};
     inline const Property meta_var_longitude_stddev_  {"Longitude StdDev", PropertyDataType::DOUBLE};

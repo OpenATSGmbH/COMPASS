@@ -20,15 +20,18 @@
 #include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
 #include "targetreport3dgrid.h"
+#include "movementui.h"
 
 #include "compass.h"
 #include "logger.h"
+#include "number.h"
 #include "section.h"
 #include "sectioncontenttable.h"
 #include "sectioncontenttext.h"
 #include "stringconv.h"
 #include "system.h"
 #include "targetposition.h"
+#include "sectorlayer.h"
 #include "dbcontent/target/targetreportchain.h"
 
 #include "eval/requirement/detection/detection_pd_helpers.h"
@@ -40,11 +43,15 @@
 #include "colorlegend.h"
 
 #include "viewpointgenerator.h"
+#include "histogram_raw.h"
 #include "plotmetadata.h"
 
 #include "json.hpp"
 
+#include <QColor>
+
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/optional.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -55,6 +62,12 @@
 
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
+using Utils::Number::mean;
+using Utils::Number::percentile;
+using analysis::MovementUI;
+using analysis::SpeedSamples;
+using analysis::gatherTestSpeeds;
+using analysis::gatherRefSpeeds;
 
 MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& config_json,
                                                              Configurable* parent)
@@ -62,6 +75,10 @@ MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& con
 {
     registerParameter("pd_method_int",   &pd_method_int_,   pd_method_int_);
     registerParameter("update_interval_s", &update_interval_s_, update_interval_s_);
+    registerParameter("update_interval_standing_s", &update_interval_standing_s_,
+                      update_interval_standing_s_);
+    registerParameter("standing_speed_max_mps", &standing_speed_max_mps_,
+                      standing_speed_max_mps_);
 
     registerParameter("use_miss_tolerance", &use_miss_tolerance_, use_miss_tolerance_);
     registerParameter("miss_tolerance_s",   &miss_tolerance_s_,   miss_tolerance_s_);
@@ -70,6 +87,9 @@ MLATCoverageInspectorSettings::MLATCoverageInspectorSettings(nlohmann::json& con
 
     registerParameter("pd_acceptable_above",   &pd_acceptable_above_,   pd_acceptable_above_);
     registerParameter("pd_unacceptable_below", &pd_unacceptable_below_, pd_unacceptable_below_);
+
+    registerParameter("ui_hist_num_bins", &ui_hist_num_bins_, ui_hist_num_bins_);
+    registerParameter("ui_hist_max_s",    &ui_hist_max_s_,    ui_hist_max_s_);
 }
 
 MLATCoverageInspector::MLATCoverageInspector(AnalyzeDataSourceTask& task,
@@ -103,18 +123,6 @@ using Settings = MLATCoverageInspectorSettings;
 using EvaluationRequirement::PDHelpers::MissTestParams;
 using EvaluationRequirement::PDHelpers::RefPeriod;
 
-MissTestParams missParamsFromSettings(const Settings& s)
-{
-    MissTestParams p;
-    p.update_interval_s  = s.update_interval_s_;
-    p.use_miss_tolerance = s.use_miss_tolerance_;
-    p.miss_tolerance_s   = s.miss_tolerance_s_;
-    // min/max gap filters not exposed on the inspector: the dataset
-    // already restricts the load to selected sources, so out-of-coverage
-    // gating from the detection requirement is not needed here.
-    return p;
-}
-
 double partialSeconds(const time_duration& d)
 {
     return static_cast<double>(d.total_microseconds()) / 1.0e6;
@@ -132,19 +140,9 @@ time_duration durationFromSeconds(double s)
     return boost::posix_time::microseconds(us);
 }
 
-double percentile(std::vector<double> v, double p)
-{
-    if (v.empty())
-        return 0.0;
-    std::sort(v.begin(), v.end());
-    if (p <= 0.0) return v.front();
-    if (p >= 1.0) return v.back();
-    double idx = p * (v.size() - 1);
-    size_t lo = static_cast<size_t>(std::floor(idx));
-    size_t hi = static_cast<size_t>(std::ceil(idx));
-    double w = idx - lo;
-    return v[lo] * (1.0 - w) + v[hi] * w;
-}
+// Inter-report intervals above this are treated as coverage gaps (target not
+// continuously tracked) and excluded from the measured-cadence statistics.
+constexpr double kMaxUpdateIntervalS = 300.0;
 
 std::string formatNumber(double v, int prec = 4)
 {
@@ -162,6 +160,38 @@ struct CellAttribution
     double lat    = 0.0;
     double lon    = 0.0;
     double alt_ft = 0.0;
+};
+
+// Per-sector slot accumulation: a slot is attributed to every selected sector
+// layer it lies in (evaluation's exact SectorLayer::isInside). `eui`/`mui`
+// accumulate across targets; `touched` is reset per target so the caller can
+// count each target once per sector.
+struct SectorWalkAccum
+{
+    const std::vector<std::shared_ptr<SectorLayer>>* layers = nullptr;
+    std::vector<std::uint64_t> eui;
+    std::vector<std::uint64_t> mui;
+    std::vector<char>          touched;
+
+    void accum(const CellAttribution& ca, bool is_miss)
+    {
+        if (!layers)
+            return;
+        dbContent::TargetPosition pos;
+        pos.latitude_     = ca.lat;
+        pos.longitude_    = ca.lon;
+        pos.has_altitude_ = true;
+        pos.altitude_     = ca.alt_ft;
+        for (std::size_t i = 0; i < layers->size(); ++i)
+        {
+            const auto& L = (*layers)[i];
+            if (L && L->isInside(pos, false, false))
+            {
+                if (is_miss) ++mui[i]; else ++eui[i];
+                touched[i] = 1;
+            }
+        }
+    }
 };
 
 // Look up the reference position for `(utn, t)` and unpack it into the
@@ -217,28 +247,35 @@ void walkTargetTimeDifference(unsigned int utn,
                               const std::vector<ptime>& tst_ts_sorted,
                               AnalysisDataset& dataset,
                               TargetReport3DGrid& grid,
-                              const Settings& settings)
+                              const Settings& settings,
+                              const analysis::MovementUI& mv,
+                              SectorWalkAccum* sec)
 {
-    const auto miss_params = missParamsFromSettings(settings);
-
     const time_duration d_max = boost::posix_time::seconds(60);
 
     for (const auto& period : periods)
     {
         const double period_s = partialSeconds(period.end - period.begin);
-        if (period_s <= 0.0 || settings.update_interval_s_ <= 0.0f)
+        if (period_s <= 0.0)
             continue;
 
-        const unsigned int n_slots = static_cast<unsigned int>(
-            std::floor(period_s / settings.update_interval_s_));
-
-        for (unsigned int k = 0; k < n_slots; ++k)
+        // Expected slots: step adaptively by the local update interval, so a
+        // standing target (which the MLAT system updates less often) is expected
+        // less often instead of accruing false misses.
+        std::size_t guard = 0;
+        const std::size_t max_iter = 50'000'000;
+        for (ptime t_slot = period.begin; t_slot < period.end; )
         {
-            ptime t_slot = addSeconds(period.begin,
-                                      k * settings.update_interval_s_);
             auto ca = refCellAt(dataset, utn, t_slot, d_max);
             if (ca.valid)
+            {
                 grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
+                if (sec) sec->accum(ca, false);
+            }
+            double ui = mv.uiAt(t_slot);
+            if (ui <= 0.0 || ++guard > max_iter)
+                break;
+            t_slot = addSeconds(t_slot, ui);
         }
 
         // Test timestamps inside [period.begin, period.end].
@@ -263,6 +300,17 @@ void walkTargetTimeDifference(unsigned int utn,
             const float gap_s =
                 static_cast<float>(partialSeconds(gap_end - gap_start));
 
+            // Expected cadence inside the gap follows the target's movement at
+            // the gap start (moving vs standing update interval).
+            const double gap_ui = mv.uiAt(gap_start);
+            if (gap_ui <= 0.0)
+                continue;
+
+            MissTestParams miss_params;
+            miss_params.update_interval_s  = static_cast<float>(gap_ui);
+            miss_params.use_miss_tolerance = settings.use_miss_tolerance_;
+            miss_params.miss_tolerance_s   = settings.miss_tolerance_s_;
+
             if (!EvaluationRequirement::PDHelpers::isMiss(gap_s, miss_params))
                 continue;
 
@@ -271,13 +319,15 @@ void walkTargetTimeDifference(unsigned int utn,
 
             for (unsigned int m = 0; m < n_misses; ++m)
             {
-                ptime t_miss = addSeconds(gap_start,
-                                          (m + 1) * settings.update_interval_s_);
+                ptime t_miss = addSeconds(gap_start, (m + 1) * gap_ui);
                 if (t_miss >= gap_end)
                     break;
                 auto ca = refCellAt(dataset, utn, t_miss, d_max);
                 if (ca.valid)
+                {
                     grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
+                    if (sec) sec->accum(ca, true);
+                }
             }
         }
     }
@@ -289,7 +339,8 @@ namespace mlatcoverage_internal
 std::vector<CycleEvent> evaluateCyclesInPeriod(
     const EvaluationRequirement::PDHelpers::RefPeriod& period,
     const std::vector<ptime>& cycles_sorted,
-    const std::vector<ptime>& tst_ts_sorted)
+    const std::vector<ptime>& tst_ts_sorted,
+    const analysis::MovementUI* mv)
 {
     std::vector<CycleEvent> out;
 
@@ -302,15 +353,38 @@ std::vector<CycleEvent> evaluateCyclesInPeriod(
 
     out.reserve(static_cast<std::size_t>(std::distance(cyc_begin, cyc_end)));
 
-    for (auto it = cyc_begin; it != cyc_end; ++it)
+    const double standing_ui = mv ? mv->ui_standing : 0.0;
+
+    for (auto it = cyc_begin; it != cyc_end; )
     {
         ptime t_cycle = *it;
-        auto next_it = std::next(it);
-        ptime t_window_end =
-            (next_it != cyc_end) ? *next_it : period.end;
+
+        // Standing targets are expected only once per standing UI, not every
+        // cycle; the window then spans that interval and the cycles inside it
+        // are skipped (a standing target legitimately reports less often than
+        // the cycle rate). Moving targets keep the per-cycle window.
+        const bool standing = mv && standing_ui > 0.0 && mv->standingAt(t_cycle);
+
+        ptime t_window_end;
+        if (standing)
+        {
+            t_window_end = t_cycle
+                + boost::posix_time::microseconds(
+                      static_cast<long long>(std::llround(standing_ui * 1.0e6)));
+            if (t_window_end > period.end)
+                t_window_end = period.end;
+        }
+        else
+        {
+            auto next_it = std::next(it);
+            t_window_end = (next_it != cyc_end) ? *next_it : period.end;
+        }
 
         if (t_window_end <= t_cycle)
+        {
+            ++it;
             continue;
+        }
 
         auto tst_lo = std::lower_bound(tst_ts_sorted.begin(),
                                        tst_ts_sorted.end(),
@@ -322,6 +396,11 @@ std::vector<CycleEvent> evaluateCyclesInPeriod(
         ev.t_cycle = t_cycle;
         ev.is_miss = !has_test;
         out.push_back(ev);
+
+        if (standing)
+            it = std::lower_bound(it, cyc_end, t_window_end);  // skip covered cycles
+        else
+            ++it;
     }
 
     return out;
@@ -346,14 +425,16 @@ void walkTargetStatusMessage(unsigned int utn,
                              const std::vector<ptime>& cycles_sorted,
                              AnalysisDataset& dataset,
                              TargetReport3DGrid& grid,
-                             const Settings& /*settings*/)
+                             const Settings& /*settings*/,
+                             const analysis::MovementUI& mv,
+                             SectorWalkAccum* sec)
 {
     const time_duration d_max = boost::posix_time::seconds(60);
 
     for (const auto& period : periods)
     {
         auto events = mlatcoverage_internal::evaluateCyclesInPeriod(
-            period, cycles_sorted, tst_ts_sorted);
+            period, cycles_sorted, tst_ts_sorted, &mv);
 
         for (const auto& ev : events)
         {
@@ -361,8 +442,12 @@ void walkTargetStatusMessage(unsigned int utn,
             if (!ca.valid)
                 continue;
             grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
+            if (sec) sec->accum(ca, false);
             if (ev.is_miss)
+            {
                 grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
+                if (sec) sec->accum(ca, true);
+            }
         }
     }
 }
@@ -420,9 +505,22 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         durationFromSeconds(settings.ref_max_time_diff_s_);
     const time_duration min_period_duration = boost::posix_time::seconds(1);
 
+    // Per-sector breakdown (over the selected sector layers, independent of the
+    // limit-by-sectors toggle). A slot is attributed to every sector it is in.
+    auto sector_layers = task_.scopeSectorLayers();
+    SectorWalkAccum sec;
+    sec.layers = &sector_layers;
+    sec.eui.assign(sector_layers.size(), 0);
+    sec.mui.assign(sector_layers.size(), 0);
+    sec.touched.assign(sector_layers.size(), 0);
+    std::vector<std::size_t> sector_target_count(sector_layers.size(), 0);
+
     unsigned int targets_walked = 0;
     unsigned int targets_no_ref = 0;
     unsigned int targets_no_tst = 0;
+
+    // Measured update cadence: consecutive inter-report intervals per target.
+    std::vector<double> intervals;
 
     const auto utns = dataset->utns();
 
@@ -456,14 +554,39 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         if (tst_ts_sorted.empty())
             ++targets_no_tst;
 
+        for (std::size_t i = 1; i < tst_ts_sorted.size(); ++i)
+        {
+            double dt = partialSeconds(tst_ts_sorted[i] - tst_ts_sorted[i - 1]);
+            if (dt > 0.0 && dt <= kMaxUpdateIntervalS)
+                intervals.push_back(dt);
+        }
+
         ++targets_walked;
+
+        std::fill(sec.touched.begin(), sec.touched.end(), 0);
+
+        // Movement classification for the time-difference walk: MLAT-reported
+        // ground speed where available, RefTraj speed as fallback.
+        SpeedSamples test_spd = gatherTestSpeeds(utn, *dataset);
+        SpeedSamples ref_spd  = gatherRefSpeeds(ref_chain);
+        MovementUI mv;
+        mv.test         = &test_spd;
+        mv.ref          = &ref_spd;
+        mv.standing_max = settings.standing_speed_max_mps_;
+        mv.ui_moving    = settings.update_interval_s_;
+        mv.ui_standing  = settings.update_interval_standing_s_;
+        mv.window_s     = std::max(6.0, 2.0 * settings.update_interval_standing_s_);
 
         if (use_status_method)
             walkTargetStatusMessage(utn, periods, tst_ts_sorted,
-                                    status_cycles, *dataset, grid, settings);
+                                    status_cycles, *dataset, grid, settings, mv, &sec);
         else
             walkTargetTimeDifference(utn, periods, tst_ts_sorted,
-                                     *dataset, grid, settings);
+                                     *dataset, grid, settings, mv, &sec);
+
+        for (std::size_t si = 0; si < sector_layers.size(); ++si)
+            if (sec.touched[si])
+                ++sector_target_count[si];
     }
 
     auto horizontal = grid.projectHorizontal();
@@ -487,7 +610,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
             worst_set = true;
         }
     }
-    double sector_pd = total_eui > 0
+    double overall_pd = total_eui > 0
                            ? (static_cast<double>(total_eui) - static_cast<double>(total_mui))
                                  / static_cast<double>(total_eui)
                            : 0.0;
@@ -498,12 +621,69 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     result_.targets_no_tst     = targets_no_tst;
     result_.total_eui          = total_eui;
     result_.total_mui          = total_mui;
-    result_.sector_pd          = sector_pd;
+    result_.overall_pd         = overall_pd;
     result_.cells_with_eui     = per_cell_pd.size();
     result_.median_per_cell_pd = percentile(per_cell_pd, 0.5);
     result_.p5_per_cell_pd     = percentile(per_cell_pd, 0.05);
     result_.has_worst_cell     = worst_set;
     result_.worst_cell_pd      = worst_pd;
+
+    result_.ui_num_intervals   = intervals.size();
+    if (!intervals.empty())
+    {
+        result_.ui_median_s = percentile(intervals, 0.5);
+        result_.ui_p10_s    = percentile(intervals, 0.1);
+        result_.ui_p90_s    = percentile(intervals, 0.9);
+        result_.ui_mean_s   = mean(intervals);
+
+        // Histogram: bins over [0, max], plus one overflow bin for >= max so
+        // long detection breaks do not stretch the axis. max = configured value
+        // or, when <= 0, a rounded-up value derived from the data (P99).
+        double hist_max = settings.ui_hist_max_s_ > 0.0f
+                              ? static_cast<double>(settings.ui_hist_max_s_)
+                              : std::ceil(percentile(intervals, 0.99));
+        if (hist_max <= 0.0)
+            hist_max = 15.0;
+        const unsigned int nbins =
+            static_cast<unsigned int>(std::max(1, settings.ui_hist_num_bins_));
+        const double w = hist_max / static_cast<double>(nbins);
+
+        std::vector<std::uint32_t> bins(nbins, 0);
+        std::uint32_t overflow = 0;
+        for (double dt : intervals)
+        {
+            if (dt >= hist_max)
+            {
+                ++overflow;
+                continue;
+            }
+            unsigned int b = static_cast<unsigned int>(std::floor(dt / w));
+            if (b >= nbins)
+                b = nbins - 1;
+            ++bins[b];
+        }
+        result_.ui_hist_max_s     = hist_max;
+        result_.ui_hist_bin_width = w;
+        result_.ui_hist_bins      = std::move(bins);
+        result_.ui_hist_overflow  = overflow;
+    }
+
+    // Per-sector rows (over the selected sector layers).
+    for (std::size_t si = 0; si < sector_layers.size(); ++si)
+    {
+        if (!sector_layers[si])
+            continue;
+        SectorRow r;
+        r.label       = sector_layers[si]->name();
+        r.num_targets = sector_target_count[si];
+        r.eui         = sec.eui[si];
+        r.mui         = sec.mui[si];
+        r.pd          = sec.eui[si] > 0
+            ? (static_cast<double>(sec.eui[si]) - static_cast<double>(sec.mui[si]))
+                  / static_cast<double>(sec.eui[si])
+            : 0.0;
+        result_.sectors.push_back(std::move(r));
+    }
 }
 
 namespace
@@ -613,7 +793,7 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
             "Three projections of the per-cell PD are rendered: a top-down "
             "horizontal map and two vertical profiles (altitude over "
             "longitude, altitude over latitude). The summary tabulates the "
-            "sector-aggregate PD and the per-cell distribution (median, 5th "
+            "overall PD and the per-cell distribution (median, 5th "
             "percentile, worst cell). Cells with no expected updates are "
             "blank.\n"
             "Use the report to locate coverage holes against the published "
@@ -632,7 +812,17 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     {
         std::ostringstream os;
         os << settings.update_interval_s_ << " s";
-        recap.addRow({"Nominal update interval (UI)", os.str()});
+        recap.addRow({"Update interval (moving)", os.str()});
+    }
+    {
+        std::ostringstream os;
+        os << settings.update_interval_standing_s_ << " s";
+        recap.addRow({"Update interval (standing)", os.str()});
+    }
+    {
+        std::ostringstream os;
+        os << settings.standing_speed_max_mps_ << " m/s";
+        recap.addRow({"Standing speed threshold", os.str()});
     }
     recap.addRow({"Use miss tolerance", settings.use_miss_tolerance_ ? "yes" : "no"});
     {
@@ -676,12 +866,81 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     summary.addRow({"Targets w/o test data", std::to_string(result_.targets_no_tst)});
     summary.addRow({"Total expected slots (#EUI)", std::to_string(result_.total_eui)});
     summary.addRow({"Total missed slots (#MUI)",   std::to_string(result_.total_mui)});
-    summary.addRow({"Sector-aggregate PD",         formatNumber(result_.sector_pd)});
+    summary.addRow({"Overall PD",                  formatNumber(result_.overall_pd)});
     summary.addRow({"Cells with EUI",              std::to_string(result_.cells_with_eui)});
     summary.addRow({"Median per-cell PD",          formatNumber(result_.median_per_cell_pd)});
     summary.addRow({"P5 per-cell PD",              formatNumber(result_.p5_per_cell_pd)});
     if (result_.has_worst_cell)
         summary.addRow({"Worst cell PD (>=5 EUI)", formatNumber(result_.worst_cell_pd)});
+
+    // Measured update cadence: the actual per-target inter-report interval,
+    // independent of the configured nominal UI. Use it to pick an Update
+    // Interval that matches the sensor (set UI at or above the median, near the
+    // P90, to avoid counting the sensor's own cadence as missed updates).
+    {
+        auto& ui_tbl = section.addTable("Calculated Update Interval", 2,
+                                        {"Property", "Value"}, false);
+        if (result_.ui_num_intervals > 0)
+        {
+            ui_tbl.addRow({"Calculated UI Median (s)", formatNumber(result_.ui_median_s, 3)});
+            ui_tbl.addRow({"Calculated UI P10 (s)",    formatNumber(result_.ui_p10_s, 3)});
+            ui_tbl.addRow({"Calculated UI P90 (s)",    formatNumber(result_.ui_p90_s, 3)});
+            ui_tbl.addRow({"Calculated UI Mean (s)",   formatNumber(result_.ui_mean_s, 3)});
+            ui_tbl.addRow({"Update interval samples",  std::to_string(result_.ui_num_intervals)});
+        }
+        else
+        {
+            ui_tbl.addRow({"Calculated UI Median (s)", "-"});
+        }
+    }
+
+    // Update-interval histogram figure.
+    if (!result_.ui_hist_bins.empty())
+    {
+        RawHistogram h;
+        const double w = result_.ui_hist_bin_width;
+        for (unsigned int i = 0; i < result_.ui_hist_bins.size(); ++i)
+        {
+            std::string lmin = formatNumber(i * w, 2);
+            std::string lmax = formatNumber((i + 1) * w, 2);
+            h.addBin(RawHistogramBin(result_.ui_hist_bins[i], lmin + "-" + lmax,
+                                     RawHistogramBin::Tag::Standard, lmin, lmax));
+        }
+        std::string ov_lbl = ">=" + formatNumber(result_.ui_hist_max_s, 2);
+        h.addBin(RawHistogramBin(result_.ui_hist_overflow, ov_lbl,
+                                 RawHistogramBin::Tag::OutOfRange, ov_lbl, ""));
+
+        const std::string fig = "Update Interval Histogram";
+        auto vp = std::make_unique<ViewPointGenVP>(fig, 0, "Histogram");
+        vp->noDataLoaded(true);
+        auto* anno = vp->annotations().getOrCreateAnnotation("Update Interval");
+        anno->addFeature(new ViewPointGenFeatureHistogram(
+            h, "Update Interval", QColor(0, 128, 192), boost::optional<bool>(),
+            PlotMetadata("Sensor Coverage", fig, "Update Interval (s)", "Count")));
+
+        nlohmann::json vp_json;
+        vp->toJSON(vp_json);
+        section.addFigure(fig, ResultReport::SectionContentViewable(vp_json));
+    }
+
+    // Per-sector overview (selected sector layers). "All" is the aggregate
+    // reference; sectors can overlap, so the rows need not sum to "All".
+    if (!result_.sectors.empty())
+    {
+        auto& st = section.addTable("PD by Sector", 5,
+                                    {"Sector", "Targets", "#EUI", "#MUI", "PD"}, false);
+        st.addRow({"All (in scope)",
+                   std::to_string(result_.targets_walked),
+                   std::to_string(result_.total_eui),
+                   std::to_string(result_.total_mui),
+                   formatNumber(result_.overall_pd)});
+        for (const auto& r : result_.sectors)
+            st.addRow({r.label,
+                       std::to_string(r.num_targets),
+                       std::to_string(r.eui),
+                       std::to_string(r.mui),
+                       formatNumber(r.pd)});
+    }
 
     if (grid_)
     {
@@ -701,5 +960,5 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
 
     loginf << "MLATCoverageInspector: walked " << result_.targets_walked << " target(s), "
            << result_.total_eui << " EUI, " << result_.total_mui
-           << " MUI, sector PD " << result_.sector_pd;
+           << " MUI, overall PD " << result_.overall_pd;
 }

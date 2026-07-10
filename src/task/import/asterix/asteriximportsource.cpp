@@ -18,6 +18,63 @@
 #include "asteriximportsource.h"
 
 #include "files.h"
+#include "stringconv.h"
+
+/**
+*/
+std::map<unsigned int, ASTERIXSkippedCategoryInfo> ASTERIXSkippedCategoryInfo::fromAnalysisInfo(
+    const nlohmann::json& analysis_info)
+{
+    std::map<unsigned int, ASTERIXSkippedCategoryInfo> skipped;
+
+    if (!analysis_info.is_object() || !analysis_info.contains("skipped_categories"))
+        return skipped;
+
+    const nlohmann::json& skipped_info = analysis_info.at("skipped_categories");
+
+    if (!skipped_info.is_object())
+        return skipped;
+
+    for (const auto& cat_it : skipped_info.items())
+    {
+        if (!cat_it.value().is_object())
+            continue;
+
+        unsigned int cat = std::stoul(cat_it.key());
+
+        auto& info = skipped[cat];
+
+        if (cat_it.value().contains("data_blocks"))
+            info.data_blocks += cat_it.value().at("data_blocks").get<size_t>();
+        if (cat_it.value().contains("bytes"))
+            info.bytes += cat_it.value().at("bytes").get<size_t>();
+        if (cat_it.value().contains("reason"))
+            info.reason = cat_it.value().at("reason");
+    }
+
+    return skipped;
+}
+
+/**
+*/
+std::string ASTERIXSkippedCategoryInfo::asString(
+    const std::map<unsigned int, ASTERIXSkippedCategoryInfo>& skipped)
+{
+    std::string ret;
+
+    for (const auto& cat_it : skipped)
+    {
+        if (!ret.empty())
+            ret += ", ";
+
+        ret += "CAT" + Utils::String::categoryString(cat_it.first);
+
+        if (!cat_it.second.reason.empty())
+            ret += " (" + cat_it.second.reason + ")";
+    }
+
+    return ret;
+}
 
 /**
 */
@@ -62,6 +119,7 @@ void ASTERIXImportFileInfo::reset()
     warning = "";
     contentinfo = "";
     records_per_category.clear();
+    skipped_categories.clear();
     sections.clear();
 
     decoding_tested = false;

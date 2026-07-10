@@ -1022,6 +1022,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
         //generate pointers
         std::vector<SymbolLineSeries> series;
 
+        //add a SymbolLineSeries per visible data series (might contain selection)
         for (auto& series_it : data_series)
         {
             if (!series_it.second.visible)
@@ -1047,7 +1048,9 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
                 s.line_series->setUseOpenGL(true);
             }
             else
+            {
                 s.line_series = nullptr;
+            }
         }
 
         //sort pointers to obtain fixed render order (as it happens inside qtcharts)
@@ -1062,7 +1065,8 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
             if (!series_it.second.visible)
                 continue;
 
-            auto& s = series[cnt++];
+            //selection always on top (=highest index)
+            auto& s = series_it.second.name == kSelectedSeriesKey ? series.back() : series[cnt++];
             
             string name = series_it.first;
             //const auto& ds = data_series[ i ];

@@ -88,7 +88,7 @@ protected:
     friend class LatexVisitor;
 
     virtual void checkSubConfigurables() override;
-    virtual void updateSelection() override;
+    virtual void updateSelection_impl() override;
 
     virtual void preVariableChangedEvent(int idx, const std::string& dbcont, const std::string& name) override;
     virtual void postVariableChangedEvent(int idx) override;

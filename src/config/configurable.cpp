@@ -363,6 +363,7 @@ void Configurable::generateSubConfigurableFromConfig(const std::string& class_na
 }
 
 void Configurable::generateSubConfigurableFromJSON(const Configurable& configurable,
+                                                   const std::string& new_instance_name,
                                                    const nlohmann::json& additional_data)
 {
     traced_assert(configuration_);
@@ -375,11 +376,18 @@ void Configurable::generateSubConfigurableFromJSON(const Configurable& configura
     if (!additional_data.is_null())
         json_cfg.update(additional_data);
 
-    //add new subconfig entry in backing json
-    auto& child_json = addNewSubConfiguration(Configuration::getClassName(json_cfg));
+    const std::string class_name = Configuration::getClassName(json_cfg);
+
+    //add new subconfig entry in backing json with the requested unique instance name
+    //(asserts the instance name is not already in use for this class)
+    auto& child_json = addNewSubConfiguration(class_name, new_instance_name);
 
     //merge the generated json into the new entry (parameters + sub_configs)
     child_json.update(json_cfg);
+
+    //the merge above copied the source's instance name into the new entry, so restore
+    //the requested unique instance name to avoid a duplicate
+    Configuration::setInstanceName(child_json, new_instance_name);
 
     generateSubConfigurable(child_json);
 }

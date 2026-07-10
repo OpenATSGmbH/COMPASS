@@ -1505,18 +1505,9 @@ void DataSourceEditWidget::updateMain(context::DataSource* ds)
 
 void DataSourceEditWidget::updatePosition(context::DataSource* ds)
 {
-    if (ds->hasPosition())
-    {
-        latitude_edit_->setText(QString::number(ds->latitude(), 'g', 12));
-        longitude_edit_->setText(QString::number(ds->longitude(), 'g', 12));
-        altitude_edit_->setText(QString::number(ds->altitude(), 'g', 12));
-    }
-    else
-    {
-        latitude_edit_->setText("0");
-        longitude_edit_->setText("0");
-        altitude_edit_->setText("0");
-    }
+    latitude_edit_->setText(ds->hasLatitude() ? QString::number(ds->latitude(), 'g', 12) : "0");
+    longitude_edit_->setText(ds->hasLongitude() ? QString::number(ds->longitude(), 'g', 12) : "0");
+    altitude_edit_->setText(ds->hasAltitude() ? QString::number(ds->altitude(), 'g', 12) : "0");
 
     latitude_label_->setVisible(true);
     latitude_edit_->setVisible(true);

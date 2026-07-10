@@ -321,8 +321,31 @@ Result ReportExporterDocx::exportText_impl(SectionContentText& text,
 
     auto& docx_section = docx_doc_->getSection(it->second);
 
-    for (const auto& txt_it : text.texts())
-        docx_section.addText(txt_it);
+    // Render the structured blocks natively: paragraphs, real Word bullet /
+    // numbered lists, and shaded note callouts.
+    using BlockType = SectionContentText::BlockType;
+    using NoteLevel = SectionContentText::NoteLevel;
+
+    for (const auto& block : text.blocks())
+    {
+        switch (block.type)
+        {
+            case BlockType::Paragraph:
+                if (!block.items.empty())
+                    docx_section.addText(block.items.front());
+                break;
+            case BlockType::BulletList:
+                docx_section.addList(block.items, false);
+                break;
+            case BlockType::OrderedList:
+                docx_section.addList(block.items, true);
+                break;
+            case BlockType::Note:
+                docx_section.addNote(block.items.empty() ? std::string() : block.items.front(),
+                                     block.note_level == NoteLevel::Warning);
+                break;
+        }
+    }
 
     return Result::succeeded();
 }

@@ -18,6 +18,7 @@
 #pragma once
 
 #include "eval/requirement/detection/detection_pd_helpers.h"
+#include "movementui.h"
 
 #include "boost/date_time/posix_time/ptime.hpp"
 
@@ -46,9 +47,17 @@ struct CycleEvent
 //     `[c_i, c_{i+1})` where `c_{i+1}` is the next in-period cycle, or
 //     `period.end` for the last one.
 //   * `is_miss` is true iff no test report timestamp lies in that window.
+//
+// When `mv` is given, standing targets are not expected every cycle: a standing
+// cycle only opens an expected opportunity once `mv->ui_standing` has elapsed,
+// and its window spans that interval (the intervening cycles are skipped, since
+// a standing target legitimately reports less often than the cycle rate). When
+// `mv` is null, or the target is moving, every in-period cycle is expected (the
+// original per-cycle behavior).
 std::vector<CycleEvent> evaluateCyclesInPeriod(
     const EvaluationRequirement::PDHelpers::RefPeriod&     period,
     const std::vector<boost::posix_time::ptime>&           cycles_sorted,
-    const std::vector<boost::posix_time::ptime>&           tst_ts_sorted);
+    const std::vector<boost::posix_time::ptime>&           tst_ts_sorted,
+    const analysis::MovementUI*                            mv = nullptr);
 
 } // namespace mlatcoverage_internal

@@ -844,7 +844,7 @@ void Section::recreateContentUI(bool force_ui_reset,
     for (size_t i = 0; i < content_.size(); ++i)
         loadOrGetContent(i, false)->addContentUI(layout, force_ui_reset);
 
-    //layout->addStretch();
+    layout->addStretch();  // pin content to the top; empty space goes below
 
     content_widget_->setLayout(layout);
 

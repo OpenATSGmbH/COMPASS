@@ -21,6 +21,7 @@
 
 #include <QWidget>
 #include <functional>
+#include <map>
 #include <memory>
 
 namespace context { class DBContextManager; }
@@ -28,6 +29,7 @@ namespace context { class DBContextManager; }
 class QVBoxLayout;
 class QGridLayout;
 class QPushButton;
+class QCheckBox;
 
 /**
  * Decode getter: returns whether a category should be decoded.
@@ -75,9 +77,11 @@ class ASTERIXConfigWidget : public QWidget
     QVBoxLayout* main_layout_{nullptr};
     QGridLayout* categories_grid_{nullptr};
 
+    std::map<unsigned int, QCheckBox*>   category_checkboxes_;
     std::map<unsigned int, QPushButton*> ref_edit_buttons_;
     std::map<unsigned int, QPushButton*> spf_edit_buttons_;
 
     void initjASTERIX();
     void updateCategories();
+    void setAllCategoriesDecoded(bool decode);
 };

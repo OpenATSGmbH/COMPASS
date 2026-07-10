@@ -26,6 +26,7 @@
 #include "viewdatawidget.h"
 #include "viewconfigwidget.h"
 #include "config.h"
+#include "timeconv.h"
 
 #include <QVBoxLayout>
 #include <QWidget>
@@ -822,3 +823,18 @@ nlohmann::json View::viewInfoJSON() const
     return info;
 }
 
+/**
+ * Updates the view selection from the current data selection.
+ * Triggered e.g. by the view manager for cross selection.
+ */
+void View::updateSelection()
+{
+    auto t0 = boost::posix_time::microsec_clock::local_time();
+
+    updateSelection_impl();
+
+    auto t1 = boost::posix_time::microsec_clock::local_time();
+    auto dt = Utils::Time::partialSeconds(t1 - t0);
+
+    loginf << "view " << name_ << ": updating selection took " << dt << "s";
+}

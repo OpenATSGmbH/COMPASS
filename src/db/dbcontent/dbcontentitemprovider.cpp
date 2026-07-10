@@ -53,7 +53,8 @@ DBContentItemProvider::DBContentItemProvider(DBContentDataStore& data_store,
 {
     if (auto_update)
     {
-        connect(&data_store_, &DBContentDataStore::dataChangedSignal, this, &DBContentItemProvider::dataChanged, Qt::QueuedConnection);
+        //should result in a direct connection => use auto connection like the view manager
+        connect(&data_store_, &DBContentDataStore::dataChangedSignal, this, &DBContentItemProvider::dataChanged);
     }
 }
 

@@ -131,8 +131,10 @@ void mergeAnalysisJSON(const json& analysis,
     {
         const std::string& key = it.key();
 
-        // skip top-level scalar metadata
-        if (key == "num_errors" || key == "num_records" || key == "num_frames")
+        // skip top-level metadata (skipped_categories is handled via
+        // ASTERIXSkippedCategoryInfo::fromAnalysisInfo, not per data source)
+        if (key == "num_errors" || key == "num_records" || key == "num_frames"
+            || key == "skipped_categories")
             continue;
 
         const json& sensor_obj = it.value();

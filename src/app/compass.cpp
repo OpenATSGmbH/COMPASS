@@ -49,6 +49,7 @@
 #include "logwidget.h"
 #include "util/system.h"
 #include "util/msghandler.h"
+#include "util/stringconv.h"
 
 #include <QMessageBox>
 #include <QApplication>
@@ -440,6 +441,22 @@ bool COMPASS::disableNativeDialogs() const
 float COMPASS::appFontScale() const
 {
     return app_font_scale_;
+}
+
+bool COMPASS::isUnspecificACID(const std::string& acid) const
+{
+    // whitespace-only identifications carry no information
+    if (Utils::String::trim(acid).empty())
+        return true;
+
+    // compare against the raw configured forms (e.g. "00000000", "????????")
+    for (const auto& it : unspecific_acids_)
+    {
+        if (it.is_string() && it.get<std::string>() == acid)
+            return true;
+    }
+
+    return false;
 }
 
 unsigned int COMPASS::minAppHeight() const

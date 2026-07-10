@@ -219,6 +219,11 @@ public:
 
     boost::optional<unsigned int> acad(const DataID& id) const;
 
+    // CAT021 ADS-B quality indicators (only set for the CAT021 chain).
+    boost::optional<unsigned int> mopsVersion(const DataID& id) const; // I021/210 VN
+    boost::optional<unsigned int> nacp(const DataID& id) const;        // I021/090 NACp
+    boost::optional<unsigned int> nucpNic(const DataID& id) const;     // I021/090 NUCp (v0) / NIC (v1/v2)
+
     boost::optional<bool> groundBit(const DataID& id) const; // gbs
 
     boost::optional<unsigned int> tstTrackNum(const DataID& id) const;

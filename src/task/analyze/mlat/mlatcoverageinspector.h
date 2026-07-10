@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 class TargetReport3DGrid;
 
@@ -41,7 +42,16 @@ public:
     PDMethod pdMethod() const
     { return static_cast<PDMethod>(pd_method_int_); }
 
-    float update_interval_s_ = 1.0f;   // UI; Time Difference only.
+    float update_interval_s_ = 1.0f;   // moving UI; Time Difference only.
+
+    // Motion-adaptive cadence (Time Difference only): a standing target (MLAT
+    // reports it less often) is expected at the slower standing UI instead of
+    // accruing false misses. A slot is standing when the reported ground speed
+    // (RefTraj speed as fallback) is below `standing_speed_max_mps_`; unknown
+    // speed counts as moving. MLAT surface cadence is fast, so the standing UI
+    // is shorter than the ADS-B equivalent.
+    float update_interval_standing_s_ = 2.0f;   // standing UI
+    float standing_speed_max_mps_     = 0.5f;   // ground speed below this = standing
 
     // Miss test (mirrors the detection requirement, simplified to miss tolerance only).
     bool  use_miss_tolerance_ = true;
@@ -56,6 +66,12 @@ public:
     // orange in between. Values are PD ratios (0..1).
     float pd_acceptable_above_    = 0.95f;
     float pd_unacceptable_below_  = 0.70f;
+
+    // Update-interval histogram. `ui_hist_max_s_` is the upper edge; intervals
+    // at or above it fold into a single overflow bin (so long detection breaks
+    // do not stretch the axis). 0 = auto-derive a rounded-up max from the data.
+    int   ui_hist_num_bins_ = 20;
+    float ui_hist_max_s_    = 15.0f;
 };
 
 /**
@@ -94,6 +110,17 @@ public:
     ~MLATCoverageInspector() override;
 
 private:
+    /// One sector row in the "PD by Sector" overview table. The "All" reference
+    /// row reuses the aggregate ComputeResult.
+    struct SectorRow
+    {
+        std::string   label;
+        std::size_t   num_targets = 0;
+        std::uint64_t eui = 0;
+        std::uint64_t mui = 0;
+        double        pd  = 0.0;
+    };
+
     /// Aggregated result of the per-target slot-walk. Populated by `compute()`
     /// (worker-thread safe) and consumed by `writeReport()` (main thread).
     struct ComputeResult
@@ -105,12 +132,31 @@ private:
         unsigned int targets_no_tst = 0;
         std::uint64_t total_eui    = 0;
         std::uint64_t total_mui    = 0;
-        double sector_pd           = 0.0;
+        double overall_pd          = 0.0;
+
+        // Measured per-target inter-report interval (the actual update cadence),
+        // to help the operator pick a representative nominal Update Interval.
+        std::size_t ui_num_intervals = 0;
+        double ui_median_s = 0.0;
+        double ui_p10_s    = 0.0;
+        double ui_p90_s    = 0.0;
+        double ui_mean_s   = 0.0;
+
+        // Update-interval histogram: per-bin counts over [0, ui_hist_max_s] with
+        // width ui_hist_bin_width; ui_hist_overflow holds the count of intervals
+        // at or above ui_hist_max_s (the single overflow bin).
+        double ui_hist_max_s      = 0.0;
+        double ui_hist_bin_width  = 0.0;
+        std::vector<std::uint32_t> ui_hist_bins;
+        std::uint32_t ui_hist_overflow = 0;
+
         std::size_t cells_with_eui = 0;
         double median_per_cell_pd  = 0.0;
         double p5_per_cell_pd      = 0.0;
         bool   has_worst_cell      = false;
         double worst_cell_pd       = 1.0;
+
+        std::vector<SectorRow> sectors;  // per selected sector layer
     };
 
     ComputeResult                      result_;

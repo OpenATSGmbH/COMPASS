@@ -472,6 +472,30 @@ int compareVersions(const std::string& v1_str, const std::string& v2_str)
 
 std::string latexString(std::string str)
 {
+    // Normalize common non-ASCII (UTF-8) characters to ASCII equivalents first.
+    // pdflatex (no Unicode input setup) cannot typeset these, so an unmapped one
+    // aborts the whole PDF export. Sources are given as raw UTF-8 byte sequences
+    // to keep this file ASCII-only. These run before the LaTeX special-char
+    // escaping below, so any '<' / '>' they introduce still gets escaped.
+    boost::replace_all(str, "\xE2\x89\xA4", "<=");      // U+2264 less-or-equal
+    boost::replace_all(str, "\xE2\x89\xA5", ">=");      // U+2265 greater-or-equal
+    boost::replace_all(str, "\xE2\x89\x88", "approx "); // U+2248 almost equal
+    boost::replace_all(str, "\xE2\x89\xA0", "!=");      // U+2260 not equal
+    boost::replace_all(str, "\xC2\xB0",     "deg");     // U+00B0 degree
+    boost::replace_all(str, "\xC3\x97",     "x");       // U+00D7 multiplication
+    boost::replace_all(str, "\xC2\xB7",     ".");       // U+00B7 middle dot
+    boost::replace_all(str, "\xC2\xB1",     "+/-");     // U+00B1 plus-minus
+    boost::replace_all(str, "\xC2\xB5",     "u");       // U+00B5 micro
+    boost::replace_all(str, "\xE2\x88\x92", "-");       // U+2212 minus
+    boost::replace_all(str, "\xE2\x80\x93", "-");       // U+2013 en dash
+    boost::replace_all(str, "\xE2\x80\x94", "-");       // U+2014 em dash
+    boost::replace_all(str, "\xE2\x86\x92", "->");      // U+2192 right arrow
+    boost::replace_all(str, "\xE2\x80\x98", "'");       // U+2018 left single quote
+    boost::replace_all(str, "\xE2\x80\x99", "'");       // U+2019 right single quote
+    boost::replace_all(str, "\xE2\x80\x9C", "\"");      // U+201C left double quote
+    boost::replace_all(str, "\xE2\x80\x9D", "\"");      // U+201D right double quote
+    boost::replace_all(str, "\xE2\x80\xA6", "...");     // U+2026 ellipsis
+
 //    \textbackslash 	n/a
     boost::replace_all(str, R"(\)", R"(\textbackslash)");
 //    \% 	%
@@ -493,6 +517,28 @@ std::string latexString(std::string str)
 
     boost::replace_all(str, "<", R"(\textless)");
     boost::replace_all(str, ">", R"(\textgreater)");
+
+    // Catch-all: replace any remaining non-ASCII bytes (unmapped Unicode) with a
+    // single '?' per run, so pdflatex never aborts on an unexpected character.
+    {
+        std::string out;
+        out.reserve(str.size());
+        bool prev_non_ascii = false;
+        for (unsigned char c : str)
+        {
+            if (c < 0x80)
+            {
+                out.push_back(static_cast<char>(c));
+                prev_non_ascii = false;
+            }
+            else if (!prev_non_ascii)
+            {
+                out.push_back('?');
+                prev_non_ascii = true;
+            }
+        }
+        str = std::move(out);
+    }
 
     return str;
 }

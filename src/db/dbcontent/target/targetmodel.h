@@ -126,6 +126,8 @@ public:
     const dbContent::Target& target(unsigned int utn) const;
     unsigned int size() const;
 
+    std::set<Target::Category> existingCategories() const;
+
     nlohmann::json asJSON() const;
     nlohmann::json targetAsJSON(unsigned int utn) const;
     nlohmann::json targetStatsAsJSON() const;

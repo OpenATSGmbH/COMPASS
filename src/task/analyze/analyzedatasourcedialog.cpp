@@ -20,13 +20,17 @@
 #include "datasourceinspectorbase.h"
 #include "mlatdataiteminspector.h"
 #include "mlatcoverageinspector.h"
+#include "adsbdataiteminspector.h"
+#include "adsbcoverageinspector.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "mlataccuracyinspector.h"
+#include "adsbaccuracyinspector.h"
 #endif
 
 #include "compass.h"
 #include "db_context_manager.h"
+#include "sectorlayer.h"
 #include "data_source.h"
 
 #include <QCheckBox>
@@ -362,6 +366,127 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
 
     outer->addWidget(tst_box, 1);
 
+    // -- Scope Filter ------------------------------------------------------
+    // Per-report inside test applied when the combined dataset is built;
+    // restricts every grid inspector to on-ground reports and/or a flight-level
+    // band (FL = barometric altitude / 100).
+    auto* scope_box    = new QGroupBox("Scope Filter");
+    auto* scope_form   = new QFormLayout(scope_box);
+
+    auto* ground_cb = new QCheckBox();
+    ground_cb->setChecked(task_.useGroundOnly());
+    ground_cb->setToolTip("Keep only reports that are on the ground "
+                          "(ground bit set, or a ground-only target type).");
+    connect(ground_cb, &QCheckBox::toggled, this, [this](bool on) {
+        if (updating_ui_) return;
+        task_.setUseGroundOnly(on);
+    });
+    scope_form->addRow("Use Ground Only", ground_cb);
+
+    auto makeFLSpin = [](float value) {
+        auto* s = new QDoubleSpinBox();
+        s->setRange(0.0, 999.0);
+        s->setDecimals(0);
+        s->setSingleStep(5.0);
+        s->setValue(value);
+        return s;
+    };
+
+    auto* min_fl_cb   = new QCheckBox();
+    min_fl_cb->setChecked(task_.useMinFL());
+    auto* min_fl_spin = makeFLSpin(task_.minFL());
+    min_fl_spin->setEnabled(task_.useMinFL());
+    min_fl_cb->setToolTip("Keep only reports at or above this flight level.");
+    connect(min_fl_cb, &QCheckBox::toggled, this, [this, min_fl_spin](bool on) {
+        if (updating_ui_) return;
+        task_.setUseMinFL(on);
+        min_fl_spin->setEnabled(on);
+    });
+    connect(min_fl_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double v) {
+        if (updating_ui_) return;
+        task_.setMinFL(static_cast<float>(v));
+    });
+    {
+        auto* row = new QHBoxLayout();
+        row->addWidget(min_fl_cb);
+        row->addWidget(min_fl_spin, 1);
+        scope_form->addRow("Minimum Flight Level", row);
+    }
+
+    auto* max_fl_cb   = new QCheckBox();
+    max_fl_cb->setChecked(task_.useMaxFL());
+    auto* max_fl_spin = makeFLSpin(task_.maxFL());
+    max_fl_spin->setEnabled(task_.useMaxFL());
+    max_fl_cb->setToolTip("Keep only reports at or below this flight level.");
+    connect(max_fl_cb, &QCheckBox::toggled, this, [this, max_fl_spin](bool on) {
+        if (updating_ui_) return;
+        task_.setUseMaxFL(on);
+        max_fl_spin->setEnabled(on);
+    });
+    connect(max_fl_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [this](double v) {
+        if (updating_ui_) return;
+        task_.setMaxFL(static_cast<float>(v));
+    });
+    {
+        auto* row = new QHBoxLayout();
+        row->addWidget(max_fl_cb);
+        row->addWidget(max_fl_spin, 1);
+        scope_form->addRow("Maximum Flight Level", row);
+    }
+
+    // Limit by sectors: precise per-report inside test (as in the evaluation)
+    // against the selected sector layers; when off, all data is used.
+    {
+        const auto& layers = task_.compass().dbContextManager().sectorLayers();
+
+        auto* sectors_cb = new QCheckBox();
+        sectors_cb->setChecked(task_.limitBySectors());
+        sectors_cb->setEnabled(!layers.empty());
+        sectors_cb->setToolTip(layers.empty()
+            ? "No sector layers are defined in the data context."
+            : "Keep only reports inside the selected sector layers.");
+        scope_form->addRow("Limit by Sectors", sectors_cb);
+
+        auto* sectors_box  = new QGroupBox("Sectors");
+        auto* sectors_lay  = new QVBoxLayout(sectors_box);
+        sectors_box->setEnabled(task_.limitBySectors() && !layers.empty());
+
+        if (layers.empty())
+        {
+            sectors_lay->addWidget(new QLabel("(none defined)"));
+        }
+        else
+        {
+            for (const auto& layer : layers)
+            {
+                if (!layer)
+                    continue;
+                const std::string name = layer->name();
+                auto* cb = new QCheckBox(QString::fromStdString(name));
+                cb->setChecked(task_.useSector(name));
+                connect(cb, &QCheckBox::toggled, this, [this, name](bool on) {
+                    if (updating_ui_) return;
+                    task_.setUseSector(name, on);
+                    updateRunEnabled();
+                });
+                sectors_lay->addWidget(cb);
+            }
+        }
+
+        connect(sectors_cb, &QCheckBox::toggled, this, [this, sectors_box](bool on) {
+            if (updating_ui_) return;
+            task_.setLimitBySectors(on);
+            sectors_box->setEnabled(on);
+            updateRunEnabled();
+        });
+
+        scope_form->addRow(sectors_box);
+    }
+
+    outer->addWidget(scope_box);
+
     return w;
 }
 
@@ -513,8 +638,29 @@ void buildCoverageSettings(QFormLayout* form,
     QObject::connect(ui_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                      [&s](double v) { s.update_interval_s_ = static_cast<float>(v); });
 
+    auto* ui_stand_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_standing_s_);
+    QObject::connect(ui_stand_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.update_interval_standing_s_ = static_cast<float>(v); });
+
+    auto* stand_spd_spin = makeFloatSpin(0.0, 50.0, 0.1, 2, " m/s", s.standing_speed_max_mps_);
+    QObject::connect(stand_spd_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.standing_speed_max_mps_ = static_cast<float>(v); });
+
+    // Standing UI/threshold only apply to the time-difference method.
+    auto on_method_standing = [ui_stand_spin, stand_spd_spin, method_combo](int) {
+        bool td = method_combo->currentData().toInt()
+                  == static_cast<int>(MLATCoverageInspectorSettings::PDMethod::TimeDifference);
+        ui_stand_spin->setEnabled(td);
+        stand_spd_spin->setEnabled(td);
+    };
+    QObject::connect(method_combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     on_method_standing);
+    on_method_standing(0);
+
     form->addRow("PD Calculation Method", method_combo);
-    form->addRow("Update Interval", ui_spin);
+    form->addRow("Update Interval (Moving)", ui_spin);
+    form->addRow("Update Interval (Standing)", ui_stand_spin);
+    form->addRow("Standing Speed Threshold", stand_spd_spin);
 
     auto* miss_cb  = new QCheckBox();
     miss_cb->setChecked(s.use_miss_tolerance_);
@@ -538,6 +684,18 @@ void buildCoverageSettings(QFormLayout* form,
     QObject::connect(unacc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                      [&s](double v) { s.pd_unacceptable_below_ = static_cast<float>(v); });
     form->addRow("Value Unacceptable (red)", unacc_spin);
+
+    auto* hbins_spin = new QSpinBox();
+    hbins_spin->setRange(1, 100);
+    hbins_spin->setValue(s.ui_hist_num_bins_);
+    QObject::connect(hbins_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.ui_hist_num_bins_ = v; });
+    form->addRow("Histogram Bins", hbins_spin);
+
+    auto* hmax_spin = makeFloatSpin(0.0, 600.0, 1.0, 1, " s", s.ui_hist_max_s_);
+    QObject::connect(hmax_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.ui_hist_max_s_ = static_cast<float>(v); });
+    form->addRow("Histogram Max Interval (0 = auto)", hmax_spin);
 }
 
 #if USE_EXPERIMENTAL_SOURCE == true
@@ -579,7 +737,147 @@ void buildAccuracySettings(QFormLayout* form,
     bind_float(upper_unacc, &s.consistency_upper_unacceptable_above_);
     form->addRow("Consistency Upper Unacceptable (red)", upper_unacc);
 }
+
+void buildADSBAccuracySettings(QFormLayout* form,
+                               ADSBAccuracyInspectorSettings& s)
+{
+    auto bind_float = [](QDoubleSpinBox* spin, float* dst) {
+        QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                         [dst](double v) { *dst = static_cast<float>(v); });
+    };
+
+    auto* pa_acc = makeFloatSpin(0.0, 10000.0, 1.0, 1, " m",
+                                 s.pos_acc_acceptable_below_m_);
+    bind_float(pa_acc, &s.pos_acc_acceptable_below_m_);
+    form->addRow("Position Accuracy Acceptable (green)", pa_acc);
+
+    auto* pa_unacc = makeFloatSpin(0.0, 10000.0, 1.0, 1, " m",
+                                   s.pos_acc_unacceptable_above_m_);
+    bind_float(pa_unacc, &s.pos_acc_unacceptable_above_m_);
+    form->addRow("Position Accuracy Unacceptable (red)", pa_unacc);
+
+    auto* lower_acc = makeFloatSpin(0.0, 10.0, 0.05, 2, "",
+                                    s.consistency_lower_acceptable_above_);
+    bind_float(lower_acc, &s.consistency_lower_acceptable_above_);
+    form->addRow("Consistency Lower Acceptable (green)", lower_acc);
+
+    auto* lower_unacc = makeFloatSpin(0.0, 10.0, 0.05, 2, "",
+                                      s.consistency_lower_unacceptable_below_);
+    bind_float(lower_unacc, &s.consistency_lower_unacceptable_below_);
+    form->addRow("Consistency Lower Unacceptable (red)", lower_unacc);
+
+    auto* upper_acc = makeFloatSpin(0.0, 100.0, 0.05, 2, "",
+                                    s.consistency_upper_acceptable_below_);
+    bind_float(upper_acc, &s.consistency_upper_acceptable_below_);
+    form->addRow("Consistency Upper Acceptable (green)", upper_acc);
+
+    auto* upper_unacc = makeFloatSpin(0.0, 100.0, 0.05, 2, "",
+                                      s.consistency_upper_unacceptable_above_);
+    bind_float(upper_unacc, &s.consistency_upper_unacceptable_above_);
+    form->addRow("Consistency Upper Unacceptable (red)", upper_unacc);
+
+    auto* factor = makeFloatSpin(1.0, 100.0, 0.5, 2, "", s.min_factor_of_interest_);
+    bind_float(factor, &s.min_factor_of_interest_);
+    form->addRow("Dubious Factor Threshold", factor);
+}
 #endif
+
+void buildADSBDataItemSettings(QFormLayout* form,
+                               AnalyzeDataSourceTask& task,
+                               ADSBDataItemInspectorSettings& s)
+{
+    auto* group = new QGroupBox("Categories to Include");
+    auto* gl = new QVBoxLayout(group);
+
+    std::set<unsigned int> cats;
+    auto& info_map = task.compass().dbContextManager().asterixInfo();
+    for (auto ds_id : task.selectedDataSourceIDs())
+    {
+        auto it = info_map.find(ds_id);
+        if (it == info_map.end())
+            continue;
+        for (const auto& cat_kv : it->second)
+            cats.insert(cat_kv.first);
+    }
+
+    if (cats.empty())
+    {
+        auto* lbl = new QLabel(
+            "(no ASTERIX info available - select test data sources first)");
+        lbl->setStyleSheet("color: gray;");
+        gl->addWidget(lbl);
+    }
+    else
+    {
+        for (auto cat : cats)
+        {
+            char buf[16];
+            std::snprintf(buf, sizeof(buf), "CAT%03u", cat);
+            auto* cb = new QCheckBox(buf);
+            cb->setChecked(s.catIncluded(cat));
+            QObject::connect(cb, &QCheckBox::toggled, [&s, cat](bool on) {
+                s.setCatIncluded(cat, on);
+            });
+            gl->addWidget(cb);
+        }
+    }
+
+    form->addRow(group);
+}
+
+void buildADSBCoverageSettings(QFormLayout* form,
+                               ADSBCoverageInspectorSettings& s)
+{
+    auto* ui_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_s_);
+    QObject::connect(ui_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.update_interval_s_ = static_cast<float>(v); });
+    form->addRow("Update Interval (Moving)", ui_spin);
+
+    auto* ui_stand_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_standing_s_);
+    QObject::connect(ui_stand_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.update_interval_standing_s_ = static_cast<float>(v); });
+    form->addRow("Update Interval (Standing)", ui_stand_spin);
+
+    auto* stand_spd_spin = makeFloatSpin(0.0, 50.0, 0.1, 2, " m/s", s.standing_speed_max_mps_);
+    QObject::connect(stand_spd_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.standing_speed_max_mps_ = static_cast<float>(v); });
+    form->addRow("Standing Speed Threshold", stand_spd_spin);
+
+    auto* miss_cb  = new QCheckBox();
+    miss_cb->setChecked(s.use_miss_tolerance_);
+    auto* miss_spin = makeFloatSpin(0.0, 60.0, 0.05, 3, " s", s.miss_tolerance_s_);
+    miss_spin->setEnabled(s.use_miss_tolerance_);
+    QObject::connect(miss_cb, &QCheckBox::toggled, [&s, miss_spin](bool on) {
+        s.use_miss_tolerance_ = on;
+        miss_spin->setEnabled(on);
+    });
+    QObject::connect(miss_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.miss_tolerance_s_ = static_cast<float>(v); });
+    form->addRow("Use Miss Tolerance", miss_cb);
+    form->addRow("Miss Tolerance",     miss_spin);
+
+    auto* acc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_acceptable_above_);
+    QObject::connect(acc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.pd_acceptable_above_ = static_cast<float>(v); });
+    form->addRow("Value Acceptable (green)", acc_spin);
+
+    auto* unacc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_unacceptable_below_);
+    QObject::connect(unacc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.pd_unacceptable_below_ = static_cast<float>(v); });
+    form->addRow("Value Unacceptable (red)", unacc_spin);
+
+    auto* hbins_spin = new QSpinBox();
+    hbins_spin->setRange(1, 100);
+    hbins_spin->setValue(s.ui_hist_num_bins_);
+    QObject::connect(hbins_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.ui_hist_num_bins_ = v; });
+    form->addRow("Histogram Bins", hbins_spin);
+
+    auto* hmax_spin = makeFloatSpin(0.0, 600.0, 1.0, 1, " s", s.ui_hist_max_s_);
+    QObject::connect(hmax_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.ui_hist_max_s_ = static_cast<float>(v); });
+    form->addRow("Histogram Max Interval (0 = auto)", hmax_spin);
+}
 
 }
 
@@ -603,9 +901,15 @@ QWidget* AnalyzeDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* 
         buildDataItemSettings(form, task_, task_.dataItemSettings());
     else if (cn == "MLATCoverageInspector")
         buildCoverageSettings(form, task_.coverageSettings());
+    else if (cn == "ADSBDataItemInspector")
+        buildADSBDataItemSettings(form, task_, task_.adsbDataItemSettings());
+    else if (cn == "ADSBCoverageInspector")
+        buildADSBCoverageSettings(form, task_.adsbCoverageSettings());
 #if USE_EXPERIMENTAL_SOURCE == true
     else if (cn == "MLATAccuracyInspector")
         buildAccuracySettings(form, task_.accuracySettings());
+    else if (cn == "ADSBAccuracyInspector")
+        buildADSBAccuracySettings(form, task_.adsbAccuracySettings());
 #endif
 
     layout->addStretch(1);
@@ -704,6 +1008,9 @@ void AnalyzeDataSourceDialog::updateRunEnabled()
         }
         can_run = any_enabled;
     }
+    // Limit by sectors requires at least one selected sector layer.
+    if (can_run && task_.limitBySectors() && task_.selectedSectorLayers().empty())
+        can_run = false;
     run_button_->setEnabled(can_run);
 }
 

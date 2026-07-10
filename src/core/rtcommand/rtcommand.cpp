@@ -351,6 +351,25 @@ namespace rtcommand
      */
     bool RTCommand::run()
     {
+        // runtime commands are automated processing - forbid modal GUI dialogs during execution
+        // (restored on any exit, including exceptions)
+        struct InteractionGuard
+        {
+            COMPASS* compass;
+            bool     previous;
+            InteractionGuard(COMPASS* c)
+            :   compass(c), previous(c ? c->allowUserInteractions() : true)
+            {
+                if (compass)
+                    compass->allowUserInteractions(false);
+            }
+            ~InteractionGuard()
+            {
+                if (compass)
+                    compass->allowUserInteractions(previous);
+            }
+        } interaction_guard(compass_);
+
         try
         {
             if (result().hasError())

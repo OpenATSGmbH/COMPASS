@@ -47,7 +47,11 @@ const std::string ReportExporter::ResourceFolderScreenshots = "screenshots";
 const std::string ReportExporter::ResourceFolderTables      = "tables";
 const std::string ReportExporter::ResourceFolderIcons       = "icons";
 
-const std::string ReportExporter::ExportImageFormat = ".jpg";
+const std::string ReportExporter::ExportImageFormat = ".png";
+// PNG is lossless; the "quality" value is the inverted zlib compression level
+// (0-9 -> maximum compression / smallest file, >=85 -> uncompressed). Use a low
+// value to keep screenshots crisp and the on-disk size small.
+const int         ReportExporter::ExportImageQuality = 1;
 const std::string ReportExporter::ExportTableFormat = ".json";
 const std::string ReportExporter::ExportTextFormat  = ".txt";
 

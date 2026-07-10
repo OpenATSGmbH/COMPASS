@@ -66,6 +66,24 @@ bool DataSource::hasPosition() const
         && info_.at(position_key).contains(longitude_key);
 }
 
+bool DataSource::hasLatitude() const
+{
+    return info_.contains(position_key)
+        && info_.at(position_key).contains(latitude_key);
+}
+
+bool DataSource::hasLongitude() const
+{
+    return info_.contains(position_key)
+        && info_.at(position_key).contains(longitude_key);
+}
+
+bool DataSource::hasAltitude() const
+{
+    return info_.contains(position_key)
+        && info_.at(position_key).contains(altitude_key);
+}
+
 double DataSource::latitude() const { return info_.at(position_key).at(latitude_key); }
 void DataSource::latitude(double value) { info_[position_key][latitude_key] = value; }
 
