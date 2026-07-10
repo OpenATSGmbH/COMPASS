@@ -72,14 +72,14 @@ ASTERIXConfigWidget::ASTERIXConfigWidget(context::DBContextManager& ctx_mgr,
                 this, [this]() { setAllCategoriesDecoded(true); });
         select_layout->addWidget(select_all_button);
 
-        select_layout->addStretch(1);
-
         QPushButton* select_none_button = new QPushButton("Select None");
         select_none_button->setIcon(QIcon());
         select_none_button->setToolTip("Disable decoding of all categories");
         connect(select_none_button, &QPushButton::clicked,
                 this, [this]() { setAllCategoriesDecoded(false); });
         select_layout->addWidget(select_none_button);
+
+        select_layout->addStretch(1);
 
         main_layout_->addLayout(select_layout);
     }
