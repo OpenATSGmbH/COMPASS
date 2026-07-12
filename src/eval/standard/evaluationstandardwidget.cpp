@@ -417,12 +417,12 @@ QWidget* EvaluationStandardWidget::createMainWidget()
 
     layout->addRow("Reference Maximum Time Difference [s]", ref_max_time_diff_edit);
 
-    QLineEdit* ref_min_acc_edit = new QLineEdit(QString::number(standard_.referenceMinAccuracy()));
-    ref_min_acc_edit->setValidator(new QDoubleValidator(0.1, 1000.0, 1, this));
-    connect(ref_min_acc_edit, &QLineEdit::textEdited, 
-        this, &EvaluationStandardWidget::refMinAccEditSlot);
+    //QLineEdit* ref_min_acc_edit = new QLineEdit(QString::number(standard_.referenceMinAccuracy()));
+    //ref_min_acc_edit->setValidator(new QDoubleValidator(0.1, 1000.0, 1, this));
+    //connect(ref_min_acc_edit, &QLineEdit::textEdited,
+    //    this, &EvaluationStandardWidget::refMinAccEditSlot);
 
-    layout->addRow("Reference Minimum Accuracy [m]", ref_min_acc_edit);
+    //layout->addRow("Reference Minimum Accuracy [m]", ref_min_acc_edit);
 
     widget->setLayout(layout);
 
@@ -442,16 +442,16 @@ void EvaluationStandardWidget::refMaxTimeDiffEditSlot(QString value)
         loginf << "invalid value";
 }
 
-void EvaluationStandardWidget::refMinAccEditSlot(QString value)
-{
-    loginf << "value " << value.toStdString();
+//void EvaluationStandardWidget::refMinAccEditSlot(QString value)
+//{
+//    loginf << "value " << value.toStdString();
 
-    bool ok;
-    float val = value.toFloat(&ok);
+//    bool ok;
+//    float val = value.toFloat(&ok);
 
-    if (ok)
-        standard_.referenceMinAccuracy(val);
-    else
-        loginf << "invalid value";
-}
+//    if (ok)
+//        standard_.referenceMinAccuracy(val);
+//    else
+//        loginf << "invalid value";
+//}
 
