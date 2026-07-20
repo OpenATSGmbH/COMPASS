@@ -300,9 +300,16 @@ public:
     unsigned int maxSectorId() const;
 
     // sector CRUD
+
+    // returns nullptr if a sector of the same name already exists in the layer
     std::shared_ptr<Sector> createSector(const std::string& name, const std::string& layer_name,
                                           bool exclude, QColor color,
                                           std::vector<std::pair<double,double>> points);
+    // silently replaces an already existing sector of the same name in the layer
+    std::shared_ptr<Sector> createOrReplaceSector(const std::string& name, const std::string& layer_name,
+                                                   bool exclude, QColor color,
+                                                   std::vector<std::pair<double,double>> points,
+                                                   bool* replaced_existing = nullptr);
     void deleteSector(std::shared_ptr<Sector> sector);
     void deleteSectors(const std::vector<std::shared_ptr<Sector>>& sectors);
     void deleteSectorLayer(const std::string& layer_name);

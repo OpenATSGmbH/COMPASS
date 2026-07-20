@@ -434,13 +434,24 @@ bool RTCommandImportSectorsGDAL::run_impl()
 
         QColor color = color_str_.empty() ? QColor("#4c88ff") : QColor(QString::fromStdString(color_str_));
 
-        for (const auto& sec : sectors)
-            ctx_man.createSector(sec.name, layer, exclude_, color, sec.points);
+        unsigned int imported_cnt = 0;
+        unsigned int replaced_cnt = 0;
 
-        loginf << "imported " << sectors.size() << " sectors from GDAL file into layer '" << layer << "'";
+        for (const auto& sec : sectors)
+        {
+            bool replaced = false;
+            if (ctx_man.createOrReplaceSector(sec.name, layer, exclude_, color, sec.points, &replaced))
+                ++imported_cnt;
+            if (replaced)
+                ++replaced_cnt;
+        }
+
+        loginf << "imported " << imported_cnt << " of " << sectors.size()
+               << " sectors from GDAL file into layer '" << layer << "', " << replaced_cnt << " replaced";
 
         nlohmann::json j;
-        j["imported_count"] = sectors.size();
+        j["imported_count"] = imported_cnt;
+        j["replaced_count"] = replaced_cnt;
         j["layer"] = layer;
         setJSONReply(j);
     }

@@ -2030,7 +2030,12 @@ shared_ptr<Sector> DBContextManager::createSector(const string& name, const stri
            << " num points " << points.size();
 
     traced_assert(sectors_loaded_);
-    traced_assert(!hasSector(name, layer_name));
+
+    if (hasSector(name, layer_name))
+    {
+        logwrn << "sector '" << name << "' already exists in layer '" << layer_name << "'";
+        return nullptr;
+    }
 
     ++max_sector_id_;
 
@@ -2052,6 +2057,36 @@ shared_ptr<Sector> DBContextManager::createSector(const string& name, const stri
     emit sectorsChangedSignal();
 
     return new_sector;
+}
+
+shared_ptr<Sector> DBContextManager::createOrReplaceSector(const string& name, const string& layer_name,
+                                                            bool exclude, QColor color,
+                                                            vector<pair<double,double>> points,
+                                                            bool* replaced_existing)
+{
+    traced_assert(sectors_loaded_);
+
+    bool replaced = hasSector(name, layer_name);
+
+    if (replaced)
+    {
+        loginf << "replacing sector '" << name << "' in layer '" << layer_name << "'";
+
+        unsigned int old_id = sector(name, layer_name)->id();
+
+        auto& ctx_sectors = activeContext().sectors();
+        auto iter = find_if(ctx_sectors.begin(), ctx_sectors.end(),
+                            [old_id](const shared_ptr<Sector>& x) { return x->id() == old_id; });
+        traced_assert(iter != ctx_sectors.end());
+        ctx_sectors.erase(iter);
+
+        rebuildSectorLayers();
+    }
+
+    if (replaced_existing)
+        *replaced_existing = replaced;
+
+    return createSector(name, layer_name, exclude, color, points);
 }
 
 void DBContextManager::deleteSector(shared_ptr<Sector> sector)

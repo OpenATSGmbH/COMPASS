@@ -38,6 +38,8 @@
 #include "sectorlayer.h"
 #include "logger.h"
 
+#include <set>
+
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 
@@ -357,8 +359,11 @@ void DBContextEditDialog::rebuildTree()
     }
     if (shown_sector_id)
     {
-        if (auto sector = manager_.sector(*shown_sector_id))
-            sector_edit_widget_->show(*sector);
+        if (manager_.hasSector(*shown_sector_id))
+        {
+            if (auto sector = manager_.sector(*shown_sector_id))
+                sector_edit_widget_->show(*sector);
+        }
     }
     if (shown_fft_name)
     {
@@ -642,6 +647,25 @@ void DBContextEditDialog::showDataSourceItemMenu(unsigned int ds_id)
 // Context menu: Sector Layers
 // ============================================================
 
+// collects names which would overwrite an existing sector, including duplicates within the
+// imported set itself
+std::vector<std::string> collectSectorNameCollisions(
+        const DBContextManager& manager,
+        const std::vector<sector_utils::ImportedSector>& sectors,
+        const std::string& layer_name)
+{
+    std::vector<std::string> collisions;
+    std::set<std::string> seen;
+
+    for (const auto& sec : sectors)
+    {
+        if (manager.hasSector(sec.name, layer_name) || !seen.insert(sec.name).second)
+            collisions.push_back(sec.name);
+    }
+
+    return collisions;
+}
+
 void DBContextEditDialog::showSectorLayersGroupMenu()
 {
     loginf << "showing sector layers group menu";
@@ -651,7 +675,7 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
     menu.addAction("Import from File...", [this]()
     {
         QString path = QFileDialog::getOpenFileName(this, "Import Sectors",  "",
-            "Vector Files (*.shp *.geojson *.json *.gml);;All Files (*)");
+            "Vector Files (*.shp *.geojson *.json *.gml *.kml);;All Files (*)");
         if (path.isEmpty()) return;
 
         auto sectors = sector_utils::parseGDALFile(path.toStdString());
@@ -676,10 +700,28 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
         bool exclude = dialog.exclude();
         QColor color = dialog.color();
 
-        for (const auto& sec : sectors)
-            manager_.createSector(sec.name, layer_name, exclude, color, sec.points);
+        auto collisions = collectSectorNameCollisions(manager_, sectors, layer_name);
+        if (collisions.size())
+        {
+            // TODO: a dialog could be shown here, offering skip / replace / rename
+            logwrn << collisions.size() << " sector name collision(s) in layer '"
+                   << layer_name << "', replacing existing sectors";
+        }
 
-        loginf << "imported " << sectors.size() << " sectors into layer '" << layer_name << "'";
+        unsigned int imported_cnt = 0;
+        unsigned int replaced_cnt = 0;
+
+        for (const auto& sec : sectors)
+        {
+            bool replaced = false;
+            if (manager_.createOrReplaceSector(sec.name, layer_name, exclude, color, sec.points, &replaced))
+                ++imported_cnt;
+            if (replaced)
+                ++replaced_cnt;
+        }
+
+        loginf << "imported " << imported_cnt << " of " << sectors.size() << " sectors into layer '"
+               << layer_name << "', " << replaced_cnt << " replaced";
 
         rebuildTree();
     });
