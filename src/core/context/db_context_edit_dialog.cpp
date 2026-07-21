@@ -703,7 +703,7 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
         auto collisions = collectSectorNameCollisions(manager_, sectors, layer_name);
         if (collisions.size())
         {
-            // TODO: a dialog could be shown here, offering skip / replace / rename
+            // @TODO: a dialog could be shown here, offering skip / replace / rename
             logwrn << collisions.size() << " sector name collision(s) in layer '"
                    << layer_name << "', replacing existing sectors";
         }
