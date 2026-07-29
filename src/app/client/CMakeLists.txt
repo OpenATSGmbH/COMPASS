@@ -6,6 +6,7 @@ target_include_directories(compass_app PUBLIC
 target_sources(compass_app
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/client.h"
+        "${CMAKE_CURRENT_LIST_DIR}/crashbreadcrumbs.h"
         "${CMAKE_CURRENT_LIST_DIR}/mainwindow.h"
         "${CMAKE_CURRENT_LIST_DIR}/mainwindow_commands.h"
         "${CMAKE_CURRENT_LIST_DIR}/mainwindow_commands_file.h"
@@ -13,6 +14,7 @@ target_sources(compass_app
         "${CMAKE_CURRENT_LIST_DIR}/toolbox.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/client.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/crashbreadcrumbs.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/mainwindow.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/mainwindow_commands.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/mainwindow_commands_file.cpp"

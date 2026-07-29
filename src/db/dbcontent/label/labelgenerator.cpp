@@ -1400,7 +1400,11 @@ void LabelGenerator::editLabelContentsDoneSlot()
     config_.label_config_ = cfg_new;
 
     label_edit_dialog_->close();
-    label_edit_dialog_ = nullptr;
+
+    // this slot runs from the dialog's own doneSignal, i.e. while the
+    // dialog's button-click handling is still on the stack: destroy it
+    // deferred instead of synchronously via the unique_ptr reset
+    label_edit_dialog_.release()->deleteLater();
 }
 
 nlohmann::json LabelGenerator::labelConfig() const
