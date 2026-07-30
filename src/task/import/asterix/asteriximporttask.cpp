@@ -336,8 +336,11 @@ void ASTERIXImportTask::asterixDecoderConfig(const std::string& asterix_decoder_
             throw runtime_error("ASTERIXImportTask: asterixDecoderConfig: cat "+to_string(cat)
                                 +" config is not an object");
 
-        auto* cfg = ctx_mgr.asterixConfig(cat);
-        traced_assert(cfg);
+        // create the config entry with jASTERIX defaults if the context does not have one yet
+        auto* cfg = &ctx_mgr.getOrCreateAsterixConfig(cat,
+                                                      jasterix_->category(cat)->defaultEdition(),
+                                                      jasterix_->category(cat)->defaultREFEdition(),
+                                                      jasterix_->category(cat)->defaultSPFEdition());
 
         if (cat_cfg.contains("edition"))
         {
