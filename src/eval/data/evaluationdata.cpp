@@ -104,7 +104,7 @@ void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsign
     set<unsigned int> active_srcs = calculator_.activeDataSourcesRef();
     bool use_active_srcs = (calculator_.dbContentNameRef() == calculator_.dbContentNameTst());
     
-    double min_std_dev_xy = calculator_.currentStandard().referenceMinAccuracy();
+    //double min_std_dev_xy = calculator_.currentStandard().referenceMinAccuracy();
 
     unsigned int num_skipped {0};
 
@@ -112,7 +112,7 @@ void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsign
     traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
     traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_line_id_));
     traced_assert(accessor_->hasMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_utn_));
-    traced_assert(accessor_->hasMetaVar<double>(dbcontent_name, dbcontent_vars::meta_var_max_stddev_xy_));
+    //traced_assert(accessor_->hasMetaVar<double>(dbcontent_name, dbcontent_vars::meta_var_max_stddev_xy_));
 
     NullableVector<ptime>& ts_vec =
         accessor_->getMetaVar<ptime>(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
@@ -123,8 +123,8 @@ void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsign
     NullableVector<unsigned int>& utn_vec =
         accessor_->getMetaVar<unsigned int>(dbcontent_name, dbcontent_vars::meta_var_utn_);
 
-    NullableVector<double>& max_stddev_xy_vec =
-        accessor_->getMetaVar<double>(dbcontent_name, dbcontent_vars::meta_var_max_stddev_xy_);
+    //NullableVector<double>& max_stddev_xy_vec =
+    //    accessor_->getMetaVar<double>(dbcontent_name, dbcontent_vars::meta_var_max_stddev_xy_);
 
     unsigned int buffer_size = ts_vec.contentSize();
 
@@ -179,11 +179,11 @@ void EvaluationData::addReferenceData (const std::string& dbcontent_name, unsign
             continue;
         }
 
-        if (!max_stddev_xy_vec.isNull(cnt) && max_stddev_xy_vec.get(cnt) > min_std_dev_xy)
-        {
-            ++num_skipped;
-            continue;
-        }
+        //if (!max_stddev_xy_vec.isNull(cnt) && max_stddev_xy_vec.get(cnt) > min_std_dev_xy)
+        //{
+        //    ++num_skipped;
+        //    continue;
+        //}
 
         if (!hasTargetData(utn))
             target_data_.emplace_back(utn, *this, accessor_, calculator_, eval_man_, dbcont_man_);

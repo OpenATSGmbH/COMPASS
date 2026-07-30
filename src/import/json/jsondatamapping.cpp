@@ -551,7 +551,27 @@ bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data, NullableVect
 
         try
         {
-            setValue(&val, array_list, row);
+            if (in_array_)
+            {
+                // repetitive item leaf: cell is an array of scalars (struct-of-arrays,
+                // aligned by repetition index) - mirror the nested-path semantics
+                if (!val.is_array())
+                {
+                    logerr << "JSONDataMapping: setFlatArrayValues: key " << json_key_
+                           << " row " << row << " cell not an array '" << val.dump() << "'";
+                    continue;
+                }
+
+                for (const json& elem : val)
+                {
+                    if (append_value_)
+                        appendValue(&elem, array_list, row);
+                    else
+                        setValue(&elem, array_list, row);
+                }
+            }
+            else
+                setValue(&val, array_list, row);
         }
         catch (json::exception& e)
         {
@@ -591,8 +611,65 @@ bool JSONDataMapping::setFlatArrayJsonValues(const json& flat_cat_data,
 {
     if (!flat_cat_data.contains(json_key_))
     {
-        if (mandatory_)
-            return true;
+        // repetitive container fallback: jASTERIX flat format emits per-leaf columns
+        // (e.g. '250.Mode S MB Data.MB Data', '250.Mode S MB Data.BDS1') with cells
+        // holding arrays of scalars aligned by repetition index. A mapping keyed at
+        // the container ('250.Mode S MB Data') zips them back into the array-of-objects
+        // form the nested decode produces.
+        const std::string prefix = json_key_ + ".";
+        std::vector<std::pair<std::string, const json*>> leaf_columns;  // leaf name, column
+
+        for (auto it = flat_cat_data.begin(); it != flat_cat_data.end(); ++it)
+            if (it.key().compare(0, prefix.size(), prefix) == 0 && it.value().is_array())
+                leaf_columns.emplace_back(it.key().substr(prefix.size()), &it.value());
+
+        if (leaf_columns.empty())
+        {
+            if (mandatory_)
+                return true;
+            return false;
+        }
+
+        for (size_t i = 0; i < num_records; ++i)
+        {
+            json zipped = json::array();
+
+            for (const auto& leaf_it : leaf_columns)
+            {
+                const json& column = *leaf_it.second;
+
+                if (i >= column.size())
+                    continue;
+
+                const json& cell = column[i];
+
+                if (!cell.is_array())
+                    continue;
+
+                for (size_t rep_cnt = 0; rep_cnt < cell.size(); ++rep_cnt)
+                    zipped[rep_cnt][leaf_it.first] = cell[rep_cnt];
+            }
+
+            if (zipped.empty())
+                continue;
+
+            size_t row = start_row + i;
+
+            try
+            {
+                std::vector<json> values;
+                for (auto& elem : zipped)
+                    values.push_back(std::move(elem));
+                array_list.set(row, values);
+            }
+            catch (json::exception& e)
+            {
+                logerr << "JSONDataMapping: setFlatArrayJsonValues: container key " << json_key_
+                       << " row " << row << " json exception " << e.what();
+                array_list.setNull(row);
+            }
+        }
+
         return false;
     }
 

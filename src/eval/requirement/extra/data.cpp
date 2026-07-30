@@ -86,7 +86,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
     // create ref time periods, irrespective of inside
     TimePeriodCollection ref_periods;
     ref_periods.createFromReference(target_data, sector_layer, max_ref_time_diff);
- 
+
     ptime timestamp;
     bool is_inside;
 

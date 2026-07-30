@@ -89,8 +89,8 @@ public:
 
     float referenceMaxTimeDiff() const { return reference_max_time_diff_; }
     void referenceMaxTimeDiff(float value) { reference_max_time_diff_= value; }
-    float referenceMinAccuracy() const { return reference_min_accuracy_; }
-    void referenceMinAccuracy(float value) { reference_min_accuracy_= value; }
+    //float referenceMinAccuracy() const { return reference_min_accuracy_; }
+    //void referenceMinAccuracy(float value) { reference_min_accuracy_= value; }
     
 protected:
     EvaluationCalculator& calculator_;
@@ -99,7 +99,7 @@ protected:
     EvaluationStandardRootItem root_item_;
 
     float reference_max_time_diff_ {5};
-    float reference_min_accuracy_ {10};
+    //float reference_min_accuracy_ {10};
 
     std::vector<std::unique_ptr<Group>> groups_;
 
