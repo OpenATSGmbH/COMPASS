@@ -51,7 +51,10 @@ SectorEditWidget::SectorEditWidget(std::function<void()> on_changed,
 
     layer_combo_ = new QComboBox();
     layer_combo_->setEditable(true);
-    connect(layer_combo_, &QComboBox::currentTextChanged, this, &SectorEditWidget::layerChangedSlot);
+    // commit on finished edit / dropdown selection only - currentTextChanged fires
+    // on every keystroke in an editable combo and would move the sector per character
+    connect(layer_combo_->lineEdit(), &QLineEdit::editingFinished, this, &SectorEditWidget::layerChangedSlot);
+    connect(layer_combo_, QOverload<int>::of(&QComboBox::activated), this, &SectorEditWidget::layerChangedSlot);
     form->addRow(new QLabel("Layer"), layer_combo_);
 
     exclude_check_ = new QCheckBox();

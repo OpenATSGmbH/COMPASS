@@ -791,6 +791,18 @@ void DBContextEditDialog::showSectorLayerMenu(const std::string& layer_name)
 
     QMenu menu;
 
+    menu.addAction("Rename Layer...", [this, layer_name]()
+    {
+        bool ok = false;
+        QString new_name = QInputDialog::getText(this, "Rename Sector Layer",
+            "New layer name:", QLineEdit::Normal,
+            QString::fromStdString(layer_name), &ok);
+        if (!ok || new_name.isEmpty()) return;
+
+        manager_.renameSectorLayer(layer_name, new_name.toStdString());
+        rebuildTree();
+    });
+
     menu.addAction("Delete Layer", [this, layer_name]()
     {
         if (!QuestionDialog::ask(this, "Delete Sector Layer",
@@ -822,7 +834,9 @@ void DBContextEditDialog::showSectorItemMenu(unsigned int sector_id)
             QString::fromStdString(sector->layerName()), &ok);
         if (!ok || new_layer.isEmpty()) return;
 
-        manager_.moveSector(sector_id, sector->layerName(), new_layer.toStdString());
+        // route through the setter - its move callback triggers
+        // DBContextManager::moveSector, which persists and rebuilds
+        sector->layerName(new_layer.toStdString());
         rebuildTree();
     });
 

@@ -37,6 +37,7 @@ REGISTER_RTCOMMAND(context_cmd::RTCommandListContexts)
 REGISTER_RTCOMMAND(context_cmd::RTCommandGetContextInfo)
 REGISTER_RTCOMMAND(context_cmd::RTCommandGetContext)
 REGISTER_RTCOMMAND(context_cmd::RTCommandImportFFTsJSON)
+REGISTER_RTCOMMAND(context_cmd::RTCommandImportContext)
 REGISTER_RTCOMMAND(context_cmd::RTCommandDeleteAllSectors)
 REGISTER_RTCOMMAND(context_cmd::RTCommandDeleteAllFFTs)
 REGISTER_RTCOMMAND(context_cmd::RTCommandImportSectorsGDAL)
@@ -55,6 +56,7 @@ void init_context_commands()
     RTCommandGetContextInfo::init();
     RTCommandGetContext::init();
     RTCommandImportFFTsJSON::init();
+    RTCommandImportContext::init();
     RTCommandDeleteAllSectors::init();
     RTCommandDeleteAllFFTs::init();
     RTCommandImportSectorsGDAL::init();
@@ -333,6 +335,50 @@ void RTCommandImportFFTsJSON::collectOptions_impl(OptionsDescription& options,
 }
 
 void RTCommandImportFFTsJSON::assignVariables_impl(const VariablesMap& variables)
+{
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "filename", string, filename_)
+}
+
+// ============================================================
+// import_context
+// ============================================================
+
+rtcommand::IsValid RTCommandImportContext::valid() const
+{
+    CHECK_RTCOMMAND_INVALID_CONDITION(filename_.empty(), "Filename empty")
+    CHECK_RTCOMMAND_INVALID_CONDITION(!Utils::Files::fileExists(filename_),
+                                      string("File '") + filename_ + "' does not exist")
+    return RTCommand::valid();
+}
+
+bool RTCommandImportContext::run_impl()
+{
+    try
+    {
+        string name = compass_->dbContextManager().importContextZip(filename_);
+
+        nlohmann::json reply;
+        reply["name"] = name;
+        setJSONReply(reply);
+    }
+    catch (const exception& e)
+    {
+        setResultMessage(string("Import failed: ") + e.what());
+        return false;
+    }
+
+    return true;
+}
+
+void RTCommandImportContext::collectOptions_impl(OptionsDescription& options,
+                                                 PosOptionsDescription& positional)
+{
+    ADD_RTCOMMAND_OPTIONS(options)
+        ("filename,f", po::value<string>()->required(), "context zip file path");
+    ADD_RTCOMMAND_POS_OPTION(positional, "filename")
+}
+
+void RTCommandImportContext::assignVariables_impl(const VariablesMap& variables)
 {
     RTCOMMAND_GET_VAR_OR_THROW(variables, "filename", string, filename_)
 }
