@@ -23,7 +23,6 @@ pipeline {
         booleanParam(name: 'TAG_ANALYZE',         defaultValue: true, description: 'Tag: analyze (Analyze Data Source, MLAT + ADS-B)')
         booleanParam(name: 'TAG_ARTAS_SPF',       defaultValue: true, description: 'Tag: artas_spf (ARTAS TRI import/association/display, at_20230422)')
         booleanParam(name: 'TAG_MLAT_RU',         defaultValue: true, description: 'Tag: mlat_ru (MLAT contributing receivers, loww_20260609)')
-        booleanParam(name: 'TAG_EVAL_LOWW',       defaultValue: true, description: 'Tag: eval_loww (ED-116/ED-117A/ED-87E surface evaluation, loww_20260609)')
 
         // Build options
         booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove build_deb10 before building)')
@@ -130,7 +129,7 @@ pipeline {
                     def anyTag = params.TAG_SYSTEM || params.TAG_IMPORT || params.TAG_CALCULATE || params.TAG_EVAL ||
                                  params.TAG_UI || params.TAG_VIEWS || params.TAG_TABLEVIEW ||
                                  params.TAG_HISTOGRAMVIEW || params.TAG_SCATTERPLOTVIEW || params.TAG_GEOGRAPHICVIEW ||
-                                 params.TAG_ANALYZE || params.TAG_ARTAS_SPF || params.TAG_MLAT_RU || params.TAG_EVAL_LOWW
+                                 params.TAG_ANALYZE || params.TAG_ARTAS_SPF || params.TAG_MLAT_RU
                     def anyDataset = params.DATASET_05H || params.DATASET_2H || params.DATASET_LOWW
                     return anyTag && anyDataset
                 }
@@ -142,7 +141,7 @@ pipeline {
                     if (params.TAG_SYSTEM)          tags << 'system'
                     if (params.TAG_IMPORT)          tags << 'import'
                     if (params.TAG_CALCULATE)       tags << 'calculate'
-                    if (params.TAG_EVAL)            tags << 'eval'
+                    if (params.TAG_EVAL)            { tags << 'eval'; tags << 'eval_loww' }
                     if (params.TAG_UI)              tags << 'ui'
                     if (params.TAG_VIEWS)           tags << 'views'
                     if (params.TAG_TABLEVIEW)       tags << 'tableview'
@@ -152,7 +151,6 @@ pipeline {
                     if (params.TAG_ANALYZE)         tags << 'analyze'
                     if (params.TAG_ARTAS_SPF)       tags << 'artas_spf'
                     if (params.TAG_MLAT_RU)         tags << 'mlat_ru'
-                    if (params.TAG_EVAL_LOWW)       tags << 'eval_loww'
                     def tagsStr = tags.join(',')
 
                     // Build dataset list from checkboxes: name (used for the log file
