@@ -218,7 +218,23 @@ bool ASTERIXFileDecoder::checkDecoding(ASTERIXImportFileInfo& file_info,
     {
         warning = "Missing SAC/SIC in CAT001 or CAT002";
     }
-    
+
+    //REF/SPF content not matching the selected definition: such fields are kept as
+    //raw data by jASTERIX, the import continues - warn only (keys guarded for
+    //compatibility with older analysis info)
+    unsigned int num_ref_errors = file_error.analysis_info.contains("num_ref_errors") ?
+        file_error.analysis_info.at("num_ref_errors").get<unsigned int>() : 0u;
+    unsigned int num_spf_errors = file_error.analysis_info.contains("num_spf_errors") ?
+        file_error.analysis_info.at("num_spf_errors").get<unsigned int>() : 0u;
+
+    if (num_ref_errors)
+        warning += (warning.empty() ? "" : ", ") + string("REF not matching selected definition in ")
+                   + to_string(num_ref_errors) + " records (kept as raw data)";
+
+    if (num_spf_errors)
+        warning += (warning.empty() ? "" : ", ") + string("SPF not matching selected definition in ")
+                   + to_string(num_spf_errors) + " records (kept as raw data)";
+
     return error.empty();
 }
 

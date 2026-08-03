@@ -2,49 +2,39 @@
     "001":{
         "comment":"Category 001 Transmission of Monoradar Data Target Reports",
         "default_edition":"1.1",
-        "default_mapping":"",
         "editions":{
             "1.1":{
                 "document":"SUR.ET1.ST05.2000-STD-02a-01",
                 "date":"August 2002",
                 "file":"001/cat001_1.1.json"
             }
-        },
-        "mappings":{
         }
     },
     "002":{
         "comment":"Category 002 Transmission of Monoradar Service Messages",
         "default_edition":"1.0",
-        "default_mapping":"",
         "editions":{
             "1.0":{
                 "document":"SUR.ET1.ST05.2000-STD-02b-01",
                 "date":"November 1997",
                 "file":"002/cat002_1.0.json"
             }
-        },
-        "mappings":{
         }
     },
     "004":{
         "comment":"Category 004 Safety Net Messages",
         "default_edition":"1.4",
-        "default_mapping":"",
         "editions":{
             "1.4":{
                 "document":"SUR.ET1.ST05.2000-STD-17-02",
                 "date":"October 2010",
                 "file":"004/cat004_1.4.json"
             }
-        },
-        "mappings":{
         }
     },
     "010":{
         "comment":"Category 010 Transmission of Monosensor Surface Movement Data",
         "default_edition":"0.31",
-        "default_mapping":"",
         "editions":{
             "0.24_sensis":{
                 "document":"Sensis for Heathrow MDS",
@@ -56,35 +46,29 @@
                 "date":"December 2001",
                 "file":"010/cat010_0.31.json"
             }
-        },
-        "mappings":{
         }
     },
     "019":{
         "comment":"Category 019 Multilateration System Status Messages",
         "default_edition":"1.3",
-        "default_mapping":"",
         "editions":{
             "1.2":{
                 "document":"SUR.ET1.ST05.2000-STD-18-02",
                 "date":"August 2009",
                 "file":"019/cat019_1.2.json"
-            },        
+            },
             "1.3":{
                 "document":"SUR.ET1.ST05.2000-STD-18-02",
                 "date":"December 2010",
                 "file":"019/cat019_1.3.json",
                 "comment":"Same as 1.2"
             }
-        },
-        "mappings":{
         }
     },
     "020":{
         "comment":"Category 020 Multilateration Target Reports",
         "default_edition":"1.8",
         "default_ref_edition":"1.3",
-        "default_mapping":"",
         "editions":{
             "1.5":{
                 "document":"SUR.ET1.ST05.2000-STD-14-02",
@@ -104,19 +88,12 @@
                 "date":"24/10/2016",
                 "file":"020/cat020_ref_1.3.json"
             }
-        },
-        "mappings":{
-            "1.0":{
-                "comment":"conversion to general format 1.0",
-                "file":"020/cat020_1.5_mapping.json"
-            }
         }
     },
     "021":{
         "comment":"Category 021 ADS-B Reports",
         "default_edition":"2.4",
         "default_ref_edition":"1.5",
-        "default_mapping":"",
         "editions":{
             "0.26":{
                 "document":"SUR.ET1.ST05.2000-STD-12-01",
@@ -140,62 +117,45 @@
                 "date":"21 December 2021",
                 "file":"021/cat021_ref_1.5.json"
             }
-        },        
-        "mappings":{
-            "1.0":{
-                "comment":"conversion to general format 1.0",
-                "file":"021/cat021_2.1_mapping.json"
-                
-            }
         }
     },
     "023":{
         "comment":"Category 023 CNS/ATM Ground Station and Service Status Reports",
         "default_edition":"1.2",
-        "default_mapping":"",
         "editions":{
             "1.2":{
                 "document":"SUR.ET1.ST05.2000-STD-16-01",
                 "date":"March 2009",
                 "file":"023/cat023_1.2.json"
             }
-        },
-        "mappings":{
         }
     },
     "030":{
         "comment":"Category 030 APPLICATION OF ASTERIX TO ARTAS",
         "default_edition":"7.0",
-        "default_mapping":"",
         "editions":{
             "7.0":{
                 "document":"DIS/SUR/ARTAS/ASTX.015",
                 "date":"06/01/2009",
                 "file":"030/cat030_7.0.json"
             }
-        },
-        "mappings":{
         }
     },
     "034":{
         "comment":"Category 034 Transmission of Monoradar Service Messages",
         "default_edition":"1.26",
-        "default_mapping":"",
         "editions":{
             "1.26":{
                 "document":"SUR.ET1.ST05.2000-STD-02b-01",
                 "date":"November 2000",
                 "file":"034/cat034_1.26.json"
             }
-        },
-        "mappings":{
         }
     },
     "048":{
         "comment":"Category 048 Transmission of Monoradar Target Reports",
         "default_edition":"1.23",
         "default_ref_edition":"1.9",
-        "default_mapping":"",
         "editions":{
             "1.15":{
                 "document":"SUR.ET1.ST05.2000-STD-04-01",
@@ -214,12 +174,6 @@
                 "date":"31/07/2017",
                 "file":"048/cat048_ref_1.9.json"
             }
-        },
-        "mappings":{
-            "1.0":{
-                "comment":"conversion to general format 1.0",
-                "file":"048/cat048_1.15_mapping.json"
-            }
         }
     },
     "062":{
@@ -227,7 +181,6 @@
         "default_edition":"1.21",
         "default_ref_edition":"1.2",
         "default_spf_edition":"",
-        "default_mapping":"",
         "editions":{
             "1.12":{
                 "document":"SUR.ET1.ST05.2000-STD-09-01",
@@ -268,18 +221,11 @@
                 "date":"06/01/2009",
                 "file":"062/cat062_spf_artas.json"
             }
-        },
-        "mappings":{
-            "1.0":{
-                    "comment":"conversion to general format 1.0",
-                    "file":"062/cat062_1.12_mapping.json"
-                }
         }
     },
     "063":{
         "comment":"Category 063 Sensor Status Messages",
         "default_edition":"1.0",
-        "default_mapping":"",
         "editions":{
             "1.0":{
                 "document":"SUR.ET1.ST05.2000-STD-10-01",
@@ -292,14 +238,11 @@
                 "file":"063/cat063_1.1.json",
                 "comment":"Same as 1.0"
             }
-        },
-        "mappings":{
         }
     },
     "065":{
         "comment":"Category 065 SDPS Service Status Messages",
         "default_edition":"1.3",
-        "default_mapping":"",
         "editions":{
             "1.2":{
                 "document":"SUR.ET1.ST05.2000-STD-15-01",
@@ -312,36 +255,28 @@
                 "file":"065/cat065_1.3.json",
                 "comment":"Same as 1.2"
             }
-        },
-        "mappings":{
         }
     },
     "247":{
         "comment":"Category 247 Version Number Exchange",
         "default_edition":"1.2",
-        "default_mapping":"",
         "editions":{
             "1.2":{
                 "document":"",
                 "date":"February 2008",
                 "file":"247/cat247_1.2.json"
             }
-        },
-        "mappings":{
         }
     },
     "252":{
         "comment":"Category 252 APPLICATION OF ASTERIX TO ARTAS",
         "default_edition":"7.0",
-        "default_mapping":"",
         "editions":{
             "7.0":{
                 "document":"DIS/SUR/ARTAS/ASTX.015",
                 "date":"06/01/2009",
                 "file":"252/cat252_7.0.json"
             }
-        },
-        "mappings":{
         }
     }
 }
