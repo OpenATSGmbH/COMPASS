@@ -130,6 +130,17 @@
             }
         }
     },
+    "025":{
+        "comment":"Category 025 CNS/ATM Ground System Status Reports",
+        "default_edition":"1.1",
+        "editions":{
+            "1.1":{
+                "document":"EUROCONTROL-SPEC-0149-26",
+                "date":"November 2015",
+                "file":"025/cat025_1.1.json"
+            }
+        }
+    },
     "030":{
         "comment":"Category 030 APPLICATION OF ASTERIX TO ARTAS",
         "default_edition":"7.0",
