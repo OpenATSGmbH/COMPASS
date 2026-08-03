@@ -1264,7 +1264,7 @@ void DataSourceEditWidget::netLineEditedSlot(const QString& value_str)
     if (item == "Listen IP" || item == "MCast IP" || item == "Sender IP")
     {
         string value = value_str.toStdString();
-        loginf << "start" << line_id << " " << item << " ip '" << value << "'";
+        loginf << "start " << line_id << " " << item << " ip '" << value << "'";
 
         if (item == "Listen IP")
             ds.info()["network_lines"][line_key]["listen_ip"] = value;

@@ -27,6 +27,14 @@ enum AppMode
     LivePaused
 };
 
+/// True for both LiveRunning and LivePaused - i.e. inside a live session. Use this
+/// (not == LiveRunning) to detect entering/leaving the live session, so a pause
+/// (LiveRunning -> LivePaused) is not mistaken for a live exit.
+inline bool isLiveSession(AppMode app_mode)
+{
+    return app_mode == AppMode::LiveRunning || app_mode == AppMode::LivePaused;
+}
+
 inline std::string toString(AppMode app_mode)
 {
     if (app_mode == AppMode::Offline)

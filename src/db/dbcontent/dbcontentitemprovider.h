@@ -18,16 +18,20 @@
 #pragma once
 
 #include "dbcontentitem.h"
+#include "dbcontentdataindex.h"
 
 #include <map>
 #include <tuple>
+#include <memory>
 
 #include "json.hpp"
 
 #include <QColor>
 #include <QObject>
 
-class DBContentDataStore;
+class DBContentDataSet;
+class DBContentManager;
+class Buffer;
 
 namespace dbContent
 {
@@ -41,7 +45,8 @@ namespace context
 
 /**
  * Provides DBContent buffer items grouped by certain attributes (e.g. UTN),
- * given a DBContentDataStore. 
+ * fed from the current DBContentDataSet (set via setSource + applyChange by the
+ * view framework).
  */
 class DBContentItemProvider : public QObject
 {
@@ -62,15 +67,20 @@ public:
     typedef std::pair<dbContent::ItemGroup*, unsigned int> ItemLocation;
     typedef std::vector<ItemLocation>                      ItemLocations;
 
-    DBContentItemProvider(DBContentDataStore& data_store, 
-                          Grouping grouping = Grouping::None,
-                          bool auto_update = true);
+    DBContentItemProvider(DBContentManager& dbc_manager,
+                          Grouping grouping = Grouping::None);
     virtual ~DBContentItemProvider();
 
     void update();
     void reset();
 
-    void setGrouping(Grouping grouping, 
+    // Source-fed path: setSource points the provider at the current DBContentDataSet
+    // (nullptr => no data); applyChange rebuilds the affected contents, keyed by content
+    // name (the DBContentDataSet change contract). Driven by the view framework.
+    void setSource(const DBContentDataSet* source) { source_ = source; }
+    void applyChange(const std::vector<std::string>& names, bool reset, bool last);
+
+    void setGrouping(Grouping grouping,
                      bool run_update = true);
     Grouping grouping() const { return grouping_; }
     std::string groupingAsString() const;
@@ -80,9 +90,6 @@ public:
     const std::vector<std::unique_ptr<dbContent::ItemGroup>>& itemGroups() const { return item_groups_; }
     const std::map<nlohmann::json, ItemLocations>& itemLocations() const { return item_locations_; }
     const ItemLocations& itemLocations(const nlohmann::json& item_id) const;
-
-    const DBContentDataStore& dataStore() const { return data_store_; }
-    DBContentDataStore& dataStore() { return data_store_; }
 
     std::string itemName(const nlohmann::json& item_id) const;
     nlohmann::json itemSortValue(const nlohmann::json& item_id) const;
@@ -156,12 +163,13 @@ protected:
 
     std::vector<std::unique_ptr<dbContent::ItemGroup>>& itemGroups() { return item_groups_; }
 
+    /// The current source's full buffer map (empty when no source is set).
+    const std::map<std::string, std::shared_ptr<Buffer>>& curBuffers() const;
+
 private:
     void resetData();
     void rebuildContent(unsigned int dbc_id);
     void contentRebuilt();
-
-    void dataChanged(const std::vector<unsigned int>& dbc_ids, bool reset, bool last);
 
     void setGroupIDNames(dbContent::ItemGroup& group) const;
 
@@ -169,7 +177,13 @@ private:
 
     static QColor colorFromItemId(const nlohmann::json& item_id);
 
-    DBContentDataStore&                                 data_store_;                // data store providing the data
+    // data-access facade over the current source (empty/null when no source is set).
+    const DBContentDataIndex::DBContentMap&           curIndices() const;
+    std::shared_ptr<Buffer>                           curBuffer(unsigned int dbc_id) const;
+    std::shared_ptr<dbContent::TargetReportAccessor>  curTargetReportAccessor(unsigned int dbc_id) const;
+
+    DBContentManager&                                   dbcont_man_;                // static model (names/ids/target model)
+    const DBContentDataSet*                             source_ {nullptr};          // current source; null => no data
     context::DBContextManager&                          context_manager_;           // context manager
     Grouping                                            grouping_ = Grouping::None; // item grouping mode
     std::vector<std::unique_ptr<dbContent::ItemGroup>>  item_groups_;               // per (dbcontent, ds, line) item groups

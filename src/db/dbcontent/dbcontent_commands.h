@@ -23,6 +23,8 @@
 
 #include <vector>
 #include <memory>
+#include <map>
+#include <string>
 
 #include <boost/optional.hpp>
 
@@ -51,6 +53,8 @@ protected:
     virtual bool checkResult_impl() override;
 
     dbContent::VariableSet getReadSetFor() const;
+
+    std::map<std::string, std::shared_ptr<Buffer>> buffers_; // harvested in run_impl
 
     DECLARE_RTCOMMAND(get_dbcontent_data, "retrieves dbcontent data from the database")
     DECLARE_RTCOMMAND_OPTIONS

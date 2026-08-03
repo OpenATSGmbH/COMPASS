@@ -217,20 +217,14 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
     connect (context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
              &task_manager_->reconstructReferencesTask(), &ReconstructorTask::sectorsChangedSlot);
 
-    // data exchange
-    QObject::connect(dbcontent_manager_.get(), &DBContentManager::loadingStartedSignal,
-                     view_manager_.get(), &ViewManager::loadingStartedSlot);
-    QObject::connect(dbcontent_manager_.get(), &DBContentManager::loadedDataSignal,
-                     view_manager_.get(), &ViewManager::loadedDataSlot);
-    QObject::connect(dbcontent_manager_.get(), &DBContentManager::loadingDoneSignal,
-                     view_manager_.get(), &ViewManager::loadingDoneSlot);
+    // view data flows from the current source (ViewManager owns it); the load bookends
+    // (loadingStarted/DoneSignal) are ViewManager's too - driven off the operation it owns.
+    // The data-sources status widget connects directly to ViewManager::dataDistributedSignal.
 
     // appmode
     connect (this, &COMPASS::appModeSwitchSignal,
              filter_manager_.get(), &FilterManager::appModeSwitchSlot);
-    // bookends the LiveRunning "one long load cycle" with loadingStartedSignal /
-    // loadingDoneSignal (Direct so the started signal lands before the first
-    // processLiveModeSlot tick that follows the appmode flip).
+    // retained no-op hook (live bookends now synthesized in ViewManager::appModeSwitchSlot)
     connect (this, &COMPASS::appModeSwitchSignal,
              dbcontent_manager_.get(), &DBContentManager::appModeSwitchSlot);
 
@@ -1080,9 +1074,9 @@ MainWindow& COMPASS::mainWindow()
     {
         main_window_ = new MainWindow(*this);
         
-        QObject::connect(dbcontent_manager_.get(), &DBContentManager::loadingStartedSignal,
+        QObject::connect(view_manager_.get(), &ViewManager::loadingStartedSignal,
                         main_window_, &MainWindow::loadingStarted);
-        QObject::connect(dbcontent_manager_.get(), &DBContentManager::loadingDoneSignal,
+        QObject::connect(view_manager_.get(), &ViewManager::loadingDoneSignal,
                         main_window_, &MainWindow::loadingDone);
     }
 
@@ -1236,67 +1230,15 @@ void COMPASS::appMode(const AppMode& app_mode)
         loginf << "app_mode_current " << toString(app_mode_)
                << " previous " << toString(last_app_mode);
 
-        QMessageBox* msg_box{nullptr};
-
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-        if (last_app_mode == AppMode::LiveRunning && app_mode == AppMode::LivePaused)
-        {
-            // switch first, load after
-            // do manually to be first and avoid trailing inserts
-            taskManager().asterixImporterTask().appModeSwitchSlot(last_app_mode, app_mode_);
-
-            emit appModeSwitchSignal(last_app_mode, app_mode_);
-
-            // load all data in db
-            msg_box = new QMessageBox(QApplication::activeWindow());
-            traced_assert(msg_box);
-            msg_box->setWindowTitle(("Switching to "+toString(app_mode_)).c_str());
-            msg_box->setText("Loading data");
-            msg_box->setStandardButtons(QMessageBox::NoButton);
-            msg_box->show();
-
-            dbcontent_manager_->loadBlocking(LoadRequest::standard());
-
-            msg_box->close();
-            delete msg_box;
-        }
-        else if (last_app_mode == AppMode::LivePaused && app_mode == AppMode::LiveRunning)
-        {
-            // load first, switch after to add to existing cache
-
-            msg_box = new QMessageBox(QApplication::activeWindow());
-            traced_assert(msg_box);
-            msg_box->setWindowTitle(("Switching to "+toString(app_mode_)).c_str());
-            msg_box->setText("Loading data");
-            msg_box->setStandardButtons(QMessageBox::NoButton);
-            msg_box->show();
-
-            boost::posix_time::ptime min_ts =
-                    Time::currentUTCTime() - boost::posix_time::minutes(max_live_data_age_cache_);
-
-            string custom_filter = "timestamp >= " + to_string(Time::toLong(min_ts));
-
-            loginf << "resuming with custom filter load '" << custom_filter << "'";
-
-            dbcontent_manager_->loadBlocking(LoadRequest::withFilter(custom_filter));
-
-            traced_assert(msg_box);
-            msg_box->close();
-            delete msg_box;
-
-            // switch later to add to loaded cache
-            taskManager().asterixImporterTask().appModeSwitchSlot(last_app_mode, app_mode_);
-
-            emit appModeSwitchSignal(last_app_mode, app_mode_);
-        }
-        else
-        {
-            // just do it
-            taskManager().asterixImporterTask().appModeSwitchSlot(last_app_mode, app_mode_);
-
-            emit appModeSwitchSignal(last_app_mode, app_mode_);
-        }
+        // Live entry / pause / resume / exit all reduce to the same two steps: switch
+        // ASTERIX ingestion (importer first, so no trailing inserts land after a pause),
+        // then flip the display. Within a live session ViewManager keeps the LiveDataFeed as
+        // the current source across running+paused, so pause = freeze and resume = unfreeze;
+        // no reload or cache prime is needed - the feed already holds the data.
+        taskManager().asterixImporterTask().appModeSwitchSlot(last_app_mode, app_mode_);
+        emit appModeSwitchSignal(last_app_mode, app_mode_);
 
         QApplication::restoreOverrideCursor();
     }

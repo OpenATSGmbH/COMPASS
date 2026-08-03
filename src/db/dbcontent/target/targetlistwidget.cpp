@@ -21,9 +21,11 @@
 #include "evaluationtargetfilterdialog.h"
 
 #include "compass.h"
+#include "viewmanager.h"
 #include "taskmanager.h"
 #include "evaluationmanager.h"
 #include "dbcontentmanager.h"
+#include "dbcontentdataengine.h"
 #include "evaluationtimestampconditionsdialog.h"
 #include "evaluationtargetexcludedtimewindowsdialog.h"
 #include "evaluationtargetexcludedrequirementsdialog.h"
@@ -366,7 +368,7 @@ void TargetListWidget::showSurroundingDataSlot ()
 {
     auto& dbcont_man = dbcont_manager_.compass().dbContentManager();
 
-    while (dbcont_man.loadInProgress())
+    while (dbcont_man.dataEngine().isLoading())
     {
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         QThread::msleep(10);
@@ -695,7 +697,7 @@ void TargetListWidget::selectionChanged(const QItemSelection& selected, const QI
     loginf << "utns " << String::compress(selected_utns,',');
 
     // to restore focus after loading
-    connect(&dbcont_manager_, &DBContentManager::loadingDoneSignal,
+    connect(&dbcont_manager_.compass().viewManager(), &ViewManager::loadingDoneSignal,
             this, &TargetListWidget::loadingDoneSlot);
 
     dbcont_manager_.showUTNs(selected_utns);
@@ -703,7 +705,7 @@ void TargetListWidget::selectionChanged(const QItemSelection& selected, const QI
 
 void TargetListWidget::loadingDoneSlot()
 {
-    disconnect(&dbcont_manager_, &DBContentManager::loadingDoneSignal, this,
+    disconnect(&dbcont_manager_.compass().viewManager(), &ViewManager::loadingDoneSignal, this,
                &TargetListWidget::loadingDoneSlot);
 
     table_view_->setFocus();

@@ -42,10 +42,10 @@ class VariableSet;
  * @brief Combined dataset folded across all selected data sources for an
  *        Analyze-Data-Source run, like the Evaluation builds for test sources.
  *
- * Configures load filters (selected DS / lines), blocks the load through
- * `DBContentManager::loadBlocking`, and packages the loaded buffers into
- * per-UTN reference / test `dbContent::TargetReport::Chain`s suitable for
- * the inspectors to walk.
+ * Configures load filters (selected DS / lines), runs a blocking load through
+ * `DBContentDataEngine::load` + `LoadOperation::wait`, and packages the loaded
+ * buffers into per-UTN reference / test `dbContent::TargetReport::Chain`s suitable
+ * for the inspectors to walk.
  *
  * The reference chain is always built from `RefTraj`. Test chains are built
  * from the configured test dbcontents (e.g. `CAT020`, `CAT010`); a UTN may

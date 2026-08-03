@@ -41,6 +41,7 @@ class Workflow;
 
 class ViewableDataConfig;
 class LatexVisitor;
+class DBContentDataSet;
 
 /**
 @brief Serves as base class for all views. Subclasses can be embedded in a ViewContainerWidget.
@@ -87,7 +88,11 @@ public:
     void databaseClosed();
 
     virtual void loadingStarted();
-    virtual void loadedData(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
+
+    // the single data-delivery callback (virtual so GeographicView can gate it for
+    // live-overload skipping); drives the data widget's updateFromSource
+    virtual void updateFromSource(const DBContentDataSet& source,
+                                  const std::vector<std::string>& names, bool reset, bool last);
     virtual void loadingDone();
     virtual void clearData();
     virtual void appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current);

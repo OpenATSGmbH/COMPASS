@@ -25,6 +25,7 @@
 #include "logger.h"
 #include "stringconv.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "compass.h"
 #include "global.h"
 #include "dbinterface.h"
@@ -180,7 +181,7 @@ void ViewPointsReportGenerator::run ()
             loginf << "setting vp " << vp_id;
             view_manager_.setCurrentViewPoint(&view_point);
 
-            while (dbcont_man.loadInProgress())
+            while (dbcont_man.dataEngine().isLoading())
                 QCoreApplication::processEvents();
 
             // do stuff

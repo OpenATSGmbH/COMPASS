@@ -25,6 +25,8 @@
 #include "variable.h"
 #include "property.h"
 #include "stringconv.h"
+#include "dbcontentitemprovider.h"
+#include "dbcontentdataset.h"
 
 #include <QApplication>
 #include <QPainter>
@@ -66,7 +68,7 @@ ViewDataWidget::ViewDataWidget(ViewWidget* view_widget, QWidget* parent, Qt::Win
 }
 
 /**
- * Checks if the view stores any data (usually set during a redraw or live update via updateData()).
+ * Checks if the view stores any data (mirrored from the current source via updateFromSource()).
  */
 bool ViewDataWidget::hasData() const
 {
@@ -247,15 +249,26 @@ void ViewDataWidget::loadingDone_impl()
 /**
  * Updates the data using the given buffers.
  */
-void ViewDataWidget::updateData(const BufferData& data, bool requires_reset)
+/**
+ * The single data-delivery callback. Mirrors the source's buffers into data_ (so the
+ * existing viewData()/redraw/selection machinery is unchanged), feeds a base-owned item
+ * provider (geo), and invokes the derived hook, which finalizes on last=true.
+ */
+void ViewDataWidget::updateFromSource(const DBContentDataSet& source,
+                                      const std::vector<std::string>& names, bool reset, bool last)
 {
     logdbg;
 
-    //store new data
-    data_ = data;
+    data_ = source.buffers();
+
+    if (item_provider_)
+    {
+        item_provider_->setSource(&source);
+        item_provider_->applyChange(names, reset, last);
+    }
 
     //invoke derived
-    updateData_impl(requires_reset);
+    updateFromSource_impl(source, names, reset, last);
 }
 
 /**
@@ -271,6 +284,13 @@ void ViewDataWidget::clearData()
 
     count_null_.reset();
     count_nan_.reset();
+
+    // wipe + detach the item provider (if any) from the current source
+    if (item_provider_)
+    {
+        item_provider_->reset();
+        item_provider_->setSource(nullptr);
+    }
 
     //invoke derived
     clearData_impl();
@@ -340,9 +360,6 @@ void ViewDataWidget::liveReload()
 {
     //invoke derived
     liveReload_impl();
-
-    //signal that live data has been loaded
-    emit liveDataLoaded();
 }
 
 /**

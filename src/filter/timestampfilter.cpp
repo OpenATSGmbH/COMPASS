@@ -19,6 +19,7 @@
 #include "timestampfilterwidget.h"
 #include "filtermanager.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
 #include "util/timeconv.h"
@@ -180,9 +181,9 @@ void TimestampFilter::shiftWindow(int minutes)
     boost::posix_time::ptime new_max = max_value_ + delta;
 
     auto& dbcont_man = filter_manager_->dbContentManager();
-    if (dbcont_man.hasMinMaxTimestamp())
+    if (dbcont_man.dataEngine().hasMinMaxTimestamp())
     {
-        auto minmax = dbcont_man.minMaxTimestamp();
+        auto minmax = dbcont_man.dataEngine().minMaxTimestamp();
 
         if (new_min < minmax.first)
             new_min = minmax.first;
@@ -207,10 +208,10 @@ bool TimestampFilter::canShiftWindow(int minutes) const
 {
     auto& dbcont_man = filter_manager_->dbContentManager();
 
-    if (!dbcont_man.hasMinMaxTimestamp())
+    if (!dbcont_man.dataEngine().hasMinMaxTimestamp())
         return true;
 
-    auto minmax = dbcont_man.minMaxTimestamp();
+    auto minmax = dbcont_man.dataEngine().minMaxTimestamp();
 
     if (minutes > 0)
         return max_value_ < minmax.second;

@@ -102,6 +102,12 @@ Qt::ItemFlags BaseBufferTableModel::flags(const QModelIndex& index) const
         flags |= Qt::ItemIsEnabled;
         flags |= Qt::ItemIsUserCheckable;
         flags |= Qt::ItemIsEditable;
+        // Must be selectable: otherwise QHeaderView::paintSection ->
+        // QItemSelectionModel::columnIntersectsSelection(0) scans the whole selected
+        // row-span looking for a selectable cell in column 0, finds none, and iterates
+        // every selected row on each header repaint (seconds on a multi-million-row
+        // table). With it selectable the check returns on the first row.
+        flags |= Qt::ItemIsSelectable;
     }
     else
         return Qt::ItemIsEnabled | Qt::ItemIsSelectable;

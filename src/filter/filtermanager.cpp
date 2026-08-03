@@ -21,6 +21,7 @@
 #include "dbfilter.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "db_context_manager.h"
 #include "filtermanagerwidget.h"
 #include "logger.h"
@@ -460,9 +461,9 @@ void FilterManager::databaseOpenedSlot()
 
     traced_assert(hasFilter("Timestamp"));
 
-    if (dbcontent_man_.hasMinMaxTimestamp())
+    if (dbcontent_man_.dataEngine().hasMinMaxTimestamp())
     {
-        auto minmax_ts = dbcontent_man_.minMaxTimestamp();
+        auto minmax_ts = dbcontent_man_.dataEngine().minMaxTimestamp();
 
         TimestampFilter* ts_filter = dynamic_cast<TimestampFilter*>(getFilter("Timestamp"));
         traced_assert(ts_filter);

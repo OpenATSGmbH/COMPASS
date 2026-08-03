@@ -22,6 +22,8 @@
 #include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variableset.h"
 #include "stringconv.h"
 #include "taskmanager.h"
@@ -489,8 +491,7 @@ void ReconstructorTask::run()
 
     updateProgressSlot("Deleting Previous References", false);
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-    dbcontent_man.clearData();
+    manager().compass().viewManager().clearDataInViews();
 
     manager().compass().evaluationManager().clearData(); // in case there are previous results
 
@@ -593,17 +594,7 @@ void ReconstructorTask::deleteAssociationsDoneSlot()
 
     run_start_time_after_del_ = boost::posix_time::microsec_clock::local_time();
 
-    manager().compass().viewManager().disableDataDistribution(true);
-    manager().compass().dbContentManager().enableDataDistribution(false);
-
     currentReconstructor()->reset();
-
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-
-    connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-            this, &ReconstructorTask::loadedDataSlot);
-    connect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-            this, &ReconstructorTask::loadingDoneSlot);
 
     if (cancelled_)
         return;
@@ -721,12 +712,12 @@ void ReconstructorTask::loadDataSlice()
                    : timestamp_filter;
     };
 
-    dbcontent_man.load(req);
-}
-
-void ReconstructorTask::loadedDataSlot(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
-{
-    traced_assert(loading_slice_);
+    // isolated per-slice batch load: filled by the engine, read in loadingDoneSlot;
+    // the view dataset is never touched
+    load_op_ = std::make_shared<LoadOperation>(dbcontent_man, req);
+    connect(load_op_.get(), &LoadOperation::finishedSignal,
+            this, &ReconstructorTask::loadingDoneSlot);
+    dbcontent_man.dataEngine().load(load_op_);
 }
 
 void ReconstructorTask::loadingDoneSlot()
@@ -739,12 +730,10 @@ void ReconstructorTask::loadingDoneSlot()
     traced_assert(currentReconstructor());
     traced_assert(loading_slice_);
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-
     if (cancelled_)
     {
         loading_slice_ = nullptr;
-        dbcontent_man.clearData(); // clear previous
+        load_op_ = nullptr;
         return;
     }
 
@@ -754,28 +743,16 @@ void ReconstructorTask::loadingDoneSlot()
            << " current_slice_idx " << current_slice_idx_;
 
     // add data to slice
-    loading_slice_->data_ = dbcontent_man.data();
+    loading_slice_->data_ = load_op_->buffers();
     loading_slice_->has_data_ = !loading_slice_->data_.empty();
     loading_slice_->loading_done_ = true;
+    load_op_ = nullptr; // release the operation
 
     for (auto& buf_it : loading_slice_->data_)
     {
         logdbg << buf_it.first << " size " << buf_it.second->size() 
         << " num prop " << buf_it.second->properties().size();
     }
-
-    //loading_slice_->data_.clear();
-
-    // for (auto& buf_it : dbcontent_man.data())
-    // {
-    //     if (dbcontent_man.dbContent(buf_it.first).containsTargetReports())
-    //         loading_slice_->data_[buf_it.first] = buf_it.second;
-
-    //     if (dbcontent_man.dbContent(buf_it.first).containsStatusContent())
-    //         loading_slice_->status_data_[buf_it.first] = buf_it.second;
-    // }
-
-    dbcontent_man.clearData(); // clear previous
 
     if (cancelled_)
         return;
@@ -833,17 +810,7 @@ void ReconstructorTask::loadingDoneSlot()
     if (cancelled_)
         return;
 
-    if (last_slice) // disconnect everything
-    {
-        disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-                   this, &ReconstructorTask::loadedDataSlot);
-        disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-                   this, &ReconstructorTask::loadingDoneSlot);
-
-        manager().compass().viewManager().disableDataDistribution(false);
-        manager().compass().dbContentManager().enableDataDistribution(true);
-    }
-    else // do next load
+    if (!last_slice) // do next load
     {
         loginf << "loading next slice";
 
@@ -1270,18 +1237,18 @@ void ReconstructorTask::runCancelledSlot()
 
     DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
-    if (dbcontent_man.loadInProgress())
-        dbcontent_man.quitLoading();
+    if (dbcontent_man.dataEngine().isLoading())
+        dbcontent_man.dataEngine().cancelLoad();
 
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                this, &ReconstructorTask::writeDoneSlot);
 
-    while (loading_data_ || dbcontent_man.loadInProgress()
+    while (loading_data_ || dbcontent_man.dataEngine().isLoading()
            || processing_data_slice_ || currentReconstructor()->processing()
            || dbcontent_man.insertInProgress())
     {
         logdbg << "waiting, load "
-               << (loading_data_ || dbcontent_man.loadInProgress())
+               << (loading_data_ || dbcontent_man.dataEngine().isLoading())
                << " proc " << (processing_data_slice_ || currentReconstructor()->processing())
                << " insert " << dbcontent_man.insertInProgress();
 
@@ -1290,18 +1257,11 @@ void ReconstructorTask::runCancelledSlot()
 
     loginf << "all done";
 
-    disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-               this, &ReconstructorTask::loadedDataSlot);
-    disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-               this, &ReconstructorTask::loadingDoneSlot);
-
-    manager().compass().viewManager().disableDataDistribution(false);
-    manager().compass().dbContentManager().enableDataDistribution(true);
-
     manager().compass().logInfo("Reconstructor") << "canceled by user";
 
     currentReconstructor()->reset();
 
+    load_op_ = nullptr;
     loading_slice_ = nullptr;
     processing_slice_ = nullptr;
     writing_slice_ = nullptr;

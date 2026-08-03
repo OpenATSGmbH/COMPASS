@@ -23,6 +23,8 @@
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/metavariable.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
@@ -205,17 +207,8 @@ void CreateARTASAssociationsTask::run()
     status_dialog_->show();
 
     DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-    dbcontent_man.clearData();
 
     auto& ctx_man = manager().compass().dbContextManager();
-
-    manager().compass().viewManager().disableDataDistribution(true);
-    manager().compass().dbContentManager().enableDataDistribution(false);
-
-    connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-            this, &CreateARTASAssociationsTask::loadedDataDataSlot);
-    connect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-            this, &CreateARTASAssociationsTask::loadingDoneSlot);
 
     std::set<std::string> targets;
     std::string cat062_clause;
@@ -271,19 +264,18 @@ void CreateARTASAssociationsTask::run()
         return name == "CAT062" ? cat062_clause : "";
     };
 
-    dbcontent_man.load(req);
+    // isolated batch load: filled by the engine, read in loadingDoneSlot; the
+    // view dataset is never touched
+    load_op_ = std::make_shared<LoadOperation>(dbcontent_man, req);
+    connect(load_op_.get(), &LoadOperation::finishedSignal,
+            this, &CreateARTASAssociationsTask::loadingDoneSlot);
+    dbcontent_man.dataEngine().load(load_op_);
 }
 
 bool CreateARTASAssociationsTask::wasRun()
 {
     return manager().compass().dbInterface().hasProperty(DONE_PROPERTY_NAME)
              && manager().compass().dbInterface().getProperty(DONE_PROPERTY_NAME) == "1";
-}
-
-void CreateARTASAssociationsTask::loadedDataDataSlot(
-        const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
-{
-    data_ = data;
 }
 
 void CreateARTASAssociationsTask::loadingDoneSlot()
@@ -296,17 +288,8 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
     traced_assert(!create_job_);
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-
-    disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-            this, &CreateARTASAssociationsTask::loadedDataDataSlot);
-    disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-            this, &CreateARTASAssociationsTask::loadingDoneSlot);
-
-    dbcontent_man.clearData();
-
-    manager().compass().viewManager().disableDataDistribution(false);
-    manager().compass().dbContentManager().enableDataDistribution(true);
+    data_ = load_op_->buffers();
+    load_op_ = nullptr; // release the isolated operation
 
     create_job_ = std::make_shared<CreateARTASAssociationsJob>(
                 *this, manager().compass().dbInterface(), data_);

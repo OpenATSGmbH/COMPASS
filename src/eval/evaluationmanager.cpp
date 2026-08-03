@@ -30,6 +30,8 @@
 
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variable.h"
 
 #include "compass.h"
@@ -321,9 +323,9 @@ void EvaluationManager::databaseOpenedSlot()
 
     DBContentManager& dbcont_man = dbcontent_man_;
 
-    if (dbcont_man.hasMinMaxTimestamp())
+    if (dbcont_man.dataEngine().hasMinMaxTimestamp())
     {
-        std::pair<boost::posix_time::ptime , boost::posix_time::ptime> minmax_ts =  dbcont_man.minMaxTimestamp();
+        std::pair<boost::posix_time::ptime , boost::posix_time::ptime> minmax_ts =  dbcont_man.dataEngine().minMaxTimestamp();
 
         if (load_timestamp_begin_.is_not_a_date_time())
             load_timestamp_begin_ = get<0>(minmax_ts);
@@ -595,29 +597,30 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator,
     configureLoadFilters(calculator);
 
     DBContentManager& dbcontent_man = dbcontent_man_;
-    dbcontent_man.clearData(); //clear previously loaded data
 
-    //!do not distribute this reload to views!
-    compass_.viewManager().disableDataDistribution(true);
-    compass_.dbContentManager().enableDataDistribution(false);
-
-    //add variables needed by evaluation
+    // add variables needed by evaluation - getReadSet picks these up while the
+    // flag is set, synchronously inside the engine load below
     needs_additional_variables_ = true;
 
     LoadRequest req;
     req.dbcontents_ = { calculator.dbContentNameRef(),
                         calculator.dbContentNameTst() };
 
+    // isolated batch load: filled by the engine, read in loadingDone; the view
+    // dataset is never touched
+    load_op_ = std::make_shared<LoadOperation>(dbcontent_man, req);
+
     if (blocking)
     {
-        dbcontent_man.loadBlocking(req);
+        dbcontent_man.dataEngine().load(load_op_);
+        load_op_->wait();
         loadingDone();
     }
     else
     {
-        connect(&dbcontent_man, &DBContentManager::loadingDoneSignal, this, &EvaluationManager::loadingDone);
+        connect(load_op_.get(), &LoadOperation::finishedSignal, this, &EvaluationManager::loadingDone);
         active_load_connection_ = true;
-        dbcontent_man.load(req);
+        dbcontent_man.dataEngine().load(load_op_);
     }
 
     needs_additional_variables_ = false;
@@ -705,26 +708,19 @@ void EvaluationManager::loadingDone()
 {
     loginf;
 
-    DBContentManager& dbcontent_man = dbcontent_man_;
-
     if (active_load_connection_)
     {
-        disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal, this, &EvaluationManager::loadingDone);
+        disconnect(load_op_.get(), &LoadOperation::finishedSignal, this, &EvaluationManager::loadingDone);
         active_load_connection_ = false;
     }
 
-    //!reenable distribution to views!
-    compass_.viewManager().disableDataDistribution(false);
-    compass_.dbContentManager().enableDataDistribution(true);
-
     traced_assert(!raw_data_available_);
 
-    //obtain data
-    raw_data_ = dbcontent_man.loadedData();
+    // obtain data from the isolated operation
+    raw_data_ = load_op_->buffers();
     raw_data_available_ = true;
 
-    //clear local data
-    dbcontent_man.clearData();
+    load_op_ = nullptr; // release the operation
 
     //signal new data
     emit hasNewData();

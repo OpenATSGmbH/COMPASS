@@ -89,14 +89,13 @@ void VariableViewDataWidget::loadingStarted_impl()
 
 /**
 */
-void VariableViewDataWidget::updateData_impl(bool requires_reset)
+void VariableViewDataWidget::updateFromSource_impl(const DBContentDataSet& /*source*/,
+                                                   const std::vector<std::string>& /*names*/, bool reset, bool last)
 {
-    logdbg;
-
-    //react on data update
-    updateDataEvent(requires_reset);
-
-    logdbg << "end";
+    // full refresh once the load completes (data_ mirrors the full source by now); the
+    // per-content arrivals (last=false) only accumulate data_, no need to react each time
+    if (last)
+        updateDataEvent(reset);
 }
 
 /**

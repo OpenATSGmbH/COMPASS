@@ -33,6 +33,7 @@ class COMPASS;
 class EvaluationStandard;
 class DBContent;
 class DBContentManager;
+class LoadOperation;
 class SectorLayer;
 struct EvaluationSettings;
 class EvaluationTargetFilter;
@@ -149,6 +150,7 @@ private:
     std::unique_ptr<EvaluationCalculator> calculator_; // sub-configurable
 
     std::unique_ptr<ViewableDataConfig>            viewable_data_cfg_;
+    std::shared_ptr<LoadOperation>                 load_op_; // isolated batch load, released after harvest
     std::map<std::string, std::shared_ptr<Buffer>> raw_data_;
     bool                                           raw_data_available_ = false;
 

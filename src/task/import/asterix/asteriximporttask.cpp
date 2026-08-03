@@ -28,10 +28,12 @@
 #include "data_source.h"
 #include "number.h"
 #include "compass.h"
+#include "viewmanager.h"
 #include "buffer.h"
 #include "configurable.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "db_context_manager.h"
 #include "files.h"
 #include "logger.h"
@@ -1293,7 +1295,7 @@ void ASTERIXImportTask::postprocessDoneSlot()
             if (!insert_active_ &&
                 !queued_insert_buffers_.empty() &&
                 !compass_.dbExportInProgress() &&
-                !dbcontent_man_.loadInProgress())
+                !dbcontent_man_.dataEngine().isLoading())
             {
                 logdbg << "inserting";
                 traced_assert(!dbcontent_man_.insertInProgress());
@@ -1395,7 +1397,7 @@ void ASTERIXImportTask::postprocessDoneSlot()
         if (!insert_active_ &&
             !queued_insert_buffers_.empty() &&
             !compass_.dbExportInProgress() &&
-            !dbcontent_man_.loadInProgress())
+            !dbcontent_man_.dataEngine().isLoading())
         {
             logdbg << "inserting";
             traced_assert(!dbcontent_man_.insertInProgress());
@@ -1553,7 +1555,7 @@ void ASTERIXImportTask::checkDataReceivedSlot()
         && (microsec_clock::local_time() - last_live_update_time_).total_seconds() > 5)
     {
         loginf << "forcing live update";
-        QMetaObject::invokeMethod(&dbcontent_man_, "processLiveModeSlot", Qt::QueuedConnection);
+        QMetaObject::invokeMethod(&compass_.viewManager(), "forceLiveUpdate", Qt::QueuedConnection);
         last_live_update_time_ = microsec_clock::local_time();
     }
 }
@@ -1630,7 +1632,7 @@ void ASTERIXImportTask::checkAllDone()
 
         if (!insert_active_
             && !compass_.dbExportInProgress()
-            && !dbcontent_man_.loadInProgress())
+            && !dbcontent_man_.dataEngine().isLoading())
         {
             insertData(); // calls checkAllDone again when done via insertDoneSlot
             return;

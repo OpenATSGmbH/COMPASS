@@ -16,6 +16,8 @@
  */
 
 #include "viewmanager.h"
+#include "loadcontroller.h"
+#include "livecontroller.h"
 #include "compass.h"
 #include "buffer.h"
 #include "logger.h"
@@ -30,11 +32,18 @@
 #include "viewpointswidget.h"
 #include "filtermanager.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataset.h"
+#include "dbcontent/loadoperation.h"
+#include "dbcontent/livedatafeed.h"
+#include "dbcontent/dbcontentdataengine.h"
+#include "db_context_manager.h"
+#include "dbcontent/loadrequest.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "viewpointsreportgenerator.h"
 #include "viewpointsreportgeneratordialog.h"
 #include "util/timeconv.h"
+#include "util/number.h"
 #include "viewpoint_commands.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
@@ -76,6 +85,8 @@ namespace
     }
 }
 
+/**
+*/
 ViewManager::ViewManager(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass), compass_(compass)
 {
@@ -91,8 +102,13 @@ ViewManager::ViewManager(nlohmann::json& config, COMPASS& compass)
 
     registerParameter("automatic_reload", &config_.automatic_reload, Config().automatic_reload);
     registerParameter("automatic_redraw", &config_.automatic_redraw, Config().automatic_redraw);
+
+    load_controller_.reset(new LoadController(compass_));
+    live_controller_.reset(new LiveController(compass_, *this));
 }
 
+/**
+*/
 void ViewManager::init(QTabWidget* main_tab_widget)
 {
     logdbg;
@@ -144,12 +160,16 @@ void ViewManager::init(QTabWidget* main_tab_widget)
     updateFeatures();
 }
 
+/**
+*/
 void ViewManager::loadViewPoints()
 {
     traced_assert(view_points_widget_);
     view_points_widget_->loadViewPoints();
 }
 
+/**
+*/
 void ViewManager::close()
 {
     logdbg;
@@ -185,6 +205,8 @@ void ViewManager::close()
     logdbg << "done";
 }
 
+/**
+*/
 ViewManager::~ViewManager()
 {
     logdbg;
@@ -196,6 +218,8 @@ ViewManager::~ViewManager()
     view_points_widget_ = nullptr;
 }
 
+/**
+*/
 void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
@@ -246,6 +270,8 @@ void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
 //        widget_->update();
 }
 
+/**
+*/
 void ViewManager::checkSubConfigurables()
 {
     if (containers_.size() == 0)
@@ -259,6 +285,8 @@ void ViewManager::checkSubConfigurables()
     }
 }
 
+/**
+*/
 void ViewManager::enableStoredReadSets()
 {
     loginf;
@@ -271,6 +299,9 @@ void ViewManager::enableStoredReadSets()
 
     use_tmp_stored_readset_ = true;
 }
+
+/**
+*/
 void ViewManager::disableStoredReadSets()
 {
     loginf;
@@ -279,6 +310,8 @@ void ViewManager::disableStoredReadSets()
     tmp_stored_readset_.clear();
 }
 
+/**
+*/
 dbContent::VariableSet ViewManager::getReadSet(const std::string& dbcontent_name)
 {
     if (use_tmp_stored_readset_)
@@ -299,18 +332,24 @@ dbContent::VariableSet ViewManager::getReadSet(const std::string& dbcontent_name
     return read_set;
 }
 
+/**
+*/
 ViewPointsWidget* ViewManager::viewPointsWidget() const
 {
     traced_assert(view_points_widget_);
     return view_points_widget_;
 }
 
+/**
+*/
 ViewPointsReportGenerator& ViewManager::viewPointsGenerator()
 {
     traced_assert(view_points_report_gen_);
     return *view_points_report_gen_;
 }
 
+/**
+*/
 std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj)
 {
     try
@@ -363,6 +402,8 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
     return std::make_pair(true, "");  
 }
 
+/**
+*/
 void ViewManager::clearViewPoints()
 {
     DBInterface& db_interface = compass_.dbInterface();
@@ -374,11 +415,16 @@ void ViewManager::clearViewPoints()
     viewPointsWidget()->clearViewPoints();
 
 }
+
+/**
+*/
 void ViewManager::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
 {
     viewPointsWidget()->addViewPoints(viewpoints);
 }
 
+/**
+*/
 void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
                                        bool load_blocking)
 {
@@ -400,12 +446,11 @@ void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
     // (the GridView duplicates its legend / skips the chart on that path).
     activateCompatibleViewTabs(current_viewable_);
 
-    if (load_blocking)
-        compass_.dbContentManager().loadBlocking(LoadRequest::standard());
-    else
-        compass_.dbContentManager().load(LoadRequest::standard());
+    reload(load_blocking);
 }
 
+/**
+*/
 void ViewManager::activateCompatibleViewTabs(const ViewableDataConfig* viewable)
 {
     if (!viewable)
@@ -475,7 +520,8 @@ void ViewManager::activateCompatibleViewTabs(const ViewableDataConfig* viewable)
     }
 }
 
-
+/**
+*/
 void ViewManager::unsetCurrentViewPoint ()
 {
     if (current_viewable_)
@@ -488,8 +534,8 @@ void ViewManager::unsetCurrentViewPoint ()
     }
 }
 
-
-
+/**
+*/
 void ViewManager::doViewPointAfterLoad ()
 {
     logdbg;
@@ -557,9 +603,9 @@ void ViewManager::doViewPointAfterLoad ()
 
         const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
-        if (dbcont_man.data().count(dbcont_it.first))
+        if (currentBuffers().count(dbcont_it.first))
         {
-            std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbcont_it.first);
+            std::shared_ptr<Buffer> buffer = currentBuffers().at(dbcont_it.first);
 
             traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
             NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
@@ -609,6 +655,8 @@ void ViewManager::doViewPointAfterLoad ()
     }
 }
 
+/**
+*/
 void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix_time::ptime ts_max)
 {
     loginf << "ts_min " << ts_min << " ts_max " << ts_max;
@@ -628,9 +676,9 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
 
         const dbContent::Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
-        if (dbcont_man.data().count(dbcont_it.first))
+        if (currentBuffers().count(dbcont_it.first))
         {
-            std::shared_ptr<Buffer> buffer = dbcont_man.data().at(dbcont_it.first);
+            std::shared_ptr<Buffer> buffer = currentBuffers().at(dbcont_it.first);
 
             traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
             NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
@@ -673,17 +721,23 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
     }
 }
 
+/**
+*/
 void ViewManager::showMainViewContainerAddView()
 {
     traced_assert(containers_.count("ViewContainer0"));
     containers_.at("ViewContainer0")->showAddViewMenuSlot();
 }
 
+/**
+*/
 std::map<std::string, std::string> ViewManager::viewClassList() const
 {
     return view_class_list_;
 }
 
+/**
+*/
 unsigned int ViewManager::newViewNumber(const std::string& class_name)
 {
     int max_number = -1;
@@ -712,13 +766,6 @@ std::string ViewManager::newViewName(const std::string& class_name)
 {
     traced_assert(view_class_list_.count(class_name));
     return view_class_list_.at(class_name) + " " + to_string(newViewNumber(class_name));
-}
-
-void ViewManager::disableDataDistribution(bool value)
-{
-    loginf << "value " << value;
-
-    disable_data_distribution_ = value;
 }
 
 bool ViewManager::isProcessingData() const
@@ -775,11 +822,15 @@ void ViewManager::resetToStartupConfiguration()
     disableStoredReadSets();
 }
 
+/**
+*/
 bool ViewManager::isInitialized() const
 {
     return initialized_;
 }
 
+/**
+*/
 ViewContainerWidget* ViewManager::addNewContainerWidget()
 {
     logdbg;
@@ -794,6 +845,8 @@ ViewContainerWidget* ViewManager::addNewContainerWidget()
     return container_widgets_.at(container_widget_name);
 }
 
+/**
+*/
 void ViewManager::clearDataInViews()
 {
     for (auto& view_it : views_)
@@ -802,6 +855,8 @@ void ViewManager::clearDataInViews()
     }
 }
 
+/**
+*/
 void ViewManager::registerView(View* view)
 {
     logdbg;
@@ -810,6 +865,8 @@ void ViewManager::registerView(View* view)
     views_[view->instanceName()] = view;
 }
 
+/**
+*/
 void ViewManager::unregisterView(View* view)
 {
     logdbg << view->getName().c_str();
@@ -822,6 +879,8 @@ void ViewManager::unregisterView(View* view)
     views_.erase(it);
 }
 
+/**
+*/
 bool ViewManager::isRegistered(View* view)
 {
     logdbg;
@@ -834,6 +893,8 @@ bool ViewManager::isRegistered(View* view)
     return !(it == views_.end());
 }
 
+/**
+*/
 void ViewManager::removeContainer(std::string instance_name)
 {
     std::map<std::string, ViewContainer*>::iterator it;
@@ -852,6 +913,8 @@ void ViewManager::removeContainer(std::string instance_name)
     throw std::runtime_error("ViewManager: removeContainer:  key not found");
 }
 
+/**
+*/
 void ViewManager::removeContainerWidget(std::string instance_name)
 {
     std::map<std::string, ViewContainerWidget*>::iterator it;
@@ -870,6 +933,8 @@ void ViewManager::removeContainerWidget(std::string instance_name)
     throw std::runtime_error("ViewManager: removeContainer: key not found");
 }
 
+/**
+*/
 void ViewManager::deleteContainerWidget(std::string instance_name)
 {
     std::map<std::string, ViewContainerWidget*>::iterator it;
@@ -889,6 +954,8 @@ void ViewManager::deleteContainerWidget(std::string instance_name)
     throw std::runtime_error("ViewManager: deleteContainerWidget: key not found");
 }
 
+/**
+*/
 void ViewManager::viewShutdown(View* view, const std::string& err)
 {
     delete view;
@@ -897,12 +964,16 @@ void ViewManager::viewShutdown(View* view, const std::string& err)
         QMessageBox::critical(QApplication::activeWindow(), "View Shutdown", QString::fromStdString(err));
 }
 
+/**
+*/
 void ViewManager::selectionChangedSlot()
 {
     loginf;
     emit selectionChangedSignal();
 }
 
+/**
+*/
 void ViewManager::databaseOpenedSlot()
 {
     loginf;
@@ -911,6 +982,8 @@ void ViewManager::databaseOpenedSlot()
         view_it.second->databaseOpened();
 }
 
+/**
+*/
 void ViewManager::databaseClosedSlot()
 {
     loginf;
@@ -922,11 +995,10 @@ void ViewManager::databaseClosedSlot()
         view_it.second->databaseClosed();
 }
 
+/**
+*/
 void ViewManager::loadingStartedSlot()
 {
-    if (disable_data_distribution_)
-        return;
-
     if (processing_data_)
     {
         loginf << "re-entry detected (currently in '" << current_dispatch_
@@ -941,40 +1013,58 @@ void ViewManager::loadingStartedSlot()
     reload_needed_ = false;
     loading_done_dispatched_ = false;
 
+    // start the load dialog/cursor here (fired off the op's startedSignal, so after the
+    // engine's single-op wait - the outgoing load is already cleaned up). Only for an
+    // offline/priming LoadOperation; the live feed (fresh entry) raises no dialog.
+    if (auto* op = dynamic_cast<LoadOperation*>(current_source_.get()))
+        load_controller_->begin(*op);
+
     loginf << "begin, " << views_.size() << " views";
 
     for (auto& view_it : views_)
         view_it.second->loadingStarted();
 
+    // bookend for external UI/view chrome consumers (owned here, not the manager)
+    emit loadingStartedSignal();
+
     loginf << "end";
 }
 
-// all data contained, also new one. requires_reset true indicates that all shown info should be re-created,
-// e.g. when data in the beginning was removed, or order of previously emitted data was changed, etc.
-void ViewManager::loadedDataSlot (const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
+// driven by the current source's dataChangedSignal. names empty = synthetic
+// finalize event (completion handled by loadingDoneSlot). reset true indicates
+// all shown info should be re-created.
+void ViewManager::sourceDataChangedSlot(const std::vector<std::string>& names, bool reset, bool last)
 {
-    if (disable_data_distribution_)
+    if (!current_source_)
+        return;
+
+    // an empty-names event only matters as the last=true finalize (drive providers to
+    // finalize); a non-final empty event has nothing to do
+    if (names.empty() && !last)
         return;
 
     if (processing_data_)
     {
         loginf << "re-entry detected (currently in '" << current_dispatch_
                << "'), deferring via queued connection";
-        // data captured by value (the map holds shared_ptrs to immutable Buffers).
-        auto data_copy = data;
         QMetaObject::invokeMethod(this,
-            [this, data_copy = std::move(data_copy), requires_reset]() {
-                loadedDataSlot(data_copy, requires_reset);
+            [this, names, reset, last]() {
+                sourceDataChangedSlot(names, reset, last);
             }, Qt::QueuedConnection);
         return;
     }
     QScopedValueRollback<bool> guard(processing_data_, true);
-    QScopedValueRollback<std::string> name_guard(current_dispatch_, "loadedDataSlot");
+    QScopedValueRollback<std::string> name_guard(current_dispatch_, "sourceDataChangedSlot");
 
     if (loading_done_dispatched_)
         logwrn << "called AFTER loadingDoneSlot completed - lifecycle contract violated";
 
-    loginf << "begin, " << views_.size() << " views, requires_reset " << requires_reset;
+    // restore the carried-over selection onto the freshly arrived buffers before the
+    // views read them (selection carry-over across reloads)
+    if (!names.empty())
+        applyCarriedSelection(names);
+
+    loginf << "begin, " << views_.size() << " views, requires_reset " << reset;
 
     using namespace boost::posix_time;
     ptime tmp_time;
@@ -982,26 +1072,235 @@ void ViewManager::loadedDataSlot (const std::map<std::string, std::shared_ptr<Bu
     for (auto& view_it : views_)
     {
         tmp_time = microsec_clock::local_time();
-        view_it.second->loadedData(data, requires_reset);
+
+        // the single data-delivery callback: the view pulls buffers/index from the source
+        // in its updateFromSource_impl (finalizing on last=true); a base-owned item
+        // provider (geo) is fed here too. names empty on the last=true finalize.
+        view_it.second->updateFromSource(*current_source_, names, reset, last);
 
         loginf << "view " << view_it.first << " took "
                << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
     }
 
+    // distribution side-effects: data-source loaded counts (per arrival) + status-widget
+    // trigger (once, on the finalize event)
+    if (current_source_)
+        compass_.dbContextManager().setLoadedCounts(current_source_->loadedCounts());
+    if (last)
+        emit dataDistributedSignal(reset);
+
     loginf << "end";
 }
 
-void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished loading
+/**
+ */
+void ViewManager::setCurrentSource(std::shared_ptr<DBContentDataSet> source)
 {
-    auto& dbcm = compass_.dbContentManager();
+    if (current_source_ == source)
+        return;
 
-    if (disable_data_distribution_)
+    if (current_source_)
+        disconnect(current_source_.get(), nullptr, this, nullptr);
+
+    current_source_ = std::move(source);
+
+    if (current_source_)
     {
-        // no views will be processed; jump the dialog to 100% so it's not stuck at 50%
-        dbcm.beginViewProgressPhase(0);
+        connect(current_source_.get(), &DBContentDataSet::dataChangedSignal,
+                this, &ViewManager::sourceDataChangedSlot);
+
+        // an offline/priming LoadOperation drives the load bookends off its own state
+        // machine; the live feed (not a LoadOperation) has none - its bookends come from
+        // appModeSwitchSlot instead
+        if (auto* op = dynamic_cast<LoadOperation*>(current_source_.get()))
+        {
+            connect(op, &LoadOperation::startedSignal, this, &ViewManager::loadingStartedSlot);
+            connect(op, &LoadOperation::finishedSignal, this, &ViewManager::loadingDoneSlot);
+        }
+    }
+}
+
+/**
+ */
+void ViewManager::reload(bool blocking, bool measure_performance)
+{
+    // in a live session (running or paused) the feed owns the data and is the current
+    // source; a full reload would swap the source away from it and lose the accumulated
+    // live data. Live view refreshes are handled in-widget (View::notifyViewUpdateNeeded
+    // -> liveReload); pause keeps the feed frozen on screen. So a reload is a no-op for
+    // the whole session.
+    if (isLiveSession(compass_.appMode()))
+    {
+        logwrn << "reload ignored in live session";
         return;
     }
 
+    // capture the outgoing selection BEFORE swapping the source away, so it can be
+    // restored onto the freshly loaded buffers as they arrive (selection carry-over)
+    captureSelection();
+
+    clearDataInViews();
+
+    LoadRequest req = LoadRequest::standard();
+    req.measure_db_performance_ = measure_performance;
+
+    // the dialog/cursor are raised by loadingStartedSlot off the op's startedSignal (after
+    // the engine's single-op wait), not here - so a superseded load can't leak them
+    auto op = std::make_shared<LoadOperation>(compass_.dbContentManager(), req);
+    setCurrentSource(op);
+
+    compass_.dbContentManager().dataEngine().load(op);
+    if (blocking)
+        op->wait();
+}
+
+/**
+ */
+const std::map<std::string, std::shared_ptr<Buffer>>& ViewManager::currentBuffers() const
+{
+    static const std::map<std::string, std::shared_ptr<Buffer>> empty;
+    return current_source_ ? current_source_->buffers() : empty;
+}
+
+/**
+ */
+bool ViewManager::hasMaxLatency() const
+{
+    return live_controller_->hasMaxLatency();
+}
+
+/**
+ */
+boost::posix_time::time_duration ViewManager::maxLatency() const
+{
+    return live_controller_->maxLatency();
+}
+
+/**
+ * ASTERIX live watchdog: force one live tick (no new inserts). Delegates to the live session.
+ */
+void ViewManager::forceLiveUpdate()
+{
+    live_controller_->processLiveModeSlot();
+}
+
+/**
+ * Reads the current source's selected_ flags into carried_selection_ so the selection
+ * survives the upcoming source swap. A selection already staged (e.g. from a view point)
+ * is kept as-is.
+ */
+void ViewManager::captureSelection()
+{
+    if (!carried_selection_.empty())
+        return; // already staged (e.g. from a view point)
+
+    if (!current_source_)
+        return;
+
+    for (const auto& buf_it : current_source_->buffers())
+    {
+        auto& buffer = buf_it.second;
+
+        if (!buffer->has<bool>(dbcontent_vars::selected_var_.name())
+            || !buffer->has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()))
+            continue;
+
+        NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
+        NullableVector<unsigned long>& rec_num_vec =
+            buffer->get<unsigned long>(dbcontent_vars::meta_var_rec_num_.name());
+
+        size_t data_size = selected_vec.contentSize();
+        for (unsigned int cnt = 0; cnt < data_size; ++cnt)
+        {
+            if (!selected_vec.isNull(cnt) && selected_vec.get(cnt))
+                carried_selection_[buf_it.first].insert(rec_num_vec.get(cnt));
+        }
+    }
+}
+
+/**
+ * Restores the carried selection onto a single freshly arrived buffer (matched rec nums
+ * are set and removed from the carry set).
+ */
+void ViewManager::restoreSelectionInto(const std::string& dbcontent_name, Buffer& buffer)
+{
+    if (!carried_selection_.count(dbcontent_name))
+        return;
+
+    auto& sel_recnums = carried_selection_.at(dbcontent_name);
+    if (sel_recnums.empty())
+        return;
+
+    if (!buffer.has<bool>(dbcontent_vars::selected_var_.name())
+        || !buffer.has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()))
+        return;
+
+    NullableVector<bool>& selected_vec = buffer.get<bool>(dbcontent_vars::selected_var_.name());
+    NullableVector<unsigned long>& rec_num_vec =
+        buffer.get<unsigned long>(dbcontent_vars::meta_var_rec_num_.name());
+
+    std::map<unsigned long, unsigned int> unique_rec_nums =
+        rec_num_vec.uniqueValuesWithIndexes(sel_recnums); // value -> index
+
+    for (auto& rec_num_it : unique_rec_nums)
+    {
+        selected_vec.set(rec_num_it.second, true);
+        sel_recnums.erase(rec_num_it.first);
+    }
+}
+
+/**
+ * Restores the carried selection onto the given contents of the current source (called
+ * from sourceDataChangedSlot as buffers arrive, before the views are driven).
+ */
+void ViewManager::applyCarriedSelection(const std::vector<std::string>& names)
+{
+    if (carried_selection_.empty() || !current_source_)
+        return;
+
+    for (const auto& name : names)
+    {
+        auto it = current_source_->buffers().find(name);
+        if (it != current_source_->buffers().end())
+            restoreSelectionInto(name, *it->second);
+    }
+}
+
+/**
+ * Stages an explicit selection (by rec num) for the next load, replacing any current
+ * selection. Used by FilterManager / view-point selection.
+ */
+void ViewManager::storeSelectedRecNums(const std::vector<unsigned long>& selected)
+{
+    clearSelectedRecNums(); // replace any current selection
+
+    DBContentManager& dbcont_man = compass_.dbContentManager();
+    for (auto rec_num : selected)
+        carried_selection_[dbcont_man.dbContentWithId(Utils::Number::recNumGetDBContId(rec_num))].insert(rec_num);
+}
+
+/**
+ * Clears the staged carry selection and the selected_ flags on the current source.
+ */
+void ViewManager::clearSelectedRecNums()
+{
+    carried_selection_.clear();
+
+    if (!current_source_)
+        return;
+
+    for (const auto& buf_it : current_source_->buffers())
+    {
+        auto& buffer = buf_it.second;
+        if (buffer->has<bool>(dbcontent_vars::selected_var_.name()))
+            buffer->get<bool>(dbcontent_vars::selected_var_.name()).setAll(false);
+    }
+}
+
+/**
+*/
+void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished loading
+{
     if (processing_data_)
     {
         loginf << "re-entry detected (currently in '" << current_dispatch_
@@ -1009,45 +1308,153 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
         QMetaObject::invokeMethod(this, &ViewManager::loadingDoneSlot, Qt::QueuedConnection);
         return;
     }
-    QScopedValueRollback<bool> guard(processing_data_, true);
-    QScopedValueRollback<std::string> name_guard(current_dispatch_, "loadingDoneSlot");
-
-    loginf << "begin, " << views_.size() << " views";
-
-    dbcm.beginViewProgressPhase(static_cast<unsigned int>(views_.size()));
-
-    using namespace boost::posix_time;
-    ptime tmp_time;
-    ptime loop_start = microsec_clock::local_time();
-
-    // Threshold: only pump events between views once the loop has been running
-    // for a while. Short loops (typical UI test loads, ~1-2 s total) finish
-    // before the threshold and never pump - this keeps queued RT commands from
-    // interleaving with view dispatch and breaking UI test injection. Long
-    // loads (the original "WM unresponsive" case, 12+ s) cross the threshold
-    // and start pumping, restoring responsiveness for the user.
-    constexpr int pump_threshold_ms = 3000;
-
-    for (auto& view_it : views_)
     {
-        tmp_time = microsec_clock::local_time();
-        view_it.second->loadingDone();
-        loginf << "view " << view_it.first << " took "
-               << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-        dbcm.advanceViewProgress();
+        QScopedValueRollback<bool> guard(processing_data_, true);
+        QScopedValueRollback<std::string> name_guard(current_dispatch_, "loadingDoneSlot");
 
-        auto elapsed_ms = (microsec_clock::local_time() - loop_start).total_milliseconds();
-        if (elapsed_ms > pump_threshold_ms)
-            pumpLoadingEvents();
-    }
+        // apply the pending view point onto the freshly loaded data BEFORE the views redraw
+        // (preserves the former finishLoading ordering: set selection -> loadingDone redraw)
+        doViewPointAfterLoad();
+
+        loginf << "begin, " << views_.size() << " views";
+
+        load_controller_->beginViewPhase(static_cast<unsigned int>(views_.size()));
+
+        using namespace boost::posix_time;
+        ptime tmp_time;
+        ptime loop_start = microsec_clock::local_time();
+
+        // Threshold: only pump events between views once the loop has been running
+        // for a while. Short loops (typical UI test loads, ~1-2 s total) finish
+        // before the threshold and never pump - this keeps queued RT commands from
+        // interleaving with view dispatch and breaking UI test injection. Long
+        // loads (the original "WM unresponsive" case, 12+ s) cross the threshold
+        // and start pumping, restoring responsiveness for the user.
+        constexpr int pump_threshold_ms = 3000;
+
+        for (auto& view_it : views_)
+        {
+            tmp_time = microsec_clock::local_time();
+            view_it.second->loadingDone();
+            loginf << "view " << view_it.first << " took "
+                   << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
+            load_controller_->advanceViewPhase();
+
+            auto elapsed_ms = (microsec_clock::local_time() - loop_start).total_milliseconds();
+            if (elapsed_ms > pump_threshold_ms)
+                pumpLoadingEvents();
+        }
+
+        // selection carry-over consumed for this load; drop any leftover (unmatched) rec nums
+        carried_selection_.clear();
+    } // processing_data_ released here
+
+    // Close the dialog OUTSIDE the re-entrancy guard (processing_data_ == false) so its
+    // processEvents flushes any deferred view redraw (e.g. the geo view's) now, while the
+    // dialog is still up - not after the load is marked done. Matches the pre-refactor
+    // finishLoading ordering. loading_done_dispatched_ is set only after this drain, so the
+    // flushed finalize is not misflagged as a late event.
+    load_controller_->end();
 
     loading_done_dispatched_ = true;
+
+    // bookend for external UI/view chrome consumers (owned here, not the manager)
+    emit loadingDoneSignal();
+
     loginf << "end";
 }
 
+/**
+ * Live-session entry bookend. The lean live counterpart of loadingStartedSlot: view chrome +
+ * the external bookend, but none of the offline-op work (no load dialog/cursor - the live
+ * feed is not a LoadOperation). Data has already been distributed via refreshDisplay by now.
+ */
+void ViewManager::beginLiveSession()
+{
+    if (processing_data_)
+    {
+        loginf << "re-entry detected (currently in '" << current_dispatch_
+               << "'), deferring via queued connection";
+        QMetaObject::invokeMethod(this, &ViewManager::beginLiveSession, Qt::QueuedConnection);
+        return;
+    }
+    QScopedValueRollback<bool> guard(processing_data_, true);
+    QScopedValueRollback<std::string> name_guard(current_dispatch_, "beginLiveSession");
+
+    reload_needed_ = false;
+    loading_done_dispatched_ = false;
+
+    for (auto& view_it : views_)
+        view_it.second->loadingStarted();
+
+    emit loadingStartedSignal();
+}
+
+/**
+ * Live-session exit bookend. The lean live counterpart of loadingDoneSlot: view chrome + the
+ * external bookend, but none of the offline-op finalize work (no view point, progress phase,
+ * pumping, dialog, or selection carry-over). current_source_ is already null here (cleared in
+ * appModeSwitchSlot before this runs), so no source-driven distribution can interleave.
+ */
+void ViewManager::endLiveSession()
+{
+    if (processing_data_)
+    {
+        loginf << "re-entry detected (currently in '" << current_dispatch_
+               << "'), deferring via queued connection";
+        QMetaObject::invokeMethod(this, &ViewManager::endLiveSession, Qt::QueuedConnection);
+        return;
+    }
+    {
+        QScopedValueRollback<bool> guard(processing_data_, true);
+        QScopedValueRollback<std::string> name_guard(current_dispatch_, "endLiveSession");
+
+        for (auto& view_it : views_)
+            view_it.second->loadingDone();
+    }
+
+    loading_done_dispatched_ = true;
+
+    emit loadingDoneSignal();
+}
+
+/**
+*/
 void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)
 {
     loginf << "app_mode " << compass_.appModeStr();
+
+    const bool was_live = isLiveSession(app_mode_previous);
+    const bool now_live = isLiveSession(app_mode_current);
+
+    // drive the live-session state machine + point current_source_ at the feed. The feed is
+    // the source across the whole session (running + paused): a pause keeps it as-is (frozen
+    // on screen), a resume catches up on the pause window before re-arming ticks, an exit
+    // drops it. COMPASS's pause reload is a no-op in a live session (see reload()) and its
+    // resume prime is overridden here by re-pointing at the feed.
+    if (app_mode_current == AppMode::LiveRunning)
+    {
+        // resume from pause catches up on the DB-accumulated window; fresh entry starts blank
+        if (app_mode_previous == AppMode::LivePaused)
+            live_controller_->resumeSession();
+        else
+            live_controller_->startSession();
+
+        setCurrentSource(live_controller_->feedPtr());
+
+        // trim the feed to the current window + distribute, without a DB delete here (that
+        // resumes on the next real tick). Fresh entry -> empty feed -> no-op.
+        live_controller_->refreshDisplay();
+    }
+    else if (app_mode_current == AppMode::LivePaused)
+    {
+        live_controller_->pauseSession(); // freeze; the feed stays the source
+    }
+    else if (was_live) // -> Offline
+    {
+        setCurrentSource(nullptr);
+        live_controller_->stopSession(); // disarm ticks + drop the live cache
+    }
 
     for (auto& view_it : views_)
     {
@@ -1058,8 +1465,19 @@ void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode
         else
             view_it.second->enableInTabWidget(true);
     }
+
+    // live-session bookends: entering the session opens the "one long load cycle", leaving it
+    // closes it. These are distinct from the offline load bookends (loadingStarted/DoneSlot,
+    // driven off the LoadOperation's state machine) - a live session raises no offline dialog/
+    // view-point/progress-phase work, so it gets its own lean bookend pair.
+    if (!was_live && now_live)
+        beginLiveSession();
+    else if (was_live && !now_live)
+        endLiveSession();
 }
 
+/**
+*/
 View* ViewManager::latestView()
 {
     time_t latest = std::numeric_limits<time_t>::min();
@@ -1077,6 +1495,8 @@ View* ViewManager::latestView()
     return latest_view;
 }
 
+/**
+*/
 ViewContainerWidget* ViewManager::latestViewContainer()
 {
     time_t latest = std::numeric_limits<time_t>::min();
@@ -1094,6 +1514,8 @@ ViewContainerWidget* ViewManager::latestViewContainer()
     return latest_container;
 }
 
+/**
+*/
 bool ViewManager::viewPresetsEnabled() const
 {
 #ifdef SCAN_PRESETS

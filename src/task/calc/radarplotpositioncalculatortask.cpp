@@ -21,6 +21,8 @@
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
 #include "logger.h"
@@ -124,16 +126,7 @@ void RadarPlotPositionCalculatorTask::run()
 
     DBContentManager& dbcontent_man = dbcontent_man_;
 
-    dbcontent_man.clearData();
     dbcontent_done_.clear();
-
-    compass_.viewManager().disableDataDistribution(true);
-    compass_.dbContentManager().enableDataDistribution(false);
-
-    connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-            this, &RadarPlotPositionCalculatorTask::loadedDataSlot);
-    connect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-            this, &RadarPlotPositionCalculatorTask::loadingDoneSlot);
 
     calculating_ = true;
     done_ = false;
@@ -169,13 +162,12 @@ void RadarPlotPositionCalculatorTask::run()
     req.cancellable_           = false;
     req.read_set_ = [this](const std::string& name) { return getReadSetFor(name); };
 
-    dbcontent_man.load(req);
-}
-
-void RadarPlotPositionCalculatorTask::loadedDataSlot(
-        const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
-{
-    data_ = data;
+    // isolated batch load: the operation is filled by the engine and read in
+    // loadingDoneSlot; the view dataset is never touched
+    load_op_ = std::make_shared<LoadOperation>(dbcontent_man, req);
+    connect(load_op_.get(), &LoadOperation::finishedSignal,
+            this, &RadarPlotPositionCalculatorTask::loadingDoneSlot);
+    dbcontent_man.dataEngine().load(load_op_);
 }
 
 void RadarPlotPositionCalculatorTask::loadingDoneSlot()
@@ -184,15 +176,8 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
 
     DBContentManager& dbcontent_man = dbcontent_man_;
 
-    disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-               this, &RadarPlotPositionCalculatorTask::loadedDataSlot);
-    disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-               this, &RadarPlotPositionCalculatorTask::loadingDoneSlot);
-
-    dbcontent_man.clearData();
-
-    compass_.viewManager().disableDataDistribution(false);
-    compass_.dbContentManager().enableDataDistribution(true);
+    data_ = load_op_->buffers();
+    load_op_ = nullptr; // release the isolated operation
 
     ProjectionManager& proj_man = compass_.projectionManager();
 

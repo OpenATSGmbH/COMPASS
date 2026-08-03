@@ -1,190 +1,222 @@
 # DBContent Loading
 
-Describes how data is read from the database into the in-memory `Buffer`s that views and tasks operate on. Every load runs through one entry point on `DBContentManager` and produces one `DBContentReadDBJob` per `DBContent` (DB jobs serialise behind the single DB connection in the JobManager).
+Describes how surveillance data is read from the database into the in-memory `Buffer`s that
+views and tasks operate on, both offline (one-shot loads) and live (a rolling in-memory
+feed). The design separates three responsibilities:
 
-## Single entry point
+- **`DBContentDataEngine`** — the single door to the DB connection for DBContent data: it
+  runs every load, insert and delete (one `DBContentReadDBJob` per `DBContent`, serialised
+  behind the single DB connection in the JobManager). It owns the running load and the
+  single-operation **safety net**.
+- **`DBContentManager`** — the *static model* (definitions, schema/variables, metadata,
+  targets, data-source model, min/max). It owns **no dataset** and does **no** distribution.
+  Its `load()` is a two-line pass-through; it forwards insert/delete to the engine.
+- **`ViewManager`** — owns the *displayed* dataset (`current_source_`), the distribution
+  dispatch, and the load/live lifecycle bookends. It delegates the two lifecycles to two
+  collaborators it owns: **`LoadController`** (offline load UX) and **`LiveController`**
+  (the live session).
 
-```cpp
-DBContentManager::load(const LoadRequest& req);
-DBContentManager::loadBlocking(const LoadRequest& req, unsigned sleep_ms = 1);
-```
+## The load object
 
-`LoadRequest` ([loadrequest.h](loadrequest.h)) is a simple struct:
+A load is a **`LoadOperation`** ([loadoperation.h](loadoperation.h)) — a `DBContentDataSet`
+subclass that carries a `LoadSpec` (the immutable `LoadRequest`), a state machine
+(`Created/Running/Done/Cancelled/Failed`), `cancel()`, an event-pumping `wait()`, and the
+loaded buffers + a lazily-built index/accessor. It emits its own `startedSignal` /
+`finishedSignal` and, being a data set, one `dataChangedSignal(names, reset, last)`.
+
+`LoadRequest` ([loadrequest.h](loadrequest.h)) is the spec used to build one:
 
 | Field | Default | Meaning |
 |---|---|---|
-| `dbcontents_` | `{}` | `{"*"}` = all eligible (`loadable() && loadingWanted()`); explicit names = exactly those (still gated by `loadable()`); empty = no-op load |
+| `dbcontents_` | `{}` | `{"*"}` = all eligible (`loadable() && loadingWanted()`); explicit names = exactly those (gated by `loadable()`); empty = no-op load |
 | `apply_datasrc_filters_` | `true` | Apply DBContext ds/line filters to WHERE |
-| `apply_view_filters_` | `true` | Apply FilterManager conditions to WHERE (and let filters add required vars to read set) |
+| `apply_view_filters_` | `true` | Apply FilterManager conditions to WHERE (and let filters add required vars to the read set) |
 | `custom_filter_clause_` | unset | Per-content `std::function<std::string(name)>` AND-ed after the filter clauses |
 | `read_set_` | unset | Per-content `std::function<VariableSet(name)>`; defaults to `mgr.getReadSet(name)` |
-| `show_status_` | `true` | Manager owns a `QProgressDialog` (one tick per content). Set `false` if the caller owns its own progress UI |
-| `cancellable_` | `true` | Dialog Cancel button calls `quitLoading()` |
+| `show_status_` | `true` | The issuer's progress UX applies (view loads only; see *LoadController*). Batch loads set `false` |
+| `cancellable_` | `true` | The progress dialog gets a Cancel button (→ `quitLoading()`) |
 | `measure_db_performance_` | `false` | Enables `DBInterface` perf metrics for this load |
 
-Three factories cover the common shapes:
+Factories: `LoadRequest::standard()` (fan-out, all filters on), `LoadRequest::withFilter(clause)`
+(fan-out + uniform clause), `LoadRequest::forContent(name, rs, clause="")` (single content, no
+filters). A default `LoadRequest{}` loads nothing — the `{"*"}` sentinel must be explicit, so
+accidental empty-set bugs are benign.
+
+## Who issues loads
+
+- **View loads** — `ViewManager::reload()` builds a `LoadRequest::standard()`, wraps it in a
+  `LoadOperation`, makes it `current_source_`, and runs it through `DBContentManager::load(op, blocking)`.
+- **Batch consumers** (Evaluation, Reconstructor, ARTAS, RadarPlot, RT `get_data`,
+  AnalysisDataset) — build their own `LoadOperation` and call **`dataEngine().load(op)`
+  directly**, then read `op->buffers()`. They never touch `current_source_`, so a batch load
+  raises **no** view/UI chrome and can't clobber the displayed dataset.
 
 ```cpp
-LoadRequest::standard();                                      // fan-out, all filters on
-LoadRequest::withFilter(std::string clause);                  // fan-out + uniform clause
-LoadRequest::forContent(std::string name, VariableSet rs,
-                        std::string clause = "");              // single content, no filters
+void DBContentManager::load(std::shared_ptr<LoadOperation> op, bool blocking = false);
+// pure wrapper: engine.load(op); if (blocking) op->wait();
 ```
 
-Default-constructed `LoadRequest{}` loads nothing - the `{"*"}` sentinel must be explicit. This makes accidental empty-set bugs benign.
+The **single-operation safety net** lives in `DBContentDataEngine::load()`: if a load is still
+running it waits (pumping events, `logwrn`) rather than asserting or quitting — a consumer may
+be awaiting the result. Because it's in the engine, *every* path (view + batch) gets it.
 
-## Workflow
+## Load flow (offline)
 
-**1. Start.** `load(req)` saves the request, sets the wait cursor, and if a previous load is still running iterates `quitLoading()` on each content and spins `processEvents()` until `load_in_progress_` clears. Then `saveSelectedRecNums()`, `clearData()`, `load_in_progress_ = true`. If `req.show_status_` and the resolved target set is non-empty, a `QProgressDialog` is created with `setMinimumDuration(500)` (so fast loads don't flicker); the Cancel button is wired to `quitLoading()` when `req.cancellable_`.
+1. `reload()` — `captureSelection()` (for carry-over), `clearDataInViews()`, build the op,
+   `setCurrentSource(op)`, `dbContentManager().load(op, blocking)`.
+   `setCurrentSource` subscribes ViewManager to the op's `dataChangedSignal`
+   (`sourceDataChangedSlot`) and — for a `LoadOperation` — to its `startedSignal`/`finishedSignal`
+   (`loadingStartedSlot`/`loadingDoneSlot`).
+2. `DBContentDataEngine::load(op)` — safety-net wait, `setState(Running)` (→ `startedSignal`),
+   `resolveTargetSet`, then per content: resolve read set (`spec.read_set_` or
+   `mgr.getReadSet`), `composeWhereClause` (ds/line filter + FilterManager conditions +
+   `custom_filter_clause_`), augment with the core meta-vars (`rec_num`/`ds_id`/`line_id`/`timestamp`),
+   create a `DBContentReadDBJob`, submit via `jobManager()`.
+3. **Per arrival** (`readJobDoneSlot`, GUI thread) — `transformVariables` (DB→var names) +
+   add `selected_`, `op->setBuffer(name)`, `op->emitChanged({name}, reset=false, last=false)`.
+   Empty contents don't emit.
+4. **Finalize** (`finish()`) — `op->emitChanged({}, reset=false, last=true)`, then
+   `setState(Done|Cancelled)` (→ `finishedSignal`), perf-metrics stop.
+5. `sourceDataChangedSlot` distributes each event (see *Distribution*); `loadingDoneSlot`
+   runs the completion (view finalize + bookend). `loadingDone(DBContent&)` and the old
+   `DBContent::loadInternal`/`readJobDoneSlot` path are dead (the engine owns its own read path).
 
-**2. Resolve target set.** `resolveTargetSet(req)` returns the names to load: if `req.dbcontents_ == {"*"}`, all `loadable() && loadingWanted()` contents; otherwise the explicit set intersected with `loadable()`.
+`load(op, /*blocking=*/true)` calls `op->wait()` (event-pumping) — used by viewpoint apply and
+the live resume reload.
 
-**3. Per-content fan-out.** For each target name the manager:
-- gets the read set (`req.read_set_(name)` or `getReadSet(name)`);
-- composes WHERE in `composeWhereClause(name, req, read_set)`: DBContext ds/line filter (if `apply_datasrc_filters_`), then `FilterManager::getSQLCondition(name, read_set)` (which may add filter-required vars to `read_set`), then `req.custom_filter_clause_(name)` - AND-ed in that order;
-- calls `DBContent::loadInternal(read_set, where)`.
+## Bookends (ViewManager)
 
-`loadInternal` is private and only callable by the manager (`friend class DBContentManager;`). It appends `rec_num`, `ds_id`, `line_id` to the read set, creates the `DBContentReadDBJob`, connects its `doneSignal` and `obsoleteSignal` to `DBContent` slots with `Qt::QueuedConnection`, and submits via `jobManager().addDBJob(...)`.
+`loadingStartedSignal()` / `loadingDoneSignal()` live on **ViewManager**, not the manager —
+the manager's loads may be issuer-private batch loads that must not drive view/UI chrome.
+They are emitted from `loadingStartedSlot` / `loadingDoneSlot`, which fire off the operation's
+own `startedSignal`/`finishedSignal` (wired in `setCurrentSource`). Consumers connect to
+ViewManager: MainWindow chrome, `TargetListWidget` focus-restore, and the RT wait
+`compass.viewmanager.loadingDoneSignal()`. The live session synthesises one `started` on
+entry and one `done` on exit (see *Live mode*), so it reads as a single
+`started → tick × N → done` cycle.
 
-After the loop the manager emits **`loadingStartedSignal()`**. If no jobs were created, `finishLoading()` is invoked immediately.
+## LoadController — the offline load UX
 
-**4. Job execution (`DBContentReadDBJob::run_impl`, DB worker thread)** - `prepareRead` → loop `readDataChunk` accumulating into `cached_buffer_` via `seizeBuffer` → on `last_buffer` break out → `finalizeReadStatement` → `done_ = true`. If canceled mid-loop, `cached_buffer_` is nulled. JobManager then fires the base-class `doneSignal()` on the GUI thread.
+`ViewManager` owns a **`LoadController`** ([loadcontroller.h](../../view/loadcontroller.h))
+that holds the modal `QProgressDialog`, the wait cursor, and the two-phase progress (load
+0..50% / view 50..100%). ViewManager drives it at its dispatch points:
 
-**5. `DBContent::readJobDoneSlot`** (GUI thread). Calls `read_job_->takeBuffer()` to retrieve the accumulated buffer; if non-empty, verifies the read-list properties, runs `buffer_utils::transformVariables` (renames DB columns to variable names), adds the `selected_` bool property, and hands the buffer to `DBContentManager::addLoadedData({{name, buffer}})`. Then `read_job_ = nullptr; dbcont_manager_.loadingDone(*this)`.
+- `begin(op)` — from `loadingStartedSlot` (i.e. off the op's `startedSignal`, **after** the
+  engine's safety-net wait). Idempotent: it `end()`s any prior cycle first, so a
+  superseded/overlapping load can't leak a dialog or unbalance the cursor. Sized via
+  `resolveTargetSet(op.spec())`. Skips the dialog when `spec.show_status_` is false or there's
+  nothing to load (wait cursor only).
+- **Load-phase progress** is driven **directly off the op's `dataChangedSignal`**
+  (`opDataChangedSlot`, connected in `begin`/disconnected in `end`) — *not* off ViewManager's
+  re-entrancy-deferrable `sourceDataChangedSlot`. A deferred arrival re-running the advance
+  used to yank the bar back to 50%.
+- `beginViewPhase(n)` / `advanceViewPhase()` — in `loadingDoneSlot`'s per-view loop.
+- `end()` — closes the dialog + restores the cursor. Called from `loadingDoneSlot`
+  **outside** the `processing_data_` guard, so a deferred `sourceDataChangedSlot` (e.g. the
+  geo view's redraw) drains while the dialog is still up — matching the pre-refactor
+  `finishLoading` ordering (no late geo update after "done").
 
-`readJobObsoleteSlot` is declared but never reached today (JobManager only emits `doneSignal`).
+## Distribution
 
-**6. `DBContentManager::addLoadedData`** seizes the buffer into `data_[name]`, updates `inserted/loaded` counts, restores selection, calls `data_store_->update(changed_dbc_contents, /*last=*/false)` (incremental, per-arrival - finalize is deferred to the `loadingDoneSignal → finalize()` hook), emits **`loadedDataSignal(data, false)`**, and advances the progress dialog by one tick. Two observers fan out from this point - see *Two parallel observers* below.
-
-**7. `DBContentManager::loadingDone(object)`** polls every DBContent; if any `isLoading()`, returns. Otherwise calls `finishLoading()`.
-
-**8. `finishLoading`** closes/clears the progress dialog, resets counters, calls `doViewPointAfterLoad`, logs perf metrics, emits **`loadingDoneSignal()`**, restores cursor, sets `loading_done_ = true`, clears `current_request_`.
-
-## Observable signals
-
-| Signal | Emitter | Meaning |
-|---|---|---|
-| `loadingStartedSignal()` | `DBContentManager` | Load has begun. |
-| `loadedDataSignal(data, reset)` | `DBContentManager` | One DBContent's buffer has arrived (once per content; the buffer is delivered in full on `doneSignal`, no streaming). |
-| `loadingDoneSignal()` | `DBContentManager` | All contents finished (or were aborted). |
-
-Polling helpers: `DBContentManager::loadInProgress()`, `DBContent::status()`, `DBContent::isLoading()`.
-
-`loadBlocking` is a convenience spin-wait wrapper around `load(req)` for callers that genuinely need to block (app-mode switch, EvaluationManager, ViewManager viewpoint apply). Treat it as a future-removal target - async + signal-driven continuation is preferred.
-
-## Two parallel observers
-
-After step 6 there are **two** distribution paths that fan out from the same data:
-
-**Path A - manager-signal path → `ViewManager` → `View`s.** `ViewManager` is connected to `loadingStartedSignal` / `loadedDataSignal` / `loadingDoneSignal` and dispatches `View::loadingStarted()` / `View::loadedData(data, reset)` / `View::loadingDone()` to every registered view (see *View distribution* below).
-
-**Path B - data-store path → `DBContentItemProvider` subclasses.** `DBContentManager` owns a `DBContentDataStore` ([dbcontentdatastore.h](dbcontentdatastore.h)) holding the buffer map plus a precomputed `dbc_id → ds_id → line_id → buffer indices` index. It exposes **one** signal:
+The displayed dataset is the **current source** — a `DBContentDataSet` (`LoadOperation`
+offline, `LiveDataFeed` live) owned by `ViewManager` as `current_source_`. It owns the buffer
+map plus a lazily-built `DBContentDataIndex` (`dbc_id → ds_id → line_id → buffer indices`) and
+accessor, and emits **one** change signal:
 
 | Signal | Payload | Meaning |
 |---|---|---|
-| `dataChangedSignal(dbc_ids, reset, last)` | `vector<unsigned int>`, `bool`, `bool` | Buffers/indices for `dbc_ids` have been rebuilt. If `reset` is true, listeners must also drop state for any contents NOT in `dbc_ids` (full dataset replacement). If `last` is true, this is the final event of a logical batch - listeners run finalize work (heavy: provider `dataRefreshed_impl`, downstream visual refresh). |
+| `dataChangedSignal(names, reset, last)` | `vector<string>`, `bool`, `bool` | Buffers/indices for `names` changed. `reset` → drop state for contents NOT in `names` (full replacement). `last` → final event of a batch; listeners run finalize work. The index is rebuilt/consistent *before* the signal fires. |
 
-The signal is emitted by:
+**`ViewManager` is the sole subscriber** (`sourceDataChangedSlot`). Per registered view it
+drives, in one guarded turn:
+- **raw-buffer path** — `View::loadedData(source.buffers(), reset)` (standard views consume the
+  buffer map; per-view incremental `updateFromSource_impl` intake is the still-pending step 8);
+- **source path** — `View::updateFromSource(source, names, reset, last)`. A view with a
+  base-owned `DBContentItemProvider` (only the Geographic View's `GeometryItemProvider`) has
+  the provider fed here: `setSource(&source)` + `applyChange(names, reset, last)` →
+  `resetData()` (if `reset`) → `rebuildContent(id)` per name → `contentRebuilt()` (if `last`),
+  reading `source.index()`/`source.buffers()`. So OSG never paints the empty intermediate
+  state between wipe and rebuild.
 
-| Caller | Emits |
+Also in `sourceDataChangedSlot`: selection carry-over (`applyCarriedSelection`), data-source
+loaded counts (`dbContextManager().setLoadedCounts`), and — on `last` — `dataDistributedSignal`
+(the data-sources status widget refreshes off it).
+
+### Re-entrancy guard + threshold event-pumping
+
+`loadingStartedSlot` / `sourceDataChangedSlot` / `loadingDoneSlot` share a single
+`processing_data_` flag (`QScopedValueRollback` for the per-view loop). If any is invoked while
+the flag is set, it re-posts itself via `Qt::QueuedConnection` and returns — preserving the
+`started → changed* → done` ordering under event-loop pumping.
+
+`loadingDoneSlot` is the one place a load can take long enough for the window manager to flag
+the app unresponsive. After each `view->loadingDone()` it calls `processEvents(ExcludeUserInput
+| ExcludeSocketNotifiers)` — but only **after the loop has run longer than `pump_threshold_ms`
+(3 s)**. Pumping unconditionally lets queued RT commands (posted from the asio runner thread,
+which bypass `QSocketNotifier`) interleave with view dispatch and break UI-test signal
+injection; the threshold keeps short loads (typical UI tests) below the pump line entirely.
+The `LoadController` progress helpers use `dialog_->repaint()` (a synchronous widget paint),
+**not** `processEvents()`, for the same reason. Treat unconditional `processEvents()` inside the
+load lifecycle as suspect; prefer `repaint()` on the specific widget.
+
+## Live mode (`LiveController`)
+
+`ViewManager` owns a **`LiveController`** ([livecontroller.h](../../view/livecontroller.h))
+that holds the `LiveDataFeed`, subscribes to the engine's `insertedDataSignal`, and runs the
+per-tick orchestration. The feed and both controllers are **private** — the ASTERIX watchdog
+fires `ViewManager::forceLiveUpdate()` and the latency façade reads `ViewManager::hasMaxLatency()/maxLatency()`.
+
+**Key fact:** pause does **not** stop ingestion. The ASTERIX decode/insert pipeline keeps
+running and the DB keeps accumulating; the display freezes only because the engine emits
+`insertedDataSignal` **only in `LiveRunning`** (in `LivePaused` it inserts to the DB and
+clears `insert_data_` without announcing). So the feed freezes while the DB grows.
+
+Transitions (`ViewManager::appModeSwitchSlot`, driven by `COMPASS::appModeSwitchSignal`;
+`compass.cpp::appMode()` no longer special-cases pause/resume — it just switches the importer
+and emits):
+
+| Transition | Action |
 |---|---|
-| `DBContentDataStore::update()` (no-args, full rebuild) | `(all_ids, reset=true, last=true)` |
-| `DBContentDataStore::update(dbc_names, last)` (incremental) | `(those_ids, reset=false, last)` |
-| `DBContentDataStore::reset(last)` | `({}, reset=true, last)` |
-| `DBContentDataStore::finalize()` - wired to `DBContentManager::loadingDoneSignal` (queued) | `({}, reset=false, last=true)` (synthetic finalize for empty/cancelled loads) |
+| **Fresh entry** (Offline→Live) | `current_source_ = feed` (empty → **blank**), one `started` bookend, `refreshDisplay()` (no-op) |
+| **Pause** (Live→Paused) | nothing — the feed stays the source, frozen; ingestion continues into the DB |
+| **Resume** (Paused→Live) | `reloadWindow()` (catch up), `current_source_ = feed`, `refreshDisplay()` |
+| **Exit** (Live→Offline) | `current_source_ = null`, `clearFeed()`, one `done` bookend |
 
-Subclasses of `DBContentItemProvider` (e.g. `GeometryItemProvider` for the Geographic View) connect to this signal with `Qt::QueuedConnection` when constructed with `auto_update=true`. The slot performs `doReset()` (if `reset`) → `rebuildContent(id)` for each id → `doRefreshed()` (if `last`) inside a single event-loop turn, so listeners that paint independently (e.g. OSG) cannot observe the empty intermediate state between the wipe and the rebuild. From there, downstream signals (e.g. `layersResetSignal` / `layersChangedSignal` in the Geographic View) drive the visual rebuild - independent of `View::loadedData()`.
+**Resume catch-up** — `LiveController::reloadWindow()` harvest-loads `timestamp >= now -
+maxLiveDataAgeCache` from the DB (a private blocking `LoadOperation`, never the display source,
+so no bookend/dialog) and `seedFrom`-**replaces** the frozen feed with the current window
+(picking up everything that accumulated while paused). It sets a `reloading_` flag around the
+blocking load so a pump-fired tick can't issue an overlapping `deleteOlderThan` or lose a
+concurrent insert to the `seedFrom` (inserts still stage and merge on the next tick).
+`refreshDisplay()` then runs `processTick()` (feed `cutCachedData` + distribute) **without** a
+DB delete — the every-tick DB bound resumes on the next real tick, so nothing overlaps here.
 
-In a normal load both paths fire concurrently:
-- step 6 calls `data_store_->update(changed_dbc_contents, last=false)` → Path B (per-arrival incremental rebuild, no finalize); also emits `loadedDataSignal` → Path A;
-- step 8 emits `loadingDoneSignal` → Path A, and the data store's queued connection runs `finalize()` which emits `dataChangedSignal({}, false, true)` → Path B (provider runs finalize work).
-
-In live-mode Path B fires once per tick as a single atomic event - see next section.
-
-## Live-mode update (`processLiveModeSlot`)
-
-Driven once per second from `ASTERIXImportTask::checkDataReceivedSlot` via the import → manager chain. It is **not** a load - no DB job runs and no `LoadRequest` is built. The freshly inserted buffers (`insert_data_`) are merged into `data_` and redistributed in place.
-
-Sequence ([dbcontentmanager.cpp:1288](dbcontentmanager.cpp#L1288)):
-
-1. Compute per-DBContent min timestamp for the latency log.
-2. `deleteDBContentData(old_time)` - drop rows older than the live cache window.
-3. `addInsertedDataToChache()` - move freshly inserted buffers into `data_`.
-4. `cutCachedData()`, `filterDataSources()`, optional `filterManager().filterBuffers(data_)`.
-5. **Distribute** -
-   - if `data_.size()`: `data_store_->update()` (Path B, single atomic event) **and** `emit loadedDataSignal(data_, true)` (Path A);
-   - else if `had_data`: `data_store_->reset(last=true)` (Path B atomic wipe+finalize) and `viewManager().clearDataInViews()` (Path A widget cache clear).
-6. `updateNumLoadedCounts()`; update `max_latency_`.
-
-Step 5 fires **both** paths.
-
-Path B is the critical part of the tick. `data_store_->update()` clears its internal state then repopulates from `data_` and emits a single `dataChangedSignal(all_ids, reset=true, last=true)` (queued). The provider processes wipe + per-content rebuild + finalize inside one event-loop turn - OSG cannot paint the empty intermediate state between the wipe and the rebuild.
-
-Path A drives the surrounding view chrome - `loadedDataSignal(data_, /*reset=*/true)` is dispatched by `ViewManager::loadedDataSlot` to every view's `loadedData(data, requires_reset)`. For the Geographic View this runs `GeographicViewDataWidget::updateData_impl` ([geographicviewdatawidget.cpp:571](../../../experimental_src/view/geographicview/geographicviewdatawidget.cpp#L571)) - `TimeFilterWidget::updateMinMaxTime`, `timestamp_drawn_*` recompute, first-tick `zoomToLoadedData()`, `updateInfoText`, `updateStatusMessage`, `drawSlot()`, overload detection.
-
-The `loadingStartedSignal` / `loadingDoneSignal` bookends of the live cycle are emitted once per cycle, not per tick: `DBContentManager::appModeSwitchSlot` ([dbcontentmanager.cpp:1307](dbcontentmanager.cpp#L1307)) emits `loadingStartedSignal()` on `LiveRunning` entry and `loadingDoneSignal()` on exit, so Path A consumers (`ViewManager::loading*Slot`) see live entry/exit as a single `started → loadedData × ticks → done` cycle.
+**The per-tick** (`processLiveModeSlot`, from `insertedDataSlot` + the watchdog): guard on
+`LiveRunning` (and not `reloading_`), `deleteDBContentData(now - maxLiveDataAgeDb)` (the DB
+bound — runs every tick, unchanged), then `processTick()`. `LiveDataFeed::processTick()` merges
+staged inserts, `cutCachedData` (trims the display to `maxLiveDataAgeCache`), filters, updates
+latency, and emits **one** atomic `dataChangedSignal(all, reset=true, last=true)` →
+`sourceDataChangedSlot`. The single queued event means the geo provider wipes + rebuilds +
+finalizes in one event-loop turn (no empty intermediate OSG paint). The **display window** is
+bound by the feed's `cutCachedData`, independent of the DB delete.
 
 ### Layer churn in the per-tick rebuild
 
-Path B's wipe + rebuild is now atomic, but `GeometryItemProvider::reset_impl()` still destroys every `GeometryItemGroupLayer` and `dataChanged_impl()` reconstructs a new one. The `backupLayer` / `restoreLayer` JSON round-trip preserves logical label state, but each `GeometryItemGroupPointLabel` is torn down and re-registered with the overlay registry per tick - visible label flicker. The deeper fix is to keep existing `(dbc, ds, line)` layers alive across ticks and refresh buffer/index references in place, destroying only vanished keys.
-
-### Other rough edges in the live path
-
-- **Stale code in `GeographicViewDataWidget::updateData_impl`** (lines 581-604) - commented-out `osg_layer_model_->processBuffers(...)` references `OSGLayerModel`, which is no longer the live geometry path; the active type is `GeographicViewLayerModel` driven by `GeometryItemProvider`. Dead block, safe to delete.
-
-## Progress granularity
-
-Coarse only: one tick per DBContent, advanced from `addLoadedData`. There is no per-row / per-chunk progress signal. Two paths to fine-grained feedback if needed later:
-- emit per-chunk from the job (instead of accumulating into `cached_buffer_` and delivering once on done) and tally rows in `addLoadedData`;
-- precompute expected totals via `SELECT COUNT(*)` with the same WHERE before submitting and report arrival % against that.
-
-## View distribution (`ViewManager`)
-
-`ViewManager` is the canonical consumer of the three lifecycle signals; it fans them out to every registered `View`:
-
-| Slot | Per-view call | Notes |
-|---|---|---|
-| `loadingStartedSlot` | `view->loadingStarted()` | Resets `reload_needed_`. Skipped when `disable_data_distribution_` is set (used during processing-only loads). |
-| `loadedDataSlot(data, reset)` | `view->loadedData(data, reset)` | Fires once per DBContent (one buffer arrival per signal). |
-| `loadingDoneSlot` | `view->loadingDone()` | Heavy work - view rebuilds, scene-graph re-zooms, table-model index rebuilds. |
-
-### Re-entrancy guard
-
-All three slots share a single `processing_data_` flag, scoped via `QScopedValueRollback` for the duration of the per-view loop. If any of them is invoked while `processing_data_` is set, it re-posts itself via `Qt::QueuedConnection` and returns immediately. This preserves the contracted ordering `started → loaded* → done` even when the slots are interrupted by event-loop pumping (see below).
-
-### Threshold-based event pumping in `loadingDoneSlot`
-
-`loadingDoneSlot` is the single place where a load can take long enough on the GUI thread for the window manager to flag the application as unresponsive (`_NET_WM_PING` timeout on X11 / similar on Wayland). For wide loads with several heavy views the per-view loop can run for tens of seconds - the original symptom was a Linux "Application is not responding - Wait / Force Quit" dialog mid-load.
-
-To keep the GUI responsive, the loop calls
-
-```cpp
-QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents
-                              | QEventLoop::ExcludeSocketNotifiers);
-```
-
-after each `view->loadingDone()` - but only **after the loop has been running longer than `pump_threshold_ms` (3 s)**. The threshold matters: pumping unconditionally lets queued events (notably RT commands posted from the asio-driven `RTCommandManager` runner thread) interleave with view dispatch. UI integration tests waiting on a single view's `viewRefreshed` signal would then issue their next command while later views in the loop are still being processed, breaking signal-injection assumptions (e.g. popup-menu tests). The threshold keeps short loads (typical UI tests, ~1–2 s total) below the pump line entirely, so the loop runs uninterrupted; long loads still get periodic pumping once they pass 3 s.
-
-Excluded event categories (`UserInput`, `SocketNotifiers`) further narrow what can fire during a pump:
-- no menu/button slot from a real user click
-- no Qt `QSocketNotifier` (RT commands from the boost::asio session bypass this - they post `QMetaCallEvent`s directly, hence the additional threshold and re-entrancy guard above)
-
-What still fires during a pump: paint events, timer events, WM ping replies, internal queued slots. The re-entrancy guard ensures that if a queued `loadedDataSlot` / `loadingDoneSlot` happens to be among them, it defers cleanly instead of running mid-iteration.
-
-`loadingStartedSlot` and `loadedDataSlot` do **not** pump. The chunk-by-chunk delivery of `loadedDataSignal` from the worker thread already yields the event loop between contents; pumping inside their per-view loops adds no responsiveness gain and used to allow `loadedDataSlot` to be re-posted past a queued `loadingDoneSlot`, breaking the ordering contract.
-
-### Progress dialog updates use `repaint()`, not `processEvents()`
-
-`DBContentManager::beginViewProgressPhase` and `advanceViewProgress` are called from inside the `loadingDoneSlot` loop after each view, to advance the `QProgressDialog` value. The natural choice would be `QCoreApplication::processEvents()` after `setValue(...)` so the dialog repaints - but that would re-introduce the same problem the threshold above avoids: an unconditional pump on every progress tick dispatches all queued events, including RT commands waiting on the main-thread queue. A regression of the popup-injection failure was traced to exactly this path.
-
-The helpers therefore call `progress_dialog_->repaint()` instead - a synchronous paint of the dialog widget, with no event-queue dispatch. The dialog updates visually without pumping. The single coarse-grained pump in `loadingDoneSlot` (gated by the 3 s threshold) remains the only place where queued events get a chance to run during the loop.
-
-Treat unconditional `processEvents()` calls inside the load lifecycle as suspect; prefer `repaint()` on the specific widget that needs to update.
+The feed's per-tick wipe + rebuild is atomic, but `GeometryItemProvider::reset_impl()` still
+destroys every `GeometryItemGroupLayer` and rebuilds a new one — each label is torn down and
+re-registered per tick (visible label flicker). The deeper fix is to keep existing
+`(dbc, ds, line)` layers alive across ticks and refresh buffer/index references in place,
+destroying only vanished keys.
 
 ## Migrating away from per-content loads
 
-`DBContent::loadInternal` is private. Tasks that previously called `DBContent::load(read_set, ...)` directly (Reconstructor, RadarPlot, ARTAS, RT `get_data`) now build a `LoadRequest` and call the manager. Patterns:
+`DBContent::loadInternal` is dead (the engine owns the read path). Tasks that previously called
+`DBContent::load(...)` directly build a `LoadOperation` and call `dataEngine().load(op)`:
 
-- **Time-sliced loads (Reconstructor).** Build one `LoadRequest` per slice with `dbcontents_` populated explicitly (the slice's targets), `apply_*_filters_=false`, `read_set_` and `custom_filter_clause_` lambdas for per-content variation, `show_status_=false`, `cancellable_=false`. The slice-to-slice iteration is driven by listening to `loadingDoneSignal` and re-issuing `load(req)` for the next slice.
-- **Single content (RT `get_data`).** `LoadRequest::forContent(name, rs, clause)` plus `show_status_=false`, `cancellable_=false`.
-- **Restricted fan-out (ARTAS, RadarPlot).** Set `dbcontents_` to the explicit target names, `apply_*_filters_=false`, `read_set_` lambda, optionally `custom_filter_clause_` lambda for per-content WHERE.
+- **Time-sliced (Reconstructor).** One op per slice with `dbcontents_` explicit, `apply_*_filters_=false`,
+  `read_set_`/`custom_filter_clause_` lambdas, `show_status_=false`; iterate by connecting the
+  op's `finishedSignal` and issuing the next slice.
+- **Single content (RT `get_data`).** `LoadRequest::forContent(name, rs, clause)`, `show_status_=false`;
+  `op->wait()` synchronously, with an `isLoading()` guard (RT bypasses UI modality).
+- **Restricted fan-out (ARTAS, RadarPlot).** Explicit `dbcontents_`, `apply_*_filters_=false`,
+  `read_set_` lambda, optional `custom_filter_clause_`.

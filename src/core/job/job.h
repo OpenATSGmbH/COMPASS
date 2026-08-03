@@ -96,11 +96,15 @@ public:
         catch (const std::exception& e)
         {
             logerr << "Job: " << name_ << ": exception: " << e.what();
+            error_ = true;
+            error_msg_ = e.what();
             done_ = true;
         }
         catch (...)
         {
             logerr << "Job: " << name_ << ": unknown exception";
+            error_ = true;
+            error_msg_ = "unknown exception";
             done_ = true;
         }
     }
@@ -118,6 +122,9 @@ public:
     bool started() { return started_; }
     // @brief Returns done flag
     bool done() { return done_; }
+    // @brief run_impl threw and was caught (job is done, but errored)
+    bool hasError() const { return error_; }
+    const std::string& errorMessage() const { return error_msg_; }
     void emitDone() { emit doneSignal(); }
     // @brief Sets obsolete flag
     virtual void setObsolete() 
@@ -196,6 +203,9 @@ protected:
     bool done_{false};
     /// Obsolete flag
     volatile bool obsolete_{false};
+    /// Error flag: run_impl threw and was caught (still done, but errored)
+    bool        error_{false};
+    std::string error_msg_;
 
     //virtual void setDone() { done_ = true; }
 

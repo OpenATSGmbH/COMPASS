@@ -103,6 +103,8 @@ class DBContent : public QObject, public Configurable
 signals:
     void updateProgressSignal(float percent);
     void updateDoneSignal(DBContent& dbcontent);
+    void readDoneSignal(const std::string& dbcontent_name, std::shared_ptr<Buffer> buffer);
+    void readFailedSignal(const std::string& dbcontent_name, const std::string& error);
 
 public slots:
     void databaseOpenedSlot();
@@ -146,8 +148,6 @@ public:
 
     bool loadable() const { return is_loadable_; }
 
-    void quitLoading();
-
     bool prepareInsert(std::shared_ptr<Buffer>& buffer);
     /// Returns true if a new data source was created in the active context.
     /// Does NOT emit countsChangedSignal/dataSourcesChangedSignal - the
@@ -169,12 +169,10 @@ public:
                              unsigned int line_id,
                              bool cleanup_db = false);
 
-    bool isLoading();
     bool isDeleting();
 
     bool hasData();
     size_t count();
-    size_t loadedCount();
 
     void refreshCount();
 
@@ -182,8 +180,6 @@ public:
 
     bool hasKeyVariable();
     dbContent::Variable& getKeyVariable();
-
-    std::string status();
 
     DBContentWidget* widget();
     void closeWidget();
@@ -200,11 +196,10 @@ public:
 
 private:
     friend class DBContentManager;
+    friend class DBContentDataEngine;
 
-    // Sole low-level entry to start a read job. Always called by the manager from
-    // DBContentManager::load(LoadRequest) after composing the WHERE clause.
-    void loadInternal(dbContent::VariableSet& read_set,
-                      std::string custom_filter_clause);
+    void loadInternal(dbContent::VariableSet& read_set, std::string custom_filter_clause);
+    void quitLoading();
 
 protected:
     void checkStaticVariable(const Property& property);

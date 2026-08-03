@@ -20,6 +20,7 @@
 #include "dbfiltercondition.h"
 #include "filtermanager.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "logger.h"
 
 #include <QHBoxLayout>
@@ -95,10 +96,10 @@ std::pair<int, int> TimeOfDayFilterWidget::effectiveBoundsSecs() const
 {
     auto& dbcont_man = filter_.filterManager().dbContentManager();
 
-    if (!dbcont_man.hasMinMaxTimestamp())
+    if (!dbcont_man.dataEngine().hasMinMaxTimestamp())
         return {0, SECONDS_PER_DAY - 1};
 
-    auto minmax = dbcont_man.minMaxTimestamp();
+    auto minmax = dbcont_man.dataEngine().minMaxTimestamp();
     long span_secs = (minmax.second - minmax.first).total_seconds();
 
     if (span_secs >= SECONDS_PER_DAY)
