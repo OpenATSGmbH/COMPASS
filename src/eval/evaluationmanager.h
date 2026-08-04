@@ -135,7 +135,10 @@ protected:
     std::map<std::string, std::shared_ptr<Buffer>> fetchData();
 
 private:
-    void configureLoadFilters(const EvaluationCalculator& calculator);
+    // per-content load WHERE for eval, built from the shared clause toolkit
+    // (ROI bbox / UTN set / timestamp bounds) - no global-filter hijack
+    std::string loadFilterClause(const std::string& dbcontent_name,
+                                 const EvaluationCalculator& calculator);
     void loadingDone();
 
     COMPASS& compass_;

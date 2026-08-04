@@ -259,8 +259,6 @@ void DBContent::loadInternal(dbContent::VariableSet& read_set, std::string custo
     read_job_ = make_shared<DBContentReadDBJob>(
                 compass_.dbInterface(), *this, read_set, custom_filter_clause);
 
-    connect(read_job_.get(), &DBContentReadDBJob::obsoleteSignal,
-            this, &DBContent::readJobObsoleteSlot, Qt::QueuedConnection);
     connect(read_job_.get(), &DBContentReadDBJob::doneSignal,
             this, &DBContent::readJobDoneSlot, Qt::QueuedConnection);
 
@@ -273,17 +271,6 @@ void DBContent::quitLoading()
 {
     if (read_job_)
         read_job_->setObsolete();
-}
-
-/**
- */
-void DBContent::readJobObsoleteSlot()
-{
-    logdbg << name_;
-
-    read_job_ = nullptr;
-
-    emit readDoneSignal(name_, nullptr);
 }
 
 /**
@@ -325,7 +312,9 @@ void DBContent::readJobDoneSlot()
         buffer->addProperty(dbcontent_vars::selected_var_);
     }
     else
+    {
         buffer = nullptr;
+    }
 
     read_job_ = nullptr;
 

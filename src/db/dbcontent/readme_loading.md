@@ -31,16 +31,18 @@ loaded buffers + a lazily-built index/accessor. It emits its own `startedSignal`
 | `dbcontents_` | `{}` | `{"*"}` = all eligible (`loadable() && loadingWanted()`); explicit names = exactly those (gated by `loadable()`); empty = no-op load |
 | `apply_datasrc_filters_` | `true` | Apply DBContext ds/line filters to WHERE |
 | `apply_view_filters_` | `true` | Apply FilterManager conditions to WHERE (and let filters add required vars to the read set) |
-| `custom_filter_clause_` | unset | Per-content `std::function<std::string(name)>` AND-ed after the filter clauses |
+| `custom_filter_clause_` | unset | Per-content `std::function<std::string(name)>` AND-ed after the filter clauses; built via the clause toolkit (see *WHERE composition*) |
 | `read_set_` | unset | Per-content `std::function<VariableSet(name)>`; defaults to `mgr.getReadSet(name)` |
 | `show_status_` | `true` | The issuer's progress UX applies (view loads only; see *LoadController*). Batch loads set `false` |
 | `cancellable_` | `true` | The progress dialog gets a Cancel button (→ `quitLoading()`) |
 | `measure_db_performance_` | `false` | Enables `DBInterface` perf metrics for this load |
 
 Factories: `LoadRequest::standard()` (fan-out, all filters on), `LoadRequest::withFilter(clause)`
-(fan-out + uniform clause), `LoadRequest::forContent(name, rs, clause="")` (single content, no
-filters). A default `LoadRequest{}` loads nothing — the `{"*"}` sentinel must be explicit, so
-accidental empty-set bugs are benign.
+(fan-out + uniform raw-string clause — an escape hatch), `LoadRequest::forContent(name, rs, clause="")`
+(single content, no filters). A default `LoadRequest{}` loads nothing — the `{"*"}` sentinel must
+be explicit, so accidental empty-set bugs are benign. `LoadRequest::perContentClause(...)` (a
+precomputed `map`, or a `(contents, generator)` pair that renders one up front) builds a
+`custom_filter_clause_` function without the caller hand-rolling the per-content lookup.
 
 ## Who issues loads
 
@@ -83,6 +85,37 @@ be awaiting the result. Because it's in the engine, *every* path (view + batch) 
 
 `load(op, /*blocking=*/true)` calls `op->wait()` (event-pumping) — used by viewpoint apply and
 the live resume reload.
+
+## WHERE composition (filter-clause library)
+
+`DBContentDataEngine::composeWhereClause(name, spec, read_set)` assembles each content's WHERE
+from three `FilterClause` parts, `combineAnd`-ed:
+
+1. **datasource/line** — from `DBContextManager::loadingSelection(name)`, the single source for
+   both the offline SQL here and the live in-memory `filterDataSources`. An empty selection
+   emits the `1=0` no-row sentinel.
+2. **view filters** — `FilterManager::viewClause(name)` when `apply_view_filters_` (each active
+   filter's `getClause`, `combineAnd`-ed), replacing the old side-effecting `getSQLCondition`.
+3. **custom clause** — the issuer's `custom_filter_clause_(name)`.
+
+A `FilterClause` is `{ std::string sql; VariableSet required_vars; }`; the engine unions
+`required_vars` into the read set, so a column that is filtered-on but not otherwise read gets
+added automatically.
+
+Clauses are built with the shared toolkit in [filterclause.h](../../filter/filterclause.h):
+- `DBFilterCondition::sqlFor(resolver, content, variable, var_dbcontent, op, value…)` renders one
+  leaf condition — any operator via the `filter_op::` tokens (the single home for `=`/`>=`/`IN`/
+  `BETWEEN`/`NULL`/… strings) — and **self-guards** via the static `variableResolvable(...)`,
+  returning an empty clause when the variable is absent for that content (so callers need no
+  per-content `metaCanGetVariable` guard).
+- per-filter `sqlFor` statics (`TimestampFilter::sqlFor`, `UTNFilter::sqlFor`, Mode3A/ACAD/…)
+  render the specialised conditions; `combineAnd`/`combineOr` join them (unioning required vars).
+
+Batch consumers build their `custom_filter_clause_` this way instead of hand-concatenating SQL
+or mutating the global FilterManager: eval (ROI bbox + UTN set + timestamp bounds — the hijack
+is gone, the user's filters are untouched), reconstructor (per-slice half-open timestamp + sector
+bbox), ARTAS (CAT062 ds/line `IN`), live prime (`timestamp >=`). `LoadRequest::perContentClause`
+wraps a per-content generator into the clause function.
 
 ## Bookends (ViewManager)
 
@@ -128,15 +161,18 @@ accessor, and emits **one** change signal:
 | `dataChangedSignal(names, reset, last)` | `vector<string>`, `bool`, `bool` | Buffers/indices for `names` changed. `reset` → drop state for contents NOT in `names` (full replacement). `last` → final event of a batch; listeners run finalize work. The index is rebuilt/consistent *before* the signal fires. |
 
 **`ViewManager` is the sole subscriber** (`sourceDataChangedSlot`). Per registered view it
-drives, in one guarded turn:
-- **raw-buffer path** — `View::loadedData(source.buffers(), reset)` (standard views consume the
-  buffer map; per-view incremental `updateFromSource_impl` intake is the still-pending step 8);
-- **source path** — `View::updateFromSource(source, names, reset, last)`. A view with a
-  base-owned `DBContentItemProvider` (only the Geographic View's `GeometryItemProvider`) has
-  the provider fed here: `setSource(&source)` + `applyChange(names, reset, last)` →
-  `resetData()` (if `reset`) → `rebuildContent(id)` per name → `contentRebuilt()` (if `last`),
-  reading `source.index()`/`source.buffers()`. So OSG never paints the empty intermediate
-  state between wipe and rebuild.
+drives, in one guarded turn, the single callback `View::updateFromSource(source, names, reset,
+last)` (the old dual `loadedData`/`updateData` path is gone — step 8). The base
+`ViewDataWidget::updateFromSource` mirrors `data_ = source.buffers()` (so the existing
+`viewData()`/redraw/selection machinery is undisturbed), feeds a base-owned
+`DBContentItemProvider` if the view has one, and calls the view's `updateFromSource_impl`:
+- **Standard views** (table/scatter/grid) read `source.buffers()`; histogram (via
+  `VariableViewDataWidget`) does a full refresh on `last`. None own a provider.
+- **Geographic View** owns a `GeometryItemProvider`, fed here: `setSource(&source)` +
+  `applyChange(names, reset, last)` → `resetData()` (if `reset`) → `rebuildContent(id)` per name
+  → `contentRebuilt()` (if `last`), reading `source.index()`/`source.buffers()`. So OSG never
+  paints the empty intermediate state between wipe and rebuild. `GeographicView::updateFromSource`
+  overrides to skip the **whole** update (provider + finalize) on live overload.
 
 Also in `sourceDataChangedSlot`: selection carry-over (`applyCarriedSelection`), data-source
 loaded counts (`dbContextManager().setLoadedCounts`), and — on `last` — `dataDistributedSignal`

@@ -48,7 +48,6 @@ public slots:
     void dialogRunSlot();
 
     void createDoneSlot();
-    void createObsoleteSlot();
 
     void loadingDoneSlot();
 

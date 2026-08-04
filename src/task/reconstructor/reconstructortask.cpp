@@ -25,6 +25,11 @@
 #include "dbcontent/dbcontentdataengine.h"
 #include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variableset.h"
+#include "filtermanager.h"
+#include "dbfiltercondition.h"
+#include "filterclause.h"
+#include "idbvariableresolver.h"
+#include "global.h"
 #include "stringconv.h"
 #include "taskmanager.h"
 #include "viewmanager.h"
@@ -619,23 +624,15 @@ void ReconstructorTask::loadDataSlice()
            << " max " << Time::toString(loading_slice_->next_slice_begin_)
            << " last " << loading_slice_->is_last_slice_;
 
-    string timestamp_filter;
-
-    timestamp_filter = "timestamp >= " + to_string(Time::toLong(loading_slice_->slice_begin_));
-
-    if (loading_slice_->is_last_slice_)
-        timestamp_filter += " AND timestamp <= " + to_string(Time::toLong(loading_slice_->next_slice_begin_));
-    else
-        timestamp_filter += " AND timestamp < " + to_string(Time::toLong(loading_slice_->next_slice_begin_));
-
-    string position_filter;
+    // optional sector bounding box, computed once and shared across contents
+    bool has_bbox = false;
+    double lat_min{0}, lat_max{0}, long_min{0}, long_max{0};
 
     if (use_sectors_extend_)
     {
         auto& ctx = manager().compass().dbContextManager();
 
         bool first = true;
-        double lat_min{0}, lat_max{0}, long_min{0}, long_max{0};
         double tmp_lat_min{0}, tmp_lat_max{0}, tmp_long_min{0}, tmp_long_max{0};
 
         for (auto& sect_it : used_sectors_)
@@ -667,18 +664,12 @@ void ReconstructorTask::loadDataSlice()
 
         if (!first)
         {
-            if (timestamp_filter.size())
-                position_filter += " AND";
+            has_bbox = true;
 
             lat_min -= sector_delta_deg_;
             lat_max += sector_delta_deg_;
             long_min -= sector_delta_deg_;
             long_max += sector_delta_deg_;
-
-            position_filter += " latitude >= " + String::doubleToStringPrecision(lat_min, 10) +
-                          " AND latitude <= " + String::doubleToStringPrecision(lat_max, 10) +
-                          " AND longitude >= " + String::doubleToStringPrecision(long_min, 10) +
-                          " AND longitude <= " + String::doubleToStringPrecision(long_max, 10);
         }
     }
 
@@ -705,12 +696,13 @@ void ReconstructorTask::loadDataSlice()
     req.read_set_ = [this](const std::string& name) {
         return currentReconstructor()->getReadSetFor(name);
     };
-    req.custom_filter_clause_ = [&dbcontent_man, timestamp_filter, position_filter]
-        (const std::string& name) -> std::string {
-        return dbcontent_man.dbContent(name).containsTargetReports()
-                   ? timestamp_filter + position_filter
-                   : timestamp_filter;
-    };
+    // per-slice load WHERE from the shared clause toolkit (half-open timestamp bounds via the
+    // generic leaf; sector bbox only on target-report content), rendered per content up front
+    req.custom_filter_clause_ = LoadRequest::perContentClause(
+        targets,
+        [this, has_bbox, lat_min, lat_max, long_min, long_max](const std::string& name) {
+            return loadFilterClause(name, has_bbox, lat_min, lat_max, long_min, long_max);
+        });
 
     // isolated per-slice batch load: filled by the engine, read in loadingDoneSlot;
     // the view dataset is never touched
@@ -718,6 +710,50 @@ void ReconstructorTask::loadDataSlice()
     connect(load_op_.get(), &LoadOperation::finishedSignal,
             this, &ReconstructorTask::loadingDoneSlot);
     dbcontent_man.dataEngine().load(load_op_);
+}
+
+/**
+ * Per-content load WHERE for the current slice, built from the shared clause toolkit:
+ * half-open timestamp bounds (>= slice begin, </<= next slice begin via the generic leaf)
+ * plus the sector bounding box (Latitude/Longitude >=/<=) on target-report content only.
+ */
+std::string ReconstructorTask::loadFilterClause(
+    const std::string& dbcontent_name, bool has_bbox,
+    double lat_min, double lat_max, double long_min, double long_max)
+{
+    IDBVariableResolver& resolver   = manager().compass().filterManager().variableResolver();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+
+    std::vector<FilterClause> parts;
+
+    // sqlFor yields an empty clause for contents without the given variable, so no guards needed
+    const std::string ts_var = dbcontent_vars::meta_var_timestamp_.name();
+
+    parts.push_back(DBFilterCondition::sqlFor(
+        resolver, dbcontent_name, ts_var, META_OBJECT_NAME,
+        filter_op::greater_equal, std::to_string(Time::toLong(loading_slice_->slice_begin_))));
+
+    parts.push_back(DBFilterCondition::sqlFor(
+        resolver, dbcontent_name, ts_var, META_OBJECT_NAME,
+        loading_slice_->is_last_slice_ ? filter_op::less_equal : filter_op::less,
+        std::to_string(Time::toLong(loading_slice_->next_slice_begin_))));
+
+    if (has_bbox && dbcontent_man.dbContent(dbcontent_name).containsTargetReports())
+    {
+        const std::string lat_var  = dbcontent_vars::meta_var_latitude_.name();
+        const std::string long_var = dbcontent_vars::meta_var_longitude_.name();
+
+        parts.push_back(DBFilterCondition::sqlFor(resolver, dbcontent_name, lat_var,
+            META_OBJECT_NAME, filter_op::greater_equal, String::doubleToStringPrecision(lat_min, 10)));
+        parts.push_back(DBFilterCondition::sqlFor(resolver, dbcontent_name, lat_var,
+            META_OBJECT_NAME, filter_op::less_equal, String::doubleToStringPrecision(lat_max, 10)));
+        parts.push_back(DBFilterCondition::sqlFor(resolver, dbcontent_name, long_var,
+            META_OBJECT_NAME, filter_op::greater_equal, String::doubleToStringPrecision(long_min, 10)));
+        parts.push_back(DBFilterCondition::sqlFor(resolver, dbcontent_name, long_var,
+            META_OBJECT_NAME, filter_op::less_equal, String::doubleToStringPrecision(long_max, 10)));
+    }
+
+    return combineAnd(parts).sql;
 }
 
 void ReconstructorTask::loadingDoneSlot()

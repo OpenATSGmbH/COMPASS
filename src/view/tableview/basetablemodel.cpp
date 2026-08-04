@@ -266,12 +266,6 @@ void BaseBufferTableModel::endCustomResetModel()
     resetting_model_ = false;
 }
 
-void BaseBufferTableModel::exportJobObsoleteSlot()
-{
-    logdbg;
-    emit exportDoneSignal(true);
-}
-
 void BaseBufferTableModel::exportJobDoneSlot()
 {
     logdbg;

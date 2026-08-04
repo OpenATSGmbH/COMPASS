@@ -31,6 +31,7 @@
 #include <boost/date_time/posix_time/ptime.hpp>
 
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -163,6 +164,16 @@ public:
     void deselectDSTypeSpecificDataSources(const std::string& ds_type);
 
     std::vector<unsigned int> unfilteredDS(const std::string& dbcontent_name) const;
+
+    // Single source for the datasource/line loading selection of a content:
+    //   nullopt   = no ds/line constraint -> load everything
+    //   map       = wanted data source -> its wanted lines, listed explicitly (all four
+    //               when not line-filtered)
+    //   empty map = nothing wanted
+    // The engine's dataSourceClause renders SQL from this; the live feed tests records
+    // against it - one source of truth, closing the offline/live divergence.
+    std::optional<std::map<unsigned int, std::set<unsigned int>>> loadingSelection(
+        const std::string& dbcontent_name) const;
 
     // ================================================================
     // Runtime counts (replaces DBDataSource counts, to be persisted in db_info)

@@ -20,6 +20,7 @@
 #include "configurable.h"
 #include "appmode.h"
 #include "dbfilterwidget.h"
+#include "filterclause.h"
 
 #include "json_fwd.hpp"
 
@@ -69,8 +70,12 @@ class DBFilter : public Configurable
     void conditionLogic(const std::string& logic);
 
     /// where condition string for a DBContent
-    virtual std::string getConditionString(const std::string& dbcontent_name, 
+    virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first);
+
+    /// self-contained WHERE fragment for a DBContent (no leading AND/OR join - the combiner
+    /// joins filters), with referenced vars as required_vars. Replaces getConditionString.
+    virtual FilterClause getClause(const std::string& dbcontent_name);
 
     bool onlyHasSubFilter() { return conditions_.size() > 0; }
 

@@ -49,7 +49,7 @@ DBFilter::DBFilter(nlohmann::json& config, bool is_generic,
     registerParameter("visible", &visible_, false);
 
     registerParameter("widget_visible", &widget_visible_, true);
-    registerParameter("condition_logic", &condition_logic_, std::string("AND"));
+    registerParameter("condition_logic", &condition_logic_, filter_op::logic_and);
 
     if (className().compare("DBFilter") == 0)  // else do it in subclass
         createSubConfigurables();
@@ -98,7 +98,7 @@ void DBFilter::setName(const std::string& name)
 
 void DBFilter::conditionLogic(const std::string& logic)
 {
-    traced_assert(logic == "AND" || logic == "OR");
+    traced_assert(logic == filter_op::logic_and || logic == filter_op::logic_or);
     condition_logic_ = logic;
 }
 
@@ -131,7 +131,7 @@ std::string DBFilter::getConditionString(
 
     if (active_)
     {
-        bool use_or = (condition_logic_ == "OR");
+        bool use_or = (condition_logic_ == filter_op::logic_or);
 
         // for OR mode, collect conditions internally with a local first flag,
         // then wrap in parens and AND-join with outer query
@@ -152,7 +152,7 @@ std::string DBFilter::getConditionString(
             if (use_or)
             {
                 std::string text =
-                    conditions_.at(cnt)->getConditionString(dbcontent_name, read_set, local_first, "OR");
+                    conditions_.at(cnt)->getConditionString(dbcontent_name, read_set, local_first, filter_op::logic_or);
                 ss << text;
             }
             else
@@ -170,7 +170,7 @@ std::string DBFilter::getConditionString(
             ss.str("");
 
             if (!first)
-                ss << " AND ";
+                ss << " " << filter_op::logic_and << " ";
             first = false;
 
             ss << "(" << or_block << ")";
@@ -181,6 +181,39 @@ std::string DBFilter::getConditionString(
            << " here '" << ss.str() << "' first " << first;
 
     return ss.str();
+}
+
+/**
+ * Condition-list clause: combine the active, applicable conditions' clauses with the
+ * filter's logic (AND flat, OR parenthesised). Mirrors getConditionString with first=true.
+ */
+FilterClause DBFilter::getClause(const std::string& dbcontent_name)
+{
+    traced_assert(!unusable_);
+
+    FilterClause clause;
+
+    if (!active_)
+        return clause;
+
+    std::vector<FilterClause> parts;
+
+    for (const auto& cond : conditions_)
+    {
+        if (cond->valueInvalid())
+        {
+            logwrn << "DBFilter " << instanceName()
+                   << ": getClause: invalid condition, will be skipped";
+            continue;
+        }
+
+        if (!cond->filters(dbcontent_name))
+            continue;
+
+        parts.push_back(cond->getClause(dbcontent_name));
+    }
+
+    return (condition_logic_ == filter_op::logic_or) ? combineOr(parts) : combineAnd(parts);
 }
 
 void DBFilter::generateSubConfigurable(nlohmann::json& child_json)

@@ -29,6 +29,11 @@
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
 #include "db_context_manager.h"
+#include "filtermanager.h"
+#include "dbfiltercondition.h"
+#include "filterclause.h"
+#include "idbvariableresolver.h"
+#include "global.h"
 #include "jobmanager.h"
 #include "stringconv.h"
 #include "taskmanager.h"
@@ -246,23 +251,25 @@ void CreateARTASAssociationsTask::run()
 
         traced_assert(ds_found);
 
-        cat062_clause =
-            dbcontent_man.metaGetVariable("CAT062", dbcontent_vars::meta_var_ds_id_).dbColumnName()
-                + " in (" + std::to_string(current_ds_id) + ") AND " +
-            dbcontent_man.metaGetVariable("CAT062", dbcontent_vars::meta_var_line_id_).dbColumnName()
-                + " in (" + std::to_string(settings_.current_data_source_line_id_) + ")";
+        // CAT062 datasource/line constraint via the shared clause toolkit (ds_id/line_id IN)
+        IDBVariableResolver& resolver = manager().compass().filterManager().variableResolver();
+
+        cat062_clause = combineAnd({
+            DBFilterCondition::sqlFor(resolver, "CAT062", dbcontent_vars::meta_var_ds_id_.name(),
+                META_OBJECT_NAME, filter_op::in, std::to_string(current_ds_id)),
+            DBFilterCondition::sqlFor(resolver, "CAT062", dbcontent_vars::meta_var_line_id_.name(),
+                META_OBJECT_NAME, filter_op::in, std::to_string(settings_.current_data_source_line_id_))
+        }).sql;
     }
 
     LoadRequest req;
-    req.dbcontents_           = targets;
+    req.dbcontents_            = targets;
     req.apply_datasrc_filters_ = false;
     req.apply_view_filters_    = false;
     req.show_status_           = false;
     req.cancellable_           = false;
     req.read_set_ = [this](const std::string& name) { return getReadSetFor(name); };
-    req.custom_filter_clause_ = [cat062_clause](const std::string& name) -> std::string {
-        return name == "CAT062" ? cat062_clause : "";
-    };
+    req.custom_filter_clause_ = LoadRequest::perContentClause({{"CAT062", cat062_clause}});
 
     // isolated batch load: filled by the engine, read in loadingDoneSlot; the
     // view dataset is never touched
@@ -296,8 +303,6 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
     connect(create_job_.get(), &CreateARTASAssociationsJob::doneSignal, this,
             &CreateARTASAssociationsTask::createDoneSlot, Qt::QueuedConnection);
-    connect(create_job_.get(), &CreateARTASAssociationsJob::obsoleteSignal, this,
-            &CreateARTASAssociationsTask::createObsoleteSlot, Qt::QueuedConnection);
     connect(create_job_.get(), &CreateARTASAssociationsJob::statusSignal, this,
             &CreateARTASAssociationsTask::associationStatusSlot, Qt::QueuedConnection);
     connect(create_job_.get(), &CreateARTASAssociationsJob::saveAssociationsQuestionSignal,
@@ -361,8 +366,6 @@ void CreateARTASAssociationsTask::createDoneSlot()
 
     emit doneSignal();
 }
-
-void CreateARTASAssociationsTask::createObsoleteSlot() { create_job_ = nullptr; }
 
 std::string CreateARTASAssociationsTask::currentDataSourceName() const
 {

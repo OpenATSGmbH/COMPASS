@@ -229,6 +229,14 @@ bool RTCommandDeleteData::run_impl()
         return false;
     }
 
+    // RT commands bypass UI modality; refuse while a delete is in flight (e.g. a live
+    // session's per-tick DB bound) rather than overlapping on the single delete slot
+    if (compass_->dbContentManager().hasActiveDeleteJob())
+    {
+        setResultMessage("Delete already in progress");
+        return false;
+    }
+
     compass_->dbContentManager().deleteData(delete_info_);
 
     return true;

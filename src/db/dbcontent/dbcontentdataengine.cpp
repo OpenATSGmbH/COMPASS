@@ -77,6 +77,10 @@ void DBContentDataEngine::load(std::shared_ptr<LoadOperation> op)
         }
     }
 
+    // each content of the previous load delivered exactly one terminal event before it
+    // finished; contentReadDoneSlot's name-only staleness check relies on that
+    traced_assert(pending_contents_.empty());
+
     current_op_ = op;
     op->clearBuffers();
 
@@ -193,8 +197,9 @@ void DBContentDataEngine::cancelLoad()
  */
 void DBContentDataEngine::cancelCurrentSlot()
 {
-    // the read jobs are owned by the DBContents; obsolete each pending one (it drains
-    // through its own obsolete slot -> readDoneSignal(null) -> contentReadDoneSlot)
+    // the read jobs are owned by the DBContents; flag each pending one obsolete. The job
+    // sees the flag between chunks, drops its buffer and completes normally, so it drains
+    // through readJobDoneSlot -> readDoneSignal(null) -> contentReadDoneSlot
     for (const auto& name : pending_contents_)
         dbcont_man_.dbContent(name).quitLoading();
 }
@@ -244,7 +249,7 @@ void DBContentDataEngine::finish()
  */
 void DBContentDataEngine::deleteData(const nlohmann::json& delete_info)
 {
-    traced_assert(!delete_job_);
+    traced_assert(!delete_job_); // caller checks hasActiveDeleteJob()
 
     delete_info_ = delete_info;
 
@@ -263,16 +268,7 @@ void DBContentDataEngine::deleteData(const nlohmann::json& delete_info)
  */
 void DBContentDataEngine::deleteOlderThan(boost::posix_time::ptime before_timestamp)
 {
-    // a previous bound-delete is still draining (its queued doneSlot hasn't cleared it yet):
-    // skip this tick's DB bound rather than assert. The DB delete is independent of the
-    // display cut (LiveDataFeed::cutCachedData bounds what is shown), so skipping one bound is
-    // harmless - the next tick re-bounds. Guards the rapid-tick overlap crash (live runs this
-    // every tick, and delete_job_ clears only on the queued deleteJobDoneSlot).
-    if (delete_job_)
-    {
-        logwrn << "deleteOlderThan: a delete is still in flight, skipping this bound";
-        return;
-    }
+    traced_assert(!delete_job_); // caller checks hasActiveDeleteJob()
 
     delete_job_ = make_shared<DBContentDeleteDBJob>(dbcont_man_.compass().dbInterface());
     delete_job_->setBeforeTimestamp(before_timestamp);
@@ -678,111 +674,86 @@ std::set<std::string> DBContentDataEngine::resolveTargetSet(const LoadSpec& spec
 std::string DBContentDataEngine::composeWhereClause(const std::string& name, const LoadSpec& spec,
                                                     dbContent::VariableSet& read_set)
 {
-    auto& ctx_man = dbcont_man_.compass().dbContextManager();
-    DBContent& dbc = dbcont_man_.dbContent(name);
+    std::vector<FilterClause> parts;
 
-    std::string filter_clause;
+    // datasource/line constraints
+    parts.push_back(dataSourceClause(name, spec));
 
-    if (spec.apply_datasrc_filters_
-        && (ctx_man.hasDSFilter(name) || ctx_man.lineSpecificLoadingRequired(name)))
-    {
-        std::vector<unsigned int> ds_ids_to_load = ctx_man.unfilteredDS(name);
-
-        traced_assert(dbc.hasVariable(dbcontent_vars::meta_var_ds_id_.name()));
-        Variable& datasource_var = dbc.variable(dbcontent_vars::meta_var_ds_id_.name());
-        traced_assert(datasource_var.dataType() == PropertyDataType::UINT);
-
-        if (ctx_man.lineSpecificLoadingRequired(name))
-        {
-            traced_assert(dbc.hasVariable(dbcontent_vars::meta_var_line_id_.name()));
-            Variable& line_var = dbc.variable(dbcontent_vars::meta_var_line_id_.name());
-            traced_assert(line_var.dataType() == PropertyDataType::UINT);
-
-            // per-DS clauses, OR-joined; skip DS with no wanted lines (empty IN() is invalid)
-            std::vector<std::string> per_ds_clauses;
-            for (auto ds_id_it : ds_ids_to_load)
-            {
-                traced_assert(ctx_man.hasDataSource(ds_id_it));
-
-                std::vector<unsigned int> wanted_lines;
-                for (unsigned int line = 0; line < 4; ++line)
-                    if (ctx_man.lineLoadingWanted(ds_id_it, line))
-                        wanted_lines.push_back(line);
-
-                if (wanted_lines.empty())
-                    continue;
-
-                std::string clause = "(" + datasource_var.dbColumnName() + " = "
-                                     + std::to_string(ds_id_it)
-                                     + " AND " + line_var.dbColumnName() + " IN (";
-                for (size_t i = 0; i < wanted_lines.size(); ++i)
-                {
-                    if (i) clause += ",";
-                    clause += std::to_string(wanted_lines[i]);
-                }
-                clause += "))";
-                per_ds_clauses.push_back(std::move(clause));
-            }
-
-            if (per_ds_clauses.empty())
-            {
-                filter_clause = "1=0";
-            }
-            else
-            {
-                filter_clause = "(";
-                for (size_t i = 0; i < per_ds_clauses.size(); ++i)
-                {
-                    if (i) filter_clause += " OR ";
-                    filter_clause += per_ds_clauses[i];
-                }
-                filter_clause += ")";
-            }
-        }
-        else
-        {
-            if (ds_ids_to_load.empty())
-            {
-                filter_clause = "1=0";
-            }
-            else
-            {
-                filter_clause = datasource_var.dbColumnName() + " IN (";
-                for (auto ds_id_it = ds_ids_to_load.begin(); ds_id_it != ds_ids_to_load.end(); ++ds_id_it)
-                {
-                    if (ds_id_it != ds_ids_to_load.begin())
-                        filter_clause += ",";
-                    filter_clause += std::to_string(*ds_id_it);
-                }
-                filter_clause += ")";
-            }
-        }
-    }
-
+    // view filters
     if (spec.apply_view_filters_ && dbcont_man_.compass().filterManager().useFilters())
-    {
-        // getSQLCondition may add filter-required variables to read_set
-        std::string filter_sql = dbcont_man_.compass().filterManager().getSQLCondition(name, read_set);
-        if (filter_sql.size())
-        {
-            if (filter_clause.size())
-                filter_clause += " AND ";
-            filter_clause += filter_sql;
-        }
-    }
+        parts.push_back(dbcont_man_.compass().filterManager().viewClause(name));
 
+    // issuer-supplied ad-hoc clause
     if (spec.custom_filter_clause_)
     {
-        std::string custom = spec.custom_filter_clause_(name);
-        if (custom.size())
-        {
-            if (filter_clause.size())
-                filter_clause += " AND ";
-            filter_clause += custom;
-        }
+        FilterClause custom;
+        custom.sql = spec.custom_filter_clause_(name);
+        parts.push_back(custom);
     }
 
-    return filter_clause;
+    FilterClause where = combineAnd(parts);
+
+    // augment the read set with the referenced vars (explicit output, replacing the read-set
+    // side effect the old getSQLCondition had)
+    read_set.add(where.required_vars);
+
+    return where.sql;
+}
+
+/**
+ * Builds the datasource/line WHERE fragment for a content from the context manager's
+ * loading selection (ds_id IN (...) or per-DS line-scoped OR groups; "1=0" empty sentinel).
+ */
+FilterClause DBContentDataEngine::dataSourceClause(const std::string& name, const LoadSpec& spec)
+{
+    FilterClause clause;
+
+    if (!spec.apply_datasrc_filters_)
+        return clause;
+
+    auto selection = dbcont_man_.compass().dbContextManager().loadingSelection(name);
+
+    if (!selection)          // unconstrained -> no clause
+        return clause;
+
+    if (selection->empty())  // nothing wanted
+    {
+        clause.sql = "1=0";
+        return clause;
+    }
+
+    DBContent& dbc = dbcont_man_.dbContent(name);
+
+    traced_assert(dbc.hasVariable(dbcontent_vars::meta_var_ds_id_.name()));
+    Variable& ds_var = dbc.variable(dbcontent_vars::meta_var_ds_id_.name());
+    traced_assert(ds_var.dataType() == PropertyDataType::UINT);
+
+    traced_assert(dbc.hasVariable(dbcontent_vars::meta_var_line_id_.name()));
+    Variable& line_var = dbc.variable(dbcontent_vars::meta_var_line_id_.name());
+    traced_assert(line_var.dataType() == PropertyDataType::UINT);
+
+    // one OR group per wanted ds: (ds = X AND line IN (its wanted lines))
+    clause.sql = "(";
+    bool first_group = true;
+    for (const auto& [ds_id, lines] : *selection)
+    {
+        if (!first_group) clause.sql += " OR ";
+        first_group = false;
+
+        clause.sql += "(" + ds_var.dbColumnName() + " = " + std::to_string(ds_id)
+                          + " AND " + line_var.dbColumnName() + " IN (";
+        bool first_line = true;
+        for (unsigned int line : lines)
+        {
+            if (!first_line) clause.sql += ",";
+            clause.sql += std::to_string(line);
+            first_line = false;
+        }
+        clause.sql += "))";
+    }
+    clause.sql += ")";
+
+    return clause;
 }
 
 /**

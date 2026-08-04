@@ -25,6 +25,11 @@
 #include "dbcontent/loadrequest.h"
 #include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variableset.h"
+#include "filtermanager.h"
+#include "dbfiltercondition.h"
+#include "filterclause.h"
+#include "idbvariableresolver.h"
+#include "global.h"
 #include "util/timeconv.h"
 #include "logger.h"
 
@@ -176,9 +181,20 @@ void LiveController::reloadWindow()
 
     ptime min_ts = Time::currentUTCTime() - minutes(compass_.maxLiveDataAgeCache());
 
-    LoadRequest req = LoadRequest::withFilter(
-        "timestamp >= " + std::to_string(Time::toLong(min_ts)));
+    // live-prime window as a per-content clause via the shared toolkit (timestamp >= min);
+    // resolver is a long-lived filter member, the clause runs synchronously inside load() below
+    IDBVariableResolver* resolver = &compass_.filterManager().variableResolver();
+    long min_ts_long = Time::toLong(min_ts);
+
+    LoadRequest req;
+    req.dbcontents_ = {"*"};
     req.show_status_ = false;
+    req.custom_filter_clause_ = [resolver, min_ts_long](const std::string& name) -> std::string {
+        // sqlFor returns an empty clause for contents without a timestamp variable
+        return DBFilterCondition::sqlFor(*resolver, name, dbcontent_vars::meta_var_timestamp_.name(),
+                                         META_OBJECT_NAME, filter_op::greater_equal,
+                                         std::to_string(min_ts_long)).sql;
+    };
 
     auto op = std::make_shared<LoadOperation>(compass_.dbContentManager(), req);
 
@@ -235,9 +251,17 @@ void LiveController::processLiveModeSlot()
     using namespace boost::posix_time;
 
     // DB write (engine-owned, requested via the manager - a view-side object never writes
-    // to the DB itself): drop rows older than the live cache window
-    ptime old_time = Time::currentUTCTime() - minutes(compass_.maxLiveDataAgeDb());
-    compass_.dbContentManager().deleteDBContentData(old_time);
+    // to the DB itself): drop rows older than the live cache window. A previous bound is
+    // still draining (its queued doneSlot hasn't cleared it): skip this tick's bound. The
+    // DB delete is independent of the display cut (cutCachedData bounds what is shown), so
+    // skipping one is harmless - the next tick re-bounds.
+    if (compass_.dbContentManager().hasActiveDeleteJob())
+        logwrn << "skipping DB bound, a delete is still in flight";
+    else
+    {
+        ptime old_time = Time::currentUTCTime() - minutes(compass_.maxLiveDataAgeDb());
+        compass_.dbContentManager().deleteDBContentData(old_time);
+    }
 
     processTick();
 }

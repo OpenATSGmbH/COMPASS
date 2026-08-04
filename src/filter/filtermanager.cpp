@@ -248,6 +248,21 @@ std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, db
     return ss.str();
 }
 
+FilterClause FilterManager::viewClause(const std::string& dbcontent_name)
+{
+    traced_assert(dbcontent_man_.dbContent(dbcontent_name).loadable());
+
+    std::vector<FilterClause> parts;
+
+    for (auto& filter : filters_)
+    {
+        if (filter->getActive() && filter->filters(dbcontent_name))
+            parts.push_back(filter->getClause(dbcontent_name));
+    }
+
+    return combineAnd(parts);
+}
+
 unsigned int FilterManager::getNumFilters() { return filters_.size(); }
 
 DBFilter* FilterManager::getFilter(unsigned int index)

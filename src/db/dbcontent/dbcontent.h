@@ -110,7 +110,6 @@ public slots:
     void databaseOpenedSlot();
     void databaseClosedSlot();
 
-    void readJobObsoleteSlot();
     void readJobDoneSlot();
 
     void updateProgressSlot(float percent);

@@ -840,6 +840,34 @@ vector<unsigned int> DBContextManager::unfilteredDS(const string& /*dbcontent_na
     return vector<unsigned int>(result.begin(), result.end());
 }
 
+optional<map<unsigned int, set<unsigned int>>> DBContextManager::loadingSelection(
+    const string& dbcontent_name) const
+{
+    // no ds/line constraint -> load everything
+    if (!hasDSFilter(dbcontent_name) && !lineSpecificLoadingRequired(dbcontent_name))
+        return nullopt;
+
+    map<unsigned int, set<unsigned int>> selection;
+
+    const bool line_specific = lineSpecificLoadingRequired(dbcontent_name);
+
+    for (unsigned int ds_id : unfilteredDS(dbcontent_name))
+    {
+        set<unsigned int> lines;
+        // the wanted lines, always listed explicitly (all four when nothing is line-filtered)
+        for (unsigned int line = 0; line < 4; ++line)
+            if (!line_specific || lineLoadingWanted(ds_id, line))
+                lines.insert(line);
+
+        if (lines.empty()) // no wanted line for this ds -> drop it
+            continue;
+
+        selection[ds_id] = std::move(lines);
+    }
+
+    return selection;
+}
+
 // ============================================================
 // Runtime counts
 // ============================================================

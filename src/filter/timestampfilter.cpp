@@ -85,6 +85,31 @@ std::string TimestampFilter::getConditionString(const std::string& dbcontent_nam
     return ss.str();
 }
 
+FilterClause TimestampFilter::getClause(const std::string& dbcontent_name)
+{
+    if (!active_)
+        return FilterClause{};
+
+    return sqlFor(variableResolver(), min_value_, max_value_, dbcontent_name);
+}
+
+FilterClause TimestampFilter::sqlFor(IDBVariableResolver& resolver,
+                                     boost::posix_time::ptime min, boost::posix_time::ptime max,
+                                     const std::string& dbcontent_name)
+{
+    FilterClause clause;
+
+    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_))
+        return clause;
+
+    string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
+
+    clause.sql = "(" + col_name + " >= " + to_string(Time::toLong(min))
+               + " AND " + col_name + " <= " + to_string(Time::toLong(max)) + ")";
+
+    return clause;
+}
+
 DBFilterWidget* TimestampFilter::createWidget()
 {
     return new TimestampFilterWidget(*this);

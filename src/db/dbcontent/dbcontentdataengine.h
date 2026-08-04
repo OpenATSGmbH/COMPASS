@@ -21,6 +21,7 @@
 
 #include "json.hpp"
 #include "loadspec.h"
+#include "filterclause.h"
 
 #include <QObject>
 
@@ -103,6 +104,8 @@ public:
     void setMinMaxLongitude(double min, double max);
     std::pair<double, double> minMaxLongitude() const;
 
+    bool hasActiveDeleteJob() const { return (bool) delete_job_; }
+
     void deleteData(const nlohmann::json& delete_info);       // delete by criteria
     void deleteOlderThan(boost::posix_time::ptime before_timestamp); // bound the live cache
 
@@ -114,6 +117,9 @@ private:
 
     std::string composeWhereClause(const std::string& dbcontent_name, const LoadSpec& spec,
                                    dbContent::VariableSet& read_set);
+
+    // datasource/line WHERE fragment for a content (empty when no ds filter applies)
+    FilterClause dataSourceClause(const std::string& dbcontent_name, const LoadSpec& spec);
 
     unsigned long queryMaxRecordNumberWODBContentID() const; // DB scan
     unsigned int  queryMaxRefTrajTrackNum() const;           // DB scan

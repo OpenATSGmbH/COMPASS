@@ -682,8 +682,6 @@ void AllBufferTableModel::saveAsCSV(const std::string& file_name)
         view_.settings().show_only_selected_, view_.settings().use_presentation_);
 
     export_job_ = std::shared_ptr<AllBufferCSVExportJob>(export_job);
-    connect(export_job, &AllBufferCSVExportJob::obsoleteSignal, this,
-            &AllBufferTableModel::exportJobObsoleteSlot, Qt::QueuedConnection);
     connect(export_job, &AllBufferCSVExportJob::doneSignal, this,
             &AllBufferTableModel::exportJobDoneSlot, Qt::QueuedConnection);
 

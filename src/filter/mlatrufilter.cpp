@@ -196,8 +196,21 @@ std::string MLATRUFilter::getConditionString(const std::string& dbcontent_name, 
     first = false;
 
     loginf << "'" << ss.str() << "'";
-    
+
     return ss.str();
+}
+
+FilterClause MLATRUFilter::getClause(const std::string& dbcontent_name)
+{
+    // complex ru-lookup builder - delegate to the proven getConditionString and strip the
+    // leading join space. A clean re-render is deferred (CAT020-only, no explicit-param reuse).
+    dbContent::VariableSet rs;
+    bool first = true;
+
+    FilterClause clause;
+    clause.sql = trimLeadingSpace(getConditionString(dbcontent_name, rs, first));
+    clause.required_vars = rs;
+    return clause;
 }
 
 DBFilterWidget* MLATRUFilter::createWidget()

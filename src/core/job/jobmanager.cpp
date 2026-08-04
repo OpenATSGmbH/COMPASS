@@ -477,14 +477,6 @@ void JobManagerAsync::handleDBJobs(bool debug)
     {
         if (active_db_job_->done())
         {
-//            if (active_db_job_->obsolete())
-//            {
-//                logdbg << "flushing obsolete non-blocking job";
-
-//                if (!stop_requested_)
-//                    active_db_job_->emitObsolete();
-//            }
-
             logdbg << "flushing non-blocking done job";
 
             if (!stop_requested_)
@@ -690,14 +682,6 @@ void JobManagerThreadPool::handleBlockingJobs(bool debug)
     {
         if (active_blocking_job_->done())
         {
-//            if (active_blocking_job_->obsolete())
-//            {
-//                logdbg << "flushing obsolete blocking job";
-
-//                if (!stop_requested_)
-//                    active_blocking_job_->emitObsolete();
-//            }
-
             logdbg << "flushing blocking done job";
 
             if (!stop_requested_)
@@ -787,14 +771,6 @@ void JobManagerThreadPool::handleNonBlockingJobs(bool debug)
         {
             if (active_non_blocking_job_->done())  // can be finalized
             {
-//                if (active_non_blocking_job_->obsolete())
-//                {
-//                    logdbg << "flushing obsolete non-blocking job";
-
-//                    if (!stop_requested_)
-//                        active_non_blocking_job_->emitObsolete();
-//                }
-
                 logdbg << "flushing non-blocking done job";
 
                 if (!stop_requested_)
@@ -839,14 +815,6 @@ void JobManagerThreadPool::handleDBJobs(bool debug)
     {
         if (active_db_job_->done())
         {
-//            if (active_db_job_->obsolete())
-//            {
-//                logdbg << "flushing obsolete non-blocking job";
-
-//                if (!stop_requested_)
-//                    active_db_job_->emitObsolete();
-//            }
-
             logdbg << "flushing non-blocking done job";
 
             if (!stop_requested_)

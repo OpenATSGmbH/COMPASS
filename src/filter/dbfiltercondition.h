@@ -21,6 +21,7 @@
 #include "traced_assert.h"
 
 #include "configurable.h"
+#include "filterclause.h"
 
 class QWidget;
 class QLineEdit;
@@ -51,6 +52,22 @@ public:
     std::string getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first,
                                    const std::string& logic_op = "AND");
 
+    // The condition's WHERE fragment (no leading AND/OR join - the combiner joins), with the
+    // referenced variables returned as required_vars instead of mutating a read set.
+    FilterClause getClause(const std::string& dbcontent_name);
+
+    // Stateless leaf renderer: one (variable, operator, value) condition -> WHERE fragment.
+    // getClause delegates to this; any caller can build a generic condition clause from it.
+    static FilterClause sqlFor(IDBVariableResolver& resolver,
+                               const std::string& dbcontent_name,
+                               const std::string& variable_name,
+                               const std::string& variable_dbcontent_name,
+                               const std::string& op,
+                               const std::string& value,
+                               const std::string& value2      = "",
+                               bool include_null              = false,
+                               bool absolute_value            = false);
+
     QLabel* getLabel()
     {
         traced_assert(label_);
@@ -70,6 +87,12 @@ public:
     const std::string& getVariableDBContentName() const { return variable_dbcontent_name_; }
 
     bool hasVariable(const std::string& dbcontent_name);
+    // whether the variable resolves for the content (meta or content-specific); the applicability
+    // check shared by hasVariable()/filters() and the sqlFor() guard
+    static bool variableResolvable(IDBVariableResolver& resolver,
+                                   const std::string& dbcontent_name,
+                                   const std::string& variable_name,
+                                   const std::string& variable_dbcontent_name);
 
     bool getAbsoluteValue() { return absolute_value_; }
     void setAbsoluteValue(bool abs) { absolute_value_ = abs; }
@@ -125,5 +148,10 @@ private:
     // transformed val, null contained
     std::pair<std::string, bool> getTransformedValue(const std::string& untransformed_value,
                                                      const std::string& dbcontent_name);
+    // stateless value transform (IN-split, NULL token, representation, string quoting)
+    static std::pair<std::string, bool> transformValue(
+        IDBVariableResolver& resolver, const std::string& dbcontent_name,
+        const std::string& variable_name, const std::string& variable_dbcontent_name,
+        const std::string& op, const std::string& untransformed_value);
     bool checkValueInvalid(const std::string& new_value);
 };

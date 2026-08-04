@@ -203,9 +203,18 @@ void DBContentManager::deleteDBContent(const std::string& dbcontent_name)
 
 /**
  */
+bool DBContentManager::hasActiveDeleteJob() const
+{
+    return data_engine_->hasActiveDeleteJob();
+}
+
+/**
+ */
 void DBContentManager::deleteData(const nlohmann::json& delete_info)
 {
     loginf;
+
+    traced_assert(!hasActiveDeleteJob()); // caller checks hasActiveDeleteJob()
 
     // wipe the display before the DB delete (a view concern kept out of the engine)
     compass_.viewManager().clearDataInViews();

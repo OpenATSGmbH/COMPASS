@@ -52,7 +52,6 @@ class Job : public QObject, public QRunnable
     Q_OBJECT
 signals:
     void doneSignal();
-    void obsoleteSignal();
 
 public:
     enum class ThreadAffinityCondition
@@ -132,9 +131,9 @@ public:
         logdbg << "Job: " << name_ << ": setObsolete";
         obsolete_ = true;
     }
+
     // @brief Returns obsolete flag
     bool obsolete() { return obsolete_; }
-    //void emitObsolete() { emit doneSignal(); }
 
     const std::string& name() { return name_; }
 

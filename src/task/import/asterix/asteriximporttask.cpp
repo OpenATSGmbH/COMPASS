@@ -949,8 +949,6 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 
     decode_job_ = make_shared<ASTERIXDecodeJob>(*this, post_process_);
 
-    connect(decode_job_.get(), &ASTERIXDecodeJob::obsoleteSignal, this,
-            &ASTERIXImportTask::decodeASTERIXObsoleteSlot, Qt::QueuedConnection);
     connect(decode_job_.get(), &ASTERIXDecodeJob::doneSignal, this,
             &ASTERIXImportTask::decodeASTERIXDoneSlot, Qt::QueuedConnection);
     connect(decode_job_.get(), &ASTERIXDecodeJob::decodedASTERIXSignal, this,
@@ -993,15 +991,6 @@ void ASTERIXImportTask::decodeASTERIXDoneSlot()
     decode_job_ = nullptr;
 
     checkAllDone();
-}
-
-/**
-*/
-void ASTERIXImportTask::decodeASTERIXObsoleteSlot()
-{
-    logdbg;
-
-    decode_job_ = nullptr;
 }
 
 /**
@@ -1093,8 +1082,6 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
 
     traced_assert(!extracted_data.size());
 
-    connect(json_map_job.get(), &ASTERIXJSONMappingJob::obsoleteSignal, this,
-            &ASTERIXImportTask::mapJSONObsoleteSlot, Qt::QueuedConnection);
     connect(json_map_job.get(), &ASTERIXJSONMappingJob::doneSignal, this,
             &ASTERIXImportTask::mapJSONDoneSlot, Qt::QueuedConnection);
 
@@ -1202,23 +1189,6 @@ void ASTERIXImportTask::mapJSONDoneSlot()
     logdbg << "done";
 }
 
-/**
-*/
-void ASTERIXImportTask::mapJSONObsoleteSlot()
-{
-    logdbg;
-
-    ASTERIXJSONMappingJob* map_job = dynamic_cast<ASTERIXJSONMappingJob*>(QObject::sender());
-    traced_assert(map_job);
-
-    traced_assert(json_map_jobs_.size());
-    traced_assert(json_map_jobs_.begin()->get() == map_job);
-    map_job = nullptr;
-    json_map_jobs_.erase(json_map_jobs_.begin()); // remove
-
-    checkAllDone();
-}
-
 void ASTERIXImportTask::timestampCalculationDoneSlot()
 {
     logdbg;
@@ -1232,9 +1202,6 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
     postprocess_jobs_.push_back(postprocess_job);
 
     // check for future when net import
-
-    connect(postprocess_job.get(), &ASTERIXPostprocessJob::obsoleteSignal, this,
-            &ASTERIXImportTask::postprocessObsoleteSlot, Qt::QueuedConnection);
     connect(postprocess_job.get(), &ASTERIXPostprocessJob::doneSignal, this,
             &ASTERIXImportTask::postprocessDoneSlot, Qt::QueuedConnection);
 
@@ -1405,19 +1372,6 @@ void ASTERIXImportTask::postprocessDoneSlot()
             insertData();
         }
     }
-}
-
-/**
-*/
-void ASTERIXImportTask::postprocessObsoleteSlot()
-{
-    ASTERIXPostprocessJob* post_job = dynamic_cast<ASTERIXPostprocessJob*>(QObject::sender());
-    traced_assert(post_job);
-
-    traced_assert(postprocess_jobs_.size());
-    traced_assert(postprocess_jobs_.begin()->get() == post_job);
-    post_job = nullptr;
-    postprocess_jobs_.erase(postprocess_jobs_.begin()); // remove
 }
 
 /**

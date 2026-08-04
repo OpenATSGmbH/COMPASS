@@ -182,6 +182,11 @@ protected:
     void deleteCalculatedReferences();
 
     void loadDataSlice();
+    // per-content load WHERE for the current slice via the shared clause toolkit
+    // (half-open timestamp bounds + optional sector bbox on target-report content)
+    std::string loadFilterClause(const std::string& dbcontent_name, bool has_bbox,
+                                 double lat_min, double lat_max,
+                                 double long_min, double long_max);
     void processDataSlice();
     void writeDataSlice();
     void endReconstruction();

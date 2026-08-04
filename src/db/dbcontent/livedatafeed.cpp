@@ -295,15 +295,19 @@ void LiveDataFeed::filterDataSources()
 {
     auto& ctx_man = dbcont_man_.compass().dbContextManager();
 
-    // ds-level selection (loadingWanted + ds-type) - the map's keys are the wanted ds
-    std::map<unsigned int, std::set<unsigned int>> wanted_data_sources = ctx_man.getLoadDataSources();
-
     unsigned int num_buffers = buffers_.size();
 
     tbb::parallel_for(uint(0), num_buffers, [&](unsigned int buffer_cnt)
     {
         auto buf_it = buffers_.begin();
         std::advance(buf_it, buffer_cnt);
+
+        // the ds/line selection for this content, shared with the offline load path
+        // (DBContextManager::loadingSelection). Computed once, tested per record.
+        auto selection = ctx_man.loadingSelection(buf_it->first);
+
+        if (!selection) // no constraint -> keep everything
+            return;
 
         traced_assert(dbcont_man_.metaVariable(dbcontent_vars::meta_var_ds_id_.name()).existsIn(buf_it->first));
         traced_assert(dbcont_man_.metaVariable(dbcontent_vars::meta_var_line_id_.name()).existsIn(buf_it->first));
@@ -329,11 +333,10 @@ void LiveDataFeed::filterDataSources()
             unsigned int ds_id   = ds_id_vec.get(index);
             unsigned int line_id = line_id_vec.get(index);
 
-            // match the load path (DBContentDataEngine uses lineLoadingWanted): keep a
-            // row if its data source is wanted and its line is wanted. A line with no
-            // explicit entry counts as wanted - which getLoadDataSources' flattened
-            // line set silently drops (that mismatch filtered out live line-0 data).
-            bool keep = wanted_data_sources.count(ds_id) && ctx_man.lineLoadingWanted(ds_id, line_id);
+            // keep a record iff its data source is wanted and its line is among that
+            // source's wanted lines (explicit set - same selection the offline load applies)
+            auto ds_it = selection->find(ds_id);
+            bool keep = ds_it != selection->end() && ds_it->second.count(line_id);
 
             if (!keep)
                 indexes_to_remove.push_back(index);

@@ -73,6 +73,10 @@ public:
 
     std::string getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set);
 
+    // combined WHERE fragment for all active view filters applying to a DBContent, with the
+    // referenced vars as required_vars. Replaces getSQLCondition (no read-set side effect).
+    FilterClause viewClause(const std::string& dbcontent_name);
+
     unsigned int getNumFilters();
     DBFilter* getFilter(unsigned int index);
     const std::vector<std::unique_ptr<DBFilter>>& filters() { return filters_; }

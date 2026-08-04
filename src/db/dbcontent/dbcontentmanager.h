@@ -116,6 +116,9 @@ public:
     void insertData(std::map<std::string, std::shared_ptr<Buffer>> data);
     bool insertInProgress() const;
 
+    // must be checked before either delete below (they assert on an overlap)
+    bool hasActiveDeleteJob() const;
+
     void deleteData(const nlohmann::json& delete_info);
     void deleteDBContentData(boost::posix_time::ptime before_timestamp);
 

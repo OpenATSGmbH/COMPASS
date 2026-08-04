@@ -296,8 +296,6 @@ void JSONImportTask::run()
 
     connect(read_json_job_.get(), &ReadJSONFileJob::readJSONFilePartSignal, this,
             &JSONImportTask::addReadJSONSlot, Qt::QueuedConnection);
-    connect(read_json_job_.get(), &ReadJSONFileJob::obsoleteSignal, this,
-            &JSONImportTask::readJSONFileObsoleteSlot, Qt::QueuedConnection);
     connect(read_json_job_.get(), &ReadJSONFileJob::doneSignal, this,
             &JSONImportTask::readJSONFileDoneSlot, Qt::QueuedConnection);
 
@@ -378,8 +376,6 @@ void JSONImportTask::addReadJSONSlot()
     json_parse_job_ =
             std::make_shared<JSONParseJob>(std::move(objects), current_schema_name_, file_line_id_, post_process_);
 
-    connect(json_parse_job_.get(), &JSONParseJob::obsoleteSignal, this,
-            &JSONImportTask::parseJSONObsoleteSlot, Qt::QueuedConnection);
     connect(json_parse_job_.get(), &JSONParseJob::doneSignal, this,
             &JSONImportTask::parseJSONDoneSlot, Qt::QueuedConnection);
 
@@ -400,11 +396,6 @@ void JSONImportTask::readJSONFileDoneSlot()
     updateMsgBox();
 
     logdbg << "done";
-}
-
-void JSONImportTask::readJSONFileObsoleteSlot()
-{
-    logdbg;
 }
 
 void JSONImportTask::parseJSONDoneSlot()
@@ -463,8 +454,6 @@ void JSONImportTask::parseJSONDoneSlot()
 
     //loginf << "UGA3";
 
-    connect(json_map_job.get(), &JSONMappingJob::obsoleteSignal, this,
-            &JSONImportTask::mapJSONObsoleteSlot, Qt::QueuedConnection);
     connect(json_map_job.get(), &JSONMappingJob::doneSignal, this, &JSONImportTask::mapJSONDoneSlot,
             Qt::QueuedConnection);
 
@@ -483,11 +472,6 @@ void JSONImportTask::parseJSONDoneSlot()
     }
 
     loginf << "done";
-}
-
-void JSONImportTask::parseJSONObsoleteSlot()
-{
-    logdbg;
 }
 
 void JSONImportTask::mapJSONDoneSlot()
@@ -552,8 +536,6 @@ void JSONImportTask::mapJSONDoneSlot()
 
     // check for future when net import
 
-    connect(postprocess_job.get(), &ASTERIXPostprocessJob::obsoleteSignal, this,
-            &JSONImportTask::postprocessObsoleteSlot, Qt::QueuedConnection);
     connect(postprocess_job.get(), &ASTERIXPostprocessJob::doneSignal, this,
             &JSONImportTask::postprocessDoneSlot, Qt::QueuedConnection);
 
@@ -563,12 +545,6 @@ void JSONImportTask::mapJSONDoneSlot()
 
     logdbg << "done";
 }
-
-void JSONImportTask::mapJSONObsoleteSlot()
-{
-     logdbg; 
-}
-
 
 void JSONImportTask::postprocessDoneSlot()
 {
@@ -608,18 +584,6 @@ void JSONImportTask::postprocessDoneSlot()
 //        }
 //    }
 }
-
-void JSONImportTask::postprocessObsoleteSlot()
-{
-    ASTERIXPostprocessJob* post_job = dynamic_cast<ASTERIXPostprocessJob*>(QObject::sender());
-    traced_assert(post_job);
-
-    traced_assert(postprocess_jobs_.size());
-    traced_assert(postprocess_jobs_.begin()->get() == post_job);
-    post_job = nullptr;
-    postprocess_jobs_.erase(postprocess_jobs_.begin()); // remove
-}
-
 
 void JSONImportTask::insertData(std::map<std::string, std::shared_ptr<Buffer>> job_buffers)
 {

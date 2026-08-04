@@ -126,6 +126,61 @@ std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, d
     return ss.str();
 }
 
+FilterClause ModeCFilter::getClause(const std::string& dbcontent_name)
+{
+    if (!active_)
+        return FilterClause{};
+
+    return sqlFor(variableResolver(), min_value_, max_value_, null_wanted_, dbcontent_name);
+}
+
+FilterClause ModeCFilter::sqlFor(IDBVariableResolver& resolver,
+                                 float min, float max, bool null_wanted,
+                                 const std::string& dbcontent_name)
+{
+    FilterClause clause;
+
+    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
+        return clause;
+
+    // stream-format the bounds to match the legacy default float formatting
+    auto range_frag = [&](const std::string& col) -> std::string {
+        std::stringstream fs;
+        fs << "(" << col << " BETWEEN " << min << " AND " << max;
+        if (null_wanted)
+            fs << " OR " << col << " IS NULL";
+        fs << ")";
+        return fs.str();
+    };
+
+    std::vector<FilterClause> parts;
+
+    {
+        FilterClause c;
+        c.sql = range_frag(resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_mc_));
+        parts.push_back(c);
+    }
+
+    if (dbcontent_name == "CAT062")
+    {
+        if (resolver.variableHasDBContent(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_))
+        {
+            FilterClause c;
+            c.sql = range_frag(resolver.getVariableDBColumn(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_));
+            parts.push_back(c);
+        }
+
+        if (resolver.variableHasDBContent(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_))
+        {
+            FilterClause c;
+            c.sql = range_frag(resolver.getVariableDBColumn(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_));
+            parts.push_back(c);
+        }
+    }
+
+    return combineAnd(parts);
+}
+
 DBFilterWidget* ModeCFilter::createWidget()
 {
     return new ModeCFilterWidget(*this);
