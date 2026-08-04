@@ -14,6 +14,7 @@ include("${CMAKE_SOURCE_DIR}/src/core/context/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/eval/requirement/detection/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/analyze/mlat/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/filter/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/reconstruction/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/gui/unit_tests/CMakeLists.txt")
 
 target_include_directories(compass_tests PRIVATE

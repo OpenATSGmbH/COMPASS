@@ -409,7 +409,7 @@ bool ReconstructorBase::TargetsContainer::canAssocByTrackNumber(
     // tr has acad, target has an acad but not the target reports
     // happens if same acid is used by 2 different transponders
     if (tr.acad_ && targets_.at(utn).hasACAD()
-        && !targets_.at(utn).hasACAD(!tr.acad_))
+        && !targets_.at(utn).hasACAD(*tr.acad_))
     {
         logwrn << " same track num reused by different ACAD transponders, tr " << *tr.track_number_ << ", utn "
                << targets_.at(utn).asStr() << " tr " << tr.asStr() << ", unassociating";
