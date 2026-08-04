@@ -100,6 +100,7 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(dbcontent_vars::meta_var_m3a_g_, true);
     add(dbcontent_vars::meta_var_m3a_v_, true);
     add(dbcontent_vars::meta_var_m3a_smoothed_, true);
+    add(dbcontent_vars::var_cat062_m3a_age_, false);
 
     add(dbcontent_vars::meta_var_mc_, true);
     add(dbcontent_vars::meta_var_mc_g_, true);
@@ -174,6 +175,7 @@ void TargetReportAccessor::cacheVectors()
     meta_mode_a_garbled_vec_  = metaVarVector<bool>(dbcontent_vars::meta_var_m3a_g_);
     meta_mode_a_valid_vec_    = metaVarVector<bool>(dbcontent_vars::meta_var_m3a_v_);
     meta_mode_a_smoothed_vec_ = metaVarVector<bool>(dbcontent_vars::meta_var_m3a_smoothed_);
+    cat062_m3a_age_vec_       = varVector<float>(dbcontent_vars::var_cat062_m3a_age_);
 
     //mode c
     meta_mode_c_vec_         = metaVarVector<float>(dbcontent_vars::meta_var_mc_);
@@ -547,6 +549,13 @@ boost::optional<bool> TargetReportAccessor::modeAValid(unsigned int index) const
 boost::optional<bool> TargetReportAccessor::modeAGarbled(unsigned int index) const
 {
     return getOptional<bool>(meta_mode_a_garbled_vec_, index);
+}
+
+/**
+*/
+boost::optional<float> TargetReportAccessor::modeAAge(unsigned int index) const
+{
+    return getOptional<float>(cat062_m3a_age_vec_, index);
 }
 
 /**

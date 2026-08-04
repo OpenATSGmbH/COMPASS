@@ -52,6 +52,67 @@ enum class ComparisonResult
     DIFFERENT
 };
 
+/**
+ * First/last observation times of one identity value (ACAD, ACID, Mode 3/A code) of a
+ * target. Kept for the target's lifetime like the identity sets themselves, surviving
+ * report purging and rebuilds, so identity history stays time-qualified after the raw
+ * reports are gone.
+ */
+struct IdentityValueInfo
+{
+    boost::posix_time::ptime first_seen_;
+    boost::posix_time::ptime last_seen_;
+
+    // order-independent update, re-adding reports during rebuilds is idempotent
+    void observe(const boost::posix_time::ptime& ts)
+    {
+        if (first_seen_.is_not_a_date_time() || ts < first_seen_)
+            first_seen_ = ts;
+
+        if (last_seen_.is_not_a_date_time() || ts > last_seen_)
+            last_seen_ = ts;
+    }
+};
+
+/**
+ * Compares a value against remembered identity values, using only values whose last
+ * observation is at most max_age before ts. Stale values are excluded in both
+ * directions: they neither confirm (SAME) nor contradict (DIFFERENT).
+ * SAME if the value is among the current ones (also if others are current, protective
+ * during transition periods), DIFFERENT if only other values are current, UNKNOWN if
+ * no current values exist.
+ */
+template <typename T>
+ComparisonResult compareStoredIdentityValue(
+    const std::map<T, IdentityValueInfo>& infos,
+    const T& value,
+    const boost::posix_time::ptime& ts,
+    const boost::posix_time::time_duration& max_age)
+{
+    bool value_current = false;
+    bool other_current = false;
+
+    for (const auto& info_it : infos)
+    {
+        if (info_it.second.last_seen_.is_not_a_date_time()
+            || ts - info_it.second.last_seen_ > max_age)
+            continue;
+
+        if (info_it.first == value)
+            value_current = true;
+        else
+            other_current = true;
+    }
+
+    if (value_current)
+        return ComparisonResult::SAME;
+
+    if (other_current)
+        return ComparisonResult::DIFFERENT;
+
+    return ComparisonResult::UNKNOWN;
+}
+
 struct AltitudeState
 {
     bool  fl_unknown;
@@ -309,6 +370,12 @@ public:
     std::set<std::string> acids_;
     std::set<unsigned int> mode_as_;
 
+    // per-value observation times for the identity sets above, same lifetime semantics;
+    // Mode 3/A stamped from reliable values only
+    std::map<unsigned int, IdentityValueInfo> acad_infos_;
+    std::map<std::string, IdentityValueInfo> acid_infos_;
+    std::map<unsigned int, IdentityValueInfo> mode_a_infos_;
+
     boost::optional<unsigned int> ecat_;
 
     std::set<std::string> reported_mismatches_;
@@ -441,6 +508,13 @@ public:
                                       boost::posix_time::time_duration max_time_diff, float max_alt_diff,
                                       bool do_debug) const;
     // unknown, same, different timestamps from this
+
+    // set-based comparisons against remembered identity values (compareStoredIdentityValue),
+    // usable beyond the retained report window, staleness-bounded (identity_value_max_age)
+    ComparisonResult compareStoredModeACode (const dbContent::targetReport::ReconstructorInfo& tr,
+                                             const boost::posix_time::time_duration& max_age) const;
+    ComparisonResult compareStoredACID (const dbContent::targetReport::ReconstructorInfo& tr,
+                                        const boost::posix_time::time_duration& max_age) const;
 
     //fl_unknown, fl_on_ground, alt_baro_ft
     std::tuple<bool, bool, float> getAltitudeState (const boost::posix_time::ptime& ts, 

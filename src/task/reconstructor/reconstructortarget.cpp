@@ -439,6 +439,18 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
     if (tr.mode_a_code_ && !mode_as_.count(tr.mode_a_code_->code_))
         mode_as_.insert(tr.mode_a_code_->code_);
 
+    if (tr.mode_a_code_ && tr.mode_a_code_->hasReliableValue())
+    {
+        // stamp measurement time: trackers repeat the code as aged item, so correct
+        // by the reported age where known, else the repetition masks staleness
+        boost::posix_time::ptime seen_ts = tr.timestamp_;
+
+        if (tr.mode_a_code_age_ && *tr.mode_a_code_age_ > 0)
+            seen_ts -= Time::partialSeconds(*tr.mode_a_code_age_);
+
+        mode_a_infos_[tr.mode_a_code_->code_].observe(seen_ts);
+    }
+
     target_reports_.push_back(tr.record_num_);
     tr_timestamps_.insert({tr.timestamp_,tr.record_num_});
     // all sources sorted by time, ts -> record_num
@@ -483,6 +495,8 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
                     ecat_ = (unsigned int) TargetBase::Category::Vehicle;
             }
         }
+
+        acad_infos_[*tr.acad_].observe(tr.timestamp_);
     }
 
     if (tr.acid_)
@@ -499,6 +513,8 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
                     ecat_ = (unsigned int) TargetBase::Category::Vehicle;
             }
         }
+
+        acid_infos_[acid].observe(tr.timestamp_);
     }
 
     if (!ecat_ || *ecat_ == 0) // check for FFT
@@ -2123,6 +2139,37 @@ ComparisonResult ReconstructorTarget::compareModeCCode (
     }
     else
         return ComparisonResult::DIFFERENT;
+}
+
+ComparisonResult ReconstructorTarget::compareStoredModeACode (
+    const dbContent::targetReport::ReconstructorInfo& tr,
+    const boost::posix_time::time_duration& max_age) const
+{
+    if (!tr.mode_a_code_ || !tr.mode_a_code_->hasReliableValue())
+        return ComparisonResult::UNKNOWN;
+
+    // evaluate at the value's measurement time, consistent with stamping
+    boost::posix_time::ptime ts = tr.timestamp_;
+
+    if (tr.mode_a_code_age_ && *tr.mode_a_code_age_ > 0)
+        ts -= Time::partialSeconds(*tr.mode_a_code_age_);
+
+    return compareStoredIdentityValue(mode_a_infos_, tr.mode_a_code_->code_, ts, max_age);
+}
+
+ComparisonResult ReconstructorTarget::compareStoredACID (
+    const dbContent::targetReport::ReconstructorInfo& tr,
+    const boost::posix_time::time_duration& max_age) const
+{
+    if (!tr.acid_)
+        return ComparisonResult::UNKNOWN;
+
+    string acid = String::trim(*tr.acid_);
+
+    if (acid.empty())
+        return ComparisonResult::UNKNOWN;
+
+    return compareStoredIdentityValue(acid_infos_, acid, tr.timestamp_, max_age);
 }
 
 //fl_unknown, fl_on_ground, alt_baro_ft

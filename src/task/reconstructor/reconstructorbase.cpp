@@ -589,6 +589,8 @@ void ReconstructorBase::registerBaseSettings(ReconstructorBaseSettings& settings
 
     // association stuff
     registerParameter("max_time_diff", &settings.max_time_diff_, settings.max_time_diff_);
+    registerParameter("identity_value_max_age", &settings.identity_value_max_age_,
+                      settings.identity_value_max_age_);
     registerParameter("max_altitude_diff", &settings.max_altitude_diff_, settings.max_altitude_diff_);
     registerParameter("track_max_time_diff", &settings.track_max_time_diff_, settings.track_max_time_diff_);
     registerParameter("do_track_number_disassociate_using_distance",
@@ -1185,6 +1187,7 @@ void ReconstructorBase::createTargetReports()
                 info.acid_ = tgt_acc.acid(cnt);
 
                 info.mode_a_code_ = tgt_acc.modeACode(cnt);
+                info.mode_a_code_age_ = tgt_acc.modeAAge(cnt);
 
                 info.track_number_ = tgt_acc.trackNumber(cnt);
                 info.track_begin_ = tgt_acc.trackBegin(cnt);

@@ -86,6 +86,10 @@ class ReconstructorBaseSettings
 
     // maximum time difference in target reports to do comparisons
     float max_time_diff_ {10}; // sec
+    // maximum age of remembered identity values (Mode 3/A, ACID) to use in comparisons,
+    // older values are UNKNOWN (neither confirm nor contradict); bounds attribute
+    // volatility, deliberately independent of max_time_diff_
+    float identity_value_max_age_ {60}; // sec
     // maximum altitude difference to consider mode c the "same"
     float max_altitude_diff_ {300.0};
     // maximimum time difference between track updates, otherwise considered new track
