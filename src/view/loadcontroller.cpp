@@ -59,8 +59,8 @@ void LoadController::begin(const LoadOperation& op)
     op_conn_ = connect(&op, &DBContentDataSet::dataChangedSignal,
                        this, &LoadController::opDataChangedSlot);
 
-    if (!op.spec().show_status_ || load_total_ == 0)
-        return; // status suppressed or nothing to load: wait cursor only
+    if (load_total_ == 0)
+        return; // nothing to load: wait cursor only
 
     dialog_.reset(new QProgressDialog("Loading data...", "Cancel", 0, 100,
                                       QApplication::activeWindow()));
@@ -69,10 +69,7 @@ void LoadController::begin(const LoadOperation& op)
     dialog_->setAutoClose(false);
     dialog_->setAutoReset(false);
 
-    if (op.spec().cancellable_)
-        connect(dialog_.get(), &QProgressDialog::canceled, this, &LoadController::canceledSlot);
-    else
-        dialog_->setCancelButton(nullptr);
+    connect(dialog_.get(), &QProgressDialog::canceled, this, &LoadController::canceledSlot);
 
     // paint before the main thread gets busy submitting jobs / processing arrivals
     dialog_->show();

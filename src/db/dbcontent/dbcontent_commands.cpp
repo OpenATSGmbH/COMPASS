@@ -115,8 +115,6 @@ bool RTCommandGetData::run_impl()
     }
 
     LoadRequest r = LoadRequest::forContent(dbcontent_name_, read_set, custom_clause);
-    r.show_status_  = false;
-    r.cancellable_  = false;
 
     // isolated blocking load: harvest the buffers here, read them in
     // checkResult_impl; the view dataset is never touched

@@ -434,8 +434,7 @@ void EvaluationCalculator::clearEvalData()
     reference_data_loaded_  = false;
     test_data_loaded_       = false;
     data_loaded_            = false;
-    evaluated_              = false; 
-    active_load_connection_ = false;
+    evaluated_              = false;
 }
 
 /**
@@ -496,9 +495,6 @@ Result EvaluationCalculator::evaluateInternal(bool update_constraints,
 
     traced_assert(canEvaluate().ok());
 
-    //always load blocking for now
-    const bool Blocking = true;
-
     try
     {
         eval_utns_         = utns;
@@ -529,21 +525,11 @@ Result EvaluationCalculator::evaluateInternal(bool update_constraints,
         if (update_constraints)
             updateConstraints();
 
-        if (Blocking)
-        {
-            eval_man_.loadData(*this, true);
-            auto res = loadingDone();
-            if (!res.ok())
-                return res;
-        }
-        else
-        {
-            traced_assert(!active_load_connection_);
+        eval_man_.loadData(*this);
 
-            QObject::connect(&eval_man_, &EvaluationManager::hasNewData, this, &EvaluationCalculator::loadingDone);
-            active_load_connection_ = true;
-            eval_man_.loadData(*this, false);
-        }
+        auto res = loadingDone();
+        if (!res.ok())
+            return res;
     }
     catch (...)
     {
@@ -558,12 +544,6 @@ Result EvaluationCalculator::evaluateInternal(bool update_constraints,
 Result EvaluationCalculator::loadingDone()
 {
     loginf;
-
-    if (active_load_connection_)
-    {
-        QObject::disconnect(&eval_man_, &EvaluationManager::hasNewData, this, &EvaluationCalculator::loadingDone);
-        active_load_connection_ = false;
-    }
 
     auto data = eval_man_.fetchData();
  

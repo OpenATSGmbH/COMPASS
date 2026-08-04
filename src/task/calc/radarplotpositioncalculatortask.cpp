@@ -158,8 +158,6 @@ void RadarPlotPositionCalculatorTask::run()
     req.dbcontents_            = targets;
     req.apply_datasrc_filters_ = false;
     req.apply_view_filters_    = false;
-    req.show_status_           = false;   // task owns its own QMessageBox
-    req.cancellable_           = false;
     req.read_set_ = [this](const std::string& name) { return getReadSetFor(name); };
 
     // isolated batch load: the operation is filled by the engine and read in

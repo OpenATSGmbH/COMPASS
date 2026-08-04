@@ -188,7 +188,6 @@ void LiveController::reloadWindow()
 
     LoadRequest req;
     req.dbcontents_ = {"*"};
-    req.show_status_ = false;
     req.custom_filter_clause_ = [resolver, min_ts_long](const std::string& name) -> std::string {
         // sqlFor returns an empty clause for contents without a timestamp variable
         return DBFilterCondition::sqlFor(*resolver, name, dbcontent_vars::meta_var_timestamp_.name(),

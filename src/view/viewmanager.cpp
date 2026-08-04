@@ -1099,6 +1099,19 @@ void ViewManager::setCurrentSource(std::shared_ptr<DBContentDataSet> source)
     if (current_source_ == source)
         return;
 
+    // an outgoing operation that is still running is abandoned here: cancel it (its buffers
+    // will never be displayed) and close its load UX now - we are about to disconnect its
+    // finishedSignal, so loadingDoneSlot would never run to end the dialog/cursor itself
+    if (auto* op = dynamic_cast<LoadOperation*>(current_source_.get()))
+    {
+        if (op->isRunning())
+        {
+            logwrn << "abandoning a still-running load";
+            op->cancel();
+            load_controller_->end();
+        }
+    }
+
     if (current_source_)
         disconnect(current_source_.get(), nullptr, this, nullptr);
 
@@ -1124,28 +1137,54 @@ void ViewManager::setCurrentSource(std::shared_ptr<DBContentDataSet> source)
  */
 void ViewManager::reload(bool blocking, bool measure_performance)
 {
-    // in a live session (running or paused) the feed owns the data and is the current
-    // source; a full reload would swap the source away from it and lose the accumulated
-    // live data. Live view refreshes are handled in-widget (View::notifyViewUpdateNeeded
-    // -> liveReload); pause keeps the feed frozen on screen. So a reload is a no-op for
-    // the whole session.
-    if (isLiveSession(compass_.appMode()))
+    // while live is running the feed owns the data and is the current source; a full reload
+    // would swap the source away from it and lose the accumulated live data (live view
+    // refreshes are handled in-widget, View::notifyViewUpdateNeeded -> liveReload). Paused
+    // displays a LoadOperation like offline, so a reload there is a normal load.
+    if (compass_.appMode() == AppMode::LiveRunning)
     {
-        logwrn << "reload ignored in live session";
+        logwrn << "reload ignored while live is running";
         return;
     }
 
+    LoadRequest req = LoadRequest::standard();
+    req.measure_db_performance_ = measure_performance;
+
+    issueLoad(req, blocking);
+}
+
+/**
+ * Paused live = an offline display over the current database: the live window prime no longer
+ * bounds what is shown, and the user's filters apply as offline. From here the load button and
+ * the filters (incl. the time window) work exactly as offline - reload() only refuses while
+ * live is actually running. Posted from appModeSwitchSlot, so the mode may have moved on again
+ * (a quick pause/resume) by the time this runs.
+ */
+void ViewManager::loadPausedDisplay()
+{
+    if (compass_.appMode() != AppMode::LivePaused)
+    {
+        loginf << "no longer paused, skipping the paused display load";
+        return;
+    }
+
+    issueLoad(LoadRequest::standard());
+}
+
+/**
+ * Runs a request as the new display source: carries the selection over, clears the views and
+ * makes the operation current_source_. The dialog/cursor are raised by loadingStartedSlot off
+ * the op's startedSignal (after the engine's single-op wait), not here - so a superseded load
+ * can't leak them.
+ */
+void ViewManager::issueLoad(const LoadRequest& req, bool blocking)
+{
     // capture the outgoing selection BEFORE swapping the source away, so it can be
     // restored onto the freshly loaded buffers as they arrive (selection carry-over)
     captureSelection();
 
     clearDataInViews();
 
-    LoadRequest req = LoadRequest::standard();
-    req.measure_db_performance_ = measure_performance;
-
-    // the dialog/cursor are raised by loadingStartedSlot off the op's startedSignal (after
-    // the engine's single-op wait), not here - so a superseded load can't leak them
     auto op = std::make_shared<LoadOperation>(compass_.dbContentManager(), req);
     setCurrentSource(op);
 
@@ -1430,17 +1469,20 @@ void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode
     // drive the live-session state machine + point current_source_ at the feed. The feed is
     // the source across the whole session (running + paused): a pause keeps it as-is (frozen
     // on screen), a resume catches up on the pause window before re-arming ticks, an exit
-    // drops it. COMPASS's pause reload is a no-op in a live session (see reload()) and its
-    // resume prime is overridden here by re-pointing at the feed.
+    // drops it.
     if (app_mode_current == AppMode::LiveRunning)
     {
+        // leave the paused display FIRST: this cancels and disconnects a still-running paused
+        // load, so it cannot drive bookends or the progress dialog while the catch-up below
+        // pumps events. The feed emits nothing until refreshDisplay, so pointing at it early
+        // distributes nothing.
+        setCurrentSource(live_controller_->feedPtr());
+
         // resume from pause catches up on the DB-accumulated window; fresh entry starts blank
         if (app_mode_previous == AppMode::LivePaused)
             live_controller_->resumeSession();
         else
             live_controller_->startSession();
-
-        setCurrentSource(live_controller_->feedPtr());
 
         // trim the feed to the current window + distribute, without a DB delete here (that
         // resumes on the next real tick). Fresh entry -> empty feed -> no-op.
@@ -1448,7 +1490,14 @@ void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode
     }
     else if (app_mode_current == AppMode::LivePaused)
     {
-        live_controller_->pauseSession(); // freeze; the feed stays the source
+        // the DB keeps ingesting silently; only the display leaves live. The paused display
+        // is loaded from the DB below - queued, so it runs after this app-mode switch has
+        // been delivered to every receiver (filters, data sources, main window) and not
+        // nested inside the signal chain. Mirrors the pre-rewrite ordering, where COMPASS
+        // emitted appModeSwitchSignal first and only then ran its pause load.
+        live_controller_->pauseSession();
+
+        QMetaObject::invokeMethod(this, &ViewManager::loadPausedDisplay, Qt::QueuedConnection);
     }
     else if (was_live) // -> Offline
     {

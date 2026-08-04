@@ -30,7 +30,6 @@
 #include "util/tbbhack.h"
 #include "logger.h"
 
-#include <boost/thread/mutex.hpp>
 
 using namespace std;
 using namespace Utils;
@@ -185,59 +184,90 @@ void LiveDataFeed::addStagedToCache()
 {
     traced_assert(read_set_provider_);
 
-    unsigned int num_buffers = staged_.size();
-    boost::mutex data_mutex;
-
-    tbb::parallel_for(uint(0), num_buffers, [&](unsigned int buffer_cnt)
+    struct StagedItem
     {
-        auto buf_it = staged_.begin();
-        std::advance(buf_it, buffer_cnt);
+        std::string               name;
+        std::shared_ptr<Buffer>   buffer;
+        VariableSet               read_set;
+        boost::optional<Property> utn_prop; // assoc column, ensured before the transform
+        boost::optional<Property> ts_prop;  // sort key (variable name, i.e. post-transform)
+        bool                      merge {false};
+    };
 
-        const string& name = buf_it->first;
+    // resolve everything that reads the view read sets / variable model here, on the calling
+    // thread - the parallel phase below must touch buffers only
+    std::vector<StagedItem> items;
+    items.reserve(staged_.size());
+
+    for (auto& buf_it : staged_)
+    {
+        const string& name = buf_it.first;
+
+        items.emplace_back();
+        StagedItem& item = items.back();
+
+        item.name   = name;
+        item.buffer = buf_it.second;
 
         // prune target: the live view read set (incl. standard/CAT063 vars) from ViewManager
-        VariableSet read_set = read_set_provider_(name);
+        item.read_set = read_set_provider_(name);
 
-        // remove all columns not in the read set
-        vector<Property> to_remove;
-        for (const auto& prop_it : buf_it->second->properties().properties())
-            if (!read_set.hasDBColumnName(prop_it.name()))
-                to_remove.push_back(prop_it);
-
-        for (auto& prop_it : to_remove)
-            buf_it->second->deleteProperty(prop_it);
-
-        // ensure the assoc (utn) column exists so it survives the transform
         if (dbcont_man_.metaCanGetVariable(name, dbcontent_vars::meta_var_utn_))
         {
             Variable& utn_var = dbcont_man_.metaGetVariable(name, dbcontent_vars::meta_var_utn_);
-            Property utn_prop (utn_var.dbColumnName(), utn_var.dataType());
-
-            if (!buf_it->second->hasProperty(utn_prop))
-                buf_it->second->addProperty(utn_prop);
+            item.utn_prop = Property(utn_var.dbColumnName(), utn_var.dataType());
         }
 
-        // rename DB columns to variable names
-        buffer_utils::transformVariables(*buf_it->second, read_set, true);
-
-        // add selection flag
-        buf_it->second->addProperty(dbcontent_vars::selected_var_);
-
-        if (!buffers_.count(name))
-        {
-            boost::mutex::scoped_lock locker(data_mutex);
-            buffers_[name] = buf_it->second;
-        }
-        else
-            buffers_.at(name)->seizeBuffer(*buf_it->second.get());
-
-        // sort by timestamp
         traced_assert(dbcont_man_.metaVariable(dbcontent_vars::meta_var_timestamp_.name()).existsIn(name));
         Variable& ts_var = dbcont_man_.metaVariable(dbcontent_vars::meta_var_timestamp_.name()).getFor(name);
-        Property ts_prop {ts_var.name(), ts_var.dataType()};
-        traced_assert(buffers_.at(name)->hasProperty(ts_prop));
+        item.ts_prop = Property(ts_var.name(), ts_var.dataType());
+    }
 
-        buffers_.at(name)->sortByProperty(ts_prop);
+    // make the cache map structurally final before any worker runs: a std::map insert
+    // rebalances the tree, so inserting from a worker would race the unlocked lookups the
+    // other workers do. A content not yet cached adopts its staged buffer as the cache buffer
+    // (mutated in place below, exactly as before).
+    for (auto& item : items)
+    {
+        if (buffers_.count(item.name))
+            item.merge = true;
+        else
+            buffers_[item.name] = item.buffer;
+    }
+
+    // per-content work on disjoint buffers; buffers_ is only read from here on
+    tbb::parallel_for(uint(0), (unsigned int) items.size(), [&](unsigned int item_cnt)
+    {
+        StagedItem& item   = items[item_cnt];
+        Buffer&     staged = *item.buffer;
+
+        // remove all columns not in the read set
+        vector<Property> to_remove;
+        for (const auto& prop_it : staged.properties().properties())
+            if (!item.read_set.hasDBColumnName(prop_it.name()))
+                to_remove.push_back(prop_it);
+
+        for (auto& prop_it : to_remove)
+            staged.deleteProperty(prop_it);
+
+        // ensure the assoc (utn) column exists so it survives the transform
+        if (item.utn_prop && !staged.hasProperty(*item.utn_prop))
+            staged.addProperty(*item.utn_prop);
+
+        // rename DB columns to variable names
+        buffer_utils::transformVariables(staged, item.read_set, true);
+
+        // add selection flag
+        staged.addProperty(dbcontent_vars::selected_var_);
+
+        auto& cached = buffers_.at(item.name);
+
+        if (item.merge)
+            cached->seizeBuffer(staged);
+
+        // sort by timestamp
+        traced_assert(cached->hasProperty(*item.ts_prop));
+        cached->sortByProperty(*item.ts_prop);
     });
 
     staged_.clear();

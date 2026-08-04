@@ -584,12 +584,22 @@ void EvaluationManager::onConfigurationChanged(const std::vector<std::string>& c
 
 /**
  */
-void EvaluationManager::loadData(const EvaluationCalculator& calculator,
-                                 bool blocking)
+void EvaluationManager::loadData(const EvaluationCalculator& calculator)
 {
-    loginf << "blocking " << blocking;
+    loginf;
 
     traced_assert(!raw_data_available_);
+
+    // Modal wait dialog around the blocking load below. The load pumps events (op->wait) and,
+    // being an issuer-private batch load, raises no progress dialog of its own - without a
+    // modal the user could drive the UI into another evaluation or load meanwhile.
+    QMessageBox msg_box(QApplication::activeWindow());
+    msg_box.setWindowTitle("Evaluation");
+    msg_box.setText("Loading data ...");
+    msg_box.setStandardButtons(QMessageBox::NoButton);
+    msg_box.setWindowModality(Qt::ApplicationModal);
+    msg_box.show();
+    QCoreApplication::processEvents(); // paint before the load busies the main thread
 
     auto& ctx_man = compass_.dbContextManager();
 
@@ -621,18 +631,9 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator,
     // dataset is never touched
     load_op_ = std::make_shared<LoadOperation>(dbcontent_man, req);
 
-    if (blocking)
-    {
-        dbcontent_man.dataEngine().load(load_op_);
-        load_op_->wait();
-        loadingDone();
-    }
-    else
-    {
-        connect(load_op_.get(), &LoadOperation::finishedSignal, this, &EvaluationManager::loadingDone);
-        active_load_connection_ = true;
-        dbcontent_man.dataEngine().load(load_op_);
-    }
+    dbcontent_man.dataEngine().load(load_op_);
+    load_op_->wait();
+    loadingDone();
 
     needs_additional_variables_ = false;
 }
@@ -685,12 +686,6 @@ std::string EvaluationManager::loadFilterClause(const std::string& dbcontent_nam
 void EvaluationManager::loadingDone()
 {
     loginf;
-
-    if (active_load_connection_)
-    {
-        disconnect(load_op_.get(), &LoadOperation::finishedSignal, this, &EvaluationManager::loadingDone);
-        active_load_connection_ = false;
-    }
 
     traced_assert(!raw_data_available_);
 

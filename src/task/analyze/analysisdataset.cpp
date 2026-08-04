@@ -73,8 +73,6 @@ void AnalysisDataset::loadStatusCycles()
     dbContent::VariableSet status_rs = status_info.getReadSetFor(status_content);
 
     LoadRequest req = LoadRequest::forContent(status_content, status_rs);
-    req.show_status_ = false;
-    req.cancellable_ = false;
 
     // isolated batch load: fill our own operation and read its buffers - the
     // view dataset is never touched (no clearData / distribution toggling)
@@ -157,7 +155,6 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
     req.dbcontents_.insert(kReferenceDBContent);
     req.dbcontents_.insert(test_dbcontents.begin(), test_dbcontents.end());
     req.apply_view_filters_ = false;
-    req.show_status_        = false;
     // Explicit read set: load every variable the inspectors and the scope
     // filter consume (in particular the ground bit, which the default read set
     // omits). Mirrors EvaluationManager attaching its own read set.

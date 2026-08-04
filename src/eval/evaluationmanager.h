@@ -130,8 +130,7 @@ protected:
 
     void updateSectorLayers();
 
-    void loadData(const EvaluationCalculator& calculator,
-                  bool blocking);
+    void loadData(const EvaluationCalculator& calculator); // blocking; harvested in loadingDone
     std::map<std::string, std::shared_ptr<Buffer>> fetchData();
 
 private:
@@ -145,7 +144,6 @@ private:
     DBContentManager& dbcontent_man_;
 
     bool initialized_ {false};
-    bool active_load_connection_ {false};
 
     bool needs_additional_variables_ {false}; // indicates if variables should be added during loading
 

@@ -234,8 +234,16 @@ protected:
     void enableStoredReadSets();
     void disableStoredReadSets();
 
+    // runs a request as the new display source (selection carry-over + view clear +
+    // setCurrentSource); used by reload() and by the paused-display load
+    void issueLoad(const LoadRequest& req, bool blocking = false);
+
+    // loads the DB contents into the display when live is paused; posted from
+    // appModeSwitchSlot so it runs after the app-mode switch has been fully delivered
+    void loadPausedDisplay();
+
     // subscribes to the source's dataChangedSignal and takes ownership; set by
-    // reload() (offline op) and appModeSwitchSlot (live feed)
+    // issueLoad() (offline/paused op) and appModeSwitchSlot (live feed)
     void setCurrentSource(std::shared_ptr<DBContentDataSet> source);
 
     // live-session bookends (distinct from the offline op-driven loadingStarted/DoneSlot):

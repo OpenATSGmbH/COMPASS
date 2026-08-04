@@ -691,8 +691,6 @@ void ReconstructorTask::loadDataSlice()
     req.dbcontents_            = targets;
     req.apply_datasrc_filters_ = false;
     req.apply_view_filters_    = false;
-    req.show_status_           = false;
-    req.cancellable_           = false;
     req.read_set_ = [this](const std::string& name) {
         return currentReconstructor()->getReadSetFor(name);
     };

@@ -37,8 +37,6 @@ struct LoadRequest
     // optional read-set override per content; default = mgr.getReadSet(name)
     std::function<dbContent::VariableSet(const std::string&)> read_set_;
 
-    bool show_status_           = true;
-    bool cancellable_           = true;
     bool measure_db_performance_ = false;
 
     static LoadRequest standard()
