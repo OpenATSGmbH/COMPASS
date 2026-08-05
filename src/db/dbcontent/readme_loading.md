@@ -152,9 +152,26 @@ the manager's loads may be issuer-private batch loads that must not drive view/U
 They are emitted from `loadingStartedSlot` / `loadingDoneSlot`, which fire off the operation's
 own `startedSignal`/`finishedSignal` (wired in `setCurrentSource`). Consumers connect to
 ViewManager: MainWindow chrome, `TargetListWidget` focus-restore, and the RT wait
-`compass.viewmanager.loadingDoneSignal()`. The live session synthesises one `started` on
-entry and one `done` on exit (see *Live mode*), so it reads as a single
-`started → tick × N → done` cycle.
+`compass.viewmanager.loadingDoneSignal()`.
+
+**Treat them as edge notifications, not a matched pair.** A live session brackets itself
+(`beginLiveSession()` on entry, `endLiveSession()` on exit), but a **pause raises an ordinary
+offline pair inside those brackets**, because the paused display is a real `LoadOperation` whose
+`started`/`finished` are wired by `setCurrentSource`. A session with one pause therefore emits:
+
+```
+started (entry) → started (paused load) → done (paused load) → [resume: nothing] → done (exit)
+```
+
+Both current consumers are edge-based, so this is harmless: `MainWindow` only stamps a time on
+`started` and clears `loading_` / re-enables the Load button on `done` — which is what you want
+while paused — and the RT view-point wait can't fire while live is running. A consumer that
+counted pairs or treated `done` as "the session ended" would be wrong.
+
+Each bookend also drives the **views** (`view->loadingStarted()` / `loadingDone()`), so the same
+nesting applies there. One consequence: exiting live **from paused** runs every view's
+`loadingDone_impl()` a second time — once for the paused load, once for `endLiveSession()` — over
+unchanged data. Redundant work, not a wrong state.
 
 ## LoadController — the offline load UX
 

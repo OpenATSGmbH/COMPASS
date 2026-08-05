@@ -1053,6 +1053,9 @@ void ViewManager::sourceDataChangedSlot(const std::vector<std::string>& names, b
     {
         loginf << "re-entry detected (currently in '" << current_dispatch_
                << "'), deferring via queued connection";
+        // @TODO: the deferred payload carries no source identity - if current_source_ were
+        // swapped before it runs, it would be applied to the new source. Safe today only by
+        // FIFO ordering (live) and load modality (offline).
         QMetaObject::invokeMethod(this,
             [this, names, reset, last]() {
                 sourceDataChangedSlot(names, reset, last);

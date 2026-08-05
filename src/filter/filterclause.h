@@ -89,6 +89,8 @@ inline FilterClause combineClauses(const std::vector<FilterClause>& parts,
     return out;
 }
 
+// @TODO: unwrapped - a part containing a top-level OR would mis-bind. All current producers
+// pass leaf clauses or combineOr results; the one raw-SQL clause (RT get_data) is never combined.
 inline FilterClause combineAnd(const std::vector<FilterClause>& parts) { return combineClauses(parts, filter_op::logic_and, false); }
 inline FilterClause combineOr (const std::vector<FilterClause>& parts) { return combineClauses(parts, filter_op::logic_or,  true);  }
 

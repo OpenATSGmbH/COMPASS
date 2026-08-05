@@ -195,6 +195,10 @@ void DBContentDataEngine::cancelLoad()
  */
 void DBContentDataEngine::cancelCurrentSlot()
 {
+    // @TODO: queued, and carries no op identity - it obsoletes whatever is current. Safe only
+    // because finish() clears pending_contents_ before the next op can start, so a late cancel
+    // finds nothing to do.
+
     // the read jobs are owned by the DBContents; flag each pending one obsolete. The job
     // sees the flag between chunks, drops its buffer and completes normally, so it drains
     // through readJobDoneSlot -> readDoneSignal(null) -> contentReadDoneSlot
