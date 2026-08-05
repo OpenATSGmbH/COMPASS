@@ -1446,6 +1446,15 @@ std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssocia
             continue;
 #endif
 
+                          // pairs separated by an identity cut stay separated
+                          if (reconstructor().targets_container_.do_not_merge_pairs_.count(
+                                  {std::min(utn, other_utn), std::max(utn, other_utn)}))
+#ifdef FIND_UTN_FOR_TARGET_MT
+                              return;
+#else
+            continue;
+#endif
+
                           if (!other.created_in_current_slice_)
                           {
                               if (do_debug)

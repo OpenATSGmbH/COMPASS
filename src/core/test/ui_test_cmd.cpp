@@ -170,6 +170,12 @@ bool RTCommandUIGet::run_impl()
         result        = v;
         result_string = receiver.second->isEnabled() ? "true" : "false";
     }
+    else if (what == "stylesheet")
+    {
+        //retrieve the style sheet, e.g. to check invalid-input coloring
+        result_string = receiver.second->styleSheet().toStdString();
+        result        = result_string;
+    }
     else
     {
         if (as_json)

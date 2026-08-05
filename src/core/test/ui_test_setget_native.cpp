@@ -23,6 +23,7 @@
 
 #include <QWidget>
 #include <QTreeView>
+#include <QDateTimeEdit>
 
 /**
  * Attempts a cast of the given widget to the given type and invokes
@@ -76,6 +77,7 @@ bool setUIElementNative(QWidget* parent,
     TRY_INVOKE_UI_SETTER(QToolBar, w.second, value, delay, hint)
     TRY_INVOKE_UI_SETTER(QLineEdit, w.second, value, delay, hint)
     TRY_INVOKE_UI_SETTER(QTextEdit, w.second, value, delay, hint)
+    TRY_INVOKE_UI_SETTER(QDateTimeEdit, w.second, value, delay, hint)
     TRY_INVOKE_UI_SETTER(QSpinBox, w.second, value, delay, hint)
     TRY_INVOKE_UI_SETTER(QDoubleSpinBox, w.second, value, delay, hint)
     TRY_INVOKE_UI_SETTER(QScrollBar, w.second, value, delay, hint)
@@ -117,6 +119,7 @@ boost::optional<QString> getUIElementNative(QWidget* parent,
     TRY_INVOKE_UI_GETTER(QToolBar, w.second, what)
     TRY_INVOKE_UI_GETTER(QLineEdit, w.second, what)
     TRY_INVOKE_UI_GETTER(QTextEdit, w.second, what)
+    TRY_INVOKE_UI_GETTER(QDateTimeEdit, w.second, what)
     TRY_INVOKE_UI_GETTER(QSpinBox, w.second, what)
     TRY_INVOKE_UI_GETTER(QDoubleSpinBox, w.second, what)
     TRY_INVOKE_UI_GETTER(QAbstractSlider, w.second, what)

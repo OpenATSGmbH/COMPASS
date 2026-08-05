@@ -77,6 +77,7 @@ class ReconstructorBaseSettings
     boost::posix_time::ptime data_timestamp_min;
     boost::posix_time::ptime data_timestamp_max;
 
+
     // slicing
     unsigned int slice_duration_in_minutes    {15};
     unsigned int outdated_duration_in_minutes {2};
@@ -211,6 +212,10 @@ public:
                                                  std::pair<unsigned int, boost::posix_time::ptime>>>> tn2utn_;
 
         std::map<unsigned int, dbContent::ReconstructorTarget> targets_; // utn -> tgt
+
+        // utn pairs separated by an identity cut this slice, self-association must not
+        // merge them back (pairs stored ordered, smaller utn first)
+        std::set<std::pair<unsigned int, unsigned int>> do_not_merge_pairs_;
         //std::vector<unsigned int> removed_utns_;
 
         unsigned int createNewTarget(const dbContent::targetReport::ReconstructorInfo& tr);

@@ -203,6 +203,7 @@ void MainWindow::createUI()
 
     // initialize toolbox
     tool_box_ = new ToolBox(this);
+    tool_box_->setObjectName("toolbox");
     
     tool_ds_      = tool_box_->addTool(compass_.dbContextManager().loadWidget()); // 0
     tool_filters_ = tool_box_->addTool(compass_.filterManager().widget()); // 1

@@ -74,45 +74,6 @@ struct IdentityValueInfo
     }
 };
 
-/**
- * Compares a value against remembered identity values, using only values whose last
- * observation is at most max_age before ts. Stale values are excluded in both
- * directions: they neither confirm (SAME) nor contradict (DIFFERENT).
- * SAME if the value is among the current ones (also if others are current, protective
- * during transition periods), DIFFERENT if only other values are current, UNKNOWN if
- * no current values exist.
- */
-template <typename T>
-ComparisonResult compareStoredIdentityValue(
-    const std::map<T, IdentityValueInfo>& infos,
-    const T& value,
-    const boost::posix_time::ptime& ts,
-    const boost::posix_time::time_duration& max_age)
-{
-    bool value_current = false;
-    bool other_current = false;
-
-    for (const auto& info_it : infos)
-    {
-        if (info_it.second.last_seen_.is_not_a_date_time()
-            || ts - info_it.second.last_seen_ > max_age)
-            continue;
-
-        if (info_it.first == value)
-            value_current = true;
-        else
-            other_current = true;
-    }
-
-    if (value_current)
-        return ComparisonResult::SAME;
-
-    if (other_current)
-        return ComparisonResult::DIFFERENT;
-
-    return ComparisonResult::UNKNOWN;
-}
-
 struct AltitudeState
 {
     bool  fl_unknown;
@@ -509,12 +470,6 @@ public:
                                       bool do_debug) const;
     // unknown, same, different timestamps from this
 
-    // set-based comparisons against remembered identity values (compareStoredIdentityValue),
-    // usable beyond the retained report window, staleness-bounded (identity_value_max_age)
-    ComparisonResult compareStoredModeACode (const dbContent::targetReport::ReconstructorInfo& tr,
-                                             const boost::posix_time::time_duration& max_age) const;
-    ComparisonResult compareStoredACID (const dbContent::targetReport::ReconstructorInfo& tr,
-                                        const boost::posix_time::time_duration& max_age) const;
 
     //fl_unknown, fl_on_ground, alt_baro_ft
     std::tuple<bool, bool, float> getAltitudeState (const boost::posix_time::ptime& ts, 

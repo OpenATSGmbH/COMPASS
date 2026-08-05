@@ -124,6 +124,10 @@ namespace ui_test
                              const QString& obj_name,
                              const QString& text,
                              int delay = -1);
+    bool injectDateTimeEditEvent(QWidget* root,
+                                 const QString& obj_name,
+                                 const QString& text,
+                                 int delay = -1);
     bool injectTextEditEvent(QWidget* root,
                              const QString& obj_name,
                              const QString& text,

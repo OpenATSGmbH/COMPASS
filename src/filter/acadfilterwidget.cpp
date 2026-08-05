@@ -30,6 +30,7 @@ ACADFilterWidget::ACADFilterWidget(ACADFilter& filter)
     : DBFilterWidget(filter), filter_(filter)
 {
     value_edit_ = new QLineEdit();
+    value_edit_->setObjectName("filter_value_edit");
 
     addNameValuePair("ACADs IN", value_edit_);
 

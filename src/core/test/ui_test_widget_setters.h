@@ -39,6 +39,7 @@
 #include <QLabel>
 #include <QDialog>
 #include <QTreeView>
+#include <QDateTimeEdit>
 
 #include <QWidget>
 #include <QString>
@@ -114,6 +115,12 @@ namespace ui_test
     inline bool setUIElement(QTextEdit* widget, const QString& value, int delay, const SetUIHint& hint)
     {
         return injectTextEditEvent(widget, "", value, delay);
+    }
+    template<>
+    inline bool setUIElement(QDateTimeEdit* widget, const QString& value, int delay, const SetUIHint& hint)
+    {
+        //value must match the display format of the widget
+        return injectDateTimeEditEvent(widget, "", value, delay);
     }
     template<>
     inline bool setUIElement(QSpinBox* widget, const QString& value, int delay, const SetUIHint& hint)

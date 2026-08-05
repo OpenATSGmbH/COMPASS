@@ -25,6 +25,7 @@
 #include <QMenu>
 #include <QTreeView>
 #include <QMenuBar>
+#include <QDateTimeEdit>
 #include <QComboBox>
 #include <QTabWidget>
 #include <QToolBar>
@@ -174,6 +175,11 @@ namespace ui_test
     inline boost::optional<QString> getUIElementValue(QTextEdit* widget, const QString& what)
     {
         return widget->toPlainText();
+    }
+    template<>
+    inline boost::optional<QString> getUIElementValue(QDateTimeEdit* widget, const QString& what)
+    {
+        return widget->dateTime().toString(widget->displayFormat());
     }
     template<>
     inline boost::optional<QString> getUIElementValue(QSpinBox* widget, const QString& what)

@@ -140,6 +140,8 @@ unsigned int StreamIdentityCut::cutDetectedTransitions(ReconstructorBase& recons
 
     unsigned int num_cuts {0};
 
+    reconstructor.targets_container_.do_not_merge_pairs_.clear();
+
     // a stream is cut at most once per invocation: later transitions belong to the
     // separated remainder, cutting them again only over-segments it
     set<tuple<unsigned int, unsigned int, unsigned int>> streams_cut;
@@ -202,7 +204,11 @@ unsigned int StreamIdentityCut::cutDetectedTransitions(ReconstructorBase& recons
                     transition.transition_time_, cut_after);
 
             if (!moved.size())
+            {
+                loginf << "utn " << utn << " holds no reports of the "
+                       << (cut_after ? "later" : "earlier") << " part, nothing to cut";
                 continue;
+            }
 
             // Mode S addresses carried by the separated reports decide where they go:
             // a target must never hold an address another target already owns
@@ -250,6 +256,9 @@ unsigned int StreamIdentityCut::cutDetectedTransitions(ReconstructorBase& recons
             {
                 traced_assert(container.targets_.count(host_utn));
 
+                container.do_not_merge_pairs_.insert(
+                    {min(utn, (unsigned int) host_utn), max(utn, (unsigned int) host_utn)});
+
                 for (auto rec_num : moved)
                     container.targets_.at(host_utn).addTargetReport(rec_num);
 
@@ -268,6 +277,9 @@ unsigned int StreamIdentityCut::cutDetectedTransitions(ReconstructorBase& recons
             else
             {
                 unsigned int new_utn = container.createTargetFromReports(moved, utn);
+
+                container.do_not_merge_pairs_.insert(
+                    {min(utn, new_utn), max(utn, new_utn)});
 
                 loginf << "cut utn " << utn << (cut_after ? " (later part)" : " (earlier part)")
                        << " -> new utn " << new_utn

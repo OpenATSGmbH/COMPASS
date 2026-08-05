@@ -38,12 +38,14 @@ TimestampFilterWidget::TimestampFilterWidget(TimestampFilter& filter)
     //QFormLayout* layout = new QFormLayout();
 
     min_edit_ = new QDateTimeEdit(QDateTime::currentDateTime());
+    min_edit_->setObjectName("filter_min_edit");
     min_edit_->setDisplayFormat(Time::QT_DATETIME_FORMAT.c_str());
     connect(min_edit_, &QDateTimeEdit::dateTimeChanged, this, &TimestampFilterWidget::minDateTimeChanged);
 
     addNameValuePair("Timestamp >=", min_edit_);
 
     max_edit_ = new QDateTimeEdit(QDateTime::currentDateTime());
+    max_edit_->setObjectName("filter_max_edit");
     max_edit_->setDisplayFormat(Time::QT_DATETIME_FORMAT.c_str());
     connect(max_edit_, &QDateTimeEdit::dateTimeChanged, this, &TimestampFilterWidget::maxDateTimeChanged);
 
@@ -63,6 +65,7 @@ TimestampFilterWidget::TimestampFilterWidget(TimestampFilter& filter)
 
         QString text = delta > 0 ? QString("+%1m").arg(delta) : QString("%1m").arg(delta);
         QPushButton* button = new QPushButton(text);
+        button->setObjectName(QString("filter_step_%1_button").arg(delta));
         button->setIcon(QIcon());
         button->setToolTip(QString("Shift window by %1 minutes").arg(delta));
         button->setFixedWidth(40);

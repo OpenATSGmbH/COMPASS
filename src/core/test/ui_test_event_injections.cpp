@@ -33,6 +33,7 @@
 #include <QAbstractItemModel>
 #include <QAbstractItemView>
 #include <QContextMenuEvent>
+#include <QDateTimeEdit>
 #include <QComboBox>
 #include <QTabWidget>
 #include <QToolBar>
@@ -1001,6 +1002,40 @@ bool injectLineEditEvent(QWidget* root,
 }
 
 /**
+ * Injects a new date time into the given date time edit by typing the given
+ * text, which must match the display format of the widget
+ * (e.g. "2023-04-22 08:15:00.000" for format "yyyy-MM-dd hh:mm:ss.zzz").
+ */
+bool injectDateTimeEditEvent(QWidget* root,
+                             const QString& obj_name,
+                             const QString& text,
+                             int delay)
+{
+    auto obj = findObjectAs<QDateTimeEdit>(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectDateTimeEditEvent", obj_name, obj.first);
+        return false;
+    }
+
+    //typed keystrokes are scattered over the edit sections in a hard to predict
+    //way, so the value is set programmatically - this emits dateTimeChanged
+    //exactly like a user edit does
+    QDateTime dt = QDateTime::fromString(text, obj.second->displayFormat());
+    if (!dt.isValid())
+    {
+        loginf << "'" << text.toStdString() << "' does not match display format '"
+               << obj.second->displayFormat().toStdString() << "'";
+        return false;
+    }
+
+    obj.second->setDateTime(dt);
+
+    //the widget clamps to its minimum / maximum - verify the value was taken
+    return obj.second->dateTime() == dt;
+}
+
+/**
  * Injects new text into the given edit object (clearing the old content).
  * The given text may contain line breaks.
  */
@@ -1248,6 +1283,12 @@ bool injectCheckBoxEvent(QWidget* root,
 
     //toggle check state
     if (!injectClickEvent(obj.second, "", 2, 2, Qt::LeftButton, delay))
+        return false;
+
+    //style sheets may exclude the corner from the clickable area - retry at
+    //the widget center
+    if (obj.second->isChecked() != on &&
+        !injectClickEvent(obj.second, "", -1, -1, Qt::LeftButton, delay))
         return false;
 
     return obj.second->isChecked() == on;

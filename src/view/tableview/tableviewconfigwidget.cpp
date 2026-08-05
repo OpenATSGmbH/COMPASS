@@ -82,7 +82,7 @@ TableViewConfigWidget::TableViewConfigWidget(TableViewWidget* view_widget, QWidg
         cfg_layout->addWidget(presentation_check_);
 
         ignore_non_target_reports_check_ = new QCheckBox("Ignore Non-Target Reports");
-        UI_TEST_OBJ_NAME(ignore_non_target_reports_check_, presentation_check_->text())
+        UI_TEST_OBJ_NAME(ignore_non_target_reports_check_, ignore_non_target_reports_check_->text())
         ignore_non_target_reports_check_->setChecked(view_->ignoreNonTargetReports());
         connect(ignore_non_target_reports_check_, &QCheckBox::clicked,
                 this, &TableViewConfigWidget::toggleIgnoreNonTargetReports);

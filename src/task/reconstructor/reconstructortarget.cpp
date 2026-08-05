@@ -2141,37 +2141,6 @@ ComparisonResult ReconstructorTarget::compareModeCCode (
         return ComparisonResult::DIFFERENT;
 }
 
-ComparisonResult ReconstructorTarget::compareStoredModeACode (
-    const dbContent::targetReport::ReconstructorInfo& tr,
-    const boost::posix_time::time_duration& max_age) const
-{
-    if (!tr.mode_a_code_ || !tr.mode_a_code_->hasReliableValue())
-        return ComparisonResult::UNKNOWN;
-
-    // evaluate at the value's measurement time, consistent with stamping
-    boost::posix_time::ptime ts = tr.timestamp_;
-
-    if (tr.mode_a_code_age_ && *tr.mode_a_code_age_ > 0)
-        ts -= Time::partialSeconds(*tr.mode_a_code_age_);
-
-    return compareStoredIdentityValue(mode_a_infos_, tr.mode_a_code_->code_, ts, max_age);
-}
-
-ComparisonResult ReconstructorTarget::compareStoredACID (
-    const dbContent::targetReport::ReconstructorInfo& tr,
-    const boost::posix_time::time_duration& max_age) const
-{
-    if (!tr.acid_)
-        return ComparisonResult::UNKNOWN;
-
-    string acid = String::trim(*tr.acid_);
-
-    if (acid.empty())
-        return ComparisonResult::UNKNOWN;
-
-    return compareStoredIdentityValue(acid_infos_, acid, tr.timestamp_, max_age);
-}
-
 //fl_unknown, fl_on_ground, alt_baro_ft
 std::tuple<bool, bool, float> ReconstructorTarget::getAltitudeState (
     const boost::posix_time::ptime& ts,

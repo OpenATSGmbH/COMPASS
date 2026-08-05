@@ -45,6 +45,8 @@ FilterManagerWidget::FilterManagerWidget(FilterManager& filter_manager,
 :   ToolBoxWidget(parent)
 ,   filter_manager_         (filter_manager)
 {
+    setObjectName("filter_manager_widget");
+
     QFont font_bold;
     font_bold.setBold(true);
 
@@ -55,6 +57,7 @@ FilterManagerWidget::FilterManagerWidget(FilterManager& filter_manager,
 
     // use filters stuff
     filters_check_ = new QCheckBox();
+    filters_check_->setObjectName("filter_use_check");
     filters_check_->setChecked(filter_manager_.useFilters());
     connect(filters_check_, &QCheckBox::clicked, this, &FilterManagerWidget::toggleUseFilters);
 
