@@ -37,6 +37,7 @@ DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name
     : QDialog(parent)
 {
     setWindowTitle("Context Conflict");
+    setObjectName("ctx_conflict_dialog");
     setWindowFlags(windowFlags() & ~Qt::WindowCloseButtonHint);
     setMinimumWidth(450);
 
@@ -65,6 +66,7 @@ DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name
     grid->setColumnStretch(0, 1); // left stretch
 
     auto* use_config_button = new QPushButton("Use Configuration");
+    use_config_button->setObjectName("ctx_conflict_use_config_button");
     use_config_button->setIcon(QIcon());
     if (db_has_sensor_data)
     {
@@ -79,12 +81,14 @@ DBContextConflictDialog::DBContextConflictDialog(const std::string& context_name
     grid->addWidget(use_config_button, 0, 1);
 
     auto* use_db_button = new QPushButton("Use Database");
+    use_db_button->setObjectName("ctx_conflict_use_db_button");
     use_db_button->setIcon(QIcon());
     use_db_button->setToolTip("Use the Database and overwrite the Configuration");
     connect(use_db_button, &QPushButton::clicked, this, &DBContextConflictDialog::useDatabaseSlot);
     grid->addWidget(use_db_button, 0, 2);
 
     auto* merge_button = new QPushButton("Merge...");
+    merge_button->setObjectName("ctx_conflict_merge_button");
     merge_button->setIcon(QIcon());
     merge_button->setToolTip("Open a merge dialog to resolve conflicts individually");
     connect(merge_button, &QPushButton::clicked, this, &DBContextConflictDialog::mergeSlot);

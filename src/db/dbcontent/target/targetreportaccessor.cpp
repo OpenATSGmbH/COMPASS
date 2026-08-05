@@ -20,8 +20,12 @@
 #include "dbcontentmanager.h"
 #include "global.h"
 #include "accuracy.h"
+#include "logger.h"
 
 #include "targetreportdefs.h"
+
+#include <mutex>
+#include <set>
 
 namespace dbContent 
 {
@@ -495,8 +499,30 @@ boost::optional<targetReport::VelocityAccuracy> TargetReportAccessor::velocityAc
             cat062_vy_stddev_vec_->isNull(index))
             return {};
 
-        return targetReport::VelocityAccuracy(cat062_vx_stddev_vec_->get(index),
-                                              cat062_vy_stddev_vec_->get(index));
+        double vx_stddev = cat062_vx_stddev_vec_->get(index);
+        double vy_stddev = cat062_vy_stddev_vec_->get(index);
+
+        // stored stddevs must not be zero when set, indicates bad source data
+        if (vx_stddev == 0 || vy_stddev == 0)
+        {
+            static std::set<unsigned int> warned_ds_ids;
+            static std::mutex warned_mutex;
+
+            unsigned int ds_id_val = dsID(index);
+
+            std::lock_guard<std::mutex> lock(warned_mutex);
+
+            if (!warned_ds_ids.count(ds_id_val))
+            {
+                warned_ds_ids.insert(ds_id_val);
+
+                logwrn << "zero stored velocity stddev vx " << vx_stddev
+                       << " vy " << vy_stddev << " ds_id " << ds_id_val
+                       << ", suppressing further warnings for this data source";
+            }
+        }
+
+        return targetReport::VelocityAccuracy(vx_stddev, vy_stddev);
     }
 
     //not implemented for dbcontent

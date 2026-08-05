@@ -23,6 +23,7 @@
 #include "json.hpp"
 
 #include <QMenu>
+#include <QTreeView>
 #include <QMenuBar>
 #include <QComboBox>
 #include <QTabWidget>
@@ -121,6 +122,36 @@ namespace ui_test
     inline boost::optional<QString> getUIElementValue(QTabWidget* widget, const QString& what)
     {
         return widget->tabBar()->tabText(widget->currentIndex());
+    }
+    template<>
+    inline boost::optional<QString> getUIElementValue(QTreeView* widget, const QString& what)
+    {
+        if (!widget->model())
+            return {};
+
+        //number of top level rows
+        if (what == "rows")
+            return conversions::stringFromValue<int>(widget->model()->rowCount());
+
+        //default: display text of the current item
+        QModelIndex idx = widget->currentIndex();
+        if (idx.isValid())
+            return idx.data(Qt::DisplayRole).toString();
+
+        return {};
+    }
+    template<>
+    inline boost::optional<QString> getUIElementValue(QMenu* widget, const QString& what)
+    {
+        //returns the enabled state of the action with the given text
+        if (what.isEmpty())
+            return {};
+
+        for (auto a : widget->actions())
+            if (!a->isSeparator() && what == normalizedActionName(a->text()))
+                return conversions::stringFromValue<bool>(a->isEnabled());
+
+        return {};
     }
     template<>
     inline boost::optional<QString> getUIElementValue(QToolBar* widget, const QString& what)
@@ -247,6 +278,16 @@ namespace ui_test
     template<>
     inline nlohmann::json getUIElementValueJSON(QComboBox* widget, const QString& what)
     {
+        //list all selectable entries instead of the current one
+        if (what == "entries")
+        {
+            nlohmann::json entries = nlohmann::json::array();
+            for (int i = 0; i < widget->count(); ++i)
+                entries.push_back(widget->itemText(i).toStdString());
+
+            return entries;
+        }
+
         return value2JSON(widget->currentText().toStdString());
     }
     template<>

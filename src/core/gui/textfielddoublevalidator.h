@@ -36,9 +36,24 @@ class TextFieldDoubleValidator : public QDoubleValidator
         setNotation(QDoubleValidator::StandardNotation);
     }
 
+    // for optional fields where an empty text is a legal value meaning "not set":
+    // an empty field then counts as acceptable input, so QLineEdit emits
+    // editingFinished on focus-out and the value can be removed by clearing
+    // the field. with the default (empty = intermediate) a cleared field never
+    // commits.
+    TextFieldDoubleValidator(double bottom, double top, int decimals, bool allow_empty,
+                             QObject* parent = nullptr)
+        : QDoubleValidator(bottom, top, decimals, parent), allow_empty_(allow_empty)
+    {
+        setNotation(QDoubleValidator::StandardNotation);
+    }
+
     QValidator::State validate(QString& s, int& pos) const
     {
-        if (s.isEmpty() || (s.startsWith("-") && s.length() == 1))  //||
+        if (s.isEmpty())
+            return allow_empty_ ? QValidator::Acceptable : QValidator::Intermediate;
+
+        if (s.startsWith("-") && s.length() == 1)
             return QValidator::Intermediate;
 
         if (decimals())
@@ -95,5 +110,8 @@ class TextFieldDoubleValidator : public QDoubleValidator
         else
             line_edit->setStyleSheet(invalid_style);
     }
+
+  private:
+    bool allow_empty_ {false};
 };
 

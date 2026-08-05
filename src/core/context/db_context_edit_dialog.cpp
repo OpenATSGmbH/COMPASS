@@ -117,6 +117,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
     loginf << "opening edit dialog";
 
     setWindowTitle("Edit Data Contexts");
+    setObjectName("ctx_edit_dialog");
     setMinimumSize(1100, 600);
     setModal(true);
 
@@ -129,6 +130,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
         top_layout->addWidget(new QLabel("Context:"));
 
         context_combo_ = new QComboBox();
+        context_combo_->setObjectName("ctx_combo");
         context_combo_->setMinimumWidth(200);
         connect(context_combo_, &QComboBox::currentTextChanged,
                 this, &DBContextEditDialog::contextComboChangedSlot);
@@ -137,30 +139,35 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
         top_layout->addStretch();
 
         copy_button_ = new QPushButton("Copy");
+        copy_button_->setObjectName("ctx_copy_button");
         copy_button_->setIcon(QIcon());
         copy_button_->setToolTip("Copy this context under a new name");
         connect(copy_button_, &QPushButton::clicked, this, &DBContextEditDialog::copySlot);
         top_layout->addWidget(copy_button_);
 
         rename_button_ = new QPushButton("Rename");
+        rename_button_->setObjectName("ctx_rename_button");
         rename_button_->setIcon(QIcon());
         rename_button_->setToolTip("Rename the current context");
         connect(rename_button_, &QPushButton::clicked, this, &DBContextEditDialog::renameSlot);
         top_layout->addWidget(rename_button_);
 
         delete_button_ = new QPushButton("Delete");
+        delete_button_->setObjectName("ctx_delete_button");
         delete_button_->setIcon(QIcon());
         delete_button_->setToolTip("Delete one or more contexts");
         connect(delete_button_, &QPushButton::clicked, this, &DBContextEditDialog::deleteSlot);
         top_layout->addWidget(delete_button_);
 
         auto* export_button = new QPushButton("Export as ZIP");
+        export_button->setObjectName("ctx_export_button");
         export_button->setIcon(QIcon());
         export_button->setToolTip("Export the current context as a zip archive");
         connect(export_button, &QPushButton::clicked, this, &DBContextEditDialog::exportZipSlot);
         top_layout->addWidget(export_button);
 
         auto* import_button = new QPushButton("Import from ZIP");
+        import_button->setObjectName("ctx_import_button");
         import_button->setIcon(QIcon());
         import_button->setToolTip("Import a context from a zip archive");
         connect(import_button, &QPushButton::clicked, this, &DBContextEditDialog::importZipSlot);
@@ -175,6 +182,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
 
         // tree view
         tree_view_ = new QTreeView();
+        tree_view_->setObjectName("ctx_tree");
         tree_view_->setHeaderHidden(true);
         tree_view_->setItemDelegate(new TreeItemDelegate(tree_view_));
         tree_view_->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -189,6 +197,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
         scroll->setWidgetResizable(true);
 
         detail_stack_ = new QStackedWidget();
+        detail_stack_->setObjectName("ctx_detail_stack");
         scroll->setWidget(detail_stack_);
 
         splitter->addWidget(scroll);
@@ -204,6 +213,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
         button_layout->addStretch();
 
         auto* close_button = new QPushButton("Close");
+        close_button->setObjectName("ctx_close_button");
         close_button->setIcon(QIcon());
         connect(close_button, &QPushButton::clicked, this, &QDialog::accept);
         button_layout->addWidget(close_button);
@@ -886,6 +896,7 @@ void DBContextEditDialog::importAirSpace()
 
     QDialog dlg(this);
     dlg.setWindowTitle("Import Air Space Sectors");
+    dlg.setObjectName("airspace_import_dialog");
 
     auto* layout = new QVBoxLayout;
     dlg.setLayout(layout);
@@ -894,12 +905,14 @@ void DBContextEditDialog::importAirSpace()
     auto* layer_layout = new QHBoxLayout;
     layer_layout->addWidget(new QLabel("Layer name:"));
     auto* layer_edit = new QLineEdit(QString::fromStdString(default_layer));
+    layer_edit->setObjectName("airspace_layer_edit");
     layer_edit->setToolTip("All imported sectors will be placed into this layer");
     layer_layout->addWidget(layer_edit);
     layout->addLayout(layer_layout);
 
     // sector selection tree
     auto* list = new QTreeWidget(&dlg);
+    list->setObjectName("airspace_sector_list");
     list->setHeaderLabels({ "", "Sector", "#Points", "Altitude min", "Altitude max" });
     list->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     list->header()->setSectionResizeMode(1, QHeaderView::Stretch);
@@ -911,9 +924,11 @@ void DBContextEditDialog::importAirSpace()
 
     auto* button_layout = new QHBoxLayout;
     auto* button_import = new QPushButton("Import");
+    button_import->setObjectName("airspace_import_button");
     button_import->setIcon(QIcon());
     button_import->setToolTip("Import selected sectors");
     auto* button_cancel = new QPushButton("Cancel");
+    button_cancel->setObjectName("airspace_cancel_button");
     button_cancel->setIcon(QIcon());
     button_cancel->setToolTip("Cancel import");
 

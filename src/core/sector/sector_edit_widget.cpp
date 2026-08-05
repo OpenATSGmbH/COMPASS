@@ -67,19 +67,28 @@ SectorEditWidget::SectorEditWidget(std::function<void()> on_changed,
     form->addRow(new QLabel("Color"), color_button_);
 
     alt_min_edit_ = new QLineEdit();
-    alt_min_edit_->setValidator(new TextFieldDoubleValidator(-10000, 100000, 1));
+    alt_min_edit_->setValidator(new TextFieldDoubleValidator(-10000, 100000, 1, true));
     alt_min_edit_->setPlaceholderText("none");
     connect(alt_min_edit_, &QLineEdit::editingFinished, this, &SectorEditWidget::altMinEditedSlot);
     form->addRow(new QLabel("Altitude Min [ft]"), alt_min_edit_);
 
     alt_max_edit_ = new QLineEdit();
-    alt_max_edit_->setValidator(new TextFieldDoubleValidator(-10000, 100000, 1));
+    alt_max_edit_->setValidator(new TextFieldDoubleValidator(-10000, 100000, 1, true));
     alt_max_edit_->setPlaceholderText("none");
     connect(alt_max_edit_, &QLineEdit::editingFinished, this, &SectorEditWidget::altMaxEditedSlot);
     form->addRow(new QLabel("Altitude Max [ft]"), alt_max_edit_);
 
     points_label_ = new QLabel();
     form->addRow(new QLabel("Points"), points_label_);
+
+    // object names for ui testing
+    name_edit_->setObjectName("sector_edit_name_edit");
+    layer_combo_->setObjectName("sector_edit_layer_combo");
+    exclude_check_->setObjectName("sector_edit_exclude_check");
+    color_button_->setObjectName("sector_edit_color_button");
+    alt_min_edit_->setObjectName("sector_edit_alt_min_edit");
+    alt_max_edit_->setObjectName("sector_edit_alt_max_edit");
+    points_label_->setObjectName("sector_edit_points_label");
 
     layout->addLayout(form);
     layout->addStretch();

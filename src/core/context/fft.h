@@ -58,7 +58,9 @@ public:
 
 private:
     std::string name_;
-    nlohmann::json info_;
+    // always an object - erase() throws on a null json, and a newly created
+    // FFT is edited before any info is set
+    nlohmann::json info_ = nlohmann::json::object();
 };
 
 } // namespace context

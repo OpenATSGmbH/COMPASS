@@ -2,6 +2,7 @@
 
 #include "msghandler.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <iostream>
 
@@ -52,6 +53,12 @@ namespace compass_assert
                       << (show_st ? "\n" : "") << (show_st ? msg.stack_trace : "")
                       << (show_st ? "\n" : "") << (aborting ? "Aborting..." : "");
         }
+
+        // make buffered diagnostics survive the abort: this message and any preceding
+        // log output would otherwise be lost when stdout is a block-buffered redirect
+        std::cout.flush();
+        std::cerr.flush();
+        std::fflush(nullptr);
 
         //then abort
         std::abort();

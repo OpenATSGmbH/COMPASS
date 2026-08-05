@@ -161,6 +161,15 @@ bool RTCommandUIGet::run_impl()
         result        = v;
         result_string = receiver.second->isVisible() ? "true" : "false";
     }
+    else if (enabled)
+    {
+        //retrieve ui element enabled state
+        nlohmann::json v;
+        v[ "enabled" ] = receiver.second->isEnabled();
+
+        result        = v;
+        result_string = receiver.second->isEnabled() ? "true" : "false";
+    }
     else
     {
         if (as_json)
@@ -211,7 +220,8 @@ void RTCommandUIGet::collectOptions_impl(OptionsDescription& options,
     ADD_RTCOMMAND_OPTIONS(options)
         ("what,w", po::value<std::string>()->default_value(""), "which value to retrieve from the ui element (empty = default behavior)")
         ("json", "if present, the result will be returned as a json struct instead of a string")
-        ("visible", "if present, the visibility of the ui element will be returned");
+        ("visible", "if present, the visibility of the ui element will be returned")
+        ("enabled", "if present, the enabled state of the ui element will be returned");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "what")
 }
@@ -226,6 +236,7 @@ void RTCommandUIGet::assignVariables_impl(const VariablesMap& variables)
     RTCOMMAND_GET_QSTRING_OR_THROW(variables, "what", what)
     RTCOMMAND_CHECK_VAR(variables, "json", as_json)
     RTCOMMAND_CHECK_VAR(variables, "visible", visible)
+    RTCOMMAND_CHECK_VAR(variables, "enabled", enabled)
 }
 
 /*************************************************************************

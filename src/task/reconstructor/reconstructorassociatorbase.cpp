@@ -16,6 +16,7 @@
  */
 
 #include "reconstructorassociatorbase.h"
+#include "streamidentitycut.h"
 #include "logger.h"
 #include "stringconv.h"
 #include "timeconv.h"
@@ -93,6 +94,21 @@ void ReconstructorAssociatorBase::associateNewData()
     //     return;
 
     // reconstructor().targets_container_.checkACADLookup();
+
+    if (reconstructor().isCancelled())
+        return;
+
+    // retrospective identity cut
+    if (reconstructor().settings().do_identity_transition_cut_)
+    {
+        unsigned int num_cuts = StreamIdentityCut::cutDetectedTransitions(reconstructor());
+
+        if (num_cuts)
+        {
+            loginf << "performed " << num_cuts << " identity cut(s)";
+            reconstructor().targets_container_.checkACADLookup();
+        }
+    }
 
     if (reconstructor().isCancelled())
         return;

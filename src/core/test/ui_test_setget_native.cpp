@@ -22,6 +22,7 @@
 #include "rtcommand_defs.h"
 
 #include <QWidget>
+#include <QTreeView>
 
 /**
  * Attempts a cast of the given widget to the given type and invokes
@@ -84,6 +85,7 @@ bool setUIElementNative(QWidget* parent,
     TRY_INVOKE_UI_SETTER(QRadioButton, w.second, value, delay, hint)
     TRY_INVOKE_UI_SETTER(QToolButton, w.second, value, delay, hint)
     TRY_INVOKE_UI_SETTER(QAbstractButton, w.second, value, delay, hint) //for all other buttons which were not handled before
+    TRY_INVOKE_UI_SETTER(QTreeView, w.second, value, delay, hint)
 
     //try to process some specific commands if the widget is a dialog
     TRY_INVOKE_UI_SETTER(QDialog, w.second, value, delay, hint)
@@ -107,6 +109,8 @@ boost::optional<QString> getUIElementNative(QWidget* parent,
         return {};
 
     TRY_INVOKE_UI_GETTER(QLabel, w.second, what)
+    TRY_INVOKE_UI_GETTER(QTreeView, w.second, what)
+    TRY_INVOKE_UI_GETTER(QMenu, w.second, what)
     TRY_INVOKE_UI_GETTER(QMenuBar, w.second, what)
     TRY_INVOKE_UI_GETTER(QComboBox, w.second, what)
     TRY_INVOKE_UI_GETTER(QTabWidget, w.second, what)

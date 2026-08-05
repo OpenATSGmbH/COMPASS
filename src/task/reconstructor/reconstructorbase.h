@@ -90,6 +90,14 @@ class ReconstructorBaseSettings
     // older values are UNKNOWN (neither confirm nor contradict); bounds attribute
     // volatility, deliberately independent of max_time_diff_
     float identity_value_max_age_ {60}; // sec
+    // execute the retrospective identity cut for detected swap candidates
+    bool do_identity_transition_cut_ {false};
+    // minimum evidence per side (sustaining measurements and duration) for a transition
+    unsigned int identity_transition_min_updates_ {5};
+    float identity_transition_min_duration_ {10}; // sec
+    // mode 3/A codes shared by many aircraft (conspicuity, emergency), which therefore
+    // carry no identity information; octal, comma separated
+    std::string identity_conspicuity_codes_ {"0000,1000,2000,7000,7500,7600,7700"};
     // maximum altitude difference to consider mode c the "same"
     float max_altitude_diff_ {300.0};
     // maximimum time difference between track updates, otherwise considered new track
@@ -226,6 +234,11 @@ public:
         // -1 if failed, else utn
 
         void eraseTrackNumberLookup(dbContent::targetReport::ReconstructorInfo& tr);
+
+        // creates a target from existing target reports (identity cut remainder) and
+        // repoints the track number / ACAD / ACID lookups that moved with them
+        unsigned int createTargetFromReports(const std::vector<unsigned long>& rec_nums,
+                                             unsigned int source_utn);
 
         void clear();
     };

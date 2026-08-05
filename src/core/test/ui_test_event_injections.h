@@ -87,12 +87,23 @@ namespace ui_test
                             const QString& obj_name,
                             const QStringList& path_to_action,
                             int delay = -1);
+    bool injectMenuBarEventDeferred(QWidget* root,
+                                    const QString& obj_name,
+                                    const QStringList& path_to_action,
+                                    int delay = -1);
     bool injectMenuEvent(QWidget* root,
                          const QString& obj_name,
                          const QStringList& path_to_action,
                          int delay = -1);
     bool injectPopupMenuEvent(const QStringList& path_to_action,
                               int delay = -1);
+    bool injectTreeViewEvent(QWidget* root,
+                             const QString& obj_name,
+                             const QStringList& path_to_item,
+                             int delay = -1);
+    bool injectContextMenuEvent(QWidget* root,
+                                const QString& obj_name,
+                                int delay = -1);
     bool injectComboBoxEditEvent(QWidget* root,
                                  const QString& obj_name,
                                  const QString& entry_txt,

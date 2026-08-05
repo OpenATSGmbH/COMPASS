@@ -38,6 +38,7 @@
 #include <QRadioButton>
 #include <QLabel>
 #include <QDialog>
+#include <QTreeView>
 
 #include <QWidget>
 #include <QString>
@@ -215,6 +216,17 @@ namespace ui_test
     {
         //default button fallback
         return buttonEvent(widget, value, true, delay, hint);
+    }
+
+    template<>
+    inline bool setUIElement(QTreeView* widget, const QString& value, int delay, const SetUIHint& hint)
+    {
+        //value is a path of item display texts, e.g. "Data Sources|Radar|ARP1 (0/1)"
+        auto v = conversions::valueFromString<QStringList>(value);
+        if (!v)
+            return false;
+
+        return injectTreeViewEvent(widget, "", v.value(), delay);
     }
 
     template<>

@@ -534,6 +534,17 @@ public:
     std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> createReferenceBuffer();
 
     void removeOutdatedTargetReports();
+
+    // removes the target reports of one tracker track stream on one side of ts (at or
+    // after it, or before it), returns their record numbers. Rebuilds report series,
+    // chain and identity aggregates; identity values that belong exclusively to the
+    // removed side are dropped, values of the retained side are kept even when their
+    // reports were already purged
+    std::vector<unsigned long> removeStreamReports(unsigned int ds_id,
+                                                   unsigned int line_id,
+                                                   unsigned int track_number,
+                                                   const boost::posix_time::ptime& ts,
+                                                   bool at_or_after);
     void removeTargetReportsLaterOrEqualThan(boost::posix_time::ptime ts);
 
     virtual void targetCategory(Category ecat) override;

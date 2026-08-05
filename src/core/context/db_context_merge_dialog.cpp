@@ -89,6 +89,7 @@ void DBContextMergeDialog::build(const DBContextDiff& diff,
                                  const QString& cancel_tooltip)
 {
     setWindowTitle("Merge Context");
+    setObjectName("ctx_merge_dialog");
     if (!cancellable)
         setWindowFlags(windowFlags() & ~Qt::WindowCloseButtonHint);
     setMinimumSize(1300, 700);
@@ -108,6 +109,7 @@ void DBContextMergeDialog::build(const DBContextDiff& diff,
 
     // --- left: tree widget ---
     tree_widget_ = new QTreeWidget();
+    tree_widget_->setObjectName("ctx_merge_tree");
     tree_widget_->setColumnCount(3);
     tree_widget_->setHeaderLabels({"Item", "Status", "Use"});
     tree_widget_->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -126,6 +128,7 @@ void DBContextMergeDialog::build(const DBContextDiff& diff,
     scroll->setWidgetResizable(true);
 
     detail_stack_ = new QStackedWidget();
+    detail_stack_->setObjectName("ctx_merge_detail_stack");
     scroll->setWidget(detail_stack_);
 
     // create read-only edit widgets
@@ -204,6 +207,7 @@ void DBContextMergeDialog::build(const DBContextDiff& diff,
     if (cancellable)
     {
         auto* cancel_button = new QPushButton("Cancel");
+        cancel_button->setObjectName("ctx_merge_cancel_button");
         cancel_button->setIcon(QIcon());
         if (!cancel_tooltip.isEmpty())
             cancel_button->setToolTip(cancel_tooltip);
@@ -212,6 +216,7 @@ void DBContextMergeDialog::build(const DBContextDiff& diff,
     }
 
     ok_button_ = new QPushButton("OK");
+    ok_button_->setObjectName("ctx_merge_ok_button");
     ok_button_->setIcon(QIcon());
     ok_button_->setToolTip("Accept the merge and apply");
     ok_button_->setEnabled(allDecided());

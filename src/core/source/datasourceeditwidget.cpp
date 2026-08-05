@@ -75,6 +75,55 @@ void DataSourceEditWidget::createUI()
     createRemoteUnitsTab();
     createNetworkTab();
 
+    // object names for ui testing (network line edits are named at creation)
+    tab_widget_->setObjectName("ds_edit_tabs");
+
+    name_edit_->setObjectName("ds_edit_name_edit");
+    short_name_edit_->setObjectName("ds_edit_short_name_edit");
+    dstype_combo_->setObjectName("ds_edit_dstype_combo");
+    sac_sic_id_label_->setObjectName("ds_edit_sac_sic_label");
+    update_interval_edit_->setObjectName("ds_edit_update_interval_edit");
+    detection_type_combo_->setObjectName("ds_edit_detection_type_combo");
+    ground_only_check_->setObjectName("ds_edit_ground_only_check");
+    radar_ignore_azmrng_check_->setObjectName("ds_edit_ignore_azmrng_check");
+    latitude_edit_->setObjectName("ds_edit_latitude_edit");
+    longitude_edit_->setObjectName("ds_edit_longitude_edit");
+    altitude_edit_->setObjectName("ds_edit_altitude_edit");
+    psr_pd_edit_->setObjectName("ds_edit_pd_edit");
+    psr_clutter_rate_edit_->setObjectName("ds_edit_clutter_rate_edit");
+    delete_button_->setObjectName("ds_edit_delete_button");
+
+    psr_min_edit_->setObjectName("ds_edit_psr_min_edit");
+    psr_max_edit_->setObjectName("ds_edit_psr_max_edit");
+    ssr_min_edit_->setObjectName("ds_edit_ssr_min_edit");
+    ssr_max_edit_->setObjectName("ds_edit_ssr_max_edit");
+    mode_s_min_edit_->setObjectName("ds_edit_mode_s_min_edit");
+    mode_s_max_edit_->setObjectName("ds_edit_mode_s_max_edit");
+    add_ranges_button_->setObjectName("ds_edit_add_ranges_button");
+
+    acc_psr_azm_edit_->setObjectName("ds_edit_acc_psr_azm_edit");
+    acc_psr_rng_edit_->setObjectName("ds_edit_acc_psr_rng_edit");
+    acc_ssr_azm_edit_->setObjectName("ds_edit_acc_ssr_azm_edit");
+    acc_ssr_rng_edit_->setObjectName("ds_edit_acc_ssr_rng_edit");
+    acc_mode_s_azm_edit_->setObjectName("ds_edit_acc_mode_s_azm_edit");
+    acc_mode_s_rng_edit_->setObjectName("ds_edit_acc_mode_s_rng_edit");
+
+    bias_range_edit_->setObjectName("ds_edit_bias_range_edit");
+    bias_range_stddev_edit_->setObjectName("ds_edit_bias_range_stddev_edit");
+    bias_range_gain_edit_->setObjectName("ds_edit_bias_range_gain_edit");
+    bias_range_gain_stddev_edit_->setObjectName("ds_edit_bias_range_gain_stddev_edit");
+    bias_azimuth_edit_->setObjectName("ds_edit_bias_azimuth_edit");
+    bias_azimuth_stddev_edit_->setObjectName("ds_edit_bias_azimuth_stddev_edit");
+    add_bias_button_->setObjectName("ds_edit_add_bias_button");
+
+    remote_units_list_->setObjectName("ds_edit_ru_list");
+    ru_add_button_->setObjectName("ds_edit_ru_add_button");
+    ru_import_button_->setObjectName("ds_edit_ru_import_button");
+    ru_clear_button_->setObjectName("ds_edit_ru_clear_button");
+    add_remote_units_button_->setObjectName("ds_edit_add_remote_units_button");
+
+    add_lines_button_->setObjectName("ds_edit_add_lines_button");
+
     // line-edit changes are written to the data source on every keystroke
     // (textEdited), but the update callback is deferred until editing of the
     // field is finished - otherwise e.g. the import dialog tree rebuilds and
@@ -571,6 +620,7 @@ void DataSourceEditWidget::createNetworkTab()
         line_layout->addWidget(new QLabel("Listen IP"), 0, 0);
 
         QLineEdit* listen_edit = new QLineEdit();
+        listen_edit->setObjectName(QString("ds_edit_net_%1_listen_edit").arg(line_str.c_str()));
         connect(listen_edit, &QLineEdit::textEdited, this,
                 &DataSourceEditWidget::netLineEditedSlot);
         listen_edit->setProperty("line", line_str.c_str());
@@ -582,6 +632,7 @@ void DataSourceEditWidget::createNetworkTab()
         line_layout->addWidget(new QLabel("MCast IP"), 1, 0);
 
         QLineEdit* sender_ip_edit = new QLineEdit();
+        sender_ip_edit->setObjectName(QString("ds_edit_net_%1_mcast_ip_edit").arg(line_str.c_str()));
         connect(sender_ip_edit, &QLineEdit::textEdited, this,
                 &DataSourceEditWidget::netLineEditedSlot);
         sender_ip_edit->setProperty("line", line_str.c_str());
@@ -592,6 +643,7 @@ void DataSourceEditWidget::createNetworkTab()
         line_layout->addWidget(new QLabel("MCast Port"), 2, 0);
 
         QLineEdit* sender_port_edit = new QLineEdit();
+        sender_port_edit->setObjectName(QString("ds_edit_net_%1_mcast_port_edit").arg(line_str.c_str()));
         connect(sender_port_edit, &QLineEdit::textEdited, this,
                 &DataSourceEditWidget::netLineEditedSlot);
         sender_port_edit->setProperty("line", line_str.c_str());
@@ -603,6 +655,7 @@ void DataSourceEditWidget::createNetworkTab()
         line_layout->addWidget(new QLabel("Sender IP"), 3, 0);
 
         QLineEdit* sender_edit = new QLineEdit();
+        sender_edit->setObjectName(QString("ds_edit_net_%1_sender_edit").arg(line_str.c_str()));
         connect(sender_edit, &QLineEdit::textEdited, this,
                 &DataSourceEditWidget::netLineEditedSlot);
         sender_edit->setProperty("line", line_str.c_str());
