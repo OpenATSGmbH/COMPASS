@@ -80,6 +80,7 @@ void AnalysisDataset::loadStatusCycles()
     dbcontent_man.dataEngine().load(op);
     op->wait();
 
+    // @TODO: op state unchecked - a Failed/Cancelled load analyses partial data
     auto status_buffers = op->buffers();
     if (!status_buffers.empty())
     {
@@ -146,15 +147,14 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
         ds_load_map[ref_ds_id] = { line_id_ref };
     }
 
-    ctx_man.setLoadDSTypes(true);
-    ctx_man.setLoadOnlyDataSources(ds_load_map);
-
     // Isolated batch load: build the operation, fill it via the engine, and read
     // its buffers into our own accessor. The view dataset is never touched.
     LoadRequest req;
     req.dbcontents_.insert(kReferenceDBContent);
     req.dbcontents_.insert(test_dbcontents.begin(), test_dbcontents.end());
     req.apply_view_filters_ = false;
+    // only the needed data sources - per-op, so the user's selection stays untouched
+    req.datasrc_selection_ = ds_load_map;
     // Explicit read set: load every variable the inspectors and the scope
     // filter consume (in particular the ground bit, which the default read set
     // omits). Mirrors EvaluationManager attaching its own read set.
@@ -164,6 +164,7 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
     dbcontent_man.dataEngine().load(op);
     op->wait();
 
+    // @TODO: op state unchecked - a Failed/Cancelled load analyses partial data
     auto buffers = op->buffers();
     if (buffers.empty())
     {

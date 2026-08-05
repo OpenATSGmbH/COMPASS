@@ -18,6 +18,7 @@
 #pragma once
 
 #include <QObject>
+#include <QString>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -33,12 +34,16 @@ class Buffer;
 /**
  * Owns the live in-memory session: the LiveDataFeed plus the per-tick orchestration
  * (bound the on-disk cache, run the feed's in-memory tick). A ViewManager collaborator -
- * ViewManager owns current_source_ (pointed at the feed during a session) and the
+ * ViewManager owns current_source_ (pointed at the feed only while Running) and the
  * distribution dispatch; this drives the feed and the DB bound.
  *
  * The session runs an explicit state machine (Stopped/Running/Paused) driven by
  * ViewManager::appModeSwitchSlot through start/pause/resume/stopSession(). Ticks only run
  * while Running; Paused (incl. the resume catch-up load) and Stopped suppress them.
+ *
+ * Paused means "still ingesting, no longer displayed": the DB keeps filling, but the display
+ * leaves the feed entirely for a plain offline LoadOperation (ViewManager::loadPausedDisplay),
+ * so the feed is a stale cache nobody reads until resumeSession() replaces its contents.
  *
  * The feed is fed by the engine's insertedDataSignal (live inserts) and ticked on each
  * insert completion plus the ASTERIX watchdog. Distribution side-effects (counts,
@@ -57,21 +62,21 @@ public:
 
     // session transitions (driven by ViewManager::appModeSwitchSlot):
     void startSession();                  // fresh entry: feed is empty -> Running
-    void pauseSession();                  // freeze the display -> Paused (DB keeps ingesting)
+    void pauseSession();                  // -> Paused: DB keeps ingesting, feed stops being shown
     void resumeSession();                 // catch up on the pause window, then -> Running
     void stopSession();                   // full stop -> Stopped, drop the live cache
 
     State state() const { return state_; }
     bool running() const { return state_ == State::Running; }
 
-    std::shared_ptr<LiveDataFeed> feedPtr(); // the feed, made ViewManager's current_source_
+    std::shared_ptr<LiveDataFeed> feedPtr(); // the feed, ViewManager's current_source_ while Running
 
     bool hasMaxLatency() const;
     boost::posix_time::time_duration maxLatency() const;
 
     // entering a live session: trim the feed to the current window + distribute, WITHOUT a
-    // DB delete (the every-tick DB bound resumes on the next real tick). Fresh entry ->
-    // empty feed -> no-op; resume -> shows the reloaded window (staged inserts merged in).
+    // DB delete (the every-tick DB bound resumes on the next real tick). Shows the window
+    // start/resumeSession just loaded, with any inserts staged during that load merged in.
     void refreshDisplay();
 
 public slots:
@@ -86,10 +91,10 @@ private:
     LiveDataFeed& feed();                 // the live feed (lives for the session lifetime)
 
     void clearFeed();                     // drop the live cache on session stop
-    // resume catch-up: harvest-load the current time window from the DB (which kept
-    // accumulating while paused) and replace the frozen feed with it. No display source /
-    // bookend / dialog - a private data fetch, like a batch consumer.
-    void reloadWindow();
+    // harvest-load the current live time window from the DB and replace the feed with it -
+    // the fresh-entry prime and the resume catch-up are the same fetch. No display source /
+    // bookend / dialog - a private data fetch, like a batch consumer. title = modal caption.
+    void reloadWindow(const QString& title);
 
     void processTick();                   // in-memory tick + raw-buffer empty-clear
 

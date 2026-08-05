@@ -19,7 +19,7 @@
 
 #include "loadrequest.h"
 
-// Immutable description of a load, held by a LoadOperation. During migration
-// this aliases the existing LoadRequest value (same fields + factories); it
-// diverges from LoadRequest once the old manager load path is retired.
+// Description of a load, held by a LoadOperation: an alias of LoadRequest (same
+// fields + factories). A separate spec type was considered and dropped - the
+// name marks the role, the value stays the one the issuers already build.
 using LoadSpec = LoadRequest;

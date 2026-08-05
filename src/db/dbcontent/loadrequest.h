@@ -21,6 +21,7 @@
 
 #include <functional>
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 
@@ -31,6 +32,9 @@ struct LoadRequest
 
     bool apply_datasrc_filters_ = true;   // DBContext ds/line filters
     bool apply_view_filters_    = true;   // FilterManager
+
+    // optional per-op ds/line selection (ds_id -> lines); replaces the DBContext selection
+    std::optional<std::map<unsigned int, std::set<unsigned int>>> datasrc_selection_;
 
     // optional, per-content WHERE fragment (AND-ed after datasrc/view filters)
     std::function<std::string(const std::string&)> custom_filter_clause_;

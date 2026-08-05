@@ -203,6 +203,20 @@ void DBContentManager::deleteDBContent(const std::string& dbcontent_name)
 
 /**
  */
+bool DBContentManager::isEngineBusy() const
+{
+    return data_engine_->isBusy();
+}
+
+/**
+ */
+void DBContentManager::waitUntilEngineIdle()
+{
+    data_engine_->waitUntilIdle();
+}
+
+/**
+ */
 bool DBContentManager::hasActiveDeleteJob() const
 {
     return data_engine_->hasActiveDeleteJob();
@@ -411,8 +425,7 @@ void DBContentManager::databaseClosedSlot()
 {
     loginf;
 
-    data_engine_->clearMaxNumbers();
-    data_engine_->clearMinMaxInfo();
+    data_engine_->onDatabaseClose();
 
     has_associations_ = false;
     associations_id_ = "";
@@ -790,6 +803,10 @@ DBContentEditDialog* DBContentManager::dbContentEditDialog()
  */
 void DBContentManager::setViewableDataConfig (const nlohmann::json::object_t& data)
 {
+    // this triggers a load; applying a view point while one runs would hand the new viewable
+    // to the outgoing load's doViewPointAfterLoad
+    data_engine_->waitUntilIdle();
+
     viewable_data_cfg_.reset(new ViewableDataConfig(data));
 
     compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get());

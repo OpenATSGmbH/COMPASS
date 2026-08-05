@@ -25,6 +25,7 @@
 #include "db_context_manager.h"
 #include "filtermanager.h"
 #include "buffer.h"
+#include "util/async.h"
 #include "util/number.h"
 #include "util/timeconv.h"
 #include "buffer_utils.h"
@@ -70,11 +71,8 @@ void DBContentDataEngine::load(std::shared_ptr<LoadOperation> op)
     if (isLoading())
     {
         logwrn << "waiting for a still-running load to finish";
-        while (isLoading())
-        {
-            QCoreApplication::processEvents();
-            QThread::msleep(1);
-        }
+        // the outgoing load is modal (progress dialog), so user input may be processed
+        Utils::Async::pumpUntil([this] { return !isLoading(); }, /*process_user_input=*/true);
     }
 
     // each content of the previous load delivered exactly one terminal event before it
@@ -223,6 +221,8 @@ void DBContentDataEngine::finish()
 
     // terminal state (Failed takes precedence over a concurrent cancel); on failure the
     // partial buffers are discarded. The Result carries the message for consumers.
+    // @TODO: Cancelled keeps its partial buffers and still reports succeeded() - a consumer
+    // reading buffers() can't tell it got a truncated result.
     LoadOperation::State state;
     if (load_failed_)
     {
@@ -376,6 +376,42 @@ void DBContentDataEngine::maxRefTrajTrackNum(unsigned int value)
 {
     logdbg << "start" << value;
     max_reftraj_track_num_ = value;
+}
+
+/**
+ * Waits out any in-flight job. Called before the DB interface is closed - a job still
+ * running would keep working on it. Pumps without user input so the close can't be re-entered.
+ */
+void DBContentDataEngine::waitUntilIdle()
+{
+    if (!isBusy())
+        return;
+
+    logwrn << "waiting for in-flight DB work";
+
+    Utils::Async::pumpUntil([this] { return !isBusy(); });
+}
+
+/**
+ * DB closed: drop everything tied to it, so the next open starts clean. Any in-flight job
+ * was waited out via waitUntilIdle before the interface was closed.
+ */
+void DBContentDataEngine::onDatabaseClose()
+{
+    current_op_ = nullptr;
+    pending_contents_.clear();
+    load_failed_ = false;
+    load_error_.clear();
+
+    insert_job_ = nullptr;
+    insert_data_.clear();
+    insert_in_progress_ = false;
+
+    delete_job_  = nullptr;
+    delete_info_ = nlohmann::json{};
+
+    clearMaxNumbers();
+    clearMinMaxInfo();
 }
 
 /**
@@ -708,10 +744,12 @@ FilterClause DBContentDataEngine::dataSourceClause(const std::string& name, cons
 {
     FilterClause clause;
 
-    if (!spec.apply_datasrc_filters_)
-        return clause;
+    std::optional<std::map<unsigned int, std::set<unsigned int>>> selection;
 
-    auto selection = dbcont_man_.compass().dbContextManager().loadingSelection(name);
+    if (spec.datasrc_selection_) // per-op selection wins over the DBContext one
+        selection = spec.datasrc_selection_;
+    else if (spec.apply_datasrc_filters_)
+        selection = dbcont_man_.compass().dbContextManager().loadingSelection(name);
 
     if (!selection)          // unconstrained -> no clause
         return clause;
@@ -762,11 +800,8 @@ FilterClause DBContentDataEngine::dataSourceClause(const std::string& name, cons
  */
 void DBContentDataEngine::insert(std::map<std::string, std::shared_ptr<Buffer>> data)
 {
-    while (isLoading()) // pending insert during a load
-    {
-        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        QThread::msleep(1);
-    }
+    // pending insert during a load
+    Utils::Async::pumpUntil([this] { return !isLoading(); });
 
     traced_assert(!insert_in_progress_);
     traced_assert(!insert_data_.size());

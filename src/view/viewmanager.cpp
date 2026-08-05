@@ -989,6 +989,12 @@ void ViewManager::databaseClosedSlot()
     loginf;
 
     unsetCurrentViewPoint();
+
+    // drop the displayed data set: it belongs to the DB being closed, and currentBuffers()
+    // would keep handing it out. Cancels a still-running load (see setCurrentSource).
+    setCurrentSource(nullptr);
+    clearSelectedRecNums(); // rec nums of the closed DB must not carry into the next one
+
     clearDataInViews();
 
     for (auto& view_it : views_)
@@ -1074,8 +1080,8 @@ void ViewManager::sourceDataChangedSlot(const std::vector<std::string>& names, b
         tmp_time = microsec_clock::local_time();
 
         // the single data-delivery callback: the view pulls buffers/index from the source
-        // in its updateFromSource_impl (finalizing on last=true); a base-owned item
-        // provider (geo) is fed here too. names empty on the last=true finalize.
+        // in its updateFromSource_impl (finalizing on last=true); an item provider (geo,
+        // owned by the derived widget) is fed here too. names empty on the last=true finalize.
         view_it.second->updateFromSource(*current_source_, names, reset, last);
 
         loginf << "view " << view_it.first << " took "
@@ -1099,16 +1105,20 @@ void ViewManager::setCurrentSource(std::shared_ptr<DBContentDataSet> source)
     if (current_source_ == source)
         return;
 
-    // an outgoing operation that is still running is abandoned here: cancel it (its buffers
-    // will never be displayed) and close its load UX now - we are about to disconnect its
-    // finishedSignal, so loadingDoneSlot would never run to end the dialog/cursor itself
+    // an outgoing operation that is still running is abandoned here: cancel it, since its
+    // buffers will never be displayed. The load UX ends itself off the op's finishedSignal
+    // (LoadController::opFinishedSlot) - it must, because we disconnect the op below and
+    // loadingDoneSlot would never run for it.
     if (auto* op = dynamic_cast<LoadOperation*>(current_source_.get()))
     {
         if (op->isRunning())
         {
             logwrn << "abandoning a still-running load";
             op->cancel();
-            load_controller_->end();
+
+            // loadingDoneSlot consumes the carry-over, and this op will never reach it -
+            // leaving it staged would restore this load's rec nums onto a later one
+            carried_selection_.clear();
         }
     }
 
@@ -1337,7 +1347,10 @@ void ViewManager::clearSelectedRecNums()
 }
 
 /**
-*/
+ * @TODO: the op's terminal state is ignored - Failed (empty buffers, error in result()) and
+ * Cancelled (partial buffers) are finalized like a successful load, so the user sees an empty
+ * or truncated result with no indication.
+ */
 void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished loading
 {
     if (processing_data_)
@@ -1466,10 +1479,9 @@ void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode
     const bool was_live = isLiveSession(app_mode_previous);
     const bool now_live = isLiveSession(app_mode_current);
 
-    // drive the live-session state machine + point current_source_ at the feed. The feed is
-    // the source across the whole session (running + paused): a pause keeps it as-is (frozen
-    // on screen), a resume catches up on the pause window before re-arming ticks, an exit
-    // drops it.
+    // drive the live-session state machine + swap current_source_. The feed is the source only
+    // while running: a pause hands the display to its own offline load, a resume catches up on
+    // the pause window and points back at the feed, an exit drops it.
     if (app_mode_current == AppMode::LiveRunning)
     {
         // leave the paused display FIRST: this cancels and disconnects a still-running paused
@@ -1478,14 +1490,16 @@ void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode
         // distributes nothing.
         setCurrentSource(live_controller_->feedPtr());
 
-        // resume from pause catches up on the DB-accumulated window; fresh entry starts blank
+        // both entries load the live window from the DB first - a fresh entry to open on the
+        // recent history, a resume to catch up on what accumulated while paused - and the
+        // ticks then accumulate on top
         if (app_mode_previous == AppMode::LivePaused)
             live_controller_->resumeSession();
         else
             live_controller_->startSession();
 
-        // trim the feed to the current window + distribute, without a DB delete here (that
-        // resumes on the next real tick). Fresh entry -> empty feed -> no-op.
+        // show that window + distribute, without a DB delete here (the every-tick bound
+        // resumes on the next real tick)
         live_controller_->refreshDisplay();
     }
     else if (app_mode_current == AppMode::LivePaused)

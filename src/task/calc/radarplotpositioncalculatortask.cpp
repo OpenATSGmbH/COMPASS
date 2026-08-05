@@ -174,6 +174,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
 
     DBContentManager& dbcontent_man = dbcontent_man_;
 
+    // @TODO: op state unchecked - a Failed/Cancelled load calculates on partial data
     data_ = load_op_->buffers();
     load_op_ = nullptr; // release the isolated operation
 

@@ -16,6 +16,7 @@
  */
 
 #include "loadcontroller.h"
+#include "viewmanager.h"
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
@@ -44,7 +45,9 @@ LoadController::~LoadController() = default;
  */
 void LoadController::begin(const LoadOperation& op)
 {
-    end();
+    end(/*drain=*/false); // no pumping here: begin runs inside the op's startedSignal
+
+    op_ = &op;
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     cursor_active_ = true;
@@ -59,6 +62,11 @@ void LoadController::begin(const LoadOperation& op)
     op_conn_ = connect(&op, &DBContentDataSet::dataChangedSignal,
                        this, &LoadController::opDataChangedSlot);
 
+    // tie the UX to the op itself: an abandoned op (source swapped away) never reaches
+    // ViewManager's end(), since its signals are disconnected there
+    op_fin_conn_ = connect(&op, &LoadOperation::finishedSignal,
+                           this, &LoadController::opFinishedSlot);
+
     if (load_total_ == 0)
         return; // nothing to load: wait cursor only
 
@@ -68,6 +76,7 @@ void LoadController::begin(const LoadOperation& op)
     dialog_->setMinimumDuration(0);
     dialog_->setAutoClose(false);
     dialog_->setAutoReset(false);
+    dialog_->setWindowTitle("Loading Data");
 
     connect(dialog_.get(), &QProgressDialog::canceled, this, &LoadController::canceledSlot);
 
@@ -78,6 +87,10 @@ void LoadController::begin(const LoadOperation& op)
 
 /**
  * Per non-empty content arrival (direct off the op): advance the load phase (0..50).
+ * The denominator counts target contents, the numerator only those returning rows, so the
+ * phase can end below 50 (beginViewPhase then jumps there) - cosmetic.
+ * @TODO: drive this off an engine progress signal counting finished contents; that also
+ * retires the resolveTargetSet recompute in begin().
  */
 void LoadController::opDataChangedSlot(const std::vector<std::string>& names, bool /*reset*/, bool /*last*/)
 {
@@ -128,18 +141,40 @@ void LoadController::advanceViewPhase()
 }
 
 /**
+ * The op reached a terminal state. If it is still the displayed source - including a load the
+ * user cancelled - ViewManager drives the completion path (view point, view phase, end()), so
+ * the UX must stay up for it. Only an abandoned op ends here: its source was swapped away, its
+ * signals to ViewManager are disconnected, and nothing else would ever close the dialog. No
+ * drain, since this runs inside the op's own emit.
  */
-void LoadController::end()
+void LoadController::opFinishedSlot()
 {
+    if (op_ && compass_.viewManager().currentSource().get() != op_)
+        end(/*drain=*/false);
+}
+
+/**
+ */
+void LoadController::end(bool drain)
+{
+    op_ = nullptr;
+
     if (op_conn_)
     {
         disconnect(op_conn_);
         op_conn_ = {};
     }
 
+    if (op_fin_conn_)
+    {
+        disconnect(op_fin_conn_);
+        op_fin_conn_ = {};
+    }
+
     if (dialog_)
     {
-        QCoreApplication::processEvents();
+        if (drain)
+            QCoreApplication::processEvents();
         dialog_->close();
         dialog_.reset();
     }

@@ -368,12 +368,6 @@ void TargetListWidget::showSurroundingDataSlot ()
 {
     auto& dbcont_man = dbcont_manager_.compass().dbContentManager();
 
-    while (dbcont_man.dataEngine().isLoading())
-    {
-        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        QThread::msleep(10);
-    }
-
     std::set<unsigned int> selected_utns = selectedUTNs();
 
     logdbg << "utns " << String::compress(selected_utns,',');

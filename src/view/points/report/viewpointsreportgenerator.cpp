@@ -181,8 +181,7 @@ void ViewPointsReportGenerator::run ()
             loginf << "setting vp " << vp_id;
             view_manager_.setCurrentViewPoint(&view_point);
 
-            while (dbcont_man.dataEngine().isLoading())
-                QCoreApplication::processEvents();
+            dbcont_man.waitUntilEngineIdle();
 
             // do stuff
             view_point.accept(visitor);

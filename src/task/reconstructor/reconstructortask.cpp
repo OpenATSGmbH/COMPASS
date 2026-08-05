@@ -777,6 +777,7 @@ void ReconstructorTask::loadingDoneSlot()
            << " current_slice_idx " << current_slice_idx_;
 
     // add data to slice
+    // @TODO: op state unchecked - a Failed/Cancelled load reconstructs the slice on partial data
     loading_slice_->data_ = load_op_->buffers();
     loading_slice_->has_data_ = !loading_slice_->data_.empty();
     loading_slice_->loading_done_ = true;

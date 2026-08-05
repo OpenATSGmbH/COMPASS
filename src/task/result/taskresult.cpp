@@ -874,8 +874,7 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
         }
     }
 
-    while (dbcont_man.dataEngine().isLoading())
-        QCoreApplication::processEvents();
+    dbcont_man.waitUntilEngineIdle();
 
     QCoreApplication::processEvents();
 

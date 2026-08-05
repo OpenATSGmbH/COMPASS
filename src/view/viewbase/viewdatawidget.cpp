@@ -251,7 +251,7 @@ void ViewDataWidget::loadingDone_impl()
  */
 /**
  * The single data-delivery callback. Mirrors the source's buffers into data_ (so the
- * existing viewData()/redraw/selection machinery is unchanged), feeds a base-owned item
+ * existing viewData()/redraw/selection machinery is unchanged), feeds the borrowed item
  * provider (geo), and invokes the derived hook, which finalizes on last=true.
  */
 void ViewDataWidget::updateFromSource(const DBContentDataSet& source,

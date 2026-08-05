@@ -97,9 +97,11 @@ void LiveController::clearFeed()
 }
 
 /**
- * Fresh entry (Offline -> Live): the feed was cleared on the last stop, so the session
- * starts blank. Just arm ticks. Guarded against a repeated entry (a doubled app-mode signal
- * would otherwise re-arm from an unexpected state).
+ * Fresh entry (Offline -> Live): prime the feed from the DB within the live bounds, so the
+ * session opens on the recent history and the ticks accumulate on top of it. The load runs
+ * while still Stopped, so a pump-fired tick cannot overlap it (see reloadWindow). Guarded
+ * against a repeated entry (a doubled app-mode signal would otherwise re-arm from an
+ * unexpected state, and re-run the load).
  */
 void LiveController::startSession()
 {
@@ -108,13 +110,16 @@ void LiveController::startSession()
         logwrn << "startSession: session already active (state " << (int) state_ << "), ignoring";
         return;
     }
+    reloadWindow("Starting Live Mode");
     state_ = State::Running;
 }
 
 /**
- * Pause (Live -> LivePaused): freeze the display. The DB keeps ingesting (the engine emits
- * insertedDataSignal only while Running, so the feed sees no new inserts); Paused suppresses
- * ticks so the on-screen window stays put. No-op if not currently Running.
+ * Pause (Live -> LivePaused): stop displaying the feed. The DB keeps ingesting - the engine
+ * announces every insert and insertedDataSlot drops them while not LiveRunning - and Paused
+ * suppresses ticks, so the feed goes stale until resumeSession() reloads it. The display
+ * itself moves to a plain offline load (ViewManager::loadPausedDisplay), not to a frozen
+ * feed. No-op if not currently Running.
  */
 void LiveController::pauseSession()
 {
@@ -127,7 +132,7 @@ void LiveController::pauseSession()
 }
 
 /**
- * Resume (LivePaused -> Live): the display froze while the DB kept accumulating. Catch up on
+ * Resume (LivePaused -> Live): the feed went stale while the DB kept accumulating. Catch up on
  * the pause window from the DB, THEN arm ticks - reloadWindow runs while still Paused so a
  * pump-fired tick can't overlap it (see reloadWindow). No-op if not currently Paused, which
  * also guards the expensive reloadWindow from running twice.
@@ -139,7 +144,7 @@ void LiveController::resumeSession()
         logwrn << "resumeSession: not paused (state " << (int) state_ << "), ignoring";
         return;
     }
-    reloadWindow();
+    reloadWindow("Resuming Live Mode");
     state_ = State::Running;
 }
 
@@ -159,20 +164,21 @@ void LiveController::stopSession()
 }
 
 /**
- * Resume catch-up: harvest-load the current window from the DB (which kept accumulating
- * while the display was frozen) and replace the feed with it. A private, blocking data
- * fetch - the op is never made the display source, so it raises no bookend/dialog.
+ * Loads the current live window from the DB and replaces the feed with it: the fresh-entry
+ * prime (recent history to open the session on) and the resume catch-up (what accumulated
+ * while the paused display was served from its own load) are the same fetch. A private,
+ * blocking fetch - the op is never made the display source, so it raises no bookend/dialog.
  */
-void LiveController::reloadWindow()
+void LiveController::reloadWindow(const QString& title)
 {
     using namespace boost::posix_time;
 
     // Modal wait dialog around the blocking load below. That load pumps events (op->wait),
     // and unlike an offline load it shows no progress dialog - without a modal the user could
     // click Pause/Resume mid-load and re-enter the app-mode transition. The modal blocks that
-    // and tells them a resume load is running.
+    // and tells them a load is running.
     QMessageBox msg_box(QApplication::activeWindow());
-    msg_box.setWindowTitle("Resuming Live Mode");
+    msg_box.setWindowTitle(title);
     msg_box.setText("Loading data ...");
     msg_box.setStandardButtons(QMessageBox::NoButton);
     msg_box.setWindowModality(Qt::ApplicationModal);
@@ -204,7 +210,8 @@ void LiveController::reloadWindow()
     // Inserts still stage and are merged on the next tick.
     compass_.dbContentManager().dataEngine().load(op);
     op->wait();
-    feed_->seedFrom(op->buffers()); // replace the frozen feed with the current DB window
+    // @TODO: op state unchecked - a Failed/Cancelled window load seeds an empty/partial feed
+    feed_->seedFrom(op->buffers()); // replace the stale feed with the current DB window
 }
 
 /**
@@ -276,9 +283,9 @@ void LiveController::refreshDisplay()
 
 /**
  * In-memory merge/trim/filter on the feed. The feed's own dataChangedSignal drives
- * ViewManager::sourceDataChangedSlot (distribution + counts + dataDistributedSignal); only
- * the raw-buffer views need an explicit clear when the feed empties (their loadedData path
- * is skipped on the empty-names event).
+ * ViewManager::sourceDataChangedSlot (distribution + counts + dataDistributedSignal).
+ * @TODO: the explicit clear on an emptied feed is only needed by the table view, whose
+ * updateFromSource_impl is a no-op; drop it once that redraws on last=true.
  */
 void LiveController::processTick()
 {

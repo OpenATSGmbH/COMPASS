@@ -495,13 +495,16 @@ Result EvaluationCalculator::evaluateInternal(bool update_constraints,
 
     traced_assert(canEvaluate().ok());
 
+    Result res = Result::succeeded();
+
+    // covers prep, load and evaluation - released on every path below
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
     try
     {
         eval_utns_         = utns;
         eval_requirements_ = requirements;
         update_report_     = update_report;
-
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
         // remove previous stuff
         eval_man_.resetViewableDataConfig(true);
@@ -511,9 +514,6 @@ Result EvaluationCalculator::evaluateInternal(bool update_constraints,
             clearConstraints();
 
         emit resultsChanged();
-
-        // actually load
-        QApplication::restoreOverrideCursor();
 
         // clear data
         data_->clear();
@@ -527,16 +527,16 @@ Result EvaluationCalculator::evaluateInternal(bool update_constraints,
 
         eval_man_.loadData(*this);
 
-        auto res = loadingDone();
-        if (!res.ok())
-            return res;
+        res = loadingDone();
     }
     catch (...)
     {
-        return Result::failed("Evaluation failed due to errors");
+        res = Result::failed("Evaluation failed due to errors");
     }
 
-    return Result::succeeded();
+    QApplication::restoreOverrideCursor();
+
+    return res;
 }
 
 /**

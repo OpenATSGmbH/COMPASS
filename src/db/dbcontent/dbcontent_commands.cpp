@@ -121,6 +121,7 @@ bool RTCommandGetData::run_impl()
     auto op = std::make_shared<LoadOperation>(dbcontent_man, r);
     dbcontent_man.dataEngine().load(op);
     op->wait();
+    // @TODO: op state unchecked - a Failed/Cancelled load returns partial data as complete
     buffers_ = op->buffers();
 
     return true; // if ok

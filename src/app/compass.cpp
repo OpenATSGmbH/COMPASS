@@ -770,6 +770,9 @@ Result COMPASS::closeDBInternal()
         context_manager_->saveCountsToDB();
         context_manager_->saveAsterixInfoToDB();
 
+        // a job still in flight would keep working on the interface closed below
+        dbcontent_manager_->waitUntilEngineIdle();
+
         db_interface_->closeDB();
         traced_assert(!db_interface_->ready());
 

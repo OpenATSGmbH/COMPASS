@@ -601,14 +601,6 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator)
     msg_box.show();
     QCoreApplication::processEvents(); // paint before the load busies the main thread
 
-    auto& ctx_man = compass_.dbContextManager();
-
-    auto ds_ids = calculator.usedDataSources();
-
-    //load only needed data sources
-    ctx_man.setLoadDSTypes(true); // load all ds types
-    ctx_man.setLoadOnlyDataSources(ds_ids); // limit loaded data sources
-
     DBContentManager& dbcontent_man = dbcontent_man_;
 
     // add variables needed by evaluation - getReadSet picks these up while the
@@ -618,6 +610,9 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator)
     LoadRequest req;
     req.dbcontents_ = { calculator.dbContentNameRef(),
                         calculator.dbContentNameTst() };
+
+    // only the needed data sources - per-op, so the user's selection stays untouched
+    req.datasrc_selection_ = calculator.usedDataSources();
 
     // build eval's load WHERE from the shared clause toolkit (ROI bbox / UTN set /
     // timestamp bounds) instead of hijacking the global FilterManager, so the user's
@@ -690,6 +685,7 @@ void EvaluationManager::loadingDone()
     traced_assert(!raw_data_available_);
 
     // obtain data from the isolated operation
+    // @TODO: op state unchecked - a Failed/Cancelled load evaluates on empty/partial data
     raw_data_ = load_op_->buffers();
     raw_data_available_ = true;
 

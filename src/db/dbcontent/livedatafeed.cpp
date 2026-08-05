@@ -96,9 +96,9 @@ void LiveDataFeed::clear()
 }
 
 /**
- * One live tick, in memory only: capture latency, merge staged buffers, trim the
- * live window, apply data-source and view filters, then emit a single atomic
- * change event so listeners reset + rebuild + finalize in one event-loop turn.
+ * One live tick, in memory only: merge staged buffers, trim the live window, apply
+ * data-source and view filters, update the latency, then emit a single atomic change
+ * event so listeners reset + rebuild + finalize in one event-loop turn.
  */
 void LiveDataFeed::processTick()
 {
@@ -115,6 +115,13 @@ void LiveDataFeed::processTick()
 
     invalidateIndex();
 
+    // before the emit: the geo view reads the latency during distribution to detect overload,
+    // and would otherwise see the previous tick's value
+    if (min_tr_time)
+        latency_ = Time::currentUTCTime() - *min_tr_time;
+    else
+        latency_ = boost::none;
+
     if (!buffers_.empty())
     {
         std::vector<std::string> names;
@@ -128,11 +135,6 @@ void LiveDataFeed::processTick()
     {
         emitChanged({}, /*reset=*/true, /*last=*/true);
     }
-
-    if (min_tr_time)
-        latency_ = Time::currentUTCTime() - *min_tr_time;
-    else
-        latency_ = boost::none;
 }
 
 /**

@@ -47,7 +47,8 @@ class DBContentDataEngine : public QObject
 signals:
     void dataDeletedSignal(); // after a delete finished and context was updated
     void insertDoneSignal();  // after an insert job finished (forwarded by the manager)
-    // freshly inserted buffers (live mode) - the ViewManager-owned LiveDataFeed consumes these
+    // freshly inserted buffers, taken over by the receiver: it may prune/transform/empty them
+    // (the LiveController-owned feed does), so single consumer by design
     void insertedDataSignal(std::map<std::string, std::shared_ptr<Buffer>> buffers);
 
 public slots:
@@ -65,6 +66,10 @@ public slots:
 public:
     DBContentDataEngine(DBContentManager& dbcont_man);
     virtual ~DBContentDataEngine();
+
+    // any DB work in flight (load, insert or delete)
+    bool isBusy() const { return isLoading() || insertInProgress() || hasActiveDeleteJob(); }
+    void waitUntilIdle(); // pumps events until isBusy() clears - before the DB is closed
 
     void load(std::shared_ptr<LoadOperation> op);
     bool isLoading() const { return (bool) current_op_; }
@@ -86,12 +91,12 @@ public:
     unsigned int maxRefTrajTrackNum() const;   // cached
     void         maxRefTrajTrackNum(unsigned int value);
 
-    void clearMaxNumbers();                    // on DB close
+    // DB closed: drop the transient load/insert/delete state + the cached DB metadata
+    void onDatabaseClose();
 
     // DB-persisted dataset-extent metadata (loaded from properties on open,
     // maintained + persisted from the inserted buffers, cleared on close)
     void loadMinMaxInfo();                     // seed from DB properties on open
-    void clearMinMaxInfo();                    // on DB close
     void updateInsertMinMax(const std::map<std::string, std::shared_ptr<Buffer>>& insert_data);
 
     bool hasMinMaxInfo() const;
@@ -114,6 +119,9 @@ public:
 
 private:
     void finish();
+
+    void clearMaxNumbers();
+    void clearMinMaxInfo();
 
     std::string composeWhereClause(const std::string& dbcontent_name, const LoadSpec& spec,
                                    dbContent::VariableSet& read_set);

@@ -116,6 +116,9 @@ public:
     void insertData(std::map<std::string, std::shared_ptr<Buffer>> data);
     bool insertInProgress() const;
 
+    bool isEngineBusy() const;  // DB work in flight (load, insert or delete)
+    void waitUntilEngineIdle(); // wait it out (before closing the DB)
+
     // must be checked before either delete below (they assert on an overlap)
     bool hasActiveDeleteJob() const;
 

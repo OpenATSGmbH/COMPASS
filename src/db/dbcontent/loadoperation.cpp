@@ -17,9 +17,7 @@
 
 #include "loadoperation.h"
 #include "logger.h"
-
-#include <QCoreApplication>
-#include <QThread>
+#include "util/async.h"
 
 /**
  */
@@ -59,11 +57,10 @@ void LoadOperation::cancel()
  */
 void LoadOperation::wait(unsigned int sleep_msecs)
 {
-    while (!isFinished())
-    {
-        QCoreApplication::processEvents();
-        QThread::msleep(sleep_msecs);
-    }
+    // blocking issuers are modal (progress dialog / their own message box), so user input
+    // may be processed - see the ordering rules in readme_loading.md
+    Utils::Async::pumpUntil([this] { return isFinished(); }, /*process_user_input=*/true,
+                            sleep_msecs);
 }
 
 /**

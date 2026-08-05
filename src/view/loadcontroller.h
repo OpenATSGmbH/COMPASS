@@ -37,6 +37,11 @@ class QProgressDialog;
  * leak a dialog or unbalance the cursor. It is driven from the operation's startedSignal
  * (after the engine's single-op wait), so the dialog/cursor are only created once the
  * load is actually the running one.
+ *
+ * The cycle is also tied to the operation itself: begin() subscribes to its finishedSignal
+ * and closes the UX when the op ends as Cancelled. A cancelled op gets no view phase - and
+ * an abandoned one (its source swapped away, e.g. resuming live over a paused load) never
+ * reaches ViewManager's end() at all, since its signals are disconnected by then.
  */
 class LoadController : public QObject
 {
@@ -53,13 +58,18 @@ public:
 
     void beginViewPhase(unsigned int num_views); // view loop starting: switch to 50..100
     void advanceViewPhase();                // one view finished
-    void end();                             // load finished/abandoned: close dialog + cursor
+    // load finished: close dialog + cursor. drain pumps the event loop before closing, so a
+    // deferred view redraw runs while the dialog is still up (the normal completion path);
+    // pass false when ending from inside another emit, where pumping would re-enter.
+    void end(bool drain = true);
 
 private slots:
     void canceledSlot();                    // dialog cancel -> cancel the running load
     // driven directly off the op's dataChangedSignal (un-guarded, so progress is immune to
     // ViewManager's re-entrancy deferral): advance the load phase per non-empty content
     void opDataChangedSlot(const std::vector<std::string>& names, bool reset, bool last);
+    // op reached a terminal state: end the UX if it was cancelled (no view phase follows)
+    void opFinishedSlot();
 
 private:
     COMPASS& compass_;
@@ -70,5 +80,7 @@ private:
     unsigned int view_total_  {0};
     bool         cursor_active_{false};
 
-    QMetaObject::Connection op_conn_;  // op.dataChangedSignal -> opDataChangedSlot
+    const LoadOperation*    op_ {nullptr}; // the running op (non-owning, valid for the cycle)
+    QMetaObject::Connection op_conn_;      // op.dataChangedSignal -> opDataChangedSlot
+    QMetaObject::Connection op_fin_conn_;  // op.finishedSignal    -> opFinishedSlot
 };
