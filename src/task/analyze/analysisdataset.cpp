@@ -23,6 +23,8 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentaccessor.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/loadoperation.h"
 #include "dbcontent/dbcontentstatusinfo.h"
 #include "dbcontent/target/targetbase.h"
 #include "dbcontent/variable/variableset.h"
@@ -71,17 +73,15 @@ void AnalysisDataset::loadStatusCycles()
     dbContent::VariableSet status_rs = status_info.getReadSetFor(status_content);
 
     LoadRequest req = LoadRequest::forContent(status_content, status_rs);
-    req.show_status_ = false;
-    req.cancellable_ = false;
 
-    auto& view_man = compass_.viewManager();
+    // isolated batch load: fill our own operation and read its buffers - the
+    // view dataset is never touched (no clearData / distribution toggling)
+    auto op = std::make_shared<LoadOperation>(dbcontent_man, req);
+    dbcontent_man.dataEngine().load(op);
+    op->wait();
 
-    dbcontent_man.clearData();
-    view_man.disableDataDistribution(true);
-    dbcontent_man.loadBlocking(req);
-    view_man.disableDataDistribution(false);
-
-    auto status_buffers = dbcontent_man.loadedData();
+    // @TODO: op state unchecked - a Failed/Cancelled load analyses partial data
+    auto status_buffers = op->buffers();
     if (!status_buffers.empty())
     {
         status_info.process(status_buffers);
@@ -97,8 +97,6 @@ void AnalysisDataset::loadStatusCycles()
                                           status_cycles_.end()),
                               status_cycles_.end());
     }
-
-    dbcontent_man.clearData();
 
     loginf << "loaded " << status_cycles_.size()
            << " " << status_content << " start-of-cycle timestamps";
@@ -149,54 +147,33 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
         ds_load_map[ref_ds_id] = { line_id_ref };
     }
 
-    ctx_man.setLoadDSTypes(true);
-    ctx_man.setLoadOnlyDataSources(ds_load_map);
-
-    // Mirror EvaluationManager::loadData / loadingDone:
-    //   1. clear cached data (so views don't keep stale state)
-    //   2. disable data distribution to views BEFORE the load
-    //   3. blocking load
-    //   4. re-enable data distribution
-    //   5. fetch loaded buffers into our own accessor
-    //   6. clearData() once the accessor holds the buffers, so the views never
-    //      see this batch (the clearData signal also flushes any stale view
-    //      state from before).
+    // Isolated batch load: build the operation, fill it via the engine, and read
+    // its buffers into our own accessor. The view dataset is never touched.
     LoadRequest req;
     req.dbcontents_.insert(kReferenceDBContent);
     req.dbcontents_.insert(test_dbcontents.begin(), test_dbcontents.end());
     req.apply_view_filters_ = false;
-    req.show_status_        = false;
+    // only the needed data sources - per-op, so the user's selection stays untouched
+    req.datasrc_selection_ = ds_load_map;
     // Explicit read set: load every variable the inspectors and the scope
     // filter consume (in particular the ground bit, which the default read set
     // omits). Mirrors EvaluationManager attaching its own read set.
     req.read_set_ = [this](const std::string& name) { return buildReadSet(name); };
 
-    auto& view_man = compass_.viewManager();
+    auto op = std::make_shared<LoadOperation>(dbcontent_man, req);
+    dbcontent_man.dataEngine().load(op);
+    op->wait();
 
-    dbcontent_man.clearData();
-
-    // !do not distribute this reload to views!
-    view_man.disableDataDistribution(true);
-
-    dbcontent_man.loadBlocking(req);
-
-    // !reenable distribution to views!
-    view_man.disableDataDistribution(false);
-
-    auto buffers = dbcontent_man.loadedData();
+    // @TODO: op state unchecked - a Failed/Cancelled load analyses partial data
+    auto buffers = op->buffers();
     if (buffers.empty())
     {
         error_out = "No data loaded for the selected data sources.";
-        dbcontent_man.clearData();
         return false;
     }
 
     accessor_->clear();
     accessor_->add(buffers);
-
-    // Clear local data (mirrors EvaluationManager::loadingDone). This also
-    // emits the cleared loadedDataSignal that flushes any view state.
-    dbcontent_man.clearData();
 
     // Always load status-bearing dbcontents (CAT019 today) as a separate
     // single-content request, with the status-specific read set. No source

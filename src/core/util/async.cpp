@@ -244,6 +244,17 @@ bool waitDialogAsyncArray(const std::function<bool(int)>& task,
     return waitDialogAsync(mt_task, done_cb, steps, task_name, wait_msg);
 }
 
+void pumpUntil(const std::function<bool()>& done, bool process_user_input, unsigned int sleep_msecs)
+{
+    QEventLoop::ProcessEventsFlags flags = process_user_input ? QEventLoop::AllEvents
+                                                              : QEventLoop::ExcludeUserInputEvents;
+    while (!done())
+    {
+        QCoreApplication::processEvents(flags);
+        QThread::msleep(sleep_msecs);
+    }
+}
+
 void waitAndProcessEventsFor (unsigned int milliseconds)
 {
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();

@@ -17,6 +17,7 @@
 
 #include "dbcontent/label/labelgenerator.h"
 #include "compass.h"
+#include "viewmanager.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 //#include "dbcontent/variable/metavariable.h"
@@ -83,7 +84,7 @@ std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcont
 {
     std::vector<std::string> tmp;
 
-    std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.loadedData();
+    std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.compass().viewManager().currentBuffers();
     if (!buffers.count(dbcontent_name))
     {
         logerr << "dbcontent_name '" << dbcontent_name << "' not in buffers";
@@ -230,7 +231,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
 {
     std::vector<std::string> tmp;
     
-    std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.loadedData();
+    std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.compass().viewManager().currentBuffers();
     if (!buffers.count(dbcontent_name))
     {
         logerr << "dbcontent_name '" << dbcontent_name << "' not in buffers";

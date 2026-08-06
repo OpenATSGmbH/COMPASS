@@ -17,6 +17,7 @@
 
 #include "evaluationtargetexcludedtimewindowsdialog.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "traced_assert.h"
 
 #include <QVBoxLayout>
@@ -60,8 +61,8 @@ EvaluationTargetExcludedTimeWindowsDialog::EvaluationTargetExcludedTimeWindowsDi
     auto min_max_func = [this]()
         -> boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
     {
-        if (dbcont_man_.hasMinMaxTimestamp())
-            return dbcont_man_.minMaxTimestamp();
+        if (dbcont_man_.dataEngine().hasMinMaxTimestamp())
+            return dbcont_man_.dataEngine().minMaxTimestamp();
         return boost::none;
     };
     tw_widget_ = new TimeWindowCollectionWidget(collection_, min_max_func);

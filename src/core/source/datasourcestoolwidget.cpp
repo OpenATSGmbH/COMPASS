@@ -20,6 +20,7 @@
 #include "db_context_manager.h"
 #include "datasourceswidget.h"
 #include "dbcontentmanager.h"
+#include "dbcontentdataengine.h"
 
 #include "logger.h"
 #include "stringconv.h"
@@ -215,10 +216,10 @@ void DataSourcesToolWidget::updateAdditionalInfo()
     traced_assert(ts_min_label_);
     traced_assert(ts_max_label_);
 
-    if (dbcont_man.hasMinMaxTimestamp())
+    if (dbcont_man.dataEngine().hasMinMaxTimestamp())
     {
-        ts_min_label_->setText(Utils::Time::toString(std::get<0>(dbcont_man.minMaxTimestamp()), 0).c_str());
-        ts_max_label_->setText(Utils::Time::toString(std::get<1>(dbcont_man.minMaxTimestamp()), 0).c_str());
+        ts_min_label_->setText(Utils::Time::toString(std::get<0>(dbcont_man.dataEngine().minMaxTimestamp()), 0).c_str());
+        ts_max_label_->setText(Utils::Time::toString(std::get<1>(dbcont_man.dataEngine().minMaxTimestamp()), 0).c_str());
     }
     else
     {

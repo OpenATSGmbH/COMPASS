@@ -120,6 +120,81 @@ std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, db
     return ss.str();
 }
 
+FilterClause ACIDFilter::getClause(const std::string& dbcontent_name)
+{
+    if (!active_)
+        return FilterClause{};
+
+    return sqlFor(variableResolver(), values_, null_wanted_, dbcontent_name);
+}
+
+FilterClause ACIDFilter::sqlFor(IDBVariableResolver& resolver,
+                                const std::set<std::string>& values, bool null_wanted,
+                                const std::string& dbcontent_name)
+{
+    FilterClause clause;
+
+    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
+        return clause;
+
+    if (!(values.size() || null_wanted))
+        return clause;
+
+    string acid_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_acid_);
+
+    string cs_fpl_col; // only set in cat062
+    bool has_cs_fpl = false;
+
+    if (dbcontent_name == "CAT062")
+    {
+        traced_assert(resolver.canGetVariable(
+                    dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_));
+
+        cs_fpl_col = resolver.getVariableDBColumn(
+                    dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_);
+        has_cs_fpl = true;
+    }
+
+    stringstream ss;
+
+    ss << "(";
+
+    bool first_val = true;
+
+    for (auto val_it : values)
+    {
+        if (!first_val)
+            ss << " OR";
+
+        ss << " (" << acid_col << " LIKE '%" << val_it << "%'";
+
+        if (has_cs_fpl)
+            ss << " OR " << cs_fpl_col << " LIKE '%" << val_it << "%'";
+
+        ss << ")";
+
+        first_val = false;
+    }
+
+    if (null_wanted)
+    {
+        if (!first_val)
+            ss << " OR";
+
+        ss << " (" << acid_col << " IS NULL";
+
+        if (has_cs_fpl)
+            ss << " OR " << cs_fpl_col << " IS NULL";
+
+        ss << ")";
+    }
+
+    ss << ")";
+
+    clause.sql = ss.str();
+    return clause;
+}
+
 
 DBFilterWidget* ACIDFilter::createWidget()
 {

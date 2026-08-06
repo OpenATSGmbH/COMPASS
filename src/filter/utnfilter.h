@@ -28,6 +28,12 @@ public:
     virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
 
+    virtual FilterClause getClause(const std::string& dbcontent_name) override;
+    // stateless renderer (reused by callers with an explicit UTN set)
+    static FilterClause sqlFor(IDBVariableResolver& resolver,
+                               const std::vector<unsigned int>& values, bool null_wanted,
+                               const std::string& dbcontent_name);
+
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;
 

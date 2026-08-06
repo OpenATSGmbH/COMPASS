@@ -78,7 +78,7 @@ void init_view_point_commands(COMPASS& compass)
 RTCommandSetViewPoint::RTCommandSetViewPoint()
     : rtcommand::RTCommand()
 {
-    condition.setSignal("compass.dbcontentmanager.loadingDoneSignal()", -1); // think about max duration
+    condition.setSignal("compass.viewmanager.loadingDoneSignal()", -1); // think about max duration
 
     // view point setting triggers load after set, so can wait on that
 }
@@ -100,8 +100,7 @@ bool RTCommandSetViewPoint::run_impl()
         return false;
     }
 
-    DBContentManager& dbcontent_man = s_compass->dbContentManager();
-    dbcontent_man.clearData();
+    s_compass->viewManager().clearDataInViews();
 
     try
     {

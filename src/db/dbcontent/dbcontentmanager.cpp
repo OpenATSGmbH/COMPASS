@@ -38,17 +38,18 @@
 #include "util/timeconv.h"
 #include "dbcontent/db_content_edit_dialog.h"
 #include "dbcontentdeletedbjob.h"
+#include "dbcontentdataengine.h"
+#include "loadoperation.h"
+#include "livedatafeed.h"
 #include "dbcontent_commands.h"
 #include "viewpoint.h"
 #include "dbcontentinsertdbjob.h"
-#include "dbcontentdatastore.h"
 #include "timeconv.h"
 
 #include "util/tbbhack.h"
 
 #include <QApplication>
 #include <QMessageBox>
-#include <QProgressDialog>
 #include <QPushButton>
 #include <QThread>
 
@@ -90,7 +91,16 @@ DBContentManager::DBContentManager(nlohmann::json& config, COMPASS& compass)
     target_model_.reset(new dbContent::TargetModel(*this));
     traced_assert(target_model_);
 
-    data_store_.reset(new DBContentDataStore(*this));
+    data_engine_.reset(new DBContentDataEngine(*this));
+    // forward the engine's delete completion as the manager's public signal so
+    // existing consumers keep working
+    connect(data_engine_.get(), &DBContentDataEngine::dataDeletedSignal,
+            this, &DBContentManager::dataDeletedSignal);
+    connect(data_engine_.get(), &DBContentDataEngine::insertDoneSignal,
+            this, &DBContentManager::insertDoneSignal);
+
+    // the live feed is owned by ViewManager (the displayer); the engine's
+    // insertedDataSignal feeds it and ViewManager drives the live tick
 }
 
 /**
@@ -98,8 +108,6 @@ DBContentManager::DBContentManager(nlohmann::json& config, COMPASS& compass)
 DBContentManager::~DBContentManager()
 {
     logdbg;
-
-    data_.clear();
 
     for (auto it : dbcontent_)
         delete it.second;
@@ -195,24 +203,37 @@ void DBContentManager::deleteDBContent(const std::string& dbcontent_name)
 
 /**
  */
+bool DBContentManager::isEngineBusy() const
+{
+    return data_engine_->isBusy();
+}
+
+/**
+ */
+void DBContentManager::waitUntilEngineIdle()
+{
+    data_engine_->waitUntilIdle();
+}
+
+/**
+ */
+bool DBContentManager::hasActiveDeleteJob() const
+{
+    return data_engine_->hasActiveDeleteJob();
+}
+
+/**
+ */
 void DBContentManager::deleteData(const nlohmann::json& delete_info)
 {
     loginf;
 
-    traced_assert(!delete_job_);
+    traced_assert(!hasActiveDeleteJob()); // caller checks hasActiveDeleteJob()
 
-    clearData();
+    // wipe the display before the DB delete (a view concern kept out of the engine)
+    compass_.viewManager().clearDataInViews();
 
-    delete_info_ = delete_info;
-
-    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
-    delete_job_->setDeleteInfo(delete_info_);
-    delete_job_->cleanupDB(true);
-
-    connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContentManager::finishDeleting,
-            Qt::QueuedConnection);
-
-    compass_.jobManager().addDBJob(delete_job_);
+    data_engine_->deleteData(delete_info);
 }
 
 /**
@@ -221,31 +242,7 @@ void DBContentManager::deleteDBContentData(boost::posix_time::ptime before_times
 {
     loginf;
 
-    traced_assert(!delete_job_);
-
-    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
-    delete_job_->setBeforeTimestamp(before_timestamp);
-
-    connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContentManager::deleteJobDoneSlot,
-            Qt::QueuedConnection);
-
-    compass_.jobManager().addDBJob(delete_job_);
-}
-
-/**
- */
-void DBContentManager::finishDeleting()
-{
-    loginf;
-
-    traced_assert(delete_job_);
-
-    compass_.dbContextManager().applyDeleteInfo(delete_info_);
-
-    delete_job_ = nullptr;
-    delete_info_ = nlohmann::json{};
-
-    emit dataDeletedSignal();
+    data_engine_->deleteOlderThan(before_timestamp);
 }
 
 /**
@@ -384,414 +381,6 @@ VariableSet DBContentManager::getReadSet(const std::string& dbcontent_name)
     return read_set;
 }
 
-/**
- */
-std::set<std::string> DBContentManager::resolveTargetSet(const LoadRequest& req) const
-{
-    auto& ctx_man = compass_.dbContextManager();
-
-    std::set<std::string> targets;
-
-    const bool wildcard = req.dbcontents_.count("*") > 0;
-
-    for (const auto& object : dbcontent_)
-    {
-        if (!object.second->loadable())
-            continue;
-
-        if (wildcard)
-        {
-            if (!ctx_man.loadingWanted(object.first))
-                continue;
-            targets.insert(object.first);
-        }
-        else if (req.dbcontents_.count(object.first))
-        {
-            targets.insert(object.first);
-        }
-    }
-
-    return targets;
-}
-
-/**
- */
-std::string DBContentManager::composeWhereClause(const std::string& name,
-                                                  const LoadRequest& req,
-                                                  dbContent::VariableSet& read_set)
-{
-    auto& ctx_man = compass_.dbContextManager();
-    DBContent& dbc = *dbcontent_.at(name);
-
-    std::string filter_clause;
-
-    if (req.apply_datasrc_filters_
-        && (ctx_man.hasDSFilter(name) || ctx_man.lineSpecificLoadingRequired(name)))
-    {
-        std::vector<unsigned int> ds_ids_to_load = ctx_man.unfilteredDS(name);
-
-        traced_assert(dbc.hasVariable(dbcontent_vars::meta_var_ds_id_.name()));
-        Variable& datasource_var = dbc.variable(dbcontent_vars::meta_var_ds_id_.name());
-        traced_assert(datasource_var.dataType() == PropertyDataType::UINT);
-
-        if (ctx_man.lineSpecificLoadingRequired(name))
-        {
-            traced_assert(dbc.hasVariable(dbcontent_vars::meta_var_line_id_.name()));
-            Variable& line_var = dbc.variable(dbcontent_vars::meta_var_line_id_.name());
-            traced_assert(line_var.dataType() == PropertyDataType::UINT);
-
-            // Build per-DS clauses into a list, OR-join only the non-empty
-            // ones. A DS with no wanted lines must be skipped - emitting
-            // "line_id IN ()" would produce invalid SQL.
-            std::vector<std::string> per_ds_clauses;
-            for (auto ds_id_it : ds_ids_to_load)
-            {
-                traced_assert(ctx_man.hasDataSource(ds_id_it));
-
-                std::vector<unsigned int> wanted_lines;
-                for (unsigned int line = 0; line < 4; ++line)
-                    if (ctx_man.lineLoadingWanted(ds_id_it, line))
-                        wanted_lines.push_back(line);
-
-                if (wanted_lines.empty())
-                    continue;
-
-                std::string clause = "(" + datasource_var.dbColumnName() + " = "
-                                     + std::to_string(ds_id_it)
-                                     + " AND " + line_var.dbColumnName() + " IN (";
-                for (size_t i = 0; i < wanted_lines.size(); ++i)
-                {
-                    if (i) clause += ",";
-                    clause += std::to_string(wanted_lines[i]);
-                }
-                clause += "))";
-                per_ds_clauses.push_back(std::move(clause));
-            }
-
-            if (per_ds_clauses.empty())
-            {
-                // Nothing wanted from any DS - return a no-row sentinel
-                // rather than asserting or emitting empty IN().
-                filter_clause = "1=0";
-            }
-            else
-            {
-                filter_clause = "(";
-                for (size_t i = 0; i < per_ds_clauses.size(); ++i)
-                {
-                    if (i) filter_clause += " OR ";
-                    filter_clause += per_ds_clauses[i];
-                }
-                filter_clause += ")";
-            }
-        }
-        else
-        {
-            if (ds_ids_to_load.empty())
-            {
-                // Same situation in the non-line branch: empty wanted set
-                // would yield "ds_id IN ()". Emit no-row sentinel instead.
-                filter_clause = "1=0";
-            }
-            else
-            {
-                filter_clause = datasource_var.dbColumnName() + " IN (";
-                for (auto ds_id_it = ds_ids_to_load.begin(); ds_id_it != ds_ids_to_load.end(); ++ds_id_it)
-                {
-                    if (ds_id_it != ds_ids_to_load.begin())
-                        filter_clause += ",";
-                    filter_clause += std::to_string(*ds_id_it);
-                }
-                filter_clause += ")";
-            }
-        }
-    }
-
-    if (req.apply_view_filters_ && compass_.filterManager().useFilters())
-    {
-        // getSQLCondition may add filter-required variables to read_set
-        std::string filter_sql = compass_.filterManager().getSQLCondition(name, read_set);
-        if (filter_sql.size())
-        {
-            if (filter_clause.size())
-                filter_clause += " AND ";
-            filter_clause += filter_sql;
-        }
-    }
-
-    if (req.custom_filter_clause_)
-    {
-        std::string custom = req.custom_filter_clause_(name);
-        if (custom.size())
-        {
-            if (filter_clause.size())
-                filter_clause += " AND ";
-            filter_clause += custom;
-        }
-    }
-
-    return filter_clause;
-}
-
-/**
- */
-void DBContentManager::advanceProgress()
-{
-    if (!progress_dialog_ || progress_load_total_ == 0)
-        return;
-
-    progress_value_ += 50.0 / static_cast<double>(progress_load_total_);
-    if (progress_value_ > 50.0)
-        progress_value_ = 50.0;
-    progress_dialog_->setValue(static_cast<int>(progress_value_));
-}
-
-/**
- */
-void DBContentManager::beginViewProgressPhase(unsigned int num_views)
-{
-    if (!progress_dialog_)
-        return;
-
-    progress_view_total_ = num_views;
-
-    if (num_views == 0)
-    {
-        // no views to process; jump straight to 100% and leave the label as-is
-        progress_value_ = 100.0;
-    }
-    else
-    {
-        progress_value_ = 50.0;
-        progress_dialog_->setLabelText("Updating views...");
-    }
-
-    progress_dialog_->setValue(static_cast<int>(progress_value_));
-    // Synchronous paint, not processEvents() - pumping arbitrary queued events
-    // here lets queued RT commands (e.g. uiset from UI tests) fire mid-loop in
-    // ViewManager::loadingDoneSlot and break injection assumptions.
-    progress_dialog_->repaint();
-}
-
-/**
- */
-void DBContentManager::advanceViewProgress()
-{
-    if (!progress_dialog_ || progress_view_total_ == 0)
-        return;
-
-    progress_value_ += 50.0 / static_cast<double>(progress_view_total_);
-    if (progress_value_ > 100.0)
-        progress_value_ = 100.0;
-    progress_dialog_->setValue(static_cast<int>(progress_value_));
-    progress_dialog_->repaint(); // see comment in beginViewProgressPhase
-}
-
-/**
- */
-void DBContentManager::cancelLoadingSlot()
-{
-    loginf;
-    if (load_in_progress_)
-        quitLoading();
-}
-
-/**
- */
-void DBContentManager::load(const LoadRequest& req)
-{
-    loading_done_ = false;
-
-    logdbg << "load_in_progress_ " << load_in_progress_;
-
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
-    if (load_in_progress_)
-    {
-        logdbg << "quitting previous load";
-
-        for (auto& object : dbcontent_)
-        {
-            if (object.second->isLoading())
-                object.second->quitLoading();
-        }
-
-        while (load_in_progress_)
-        {
-            loginf << "previous load to finish";
-            QCoreApplication::processEvents();
-            QThread::msleep(1);
-        }
-    }
-
-    loginf << "starting loading";
-
-    saveSelectedRecNums();
-    clearData();
-
-    current_request_  = req;
-    load_in_progress_ = true;
-
-    DBInterface& db_interface = compass_.dbInterface();
-    if (req.measure_db_performance_)
-        db_interface.startPerformanceMetrics();
-
-    std::set<std::string> targets = resolveTargetSet(req);
-
-    progress_value_      = 0.0;
-    progress_load_total_ = static_cast<unsigned int>(targets.size());
-    progress_view_total_ = 0;
-
-    if (req.show_status_ && progress_load_total_ > 0)
-    {
-        progress_dialog_.reset(new QProgressDialog("Loading data...", "Cancel", 0, 100,
-                                                   QApplication::activeWindow()));
-        progress_dialog_->setWindowModality(Qt::ApplicationModal);
-        progress_dialog_->setMinimumDuration(0);
-        progress_dialog_->setAutoClose(false);
-        progress_dialog_->setAutoReset(false);
-
-        if (req.cancellable_)
-        {
-            connect(progress_dialog_.get(), &QProgressDialog::canceled,
-                    this, &DBContentManager::cancelLoadingSlot);
-        }
-        else
-        {
-            progress_dialog_->setCancelButton(nullptr);
-        }
-
-        // make sure the dialog actually paints before the main thread gets busy
-        // submitting jobs and processing the first arriving buffers
-        progress_dialog_->show();
-        QCoreApplication::processEvents();
-    }
-
-    bool load_job_created = false;
-
-    for (const auto& name : targets)
-    {
-        DBContent* obj = dbcontent_.at(name);
-
-        VariableSet read_set = req.read_set_ ? req.read_set_(name) : getReadSet(name);
-
-        if (read_set.getSize() == 0)
-        {
-            logwrn << "skipping loading of " << name << ": empty read set";
-            continue;
-        }
-
-        std::string where = composeWhereClause(name, req, read_set);
-
-        logdbg << name << " read set " << read_set.str()
-               << " where '" << where << "'";
-
-        obj->loadInternal(read_set, where);
-        load_job_created = true;
-    }
-
-    emit loadingStartedSignal();
-
-    if (!load_job_created)
-        finishLoading();
-}
-
-/**
- */
-void DBContentManager::loadBlocking(const LoadRequest& req, unsigned int sleep_msecs)
-{
-    load(req);
-
-    while (!loading_done_)
-    {
-        QCoreApplication::processEvents();
-        QThread::msleep(sleep_msecs);
-    }
-}
-
-/**
- */
-void DBContentManager::addLoadedData(std::map<std::string, std::shared_ptr<Buffer>> data)
-{
-    logdbg;
-
-    // newest data batch has been finalized, ready to be added
-
-    // add buffers to data
-
-    bool something_changed = false;
-
-    std::vector<std::string> changed_dbc_contents;
-    for (auto& buf_it : data)
-    {
-        if (!buf_it.second->size()) // empty buffer
-            continue;
-
-        if (data_.count(buf_it.first))
-        {
-            logdbg << "adding buffer dbcont " << buf_it.first
-                   << " adding size " << buf_it.second->size() << " current size " << data_.at(buf_it.first)->size();
-
-            data_.at(buf_it.first)->seizeBuffer(*buf_it.second.get());
-
-            logdbg << "new buffer dbcont " << buf_it.first
-                   << " size " << data_.at(buf_it.first)->size();
-        }
-        else
-        {
-            data_[buf_it.first] = std::move(buf_it.second);
-
-            logdbg << "created buffer dbcont " << buf_it.first
-                   << " size " << data_.at(buf_it.first)->size();
-        }
-
-        something_changed = true;
-        changed_dbc_contents.push_back(buf_it.first);
-    }
-
-    if (something_changed)
-    {
-        updateNumLoadedCounts();
-        restoreSelectedRecNums();
-
-        //update all changed dbcontents in data store; pass last=false so the
-        //provider does not run heavy finalize work per-arrival - the
-        //loadingDoneSignal -> finalize() hook runs it once at end-of-load.
-        if (distribute_data_)
-            data_store_->update(changed_dbc_contents, /*last=*/false);
-
-        logdbg << "emitting signal";
-
-        emit loadedDataSignal(data_, false);
-
-        // one tick per content as its buffer arrives
-        advanceProgress();
-    }
-}
-
-/**
- */
-std::map<std::string, std::shared_ptr<Buffer>> DBContentManager::loadedData()
-{
-    return data_;
-}
-
-/**
- */
-void DBContentManager::quitLoading()
-{
-    loginf;
-
-    traced_assert(load_in_progress_);
-
-    for (auto& object : dbcontent_)
-    {
-        if (object.second->isLoading())
-            object.second->quitLoading();
-    }
-
-    //load_in_progress_ = true;  // TODO
-}
 
 /**
  */
@@ -799,8 +388,9 @@ void DBContentManager::databaseOpenedSlot()
 {
     loginf;
 
-    loadMaxRecordNumberWODBContentID();
-    loadMaxRefTrajTrackNum();
+    data_engine_->loadMaxRecordNumberWODBContentID();
+    data_engine_->loadMaxRefTrajTrackNum();
+    data_engine_->loadMinMaxInfo();
 
     DBInterface& db_interface = compass_.dbInterface();
 
@@ -817,41 +407,6 @@ void DBContentManager::databaseOpenedSlot()
         has_associations_ = false;
         associations_id_ = "";
     }
-
-    // load min max values
-    if (db_interface.hasProperty(PROP_TIMESTAMP_MIN_NAME))
-    {
-        timestamp_min_ = Time::fromLong(stol(db_interface.getProperty(PROP_TIMESTAMP_MIN_NAME)));
-        traced_assert(!timestamp_min_->is_not_a_date_time());
-    }
-    if (db_interface.hasProperty(PROP_TIMESTAMP_MAX_NAME))
-    {
-        timestamp_max_ = Time::fromLong(stol(db_interface.getProperty(PROP_TIMESTAMP_MAX_NAME)));
-        traced_assert(!timestamp_max_->is_not_a_date_time());
-    }
-
-    if (hasMinMaxTimestamp())
-        loginf << "timestamp_min_ " << Time::toString(*timestamp_min_)
-               << " timestamp_max_ " << Time::toString(*timestamp_max_);
-    else
-        loginf << "no min/max timestamp";
-
-    if (db_interface.hasProperty(PROP_LATITUDE_MIN_NAME))
-        latitude_min_ = stod(db_interface.getProperty(PROP_LATITUDE_MIN_NAME));
-    if (db_interface.hasProperty(PROP_LATITUDE_MAX_NAME))
-        latitude_max_ = stod(db_interface.getProperty(PROP_LATITUDE_MAX_NAME));
-
-    if (db_interface.hasProperty(PROP_LONGITUDE_MIN_NAME))
-        longitude_min_ = stod(db_interface.getProperty(PROP_LONGITUDE_MIN_NAME));
-    if (db_interface.hasProperty(PROP_LONGITUDE_MAX_NAME))
-        longitude_max_ = stod(db_interface.getProperty(PROP_LONGITUDE_MAX_NAME));
-
-    if (hasMinMaxPosition())
-        loginf << "latitude_min_ " << *latitude_min_
-               << " latitude_max_ " << *latitude_max_ << " longitude_min_ " << *longitude_min_
-               << " longitude_max_ " << *longitude_max_;
-    else
-        loginf << "no min/max position";
 
     for (auto& object : dbcontent_)
         object.second->databaseOpenedSlot();
@@ -870,11 +425,7 @@ void DBContentManager::databaseClosedSlot()
 {
     loginf;
 
-    max_rec_num_wo_dbcontid_ = 0;
-    has_max_rec_num_wo_dbcontid_ = false;
-
-    max_reftraj_track_num_ = 0;
-    has_max_reftraj_track_num_ = false;
+    data_engine_->onDatabaseClose();
 
     has_associations_ = false;
     associations_id_ = "";
@@ -884,48 +435,8 @@ void DBContentManager::databaseClosedSlot()
 
     target_model_->clear();
 
-    timestamp_min_.reset();
-    timestamp_max_.reset();
-    latitude_min_.reset();
-    latitude_max_.reset();
-    longitude_min_.reset();
-    longitude_max_.reset();
-
     emit associationStatusChangedSignal();
     emit dbContentStatusChanged();
-}
-
-/**
- */
-void DBContentManager::loadingDone(DBContent& object)
-{
-    bool done = true;
-
-    for (auto& object_it : dbcontent_)
-    {
-        if (object_it.second->isLoading())
-        {
-            logdbg << "start" << object_it.first << " still loading";
-            done = false;
-            break;
-        }
-    }
-
-    if (done)
-        finishLoading();
-    else
-        logdbg << "not done";
-}
-
-/**
- */
-void DBContentManager::deleteJobDoneSlot()
-{
-    logdbg;
-
-    traced_assert(delete_job_);
-
-    delete_job_ = nullptr;
 }
 
 /**
@@ -936,46 +447,6 @@ void DBContentManager::dbContentEditDialogOKSlot()
     db_content_edit_dialog_->hide();
 }
 
-/**
- */
-void DBContentManager::finishLoading()
-{
-    loginf << "start";
-    load_in_progress_ = false;
-
-    tmp_selected_rec_nums_.clear();
-
-    progress_value_      = 0.0;
-    progress_load_total_ = 0;
-    progress_view_total_ = 0;
-
-    compass_.viewManager().doViewPointAfterLoad();
-
-    DBInterface& db_interface = compass_.dbInterface();
-    if (db_interface.hasActivePerformanceMetrics())
-        loginf << db_interface.stopPerformanceMetrics().asString();
-
-    emit loadingDoneSignal();
-
-    //compass_.dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
-
-    QApplication::restoreOverrideCursor();
-
-    loading_done_ = true;
-
-    current_request_ = LoadRequest{};
-
-    // close the dialog only after every listener (views, etc.) has processed the signal -
-    // direct-connected slots ran inside emit; processEvents drains queued ones
-    if (progress_dialog_)
-    {
-        QCoreApplication::processEvents();
-        progress_dialog_->close();
-        progress_dialog_.reset();
-    }
-
-    loginf << "done";
-}
 
 /**
  */
@@ -1030,899 +501,20 @@ void DBContentManager::clearAssociationsIdentifier()
 
 /**
  */
-bool DBContentManager::loadInProgress() const
-{
-    return load_in_progress_;
-}
-
-/**
- */
-void DBContentManager::clearData()
-{
-    loginf;
-
-    // wipe + finalize so providers actually settle in empty state; if a load
-    // follows, loadingDoneSignal -> finalize() will finalize again after the
-    // last per-content arrival.
-    data_store_->reset(/*last=*/true);
-
-    data_.clear();
-
-    compass_.viewManager().clearDataInViews();
-}
-
-/**
- */
 void DBContentManager::insertData(std::map<std::string, std::shared_ptr<Buffer>> data)
 {
     logdbg;
 
-    while (load_in_progress_) // pending insert
-    {
-        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        QThread::msleep(1);
-    }
-
-    traced_assert(!insert_in_progress_);
-    traced_assert(!insert_data_.size());
-    traced_assert(!insert_job_);
-
-    insert_in_progress_ = true;
-    logdbg << "insert in progress " << insert_in_progress_;
-
-    insert_data_ = data;
-
-    //@TODO: prepare insert in dbcontents in parallel
-    for (auto& buf_it : insert_data_)
-    {
-        traced_assert(existsDBContent(buf_it.first));
-        dbContent(buf_it.first).prepareInsert(buf_it.second);
-    }
-
-    //update data sources from dbcontents (single-threaded)
-    bool ds_added_any = false;
-    for (auto& buf_it : insert_data_)
-    {
-        ds_added_any |= dbContent(buf_it.first).updateDataSourcesBeforeInsert(buf_it.second);
-    }
-
-    auto& ctx_man = compass_.dbContextManager();
-    if (ds_added_any)
-        emit ctx_man.dataSourcesChangedSignal();
-    emit ctx_man.countsChangedSignal();
-
-    insert_job_ = make_shared<DBContentInsertDBJob>(compass_.dbInterface(), *this, data, false);
-
-    connect(insert_job_.get(), &DBContentInsertDBJob::doneSignal,
-            this, &DBContentManager::finishInserting, Qt::QueuedConnection);
-
-    compass_.jobManager().addDBJob(insert_job_);
+    data_engine_->insert(std::move(data));
 }
 
 /**
- */
-void DBContentManager::finishInserting()
-{
-    logdbg;
-
-    //delete insert job
-    insert_job_ = nullptr;
-
-    using namespace boost::posix_time;
-
-    ptime start_time = microsec_clock::local_time();
-    ptime tmp_time = microsec_clock::local_time();
-
-    //finish inserting in db contents
-    for (auto& buf_it : insert_data_)
-    {
-        dbContent(buf_it.first).finalizeInsert(buf_it.second);
-    }
-
-    unsigned int buffer_cnt = 0;
-    for (auto& buf_it : insert_data_)
-        buffer_cnt += buf_it.second->size();
-
-    logdbg << "size " << buffer_cnt;
-
-    traced_assert(existsMetaVariable(dbcontent_vars::meta_var_timestamp_.name()));
-
-    insert_in_progress_ = false;
-    logdbg << "insert in progress " << insert_in_progress_;
-    emit insertDoneSignal();
-
-    logdbg << "done signal took "
-           << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-           << " full " << String::timeStringFromDouble((microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
-
-    // calculate min/max values
-
-    tmp_time = microsec_clock::local_time();
-
-    // ts calc for resume action
-
-    boost::posix_time::ptime min_tr_time_found; // for max latency calculation
-    string min_tr_time_dbcont;
-
-    for (auto& buf_it : insert_data_)
-    {
-        string dbcont_name = buf_it.first;
-
-        traced_assert(metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_timestamp_));
-
-        unsigned int buffer_size = buf_it.second->size();
-
-        //auto updateMinMaxRange = [ & ] (Property prop, const std::string& dbcont_name, )
-        // TODO template function this
-
-        // use dbcolum name since buffer has been transformed during insert
-
-        // timestamp
-        {
-            Variable& var = metaGetVariable(dbcont_name, dbcontent_vars::meta_var_timestamp_);
-            if (buf_it.second->has<boost::posix_time::ptime>(var.dbColumnName()))
-            {
-                NullableVector<boost::posix_time::ptime>& data_vec = buf_it.second->get<boost::posix_time::ptime>(
-                    var.dbColumnName());
-
-                bool has_vec_min_max;
-                ptime ts_vec_min, ts_vec_max;
-
-                tie(has_vec_min_max, ts_vec_min, ts_vec_max) = data_vec.minMaxValues();
-
-                if (has_vec_min_max)
-                {
-                    // set min time found
-                    if (dbContent(buf_it.first).containsTargetReports())
-                    {
-                        logdbg << "new " << buf_it.first << " min ts with latency " << Time::toString(Time::currentUTCTime() - ts_vec_min);
-
-                        if (min_tr_time_found.is_not_a_date_time())
-                            min_tr_time_found = ts_vec_min;
-                        else
-                            min_tr_time_found = min(min_tr_time_found, ts_vec_min);
-
-                        min_tr_time_dbcont = buf_it.first;
-                    }
-
-                    if (hasMinMaxTimestamp())
-                    {
-                        timestamp_min_ = std::min(timestamp_min_.get(), ts_vec_min);
-                        timestamp_max_ = std::max(timestamp_max_.get(), ts_vec_max);
-                    }
-                    else
-                    {
-                        timestamp_min_ = ts_vec_min;
-                        timestamp_max_ = ts_vec_max;
-                    }
-                }
-            }
-        }
-
-        if (hasMinMaxTimestamp())
-        {
-            compass_.dbInterface().setProperty(PROP_TIMESTAMP_MIN_NAME,
-                                                        to_string(Time::toLong(timestamp_min_.get())));
-            compass_.dbInterface().setProperty(PROP_TIMESTAMP_MAX_NAME,
-                                                        to_string(Time::toLong(timestamp_max_.get())));
-
-            logdbg << "tod min " << timestamp_min_.get()
-                   << " max " << timestamp_max_.get();
-        }
-
-        // lat & long
-        if (metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_longitude_)
-            && metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_latitude_))
-        {
-            Variable& lat_var = metaGetVariable(dbcont_name, dbcontent_vars::meta_var_latitude_);
-            Variable& lon_var = metaGetVariable(dbcont_name, dbcontent_vars::meta_var_longitude_);
-
-            if (buf_it.second->has<double>(lat_var.dbColumnName())
-                && buf_it.second->has<double>(lon_var.dbColumnName()))
-            {
-                NullableVector<double>& lat_vec = buf_it.second->get<double>(lat_var.dbColumnName());
-                NullableVector<double>& lon_vec = buf_it.second->get<double>(lon_var.dbColumnName());
-
-                bool has_min_max = hasMinMaxPosition();
-
-                for (unsigned int cnt=0; cnt < buffer_size; cnt++)
-                {
-                    if (!lat_vec.isNull(cnt) && !lon_vec.isNull(cnt))
-                    {
-                        if (has_min_max)
-                        {
-                            latitude_min_ = std::min(latitude_min_.get(), lat_vec.get(cnt));
-                            latitude_max_ = std::max(latitude_max_.get(), lat_vec.get(cnt));
-
-                            longitude_min_ = std::min(longitude_min_.get(), lon_vec.get(cnt));
-                            longitude_max_ = std::max(longitude_max_.get(), lon_vec.get(cnt));
-                        }
-                        else
-                        {
-                            latitude_min_ = lat_vec.get(cnt);
-                            latitude_max_ = lat_vec.get(cnt);
-
-                            longitude_min_ = lon_vec.get(cnt);
-                            longitude_max_ = lon_vec.get(cnt);
-
-                            has_min_max = true;
-                        }
-                    }
-                }
-
-                if (has_min_max)
-                {
-                    compass_.dbInterface().setProperty(PROP_LATITUDE_MIN_NAME, to_string(latitude_min_.get()));
-                    compass_.dbInterface().setProperty(PROP_LATITUDE_MAX_NAME, to_string(latitude_max_.get()));
-
-                    compass_.dbInterface().setProperty(PROP_LONGITUDE_MIN_NAME, to_string(longitude_min_.get()));
-                    compass_.dbInterface().setProperty(PROP_LONGITUDE_MAX_NAME, to_string(longitude_max_.get()));
-
-                    logdbg << "lat min " << latitude_min_.get()
-                           << " max " << latitude_max_.get()
-                           << " lon min " << longitude_min_.get()
-                           << " max " << longitude_max_.get();
-                }
-            }
-        }
-    }
-
-    // min/max timestamps/positions are up to date now - announce per inserted chunk,
-    // e.g. updates the timestamps shown in the data sources tool during import
-    emit dbContentStatusChanged();
-
-    logdbg << "min/max took "
-           << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true)
-           << " full " << String::timeStringFromDouble((microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
-
-    tmp_time = microsec_clock::local_time();
-
-    if (compass_.appMode() == AppMode::Offline || compass_.appMode() == AppMode::LivePaused)
-        insert_data_.clear();
-
-    if (compass_.appMode() == AppMode::LiveRunning)
-    {
-        //live mode specific processing
-        processLiveModeSlot();
-    }
-    else
-    {
-        //non-live updates
-        // updateWidgets removed - handled by signals
-        //compass_.dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
-
-        logdbg << "update widgets + lines took "
-           << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-    }
-
-    logdbg << "full update took " << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - start_time).total_milliseconds() / 1000.0, true);
-}
-
-/**
- * Bookends the live-mode "one long load cycle" with the manager lifecycle
- * signals so that ViewManager and other Path A consumers see live entry/exit
- * as a single started → loaded* → done cycle (loadedDataSignal fires per
- * processLiveModeSlot tick in between).
- *
- * - leaving LiveRunning: emit loadingDoneSignal before any follow-up load
- *   (the explicit Live↔Paused transitions in COMPASS::appMode trigger a
- *   loadBlocking that has its own cycle, which is fine since done has already
- *   been dispatched here);
- * - entering LiveRunning: emit loadingStartedSignal so loading_done_dispatched_
- *   in ViewManager is reset before the first live tick.
+ * No-op: the live-session load bookends moved to ViewManager::appModeSwitchSlot (it owns
+ * the feed and the load lifecycle). Kept as a hook for any future manager-side app-mode
+ * reaction; the connection in COMPASS is retained for the same reason.
  */
 void DBContentManager::appModeSwitchSlot(AppMode app_mode_previous, AppMode app_mode_current)
 {
-    const bool was_live = (app_mode_previous == AppMode::LiveRunning);
-    const bool now_live = (app_mode_current  == AppMode::LiveRunning);
-
-    if (was_live && !now_live)
-    {
-        loginf << "leaving LiveRunning, closing live cycle";
-        emit loadingDoneSignal();
-    }
-    else if (!was_live && now_live)
-    {
-        loginf << "entering LiveRunning, opening live cycle";
-        emit loadingStartedSignal();
-    }
-}
-
-/**
- */
-void DBContentManager::processLiveModeSlot()
-{
-    if (compass_.appMode() != AppMode::LiveRunning)
-        return;
-
-    using namespace boost::posix_time;
-
-    auto tmp_time = microsec_clock::local_time();
-
-    //compute latency related stuff
-    boost::posix_time::ptime min_tr_time_found; // for max latency calculation
-    string min_tr_time_dbcont;
-
-    for (auto& buf_it : insert_data_)
-    {
-        string dbcont_name = buf_it.first;
-
-        traced_assert(metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_timestamp_));
-
-        // timestamp
-        {
-            Variable& var = metaGetVariable(dbcont_name, dbcontent_vars::meta_var_timestamp_);
-            if (buf_it.second->has<boost::posix_time::ptime>(var.dbColumnName()))
-            {
-                NullableVector<boost::posix_time::ptime>& data_vec = buf_it.second->get<boost::posix_time::ptime>(
-                    var.dbColumnName());
-
-                bool has_vec_min_max;
-                ptime ts_vec_min, ts_vec_max;
-
-                tie(has_vec_min_max, ts_vec_min, ts_vec_max) = data_vec.minMaxValues();
-
-                if (has_vec_min_max)
-                {
-                    // set min time found
-                    if (dbContent(buf_it.first).containsTargetReports())
-                    {
-                        logdbg << "new " << buf_it.first << " min ts with latency " << Time::toString(Time::currentUTCTime() - ts_vec_min);
-
-                        if (min_tr_time_found.is_not_a_date_time())
-                            min_tr_time_found = ts_vec_min;
-                        else
-                            min_tr_time_found = min(min_tr_time_found, ts_vec_min);
-
-                        min_tr_time_dbcont = buf_it.first;
-                    }
-                }
-            }
-        }
-    }
-
-    logdbg << "latency check took "
-           << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-
-    tmp_time = microsec_clock::local_time();
-
-    {
-        using namespace boost::posix_time;
-
-        ptime old_time = Time::currentUTCTime() - minutes(compass_.maxLiveDataAgeDb());
-
-        logdbg << "deleting data before " << Time::toString(old_time);
-
-        deleteDBContentData(old_time);
-    }
-
-    logdbg << "clear old took "
-           << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-
-    tmp_time = microsec_clock::local_time();
-
-    // add inserted to loaded data
-
-    bool had_data = data_.size();
-
-    {
-        addInsertedDataToChache();
-
-        logdbg << "insert cache took "
-               << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-
-        tmp_time = microsec_clock::local_time();
-
-        auto buffer_cnt = 0;
-        for (auto& buf_it : data_)
-            buffer_cnt += buf_it.second->size();
-
-        logdbg << "before cut data size " << buffer_cnt;
-
-        cutCachedData();
-
-        logdbg << "cut cache took "
-               << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-
-        tmp_time = microsec_clock::local_time();
-
-        buffer_cnt = 0;
-        for (auto& buf_it : data_)
-            buffer_cnt += buf_it.second->size();
-
-        logdbg << "after cut data size " << buffer_cnt;
-
-        // INFO] DBContentManager: finishInserting: size 220692
-        // filter ds took 00:00:13.266 full 00:00:13.395
-        filterDataSources();
-
-        logdbg << "filterDataSources took "
-               << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-
-        buffer_cnt = 0;
-        for (auto& buf_it : data_)
-            buffer_cnt += buf_it.second->size();
-
-        logdbg << "after ds filter data size " << buffer_cnt;
-
-        tmp_time = microsec_clock::local_time();
-
-        if (compass_.filterManager().useFilters())
-        {
-            compass_.filterManager().filterBuffers(data_);
-
-            logdbg << "filter buffs took "
-                   << String::timeStringFromDouble(
-                          (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-
-            tmp_time = microsec_clock::local_time();
-        }
-
-        loginf << "distributing data, num buffers " << data_.size() << " had_data " << had_data;
-
-        if (data_.size())
-        {
-            // Path B: rebuild geometry/items via providers. update() emits ONE
-            // queued dataChangedSignal(all_ids, reset=true, last=true) - the
-            // provider then runs reset + per-content rebuild + finalize inside a
-            // single event-loop turn, so OSG cannot paint the empty intermediate
-            // state between the wipe and the rebuild.
-            if (distribute_data_)
-                data_store_->update();
-
-            // Path A: drive view chrome (TimeFilterWidget, info/status text, draw kick,
-            // overload detection, label generator). Emitted inside the live cycle that
-            // appModeSwitchSlot opens/closes on LiveRunning entry/exit.
-            emit loadedDataSignal(data_, true);
-        }
-        else if (had_data)
-        {
-            // reset(last=true): atomic wipe + finalize in providers.
-            data_store_->reset(/*last=*/true);
-            compass_.viewManager().clearDataInViews();
-        }
-
-        logdbg << "distribute took "
-               << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-
-        tmp_time = microsec_clock::local_time();
-
-        updateNumLoadedCounts();
-
-        logdbg << "update cnts took "
-               << String::timeStringFromDouble(
-                      (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-
-        tmp_time = microsec_clock::local_time();
-
-        if (!min_tr_time_found.is_not_a_date_time())
-        {
-            max_latency_ = Time::currentUTCTime() - min_tr_time_found;
-            
-            loginf << "max latency " << Time::toString(*max_latency_) << " in " << min_tr_time_dbcont;
-        }
-        else
-        {
-            max_latency_ = boost::none;
-        }
-    }
-
-    // updateWidgets removed - handled by signals
-
-    //compass_.dbContentManager().labelGenerator().updateAvailableLabelLines(); // update available lines
-
-    logdbg << "update widgets + lines took "
-           << String::timeStringFromDouble(
-                  (microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-}
-
-#define ADD_INSERTED_MT
-
-/**
- */
-void DBContentManager::addInsertedDataToChache()
-{
-    loginf;
-
-    //assert (label_generator_);
-
-    //tbb::parallel_for(uint(0), num_targets, [&](unsigned int cnt)
-
-    //for (auto& buf_it : insert_data_)
-    unsigned int num_buffers = insert_data_.size();
-    boost::mutex data_mutex;
-
-#ifdef ADD_INSERTED_MT
-    tbb::parallel_for(uint(0), num_buffers, [&](unsigned int buffer_cnt)
-#else
-    for (unsigned int buffer_cnt = 0; buffer_cnt < num_buffers; ++buffer_cnt)
-#endif
-    {
-        std::map<std::string, std::shared_ptr<Buffer>>::iterator buf_it = insert_data_.begin();
-        std::advance(buf_it, buffer_cnt);
-
-        VariableSet read_set = compass_.viewManager().getReadSet(buf_it->first);
-        addStandardVariables(buf_it->first, read_set);
-        //label_generator_->addVariables(buf_it->first, read_set);
-
-        //sensor status
-        if (compass_.appMode() == AppMode::LiveRunning)
-        {
-            if (buf_it->first == "CAT063")
-            {
-                traced_assert(canGetVariable(buf_it->first, dbcontent_vars::var_cat063_con_       ));
-                traced_assert(canGetVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sac_));
-                traced_assert(canGetVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sic_));
-
-                read_set.add(getVariable(buf_it->first, dbcontent_vars::var_cat063_con_       ));
-                read_set.add(getVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sac_));
-                read_set.add(getVariable(buf_it->first, dbcontent_vars::var_cat063_sensor_sic_));
-            }
-        }
-
-        // for (unsigned int i = 0; i < read_set.getSize(); ++i)
-        //     loginf << buf_it->first << " " << read_set.getVariable(i).name() << " (" << read_set.getVariable(i).dbColumnName() << ")";
-
-        vector<Property> buffer_properties_to_be_removed;
-
-        // remove all unused
-        for (const auto& prop_it : buf_it->second->properties().properties())
-        {
-            if (!read_set.hasDBColumnName(prop_it.name()))
-            {
-                buffer_properties_to_be_removed.push_back(prop_it); // remove it later
-            }
-        }
-
-        for (auto& prop_it : buffer_properties_to_be_removed)
-        {
-            logdbg << buf_it->first << " deleting property " << prop_it.name();
-            buf_it->second->deleteProperty(prop_it);
-        }
-
-        // add assoc property if required
-        if (metaCanGetVariable(buf_it->first, dbcontent_vars::meta_var_utn_))
-        {
-            Variable& utn_var = metaGetVariable(buf_it->first, dbcontent_vars::meta_var_utn_);
-            Property utn_prop (utn_var.dbColumnName(), utn_var.dataType());
-
-            if (!buf_it->second->hasProperty(utn_prop))
-                buf_it->second->addProperty(utn_prop);
-        }
-
-        // change db column names to dbcont var names
-        buffer_utils::transformVariables(*buf_it->second, read_set, true);
-
-        // add selection flags
-        buf_it->second->addProperty(dbcontent_vars::selected_var_);
-
-        // add buffer to be able to distribute to views
-        if (!data_.count(buf_it->first))
-        {
-            boost::mutex::scoped_lock locker(data_mutex);
-            data_[buf_it->first] = buf_it->second;
-        }
-        else
-        {
-            data_.at(buf_it->first)->seizeBuffer(*buf_it->second.get());
-        }
-
-        // sort by tod
-        traced_assert(metaVariable(dbcontent_vars::meta_var_timestamp_.name()).existsIn(buf_it->first));
-        Variable& ts_var = metaVariable(dbcontent_vars::meta_var_timestamp_.name()).getFor(buf_it->first);
-        Property ts_prop {ts_var.name(), ts_var.dataType()};
-        traced_assert(data_.at(buf_it->first)->hasProperty(ts_prop));
-
-        data_.at(buf_it->first)->sortByProperty(ts_prop);
-#ifdef ADD_INSERTED_MT
-    });
-#else
-    }
-#endif
-
-    insert_data_.clear();
-}
-
-/**
- */
-void DBContentManager::filterDataSources()
-{
-    logdbg;
-
-    std::map<unsigned int, std::set<unsigned int>> wanted_data_sources =
-        compass_.dbContextManager().getLoadDataSources();
-
-    unsigned int num_buffers = data_.size();
-
-    tbb::parallel_for(uint(0), num_buffers, [&](unsigned int buffer_cnt)
-                      {
-                          std::map<std::string, std::shared_ptr<Buffer>>::iterator buf_it = data_.begin();
-                          std::advance(buf_it, buffer_cnt);
-
-                          // remove unwanted data sources
-                          traced_assert(metaVariable(dbcontent_vars::meta_var_ds_id_.name()).existsIn(buf_it->first));
-                          traced_assert(metaVariable(dbcontent_vars::meta_var_line_id_.name()).existsIn(buf_it->first));
-
-                          Variable& ds_id_var =
-                              metaVariable(dbcontent_vars::meta_var_ds_id_.name()).getFor(buf_it->first);
-                          Variable& line_id_var =
-                              metaVariable(dbcontent_vars::meta_var_line_id_.name()).getFor(buf_it->first);
-
-                          Property ds_id_prop {ds_id_var.name(), ds_id_var.dataType()};
-                          traced_assert(buf_it->second->hasProperty(ds_id_prop));
-
-                          Property line_id_prop {line_id_var.name(), line_id_var.dataType()};
-                          traced_assert(buf_it->second->hasProperty(ds_id_prop));
-
-                          NullableVector<unsigned int>& ds_id_vec =
-                              buf_it->second->get<unsigned int>(ds_id_var.name());
-                          NullableVector<unsigned int>& line_id_vec =
-                              buf_it->second->get<unsigned int>(line_id_var.name());
-
-                          unsigned int buffer_size = buf_it->second->size();
-
-                          vector<unsigned int> indexes_to_remove;
-                          //assert (ds_id_vec.isNeverNull()); TODO why asserts?
-
-                          for (unsigned int index=0; index < buffer_size; ++index)
-                          {
-                              traced_assert(!ds_id_vec.isNull(index));
-                              traced_assert(!line_id_vec.isNull(index));
-
-                              if (!wanted_data_sources.count(ds_id_vec.get(index)) // unwanted ds
-                                  || !wanted_data_sources.at(ds_id_vec.get(index)).count(line_id_vec.get(index))) // unwanted line
-                                  indexes_to_remove.push_back(index);
-                          }
-
-                          logdbg << "in " << buf_it->first << " remove "
-                                 << indexes_to_remove.size() << " of " << buffer_size;
-
-                          // remove unwanted indexes
-                          if (indexes_to_remove.size())
-                          {
-                              buf_it->second->removeIndexes(indexes_to_remove); // huge cost here
-                          }
-                          //buffer_size = buf_it.second->size();
-                      });
-
-    // remove empty buffers
-    std::map<std::string, std::shared_ptr<Buffer>> tmp_data = data_;
-
-    for (auto& buf_it : tmp_data)
-        if (!buf_it.second->size())
-            data_.erase(buf_it.first);
-}
-
-/**
- */
-void DBContentManager::cutCachedData()
-{
-    unsigned int buffer_size;
-
-    boost::posix_time::ptime min_ts = Time::currentUTCTime() - boost::posix_time::minutes(compass_.maxLiveDataAgeCache());
-    // max - x minutes
-
-    logdbg << "current ts " << Time::toString(Time::currentUTCTime())
-           << " min_ts " << Time::toString(min_ts);
-
-    for (auto& buf_it : data_)
-    {
-        buffer_size = buf_it.second->size();
-
-        traced_assert(metaVariable(dbcontent_vars::meta_var_timestamp_.name()).existsIn(buf_it.first));
-
-        Variable& ts_var = metaVariable(dbcontent_vars::meta_var_timestamp_.name()).getFor(buf_it.first);
-
-        Property ts_prop {ts_var.name(), ts_var.dataType()};
-
-        if (buf_it.second->hasProperty(ts_prop))
-        {
-            NullableVector<boost::posix_time::ptime>& ts_vec = buf_it.second->get<boost::posix_time::ptime>(
-                ts_var.name());
-
-            unsigned int index=0;
-
-            for (; index < buffer_size; ++index)
-            {
-                if (!ts_vec.isNull(index) && ts_vec.get(index) > min_ts)
-                {
-                    logdbg << "found " << buf_it.first
-                           << " cutoff tod index " << index
-                           << " ts " << Time::toString(ts_vec.get(index));
-                    break;
-                }
-            }
-            // index == buffer_size if none bigger than min_ts
-
-            if (index) // index found
-            {
-                index--; // cut at previous
-
-                logdbg << "cutting " << buf_it.first
-                       << " up to index " << index
-                       << " total size " << buffer_size
-                       << " index time " << (ts_vec.isNull(index) ? "null" : Time::toString(ts_vec.get(index)));
-                traced_assert(index < buffer_size);
-                buf_it.second->cutUpToIndex(index);
-            }
-        }
-        else
-            logwrn << "buffer " << buf_it.first << " has not tod for cutoff";
-    }
-
-    // remove empty buffers
-    std::map<std::string, std::shared_ptr<Buffer>> tmp_data = data_;
-
-    for (auto& buf_it : tmp_data)
-        if (!buf_it.second->size())
-            data_.erase(buf_it.first);
-}
-
-/**
- */
-void DBContentManager::updateNumLoadedCounts()
-{
-    logdbg;
-
-    // ds id->dbcont->line->cnt
-    std::map<unsigned int, std::map<std::string,
-                                    std::map<unsigned int, unsigned int>>> loaded_counts;
-
-    for (auto& buf_it : data_)
-    {
-        traced_assert(metaCanGetVariable(buf_it.first, dbcontent_vars::meta_var_ds_id_));
-        traced_assert(metaCanGetVariable(buf_it.first, dbcontent_vars::meta_var_line_id_));
-
-        Variable& ds_id_var = metaGetVariable(buf_it.first, dbcontent_vars::meta_var_ds_id_);
-        Variable& line_id_var = metaGetVariable(buf_it.first, dbcontent_vars::meta_var_line_id_);
-
-        NullableVector<unsigned int>& ds_id_vec = buf_it.second->get<unsigned int>(ds_id_var.name());
-        NullableVector<unsigned int>& line_id_vec = buf_it.second->get<unsigned int>(line_id_var.name());
-
-        traced_assert(ds_id_vec.isNeverNull());
-        traced_assert(line_id_vec.isNeverNull());
-
-        unsigned int buffer_size = buf_it.second->size();
-
-        for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
-            loaded_counts[ds_id_vec.get(cnt)][buf_it.first][line_id_vec.get(cnt)] += 1;
-    }
-
-    compass_.dbContextManager().setLoadedCounts(loaded_counts);
-}
-
-/**
- */
-unsigned long DBContentManager::maxRecordNumberWODBContentID() const
-{
-    traced_assert(has_max_rec_num_wo_dbcontid_);
-    return max_rec_num_wo_dbcontid_;
-}
-
-/**
- */
-void DBContentManager::maxRecordNumberWODBContentID(unsigned long value)
-{
-    logdbg << "start" << value;
-
-    max_rec_num_wo_dbcontid_ = value;
-    has_max_rec_num_wo_dbcontid_ = true;
-}
-
-/**
- */
-unsigned int DBContentManager::maxRefTrajTrackNum() const
-{
-    traced_assert(has_max_reftraj_track_num_);
-    return max_reftraj_track_num_;
-}
-
-/**
- */
-void DBContentManager::maxRefTrajTrackNum(unsigned int value)
-{
-    logdbg << "start" << value;
-
-    max_reftraj_track_num_ = value;
-    has_max_reftraj_track_num_ = true;
-}
-
-/**
- */
-bool DBContentManager::hasMinMaxInfo() const
-{
-    return timestamp_min_.has_value() || timestamp_max_.has_value()
-           || latitude_min_.has_value() || latitude_max_.has_value()
-           || longitude_min_.has_value() || longitude_max_.has_value();
-}
-
-/**
- */
-bool DBContentManager::hasMinMaxTimestamp() const
-{
-    return timestamp_min_.has_value() && timestamp_max_.has_value();
-}
-
-/**
- */
-void DBContentManager::setMinMaxTimestamp(boost::posix_time::ptime min, boost::posix_time::ptime max)
-{
-    traced_assert(!min.is_not_a_date_time());
-    traced_assert(!max.is_not_a_date_time());
-
-    timestamp_min_ = min;
-    timestamp_max_ = max;
-
-    compass_.dbInterface().setProperty("timestamp_min", to_string(Time::toLong(timestamp_min_.get())));
-    compass_.dbInterface().setProperty("timestamp_max", to_string(Time::toLong(timestamp_max_.get())));
-}
-
-/**
- */
-std::pair<boost::posix_time::ptime , boost::posix_time::ptime> DBContentManager::minMaxTimestamp() const
-{
-    traced_assert(hasMinMaxTimestamp());
-    return {timestamp_min_.get(), timestamp_max_.get()};
-}
-
-/**
- */
-bool DBContentManager::hasMinMaxPosition() const
-{
-    return latitude_min_.has_value() || latitude_max_.has_value()
-           || longitude_min_.has_value() || longitude_max_.has_value();
-}
-
-/**
- */
-void DBContentManager::setMinMaxLatitude(double min, double max)
-{
-    latitude_min_ = min;
-    latitude_max_ = max;
-
-    compass_.dbInterface().setProperty("latitude_min", to_string(latitude_min_.get()));
-    compass_.dbInterface().setProperty("latitude_max", to_string(latitude_max_.get()));
-}
-
-/**
- */
-std::pair<double, double> DBContentManager::minMaxLatitude() const
-{
-    traced_assert(hasMinMaxPosition());
-    return {latitude_min_.get(), latitude_max_.get()};
-}
-
-/**
- */
-void DBContentManager::setMinMaxLongitude(double min, double max)
-{
-    longitude_min_ = min;
-    longitude_max_ = max;
-
-    compass_.dbInterface().setProperty("longitude_min", to_string(longitude_min_.get()));
-    compass_.dbInterface().setProperty("longitude_max", to_string(longitude_max_.get()));
-}
-
-/**
- */
-std::pair<double, double> DBContentManager::minMaxLongitude() const
-{
-    traced_assert(hasMinMaxPosition());
-    return {longitude_min_.get(), longitude_max_.get()};
-}
-
-/**
- */
-const std::map<std::string, std::shared_ptr<Buffer>>& DBContentManager::data() const
-{
-    return data_;
 }
 
 /**
@@ -2164,48 +756,16 @@ void DBContentManager::resizeTargetListWidget()
  */
 bool DBContentManager::insertInProgress() const
 {
-    return insert_in_progress_;
+    return data_engine_->insertInProgress();
 }
 
 /**
+ * Adds the always-present load core (record number, data source id, line id and
+ * the ordering timestamp); with add_utn_if_available also adds utn when the
+ * content has it. Single source for the standard load variables.
  */
-void DBContentManager::loadMaxRecordNumberWODBContentID()
-{
-    traced_assert(compass_.dbInterface().ready());
-
-    max_rec_num_wo_dbcontid_ = 0;
-    unsigned long max_rec_num_with_dbcontid = 0;
-
-    for (auto& obj_it : dbcontent_)
-    {
-        if (obj_it.second->existsInDB())
-        {
-            max_rec_num_with_dbcontid = compass_.dbInterface().getMaxRecordNumber(*obj_it.second);
-            max_rec_num_wo_dbcontid_ = max(Number::recNumGetWithoutDBContId(max_rec_num_with_dbcontid),
-                                           max_rec_num_wo_dbcontid_);
-        }
-    }
-
-    has_max_rec_num_wo_dbcontid_ = true;
-
-    loginf << "start" << max_rec_num_wo_dbcontid_;
-}
-
-/**
- */
-void DBContentManager::loadMaxRefTrajTrackNum()
-{
-    traced_assert(compass_.dbInterface().ready());
-
-    max_reftraj_track_num_ = compass_.dbInterface().getMaxRefTrackTrackNum();
-    has_max_reftraj_track_num_ = true;
-
-    loginf << "start" << max_reftraj_track_num_;
-}
-
-/**
- */
-void DBContentManager::addStandardVariables(std::string dbcont_name, dbContent::VariableSet& read_set)
+void DBContentManager::addStandardVariables(std::string dbcont_name, dbContent::VariableSet& read_set,
+                                            bool add_utn_if_available)
 {
     traced_assert(metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_rec_num_));
     read_set.add(metaGetVariable(dbcont_name, dbcontent_vars::meta_var_rec_num_));
@@ -2219,7 +779,7 @@ void DBContentManager::addStandardVariables(std::string dbcont_name, dbContent::
     traced_assert(metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_timestamp_));
     read_set.add(metaGetVariable(dbcont_name, dbcontent_vars::meta_var_timestamp_));
 
-    if(metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_utn_))
+    if(add_utn_if_available && metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_utn_))
         read_set.add(metaGetVariable(dbcont_name, dbcontent_vars::meta_var_utn_));
 }
 
@@ -2243,6 +803,10 @@ DBContentEditDialog* DBContentManager::dbContentEditDialog()
  */
 void DBContentManager::setViewableDataConfig (const nlohmann::json::object_t& data)
 {
+    // this triggers a load; applying a view point while one runs would hand the new viewable
+    // to the outgoing load's doViewPointAfterLoad
+    data_engine_->waitUntilIdle();
+
     viewable_data_cfg_.reset(new ViewableDataConfig(data));
 
     compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
@@ -2250,110 +814,19 @@ void DBContentManager::setViewableDataConfig (const nlohmann::json::object_t& da
 
 void DBContentManager::storeSelectedRecNums(const std::vector<unsigned long>& selected)
 {
-    clearSelectedRecNums(); // no other selected
-
-    auto& dbcont_man = compass_.dbContentManager();
-
-    for (auto rec_num : selected)
-    {
-        tmp_selected_rec_nums_[dbcont_man.dbContentWithId(Number::recNumGetDBContId(rec_num))].insert(rec_num);
-    }
-}
-
-void DBContentManager::clearSelectedRecNums()
-{
-    loginf;
-
-    tmp_selected_rec_nums_.clear();
-
-    for (const auto& buf_it : data_) // std::map<std::string, std::shared_ptr<Buffer>>
-    {
-        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
-
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
-        selected_vec.setAll(false);
-    }
+    // selection carry-over lives in ViewManager; this is a thin façade for lower layers
+    compass_.viewManager().storeSelectedRecNums(selected);
 }
 
 bool DBContentManager::hasMaxLatency() const
 {
-    return max_latency_.has_value() && !max_latency_->is_not_a_date_time();
+    // the live session (owned by ViewManager) owns the latency; the manager only forwards it
+    return compass_.viewManager().hasMaxLatency();
 }
 
 boost::posix_time::time_duration DBContentManager::maxLatency() const
 {
-    return *max_latency_;
-}
-
-/**
- */
-void DBContentManager::saveSelectedRecNums()
-{
-    loginf;
-
-    if(tmp_selected_rec_nums_.size())
-        return; // already stored from view point
-
-    for (const auto& buf_it : data_) // std::map<std::string, std::shared_ptr<Buffer>>
-    {
-        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
-
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
-
-        traced_assert(buf_it.second->has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()));
-        NullableVector<unsigned long>& rec_num_vec = buf_it.second->get<unsigned long>(
-            dbcontent_vars::meta_var_rec_num_.name());
-
-        size_t data_size = selected_vec.contentSize();
-
-        for (unsigned int cnt=0; cnt < data_size; ++cnt)
-        {
-            if (!selected_vec.isNull(cnt) && selected_vec.get(cnt))
-                tmp_selected_rec_nums_[buf_it.first].insert(rec_num_vec.get(cnt));
-        }
-
-        loginf << "start" << buf_it.first << " has "
-               << tmp_selected_rec_nums_[buf_it.first].size() << " selected" ;
-    }
-}
-
-/**
- */
-void DBContentManager::restoreSelectedRecNums()
-{
-    logdbg << "start" << tmp_selected_rec_nums_.size();
-
-    if (tmp_selected_rec_nums_.empty())
-        return;
-
-    for (const auto& buf_it : data_) // std::map<std::string, std::shared_ptr<Buffer>>
-    {
-        if (!tmp_selected_rec_nums_.count(buf_it.first))
-            continue;
-
-        auto& sel_recnums = tmp_selected_rec_nums_.at(buf_it.first);
-        if (sel_recnums.empty())
-            continue;
-
-        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
-
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
-
-        traced_assert(buf_it.second->has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()));
-        NullableVector<unsigned long>& rec_num_vec = buf_it.second->get<unsigned long>(
-            dbcontent_vars::meta_var_rec_num_.name());
-
-        // select existing & erase, keep still unselected
-
-        std::map<unsigned long, unsigned int> unique_rec_nums =
-            rec_num_vec.uniqueValuesWithIndexes(sel_recnums); // indexes of selected rec nums, value->index
-
-        for (auto& rec_num_it : unique_rec_nums)
-        {
-            selected_vec.set(rec_num_it.second, true);
-            sel_recnums.erase(rec_num_it.first);
-        }
-    }
+    return compass_.viewManager().maxLatency();
 }
 
 /**
@@ -2417,12 +890,12 @@ void DBContentManager::showSurroundingData (unsigned int utn)
         data[ViewPoint::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
     }
 
-        //    "Position": {
-        //    "Latitude Maximum": "50.78493920733",
-        //    "Latitude Minimum": "44.31547147615",
-        //    "Longitude Maximum": "20.76559892354",
-        //    "Longitude Minimum": "8.5801592186"
-        //    }
+    //    "Position": {
+    //    "Latitude Maximum": "50.78493920733",
+    //    "Latitude Minimum": "44.31547147615",
+    //    "Longitude Maximum": "20.76559892354",
+    //    "Longitude Minimum": "8.5801592186"
+    //    }
 
     if (target.hasPositionBounds())
     {
@@ -2682,13 +1155,7 @@ void DBContentManager::showUTNs (std::set<unsigned int> utns)
     }
     else
     {
-        clearData();
+        compass_.viewManager().clearDataInViews();
     }
 }
 
-/**
- */
-void DBContentManager::enableDataDistribution(bool ok)
-{
-    distribute_data_ = ok;
-}

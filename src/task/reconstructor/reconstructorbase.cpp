@@ -19,6 +19,7 @@
 #include "reconstructortask.h"
 #include "compass.h"
 #include "dbcontentmanager.h"
+#include "dbcontentdataengine.h"
 #include "dbcontent/dbcontent.h"
 #include "logger.h"
 #include "stringconv.h"
@@ -750,11 +751,11 @@ bool ReconstructorBase::isVehicleACAD(unsigned int value)
 std::pair<boost::posix_time::ptime, boost::posix_time::ptime> ReconstructorBase::timeFrame() const
 {
     //get full data time range (should)
-    if (!task_.manager().compass().dbContentManager().hasMinMaxTimestamp())
+    if (!task_.manager().compass().dbContentManager().dataEngine().hasMinMaxTimestamp())
         return std::pair<boost::posix_time::ptime, boost::posix_time::ptime>();
 
     boost::posix_time::ptime data_t0, data_t1;
-    std::tie(data_t0, data_t1) = task_.manager().compass().dbContentManager().minMaxTimestamp();
+    std::tie(data_t0, data_t1) = task_.manager().compass().dbContentManager().dataEngine().minMaxTimestamp();
 
     if (data_t0 >= data_t1)
         return std::pair<boost::posix_time::ptime, boost::posix_time::ptime>();
@@ -1851,7 +1852,7 @@ void ReconstructorBase::doUnassociatedAnalysis()
 {
     auto& dbcont_man = task_.manager().compass().dbContentManager();
 
-    traced_assert(dbcont_man.hasMinMaxPosition());
+    traced_assert(dbcont_man.dataEngine().hasMinMaxPosition());
 
     unsigned int slice_cnt = currentSlice().slice_count_;
     unsigned int run_cnt = currentSlice().run_count_;
@@ -1861,8 +1862,8 @@ void ReconstructorBase::doUnassociatedAnalysis()
     // unassociated grid
     double lat_min, lat_max, lon_min, lon_max;
 
-    tie(lat_min, lat_max) = dbcont_man.minMaxLatitude();
-    tie(lon_min, lon_max) = dbcont_man.minMaxLongitude();
+    tie(lat_min, lat_max) = dbcont_man.dataEngine().minMaxLatitude();
+    tie(lon_min, lon_max) = dbcont_man.dataEngine().minMaxLongitude();
 
     QRectF roi(lon_min, lat_min, lon_max - lon_min, lat_max - lat_min);
     traced_assert(!roi.isEmpty());

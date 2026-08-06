@@ -97,6 +97,108 @@ bool DBFilterCondition::filters(const std::string& dbcontent_name)
     return hasVariable(dbcontent_name);
 }
 
+FilterClause DBFilterCondition::getClause(const std::string& dbcontent_name)
+{
+    traced_assert(usable_);
+    traced_assert(hasVariable(dbcontent_name));
+
+    return sqlFor(var_resolver_, dbcontent_name, variable_name_, variable_dbcontent_name_,
+                  operator_, value_, value2_, include_null_, absolute_value_);
+}
+
+FilterClause DBFilterCondition::sqlFor(
+    IDBVariableResolver& resolver, const std::string& dbcontent_name,
+    const std::string& variable_name, const std::string& variable_dbcontent_name,
+    const std::string& op, const std::string& value, const std::string& value2,
+    bool include_null, bool absolute_value)
+{
+    FilterClause clause;
+
+    // variable not resolvable for this content -> no constraint (mirrors the config path's
+    // cond->filters() skip), so callers may pass meta variables blindly per content
+    if (!variableResolvable(resolver, dbcontent_name, variable_name, variable_dbcontent_name))
+        return clause;
+
+    std::string variable_prefix;
+    std::string variable_suffix;
+
+    if (absolute_value)
+    {
+        variable_prefix = "ABS(";
+        variable_suffix = ")";
+    }
+
+    std::string db_expression = resolver.variableDBExpression(
+        dbcontent_name, variable_name, variable_dbcontent_name);
+
+    std::string db_item_str;
+
+    if (db_expression.size())
+        db_item_str = resolver.variableDBColumnName(
+            dbcontent_name, variable_name, variable_dbcontent_name);
+    else
+        db_item_str = resolver.variableDBTableName(
+                          dbcontent_name, variable_name, variable_dbcontent_name)
+                      + "."
+                      + resolver.variableDBColumnName(
+                          dbcontent_name, variable_name, variable_dbcontent_name);
+
+    string val_str;
+    bool null_contained;
+
+    tie(val_str, null_contained) = transformValue(
+        resolver, dbcontent_name, variable_name, variable_dbcontent_name, op, value);
+
+    std::string col_expr = variable_prefix + db_item_str + variable_suffix;
+
+    bool needs_null_or = null_contained || include_null;
+    bool is_between = (op == filter_op::between);
+    bool has_main_condition = false;
+
+    std::stringstream ss;
+
+    if (needs_null_or)
+        ss << "(";
+
+    if (is_between)
+    {
+        std::string val2_str;
+        bool null2;
+        tie(val2_str, null2) = transformValue(
+            resolver, dbcontent_name, variable_name, variable_dbcontent_name, op, value2);
+        ss << col_expr << " " << filter_op::between << " " << val_str
+           << " " << filter_op::logic_and << " " << val2_str;
+        has_main_condition = true;
+    }
+    else if (null_contained && val_str.size())
+    {
+        ss << col_expr << " " << op << val_str;
+        has_main_condition = true;
+    }
+    else if (!null_contained)
+    {
+        ss << col_expr << " " << op << val_str;
+        has_main_condition = true;
+    }
+
+    if (needs_null_or)
+    {
+        if (has_main_condition)
+            ss << " " << filter_op::logic_or << " ";
+        ss << col_expr << " " << filter_op::is_null << ")";
+    }
+
+    clause.sql = ss.str();
+
+    // a DB-expression (computed column) needs its source variable read; a plain column is
+    // read directly, so only expressions contribute a required var (matches the old path)
+    if (db_expression.size())
+        resolver.addVariableToReadSet(dbcontent_name, variable_name, variable_dbcontent_name,
+                                      clause.required_vars);
+
+    return clause;
+}
+
 std::string DBFilterCondition::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first,
                                                    const std::string& logic_op)
 {
@@ -145,7 +247,7 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
     std::string col_expr = variable_prefix + db_item_str + variable_suffix;
 
     bool needs_null_or = null_contained || include_null_;
-    bool is_between = (operator_ == "BETWEEN");
+    bool is_between = (operator_ == filter_op::between);
     bool has_main_condition = false;
 
     if (needs_null_or)
@@ -156,7 +258,8 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
         std::string val2_str;
         bool null2;
         tie(val2_str, null2) = getTransformedValue(value2_, dbcontent_name);
-        ss << col_expr << " BETWEEN " << val_str << " AND " << val2_str;
+        ss << col_expr << " " << filter_op::between << " " << val_str
+           << " " << filter_op::logic_and << " " << val2_str;
         has_main_condition = true;
     }
     else if (null_contained && val_str.size())
@@ -173,8 +276,8 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
     if (needs_null_or)
     {
         if (has_main_condition)
-            ss << " OR ";
-        ss << col_expr << " IS NULL)";
+            ss << " " << filter_op::logic_or << " ";
+        ss << col_expr << " " << filter_op::is_null << ")";
     }
 
     if (ss.str().size())
@@ -240,22 +343,30 @@ void DBFilterCondition::setVariableName(const std::string& variable_name)
 
 bool DBFilterCondition::hasVariable(const std::string& dbcontent_name)
 {
-    if (variable_dbcontent_name_ == META_OBJECT_NAME)
+    return variableResolvable(var_resolver_, dbcontent_name, variable_name_,
+                              variable_dbcontent_name_);
+}
+
+bool DBFilterCondition::variableResolvable(
+    IDBVariableResolver& resolver, const std::string& dbcontent_name,
+    const std::string& variable_name, const std::string& variable_dbcontent_name)
+{
+    if (variable_dbcontent_name == META_OBJECT_NAME)
     {
-        if (!var_resolver_.existsMetaVariable(variable_name_))
+        if (!resolver.existsMetaVariable(variable_name))
             return false;
 
-        return var_resolver_.metaVariableExistsIn(variable_name_, dbcontent_name);
+        return resolver.metaVariableExistsIn(variable_name, dbcontent_name);
     }
     else
     {
-        if (dbcontent_name != variable_dbcontent_name_)
+        if (dbcontent_name != variable_dbcontent_name)
             return false;
 
-        if (!var_resolver_.existsDBContent(variable_dbcontent_name_))
+        if (!resolver.existsDBContent(variable_dbcontent_name))
             return false;
 
-        return var_resolver_.dbContentHasVariable(variable_dbcontent_name_, variable_name_);
+        return resolver.dbContentHasVariable(variable_dbcontent_name, variable_name);
     }
 }
 
@@ -360,10 +471,19 @@ bool DBFilterCondition::checkValueInvalid(const std::string& new_value)
 std::pair<std::string, bool> DBFilterCondition::getTransformedValue(
     const std::string& untransformed_value, const std::string& dbcontent_name)
 {
+    return transformValue(var_resolver_, dbcontent_name, variable_name_, variable_dbcontent_name_,
+                          operator_, untransformed_value);
+}
+
+std::pair<std::string, bool> DBFilterCondition::transformValue(
+    IDBVariableResolver& resolver, const std::string& dbcontent_name,
+    const std::string& variable_name, const std::string& variable_dbcontent_name,
+    const std::string& op, const std::string& untransformed_value)
+{
     std::vector<std::string> value_strings;
     std::vector<std::string> transformed_value_strings;
 
-    if (operator_ == "IN" || operator_ == "NOT IN")
+    if (op == filter_op::in || op == filter_op::not_in)
     {
         value_strings = String::split(untransformed_value, ',');
     }
@@ -372,13 +492,11 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(
         value_strings.push_back(untransformed_value);
     }
 
-    logdbg << "in value strings '"
-           << boost::algorithm::join(value_strings, ",") << "'";
-
-    bool null_set = find(value_strings.begin(), value_strings.end(), "NULL") != value_strings.end();
+    bool null_set = find(value_strings.begin(), value_strings.end(),
+                         filter_op::null_value) != value_strings.end();
 
     if (null_set) // remove null value
-        value_strings.erase(find(value_strings.begin(), value_strings.end(), "NULL"));
+        value_strings.erase(find(value_strings.begin(), value_strings.end(), filter_op::null_value));
 
     std::string value_str;
 
@@ -389,17 +507,13 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(
         if (value_str.empty())
             continue;
 
-        if (var_resolver_.variableHasNonStandardRepresentation(
-                dbcontent_name, variable_name_, variable_dbcontent_name_))
-            value_str = var_resolver_.variableValueFromRepresentation(
-                dbcontent_name, variable_name_, variable_dbcontent_name_, value_str);
+        if (resolver.variableHasNonStandardRepresentation(
+                dbcontent_name, variable_name, variable_dbcontent_name))
+            value_str = resolver.variableValueFromRepresentation(
+                dbcontent_name, variable_name, variable_dbcontent_name, value_str);
 
-        logdbg << "transformed value string " << value_str;
-
-        PropertyDataType data_type = var_resolver_.variableDataType(
-            dbcontent_name, variable_name_, variable_dbcontent_name_);
-
-        if (data_type == PropertyDataType::STRING)
+        if (resolver.variableDataType(
+                dbcontent_name, variable_name, variable_dbcontent_name) == PropertyDataType::STRING)
         {
             boost::replace_all(value_str, "'", "''");
             transformed_value_strings.push_back("'" + value_str + "'");
@@ -445,7 +559,7 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(
 
     if (transformed_value_strings.size()) // can be empty if only NULL
     {
-        if (operator_ != "IN" && operator_ != "NOT IN")
+        if (op != filter_op::in && op != filter_op::not_in)
         {
             traced_assert(transformed_value_strings.size() == 1);
             value_str = transformed_value_strings.at(0);

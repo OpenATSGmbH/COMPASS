@@ -20,6 +20,8 @@
 #include "rtcommand_registry.h"
 #include "compass.h"
 #include "dbcontentmanager.h"
+#include "dbcontentdataengine.h"
+#include "loadoperation.h"
 #include "dbcontent.h"
 #include "view/viewmanager.h"
 #include "compass.h"
@@ -52,7 +54,7 @@ void init_dbcontent_commands()
 RTCommandGetData::RTCommandGetData()
     : rtcommand::RTCommand()
 {
-    condition.setSignal("compass.dbcontentmanager.loadingDoneSignal()", -1); // think about max duration
+    // run_impl loads synchronously (op->wait()); no signal wait needed
 }
 
 
@@ -73,7 +75,14 @@ bool RTCommandGetData::run_impl()
     }
 
     DBContentManager& dbcontent_man = compass_->dbContentManager();
-    dbcontent_man.clearData();
+
+    // RT commands bypass UI modality; refuse to start while a load runs so we
+    // never nest inside the outer load's event pump
+    if (dbcontent_man.dataEngine().isLoading())
+    {
+        setResultMessage("Load already in progress");
+        return false;
+    }
 
     if (!dbcontent_man.existsDBContent(dbcontent_name_))
     {
@@ -92,9 +101,6 @@ bool RTCommandGetData::run_impl()
         }
     }
 
-    compass_->viewManager().disableDataDistribution(true);
-    compass_->dbContentManager().enableDataDistribution(false);
-
     // loading stuff
 
     VariableSet read_set = getReadSetFor();
@@ -109,27 +115,27 @@ bool RTCommandGetData::run_impl()
     }
 
     LoadRequest r = LoadRequest::forContent(dbcontent_name_, read_set, custom_clause);
-    r.show_status_  = false;
-    r.cancellable_  = false;
-    dbcontent_man.load(r);
+
+    // isolated blocking load: harvest the buffers here, read them in
+    // checkResult_impl; the view dataset is never touched
+    auto op = std::make_shared<LoadOperation>(dbcontent_man, r);
+    dbcontent_man.dataEngine().load(op);
+    op->wait();
+    // @TODO: op state unchecked - a Failed/Cancelled load returns partial data as complete
+    buffers_ = op->buffers();
 
     return true; // if ok
 }
 
 bool RTCommandGetData::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = compass_->dbContentManager();
-
-    compass_->viewManager().disableDataDistribution(false);
-    compass_->dbContentManager().enableDataDistribution(true);
-
-    if (!dbcontent_man.hasData())
+    if (buffers_.empty())
     {
         setResultMessage("No data loaded");
         return false; // error
     }
 
-    const std::map<std::string, std::shared_ptr<Buffer>>& buffers = dbcontent_man.data();
+    const std::map<std::string, std::shared_ptr<Buffer>>& buffers = buffers_;
 
     if (!buffers.count(dbcontent_name_))
     {

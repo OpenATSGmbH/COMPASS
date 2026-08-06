@@ -33,6 +33,7 @@ class COMPASS;
 class EvaluationStandard;
 class DBContent;
 class DBContentManager;
+class LoadOperation;
 class SectorLayer;
 struct EvaluationSettings;
 class EvaluationTargetFilter;
@@ -129,19 +130,20 @@ protected:
 
     void updateSectorLayers();
 
-    void loadData(const EvaluationCalculator& calculator,
-                  bool blocking);
+    void loadData(const EvaluationCalculator& calculator); // blocking; harvested in loadingDone
     std::map<std::string, std::shared_ptr<Buffer>> fetchData();
 
 private:
-    void configureLoadFilters(const EvaluationCalculator& calculator);
+    // per-content load WHERE for eval, built from the shared clause toolkit
+    // (ROI bbox / UTN set / timestamp bounds) - no global-filter hijack
+    std::string loadFilterClause(const std::string& dbcontent_name,
+                                 const EvaluationCalculator& calculator);
     void loadingDone();
 
     COMPASS& compass_;
     DBContentManager& dbcontent_man_;
 
     bool initialized_ {false};
-    bool active_load_connection_ {false};
 
     bool needs_additional_variables_ {false}; // indicates if variables should be added during loading
 
@@ -149,6 +151,7 @@ private:
     std::unique_ptr<EvaluationCalculator> calculator_; // sub-configurable
 
     std::unique_ptr<ViewableDataConfig>            viewable_data_cfg_;
+    std::shared_ptr<LoadOperation>                 load_op_; // isolated batch load, released after harvest
     std::map<std::string, std::shared_ptr<Buffer>> raw_data_;
     bool                                           raw_data_available_ = false;
 

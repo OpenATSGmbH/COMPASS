@@ -401,14 +401,14 @@ bool ViewWidget::refreshView()
     {
         // reload required (most likely due to no data loaded yet) => reload view
         // viewRefreshed() emitted from triggered reload
-        view_->viewManager().compass().dbContentManager().load(LoadRequest::standard()); 
+        view_->viewManager().reload();
     }
 #if 0
     else 
     {
         // fallback 1: be sceptical and reload in all other cases (will completely update the view)
         // viewRefreshed() emitted from triggered reload
-        view_->viewManager().compass().dbContentManager().load(LoadRequest::standard()); // fallback: just reload
+        view_->viewManager().reload(); // fallback: just reload
     }
 #else
     else

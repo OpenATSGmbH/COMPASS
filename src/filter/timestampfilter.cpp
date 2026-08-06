@@ -19,6 +19,7 @@
 #include "timestampfilterwidget.h"
 #include "filtermanager.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
 #include "util/timeconv.h"
@@ -82,6 +83,31 @@ std::string TimestampFilter::getConditionString(const std::string& dbcontent_nam
     logdbg << "here '" << ss.str() << "'";
 
     return ss.str();
+}
+
+FilterClause TimestampFilter::getClause(const std::string& dbcontent_name)
+{
+    if (!active_)
+        return FilterClause{};
+
+    return sqlFor(variableResolver(), min_value_, max_value_, dbcontent_name);
+}
+
+FilterClause TimestampFilter::sqlFor(IDBVariableResolver& resolver,
+                                     boost::posix_time::ptime min, boost::posix_time::ptime max,
+                                     const std::string& dbcontent_name)
+{
+    FilterClause clause;
+
+    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_))
+        return clause;
+
+    string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
+
+    clause.sql = "(" + col_name + " >= " + to_string(Time::toLong(min))
+               + " AND " + col_name + " <= " + to_string(Time::toLong(max)) + ")";
+
+    return clause;
 }
 
 DBFilterWidget* TimestampFilter::createWidget()
@@ -180,9 +206,9 @@ void TimestampFilter::shiftWindow(int minutes)
     boost::posix_time::ptime new_max = max_value_ + delta;
 
     auto& dbcont_man = filter_manager_->dbContentManager();
-    if (dbcont_man.hasMinMaxTimestamp())
+    if (dbcont_man.dataEngine().hasMinMaxTimestamp())
     {
-        auto minmax = dbcont_man.minMaxTimestamp();
+        auto minmax = dbcont_man.dataEngine().minMaxTimestamp();
 
         if (new_min < minmax.first)
             new_min = minmax.first;
@@ -207,10 +233,10 @@ bool TimestampFilter::canShiftWindow(int minutes) const
 {
     auto& dbcont_man = filter_manager_->dbContentManager();
 
-    if (!dbcont_man.hasMinMaxTimestamp())
+    if (!dbcont_man.dataEngine().hasMinMaxTimestamp())
         return true;
 
-    auto minmax = dbcont_man.minMaxTimestamp();
+    auto minmax = dbcont_man.dataEngine().minMaxTimestamp();
 
     if (minutes > 0)
         return max_value_ < minmax.second;

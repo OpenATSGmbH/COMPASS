@@ -33,6 +33,7 @@ class TaskManager;
 
 class DBContent;
 class Buffer;
+class LoadOperation;
 
 namespace dbContent {
 class Variable;
@@ -47,9 +48,7 @@ public slots:
     void dialogRunSlot();
 
     void createDoneSlot();
-    void createObsoleteSlot();
 
-    void loadedDataDataSlot(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
     void loadingDoneSlot();
 
     void associationStatusSlot(QString status);
@@ -170,6 +169,7 @@ protected:
 
     bool save_associations_{true};
 
+    std::shared_ptr<LoadOperation> load_op_; // isolated batch load, released after harvest
     std::map<std::string, std::shared_ptr<Buffer>> data_;
 
     std::unique_ptr<CreateARTASAssociationsStatusDialog> status_dialog_{nullptr};

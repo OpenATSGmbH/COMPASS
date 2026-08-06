@@ -19,12 +19,12 @@
 #include "compass.h"
 #include "buffer.h"
 #include "buffer_utils.h"
+#include "dbcontentreaddbjob.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentwidget.h"
 #include "db_context_manager.h"
 #include "util/number.h"
-#include "dbcontentreaddbjob.h"
 #include "dbcontent/variable/variable.h"
 #include "filtermanager.h"
 #include "jobmanager.h"
@@ -228,32 +228,6 @@ Variable& DBContent::getKeyVariable()
 
 /**
  */
-string DBContent::status()
-{
-    if (read_job_)
-    {
-        if (loadedCount())
-        {
-            return "Loading";
-        }
-        else
-        {
-            if (read_job_->started())
-                return "Started";
-            else
-                return "Queued";
-        }
-    }
-    //    else if (finalize_jobs_.size() > 0)
-    //        return "Post-processing";
-    else
-    {
-        return "Idle";
-    }
-}
-
-/**
- */
 DBContentWidget* DBContent::widget()
 {
     if (!widget_)
@@ -267,38 +241,24 @@ DBContentWidget* DBContent::widget()
 
 /**
  */
-void DBContent::closeWidget() 
-{ 
-    widget_ = nullptr; 
+void DBContent::closeWidget()
+{
+    widget_ = nullptr;
 }
 
 /**
  */
-void DBContent::loadInternal(dbContent::VariableSet& read_set,
-                             std::string custom_filter_clause)
+void DBContent::loadInternal(dbContent::VariableSet& read_set, std::string custom_filter_clause)
 {
     logdbg << "name " << name_ << " loadable " << is_loadable_;
 
     traced_assert(is_loadable_);
     traced_assert(existsInDB());
-
     traced_assert(!read_job_);
 
-    // add required vars for processing
-    traced_assert(dbcont_manager_.metaCanGetVariable(name_, dbcontent_vars::meta_var_rec_num_));
-    read_set.add(dbcont_manager_.metaGetVariable(name_, dbcontent_vars::meta_var_rec_num_));
+    read_job_ = make_shared<DBContentReadDBJob>(
+                compass_.dbInterface(), *this, read_set, custom_filter_clause);
 
-    traced_assert(dbcont_manager_.metaCanGetVariable(name_, dbcontent_vars::meta_var_ds_id_));
-    read_set.add(dbcont_manager_.metaGetVariable(name_, dbcontent_vars::meta_var_ds_id_));
-
-    traced_assert(dbcont_manager_.metaCanGetVariable(name_, dbcontent_vars::meta_var_line_id_));
-    read_set.add(dbcont_manager_.metaGetVariable(name_, dbcontent_vars::meta_var_line_id_));
-
-    read_job_ = shared_ptr<DBContentReadDBJob>(
-                new DBContentReadDBJob(compass_.dbInterface(), *this, read_set, custom_filter_clause));
-
-    connect(read_job_.get(),  &DBContentReadDBJob::obsoleteSignal,
-            this, &DBContent::readJobObsoleteSlot, Qt::QueuedConnection);
     connect(read_job_.get(), &DBContentReadDBJob::doneSignal,
             this, &DBContent::readJobDoneSlot, Qt::QueuedConnection);
 
@@ -310,9 +270,55 @@ void DBContent::loadInternal(dbContent::VariableSet& read_set,
 void DBContent::quitLoading()
 {
     if (read_job_)
-    {
         read_job_->setObsolete();
+}
+
+/**
+ */
+void DBContent::readJobDoneSlot()
+{
+    logdbg << name_;
+
+    traced_assert(read_job_);
+
+    // run_impl threw (DB read error): report failure, not an empty result
+    if (read_job_->hasError())
+    {
+        std::string err = read_job_->errorMessage();
+        read_job_ = nullptr;
+        emit readFailedSignal(name_, err);
+        return;
     }
+
+    shared_ptr<Buffer> buffer = read_job_->takeBuffer();
+
+    if (buffer && buffer->size())
+    {
+        // verify variables present and typed correctly
+        const vector<Variable*>& variables = read_job_->readList().getSet();
+        const PropertyList& properties = buffer->properties();
+
+        for (auto var_it : variables)
+        {
+            traced_assert(properties.hasProperty(var_it->dbColumnOrExpression()));
+            const Property& property = properties.get(var_it->dbColumnOrExpression());
+            traced_assert(property.dataType() == var_it->dataType());
+        }
+
+        // rename DB columns to variable names
+        buffer_utils::transformVariables(*buffer, read_job_->readList(), true);
+
+        // add boolean to indicate selection
+        buffer->addProperty(dbcontent_vars::selected_var_);
+    }
+    else
+    {
+        buffer = nullptr;
+    }
+
+    read_job_ = nullptr;
+
+    emit readDoneSignal(name_, buffer);
 }
 
 /**
@@ -593,55 +599,6 @@ void DBContent::deleteJobDoneSlot()
 
 /**
  */
-void DBContent::readJobObsoleteSlot()
-{
-    logdbg << name_;
-    read_job_ = nullptr;
-
-    logdbg << name_ << ": done";
-    dbcont_manager_.loadingDone(*this);
-}
-
-/**
- */
-void DBContent::readJobDoneSlot()
-{
-    logdbg << name_;
-
-    traced_assert(read_job_);
-
-    shared_ptr<Buffer> buffer = read_job_->takeBuffer();
-
-    if (buffer && buffer->size())
-    {
-        // verify variables present and typed correctly
-        const vector<Variable*>& variables = read_job_->readList().getSet();
-        const PropertyList& properties = buffer->properties();
-
-        for (auto var_it : variables)
-        {
-            traced_assert(properties.hasProperty(var_it->dbColumnOrExpression()));
-            const Property& property = properties.get(var_it->dbColumnOrExpression());
-            traced_assert(property.dataType() == var_it->dataType());
-        }
-
-        // rename DB columns to variable names
-        buffer_utils::transformVariables(*buffer, read_job_->readList(), true);
-
-        // add boolean to indicate selection
-        buffer->addProperty(dbcontent_vars::selected_var_);
-
-        dbcont_manager_.addLoadedData({{name_, buffer}});
-    }
-
-    read_job_ = nullptr;
-
-    logdbg << name_ << ": done";
-    dbcont_manager_.loadingDone(*this);
-}
-
-/**
- */
 void DBContent::databaseOpenedSlot()
 {
     logdbg << name_;
@@ -676,10 +633,6 @@ string DBContent::dbTableName() const
 
 /**
  */
-bool DBContent::isLoading() { return read_job_ != nullptr; }
-
-/**
- */
 bool DBContent::isDeleting() { return delete_job_ != nullptr; }
 
 /**
@@ -696,16 +649,6 @@ void DBContent::refreshCount()
 {
     if (existsInDB())
         count_ = compass_.dbInterface().count(db_table_name_);
-}
-
-/**
- */
-size_t DBContent::loadedCount()
-{
-    if (dbcont_manager_.data().count(name_))
-        return dbcont_manager_.data().at(name_)->size();
-    else
-        return 0;
 }
 
 /**
