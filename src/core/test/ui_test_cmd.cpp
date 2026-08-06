@@ -417,10 +417,16 @@ bool RTCommandUIRefresh::run_impl()
  */
 bool RTCommandUIFileDialog::run_impl()
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    const auto skip_empty_parts = Qt::SkipEmptyParts;
+#else
+    const auto skip_empty_parts = QString::SkipEmptyParts;
+#endif
+
     if (cancel)
         addFileDialogResult(QStringList());
     else
-        addFileDialogResult(paths.split(';', Qt::SkipEmptyParts));
+        addFileDialogResult(paths.split(';', skip_empty_parts));
 
     return true;
 }
