@@ -23,6 +23,7 @@ target_sources(compass_gui
         "${CMAKE_CURRENT_LIST_DIR}/timewindowdialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/noscrollqspinbox.h"
         "${CMAKE_CURRENT_LIST_DIR}/questiondialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/dialogs.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rangeedit.cpp"
@@ -40,6 +41,7 @@ target_sources(compass_gui
         "${CMAKE_CURRENT_LIST_DIR}/timewindowcollectionwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowdialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/questiondialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dialogs.cpp"
 )
 
 target_include_directories(compass_gui PUBLIC "${CMAKE_CURRENT_LIST_DIR}")

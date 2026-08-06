@@ -645,8 +645,6 @@ void ReconstructorBase::registerBaseSettings(ReconstructorBaseSettings& settings
     registerParameter("max_time_diff", &settings.max_time_diff_, settings.max_time_diff_);
     registerParameter("identity_value_max_age", &settings.identity_value_max_age_,
                       settings.identity_value_max_age_);
-    registerParameter("do_identity_transition_cut", &settings.do_identity_transition_cut_,
-                      settings.do_identity_transition_cut_);
     registerParameter("identity_transition_min_updates", &settings.identity_transition_min_updates_,
                       settings.identity_transition_min_updates_);
     registerParameter("identity_transition_min_duration", &settings.identity_transition_min_duration_,
@@ -660,6 +658,8 @@ void ReconstructorBase::registerBaseSettings(ReconstructorBaseSettings& settings
                       settings.do_track_number_disassociate_using_distance_);
     registerParameter("tn_disassoc_distance_factor", &settings.tn_disassoc_distance_factor_,
                       settings.tn_disassoc_distance_factor_);
+    registerParameter("do_identity_change_cut", &settings.do_identity_change_cut_,
+                      settings.do_identity_change_cut_);
 
     registerParameter("target_prob_min_time_overlap", &settings.target_prob_min_time_overlap_,
                       settings.target_prob_min_time_overlap_);

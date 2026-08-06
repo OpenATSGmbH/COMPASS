@@ -19,6 +19,7 @@
 #include "ui_test_setget.h"
 #include "ui_test_inject.h"
 #include "ui_test_testable.h"
+#include "ui_test_file_dialog.h"
 #include "rtcommand_registry.h"
 //#include "json_tools.h"
 
@@ -32,6 +33,7 @@ REGISTER_RTCOMMAND(ui_test::RTCommandUIGet)
 REGISTER_RTCOMMAND(ui_test::RTCommandUIGetJSON)
 REGISTER_RTCOMMAND(ui_test::RTCommandUIInject)
 REGISTER_RTCOMMAND(ui_test::RTCommandUIRefresh)
+REGISTER_RTCOMMAND(ui_test::RTCommandUIFileDialog)
 
 namespace ui_test
 {
@@ -403,6 +405,44 @@ bool RTCommandUIRefresh::run_impl()
     testable->uiRefresh();
 
     return true;
+}
+
+/*************************************************************************
+ * RTCommandUIFileDialog
+ *************************************************************************/
+
+/**
+ * Queues a result for the next native file dialog invocation, consumed by
+ * the Dialogs wrappers (dialogs.h). An empty result simulates a canceled dialog.
+ */
+bool RTCommandUIFileDialog::run_impl()
+{
+    if (cancel)
+        addFileDialogResult(QStringList());
+    else
+        addFileDialogResult(paths.split(';', Qt::SkipEmptyParts));
+
+    return true;
+}
+
+/**
+ */
+void RTCommandUIFileDialog::collectOptions_impl(OptionsDescription& options,
+                                                PosOptionsDescription& positional)
+{
+    ADD_RTCOMMAND_OPTIONS(options)
+        ("paths,p", po::value<std::string>()->default_value(""), "file path(s) to return from the next native file dialog, separated by ';'")
+        ("cancel", "if present, the next native file dialog will act as canceled by the user");
+
+    ADD_RTCOMMAND_POS_OPTION(positional, "paths")
+}
+
+/**
+ */
+void RTCommandUIFileDialog::assignVariables_impl(const VariablesMap& variables)
+{
+    RTCOMMAND_GET_QSTRING_OR_THROW(variables, "paths", paths)
+    RTCOMMAND_CHECK_VAR(variables, "cancel", cancel)
 }
 
 }

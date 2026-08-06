@@ -112,6 +112,28 @@ protected:
 };
 
 /**
+ */
+struct RTCommandUIFileDialog : public rtcommand::RTCommand
+{
+    QString paths;
+    bool    cancel = false;
+
+    virtual rtcommand::IsValid valid() const override
+    {
+        CHECK_RTCOMMAND_INVALID_CONDITION(paths.isEmpty() && !cancel, "Either paths or --cancel must be given")
+        CHECK_RTCOMMAND_INVALID_CONDITION(!paths.isEmpty() && cancel, "Paths and --cancel are mutually exclusive")
+
+        return rtcommand::RTCommand::valid();
+    }
+
+protected:
+    virtual bool run_impl() override;
+
+    DECLARE_RTCOMMAND(uifiledialog, "queues a result for the next native file dialog: paths separated by ';', or --cancel to simulate a canceled dialog")
+    DECLARE_RTCOMMAND_OPTIONS
+};
+
+/**
 */
 inline void initUITestCommands()
 {
@@ -120,6 +142,7 @@ inline void initUITestCommands()
     RTCommandUIGetJSON::init();
     RTCommandUIInject::init();
     RTCommandUIRefresh::init();
+    RTCommandUIFileDialog::init();
 }
 
 } // namespace ui_test

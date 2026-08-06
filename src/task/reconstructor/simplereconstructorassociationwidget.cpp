@@ -158,6 +158,17 @@ SimpleReconstructorAssociationWidget::SimpleReconstructorAssociationWidget(
 
     layout->addWidget(tn_disassoc_distance_factor_edit_, row, 1);
 
+    // QCheckBox* do_identity_change_cut_box_ {nullptr};
+    ++row;
+    layout->addWidget(new QLabel("Do Identity Change Cut"), row, 0);
+
+    do_identity_change_cut_box_ = new QCheckBox();
+
+    connect(do_identity_change_cut_box_, &QCheckBox::toggled,
+            [ = ] (bool ok) { this->reconstructor_.settings().do_identity_change_cut_ = ok; });
+
+    layout->addWidget(do_identity_change_cut_box_, row, 1);
+
     //    QLineEdit* min_updates_tracker_edit_{nullptr};
     ++row;
 
@@ -247,6 +258,10 @@ void SimpleReconstructorAssociationWidget::updateValues()
     // QSpinBox* tn_disassoc_distance_factor_edit_{nullptr};
     traced_assert(tn_disassoc_distance_factor_edit_);
     tn_disassoc_distance_factor_edit_->setValue(reconstructor_.settings().tn_disassoc_distance_factor_);
+
+    // QCheckBox* do_identity_change_cut_box_ {nullptr};
+    traced_assert(do_identity_change_cut_box_);
+    do_identity_change_cut_box_->setChecked(reconstructor_.settings().do_identity_change_cut_);
 
     //    QLineEdit* min_updates_tracker_edit_{nullptr};
     traced_assert(min_updates_edit_);

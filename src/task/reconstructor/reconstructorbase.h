@@ -91,8 +91,6 @@ class ReconstructorBaseSettings
     // older values are UNKNOWN (neither confirm nor contradict); bounds attribute
     // volatility, deliberately independent of max_time_diff_
     float identity_value_max_age_ {60}; // sec
-    // execute the retrospective identity cut for detected swap candidates
-    bool do_identity_transition_cut_ {false};
     // minimum evidence per side (sustaining measurements and duration) for a transition
     unsigned int identity_transition_min_updates_ {5};
     float identity_transition_min_duration_ {10}; // sec
@@ -107,6 +105,8 @@ class ReconstructorBaseSettings
     bool do_track_number_disassociate_using_distance_ {true};
     // if do tn disassc, factor for "normal" assoc threshold to calc threshold
     float tn_disassoc_distance_factor_ {3};
+    // cut tracker track streams at detected identity changes (swap candidates)
+    bool do_identity_change_cut_ {true};
 
     // compare targets related
     double target_prob_min_time_overlap_ {0.1};

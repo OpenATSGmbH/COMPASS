@@ -157,6 +157,7 @@ The following table lists the configuration parameters available for the Scoring
     Maximum Altitude Difference & Max. diff. in Mode C altitude for association. & Basic & 300 ft & 0 -- 5000 ft \\ \hline
     Do Track Number Disassoc. Using Distance & If enabled, matching track numbers are rejected if geographic distance is too large. & Basic & True & True/False \\ \hline
     Track Number Disassoc. Distance Factor & Multiplier of Acceptable Distance to validate track number reuse. & Advanced & 3$\sigma$ & 1 -- 20 \\ \hline
+    Do Identity Change Cut & If enabled, the track number to UTN association is cut at a detected permanent Mode 3/A code change (track swap onto a different target), with Mode S address and identification used as guards. The wrongly continued track part is separated into an own UTN. & Basic & True & True/False \\ \hline
     Minimum Updates & Minimum updates to validate a target or confirm a merge. & Intermediate & 2 & $\ge 1$ \\ \hline
     Minimum Time Overlap Probability & Minimum time overlap probability for merging similar targets. & Advanced & 0.1 & 0.05 -- 0.9 \\ \hline
     \end{tabular}
@@ -283,6 +284,7 @@ Please \textbf{note} that:
     Maximum Altitude Difference & Max. diff. in Mode C altitude for association. & Basic & 300 ft & 0 -- 3000 ft \\ \hline
     Do Track Number Disassoc. Using Distance & If enabled, matching track numbers are rejected if geographic distance is too large. & Basic & True & True/False \\ \hline
     Track Number Disassoc. Distance Factor & Multiplier of Acceptable Distance to validate track number reuse. & Intermediate & 3 & 1 -- 10 \\ \hline
+    Do Identity Change Cut & If enabled, the track number to UTN association is cut at a detected permanent Mode 3/A code change (track swap onto a different target), with Mode S address and identification used as guards. The wrongly continued track part is separated into an own UTN. & Basic & True & True/False \\ \hline
     Minimum Updates & Minimum updates to validate a target or confirm a merge. & Intermediate & 2 & $\ge 1$ \\ \hline
     Minimum Time Overlap Probability & Minimum time overlap probability for merging similar targets. & Advanced & 0.1 & 0 -- 1 \\ \hline
     \end{tabular}

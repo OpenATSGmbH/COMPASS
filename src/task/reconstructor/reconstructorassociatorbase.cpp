@@ -99,7 +99,7 @@ void ReconstructorAssociatorBase::associateNewData()
         return;
 
     // retrospective identity cut
-    if (reconstructor().settings().do_identity_transition_cut_)
+    if (reconstructor().settings().do_identity_change_cut_)
     {
         unsigned int num_cuts = StreamIdentityCut::cutDetectedTransitions(reconstructor());
 
