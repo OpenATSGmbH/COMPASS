@@ -68,6 +68,7 @@ DBFilterCondition::DBFilterCondition(nlohmann::json& config, DBFilter* parent)
     label_->setText(tr((label_prefix_ + base_label_text_).c_str()));
 
     edit_ = new QLineEdit(tr(value_.c_str()));
+    edit_->setObjectName("filter_condition_" + QString::fromStdString(instanceName()));
     edit_->setMaxLength(16*1024*1024);
     connect(edit_, SIGNAL(textChanged(QString)), this, SLOT(valueChanged()));
 
@@ -521,7 +522,42 @@ std::pair<std::string, bool> DBFilterCondition::transformValue(
             transformed_value_strings.push_back("'" + value_str + "'");
         }
         else
+        {
+            // numeric data types: the value must parse completely as a number,
+            // otherwise the generated SQL would be invalid. throwing here makes
+            // checkValueInvalid() reject the value, which keeps it out of the
+            // condition and colors the input field.
+            bool is_numeric_type = data_type == PropertyDataType::BOOL ||
+                                   data_type == PropertyDataType::CHAR ||
+                                   data_type == PropertyDataType::UCHAR ||
+                                   data_type == PropertyDataType::INT ||
+                                   data_type == PropertyDataType::UINT ||
+                                   data_type == PropertyDataType::LONGINT ||
+                                   data_type == PropertyDataType::ULONGINT ||
+                                   data_type == PropertyDataType::FLOAT ||
+                                   data_type == PropertyDataType::DOUBLE;
+
+            if (is_numeric_type)
+            {
+                size_t parsed_chars {0};
+
+                try
+                {
+                    std::stod(value_str, &parsed_chars);
+                }
+                catch (const std::exception&)
+                {
+                    parsed_chars = 0;
+                }
+
+                if (parsed_chars != value_str.size())
+                    throw std::invalid_argument(
+                        "invalid numeric value '" + value_str + "' for variable '" +
+                        variable_name_ + "'");
+            }
+
             transformed_value_strings.push_back(value_str);
+        }
     }
 
     if (transformed_value_strings.size()) // can be empty if only NULL

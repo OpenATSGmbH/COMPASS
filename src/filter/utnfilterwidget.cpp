@@ -31,6 +31,7 @@ UTNFilterWidget::UTNFilterWidget(UTNFilter& filter)
     : DBFilterWidget(filter), filter_(filter)
 {
     value_edit_ = new QLineEdit();
+    value_edit_->setObjectName("filter_value_edit");
     //value_edit_->setValidator(new TextFieldDoubleValidator(0, 100000, 0));
     connect(value_edit_, &QLineEdit::textEdited, this, &UTNFilterWidget::valueEditedSlot);
 

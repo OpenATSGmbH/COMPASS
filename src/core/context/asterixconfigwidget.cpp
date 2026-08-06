@@ -66,6 +66,7 @@ ASTERIXConfigWidget::ASTERIXConfigWidget(context::DBContextManager& ctx_mgr,
         QHBoxLayout* select_layout = new QHBoxLayout();
 
         QPushButton* select_all_button = new QPushButton("Select All");
+        select_all_button->setObjectName("asterix_select_all_button");
         select_all_button->setIcon(QIcon());
         select_all_button->setToolTip("Enable decoding of all categories");
         connect(select_all_button, &QPushButton::clicked,
@@ -73,6 +74,7 @@ ASTERIXConfigWidget::ASTERIXConfigWidget(context::DBContextManager& ctx_mgr,
         select_layout->addWidget(select_all_button);
 
         QPushButton* select_none_button = new QPushButton("Select None");
+        select_none_button->setObjectName("asterix_select_none_button");
         select_none_button->setIcon(QIcon());
         select_none_button->setToolTip("Disable decoding of all categories");
         connect(select_none_button, &QPushButton::clicked,
@@ -183,6 +185,7 @@ void ASTERIXConfigWidget::updateCategories()
                 continue;
 
             QCheckBox* cat_check = new QCheckBox(String::categoryString(category).c_str());
+            cat_check->setObjectName(QString("asterix_cat%1_check").arg(category, 3, 10, QChar('0')));
             cat_check->setProperty("category", category);
             if (decode_editable_)
             {
@@ -198,6 +201,7 @@ void ASTERIXConfigWidget::updateCategories()
             category_checkboxes_[category] = cat_check;
 
             ASTERIXEditionComboBox* ed_combo = new ASTERIXEditionComboBox(cat);
+            ed_combo->setObjectName(QString("asterix_cat%1_edition_combo").arg(category, 3, 10, QChar('0')));
             if (cat->editions().count(cfg->edition()))
                 ed_combo->setEdition(cfg->edition());
             connect(ed_combo, &ASTERIXEditionComboBox::changedEdition, this,
@@ -207,6 +211,7 @@ void ASTERIXConfigWidget::updateCategories()
             if (decode_editable_)
             {
                 QPushButton* ed_edit = new QPushButton();
+                ed_edit->setObjectName(QString("asterix_cat%1_edition_edit_button").arg(category, 3, 10, QChar('0')));
                 ed_edit->setIcon(edit_icon);
                 ed_edit->setFixedSize(UI_ICON_SIZE);
                 ed_edit->setFlat(UI_ICON_BUTTON_FLAT);
@@ -218,6 +223,7 @@ void ASTERIXConfigWidget::updateCategories()
 
             // ref
             ASTERIXREFEditionComboBox* ref_combo = new ASTERIXREFEditionComboBox(cat);
+            ref_combo->setObjectName(QString("asterix_cat%1_ref_combo").arg(category, 3, 10, QChar('0')));
             if (cfg->ref().size() && cat->refEditions().count(cfg->ref()))
                 ref_combo->setREFEdition(cfg->ref());
             connect(ref_combo, &ASTERIXREFEditionComboBox::changedREFSignal, this,
@@ -227,6 +233,7 @@ void ASTERIXConfigWidget::updateCategories()
             if (decode_editable_)
             {
                 QPushButton* ref_edit = new QPushButton();
+                ref_edit->setObjectName(QString("asterix_cat%1_ref_edit_button").arg(category, 3, 10, QChar('0')));
                 ref_edit->setIcon(edit_icon);
                 ref_edit->setFixedSize(UI_ICON_SIZE);
                 ref_edit->setFlat(UI_ICON_BUTTON_FLAT);
@@ -243,6 +250,7 @@ void ASTERIXConfigWidget::updateCategories()
 
             // spf
             ASTERIXSPFEditionComboBox* spf_combo = new ASTERIXSPFEditionComboBox(cat);
+            spf_combo->setObjectName(QString("asterix_cat%1_spf_combo").arg(category, 3, 10, QChar('0')));
             if (cfg->spf().size() && cat->spfEditions().count(cfg->spf()))
                 spf_combo->setSPFEdition(cfg->spf());
             connect(spf_combo, &ASTERIXSPFEditionComboBox::changedSPFSignal, this,
@@ -252,6 +260,7 @@ void ASTERIXConfigWidget::updateCategories()
             if (decode_editable_)
             {
                 QPushButton* spf_edit = new QPushButton();
+                spf_edit->setObjectName(QString("asterix_cat%1_spf_edit_button").arg(category, 3, 10, QChar('0')));
                 spf_edit->setIcon(edit_icon);
                 spf_edit->setFixedSize(UI_ICON_SIZE);
                 spf_edit->setFlat(UI_ICON_BUTTON_FLAT);

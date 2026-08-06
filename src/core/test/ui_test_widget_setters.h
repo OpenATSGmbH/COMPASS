@@ -38,6 +38,8 @@
 #include <QRadioButton>
 #include <QLabel>
 #include <QDialog>
+#include <QTreeView>
+#include <QDateTimeEdit>
 
 #include <QWidget>
 #include <QString>
@@ -113,6 +115,12 @@ namespace ui_test
     inline bool setUIElement(QTextEdit* widget, const QString& value, int delay, const SetUIHint& hint)
     {
         return injectTextEditEvent(widget, "", value, delay);
+    }
+    template<>
+    inline bool setUIElement(QDateTimeEdit* widget, const QString& value, int delay, const SetUIHint& hint)
+    {
+        //value must match the display format of the widget
+        return injectDateTimeEditEvent(widget, "", value, delay);
     }
     template<>
     inline bool setUIElement(QSpinBox* widget, const QString& value, int delay, const SetUIHint& hint)
@@ -215,6 +223,17 @@ namespace ui_test
     {
         //default button fallback
         return buttonEvent(widget, value, true, delay, hint);
+    }
+
+    template<>
+    inline bool setUIElement(QTreeView* widget, const QString& value, int delay, const SetUIHint& hint)
+    {
+        //value is a path of item display texts, e.g. "Data Sources|Radar|ARP1 (0/1)"
+        auto v = conversions::valueFromString<QStringList>(value);
+        if (!v)
+            return false;
+
+        return injectTreeViewEvent(widget, "", v.value(), delay);
     }
 
     template<>

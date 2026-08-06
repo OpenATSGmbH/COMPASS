@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "ui_test_testable.h"
+
 #include <QFrame>
 #include <QMenu>
 
@@ -29,7 +31,7 @@ class QPushButton;
 
 /**
  */
-class DBFilterWidget : public QFrame
+class DBFilterWidget : public QFrame, public ui_test::UITestable
 {
     Q_OBJECT
 
@@ -60,6 +62,10 @@ public:
     void updateChildWidget();
 
     virtual void update(void);
+
+    /// re-reads the widget contents from the filter, e.g. to check via ui
+    /// commands which edited values were actually stored
+    void uiRefresh() override;
 
     void collapse();
     void expand();

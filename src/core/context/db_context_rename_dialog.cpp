@@ -35,6 +35,7 @@ DBContextRenameDialog::DBContextRenameDialog(DBContextManager& manager, QWidget*
     , manager_(manager)
 {
     setWindowTitle("Rename Data Context");
+    setObjectName("ctx_rename_dialog");
     setMinimumWidth(400);
     setModal(true);
 
@@ -47,6 +48,7 @@ DBContextRenameDialog::DBContextRenameDialog(DBContextManager& manager, QWidget*
     auto* name_layout = new QHBoxLayout();
     name_layout->addWidget(new QLabel("New name:"));
     name_edit_ = new QLineEdit();
+    name_edit_->setObjectName("ctx_rename_name_edit");
     name_edit_->setText(QString::fromStdString(manager_.activeContextName()));
     name_edit_->selectAll();
     name_layout->addWidget(name_edit_);
@@ -57,6 +59,7 @@ DBContextRenameDialog::DBContextRenameDialog(DBContextManager& manager, QWidget*
     auto* button_layout = new QHBoxLayout();
 
     auto* cancel_btn = new QPushButton("Cancel");
+    cancel_btn->setObjectName("ctx_rename_cancel_button");
     cancel_btn->setIcon(QIcon());
     connect(cancel_btn, &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_btn);
@@ -64,6 +67,7 @@ DBContextRenameDialog::DBContextRenameDialog(DBContextManager& manager, QWidget*
     button_layout->addStretch();
 
     rename_button_ = new QPushButton("Rename");
+    rename_button_->setObjectName("ctx_rename_apply_button");
     rename_button_->setIcon(QIcon());
     rename_button_->setEnabled(false);
     rename_button_->setDefault(true);

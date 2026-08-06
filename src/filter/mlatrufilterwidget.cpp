@@ -31,12 +31,14 @@ MLATRUFilterWidget::MLATRUFilterWidget(MLATRUFilter& filter)
     : DBFilterWidget(filter), filter_(filter)
 {
     value_edit_ = new QLineEdit();
+    value_edit_->setObjectName("filter_value_edit");
     //value_edit_->setValidator(new TextFieldDoubleValidator(0, 100000, 0));
     connect(value_edit_, &QLineEdit::textEdited, this, &MLATRUFilterWidget::valueEditedSlot);
 
     addNameValuePair("MLAT RUs IN", value_edit_);
 
     match_all_cb_ = new QCheckBox();
+    match_all_cb_->setObjectName("filter_match_all_check");
     connect(match_all_cb_, &QCheckBox::toggled, this, &MLATRUFilterWidget::matchAllToggledSlot);
     addNameValuePair("Require Match All", match_all_cb_);
 

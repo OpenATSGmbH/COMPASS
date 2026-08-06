@@ -60,7 +60,9 @@ void ColorsEditWidget::buildUI()
         auto* row = new QHBoxLayout();
 
         light_radio_ = new QRadioButton("Light");
+        light_radio_->setObjectName("colors_light_radio");
         dark_radio_ = new QRadioButton("Dark");
+        dark_radio_->setObjectName("colors_dark_radio");
 
         connect(light_radio_, &QRadioButton::toggled, this,
                 &ColorsEditWidget::preferenceChangedSlot);
@@ -94,6 +96,7 @@ void ColorsEditWidget::buildUI()
         vbox->addLayout(ds_type_grid_);
 
         auto* reset = new QPushButton("Reset to defaults");
+        reset->setObjectName("colors_ds_type_reset_button");
         reset->setIcon(QIcon());
         reset->setToolTip("Restore the default DSType color palette");
         connect(reset, &QPushButton::clicked, this,
@@ -118,6 +121,7 @@ void ColorsEditWidget::buildUI()
         vbox->addLayout(dbcontent_grid_);
 
         auto* reset = new QPushButton("Reset to defaults");
+        reset->setObjectName("colors_dbcontent_reset_button");
         reset->setIcon(QIcon());
         reset->setToolTip("Restore the default DBContent color palette");
         connect(reset, &QPushButton::clicked, this,
@@ -140,6 +144,7 @@ void ColorsEditWidget::buildUI()
         auto* bulk_row = new QHBoxLayout();
 
         auto* all_light = new QPushButton("Auto Light All");
+        all_light->setObjectName("colors_auto_light_all_button");
         all_light->setIcon(QIcon());
         all_light->setToolTip("Regenerate light-band base colors for every data source");
         connect(all_light, &QPushButton::clicked, this,
@@ -147,6 +152,7 @@ void ColorsEditWidget::buildUI()
         bulk_row->addWidget(all_light);
 
         auto* all_dark = new QPushButton("Auto Dark All");
+        all_dark->setObjectName("colors_auto_dark_all_button");
         all_dark->setIcon(QIcon());
         all_dark->setToolTip("Regenerate dark-band base colors for every data source");
         connect(all_dark, &QPushButton::clicked, this,
@@ -154,6 +160,7 @@ void ColorsEditWidget::buildUI()
         bulk_row->addWidget(all_dark);
 
         auto* all_reset = new QPushButton("Reset All");
+        all_reset->setObjectName("colors_reset_all_button");
         all_reset->setIcon(QIcon());
         all_reset->setToolTip("Regenerate base colors for every data source using the context preference");
         connect(all_reset, &QPushButton::clicked, this,
@@ -240,6 +247,7 @@ void ColorsEditWidget::refresh()
             ds_type_grid_->addWidget(name_lbl, row_idx, 0, Qt::AlignLeft | Qt::AlignVCenter);
 
             auto* btn = new QPushButton();
+            btn->setObjectName("colors_ds_type_" + QString::fromStdString(ds_type).toLower() + "_button");
             btn->setIcon(QIcon());
             btn->setToolTip(QString::fromStdString("Color for DSType " + ds_type));
             btn->setProperty("ds_type", QString::fromStdString(ds_type));
@@ -284,6 +292,7 @@ void ColorsEditWidget::refresh()
             dbcontent_grid_->addWidget(name_lbl, row_idx, 0, Qt::AlignLeft | Qt::AlignVCenter);
 
             auto* btn = new QPushButton();
+            btn->setObjectName("colors_dbcontent_" + QString::fromStdString(name).toLower() + "_button");
             btn->setIcon(QIcon());
             btn->setToolTip(QString::fromStdString("Color for DBContent " + name));
             btn->setProperty("dbcontent", QString::fromStdString(name));
@@ -320,6 +329,7 @@ void ColorsEditWidget::refresh()
         data_source_grid_->addWidget(name_lbl, row_idx, 0, Qt::AlignLeft | Qt::AlignVCenter);
 
         auto* base_btn = new QPushButton();
+        base_btn->setObjectName(QString("colors_ds_%1_base_button").arg(ds.id()));
         base_btn->setIcon(QIcon());
         base_btn->setToolTip("Base color for this data source");
         base_btn->setProperty("ds_id", ds.id());
@@ -337,6 +347,7 @@ void ColorsEditWidget::refresh()
         for (unsigned int i = 0; i < 4; ++i)
         {
             auto* lb = new QPushButton(QString("L%1").arg(i + 1));
+            lb->setObjectName(QString("colors_ds_%1_line%2_button").arg(ds.id()).arg(i + 1));
             lb->setIcon(QIcon());
             lb->setToolTip(QString("Color for line L%1 - click to edit").arg(i + 1));
             lb->setProperty("ds_id", ds.id());

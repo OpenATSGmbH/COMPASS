@@ -318,12 +318,34 @@ void MLATRUFilter::matchAll(bool match_all)
 void MLATRUFilter::updateMLATDataSources(
     const std::map<unsigned int, std::map<std::string, std::vector<unsigned int>>>& mlat_ru_lookup)
 {
-    mlat_ru_lookup_ = mlat_ru_lookup;
+    // normalize RU names to lower case, matching the query normalization in
+    // getConditionString() / checkRUs()
+    mlat_ru_lookup_.clear();
+
+    for (const auto& ds_it : mlat_ru_lookup)
+    {
+        auto& names = mlat_ru_lookup_[ds_it.first];
+
+        for (const auto& name_it : ds_it.second)
+        {
+            std::string name = name_it.first;
+            boost::algorithm::to_lower(name);
+
+            auto& indexes = names[name];
+            indexes.insert(indexes.end(), name_it.second.begin(), name_it.second.end());
+        }
+    }
 }
 
 void MLATRUFilter::updateMLATKnownRUNames(const std::set<std::string>& known_ru_names)
 {
-    known_ru_names_ = known_ru_names;
+    known_ru_names_.clear();
+
+    for (std::string name : known_ru_names)
+    {
+        boost::algorithm::to_lower(name);
+        known_ru_names_.insert(name);
+    }
 }
 
 

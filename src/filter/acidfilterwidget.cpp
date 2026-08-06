@@ -30,6 +30,7 @@ ACIDFilterWidget::ACIDFilterWidget(ACIDFilter& filter)
     : DBFilterWidget(filter), filter_(filter)
 {
     value_edit_ = new QLineEdit();
+    value_edit_->setObjectName("filter_value_edit");
     connect(value_edit_, &QLineEdit::textEdited, this, &ACIDFilterWidget::valueEditedSlot);
 
     addNameValuePair("ACIDs IN", value_edit_);

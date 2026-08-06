@@ -134,6 +134,7 @@ void mergeAnalysisJSON(const json& analysis,
         // skip top-level metadata (skipped_categories is handled via
         // ASTERIXSkippedCategoryInfo::fromAnalysisInfo, not per data source)
         if (key == "num_errors" || key == "num_records" || key == "num_frames"
+            || key == "num_ref_errors" || key == "num_spf_errors"
             || key == "skipped_categories")
             continue;
 

@@ -207,7 +207,10 @@ bool RTCommandRunner::executeCommand(std::shared_ptr<RTCommand> cmd, RTCommandRu
     if (!invoked)
         cmd->setError(CmdErrorCode::Exec_InvokeFailed);
 
-    if (succeeded)
+    //async commands transition state in the deferred main thread execution -
+    //setting the state here would race the queued invocation, whose run()
+    //requires the configured state
+    if (succeeded && !cmd->execute_async)
         cmd->setState(CmdState::Executed);
 
     logMsg(std::string("[") + (succeeded ? "Succeeded" : "Failed") + "]", cmd.get());
@@ -223,12 +226,10 @@ bool RTCommandRunner::postCheckCommand(std::shared_ptr<RTCommand> cmd, RTCommand
     if (!cmd || !stash)
         throw std::runtime_error("RTCommandRunner::postCheckCommand: Bad init");
 
-    //asynchronous commands will not check their result
+    //asynchronous commands will not check their result - their state is
+    //handled by the deferred execution in the main thread
     if (cmd->execute_async)
-    {
-        cmd->setState(CmdState::Finished);
         return true;
-    }
 
     qRegisterMetaType<RTCommandMetaTypeWrapper>();
 

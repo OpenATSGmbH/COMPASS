@@ -410,7 +410,7 @@ bool ReconstructorBase::TargetsContainer::canAssocByTrackNumber(
     // tr has acad, target has an acad but not the target reports
     // happens if same acid is used by 2 different transponders
     if (tr.acad_ && targets_.at(utn).hasACAD()
-        && !targets_.at(utn).hasACAD(!tr.acad_))
+        && !targets_.at(utn).hasACAD(*tr.acad_))
     {
         logwrn << " same track num reused by different ACAD transponders, tr " << *tr.track_number_ << ", utn "
                << targets_.at(utn).asStr() << " tr " << tr.asStr() << ", unassociating";
@@ -472,6 +472,60 @@ int ReconstructorBase::TargetsContainer::assocByTrackNumber(
 
      if (do_debug || reconstructor_->task().debugSettings().debugUTN(utn))
         loginf << "DBG assoc by tn " << *tr.track_number_ << " to utn " << utn;
+
+    return utn;
+}
+
+unsigned int ReconstructorBase::TargetsContainer::createTargetFromReports(
+    const std::vector<unsigned long>& rec_nums, unsigned int source_utn)
+{
+    traced_assert(rec_nums.size());
+    traced_assert(reconstructor_);
+
+    unsigned int utn = targets_.size() ? targets_.rbegin()->first + 1 : 0;
+
+    traced_assert(!targets_.count(utn));
+
+    targets_.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(utn),
+        std::forward_as_tuple(*reconstructor_, utn, true, true));
+
+    dbContent::ReconstructorTarget& target = targets_.at(utn);
+
+    // eligible for re-homing by self-association, but not tentative origin
+    target.created_in_current_slice_ = true;
+
+    utn_vec_.push_back(utn);
+
+    for (auto rec_num : rec_nums)
+    {
+        traced_assert(reconstructor_->target_reports_.count(rec_num));
+        target.addTargetReport(rec_num);
+    }
+
+    // move lookups that followed the reports; the source target keeps whatever it
+    // still holds after its rebuild
+    const dbContent::ReconstructorTarget& source = targets_.at(source_utn);
+
+    for (auto rec_num : rec_nums)
+    {
+        dbContent::targetReport::ReconstructorInfo& tr =
+            reconstructor_->target_reports_.at(rec_num);
+
+        unsigned int dbcont_id = Number::recNumGetDBContId(rec_num);
+
+        if (tr.track_number_ && (dbcont_id == 62 || dbcont_id == 255))
+            tn2utn_[tr.ds_id_][tr.line_id_][*tr.track_number_] =
+                std::pair<unsigned int, boost::posix_time::ptime>(utn, tr.timestamp_);
+
+        if (tr.acad_ && !source.hasACAD(*tr.acad_))
+            acad_2_utn_[*tr.acad_] = utn;
+
+        if (tr.acid_ && !unspecific_acids_.count(*tr.acid_)
+            && !source.acids_.count(String::trim(*tr.acid_)))
+            acid_2_utn_[String::trim(*tr.acid_)] = utn;
+    }
 
     return utn;
 }
@@ -590,6 +644,14 @@ void ReconstructorBase::registerBaseSettings(ReconstructorBaseSettings& settings
 
     // association stuff
     registerParameter("max_time_diff", &settings.max_time_diff_, settings.max_time_diff_);
+    registerParameter("identity_value_max_age", &settings.identity_value_max_age_,
+                      settings.identity_value_max_age_);
+    registerParameter("identity_transition_min_updates", &settings.identity_transition_min_updates_,
+                      settings.identity_transition_min_updates_);
+    registerParameter("identity_transition_min_duration", &settings.identity_transition_min_duration_,
+                      settings.identity_transition_min_duration_);
+    registerParameter("identity_conspicuity_codes", &settings.identity_conspicuity_codes_,
+                      settings.identity_conspicuity_codes_);
     registerParameter("max_altitude_diff", &settings.max_altitude_diff_, settings.max_altitude_diff_);
     registerParameter("track_max_time_diff", &settings.track_max_time_diff_, settings.track_max_time_diff_);
     registerParameter("do_track_number_disassociate_using_distance",
@@ -597,6 +659,8 @@ void ReconstructorBase::registerBaseSettings(ReconstructorBaseSettings& settings
                       settings.do_track_number_disassociate_using_distance_);
     registerParameter("tn_disassoc_distance_factor", &settings.tn_disassoc_distance_factor_,
                       settings.tn_disassoc_distance_factor_);
+    registerParameter("do_identity_change_cut", &settings.do_identity_change_cut_,
+                      settings.do_identity_change_cut_);
 
     registerParameter("target_prob_min_time_overlap", &settings.target_prob_min_time_overlap_,
                       settings.target_prob_min_time_overlap_);
@@ -1186,6 +1250,7 @@ void ReconstructorBase::createTargetReports()
                 info.acid_ = tgt_acc.acid(cnt);
 
                 info.mode_a_code_ = tgt_acc.modeACode(cnt);
+                info.mode_a_code_age_ = tgt_acc.modeAAge(cnt);
 
                 info.track_number_ = tgt_acc.trackNumber(cnt);
                 info.track_begin_ = tgt_acc.trackBegin(cnt);

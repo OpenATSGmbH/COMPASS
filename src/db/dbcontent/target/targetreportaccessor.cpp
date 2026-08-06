@@ -20,8 +20,12 @@
 #include "dbcontentmanager.h"
 #include "global.h"
 #include "accuracy.h"
+#include "logger.h"
 
 #include "targetreportdefs.h"
+
+#include <mutex>
+#include <set>
 
 namespace dbContent 
 {
@@ -100,6 +104,7 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(dbcontent_vars::meta_var_m3a_g_, true);
     add(dbcontent_vars::meta_var_m3a_v_, true);
     add(dbcontent_vars::meta_var_m3a_smoothed_, true);
+    add(dbcontent_vars::var_cat062_m3a_age_, false);
 
     add(dbcontent_vars::meta_var_mc_, true);
     add(dbcontent_vars::meta_var_mc_g_, true);
@@ -174,6 +179,7 @@ void TargetReportAccessor::cacheVectors()
     meta_mode_a_garbled_vec_  = metaVarVector<bool>(dbcontent_vars::meta_var_m3a_g_);
     meta_mode_a_valid_vec_    = metaVarVector<bool>(dbcontent_vars::meta_var_m3a_v_);
     meta_mode_a_smoothed_vec_ = metaVarVector<bool>(dbcontent_vars::meta_var_m3a_smoothed_);
+    cat062_m3a_age_vec_       = varVector<float>(dbcontent_vars::var_cat062_m3a_age_);
 
     //mode c
     meta_mode_c_vec_         = metaVarVector<float>(dbcontent_vars::meta_var_mc_);
@@ -493,8 +499,30 @@ boost::optional<targetReport::VelocityAccuracy> TargetReportAccessor::velocityAc
             cat062_vy_stddev_vec_->isNull(index))
             return {};
 
-        return targetReport::VelocityAccuracy(cat062_vx_stddev_vec_->get(index),
-                                              cat062_vy_stddev_vec_->get(index));
+        double vx_stddev = cat062_vx_stddev_vec_->get(index);
+        double vy_stddev = cat062_vy_stddev_vec_->get(index);
+
+        // stored stddevs must not be zero when set, indicates bad source data
+        if (vx_stddev == 0 || vy_stddev == 0)
+        {
+            static std::set<unsigned int> warned_ds_ids;
+            static std::mutex warned_mutex;
+
+            unsigned int ds_id_val = dsID(index);
+
+            std::lock_guard<std::mutex> lock(warned_mutex);
+
+            if (!warned_ds_ids.count(ds_id_val))
+            {
+                warned_ds_ids.insert(ds_id_val);
+
+                logwrn << "zero stored velocity stddev vx " << vx_stddev
+                       << " vy " << vy_stddev << " ds_id " << ds_id_val
+                       << ", suppressing further warnings for this data source";
+            }
+        }
+
+        return targetReport::VelocityAccuracy(vx_stddev, vy_stddev);
     }
 
     //not implemented for dbcontent
@@ -547,6 +575,13 @@ boost::optional<bool> TargetReportAccessor::modeAValid(unsigned int index) const
 boost::optional<bool> TargetReportAccessor::modeAGarbled(unsigned int index) const
 {
     return getOptional<bool>(meta_mode_a_garbled_vec_, index);
+}
+
+/**
+*/
+boost::optional<float> TargetReportAccessor::modeAAge(unsigned int index) const
+{
+    return getOptional<float>(cat062_m3a_age_vec_, index);
 }
 
 /**

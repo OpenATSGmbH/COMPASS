@@ -20,14 +20,18 @@ pipeline {
         booleanParam(name: 'TAG_HISTOGRAMVIEW',   defaultValue: true, description: 'Tag: histogramview')
         booleanParam(name: 'TAG_SCATTERPLOTVIEW', defaultValue: true, description: 'Tag: scatterplotview')
         booleanParam(name: 'TAG_GEOGRAPHICVIEW',  defaultValue: true, description: 'Tag: geographicview')
+        booleanParam(name: 'TAG_ANALYZE',         defaultValue: true, description: 'Tag: analyze (Analyze Data Source, MLAT + ADS-B)')
+        booleanParam(name: 'TAG_ARTAS_SPF',       defaultValue: true, description: 'Tag: artas_spf (ARTAS TRI import/association/display, at_20230422)')
+        booleanParam(name: 'TAG_MLAT_RU',         defaultValue: true, description: 'Tag: mlat_ru (MLAT contributing receivers, loww_20260609)')
 
         // Build options
         booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove build_deb10 before building)')
         booleanParam(name: 'ASAN',                   defaultValue: false, description: 'Build with AddressSanitizer (slower; use to diagnose heap/memory corruption)')
 
         // Datasets (checkboxes)
-        booleanParam(name: 'DATASET_05H', defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
-        booleanParam(name: 'DATASET_2H',  defaultValue: true,  description: 'Dataset: at_20230422_2h (2h)')
+        booleanParam(name: 'DATASET_05H',  defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
+        booleanParam(name: 'DATASET_2H',   defaultValue: true,  description: 'Dataset: at_20230422_2h (2h)')
+        booleanParam(name: 'DATASET_LOWW', defaultValue: true,  description: 'Dataset: loww_20260609_4h (Vienna airport surface, 4h)')
     }
 
     environment {
@@ -124,8 +128,9 @@ pipeline {
                 expression {
                     def anyTag = params.TAG_SYSTEM || params.TAG_IMPORT || params.TAG_CALCULATE || params.TAG_EVAL ||
                                  params.TAG_UI || params.TAG_VIEWS || params.TAG_TABLEVIEW ||
-                                 params.TAG_HISTOGRAMVIEW || params.TAG_SCATTERPLOTVIEW || params.TAG_GEOGRAPHICVIEW
-                    def anyDataset = params.DATASET_05H || params.DATASET_2H
+                                 params.TAG_HISTOGRAMVIEW || params.TAG_SCATTERPLOTVIEW || params.TAG_GEOGRAPHICVIEW ||
+                                 params.TAG_ANALYZE || params.TAG_ARTAS_SPF || params.TAG_MLAT_RU
+                    def anyDataset = params.DATASET_05H || params.DATASET_2H || params.DATASET_LOWW
                     return anyTag && anyDataset
                 }
             }
@@ -136,19 +141,26 @@ pipeline {
                     if (params.TAG_SYSTEM)          tags << 'system'
                     if (params.TAG_IMPORT)          tags << 'import'
                     if (params.TAG_CALCULATE)       tags << 'calculate'
-                    if (params.TAG_EVAL)            tags << 'eval'
+                    if (params.TAG_EVAL)            { tags << 'eval'; tags << 'eval_loww' }
                     if (params.TAG_UI)              tags << 'ui'
                     if (params.TAG_VIEWS)           tags << 'views'
                     if (params.TAG_TABLEVIEW)       tags << 'tableview'
                     if (params.TAG_HISTOGRAMVIEW)   tags << 'histogramview'
                     if (params.TAG_SCATTERPLOTVIEW) tags << 'scatterplotview'
                     if (params.TAG_GEOGRAPHICVIEW)  tags << 'geographicview'
+                    if (params.TAG_ANALYZE)         tags << 'analyze'
+                    if (params.TAG_ARTAS_SPF)       tags << 'artas_spf'
+                    if (params.TAG_MLAT_RU)         tags << 'mlat_ru'
                     def tagsStr = tags.join(',')
 
-                    // Build dataset list from checkboxes
+                    // Build dataset list from checkboxes: name (used for the log file
+                    // name) + manifest path. Each manifest declares the tags its
+                    // dataset supports; unsupported selected tags simply resolve to
+                    // no targets for that dataset.
                     def datasets = []
-                    if (params.DATASET_05H) datasets << 'at_20230422_05h'
-                    if (params.DATASET_2H)  datasets << 'at_20230422_2h'
+                    if (params.DATASET_05H)  datasets << [name: 'at_20230422_05h',  manifest: "${TEST_DATA_PATH}/at_20230422/at_20230422_05h.json"]
+                    if (params.DATASET_2H)   datasets << [name: 'at_20230422_2h',   manifest: "${TEST_DATA_PATH}/at_20230422/at_20230422_2h.json"]
+                    if (params.DATASET_LOWW) datasets << [name: 'loww_20260609_4h', manifest: "${TEST_DATA_PATH}/loww_20260609/loww_20260609_4h.json"]
 
                     // Find the run directory created by collect_artifacts.sh
                     def runDir = sh(
@@ -181,22 +193,20 @@ pipeline {
                     def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:log_path=${runDir}/asan' LSAN_OPTIONS='exitcode=0' ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer COMPASS_QUIT_TIMEOUT_SEC=180 " : ''
 
                     for (dataset in datasets) {
-                        def manifest = "${TEST_DATA_PATH}/at_20230422/${dataset}.json"
-
-                        echo "Running tests for dataset: ${dataset} (tags: ${tagsStr})${params.ASAN ? ' [ASan]' : ''}"
+                        echo "Running tests for dataset: ${dataset.name} (tags: ${tagsStr})${params.ASAN ? ' [ASan]' : ''}"
 
                         sh """
                             cd '${scriptsDir}/test_infra' && \
                             ${asanEnv}PYTHONPATH='${scriptsDir}' python3 test_suite.py \
                                 --binary='${appimage}' \
                                 --path='${scriptsDir}/tests' \
-                                --manifest='${manifest}' \
+                                --manifest='${dataset.manifest}' \
                                 --output='${TEST_DATA_PATH}' \
                                 --tags='${tagsStr}' \
                                 --deps=tests \
                                 --no-prompt \
                                 --cfg-override=none \
-                                2>&1 | tee '${runDir}/test_${dataset}.log'
+                                2>&1 | tee '${runDir}/test_${dataset.name}.log'
                         """
                     }
                 }

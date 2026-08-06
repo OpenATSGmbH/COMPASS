@@ -122,19 +122,16 @@ void ASTERIXPostProcess::postProcessFlatCAT020(nlohmann::json& d, size_t num_rec
         }
     }
 
-    // 400 contributing receivers: decode per-record [{RUx: byte}, ...] (each byte is an
-    // 8-RU bitmap; the array is in spec order, last byte = lowest RUs) into a list of
-    // 1-based RU indexes for set bits, written under "400.Contributing Receivers.RUx"
-    if (d.contains("400.Contributing Receivers"))
+    // 400 contributing receivers: per-record array of raw bitmap bytes (each byte is an
+    // 8-RU bitmap; the array is in spec order, last byte = lowest RUs), decoded in place
+    // into a list of 1-based RU indexes for set bits
+    if (d.contains("400.Contributing Receivers.RUx"))
     {
-        const json& contrib_arr = d.at("400.Contributing Receivers");
+        json& rux_arr = d.at("400.Contributing Receivers.RUx");
 
-        json out_arr = json::array();
-        out_arr.get_ref<json::array_t&>().resize(num_records, nullptr);
-
-        for (size_t i = 0; i < contrib_arr.size() && i < num_records; ++i)
+        for (size_t i = 0; i < rux_arr.size() && i < num_records; ++i)
         {
-            const json& rec = contrib_arr[i];
+            json& rec = rux_arr[i];
             if (rec.is_null() || !rec.is_array() || rec.empty())
                 continue;
 
@@ -143,8 +140,8 @@ void ASTERIXPostProcess::postProcessFlatCAT020(nlohmann::json& d, size_t num_rec
 
             for (auto it = rec.crbegin(); it != rec.crend(); ++it)
             {
-                traced_assert(it->contains("RUx"));
-                unsigned int rux_bits = it->at("RUx").get<unsigned int>();
+                traced_assert(it->is_number_unsigned());
+                unsigned int rux_bits = it->get<unsigned int>();
                 traced_assert(rux_bits < 256);
 
                 for (unsigned int bit = 0; bit < 8; ++bit)
@@ -155,11 +152,8 @@ void ASTERIXPostProcess::postProcessFlatCAT020(nlohmann::json& d, size_t num_rec
                 prev_bit_cnt += 8;
             }
 
-            out_arr[i] = std::move(ru_indexes);
+            rec = std::move(ru_indexes);
         }
-
-        d["400.Contributing Receivers.RUx"] = std::move(out_arr);
-        d.erase("400.Contributing Receivers");
     }
 }
 
