@@ -199,6 +199,8 @@ void CreateARTASAssociationsTask::run()
 
     save_associations_ = true;
 
+    result_stats_ = ResultStats();
+
     start_time_ = boost::posix_time::microsec_clock::local_time();
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -277,6 +279,11 @@ void CreateARTASAssociationsTask::run()
     dbcontent_man.dataEngine().load(load_op_);
 }
 
+const CreateARTASAssociationsTask::ResultStats& CreateARTASAssociationsTask::resultStats() const
+{
+    return result_stats_;
+}
+
 bool CreateARTASAssociationsTask::wasRun()
 {
     return manager().compass().dbInterface().hasProperty(DONE_PROPERTY_NAME)
@@ -328,6 +335,13 @@ void CreateARTASAssociationsTask::createDoneSlot()
     traced_assert(create_job_);
 
     create_job_done_ = true;
+
+    result_stats_.found_hashes_               = create_job_->foundHashes();
+    result_stats_.missing_hashes_at_beginning_ = create_job_->missingHashesAtBeginning();
+    result_stats_.missing_hashes_             = create_job_->missingHashes();
+    result_stats_.found_hash_duplicates_      = create_job_->foundHashDuplicates();
+    result_stats_.dubious_associations_       = create_job_->dubiousAssociations();
+    result_stats_.association_counts_         = create_job_->associationCounts();
 
     status_dialog_->setAssociationCounts(create_job_->associationCounts());
     status_dialog_->setFoundHashes(create_job_->foundHashes());

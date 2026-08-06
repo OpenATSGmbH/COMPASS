@@ -88,6 +88,7 @@
 #include <QInputDialog>
 #include <QLineEdit>
 #include "questiondialog.h"
+#include "dialogs.h"
 
 #include <QMessageBox>
 #include <QPushButton>
@@ -204,6 +205,7 @@ void MainWindow::createUI()
 
     // initialize toolbox
     tool_box_ = new ToolBox(this);
+    tool_box_->setObjectName("toolbox");
     
     tool_ds_      = tool_box_->addTool(compass_.dbContextManager().loadWidget()); // 0
     tool_filters_ = tool_box_->addTool(compass_.filterManager().widget()); // 1
@@ -1058,9 +1060,9 @@ void MainWindow::importJSONRecordingSlot()
 
 void MainWindow::importGPSTrailSlot()
 {
-    string filename = QFileDialog::getOpenFileName(this, "Import GPS Trail",
-                                                   compass_.lastUsedPath().c_str(),
-                                                   "Text Files (*.nmea *.txt)").toStdString();
+    string filename = Dialogs::getOpenFileName(this, "Import GPS Trail",
+                                               compass_.lastUsedPath().c_str(),
+                                               "Text Files (*.nmea *.txt)").toStdString();
 
     if (filename.size() > 0)
     {

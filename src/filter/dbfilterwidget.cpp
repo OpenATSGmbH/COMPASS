@@ -39,6 +39,8 @@ DBFilterWidget::DBFilterWidget(DBFilter& filter)
 {
     logdbg;
 
+    setObjectName("filter_widget_" + QString::fromStdString(filter_.getName()));
+
     QVBoxLayout* main_layout = new QVBoxLayout();
     main_layout->setContentsMargins(1, 1, 1, 1);
     main_layout->setSpacing(1);
@@ -50,10 +52,12 @@ DBFilterWidget::DBFilterWidget(DBFilter& filter)
     config_layout->setSpacing(1);
 
     active_checkbox_ = new QCheckBox();
+    active_checkbox_->setObjectName("filter_active_check");
     connect(active_checkbox_, SIGNAL(clicked()), this, SLOT(toggleActive()));
     config_layout->addWidget(active_checkbox_);
 
     visible_checkbox_ = new QCheckBox(tr(filter_.getName().c_str()));
+    visible_checkbox_->setObjectName("filter_visible_check");
     connect(visible_checkbox_, SIGNAL(clicked()), this, SLOT(toggleVisible()));
 
     std::string style_str =
@@ -196,6 +200,16 @@ void DBFilterWidget::update(void)
     //  {
     //    conditions.at(cnt)->update();
     //  }
+}
+
+void DBFilterWidget::uiRefresh()
+{
+    update();
+
+    //re-read the condition values from the filter - update() intentionally does
+    //not touch them, since it runs while the user is typing
+    for (auto& cond : filter_.getConditions())
+        cond->update();
 }
 
 void DBFilterWidget::collapse()

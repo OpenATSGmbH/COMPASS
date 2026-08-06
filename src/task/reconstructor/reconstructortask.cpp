@@ -1532,6 +1532,36 @@ void ReconstructorTask::checkSubConfigurables()
 #endif
 }
 
+Result ReconstructorTask::applyJSONParameters(const nlohmann::json& params_json)
+{
+    nlohmann::json params = params_json;
+
+    auto& settings = currentReconstructor()->settings();
+
+    if (params.contains("data_timestamp_min"))
+    {
+        settings.data_timestamp_min = Utils::Time::fromString(
+            params.at("data_timestamp_min").get<std::string>());
+        params.erase("data_timestamp_min");
+
+        loginf << "data timeframe min " << Utils::Time::toString(settings.data_timestamp_min);
+    }
+
+    if (params.contains("data_timestamp_max"))
+    {
+        settings.data_timestamp_max = Utils::Time::fromString(
+            params.at("data_timestamp_max").get<std::string>());
+        params.erase("data_timestamp_max");
+
+        loginf << "data timeframe max " << Utils::Time::toString(settings.data_timestamp_max);
+    }
+
+    if (params.empty())
+        return Result::succeeded();
+
+    return Configurable::applyJSONParameters(params);
+}
+
 void ReconstructorTask::deleteCalculatedReferences() // called in async
 {
     loginf << "delete_all_calc_reftraj "

@@ -2190,6 +2190,37 @@ void DBContextManager::deleteSectorLayer(const std::string& layer_name)
     emit sectorsChangedSignal();
 }
 
+void DBContextManager::renameSectorLayer(const std::string& old_name, const std::string& new_name)
+{
+    traced_assert(sectors_loaded_);
+    traced_assert(!new_name.empty());
+
+    if (old_name == new_name)
+        return;
+
+    bool changed = false;
+
+    for (auto& s : activeContext().sectors())
+    {
+        if (s->layerName() == old_name)
+        {
+            s->layerName(new_name, false); // no per-sector move callback, persisted once below
+            changed = true;
+        }
+    }
+
+    if (!changed)
+        return;
+
+    saveContext(activeContextName());
+    if (compass_.dbOpened())
+        writeContextToDB();
+
+    rebuildSectorLayers();
+
+    emit sectorsChangedSignal();
+}
+
 void DBContextManager::deleteAllSectors()
 {
     traced_assert(sectors_loaded_);
@@ -2226,9 +2257,8 @@ void DBContextManager::moveSector(unsigned int id, const string& old_layer, cons
     traced_assert(sectors_loaded_);
     traced_assert(hasSector(id));
 
-    // find the sector and change its layer name
-    auto sec = sector(id);
-    sec->layerName(new_layer);
+    // layer_name_ is already set by Sector::layerName() before it invokes the
+    // move callback - calling the setter here again would recurse endlessly
 
     saveContext(activeContextName());
     if (compass_.dbOpened())
@@ -2684,7 +2714,7 @@ void DBContextManager::exportContextZip(const string& name, const string& zip_fi
     DBContextSerializer::exportContextZip(basePath(), name, zip_filepath);
 }
 
-void DBContextManager::importContextZip(const string& zip_filepath)
+string DBContextManager::importContextZip(const string& zip_filepath)
 {
     string name = DBContextSerializer::importContextZip(basePath(), zip_filepath);
 
@@ -2697,6 +2727,8 @@ void DBContextManager::importContextZip(const string& zip_filepath)
     loginf << "imported context '" << name << "' from zip";
 
     emit contextsChangedSignal();
+
+    return name;
 }
 
 // ============================================================

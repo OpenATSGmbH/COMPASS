@@ -328,6 +328,7 @@ public:
     void saveSector(unsigned int id);
     void saveSector(std::shared_ptr<Sector> sector);
     void moveSector(unsigned int id, const std::string& old_layer, const std::string& new_layer);
+    void renameSectorLayer(const std::string& old_name, const std::string& new_name);
 
     void importAirSpace(const AirSpace& air_space,
                         const std::map<std::string, bool>& sectors_to_import,
@@ -379,7 +380,7 @@ public:
 
     // zip-based full context export/import
     void exportContextZip(const std::string& name, const std::string& zip_filepath);
-    void importContextZip(const std::string& zip_filepath);
+    std::string importContextZip(const std::string& zip_filepath); // returns imported context name
 
     // ================================================================
     // Widgets (lazy creation, owned by this manager)

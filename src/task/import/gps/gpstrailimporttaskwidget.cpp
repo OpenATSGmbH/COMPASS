@@ -47,9 +47,12 @@ using namespace Utils;
 GPSTrailImportTaskWidget::GPSTrailImportTaskWidget(GPSTrailImportTask& task, QWidget* parent, Qt::WindowFlags f)
     : TaskWidget(parent, f), task_(task)
 {
+    setObjectName("gps_import_task_widget");
+
     main_layout_ = new QHBoxLayout();
 
     tab_widget_ = new QTabWidget();
+    tab_widget_->setObjectName("gps_import_tab_widget");
 
     main_layout_->addWidget(tab_widget_);
 
@@ -103,6 +106,7 @@ void GPSTrailImportTaskWidget::addConfigTab()
     grid->addWidget(new QLabel("SAC"), row, 0);
 
     sac_edit_ = new QLineEdit();
+    sac_edit_->setObjectName("gps_import_sac_edit");
     sac_edit_->setValidator(new TextFieldDoubleValidator(0, 255, 0));
     connect(sac_edit_, &QLineEdit::textEdited, this, &GPSTrailImportTaskWidget::sacEditedSlot);
     grid->addWidget(sac_edit_, row, 1);
@@ -113,6 +117,7 @@ void GPSTrailImportTaskWidget::addConfigTab()
     grid->addWidget(new QLabel("SIC"), row, 0);
 
     sic_edit_ = new QLineEdit();
+    sic_edit_->setObjectName("gps_import_sic_edit");
     sic_edit_->setValidator(new TextFieldDoubleValidator(0, 255, 0));
     connect(sic_edit_, &QLineEdit::textEdited, this, &GPSTrailImportTaskWidget::sicEditedSlot);
     grid->addWidget(sic_edit_, row, 1);
@@ -123,16 +128,19 @@ void GPSTrailImportTaskWidget::addConfigTab()
     grid->addWidget(new QLabel("Name"), row, 0);
 
     name_edit_ = new QLineEdit();
+    name_edit_->setObjectName("gps_import_name_edit");
     connect(name_edit_, &QLineEdit::textEdited, this, &GPSTrailImportTaskWidget::nameEditedSlot);
     grid->addWidget(name_edit_, row, 1);
 
     // tod offset
     ++row;
     use_tod_offset_check_ = new QCheckBox("Use Time of Day Offset");
+    use_tod_offset_check_->setObjectName("gps_import_tod_offset_check");
     connect(use_tod_offset_check_, &QCheckBox::clicked, this, &GPSTrailImportTaskWidget::useTodOffsetCheckedSlot);
     grid->addWidget(use_tod_offset_check_, row, 0);
 
     tod_offset_edit_ = new QLineEdit();
+    tod_offset_edit_->setObjectName("gps_import_tod_offset_edit");
     tod_offset_edit_->setValidator(new TextFieldDoubleValidator(-24 * 3600, 24 * 3600, 3));
     connect(tod_offset_edit_, &QLineEdit::textEdited, this, &GPSTrailImportTaskWidget::todOffsetEditedSlot);
     grid->addWidget(tod_offset_edit_, row, 1);
@@ -140,10 +148,12 @@ void GPSTrailImportTaskWidget::addConfigTab()
     // date override
     ++row;
     use_override_date_check_ = new QCheckBox("Override Date");
+    use_override_date_check_->setObjectName("gps_import_date_check");
     connect(use_override_date_check_, &QCheckBox::clicked, this, &GPSTrailImportTaskWidget::overrideDateCheckedSlot);
     grid->addWidget(use_override_date_check_, row, 0);
 
     override_date_edit_ = new QDateEdit();
+    override_date_edit_->setObjectName("gps_import_date_edit");
     override_date_edit_->setDisplayFormat("yyyy-MM-dd");
     connect(override_date_edit_, &QDateEdit::dateChanged, this, &GPSTrailImportTaskWidget::overrideDateChangedSlot);
     grid->addWidget(override_date_edit_, row, 1);
@@ -151,10 +161,12 @@ void GPSTrailImportTaskWidget::addConfigTab()
     // mode 3a
     ++row;
     set_mode_3a_code_check_ = new QCheckBox("Mode 3/A Code (octal)");
+    set_mode_3a_code_check_->setObjectName("gps_import_mode3a_check");
     connect(set_mode_3a_code_check_, &QCheckBox::clicked, this, &GPSTrailImportTaskWidget::mode3ACheckedSlot);
     grid->addWidget(set_mode_3a_code_check_, row, 0);
 
     mode_3a_code_edit_ = new QLineEdit();
+    mode_3a_code_edit_->setObjectName("gps_import_mode3a_edit");
     mode_3a_code_edit_->setValidator(new TextFieldOctValidator(4));
     connect(mode_3a_code_edit_, &QLineEdit::textEdited, this,
             &GPSTrailImportTaskWidget::mode3AEditedSlot);
@@ -164,10 +176,12 @@ void GPSTrailImportTaskWidget::addConfigTab()
 
     ++row;
     set_target_address_check_ = new QCheckBox("Aircraft Address (hexadecimal)");
+    set_target_address_check_->setObjectName("gps_import_address_check");
     connect(set_target_address_check_, &QCheckBox::clicked, this, &GPSTrailImportTaskWidget::targetAddressCheckedSlot);
     grid->addWidget(set_target_address_check_, row, 0);
 
     target_address_edit_ = new QLineEdit();
+    target_address_edit_->setObjectName("gps_import_address_edit");
     target_address_edit_->setValidator(new TextFieldHexValidator(6));
     connect(target_address_edit_, &QLineEdit::textEdited, this,
             &GPSTrailImportTaskWidget::targetAddressEditedSlot);
@@ -177,10 +191,12 @@ void GPSTrailImportTaskWidget::addConfigTab()
 
     ++row;
     set_callsign_check_ = new QCheckBox("Aircraft Identification");
+    set_callsign_check_->setObjectName("gps_import_callsign_check");
     connect(set_callsign_check_, &QCheckBox::clicked, this, &GPSTrailImportTaskWidget::callsignCheckedSlot);
     grid->addWidget(set_callsign_check_, row, 0);
 
     callsign_edit_ = new QLineEdit();
+    callsign_edit_->setObjectName("gps_import_callsign_edit");
     callsign_edit_->setMaxLength(8);
     connect(callsign_edit_, &QLineEdit::textEdited, this,
             &GPSTrailImportTaskWidget::callsignEditedSlot);
@@ -193,6 +209,7 @@ void GPSTrailImportTaskWidget::addConfigTab()
     grid->addWidget(new QLabel("Line ID"), row, 0);
 
     QComboBox* file_line_box = new QComboBox();
+    file_line_box->setObjectName("gps_import_line_combo");
     file_line_box->addItems({"1", "2", "3", "4"});
 
     connect(file_line_box, &QComboBox::currentTextChanged,
@@ -402,6 +419,11 @@ void GPSTrailImportTaskWidget::updateConfig ()
 }
 
 void GPSTrailImportTaskWidget::expertModeChangedSlot() {}
+
+void GPSTrailImportTaskWidget::uiRefresh()
+{
+    updateConfig();
+}
 
 //void GPSTrailImportTaskWidget::runStarted()
 //{

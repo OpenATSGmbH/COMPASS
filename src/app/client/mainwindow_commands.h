@@ -84,6 +84,7 @@ struct RTCommandCalculateARTASAssociations : public rtcommand::RTCommand
 
 protected:
     virtual bool run_impl() override;
+    virtual bool checkResult_impl() override;
 
     DECLARE_RTCOMMAND(calculate_artas_tr_usage, "associate target reports based on ARTAS usage")
     DECLARE_RTCOMMAND_NOOPTIONS

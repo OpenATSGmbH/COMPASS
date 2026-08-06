@@ -35,6 +35,7 @@ DBContextSelectDialog::DBContextSelectDialog(DBContextManager& manager, QWidget*
     , manager_(manager)
 {
     setWindowTitle("Select Data Context");
+    setObjectName("ctx_select_dialog");
     setMinimumWidth(400);
     setMinimumHeight(300);
     setModal(true);
@@ -45,6 +46,7 @@ DBContextSelectDialog::DBContextSelectDialog(DBContextManager& manager, QWidget*
     layout->addSpacing(5);
 
     list_widget_ = new QListWidget();
+    list_widget_->setObjectName("ctx_select_list");
     for (const auto& name : manager_.contextNames())
         list_widget_->addItem(QString::fromStdString(name));
 
@@ -59,6 +61,7 @@ DBContextSelectDialog::DBContextSelectDialog(DBContextManager& manager, QWidget*
     auto* button_layout = new QHBoxLayout();
 
     auto* cancel_button = new QPushButton("Cancel");
+    cancel_button->setObjectName("ctx_select_cancel_button");
     cancel_button->setIcon(QIcon());
     connect(cancel_button, &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button);
@@ -66,6 +69,7 @@ DBContextSelectDialog::DBContextSelectDialog(DBContextManager& manager, QWidget*
     button_layout->addStretch();
 
     auto* select_button = new QPushButton("Select");
+    select_button->setObjectName("ctx_select_apply_button");
     select_button->setIcon(QIcon());
     select_button->setDefault(true);
     connect(select_button, &QPushButton::clicked, this, &DBContextSelectDialog::selectSlot);

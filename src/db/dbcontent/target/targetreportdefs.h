@@ -231,6 +231,7 @@ struct ReconstructorInfo : public BaseInfo
     boost::optional<unsigned int> acad_;
     boost::optional<std::string> acid_;
     boost::optional<targetReport::ModeACode> mode_a_code_;
+    boost::optional<float> mode_a_code_age_; // s, age of last measured code (CAT062 I062/295 MDA)
 
     boost::optional<unsigned int> track_number_;
     boost::optional<bool> track_begin_;

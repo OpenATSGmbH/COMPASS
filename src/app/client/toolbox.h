@@ -18,6 +18,7 @@
 #pragma once
 
 #include "toolboxdefs.h"
+#include "ui_test_testable.h"
 
 #include <vector>
 
@@ -68,12 +69,15 @@ protected:
  
 /**
  */
-class ToolBox : public QWidget
+class ToolBox : public QWidget, public ui_test::UITestable
 {
     Q_OBJECT
 public:
     ToolBox(QWidget* parent = nullptr);
     virtual ~ToolBox();
+
+    /// selects the tool with the given name, e.g. 'uiset mainwindow.toolbox "Filters"'
+    bool uiSet(const QString& str) override { return selectTool(str.toStdString()); }
 
     void setMainContent(QWidget* content);
 

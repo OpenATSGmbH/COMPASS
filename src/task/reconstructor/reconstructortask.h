@@ -55,6 +55,11 @@ class ReconstructorTask : public Task, public Configurable
     Q_OBJECT
 
 public:
+    // applies parameters from --reconstruct_references_cfg; intercepts the session-only
+    // data timeframe restriction (data_timestamp_min/max, equivalent to the dialog first
+    // tab), which is deliberately not a persisted parameter
+    virtual Result applyJSONParameters(const nlohmann::json& params_json) override;
+
     struct DebugSettings
     {
         std::set<unsigned int> debug_utns_;

@@ -52,6 +52,28 @@ enum class ComparisonResult
     DIFFERENT
 };
 
+/**
+ * First/last observation times of one identity value (ACAD, ACID, Mode 3/A code) of a
+ * target. Kept for the target's lifetime like the identity sets themselves, surviving
+ * report purging and rebuilds, so identity history stays time-qualified after the raw
+ * reports are gone.
+ */
+struct IdentityValueInfo
+{
+    boost::posix_time::ptime first_seen_;
+    boost::posix_time::ptime last_seen_;
+
+    // order-independent update, re-adding reports during rebuilds is idempotent
+    void observe(const boost::posix_time::ptime& ts)
+    {
+        if (first_seen_.is_not_a_date_time() || ts < first_seen_)
+            first_seen_ = ts;
+
+        if (last_seen_.is_not_a_date_time() || ts > last_seen_)
+            last_seen_ = ts;
+    }
+};
+
 struct AltitudeState
 {
     bool  fl_unknown;
@@ -309,6 +331,12 @@ public:
     std::set<std::string> acids_;
     std::set<unsigned int> mode_as_;
 
+    // per-value observation times for the identity sets above, same lifetime semantics;
+    // Mode 3/A stamped from reliable values only
+    std::map<unsigned int, IdentityValueInfo> acad_infos_;
+    std::map<std::string, IdentityValueInfo> acid_infos_;
+    std::map<unsigned int, IdentityValueInfo> mode_a_infos_;
+
     boost::optional<unsigned int> ecat_;
 
     std::set<std::string> reported_mismatches_;
@@ -442,6 +470,7 @@ public:
                                       bool do_debug) const;
     // unknown, same, different timestamps from this
 
+
     //fl_unknown, fl_on_ground, alt_baro_ft
     std::tuple<bool, bool, float> getAltitudeState (const boost::posix_time::ptime& ts, 
                                                     const boost::posix_time::time_duration& max_time_diff,
@@ -460,6 +489,17 @@ public:
     std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> createReferenceBuffer();
 
     void removeOutdatedTargetReports();
+
+    // removes the target reports of one tracker track stream on one side of ts (at or
+    // after it, or before it), returns their record numbers. Rebuilds report series,
+    // chain and identity aggregates; identity values that belong exclusively to the
+    // removed side are dropped, values of the retained side are kept even when their
+    // reports were already purged
+    std::vector<unsigned long> removeStreamReports(unsigned int ds_id,
+                                                   unsigned int line_id,
+                                                   unsigned int track_number,
+                                                   const boost::posix_time::ptime& ts,
+                                                   bool at_or_after);
     void removeTargetReportsLaterOrEqualThan(boost::posix_time::ptime ts);
 
     virtual void targetCategory(Category ecat) override;

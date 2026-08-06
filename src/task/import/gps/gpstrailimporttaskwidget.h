@@ -18,6 +18,8 @@
 #pragma once
 
 #include <taskwidget.h>
+#include "ui_test_testable.h"
+
 #include <QDate>
 
 class GPSTrailImportTask;
@@ -31,7 +33,7 @@ class QLineEdit;
 class QCheckBox;
 class QDateEdit;
 
-class GPSTrailImportTaskWidget : public TaskWidget
+class GPSTrailImportTaskWidget : public TaskWidget, public ui_test::UITestable
 {
     Q_OBJECT
 
@@ -66,7 +68,9 @@ public:
     void updateConfig ();
     void updateText ();
 
-    void expertModeChangedSlot();
+    void expertModeChangedSlot() override;
+
+    virtual void uiRefresh() override; // re-reads the shown values from the task
 
 protected:
     GPSTrailImportTask& task_;

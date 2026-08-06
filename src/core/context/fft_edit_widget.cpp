@@ -29,6 +29,37 @@
 namespace context
 {
 
+namespace
+{
+    /**
+     * Stores value under key. Returns true only if the stored content actually
+     * changed, so callers can avoid a needless context save and tree rebuild.
+     */
+    template <typename T>
+    bool setInfoValue(nlohmann::json& info, const std::string& key, const T& value)
+    {
+        if (info.contains(key) && info.at(key) == value)
+            return false;
+
+        info[key] = value;
+
+        return true;
+    }
+
+    /**
+     * Removes key. Returns true only if it was present.
+     */
+    bool eraseInfoValue(nlohmann::json& info, const std::string& key)
+    {
+        if (!info.contains(key))
+            return false;
+
+        info.erase(key);
+
+        return true;
+    }
+}
+
 FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
                              QWidget* parent)
     : QWidget(parent)
@@ -44,19 +75,19 @@ FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
     form->addRow(new QLabel("Name"), name_edit_);
 
     latitude_edit_ = new QLineEdit();
-    latitude_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 8));
+    latitude_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 8, true));
     latitude_edit_->setPlaceholderText("not set");
     connect(latitude_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::positionEditedSlot);
     form->addRow(new QLabel("Latitude"), latitude_edit_);
 
     longitude_edit_ = new QLineEdit();
-    longitude_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 8));
+    longitude_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 8, true));
     longitude_edit_->setPlaceholderText("not set");
     connect(longitude_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::positionEditedSlot);
     form->addRow(new QLabel("Longitude"), longitude_edit_);
 
     altitude_edit_ = new QLineEdit();
-    altitude_edit_->setValidator(new TextFieldDoubleValidator(-10000, 100000, 1));
+    altitude_edit_->setValidator(new TextFieldDoubleValidator(-10000, 100000, 1, true));
     altitude_edit_->setPlaceholderText("not set");
     connect(altitude_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::positionEditedSlot);
     form->addRow(new QLabel("Altitude [ft]"), altitude_edit_);
@@ -72,10 +103,19 @@ FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
     form->addRow(new QLabel("Mode 3/A Code"), mode_3a_edit_);
 
     mode_c_edit_ = new QLineEdit();
-    mode_c_edit_->setValidator(new TextFieldDoubleValidator(-10000, 100000, 1));
+    mode_c_edit_->setValidator(new TextFieldDoubleValidator(-10000, 100000, 1, true));
     mode_c_edit_->setPlaceholderText("not set");
     connect(mode_c_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::modeCEditedSlot);
     form->addRow(new QLabel("Mode C Code [ft]"), mode_c_edit_);
+
+    // object names for ui testing
+    name_edit_->setObjectName("fft_edit_name_edit");
+    latitude_edit_->setObjectName("fft_edit_latitude_edit");
+    longitude_edit_->setObjectName("fft_edit_longitude_edit");
+    altitude_edit_->setObjectName("fft_edit_altitude_edit");
+    mode_s_edit_->setObjectName("fft_edit_mode_s_edit");
+    mode_3a_edit_->setObjectName("fft_edit_mode_3a_edit");
+    mode_c_edit_->setObjectName("fft_edit_mode_c_edit");
 
     layout->addLayout(form);
     layout->addStretch();
@@ -195,6 +235,8 @@ void FFTEditWidget::positionEditedSlot()
     QString lon_text = longitude_edit_->text().trimmed();
     QString alt_text = altitude_edit_->text().trimmed();
 
+    bool changed = false;
+
     if (!lat_text.isEmpty() && !lon_text.isEmpty())
     {
         bool lat_ok = false, lon_ok = false;
@@ -203,29 +245,36 @@ void FFTEditWidget::positionEditedSlot()
 
         if (lat_ok && lon_ok)
         {
-            info["latitude"] = lat;
-            info["longitude"] = lon;
+            if (setInfoValue(info, "latitude", lat))
+                changed = true;
+            if (setInfoValue(info, "longitude", lon))
+                changed = true;
         }
     }
-    else
+    else if (lat_text.isEmpty() && lon_text.isEmpty())
     {
-        info.erase("latitude");
-        info.erase("longitude");
+        // both coordinates cleared - drop the position. a half-entered position
+        // is left untouched, so the value typed first survives until the second
+        // coordinate is entered
+        if (eraseInfoValue(info, "latitude"))
+            changed = true;
+        if (eraseInfoValue(info, "longitude"))
+            changed = true;
     }
 
     if (!alt_text.isEmpty())
     {
         bool ok = false;
         double alt = alt_text.toDouble(&ok);
-        if (ok)
-            info["altitude"] = alt;
+        if (ok && setInfoValue(info, "altitude", alt))
+            changed = true;
     }
-    else
+    else if (eraseInfoValue(info, "altitude"))
     {
-        info.erase("altitude");
+        changed = true;
     }
 
-    if (on_changed_)
+    if (changed && on_changed_)
         on_changed_();
 }
 
@@ -237,17 +286,24 @@ void FFTEditWidget::modeSEditedSlot()
     auto& info = current_fft_->info();
     QString text = mode_s_edit_->text().trimmed();
 
+    bool changed = false;
+
     if (text.isEmpty())
-        info.erase("mode_s_address");
+    {
+        changed = eraseInfoValue(info, "mode_s_address");
+    }
     else
     {
         bool ok = false;
         unsigned int val = text.toUInt(&ok);
+
+        // unparseable input is left in the field instead of being written back,
+        // so it is not lost while the user is still typing
         if (ok)
-            info["mode_s_address"] = val;
+            changed = setInfoValue(info, "mode_s_address", val);
     }
 
-    if (on_changed_)
+    if (changed && on_changed_)
         on_changed_();
 }
 
@@ -259,17 +315,22 @@ void FFTEditWidget::mode3AEditedSlot()
     auto& info = current_fft_->info();
     QString text = mode_3a_edit_->text().trimmed();
 
+    bool changed = false;
+
     if (text.isEmpty())
-        info.erase("mode_3a_code");
+    {
+        changed = eraseInfoValue(info, "mode_3a_code");
+    }
     else
     {
         bool ok = false;
         unsigned int val = text.toUInt(&ok);
+
         if (ok)
-            info["mode_3a_code"] = val;
+            changed = setInfoValue(info, "mode_3a_code", val);
     }
 
-    if (on_changed_)
+    if (changed && on_changed_)
         on_changed_();
 }
 
@@ -281,17 +342,22 @@ void FFTEditWidget::modeCEditedSlot()
     auto& info = current_fft_->info();
     QString text = mode_c_edit_->text().trimmed();
 
+    bool changed = false;
+
     if (text.isEmpty())
-        info.erase("mode_c_code");
+    {
+        changed = eraseInfoValue(info, "mode_c_code");
+    }
     else
     {
         bool ok = false;
         float val = text.toFloat(&ok);
+
         if (ok)
-            info["mode_c_code"] = val;
+            changed = setInfoValue(info, "mode_c_code", val);
     }
 
-    if (on_changed_)
+    if (changed && on_changed_)
         on_changed_();
 }
 

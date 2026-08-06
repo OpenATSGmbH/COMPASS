@@ -25,6 +25,7 @@
 bool QuestionDialog::ask(QWidget* parent, const QString& title, const QString& text)
 {
     QMessageBox msg(parent);
+    msg.setObjectName("question_dialog");
     msg.setWindowTitle(title);
     msg.setText(text);
     msg.setIcon(QMessageBox::NoIcon);
@@ -35,6 +36,13 @@ bool QuestionDialog::ask(QWidget* parent, const QString& title, const QString& t
     for (auto* btn : msg.buttons())
         if (auto* push = qobject_cast<QPushButton*>(btn))
             push->setIcon(QIcon());
+
+    // object names for ui testing - QMessageBox::exec returns the clicked
+    // button, so tests must click Yes/No instead of accepting/rejecting
+    if (auto* yes = qobject_cast<QPushButton*>(msg.button(QMessageBox::Yes)))
+        yes->setObjectName("question_yes_button");
+    if (auto* no = qobject_cast<QPushButton*>(msg.button(QMessageBox::No)))
+        no->setObjectName("question_no_button");
 
     return msg.exec() == QMessageBox::Yes;
 }

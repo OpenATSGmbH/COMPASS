@@ -35,6 +35,7 @@ DataSourceCreateDialog::DataSourceCreateDialog(context::DBContextManager& ctx_ma
     :  QDialog(parent), ctx_man_(ctx_man)
 {
     setWindowTitle("Create New Data Source");
+    setObjectName("ds_create_dialog");
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
 
     setModal(true);
@@ -46,15 +47,18 @@ DataSourceCreateDialog::DataSourceCreateDialog(context::DBContextManager& ctx_ma
     QFormLayout* prop_lay = new QFormLayout();
 
     dstype_combo_ = new DSTypeSelectionComboBox();
+    dstype_combo_->setObjectName("ds_create_dstype_combo");
     connect(dstype_combo_, &DSTypeSelectionComboBox::changedTypeSignal, this, &DataSourceCreateDialog::dsTypeEditedSlot);
     prop_lay->addRow("Data Source Type", dstype_combo_);
 
     sac_edit_ = new QLineEdit("0");
+    sac_edit_->setObjectName("ds_create_sac_edit");
     sac_edit_->setValidator(new TextFieldDoubleValidator(0, 255, 0));
     connect(sac_edit_, &QLineEdit::textEdited, this, &DataSourceCreateDialog::sacEditedSlot);
     prop_lay->addRow("SAC", sac_edit_);
 
     sic_edit_ = new QLineEdit("0");
+    sic_edit_->setObjectName("ds_create_sic_edit");
     sic_edit_->setValidator(new TextFieldDoubleValidator(0, 255, 0));
     connect(sic_edit_, &QLineEdit::textEdited, this, &DataSourceCreateDialog::sicEditedSlot);
     prop_lay->addRow("SIC", sic_edit_);
@@ -66,12 +70,14 @@ DataSourceCreateDialog::DataSourceCreateDialog(context::DBContextManager& ctx_ma
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     cancel_button_ = new QPushButton("Cancel");
+    cancel_button_->setObjectName("ds_create_cancel_button");
     connect(cancel_button_, &QPushButton::clicked, this, &DataSourceCreateDialog::cancelClickedSlot);
     button_layout->addWidget(cancel_button_);
 
     button_layout->addStretch();
 
     done_button_ = new QPushButton("Done");
+    done_button_->setObjectName("ds_create_done_button");
     connect(done_button_, &QPushButton::clicked, this, &DataSourceCreateDialog::doneClickedSlot);
     button_layout->addWidget(done_button_);
 
