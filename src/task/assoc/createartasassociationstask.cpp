@@ -254,11 +254,15 @@ void CreateARTASAssociationsTask::run()
         // CAT062 datasource/line constraint via the shared clause toolkit (ds_id/line_id IN)
         IDBVariableResolver& resolver = manager().compass().filterManager().variableResolver();
 
+        // stored ids, not display representations: ds_id must not be resolved as a data source
+        // name, and line_id is stored 0-based while its representation is "L1".."L4"
         cat062_clause = combineAnd({
             DBFilterCondition::sqlFor(resolver, "CAT062", dbcontent_vars::meta_var_ds_id_.name(),
-                META_OBJECT_NAME, filter_op::in, std::to_string(current_ds_id)),
+                META_OBJECT_NAME, filter_op::in, std::to_string(current_ds_id),
+                "", false, false, /*value_is_representation=*/false),
             DBFilterCondition::sqlFor(resolver, "CAT062", dbcontent_vars::meta_var_line_id_.name(),
-                META_OBJECT_NAME, filter_op::in, std::to_string(settings_.current_data_source_line_id_))
+                META_OBJECT_NAME, filter_op::in, std::to_string(settings_.current_data_source_line_id_),
+                "", false, false, /*value_is_representation=*/false)
         }).sql;
     }
 

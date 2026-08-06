@@ -66,7 +66,11 @@ public:
                                const std::string& value,
                                const std::string& value2      = "",
                                bool include_null              = false,
-                               bool absolute_value            = false);
+                               bool absolute_value            = false,
+                               // filter-UI values are display representations ("L1", a data
+                               // source name, octal Mode 3/A); callers holding stored values
+                               // (raw ids, longs) must pass false
+                               bool value_is_representation   = true);
 
     QLabel* getLabel()
     {
@@ -152,6 +156,7 @@ private:
     static std::pair<std::string, bool> transformValue(
         IDBVariableResolver& resolver, const std::string& dbcontent_name,
         const std::string& variable_name, const std::string& variable_dbcontent_name,
-        const std::string& op, const std::string& untransformed_value);
+        const std::string& op, const std::string& untransformed_value,
+        bool value_is_representation = true);
     bool checkValueInvalid(const std::string& new_value);
 };
