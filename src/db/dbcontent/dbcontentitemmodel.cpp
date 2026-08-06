@@ -19,6 +19,7 @@
 
 #include "logger.h"
 
+#include <QApplication>
 #include <QMenu>
 
 /**
@@ -301,9 +302,15 @@ void DBContentItemModel::groupingChangedSlot()
 // --- Private ---
 
 /**
+ * Collects + sorts all item ids of the provider and resets the model.
+ * Sets a wait cursor itself: the triggering signals are queued (see ctor), so this
+ * runs in a later event loop turn, outside of any cursor the original caller (e.g.
+ * the grouping combo) might have set around its own work.
  */
 void DBContentItemModel::rebuild()
 {
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+
     beginResetModel();
 
     item_ids_.clear();
@@ -321,4 +328,6 @@ void DBContentItemModel::rebuild()
               { return name_cache.at(a) < name_cache.at(b); });
 
     endResetModel();
+
+    QApplication::restoreOverrideCursor();
 }

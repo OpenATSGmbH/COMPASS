@@ -70,6 +70,9 @@ DBContentItemView::DBContentItemView(DBContentItemModel& model, QWidget* parent)
     tree_view_ = new QTreeView(this);
     tree_view_->setModel(&model_);
     tree_view_->setRootIsDecorated(false);
+    //flat list of same-height rows: skips the per-row size hint computation
+    //(which queries the model for each item) on every model reset
+    tree_view_->setUniformRowHeights(true);
     tree_view_->setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(tree_view_, &QTreeView::customContextMenuRequested,
