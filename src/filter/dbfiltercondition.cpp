@@ -110,7 +110,7 @@ FilterClause DBFilterCondition::sqlFor(
     IDBVariableResolver& resolver, const std::string& dbcontent_name,
     const std::string& variable_name, const std::string& variable_dbcontent_name,
     const std::string& op, const std::string& value, const std::string& value2,
-    bool include_null, bool absolute_value)
+    bool include_null, bool absolute_value, bool value_is_representation)
 {
     FilterClause clause;
 
@@ -147,7 +147,8 @@ FilterClause DBFilterCondition::sqlFor(
     bool null_contained;
 
     tie(val_str, null_contained) = transformValue(
-        resolver, dbcontent_name, variable_name, variable_dbcontent_name, op, value);
+        resolver, dbcontent_name, variable_name, variable_dbcontent_name, op, value,
+        value_is_representation);
 
     std::string col_expr = variable_prefix + db_item_str + variable_suffix;
 
@@ -165,7 +166,8 @@ FilterClause DBFilterCondition::sqlFor(
         std::string val2_str;
         bool null2;
         tie(val2_str, null2) = transformValue(
-            resolver, dbcontent_name, variable_name, variable_dbcontent_name, op, value2);
+            resolver, dbcontent_name, variable_name, variable_dbcontent_name, op, value2,
+            value_is_representation);
         ss << col_expr << " " << filter_op::between << " " << val_str
            << " " << filter_op::logic_and << " " << val2_str;
         has_main_condition = true;
@@ -478,7 +480,8 @@ std::pair<std::string, bool> DBFilterCondition::getTransformedValue(
 std::pair<std::string, bool> DBFilterCondition::transformValue(
     IDBVariableResolver& resolver, const std::string& dbcontent_name,
     const std::string& variable_name, const std::string& variable_dbcontent_name,
-    const std::string& op, const std::string& untransformed_value)
+    const std::string& op, const std::string& untransformed_value,
+    bool value_is_representation)
 {
     std::vector<std::string> value_strings;
     std::vector<std::string> transformed_value_strings;
@@ -507,7 +510,7 @@ std::pair<std::string, bool> DBFilterCondition::transformValue(
         if (value_str.empty())
             continue;
 
-        if (resolver.variableHasNonStandardRepresentation(
+        if (value_is_representation && resolver.variableHasNonStandardRepresentation(
                 dbcontent_name, variable_name, variable_dbcontent_name))
             value_str = resolver.variableValueFromRepresentation(
                 dbcontent_name, variable_name, variable_dbcontent_name, value_str);
