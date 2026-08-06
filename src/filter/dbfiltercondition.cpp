@@ -515,8 +515,10 @@ std::pair<std::string, bool> DBFilterCondition::transformValue(
             value_str = resolver.variableValueFromRepresentation(
                 dbcontent_name, variable_name, variable_dbcontent_name, value_str);
 
-        if (resolver.variableDataType(
-                dbcontent_name, variable_name, variable_dbcontent_name) == PropertyDataType::STRING)
+        auto data_type = resolver.variableDataType(
+                dbcontent_name, variable_name, variable_dbcontent_name);
+
+        if (data_type == PropertyDataType::STRING)
         {
             boost::replace_all(value_str, "'", "''");
             transformed_value_strings.push_back("'" + value_str + "'");
@@ -553,7 +555,7 @@ std::pair<std::string, bool> DBFilterCondition::transformValue(
                 if (parsed_chars != value_str.size())
                     throw std::invalid_argument(
                         "invalid numeric value '" + value_str + "' for variable '" +
-                        variable_name_ + "'");
+                        variable_name + "'");
             }
 
             transformed_value_strings.push_back(value_str);
