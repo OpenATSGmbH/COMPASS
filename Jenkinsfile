@@ -3,6 +3,9 @@ pipeline {
 
     options {
         timestamps()
+        // Two builds of the same branch share one workspace, so a second build
+        // would compile into the build dir of the first one.
+        disableConcurrentBuilds()
     }
 
     parameters {
@@ -42,12 +45,25 @@ pipeline {
         DISPLAY             = ':0'
         COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
         PYTHONUNBUFFERED    = '1'
+        // Container identity. Killing a `docker run` client (abort, Jenkins
+        // restart) does not stop the container - it keeps compiling in the
+        // workspace and collides with the next build. Every container is
+        // labeled so it can be found and removed again, and named so it is
+        // recognizable in `docker ps`. Branch names may contain characters
+        // that are illegal in a container name.
+        CI_BRANCH           = "${env.BRANCH_NAME.replaceAll('[^A-Za-z0-9_.-]', '_')}"
+        CI_TAG              = "${env.BRANCH_NAME.replaceAll('[^A-Za-z0-9_.-]', '_')}-${env.BUILD_NUMBER}"
     }
 
     stages {
         stage('Checkout') {
             steps {
                 script {
+                    // Remove containers left behind by an earlier build of this
+                    // branch (aborted build, Jenkins restart). They still hold the
+                    // workspace and would compile into it while this build does.
+                    sh "docker ps -aq --filter label=compass_ci_branch=${CI_BRANCH} | xargs -r docker rm -f || true"
+
                     // Resolve branch parameters
                     // experimental_src: explicit param > pipeline branch > devel
                     def expBranch = params.EXPERIMENTAL_SRC_BRANCH?.trim() ?: env.BRANCH_NAME
@@ -73,7 +89,10 @@ pipeline {
                     def cleanFlag = params.CLEAN_BUILD ? '--clean' : ''
                     def asanFlag  = params.ASAN ? '--asan' : ''
                     sh """
-                        docker run --rm \
+                        docker run --rm --init \
+                            --name compass-build-${CI_TAG} \
+                            --label compass_ci_branch=${CI_BRANCH} \
+                            --label compass_ci_build=${CI_TAG} \
                             -v \$(pwd):/workspace/compass \
                             -v \$(pwd)/jasterix:/workspace/jasterix \
                             -w /workspace/compass/docker \
@@ -94,6 +113,9 @@ pipeline {
                     def lsanEnv = params.ASAN ? "LSAN_OPTIONS=exitcode=0 " : ''
                     sh """
                         docker run --rm --init \
+                            --name compass-unittests-${CI_TAG} \
+                            --label compass_ci_branch=${CI_BRANCH} \
+                            --label compass_ci_build=${CI_TAG} \
                             -v \$(pwd):/workspace/compass \
                             -v \$(pwd)/jasterix:/workspace/jasterix \
                             -w /workspace/compass \
@@ -109,13 +131,16 @@ pipeline {
                 script {
                     def asanFlag = params.ASAN ? '--asan' : ''
                     sh """
-                        docker run --rm \
+                        docker run --rm --init \
+                            --name compass-appimage-${CI_TAG} \
+                            --label compass_ci_branch=${CI_BRANCH} \
+                            --label compass_ci_build=${CI_TAG} \
                             -v \$(pwd):/workspace/compass \
                             -v \$(pwd)/jasterix:/workspace/jasterix \
                             -v ${CI_DIR}:${CI_DIR} \
                             -w /workspace/compass \
                             ${DOCKER_IMAGE} \
-                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo make -C /workspace/jasterix/build_deb10 install && sudo make -C /workspace/compass/build_deb10 install && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
+                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo cmake --install /workspace/jasterix/build_deb10 && sudo cmake --install /workspace/compass/build_deb10 && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
                     """
                     // Collect artifacts
                     sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME}"
@@ -247,6 +272,10 @@ pipeline {
 
     post {
         always {
+            // Stop any container of this build that outlived its `docker run`
+            // client - on abort Jenkins kills the client, not the container, and
+            // the container would keep compiling into the workspace.
+            sh "docker ps -aq --filter label=compass_ci_build=${CI_TAG} | xargs -r docker rm -f || true"
             // Crash logs are kept on the host under
             // ${CI_DIR}/*-${BUILD_NUMBER}-${BRANCH_NAME}/compass_crash_*.log
             // so they're available per-build via SSH but don't clutter the

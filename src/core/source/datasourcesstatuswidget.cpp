@@ -659,7 +659,7 @@ void DataSourcesStatusWidget::dataLoaded()
                 bool already_scanned     = sen_stat.second.last_update_found_in_scan;
 
                 if (status_changed)
-                    loginf << tracker_status.first.first << ":" << sen_stat.first 
+                    logdbg << tracker_status.first.first << ":" << sen_stat.first 
                         << " has last item " << has_last_item_state
                         << " already scanned " << already_scanned
                         << " status changed " << status_changed;
