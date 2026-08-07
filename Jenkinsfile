@@ -192,12 +192,26 @@ pipeline {
                     // force-kill slow shutdowns, spuriously flagging tests as crashed.
                     def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:log_path=${runDir}/asan' LSAN_OPTIONS='exitcode=0' ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer COMPASS_QUIT_TIMEOUT_SEC=180 " : ''
 
+                    def testFailures = []
+
                     for (dataset in datasets) {
                         echo "Running tests for dataset: ${dataset.name} (tags: ${tagsStr})${params.ASAN ? ' [ASan]' : ''}"
 
-                        sh """
-                            cd '${scriptsDir}/test_infra' && \
-                            ${asanEnv}PYTHONPATH='${scriptsDir}' python3 test_suite.py \
+                        // The exit code of test_suite.py has to survive the `tee`:
+                        // a shell pipeline reports the status of its LAST command,
+                        // so without this the suite could crash and the step would
+                        // still report success. `pipefail` is not used since it is
+                        // not available in every /bin/sh - instead the status is
+                        // written to a file inside the pipeline and re-raised after
+                        // it. Streaming through tee is kept so the Jenkins console
+                        // shows test progress live.
+                        // returnStatus keeps the loop going: every dataset runs even
+                        // if an earlier one failed, the stage is failed afterwards.
+                        def rcFile = "${runDir}/test_${dataset.name}.rc"
+                        def rc = sh(returnStatus: true, script: """
+                            set +e
+                            cd '${scriptsDir}/test_infra' || exit 2
+                            { ${asanEnv}PYTHONPATH='${scriptsDir}' python3 test_suite.py \
                                 --binary='${appimage}' \
                                 --path='${scriptsDir}/tests' \
                                 --manifest='${dataset.manifest}' \
@@ -205,9 +219,26 @@ pipeline {
                                 --tags='${tagsStr}' \
                                 --deps=tests \
                                 --no-prompt \
-                                --cfg-override=none \
+                                --cfg-override=none ; \
+                              echo \$? > '${rcFile}' ; } \
                                 2>&1 | tee '${runDir}/test_${dataset.name}.log'
-                        """
+                            exit `cat '${rcFile}'`
+                        """)
+
+                        // 0 = all tests passed, 1 = tests failed, 2 = suite could
+                        // not be run (see ExitCode* in test_suite.py)
+                        if (rc != 0) {
+                            def reason = (rc == 1) ? 'test failures' : "suite error (exit ${rc})"
+                            echo "Dataset ${dataset.name}: ${reason}"
+                            testFailures << "${dataset.name} (${reason})"
+                        }
+                    }
+
+                    // Fail the stage here, after all datasets have run, so the
+                    // Stage View shows the failure on Integration Tests instead of
+                    // on the post actions where the junit step publishes results.
+                    if (testFailures) {
+                        error "Integration tests failed: ${testFailures.join(', ')}"
                     }
                 }
             }
