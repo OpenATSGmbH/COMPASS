@@ -807,9 +807,9 @@ void DBContentManager::setViewableDataConfig (const nlohmann::json::object_t& da
     // to the outgoing load's doViewPointAfterLoad
     data_engine_->waitUntilIdle();
 
-    viewable_data_cfg_.reset(new ViewableDataConfig(data));
+    viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 
-    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
+    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_);
 }
 
 void DBContentManager::storeSelectedRecNums(const std::vector<unsigned long>& selected)

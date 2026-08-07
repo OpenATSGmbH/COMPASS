@@ -172,6 +172,13 @@ class ViewManager : public QObject, public Configurable
 
     void setCurrentViewPoint (ViewableDataConfig* viewable,
                               bool load_blocking = false);
+    /// Same, but takes shared ownership. Use this whenever the caller cannot
+    /// guarantee that the viewable outlives the load it starts - the
+    /// set_view_point command is destroyed before its load completes, which
+    /// would leave current_viewable_ (and the views' current_view_point_)
+    /// dangling in doViewPointAfterLoad().
+    void setCurrentViewPoint (std::shared_ptr<ViewableDataConfig> viewable,
+                              bool load_blocking = false);
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
 
@@ -292,6 +299,10 @@ protected:
     std::unique_ptr<ViewPointsReportGenerator> view_points_report_gen_;
 
     ViewableDataConfig* current_viewable_ {nullptr};
+    /// Set when the viewable was handed over with shared ownership, to keep it
+    /// alive for as long as current_viewable_ points at it. Empty for the
+    /// ViewPoints owned by ViewPointsTableModel, which are passed raw.
+    std::shared_ptr<ViewableDataConfig> current_viewable_owned_;
     bool view_point_data_selected_ {false};
 
     unsigned int container_count_{0};

@@ -560,9 +560,9 @@ void EvaluationManager::updateSectorLayers()
  */
 void EvaluationManager::setViewableDataConfig (const nlohmann::json::object_t& data)
 {
-    viewable_data_cfg_.reset(new ViewableDataConfig(data));
+    viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 
-    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
+    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_);
 }
 
 /**

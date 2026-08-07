@@ -150,7 +150,8 @@ private:
     std::unique_ptr<EvaluationTargetFilter> target_filter_;
     std::unique_ptr<EvaluationCalculator> calculator_; // sub-configurable
 
-    std::unique_ptr<ViewableDataConfig>            viewable_data_cfg_;
+    // shared with ViewManager so it cannot be released while a load it started is in flight
+    std::shared_ptr<ViewableDataConfig>            viewable_data_cfg_;
     std::shared_ptr<LoadOperation>                 load_op_; // isolated batch load, released after harvest
     std::map<std::string, std::shared_ptr<Buffer>> raw_data_;
     bool                                           raw_data_available_ = false;

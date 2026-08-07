@@ -120,9 +120,10 @@ bool RTCommandSetViewPoint::run_impl()
             }
         }
 
-        viewable_data_cfg_.reset(new ViewableDataConfig(vp_json_parsed.get<nlohmann::json::object_t>()));
+        viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(
+            vp_json_parsed.get<nlohmann::json::object_t>());
 
-        s_compass->viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
+        s_compass->viewManager().setCurrentViewPoint(viewable_data_cfg_);
     }
     catch (exception& e)
     {

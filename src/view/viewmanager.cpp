@@ -451,6 +451,22 @@ void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
 
 /**
 */
+void ViewManager::setCurrentViewPoint (std::shared_ptr<ViewableDataConfig> viewable,
+                                       bool load_blocking)
+{
+    traced_assert(viewable);
+
+    // Assigned only after the raw overload ran: that one starts with
+    // unsetCurrentViewPoint(), which would immediately release the reference
+    // again. The by-value parameter keeps the viewable alive meanwhile, which
+    // also covers a blocking load completing inside the call.
+    setCurrentViewPoint(viewable.get(), load_blocking);
+
+    current_viewable_owned_ = std::move(viewable);
+}
+
+/**
+*/
 void ViewManager::activateCompatibleViewTabs(const ViewableDataConfig* viewable)
 {
     if (!viewable)
@@ -529,6 +545,9 @@ void ViewManager::unsetCurrentViewPoint ()
         emit unshowViewPointSignal(current_viewable_);
 
         current_viewable_ = nullptr;
+
+        // released last: the views drop their pointer in the signal above
+        current_viewable_owned_.reset();
 
         view_point_data_selected_ = false;
     }

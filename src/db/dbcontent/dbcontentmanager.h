@@ -214,5 +214,6 @@ protected:
     std::unique_ptr<DBContentDataEngine> data_engine_;
     std::unique_ptr<DBContentManagerWidget> widget_;
     std::unique_ptr<dbContent::DBContentEditDialog> db_content_edit_dialog_;
-    std::unique_ptr<ViewableDataConfig> viewable_data_cfg_;
+    // shared with ViewManager so it cannot be released while a load it started is in flight
+    std::shared_ptr<ViewableDataConfig> viewable_data_cfg_;
 };
