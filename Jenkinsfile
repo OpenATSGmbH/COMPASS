@@ -219,6 +219,12 @@ pipeline {
 
                     def testFailures = []
 
+                    // Each dataset writes into its own output dir. A shared one
+                    // makes the second run overwrite the first's results - and
+                    // junit_results.xml with them, so only the last dataset ever
+                    // reached the Jenkins test report.
+                    sh "rm -rf ${TEST_DATA_PATH}/runs"
+
                     for (dataset in datasets) {
                         echo "Running tests for dataset: ${dataset.name} (tags: ${tagsStr})${params.ASAN ? ' [ASan]' : ''}"
 
@@ -240,7 +246,7 @@ pipeline {
                                 --binary='${appimage}' \
                                 --path='${scriptsDir}/tests' \
                                 --manifest='${dataset.manifest}' \
-                                --output='${TEST_DATA_PATH}' \
+                                --output='${TEST_DATA_PATH}/runs/${dataset.name}' \
                                 --tags='${tagsStr}' \
                                 --deps=tests \
                                 --no-prompt \
@@ -284,9 +290,18 @@ pipeline {
             sh "rm -f compass_crash_*.log"
             // Archive test logs
             archiveArtifacts artifacts: '**/test_*.log', allowEmptyArchive: true
-            // Copy JUnit XML into workspace and publish per-test results
-            sh "cp ${TEST_DATA_PATH}/results/junit_results.xml junit_results.xml || true"
-            junit testResults: 'junit_results.xml', allowEmptyResults: true
+            // Copy each dataset's JUnit XML into the workspace and publish
+            // per-test results. One file per dataset - a single file would only
+            // ever carry the last dataset's tests.
+            sh """
+                rm -rf junit_results && mkdir -p junit_results
+                for f in ${TEST_DATA_PATH}/runs/*/results/junit_results.xml; do
+                    [ -f "\$f" ] || continue
+                    ds=\$(basename \$(dirname \$(dirname "\$f")))
+                    cp "\$f" "junit_results/\$ds.xml"
+                done
+            """
+            junit testResults: 'junit_results/*.xml', allowEmptyResults: true
         }
         failure {
             echo 'Build or tests failed!'
