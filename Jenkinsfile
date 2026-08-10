@@ -26,6 +26,8 @@ pipeline {
         booleanParam(name: 'TAG_ANALYZE',         defaultValue: true, description: 'Tag: analyze (Analyze Data Source, MLAT + ADS-B)')
         booleanParam(name: 'TAG_ARTAS_SPF',       defaultValue: true, description: 'Tag: artas_spf (ARTAS TRI import/association/display, at_20230422)')
         booleanParam(name: 'TAG_MLAT_RU',         defaultValue: true, description: 'Tag: mlat_ru (MLAT contributing receivers, loww_20260609)')
+        booleanParam(name: 'TAG_SENSOR_STATUS',   defaultValue: true, description: 'Tag: sensor_status (CAT063 sensor status, skeyes_20251203)')
+        booleanParam(name: 'TAG_TRACKER_CONTRIB', defaultValue: true, description: 'Tag: tracker_contrib (CAT062 contributing sensors, skeyes_20251203)')
 
         // Build options
         booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove build_deb10 before building)')
@@ -35,6 +37,8 @@ pipeline {
         booleanParam(name: 'DATASET_05H',  defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
         booleanParam(name: 'DATASET_2H',   defaultValue: true,  description: 'Dataset: at_20230422_2h (2h)')
         booleanParam(name: 'DATASET_LOWW', defaultValue: true,  description: 'Dataset: loww_20260609_4h (Vienna airport surface, 4h)')
+        // off by default: ~1 GB of ASTERIX, adds a long import to every run
+        booleanParam(name: 'DATASET_SKEYES', defaultValue: false, description: 'Dataset: skeyes_20251203 (multi-sensor, sensor status + tracker, 7h)')
     }
 
     environment {
@@ -176,6 +180,8 @@ pipeline {
                     if (params.TAG_ANALYZE)         tags << 'analyze'
                     if (params.TAG_ARTAS_SPF)       tags << 'artas_spf'
                     if (params.TAG_MLAT_RU)         tags << 'mlat_ru'
+                    if (params.TAG_SENSOR_STATUS)   tags << 'sensor_status'
+                    if (params.TAG_TRACKER_CONTRIB) tags << 'tracker_contrib'
                     def tagsStr = tags.join(',')
 
                     // Build dataset list from checkboxes: name (used for the log file
@@ -186,6 +192,7 @@ pipeline {
                     if (params.DATASET_05H)  datasets << [name: 'at_20230422_05h',  manifest: "${TEST_DATA_PATH}/at_20230422/at_20230422_05h.json"]
                     if (params.DATASET_2H)   datasets << [name: 'at_20230422_2h',   manifest: "${TEST_DATA_PATH}/at_20230422/at_20230422_2h.json"]
                     if (params.DATASET_LOWW) datasets << [name: 'loww_20260609_4h', manifest: "${TEST_DATA_PATH}/loww_20260609/loww_20260609_4h.json"]
+                    if (params.DATASET_SKEYES) datasets << [name: 'skeyes_20251203', manifest: "${TEST_DATA_PATH}/skeyes_20251203/skeyes_20251203.json"]
 
                     // Find the run directory created by collect_artifacts.sh
                     def runDir = sh(

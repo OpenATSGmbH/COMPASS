@@ -27,6 +27,7 @@
 #include "number.h"
 #include "files.h"
 #include "timeconv.h"
+#include "ui_test_common.h"
 
 #include <QComboBox>
 #include <QLabel>
@@ -87,6 +88,7 @@ void DataSourcesToolWidget::createUI()
         mode_layout->addWidget(mode_label);
 
         color_mode_combo_ = new QComboBox();
+        UI_TEST_OBJ_NAME(color_mode_combo_, "Color Mode")
         // Items carry the ColorProvider::Mode enum value as user data so the
         // UI order can be changed independently of the persisted numeric mode.
         color_mode_combo_->addItem("DSType",              (unsigned int)0); // DSType
