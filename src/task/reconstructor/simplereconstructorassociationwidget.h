@@ -80,6 +80,7 @@ private:
     QLineEdit* max_altitude_diff_edit_{nullptr};
 
     QCheckBox* do_track_number_disassociate_using_distance_box_ {nullptr};
+    QCheckBox* do_identity_change_cut_box_ {nullptr};
     QSpinBox* tn_disassoc_distance_factor_edit_{nullptr};
 
     QLineEdit* min_updates_edit_{nullptr};

@@ -23,10 +23,17 @@
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/metavariable.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
 #include "db_context_manager.h"
+#include "filtermanager.h"
+#include "dbfiltercondition.h"
+#include "filterclause.h"
+#include "idbvariableresolver.h"
+#include "global.h"
 #include "jobmanager.h"
 #include "stringconv.h"
 #include "taskmanager.h"
@@ -192,6 +199,8 @@ void CreateARTASAssociationsTask::run()
 
     save_associations_ = true;
 
+    result_stats_ = ResultStats();
+
     start_time_ = boost::posix_time::microsec_clock::local_time();
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -205,17 +214,8 @@ void CreateARTASAssociationsTask::run()
     status_dialog_->show();
 
     DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-    dbcontent_man.clearData();
 
     auto& ctx_man = manager().compass().dbContextManager();
-
-    manager().compass().viewManager().disableDataDistribution(true);
-    manager().compass().dbContentManager().enableDataDistribution(false);
-
-    connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-            this, &CreateARTASAssociationsTask::loadedDataDataSlot);
-    connect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-            this, &CreateARTASAssociationsTask::loadingDoneSlot);
 
     std::set<std::string> targets;
     std::string cat062_clause;
@@ -253,37 +253,45 @@ void CreateARTASAssociationsTask::run()
 
         traced_assert(ds_found);
 
-        cat062_clause =
-            dbcontent_man.metaGetVariable("CAT062", dbcontent_vars::meta_var_ds_id_).dbColumnName()
-                + " in (" + std::to_string(current_ds_id) + ") AND " +
-            dbcontent_man.metaGetVariable("CAT062", dbcontent_vars::meta_var_line_id_).dbColumnName()
-                + " in (" + std::to_string(settings_.current_data_source_line_id_) + ")";
+        // CAT062 datasource/line constraint via the shared clause toolkit (ds_id/line_id IN)
+        IDBVariableResolver& resolver = manager().compass().filterManager().variableResolver();
+
+        // stored ids, not display representations: ds_id must not be resolved as a data source
+        // name, and line_id is stored 0-based while its representation is "L1".."L4"
+        cat062_clause = combineAnd({
+            DBFilterCondition::sqlFor(resolver, "CAT062", dbcontent_vars::meta_var_ds_id_.name(),
+                META_OBJECT_NAME, filter_op::in, std::to_string(current_ds_id),
+                "", false, false, /*value_is_representation=*/false),
+            DBFilterCondition::sqlFor(resolver, "CAT062", dbcontent_vars::meta_var_line_id_.name(),
+                META_OBJECT_NAME, filter_op::in, std::to_string(settings_.current_data_source_line_id_),
+                "", false, false, /*value_is_representation=*/false)
+        }).sql;
     }
 
     LoadRequest req;
-    req.dbcontents_           = targets;
+    req.dbcontents_            = targets;
     req.apply_datasrc_filters_ = false;
     req.apply_view_filters_    = false;
-    req.show_status_           = false;
-    req.cancellable_           = false;
     req.read_set_ = [this](const std::string& name) { return getReadSetFor(name); };
-    req.custom_filter_clause_ = [cat062_clause](const std::string& name) -> std::string {
-        return name == "CAT062" ? cat062_clause : "";
-    };
+    req.custom_filter_clause_ = LoadRequest::perContentClause({{"CAT062", cat062_clause}});
 
-    dbcontent_man.load(req);
+    // isolated batch load: filled by the engine, read in loadingDoneSlot; the
+    // view dataset is never touched
+    load_op_ = std::make_shared<LoadOperation>(dbcontent_man, req);
+    connect(load_op_.get(), &LoadOperation::finishedSignal,
+            this, &CreateARTASAssociationsTask::loadingDoneSlot);
+    dbcontent_man.dataEngine().load(load_op_);
+}
+
+const CreateARTASAssociationsTask::ResultStats& CreateARTASAssociationsTask::resultStats() const
+{
+    return result_stats_;
 }
 
 bool CreateARTASAssociationsTask::wasRun()
 {
     return manager().compass().dbInterface().hasProperty(DONE_PROPERTY_NAME)
              && manager().compass().dbInterface().getProperty(DONE_PROPERTY_NAME) == "1";
-}
-
-void CreateARTASAssociationsTask::loadedDataDataSlot(
-        const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
-{
-    data_ = data;
 }
 
 void CreateARTASAssociationsTask::loadingDoneSlot()
@@ -296,25 +304,15 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
 
     traced_assert(!create_job_);
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-
-    disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-            this, &CreateARTASAssociationsTask::loadedDataDataSlot);
-    disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-            this, &CreateARTASAssociationsTask::loadingDoneSlot);
-
-    dbcontent_man.clearData();
-
-    manager().compass().viewManager().disableDataDistribution(false);
-    manager().compass().dbContentManager().enableDataDistribution(true);
+    // @TODO: op state unchecked - a Failed/Cancelled load associates on partial data
+    data_ = load_op_->buffers();
+    load_op_ = nullptr; // release the isolated operation
 
     create_job_ = std::make_shared<CreateARTASAssociationsJob>(
                 *this, manager().compass().dbInterface(), data_);
 
     connect(create_job_.get(), &CreateARTASAssociationsJob::doneSignal, this,
             &CreateARTASAssociationsTask::createDoneSlot, Qt::QueuedConnection);
-    connect(create_job_.get(), &CreateARTASAssociationsJob::obsoleteSignal, this,
-            &CreateARTASAssociationsTask::createObsoleteSlot, Qt::QueuedConnection);
     connect(create_job_.get(), &CreateARTASAssociationsJob::statusSignal, this,
             &CreateARTASAssociationsTask::associationStatusSlot, Qt::QueuedConnection);
     connect(create_job_.get(), &CreateARTASAssociationsJob::saveAssociationsQuestionSignal,
@@ -341,6 +339,13 @@ void CreateARTASAssociationsTask::createDoneSlot()
     traced_assert(create_job_);
 
     create_job_done_ = true;
+
+    result_stats_.found_hashes_               = create_job_->foundHashes();
+    result_stats_.missing_hashes_at_beginning_ = create_job_->missingHashesAtBeginning();
+    result_stats_.missing_hashes_             = create_job_->missingHashes();
+    result_stats_.found_hash_duplicates_      = create_job_->foundHashDuplicates();
+    result_stats_.dubious_associations_       = create_job_->dubiousAssociations();
+    result_stats_.association_counts_         = create_job_->associationCounts();
 
     status_dialog_->setAssociationCounts(create_job_->associationCounts());
     status_dialog_->setFoundHashes(create_job_->foundHashes());
@@ -378,8 +383,6 @@ void CreateARTASAssociationsTask::createDoneSlot()
 
     emit doneSignal();
 }
-
-void CreateARTASAssociationsTask::createObsoleteSlot() { create_job_ = nullptr; }
 
 std::string CreateARTASAssociationsTask::currentDataSourceName() const
 {

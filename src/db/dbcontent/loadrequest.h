@@ -20,6 +20,8 @@
 #include "dbcontent/variable/variableset.h"
 
 #include <functional>
+#include <map>
+#include <optional>
 #include <set>
 #include <string>
 
@@ -31,13 +33,14 @@ struct LoadRequest
     bool apply_datasrc_filters_ = true;   // DBContext ds/line filters
     bool apply_view_filters_    = true;   // FilterManager
 
+    // optional per-op ds/line selection (ds_id -> lines); replaces the DBContext selection
+    std::optional<std::map<unsigned int, std::set<unsigned int>>> datasrc_selection_;
+
     // optional, per-content WHERE fragment (AND-ed after datasrc/view filters)
     std::function<std::string(const std::string&)> custom_filter_clause_;
     // optional read-set override per content; default = mgr.getReadSet(name)
     std::function<dbContent::VariableSet(const std::string&)> read_set_;
 
-    bool show_status_           = true;
-    bool cancellable_           = true;
     bool measure_db_performance_ = false;
 
     static LoadRequest standard()
@@ -72,5 +75,29 @@ struct LoadRequest
         dbContent::VariableSet rs_copy = std::move(rs);
         r.read_set_ = [rs_copy](const std::string&) { return rs_copy; };
         return r;
+    }
+
+    // custom_filter_clause_ from a precomputed per-content SQL map; a content absent
+    // from the map gets no constraint. Renders the clauses up front, once per content.
+    static std::function<std::string(const std::string&)> perContentClause(
+        std::map<std::string, std::string> clauses)
+    {
+        return [clauses = std::move(clauses)](const std::string& name) -> std::string {
+            auto it = clauses.find(name);
+            return it != clauses.end() ? it->second : std::string();
+        };
+    }
+
+    // custom_filter_clause_ built by applying `generator` to each content up front; the
+    // rendered SQL is captured (the generator itself is not retained), so a generator that
+    // borrows short-lived state is safe to pass.
+    static std::function<std::string(const std::string&)> perContentClause(
+        const std::set<std::string>& contents,
+        const std::function<std::string(const std::string&)>& generator)
+    {
+        std::map<std::string, std::string> clauses;
+        for (const auto& name : contents)
+            clauses[name] = generator(name);
+        return perContentClause(std::move(clauses));
     }
 };

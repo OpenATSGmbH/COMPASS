@@ -36,12 +36,14 @@ ModeCFilterWidget::ModeCFilterWidget(ModeCFilter& filter)
     const int   SliderSteps = 1000;
 
     min_value_edit_ = new QLineEdit();
+    min_value_edit_->setObjectName("filter_min_edit");
     min_value_edit_->setValidator(new TextFieldDoubleValidator(ModeCMin, ModeCMax, Precision));
     connect(min_value_edit_, &QLineEdit::textEdited, this, &ModeCFilterWidget::minValueEditedSlot);
 
     addNameValuePair("Mode C Code >=", min_value_edit_);
 
     max_value_edit_ = new QLineEdit();
+    max_value_edit_->setObjectName("filter_max_edit");
     max_value_edit_->setValidator(new TextFieldDoubleValidator(ModeCMin, ModeCMax, Precision));
     connect(max_value_edit_, &QLineEdit::textEdited, this, &ModeCFilterWidget::maxValueEditedSlot);
 
@@ -57,6 +59,7 @@ ModeCFilterWidget::ModeCFilterWidget(ModeCFilter& filter)
     addNameValuePair("", range_edit_);
 
     null_check_ = new QCheckBox();
+    null_check_->setObjectName("filter_null_check");
     connect(null_check_, &QCheckBox::clicked, this, &ModeCFilterWidget::nullWantedChangedSlot);
     addNameValuePair("NULL Values", null_check_);
 

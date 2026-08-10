@@ -19,6 +19,7 @@
 #include "ui_test_setget.h"
 #include "ui_test_inject.h"
 #include "ui_test_testable.h"
+#include "ui_test_file_dialog.h"
 #include "rtcommand_registry.h"
 //#include "json_tools.h"
 
@@ -32,6 +33,7 @@ REGISTER_RTCOMMAND(ui_test::RTCommandUIGet)
 REGISTER_RTCOMMAND(ui_test::RTCommandUIGetJSON)
 REGISTER_RTCOMMAND(ui_test::RTCommandUIInject)
 REGISTER_RTCOMMAND(ui_test::RTCommandUIRefresh)
+REGISTER_RTCOMMAND(ui_test::RTCommandUIFileDialog)
 
 namespace ui_test
 {
@@ -161,6 +163,21 @@ bool RTCommandUIGet::run_impl()
         result        = v;
         result_string = receiver.second->isVisible() ? "true" : "false";
     }
+    else if (enabled)
+    {
+        //retrieve ui element enabled state
+        nlohmann::json v;
+        v[ "enabled" ] = receiver.second->isEnabled();
+
+        result        = v;
+        result_string = receiver.second->isEnabled() ? "true" : "false";
+    }
+    else if (what == "stylesheet")
+    {
+        //retrieve the style sheet, e.g. to check invalid-input coloring
+        result_string = receiver.second->styleSheet().toStdString();
+        result        = result_string;
+    }
     else
     {
         if (as_json)
@@ -211,7 +228,8 @@ void RTCommandUIGet::collectOptions_impl(OptionsDescription& options,
     ADD_RTCOMMAND_OPTIONS(options)
         ("what,w", po::value<std::string>()->default_value(""), "which value to retrieve from the ui element (empty = default behavior)")
         ("json", "if present, the result will be returned as a json struct instead of a string")
-        ("visible", "if present, the visibility of the ui element will be returned");
+        ("visible", "if present, the visibility of the ui element will be returned")
+        ("enabled", "if present, the enabled state of the ui element will be returned");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "what")
 }
@@ -226,6 +244,7 @@ void RTCommandUIGet::assignVariables_impl(const VariablesMap& variables)
     RTCOMMAND_GET_QSTRING_OR_THROW(variables, "what", what)
     RTCOMMAND_CHECK_VAR(variables, "json", as_json)
     RTCOMMAND_CHECK_VAR(variables, "visible", visible)
+    RTCOMMAND_CHECK_VAR(variables, "enabled", enabled)
 }
 
 /*************************************************************************
@@ -386,6 +405,50 @@ bool RTCommandUIRefresh::run_impl()
     testable->uiRefresh();
 
     return true;
+}
+
+/*************************************************************************
+ * RTCommandUIFileDialog
+ *************************************************************************/
+
+/**
+ * Queues a result for the next native file dialog invocation, consumed by
+ * the Dialogs wrappers (dialogs.h). An empty result simulates a canceled dialog.
+ */
+bool RTCommandUIFileDialog::run_impl()
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    const auto skip_empty_parts = Qt::SkipEmptyParts;
+#else
+    const auto skip_empty_parts = QString::SkipEmptyParts;
+#endif
+
+    if (cancel)
+        addFileDialogResult(QStringList());
+    else
+        addFileDialogResult(paths.split(';', skip_empty_parts));
+
+    return true;
+}
+
+/**
+ */
+void RTCommandUIFileDialog::collectOptions_impl(OptionsDescription& options,
+                                                PosOptionsDescription& positional)
+{
+    ADD_RTCOMMAND_OPTIONS(options)
+        ("paths,p", po::value<std::string>()->default_value(""), "file path(s) to return from the next native file dialog, separated by ';'")
+        ("cancel", "if present, the next native file dialog will act as canceled by the user");
+
+    ADD_RTCOMMAND_POS_OPTION(positional, "paths")
+}
+
+/**
+ */
+void RTCommandUIFileDialog::assignVariables_impl(const VariablesMap& variables)
+{
+    RTCOMMAND_GET_QSTRING_OR_THROW(variables, "paths", paths)
+    RTCOMMAND_CHECK_VAR(variables, "cancel", cancel)
 }
 
 }

@@ -16,7 +16,7 @@
  */
 
 #include "dbcontentitemprovider.h"
-#include "dbcontentdatastore.h"
+#include "dbcontentdataset.h"
 #include "dbcontentaccessor.h"
 #include "dbcontentmanager.h"
 #include "targetmodel.h"
@@ -41,21 +41,15 @@ const DBContentItemProvider::Grouping DBContentItemProvider::DefaultGrouping = D
 const std::string DBContentItemProvider::DsTypeOther = "Other";
 
 /**
- * Constructs the item provider and connects to the given data store's signals,
- * so that item groups are kept in sync with data store changes.
+ * Constructs the item provider over the static model. Data is fed later via
+ * setSource()/applyChange() by the view framework.
  */
-DBContentItemProvider::DBContentItemProvider(DBContentDataStore& data_store, 
-                                             Grouping grouping,
-                                             bool auto_update)
-:   data_store_      (data_store)
-,   context_manager_ (data_store.dbcManager().compass().dbContextManager())
+DBContentItemProvider::DBContentItemProvider(DBContentManager& dbc_manager,
+                                             Grouping grouping)
+:   dbcont_man_      (dbc_manager)
+,   context_manager_ (dbcont_man_.compass().dbContextManager())
 ,   grouping_        (grouping)
 {
-    if (auto_update)
-    {
-        //should result in a direct connection => use auto connection like the view manager
-        connect(&data_store_, &DBContentDataStore::dataChangedSignal, this, &DBContentItemProvider::dataChanged);
-    }
 }
 
 /**
@@ -436,27 +430,61 @@ std::function<nlohmann::json(unsigned int)> DBContentItemProvider::createGroupFu
 }
 
 /**
- * Unified data-changed slot. Performs (optional reset) -> rebuild each id in
- * dbc_ids -> (optional finalize) inside a single event-loop turn, so listeners
- * that paint (e.g. OSG) cannot observe the empty intermediate state between
- * the wipe and the rebuild.
+ * Framework-driven data-changed entry, keyed by content name (the DBContentDataSet
+ * contract). Performs (optional reset) -> rebuild each named content -> (optional
+ * finalize) inside a single event-loop turn, so listeners that paint (e.g. OSG)
+ * cannot observe the empty intermediate state between the wipe and the rebuild.
  *
  *   reset = drop all prior provider state first (full dataset replacement)
- *   last  = run finalize work (heavy: dataRefreshed_impl, downstream signal)
- *           after rebuilding. Live tick events always pass last=true.
+ *   last  = run finalize work (heavy: contentRebuilt, downstream signal) after
+ *           rebuilding. Live tick events always pass last=true.
  */
-void DBContentItemProvider::dataChanged(const std::vector<unsigned int>& dbc_ids, bool reset, bool last)
+void DBContentItemProvider::applyChange(const std::vector<std::string>& names, bool reset, bool last)
 {
     if (reset)
         resetData();
 
-    for (auto dbc_id : dbc_ids)
-        rebuildContent(dbc_id);
+    for (const auto& name : names)
+        rebuildContent(dbcont_man_.dbContentId(name));
 
     if (last)
         contentRebuilt();
 
     dataChanged_impl();
+}
+
+/**
+ * Data-access facade over the current source's index (empty/null when no source is
+ * set). The index exposes the id-keyed DBContent -> ds -> line -> row-indices
+ * projection.
+ */
+const DBContentDataIndex::DBContentMap& DBContentItemProvider::curIndices() const
+{
+    static const DBContentDataIndex::DBContentMap empty;
+    return source_ ? source_->index().indices() : empty;
+}
+
+/**
+ */
+std::shared_ptr<Buffer> DBContentItemProvider::curBuffer(unsigned int dbc_id) const
+{
+    return source_ ? source_->index().buffer(dbc_id) : nullptr;
+}
+
+/**
+ */
+std::shared_ptr<dbContent::TargetReportAccessor> DBContentItemProvider::curTargetReportAccessor(unsigned int dbc_id) const
+{
+    return source_ ? source_->index().targetReportAccessor(dbc_id) : nullptr;
+}
+
+/**
+ * The current source's full buffer map (empty when no source is set).
+ */
+const std::map<std::string, std::shared_ptr<Buffer>>& DBContentItemProvider::curBuffers() const
+{
+    static const std::map<std::string, std::shared_ptr<Buffer>> empty;
+    return source_ ? source_->buffers() : empty;
 }
 
 /**
@@ -469,16 +497,16 @@ void DBContentItemProvider::dataChanged(const std::vector<unsigned int>& dbc_ids
  */
 void DBContentItemProvider::rebuildContent(unsigned int dbc_id)
 {
-    auto dbc_name = data_store_.dbcManager().dbContentWithId(dbc_id);
+    auto dbc_name = dbcont_man_.dbContentWithId(dbc_id);
 
-    // queued signal may arrive after data store was reset - nothing to do
-    if (!data_store_.indices().count(dbc_id))
+    // queued signal may arrive after the source was reset - nothing to do
+    if (!curIndices().count(dbc_id))
         return;
 
-    const auto& indices = data_store_.indices().at(dbc_id);
+    const auto& indices = curIndices().at(dbc_id);
 
-    auto tr_acc = data_store_.targetReportAccessor(dbc_id);
-    auto buffer = data_store_.buffer(dbc_id);
+    auto tr_acc = curTargetReportAccessor(dbc_id);
+    auto buffer = curBuffer(dbc_id);
 
     traced_assert(tr_acc);
     traced_assert(buffer);
@@ -563,7 +591,7 @@ void DBContentItemProvider::rebuildContent(unsigned int dbc_id)
 void DBContentItemProvider::setGroupIDNames(dbContent::ItemGroup& group) const
 {
     // dbcontent name
-    group.dbc_name = data_store_.dbcManager().dbContentWithId(group.dbc_id);
+    group.dbc_name = dbcont_man_.dbContentWithId(group.dbc_id);
 
     // ds name + type
     if (context_manager_.hasDataSource(group.ds_id))
@@ -614,7 +642,7 @@ void DBContentItemProvider::updateInternal(bool grouping_changed)
 {
     resetData();
 
-    for (const auto& it : data_store_.buffers())
+    for (const auto& it : curIndices())
         rebuildContent(it.first);
 
     contentRebuilt();
@@ -633,7 +661,7 @@ std::string DBContentItemProvider::toString() const
 
     for (const auto& group : item_groups_)
     {
-        const auto dbc_name   = data_store_.dbcManager().dbContentWithId(group->dbc_id);
+        const auto dbc_name   = dbcont_man_.dbContentWithId(group->dbc_id);
 
         std::string ds_name = "unknown";
         if (context_manager_.hasDataSource(group->ds_id))
@@ -717,7 +745,7 @@ std::string DBContentItemProvider::itemBestAvailableIdentification(const nlohman
     if (grouping_ != Grouping::UTN || item_id.is_null() || !item_id.is_number_unsigned())
         return {};
 
-    const auto* target_model = data_store_.dbcManager().targetModel();
+    const auto* target_model = dbcont_man_.targetModel();
     if (!target_model)
         return {};
 

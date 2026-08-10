@@ -180,5 +180,6 @@ protected:
 
     std::unique_ptr<ResultReport::ReportExport> report_export_;
 
-    std::unique_ptr<ViewableDataConfig> viewable_data_cfg_;
+    // shared with ViewManager so it cannot be released while a load it started is in flight
+    std::shared_ptr<ViewableDataConfig> viewable_data_cfg_;
 };

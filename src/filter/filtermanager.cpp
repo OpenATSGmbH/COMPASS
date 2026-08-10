@@ -21,6 +21,7 @@
 #include "dbfilter.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "db_context_manager.h"
 #include "filtermanagerwidget.h"
 #include "logger.h"
@@ -247,6 +248,21 @@ std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, db
     return ss.str();
 }
 
+FilterClause FilterManager::viewClause(const std::string& dbcontent_name)
+{
+    traced_assert(dbcontent_man_.dbContent(dbcontent_name).loadable());
+
+    std::vector<FilterClause> parts;
+
+    for (auto& filter : filters_)
+    {
+        if (filter->getActive() && filter->filters(dbcontent_name))
+            parts.push_back(filter->getClause(dbcontent_name));
+    }
+
+    return combineAnd(parts);
+}
+
 unsigned int FilterManager::getNumFilters() { return filters_.size(); }
 
 DBFilter* FilterManager::getFilter(unsigned int index)
@@ -460,9 +476,9 @@ void FilterManager::databaseOpenedSlot()
 
     traced_assert(hasFilter("Timestamp"));
 
-    if (dbcontent_man_.hasMinMaxTimestamp())
+    if (dbcontent_man_.dataEngine().hasMinMaxTimestamp())
     {
-        auto minmax_ts = dbcontent_man_.minMaxTimestamp();
+        auto minmax_ts = dbcontent_man_.dataEngine().minMaxTimestamp();
 
         TimestampFilter* ts_filter = dynamic_cast<TimestampFilter*>(getFilter("Timestamp"));
         traced_assert(ts_filter);

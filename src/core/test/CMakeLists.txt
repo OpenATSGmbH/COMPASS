@@ -16,6 +16,7 @@ PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}/ui_test_inject.h"
     "${CMAKE_CURRENT_LIST_DIR}/ui_test_find.h"
     "${CMAKE_CURRENT_LIST_DIR}/ui_test_cmd.h"
+    "${CMAKE_CURRENT_LIST_DIR}/ui_test_file_dialog.h"
 
 PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/ui_test_event_injections.cpp"
@@ -24,6 +25,7 @@ PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/ui_test_inject.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/ui_test_find.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/ui_test_cmd.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/ui_test_file_dialog.cpp"
 )
 
 

@@ -59,7 +59,8 @@ public:
 protected:
     virtual void loadingStarted_impl() override final;
     virtual void loadingDone_impl() override final;
-    virtual void updateData_impl(bool requires_reset) override final;
+    virtual void updateFromSource_impl(const DBContentDataSet& source,
+                                       const std::vector<std::string>& names, bool reset, bool last) override final;
     virtual void clearData_impl() override final;
     virtual void clearIntermediateRedrawData_impl() override final;
     virtual DrawState redrawData_impl(bool recompute) override final;
@@ -72,7 +73,7 @@ protected:
 
     /*to be implemented in derived classes*/
 
-    /// called on buffer data update (updateData_impl)
+    /// called on buffer data update (from updateFromSource_impl, on the load finalize)
     virtual void updateDataEvent(bool requires_reset) {}
     /// called after loading buffers, should return true if it already triggered a redraw (e.g. by reconfiguring the view)
     virtual bool postLoadTrigger() { return false; }

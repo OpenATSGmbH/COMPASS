@@ -24,6 +24,7 @@
 #include "taskmanager.h"
 #include "licensemanager.h"
 #include "dbcontentmanager.h"
+#include "dbcontentdataengine.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "probimmreconstructor.h"
@@ -228,11 +229,11 @@ std::pair<bool, std::string> ReconstructorTaskDialog::configValid() const
         return std::make_pair(false, "No reconstructor found");
 
     //get full data time range
-    if (!task_.manager().compass().dbContentManager().hasMinMaxTimestamp())
+    if (!task_.manager().compass().dbContentManager().dataEngine().hasMinMaxTimestamp())
         return std::make_pair(false, "No timestamps found");
 
     boost::posix_time::ptime data_t0, data_t1;
-    std::tie(data_t0, data_t1) = task_.manager().compass().dbContentManager().minMaxTimestamp();
+    std::tie(data_t0, data_t1) = task_.manager().compass().dbContentManager().dataEngine().minMaxTimestamp();
 
     const auto& settings = rec->settings();
     if (settings.data_timestamp_min.is_not_a_date_time())

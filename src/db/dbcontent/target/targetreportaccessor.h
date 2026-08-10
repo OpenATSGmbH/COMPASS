@@ -86,6 +86,7 @@ public:
     boost::optional<bool> modeAValid(unsigned int index) const;
     boost::optional<bool> modeAGarbled(unsigned int index) const;
     boost::optional<bool> modeASmoothed(unsigned int index) const;
+    boost::optional<float> modeAAge(unsigned int index) const; // s, CAT062 only (I062/295 MDA)
 
     boost::optional<float> modeC(unsigned int index) const;
     boost::optional<bool> modeCValid(unsigned int index) const;
@@ -177,6 +178,7 @@ private:
     const NullableVector<bool>*         meta_mode_a_garbled_vec_  = nullptr;
     const NullableVector<bool>*         meta_mode_a_valid_vec_    = nullptr;
     const NullableVector<bool>*         meta_mode_a_smoothed_vec_ = nullptr;
+    const NullableVector<float>*        cat062_m3a_age_vec_       = nullptr;
 
     //mode c
     const NullableVector<float>* meta_mode_c_vec_         = nullptr;

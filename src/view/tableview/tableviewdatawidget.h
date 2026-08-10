@@ -73,7 +73,8 @@ protected:
     virtual void toolChanged_impl(int mode) override;
     virtual void loadingStarted_impl() override;
     virtual void loadingDone_impl() override;
-    virtual void updateData_impl(bool requires_reset) override;
+    virtual void updateFromSource_impl(const DBContentDataSet& source,
+                                       const std::vector<std::string>& names, bool reset, bool last) override;
     virtual void clearData_impl() override;
     virtual void clearIntermediateRedrawData_impl() override;
     virtual DrawState redrawData_impl(bool recompute) override;

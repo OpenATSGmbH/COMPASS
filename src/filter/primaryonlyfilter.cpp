@@ -128,6 +128,38 @@ std::string PrimaryOnlyFilter::getConditionString(const std::string& dbcontent_n
     return ss.str();
 }
 
+FilterClause PrimaryOnlyFilter::getClause(const std::string& dbcontent_name)
+{
+    auto& resolver = variableResolver();
+
+    std::vector<FilterClause> parts;
+
+    // "primary only" = the identifying meta vars are all NULL (no secondary/ADS-B info)
+    auto add_null = [&](const auto& metavar) {
+        if (resolver.metaCanGetVariable(dbcontent_name, metavar))
+        {
+            FilterClause c;
+            c.sql = resolver.metaGetVariableDBColumn(dbcontent_name, metavar) + " IS NULL";
+            parts.push_back(c);
+        }
+    };
+
+    add_null(dbcontent_vars::meta_var_m3a_);
+    add_null(dbcontent_vars::meta_var_mc_);
+    add_null(dbcontent_vars::meta_var_acad_);
+    add_null(dbcontent_vars::meta_var_acid_);
+
+    if (resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_detection_type_))
+    {
+        string col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_detection_type_);
+        FilterClause c;
+        c.sql = "(" + col + " IN (1,3,6,7) OR " + col + " IS NULL)";
+        parts.push_back(c);
+    }
+
+    return combineAnd(parts);
+}
+
 
 DBFilterWidget* PrimaryOnlyFilter::createWidget()
 {

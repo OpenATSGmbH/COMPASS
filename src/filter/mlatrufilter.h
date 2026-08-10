@@ -29,6 +29,8 @@ public:
     virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
 
+    virtual FilterClause getClause(const std::string& dbcontent_name) override;
+
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;
 

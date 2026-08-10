@@ -23,6 +23,8 @@
 
 #include <map>
 #include <memory>
+#include <vector>
+#include <string>
 
 #include <boost/optional.hpp>
 
@@ -32,6 +34,8 @@ class ViewWidget;
 class ViewToolSwitcher;
 class Buffer;
 class LayerTreeModel;
+class DBContentItemProvider;
+class DBContentDataSet;
 
 namespace dbContent
 {
@@ -63,10 +67,21 @@ public:
 
     void loadingStarted();
     void loadingDone();
-    void updateData(const BufferData& buffer_data, bool requires_reset);
+    void updateFromSource(const DBContentDataSet& source,
+                          const std::vector<std::string>& names, bool reset, bool last);
     void clearData();
     DrawState redrawData(bool recompute, bool notify = false);
     void liveReload();
+
+    // Optional item provider, registered by a derived widget which OWNS it (the
+    // provider's lifetime is tied to the derived widget's, whose teardown may be
+    // order-sensitive). The base only borrows it: it drives the provider's input
+    // from the current source (updateFromSource) and resets it on clearData().
+    // The derived widget must setItemProvider(nullptr) before destroying it.
+    // Views without a provider are unaffected.
+    void setItemProvider(DBContentItemProvider* provider) { item_provider_ = provider; }
+    bool hasItemProvider() const { return item_provider_ != nullptr; }
+    DBContentItemProvider* itemProvider() { return item_provider_; }
 
     bool hasData() const;
     bool hasAnnotations() const;
@@ -124,7 +139,6 @@ public:
 signals:
     void displayChanged();
     void dataLoaded();
-    void liveDataLoaded();
     void redrawStarted();
     void redrawDone();
     void updateStarted();
@@ -134,11 +148,12 @@ protected:
     virtual void toolChanged_impl(int tool_id) = 0;        //implements reactions on tool switches
     virtual void loadingStarted_impl() = 0;                //implements behavior at starting a reload
     virtual void loadingDone_impl();                       //implements behavior at finishing a reload
-    virtual void updateData_impl(bool requires_reset) = 0; //implements behavior at receiving new data
+    virtual void updateFromSource_impl(const DBContentDataSet& source,
+                                       const std::vector<std::string>& names, bool reset, bool last) = 0; //implements behavior at receiving a source update
     virtual void clearData_impl() = 0;                     //implements clearing all view data
     virtual void clearIntermediateRedrawData_impl() = 0;   //implements clearing of any data collected during redraw
     virtual DrawState redrawData_impl(bool recompute) = 0; //implements redrawing the display (and possibly needed computations), and returns the new draw state
-    virtual void liveReload_impl() = 0;                    //implements data reload during live running mode
+    virtual void liveReload_impl() = 0;                    //implements data reload during live running mode (reload not handled via a real db reload)
     virtual bool hasAnnotations_impl() const = 0;          //implements checking if the view has any annotations
     virtual void databaseOpened_impl() {}                  //implements behavior on opening a database
     virtual void databaseClosed_impl() {}                  //implements behavior on closing a database
@@ -165,6 +180,8 @@ private:
 
     ViewWidget*       view_widget_   = nullptr;
     ViewToolSwitcher* tool_switcher_ = nullptr;
+
+    DBContentItemProvider* item_provider_ = nullptr; // optional, NOT owned (see setItemProvider)
 
     BufferData data_;
     DrawState  draw_state_ = DrawState::NotDrawn;

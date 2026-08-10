@@ -318,7 +318,6 @@ protected:
     bool test_data_loaded_       {false};
     bool evaluated_              {false};
     
-    bool active_load_connection_ {false};
     bool update_report_          {true };
 
     std::vector<std::unique_ptr<EvaluationStandard>> standards_;

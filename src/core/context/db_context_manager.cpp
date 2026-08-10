@@ -840,6 +840,34 @@ vector<unsigned int> DBContextManager::unfilteredDS(const string& /*dbcontent_na
     return vector<unsigned int>(result.begin(), result.end());
 }
 
+optional<map<unsigned int, set<unsigned int>>> DBContextManager::loadingSelection(
+    const string& dbcontent_name) const
+{
+    // no ds/line constraint -> load everything
+    if (!hasDSFilter(dbcontent_name) && !lineSpecificLoadingRequired(dbcontent_name))
+        return nullopt;
+
+    map<unsigned int, set<unsigned int>> selection;
+
+    const bool line_specific = lineSpecificLoadingRequired(dbcontent_name);
+
+    for (unsigned int ds_id : unfilteredDS(dbcontent_name))
+    {
+        set<unsigned int> lines;
+        // the wanted lines, always listed explicitly (all four when nothing is line-filtered)
+        for (unsigned int line = 0; line < 4; ++line)
+            if (!line_specific || lineLoadingWanted(ds_id, line))
+                lines.insert(line);
+
+        if (lines.empty()) // no wanted line for this ds -> drop it
+            continue;
+
+        selection[ds_id] = std::move(lines);
+    }
+
+    return selection;
+}
+
 // ============================================================
 // Runtime counts
 // ============================================================
@@ -2030,7 +2058,12 @@ shared_ptr<Sector> DBContextManager::createSector(const string& name, const stri
            << " num points " << points.size();
 
     traced_assert(sectors_loaded_);
-    traced_assert(!hasSector(name, layer_name));
+
+    if (hasSector(name, layer_name))
+    {
+        logwrn << "sector '" << name << "' already exists in layer '" << layer_name << "'";
+        return nullptr;
+    }
 
     ++max_sector_id_;
 
@@ -2052,6 +2085,36 @@ shared_ptr<Sector> DBContextManager::createSector(const string& name, const stri
     emit sectorsChangedSignal();
 
     return new_sector;
+}
+
+shared_ptr<Sector> DBContextManager::createOrReplaceSector(const string& name, const string& layer_name,
+                                                            bool exclude, QColor color,
+                                                            vector<pair<double,double>> points,
+                                                            bool* replaced_existing)
+{
+    traced_assert(sectors_loaded_);
+
+    bool replaced = hasSector(name, layer_name);
+
+    if (replaced)
+    {
+        loginf << "replacing sector '" << name << "' in layer '" << layer_name << "'";
+
+        unsigned int old_id = sector(name, layer_name)->id();
+
+        auto& ctx_sectors = activeContext().sectors();
+        auto iter = find_if(ctx_sectors.begin(), ctx_sectors.end(),
+                            [old_id](const shared_ptr<Sector>& x) { return x->id() == old_id; });
+        traced_assert(iter != ctx_sectors.end());
+        ctx_sectors.erase(iter);
+
+        rebuildSectorLayers();
+    }
+
+    if (replaced_existing)
+        *replaced_existing = replaced;
+
+    return createSector(name, layer_name, exclude, color, points);
 }
 
 void DBContextManager::deleteSector(shared_ptr<Sector> sector)
@@ -2127,6 +2190,37 @@ void DBContextManager::deleteSectorLayer(const std::string& layer_name)
     emit sectorsChangedSignal();
 }
 
+void DBContextManager::renameSectorLayer(const std::string& old_name, const std::string& new_name)
+{
+    traced_assert(sectors_loaded_);
+    traced_assert(!new_name.empty());
+
+    if (old_name == new_name)
+        return;
+
+    bool changed = false;
+
+    for (auto& s : activeContext().sectors())
+    {
+        if (s->layerName() == old_name)
+        {
+            s->layerName(new_name, false); // no per-sector move callback, persisted once below
+            changed = true;
+        }
+    }
+
+    if (!changed)
+        return;
+
+    saveContext(activeContextName());
+    if (compass_.dbOpened())
+        writeContextToDB();
+
+    rebuildSectorLayers();
+
+    emit sectorsChangedSignal();
+}
+
 void DBContextManager::deleteAllSectors()
 {
     traced_assert(sectors_loaded_);
@@ -2163,9 +2257,8 @@ void DBContextManager::moveSector(unsigned int id, const string& old_layer, cons
     traced_assert(sectors_loaded_);
     traced_assert(hasSector(id));
 
-    // find the sector and change its layer name
-    auto sec = sector(id);
-    sec->layerName(new_layer);
+    // layer_name_ is already set by Sector::layerName() before it invokes the
+    // move callback - calling the setter here again would recurse endlessly
 
     saveContext(activeContextName());
     if (compass_.dbOpened())
@@ -2621,7 +2714,7 @@ void DBContextManager::exportContextZip(const string& name, const string& zip_fi
     DBContextSerializer::exportContextZip(basePath(), name, zip_filepath);
 }
 
-void DBContextManager::importContextZip(const string& zip_filepath)
+string DBContextManager::importContextZip(const string& zip_filepath)
 {
     string name = DBContextSerializer::importContextZip(basePath(), zip_filepath);
 
@@ -2634,6 +2727,8 @@ void DBContextManager::importContextZip(const string& zip_filepath)
     loginf << "imported context '" << name << "' from zip";
 
     emit contextsChangedSignal();
+
+    return name;
 }
 
 // ============================================================

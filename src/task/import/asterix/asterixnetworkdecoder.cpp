@@ -386,6 +386,24 @@ void ASTERIXNetworkDecoder::checkDecoding_impl(bool force_recompute,
             continue;
         }
 
+        //REF/SPF content not matching the selected definition: such fields are kept as
+        //raw data by jASTERIX, the import continues - warn only (keys guarded for
+        //compatibility with older analysis info)
+        unsigned int num_ref_errors = analysis_info->contains("num_ref_errors") ?
+            analysis_info->at("num_ref_errors").get<unsigned int>() : 0u;
+        unsigned int num_spf_errors = analysis_info->contains("num_spf_errors") ?
+            analysis_info->at("num_spf_errors").get<unsigned int>() : 0u;
+
+        if (num_ref_errors)
+            sec.warning += (sec.warning.empty() ? "" : ", ")
+                           + std::string("REF not matching selected definition in ")
+                           + std::to_string(num_ref_errors) + " records (kept as raw data)";
+
+        if (num_spf_errors)
+            sec.warning += (sec.warning.empty() ? "" : ", ")
+                           + std::string("SPF not matching selected definition in ")
+                           + std::to_string(num_spf_errors) + " records (kept as raw data)";
+
         //store categories found in the stream but skipped during decoding
         sec.skipped_categories = ASTERIXSkippedCategoryInfo::fromAnalysisInfo(*analysis_info);
 

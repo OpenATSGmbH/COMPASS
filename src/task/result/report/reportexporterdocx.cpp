@@ -204,7 +204,7 @@ Result ReportExporterDocx::exportFigure_impl(SectionContentFigure& figure,
             }
         }
 
-        docx_section.addImage(img.path, img.name, rel_id, w_emu, h_emu);
+        docx_section.addImage(img.path, img.name, rel_id, docx_doc_->allocDrawingId(), w_emu, h_emu);
     }
 
     return Result::succeeded();

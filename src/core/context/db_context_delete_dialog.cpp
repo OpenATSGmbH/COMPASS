@@ -36,6 +36,7 @@ DBContextDeleteDialog::DBContextDeleteDialog(DBContextManager& manager, QWidget*
     , manager_(manager)
 {
     setWindowTitle("Delete Data Contexts");
+    setObjectName("ctx_delete_dialog");
     setMinimumWidth(350);
     setModal(true);
 
@@ -48,6 +49,7 @@ DBContextDeleteDialog::DBContextDeleteDialog(DBContextManager& manager, QWidget*
     for (const auto& name : manager_.contextNames())
     {
         auto* cb = new QCheckBox(QString::fromStdString(name));
+        cb->setObjectName("ctx_delete_check_" + QString::fromStdString(name));
         cb->setChecked(false);
         connect(cb, &QCheckBox::toggled, this, &DBContextDeleteDialog::updateDeleteButton);
         checkboxes_[name] = cb;
@@ -60,11 +62,13 @@ DBContextDeleteDialog::DBContextDeleteDialog(DBContextManager& manager, QWidget*
     auto* sel_layout = new QHBoxLayout();
 
     auto* select_all_btn = new QPushButton("Select All");
+    select_all_btn->setObjectName("ctx_delete_select_all_button");
     select_all_btn->setIcon(QIcon());
     connect(select_all_btn, &QPushButton::clicked, this, &DBContextDeleteDialog::selectAllSlot);
     sel_layout->addWidget(select_all_btn);
 
     auto* select_none_btn = new QPushButton("Select None");
+    select_none_btn->setObjectName("ctx_delete_select_none_button");
     select_none_btn->setIcon(QIcon());
     connect(select_none_btn, &QPushButton::clicked, this, &DBContextDeleteDialog::selectNoneSlot);
     sel_layout->addWidget(select_none_btn);
@@ -78,6 +82,7 @@ DBContextDeleteDialog::DBContextDeleteDialog(DBContextManager& manager, QWidget*
     auto* button_layout = new QHBoxLayout();
 
     auto* cancel_btn = new QPushButton("Cancel");
+    cancel_btn->setObjectName("ctx_delete_cancel_button");
     cancel_btn->setIcon(QIcon());
     connect(cancel_btn, &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_btn);
@@ -85,6 +90,7 @@ DBContextDeleteDialog::DBContextDeleteDialog(DBContextManager& manager, QWidget*
     button_layout->addStretch();
 
     delete_button_ = new QPushButton("Delete");
+    delete_button_->setObjectName("ctx_delete_apply_button");
     delete_button_->setIcon(QIcon());
     delete_button_->setEnabled(false);
     delete_button_->setToolTip("Select at least one context to delete");
@@ -150,10 +156,13 @@ void DBContextDeleteDialog::deleteSlot()
         msg += "  - " + QString::fromStdString(name) + "\n";
 
     QMessageBox confirm(this);
+    confirm.setObjectName("ctx_delete_confirm_dialog");
     confirm.setWindowTitle("Confirm Delete");
     confirm.setText(msg);
     auto* yes_btn = confirm.addButton("Yes", QMessageBox::YesRole);
     auto* no_btn = confirm.addButton("No", QMessageBox::NoRole);
+    yes_btn->setObjectName("ctx_delete_confirm_yes_button");
+    no_btn->setObjectName("ctx_delete_confirm_no_button");
     yes_btn->setIcon(QIcon());
     no_btn->setIcon(QIcon());
     confirm.exec();

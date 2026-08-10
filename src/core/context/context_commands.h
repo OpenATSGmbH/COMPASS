@@ -115,6 +115,20 @@ protected:
     DECLARE_RTCOMMAND_OPTIONS
 };
 
+// import_context <zip file>
+struct RTCommandImportContext : public rtcommand::RTCommand
+{
+    std::string filename_;
+
+    virtual rtcommand::IsValid valid() const override;
+
+protected:
+    virtual bool run_impl() override;
+
+    DECLARE_RTCOMMAND(import_context, "imports a data context from a zip file")
+    DECLARE_RTCOMMAND_OPTIONS
+};
+
 // delete_all_sectors
 struct RTCommandDeleteAllSectors : public rtcommand::RTCommand
 {

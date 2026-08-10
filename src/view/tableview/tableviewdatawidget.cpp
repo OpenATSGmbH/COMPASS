@@ -112,13 +112,10 @@ void TableViewDataWidget::loadingStarted_impl()
     //nothing to do yet
 }
 
-void TableViewDataWidget::updateData_impl(bool requires_reset)
+void TableViewDataWidget::updateFromSource_impl(const DBContentDataSet& /*source*/,
+                                                const std::vector<std::string>& /*names*/, bool /*reset*/, bool /*last*/)
 {
-    logdbg << "begin";
-
-    //nothing to do yet
-
-    logdbg << "end";
+    // nothing to do - the table model reads viewData() (source-fed) at redraw
 }
 
 void TableViewDataWidget::loadingDone_impl()

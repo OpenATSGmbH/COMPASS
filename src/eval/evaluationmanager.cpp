@@ -30,6 +30,8 @@
 
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variable.h"
 
 #include "compass.h"
@@ -41,6 +43,12 @@
 
 #include "buffer.h"
 #include "dbfilter.h"
+#include "dbfiltercondition.h"
+#include "timestampfilter.h"
+#include "utnfilter.h"
+#include "filterclause.h"
+#include "idbvariableresolver.h"
+#include "global.h"
 #include "viewpoint.h"
 #include "viewabledataconfig.h"
 
@@ -321,9 +329,9 @@ void EvaluationManager::databaseOpenedSlot()
 
     DBContentManager& dbcont_man = dbcontent_man_;
 
-    if (dbcont_man.hasMinMaxTimestamp())
+    if (dbcont_man.dataEngine().hasMinMaxTimestamp())
     {
-        std::pair<boost::posix_time::ptime , boost::posix_time::ptime> minmax_ts =  dbcont_man.minMaxTimestamp();
+        std::pair<boost::posix_time::ptime , boost::posix_time::ptime> minmax_ts =  dbcont_man.dataEngine().minMaxTimestamp();
 
         if (load_timestamp_begin_.is_not_a_date_time())
             load_timestamp_begin_ = get<0>(minmax_ts);
@@ -552,9 +560,9 @@ void EvaluationManager::updateSectorLayers()
  */
 void EvaluationManager::setViewableDataConfig (const nlohmann::json::object_t& data)
 {
-    viewable_data_cfg_.reset(new ViewableDataConfig(data));
+    viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 
-    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get());
+    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_);
 }
 
 /**
@@ -576,127 +584,96 @@ void EvaluationManager::onConfigurationChanged(const std::vector<std::string>& c
 
 /**
  */
-void EvaluationManager::loadData(const EvaluationCalculator& calculator,
-                                 bool blocking)
+void EvaluationManager::loadData(const EvaluationCalculator& calculator)
 {
-    loginf << "blocking " << blocking;
+    loginf;
 
     traced_assert(!raw_data_available_);
 
-    auto& ctx_man = compass_.dbContextManager();
-
-    auto ds_ids = calculator.usedDataSources();
-
-    //load only needed data sources
-    ctx_man.setLoadDSTypes(true); // load all ds types
-    ctx_man.setLoadOnlyDataSources(ds_ids); // limit loaded data sources
-
-    //configure filters for load
-    configureLoadFilters(calculator);
+    // Modal wait dialog around the blocking load below. The load pumps events (op->wait) and,
+    // being an issuer-private batch load, raises no progress dialog of its own - without a
+    // modal the user could drive the UI into another evaluation or load meanwhile.
+    QMessageBox msg_box(QApplication::activeWindow());
+    msg_box.setWindowTitle("Evaluation");
+    msg_box.setText("Loading data ...");
+    msg_box.setStandardButtons(QMessageBox::NoButton);
+    msg_box.setWindowModality(Qt::ApplicationModal);
+    msg_box.show();
+    QCoreApplication::processEvents(); // paint before the load busies the main thread
 
     DBContentManager& dbcontent_man = dbcontent_man_;
-    dbcontent_man.clearData(); //clear previously loaded data
 
-    //!do not distribute this reload to views!
-    compass_.viewManager().disableDataDistribution(true);
-    compass_.dbContentManager().enableDataDistribution(false);
-
-    //add variables needed by evaluation
+    // add variables needed by evaluation - getReadSet picks these up while the
+    // flag is set, synchronously inside the engine load below
     needs_additional_variables_ = true;
 
     LoadRequest req;
     req.dbcontents_ = { calculator.dbContentNameRef(),
                         calculator.dbContentNameTst() };
 
-    if (blocking)
-    {
-        dbcontent_man.loadBlocking(req);
-        loadingDone();
-    }
-    else
-    {
-        connect(&dbcontent_man, &DBContentManager::loadingDoneSignal, this, &EvaluationManager::loadingDone);
-        active_load_connection_ = true;
-        dbcontent_man.load(req);
-    }
+    // only the needed data sources - per-op, so the user's selection stays untouched
+    req.datasrc_selection_ = calculator.usedDataSources();
+
+    // build eval's load WHERE from the shared clause toolkit (ROI bbox / UTN set /
+    // timestamp bounds) instead of hijacking the global FilterManager, so the user's
+    // filters stay untouched. rendered per content up front and captured.
+    req.apply_view_filters_ = false;
+    req.custom_filter_clause_ = LoadRequest::perContentClause(
+        req.dbcontents_,
+        [this, &calculator](const std::string& name) { return loadFilterClause(name, calculator); });
+
+    // isolated batch load: filled by the engine, read in loadingDone; the view
+    // dataset is never touched
+    load_op_ = std::make_shared<LoadOperation>(dbcontent_man, req);
+
+    dbcontent_man.dataEngine().load(load_op_);
+    load_op_->wait();
+    loadingDone();
 
     needs_additional_variables_ = false;
 }
 
 /**
+ * Per-content load WHERE for eval, built from the shared clause toolkit: ROI position
+ * bbox (Latitude/Longitude <=/>=), UTN set, and timestamp bounds - AND-combined. Mirrors
+ * the old configureLoadFilters values without mutating the global FilterManager. Excluded
+ * time windows are applied in-memory during evaluation, not at load (as before).
  */
-void EvaluationManager::configureLoadFilters(const EvaluationCalculator& calculator)
+std::string EvaluationManager::loadFilterClause(const std::string& dbcontent_name,
+                                                const EvaluationCalculator& calculator)
 {
-    FilterManager& fil_man = compass_.filterManager();
+    IDBVariableResolver& resolver = compass_.filterManager().variableResolver();
 
-    // set use filters
-    fil_man.useFilters(true);
-    fil_man.disableAllFilters();
+    std::vector<FilterClause> parts;
 
-    const auto& roi  = calculator.sectorROI();
-    const auto& utns = calculator.evaluationUTNs();
-    
-    // position data
+    // sqlFor yields an empty clause for contents lacking the given variable, so no guards needed
+    const auto& roi = calculator.sectorROI();
     if (roi.has_value())
     {
-        traced_assert(fil_man.hasFilter("Position"));
-        DBFilter* pos_fil = fil_man.getFilter("Position");
+        parts.push_back(DBFilterCondition::sqlFor(
+            resolver, dbcontent_name, dbcontent_vars::meta_var_latitude_.name(),
+            META_OBJECT_NAME, filter_op::less_equal, std::to_string(roi->latitude_max)));
+        parts.push_back(DBFilterCondition::sqlFor(
+            resolver, dbcontent_name, dbcontent_vars::meta_var_latitude_.name(),
+            META_OBJECT_NAME, filter_op::greater_equal, std::to_string(roi->latitude_min)));
 
-        json filter;
-
-        pos_fil->setActive(true);
-
-        filter["Position"]["Latitude Maximum" ] = to_string(roi->latitude_max );
-        filter["Position"]["Latitude Minimum" ] = to_string(roi->latitude_min );
-        filter["Position"]["Longitude Maximum"] = to_string(roi->longitude_max);
-        filter["Position"]["Longitude Minimum"] = to_string(roi->longitude_min);
-
-        pos_fil->loadViewPointConditions(filter); 
+        parts.push_back(DBFilterCondition::sqlFor(
+            resolver, dbcontent_name, dbcontent_vars::meta_var_longitude_.name(),
+            META_OBJECT_NAME, filter_op::less_equal, std::to_string(roi->longitude_max)));
+        parts.push_back(DBFilterCondition::sqlFor(
+            resolver, dbcontent_name, dbcontent_vars::meta_var_longitude_.name(),
+            META_OBJECT_NAME, filter_op::greater_equal, std::to_string(roi->longitude_min)));
     }
 
+    const auto& utns = calculator.evaluationUTNs();
     if (!utns.empty())
-    {
-        traced_assert(fil_man.hasFilter("UTNs"));
-        DBFilter* utn_fil = fil_man.getFilter("UTNs");
+        parts.push_back(UTNFilter::sqlFor(resolver, utns, false, dbcontent_name));
 
-        json filter;
-
-        utn_fil->setActive(true);
-
-        std::vector<std::string> utn_strings;
-        for (auto utn : utns)
-             utn_strings.push_back(std::to_string(utn));
-
-        std::string utns_str = Utils::String::compress(utn_strings, ',');
-
-        filter["UTNs"]["utns" ] = utns_str;
-
-        utn_fil->loadViewPointConditions(filter);
-    }
-
-    // timestamp-based load filters
     if (use_timestamp_filter_)
-    {
-        // configure timestamp filter
-        traced_assert(fil_man.hasFilter("Timestamp"));
-        DBFilter* fil = fil_man.getFilter("Timestamp");
+        parts.push_back(TimestampFilter::sqlFor(
+            resolver, load_timestamp_begin_, load_timestamp_end_, dbcontent_name));
 
-        fil->setActive(true);
-
-        json filter;
-
-        filter["Timestamp"]["Timestamp Minimum"] = Time::toString(load_timestamp_begin_);
-        filter["Timestamp"]["Timestamp Maximum"] = Time::toString(load_timestamp_end_);
-
-        // configure exclustion windows filter
-        if (load_filtered_time_windows_.size())
-        {
-            filter["Excluded Time Windows"]["Windows"] =
-                load_filtered_time_windows_.asJSON();
-        }
-
-        fil->loadViewPointConditions(filter);
-    }
+    return combineAnd(parts).sql;
 }
 
 /**
@@ -705,26 +682,14 @@ void EvaluationManager::loadingDone()
 {
     loginf;
 
-    DBContentManager& dbcontent_man = dbcontent_man_;
-
-    if (active_load_connection_)
-    {
-        disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal, this, &EvaluationManager::loadingDone);
-        active_load_connection_ = false;
-    }
-
-    //!reenable distribution to views!
-    compass_.viewManager().disableDataDistribution(false);
-    compass_.dbContentManager().enableDataDistribution(true);
-
     traced_assert(!raw_data_available_);
 
-    //obtain data
-    raw_data_ = dbcontent_man.loadedData();
+    // obtain data from the isolated operation
+    // @TODO: op state unchecked - a Failed/Cancelled load evaluates on empty/partial data
+    raw_data_ = load_op_->buffers();
     raw_data_available_ = true;
 
-    //clear local data
-    dbcontent_man.clearData();
+    load_op_ = nullptr; // release the operation
 
     //signal new data
     emit hasNewData();

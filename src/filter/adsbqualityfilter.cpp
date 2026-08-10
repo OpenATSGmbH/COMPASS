@@ -183,6 +183,20 @@ std::string ADSBQualityFilter::getConditionString(const std::string& dbcontent_n
     return ss.str();
 }
 
+FilterClause ADSBQualityFilter::getClause(const std::string& dbcontent_name)
+{
+    // large flag-driven builder - delegate to the proven getConditionString and strip the
+    // leading join space. A clean re-render + explicit-param sqlFor is deferred (no consumer
+    // reuses this filter with explicit params).
+    dbContent::VariableSet rs;
+    bool first = true;
+
+    FilterClause clause;
+    clause.sql = trimLeadingSpace(getConditionString(dbcontent_name, rs, first));
+    clause.required_vars = rs;
+    return clause;
+}
+
 DBFilterWidget* ADSBQualityFilter::createWidget()
 {
     return new ADSBQualityFilterWidget(*this);

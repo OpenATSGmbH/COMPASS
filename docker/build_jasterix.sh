@@ -45,6 +45,9 @@ cd "$BUILD_DIR"
 echo "$ASAN" > "$ASAN_MARKER"
 cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release "${CMAKE_EXTRA[@]}" ..
 make -j $(nproc)
-sudo make install
+# `make install` depends on the `all` target, so it would re-run the compiler as
+# root and leave root-owned object files in the shared build dir, which the next
+# non-root build cannot overwrite. `cmake --install` only installs.
+sudo cmake --install .
 
 cd ${WORKSPACE_BASE:-/app/workspace}/compass/docker

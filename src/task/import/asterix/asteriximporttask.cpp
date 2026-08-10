@@ -28,10 +28,12 @@
 #include "data_source.h"
 #include "number.h"
 #include "compass.h"
+#include "viewmanager.h"
 #include "buffer.h"
 #include "configurable.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "db_context_manager.h"
 #include "files.h"
 #include "logger.h"
@@ -336,8 +338,11 @@ void ASTERIXImportTask::asterixDecoderConfig(const std::string& asterix_decoder_
             throw runtime_error("ASTERIXImportTask: asterixDecoderConfig: cat "+to_string(cat)
                                 +" config is not an object");
 
-        auto* cfg = ctx_mgr.asterixConfig(cat);
-        traced_assert(cfg);
+        // create the config entry with jASTERIX defaults if the context does not have one yet
+        auto* cfg = &ctx_mgr.getOrCreateAsterixConfig(cat,
+                                                      jasterix_->category(cat)->defaultEdition(),
+                                                      jasterix_->category(cat)->defaultREFEdition(),
+                                                      jasterix_->category(cat)->defaultSPFEdition());
 
         if (cat_cfg.contains("edition"))
         {
@@ -947,8 +952,6 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 
     decode_job_ = make_shared<ASTERIXDecodeJob>(*this, post_process_);
 
-    connect(decode_job_.get(), &ASTERIXDecodeJob::obsoleteSignal, this,
-            &ASTERIXImportTask::decodeASTERIXObsoleteSlot, Qt::QueuedConnection);
     connect(decode_job_.get(), &ASTERIXDecodeJob::doneSignal, this,
             &ASTERIXImportTask::decodeASTERIXDoneSlot, Qt::QueuedConnection);
     connect(decode_job_.get(), &ASTERIXDecodeJob::decodedASTERIXSignal, this,
@@ -991,15 +994,6 @@ void ASTERIXImportTask::decodeASTERIXDoneSlot()
     decode_job_ = nullptr;
 
     checkAllDone();
-}
-
-/**
-*/
-void ASTERIXImportTask::decodeASTERIXObsoleteSlot()
-{
-    logdbg;
-
-    decode_job_ = nullptr;
 }
 
 /**
@@ -1091,8 +1085,6 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
 
     traced_assert(!extracted_data.size());
 
-    connect(json_map_job.get(), &ASTERIXJSONMappingJob::obsoleteSignal, this,
-            &ASTERIXImportTask::mapJSONObsoleteSlot, Qt::QueuedConnection);
     connect(json_map_job.get(), &ASTERIXJSONMappingJob::doneSignal, this,
             &ASTERIXImportTask::mapJSONDoneSlot, Qt::QueuedConnection);
 
@@ -1200,23 +1192,6 @@ void ASTERIXImportTask::mapJSONDoneSlot()
     logdbg << "done";
 }
 
-/**
-*/
-void ASTERIXImportTask::mapJSONObsoleteSlot()
-{
-    logdbg;
-
-    ASTERIXJSONMappingJob* map_job = dynamic_cast<ASTERIXJSONMappingJob*>(QObject::sender());
-    traced_assert(map_job);
-
-    traced_assert(json_map_jobs_.size());
-    traced_assert(json_map_jobs_.begin()->get() == map_job);
-    map_job = nullptr;
-    json_map_jobs_.erase(json_map_jobs_.begin()); // remove
-
-    checkAllDone();
-}
-
 void ASTERIXImportTask::timestampCalculationDoneSlot()
 {
     logdbg;
@@ -1230,9 +1205,6 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
     postprocess_jobs_.push_back(postprocess_job);
 
     // check for future when net import
-
-    connect(postprocess_job.get(), &ASTERIXPostprocessJob::obsoleteSignal, this,
-            &ASTERIXImportTask::postprocessObsoleteSlot, Qt::QueuedConnection);
     connect(postprocess_job.get(), &ASTERIXPostprocessJob::doneSignal, this,
             &ASTERIXImportTask::postprocessDoneSlot, Qt::QueuedConnection);
 
@@ -1293,7 +1265,7 @@ void ASTERIXImportTask::postprocessDoneSlot()
             if (!insert_active_ &&
                 !queued_insert_buffers_.empty() &&
                 !compass_.dbExportInProgress() &&
-                !dbcontent_man_.loadInProgress())
+                !dbcontent_man_.dataEngine().isLoading())
             {
                 logdbg << "inserting";
                 traced_assert(!dbcontent_man_.insertInProgress());
@@ -1395,7 +1367,7 @@ void ASTERIXImportTask::postprocessDoneSlot()
         if (!insert_active_ &&
             !queued_insert_buffers_.empty() &&
             !compass_.dbExportInProgress() &&
-            !dbcontent_man_.loadInProgress())
+            !dbcontent_man_.dataEngine().isLoading())
         {
             logdbg << "inserting";
             traced_assert(!dbcontent_man_.insertInProgress());
@@ -1403,19 +1375,6 @@ void ASTERIXImportTask::postprocessDoneSlot()
             insertData();
         }
     }
-}
-
-/**
-*/
-void ASTERIXImportTask::postprocessObsoleteSlot()
-{
-    ASTERIXPostprocessJob* post_job = dynamic_cast<ASTERIXPostprocessJob*>(QObject::sender());
-    traced_assert(post_job);
-
-    traced_assert(postprocess_jobs_.size());
-    traced_assert(postprocess_jobs_.begin()->get() == post_job);
-    post_job = nullptr;
-    postprocess_jobs_.erase(postprocess_jobs_.begin()); // remove
 }
 
 /**
@@ -1553,7 +1512,7 @@ void ASTERIXImportTask::checkDataReceivedSlot()
         && (microsec_clock::local_time() - last_live_update_time_).total_seconds() > 5)
     {
         loginf << "forcing live update";
-        QMetaObject::invokeMethod(&dbcontent_man_, "processLiveModeSlot", Qt::QueuedConnection);
+        QMetaObject::invokeMethod(&compass_.viewManager(), "forceLiveUpdate", Qt::QueuedConnection);
         last_live_update_time_ = microsec_clock::local_time();
     }
 }
@@ -1630,7 +1589,7 @@ void ASTERIXImportTask::checkAllDone()
 
         if (!insert_active_
             && !compass_.dbExportInProgress()
-            && !dbcontent_man_.loadInProgress())
+            && !dbcontent_man_.dataEngine().isLoading())
         {
             insertData(); // calls checkAllDone again when done via insertDoneSlot
             return;

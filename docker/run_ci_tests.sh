@@ -58,7 +58,12 @@ if [ -z "$MANIFESTS" ]; then
     exit 1
 fi
 
-# Run tests for each dataset with a manifest
+# Run tests for each dataset with a manifest.
+# test_suite.py exits non-zero on test failures (1) and suite errors (2), and
+# `set -eo pipefail` above would abort the loop at the first one - collect the
+# failures instead so every dataset runs, then fail at the end.
+FAILED_DATASETS=""
+
 for MANIFEST in $MANIFESTS; do
     DATASET_DIR=$(dirname "$MANIFEST")
     DATASET_NAME=$(basename "$DATASET_DIR")
@@ -69,6 +74,7 @@ for MANIFEST in $MANIFESTS; do
     echo "=============================================="
     echo ""
 
+    RC=0
     python3 test_suite.py \
         --binary="$APPIMAGE" \
         --path="$TEST_PATH" \
@@ -78,9 +84,22 @@ for MANIFEST in $MANIFESTS; do
         --deps=modules \
         --no-prompt \
         --cfg-override=none \
-        2>&1 | tee "$LOG_DIR/test_${DATASET_NAME}.log"
+        2>&1 | tee "$LOG_DIR/test_${DATASET_NAME}.log" || RC=$?
+
+    if [ "$RC" -ne 0 ]; then
+        if [ "$RC" -eq 1 ]; then
+            FAILED_DATASETS="$FAILED_DATASETS $DATASET_NAME (test failures)"
+        else
+            FAILED_DATASETS="$FAILED_DATASETS $DATASET_NAME (suite error, exit $RC)"
+        fi
+    fi
 
     echo ""
     echo "Test logs saved to $LOG_DIR/test_${DATASET_NAME}.log"
     echo ""
 done
+
+if [ -n "$FAILED_DATASETS" ]; then
+    echo "Integration tests failed:$FAILED_DATASETS"
+    exit 1
+fi

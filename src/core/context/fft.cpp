@@ -80,7 +80,7 @@ json FFT::toJSON() const
 
     j["name"] = name_;
 
-    if (!info_.is_null())
+    if (!info_.is_null() && !info_.empty())
         j["info"] = info_;
 
     return j;
@@ -93,7 +93,8 @@ FFT FFT::fromJSON(const json& j)
     traced_assert(j.contains("name"));
     fft.name_ = j.at("name");
 
-    if (j.contains("info"))
+    // keep the default empty object if the stored info is absent or null
+    if (j.contains("info") && j.at("info").is_object())
         fft.info_ = j.at("info");
 
     return fft;

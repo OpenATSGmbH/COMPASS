@@ -23,6 +23,7 @@
 #include <QMessageBox>
 #include <QTableView>
 #include <QTimer>
+#include <QItemSelection>
 
 AllBufferTableWidget::AllBufferTableWidget(TableView& view, TableViewDataSource& data_source,
                                            QWidget* parent, Qt::WindowFlags f)
@@ -54,28 +55,42 @@ void AllBufferTableWidget::selectSelectedRows()
 
     traced_assert(table_);
     traced_assert(all_buffer_model_);
-    std::pair<int,int> rows = all_buffer_model_->getSelectedRows();
 
-    if (rows.first >= 0 && rows.second >= 0)
+    std::vector<std::pair<int,int>> ranges = all_buffer_model_->getSelectedRows();
+
+    if (ranges.empty())
     {
-        loginf << "rows " << rows.first << " to " << rows.second;
-
-        traced_assert(rows.first <= rows.second);
-
-        QModelIndex first = all_buffer_model_->index(rows.first, 0, QModelIndex());
-        traced_assert(first.isValid());
-
-        QModelIndex last = all_buffer_model_->index(rows.second, 0, QModelIndex());
-        traced_assert(last.isValid());
-
-        table_->selectionModel()->select(QItemSelection(first, last),
-                                         QItemSelectionModel::Select | QItemSelectionModel::Rows);
-
-        // needed, maybe because model is reset
-        QTimer::singleShot(10, [this,first]{table_->scrollTo(first, QAbstractItemView::PositionAtCenter);});
+        table_->selectionModel()->clearSelection();
+        return;
     }
-    else
-        loginf << "nothing selected";
+
+    // Highlight the whole span from the first to the last selected row (one contiguous
+    // range - the individual selected rows are indicated by the selected_ checkbox
+    // column). ranges is sorted, so front().first / back().second bound the span.
+    const int first_row = ranges.front().first;
+    const int last_row  = ranges.back().second;
+
+    QModelIndex first = all_buffer_model_->index(first_row, 0, QModelIndex());
+    QModelIndex last  = all_buffer_model_->index(last_row,  0, QModelIndex());
+
+    {
+        // Block the selection model's change signal during the apply. For a selection
+        // spanning most of a multi-million-row table, QTableView::selectionChanged calls
+        // QItemSelection::indexes() to update header-section highlighting, which
+        // materializes every selected cell (rows x selectable columns) and calls flags()
+        // on each - O(selected cells), ~70 s on an 8M-row table. The selection is stored
+        // regardless, and cell painting queries it per visible cell, so the highlight
+        // still renders; we repaint the viewport so it shows immediately. The signal only
+        // fires on selection change, so no such sweep happens when the tab is shown.
+        QSignalBlocker blocker(table_->selectionModel());
+        table_->selectionModel()->select(QItemSelection(first, last),
+                                         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    }
+
+    table_->viewport()->update();
+
+    // needed, maybe because model is reset
+    QTimer::singleShot(10, [this,first]{table_->scrollTo(first, QAbstractItemView::PositionAtCenter);});
 }
 
 std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText()

@@ -439,6 +439,18 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
     if (tr.mode_a_code_ && !mode_as_.count(tr.mode_a_code_->code_))
         mode_as_.insert(tr.mode_a_code_->code_);
 
+    if (tr.mode_a_code_ && tr.mode_a_code_->hasReliableValue())
+    {
+        // stamp measurement time: trackers repeat the code as aged item, so correct
+        // by the reported age where known, else the repetition masks staleness
+        boost::posix_time::ptime seen_ts = tr.timestamp_;
+
+        if (tr.mode_a_code_age_ && *tr.mode_a_code_age_ > 0)
+            seen_ts -= Time::partialSeconds(*tr.mode_a_code_age_);
+
+        mode_a_infos_[tr.mode_a_code_->code_].observe(seen_ts);
+    }
+
     target_reports_.push_back(tr.record_num_);
     tr_timestamps_.insert({tr.timestamp_,tr.record_num_});
     // all sources sorted by time, ts -> record_num
@@ -483,6 +495,8 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
                     ecat_ = (unsigned int) TargetBase::Category::Vehicle;
             }
         }
+
+        acad_infos_[*tr.acad_].observe(tr.timestamp_);
     }
 
     if (tr.acid_)
@@ -499,6 +513,8 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
                     ecat_ = (unsigned int) TargetBase::Category::Vehicle;
             }
         }
+
+        acid_infos_[acid].observe(tr.timestamp_);
     }
 
     if (!ecat_ || *ecat_ == 0) // check for FFT
@@ -3011,6 +3027,96 @@ void ReconstructorTarget::removeOutdatedTargetReports()
     } 
 
     references_.clear();
+}
+
+std::vector<unsigned long> ReconstructorTarget::removeStreamReports(
+    unsigned int ds_id, unsigned int line_id, unsigned int track_number,
+    const boost::posix_time::ptime& ts, bool at_or_after)
+{
+    std::vector<unsigned long> removed;
+
+    auto tmp_tr_timestamps = std::move(tr_timestamps_);
+
+    // identity history, to keep values predating the cut whose reports are purged
+    auto old_acad_infos   = acad_infos_;
+    auto old_acid_infos   = acid_infos_;
+    auto old_mode_a_infos = mode_a_infos_;
+
+    target_reports_.clear();
+    tr_timestamps_.clear();
+    tr_ds_timestamps_.clear();
+
+    standing_adsb_target_.reset();
+
+    acads_.clear();
+    acids_.clear();
+    mode_as_.clear();
+    acad_infos_.clear();
+    acid_infos_.clear();
+    mode_a_infos_.clear();
+
+    chain().reset(); // rebuilt from the retained reports below
+
+    for (auto& ts_it : tmp_tr_timestamps)
+    {
+        if (!reconstructor_.target_reports_.count(ts_it.second))
+            continue;
+
+        const dbContent::targetReport::ReconstructorInfo& tr =
+            reconstructor_.target_reports_.at(ts_it.second);
+
+        if (tr.ds_id_ == ds_id && tr.line_id_ == line_id
+            && tr.track_number_ && *tr.track_number_ == track_number
+            && (at_or_after ? tr.timestamp_ >= ts : tr.timestamp_ < ts))
+        {
+            removed.push_back(ts_it.second);
+            continue;
+        }
+
+        addTargetReportInternal(ts_it.second, true, false);
+    }
+
+    // restore identity values belonging to the retained side whose reports are purged:
+    // when the later part was removed, values first seen before the cut belong here;
+    // when the earlier part was removed, values still current after it do
+    auto belongs_to_retained = [ & ] (const IdentityValueInfo& info)
+    {
+        return at_or_after ? info.first_seen_ < ts : info.last_seen_ >= ts;
+    };
+
+    for (const auto& info_it : old_acad_infos)
+    {
+        if (!acads_.count(info_it.first) && belongs_to_retained(info_it.second))
+        {
+            acads_.insert(info_it.first);
+            acad_infos_[info_it.first] = info_it.second;
+        }
+    }
+
+    for (const auto& info_it : old_acid_infos)
+    {
+        if (!acids_.count(info_it.first) && belongs_to_retained(info_it.second))
+        {
+            acids_.insert(info_it.first);
+            acid_infos_[info_it.first] = info_it.second;
+        }
+    }
+
+    for (const auto& info_it : old_mode_a_infos)
+    {
+        if (!mode_as_.count(info_it.first) && belongs_to_retained(info_it.second))
+        {
+            mode_as_.insert(info_it.first);
+            mode_a_infos_[info_it.first] = info_it.second;
+        }
+    }
+
+    references_.clear();
+
+    if (hasChain() && chain()->hasData())
+        chain()->reestimate();
+
+    return removed;
 }
 
 void ReconstructorTarget::removeTargetReportsLaterOrEqualThan(boost::posix_time::ptime ts)

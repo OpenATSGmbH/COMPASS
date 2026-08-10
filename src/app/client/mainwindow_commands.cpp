@@ -346,6 +346,31 @@ bool RTCommandCalculateARTASAssociations::run_impl()
     return true;
 }
 
+bool RTCommandCalculateARTASAssociations::checkResult_impl()
+{
+    const auto& stats = compass_->taskManager().createArtasAssociationsTask().resultStats();
+
+    nlohmann::json reply;
+
+    reply["found_hashes"]               = stats.found_hashes_;
+    reply["missing_hashes_at_beginning"] = stats.missing_hashes_at_beginning_;
+    reply["missing_hashes"]             = stats.missing_hashes_;
+    reply["found_hash_duplicates"]      = stats.found_hash_duplicates_;
+    reply["dubious_associations"]       = stats.dubious_associations_;
+
+    nlohmann::json counts = nlohmann::json::object();
+
+    for (const auto& cnt_it : stats.association_counts_)
+        counts[cnt_it.first] = { {"count", cnt_it.second.first},
+                                 {"associated_count", cnt_it.second.second} };
+
+    reply["association_counts"] = counts;
+
+    setJSONReply(reply);
+
+    return true;
+}
+
 // calc ref
 RTCommandReconstructReferences::RTCommandReconstructReferences()
     : rtcommand::RTCommand()

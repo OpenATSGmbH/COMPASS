@@ -64,8 +64,6 @@ private:
     bool               is_init_ = false;
 
     QString last_stylesheet_;
-    QColor  last_palette_color_;
-    bool    last_auto_fill_bg_   = false;
     bool    last_hidden_set_     = false;
     bool    last_hidden_         = false;
     bool    last_disabled_set_   = false;

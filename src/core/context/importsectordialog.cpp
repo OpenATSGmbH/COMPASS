@@ -38,6 +38,7 @@ ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
     setWindowFlags(Qt::Window | Qt::WindowTitleHint); //  | Qt::CustomizeWindowHint
 
     setWindowTitle("Import Sector");
+    setObjectName("sector_import_dialog");
 
     setModal(true);
 
@@ -50,6 +51,7 @@ ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
     grid->addWidget(new QLabel("Sector Layer"), row, 0);
 
     layer_name_edit_edit_ = new QLineEdit ();
+    layer_name_edit_edit_->setObjectName("sector_import_layer_edit");
     layer_name_edit_edit_->setText(layer_name.c_str());
     grid->addWidget(layer_name_edit_edit_, row, 1);
 
@@ -59,6 +61,7 @@ ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
     grid->addWidget(new QLabel("Exclude"), row, 0);
 
     exclude_check_ = new QCheckBox();
+    exclude_check_->setObjectName("sector_import_exclude_check");
     exclude_check_->setChecked(false);
     grid->addWidget(exclude_check_, row, 1);
 
@@ -69,6 +72,7 @@ ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
     color_ = QColor("#AAAAAA");
 
     color_button_ = new QPushButton();
+    color_button_->setObjectName("sector_import_color_button");
     color_button_->setFlat(true);
 
     QPalette pal = color_button_->palette();
@@ -86,6 +90,7 @@ ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     QPushButton* quit_button_ = new QPushButton("Cancel");
+    quit_button_->setObjectName("sector_import_cancel_button");
     quit_button_->setIcon(QIcon());
     connect(quit_button_, &QPushButton::clicked, this, &ImportSectorDialog::cancelSlot);
     button_layout->addWidget(quit_button_);
@@ -93,6 +98,7 @@ ImportSectorDialog::ImportSectorDialog(const std::string& layer_name,
     button_layout->addStretch();
 
     QPushButton* import_button_ = new QPushButton("Import");
+    import_button_->setObjectName("sector_import_apply_button");
     import_button_->setIcon(QIcon());
     connect(import_button_, &QPushButton::clicked, this, &ImportSectorDialog::importSlot);
     button_layout->addWidget(import_button_);

@@ -30,6 +30,12 @@ public:
     virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
 
+    virtual FilterClause getClause(const std::string& dbcontent_name) override;
+    // stateless renderer (reused by callers with an explicit time range)
+    static FilterClause sqlFor(IDBVariableResolver& resolver,
+                               boost::posix_time::ptime min, boost::posix_time::ptime max,
+                               const std::string& dbcontent_name);
+
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;
     void reset(boost::posix_time::ptime min, boost::posix_time::ptime max);

@@ -31,6 +31,7 @@
 #include <boost/date_time/posix_time/ptime.hpp>
 
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -163,6 +164,16 @@ public:
     void deselectDSTypeSpecificDataSources(const std::string& ds_type);
 
     std::vector<unsigned int> unfilteredDS(const std::string& dbcontent_name) const;
+
+    // Single source for the datasource/line loading selection of a content:
+    //   nullopt   = no ds/line constraint -> load everything
+    //   map       = wanted data source -> its wanted lines, listed explicitly (all four
+    //               when not line-filtered)
+    //   empty map = nothing wanted
+    // The engine's dataSourceClause renders SQL from this; the live feed tests records
+    // against it - one source of truth, closing the offline/live divergence.
+    std::optional<std::map<unsigned int, std::set<unsigned int>>> loadingSelection(
+        const std::string& dbcontent_name) const;
 
     // ================================================================
     // Runtime counts (replaces DBDataSource counts, to be persisted in db_info)
@@ -300,9 +311,16 @@ public:
     unsigned int maxSectorId() const;
 
     // sector CRUD
+
+    // returns nullptr if a sector of the same name already exists in the layer
     std::shared_ptr<Sector> createSector(const std::string& name, const std::string& layer_name,
                                           bool exclude, QColor color,
                                           std::vector<std::pair<double,double>> points);
+    // silently replaces an already existing sector of the same name in the layer
+    std::shared_ptr<Sector> createOrReplaceSector(const std::string& name, const std::string& layer_name,
+                                                   bool exclude, QColor color,
+                                                   std::vector<std::pair<double,double>> points,
+                                                   bool* replaced_existing = nullptr);
     void deleteSector(std::shared_ptr<Sector> sector);
     void deleteSectors(const std::vector<std::shared_ptr<Sector>>& sectors);
     void deleteSectorLayer(const std::string& layer_name);
@@ -310,6 +328,7 @@ public:
     void saveSector(unsigned int id);
     void saveSector(std::shared_ptr<Sector> sector);
     void moveSector(unsigned int id, const std::string& old_layer, const std::string& new_layer);
+    void renameSectorLayer(const std::string& old_name, const std::string& new_name);
 
     void importAirSpace(const AirSpace& air_space,
                         const std::map<std::string, bool>& sectors_to_import,
@@ -361,7 +380,7 @@ public:
 
     // zip-based full context export/import
     void exportContextZip(const std::string& name, const std::string& zip_filepath);
-    void importContextZip(const std::string& zip_filepath);
+    std::string importContextZip(const std::string& zip_filepath); // returns imported context name
 
     // ================================================================
     // Widgets (lazy creation, owned by this manager)

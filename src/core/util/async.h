@@ -40,5 +40,11 @@ extern bool waitDialogAsyncArray(const std::function<bool(int)>& task,
 
 extern void waitAndProcessEventsFor (unsigned int milliseconds);
 
+// pumps the event loop until done() holds. User input is excluded unless the caller is already
+// modal - see the ordering rules in db/dbcontent/readme_loading.md.
+extern void pumpUntil(const std::function<bool()>& done,
+                      bool process_user_input = false,
+                      unsigned int sleep_msecs = 1);
+
 }
 }

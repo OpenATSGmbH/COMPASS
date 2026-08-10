@@ -31,6 +31,11 @@ public:
     virtual std::string getConditionString(const std::string& dbcontent_name,
       dbContent::VariableSet& read_set, bool& first) override;
 
+    virtual FilterClause getClause(const std::string& dbcontent_name) override;
+    static FilterClause sqlFor(IDBVariableResolver& resolver,
+                               const std::set<std::string>& values, bool null_wanted,
+                               const std::string& dbcontent_name);
+
      virtual bool filters(const std::string& dbcontent_name) override;
      virtual void reset() override;
 

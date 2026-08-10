@@ -25,6 +25,7 @@
 
 #include "compass.h"
 #include "dbcontentmanager.h"
+#include "dbcontentdataengine.h"
 #include "viewmanager.h"
 #include "view.h"
 
@@ -873,8 +874,7 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
         }
     }
 
-    while (dbcont_man.loadInProgress())
-        QCoreApplication::processEvents();
+    dbcont_man.waitUntilEngineIdle();
 
     QCoreApplication::processEvents();
 

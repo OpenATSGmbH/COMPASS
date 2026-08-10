@@ -23,6 +23,7 @@
 #include "taskmanager.h"
 #include "files.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "db_context_manager.h"
@@ -732,8 +733,8 @@ void GPSTrailImportTask::run()
 
     unsigned int ds_id = Number::dsIdFrom(settings_.ds_sac, settings_.ds_sic);
 
-    traced_assert(dbcontent_man.hasMaxRefTrajTrackNum());
-    unsigned int track_num = dbcontent_man.maxRefTrajTrackNum();
+    traced_assert(dbcontent_man.dataEngine().hasMaxRefTrajTrackNum());
+    unsigned int track_num = dbcontent_man.dataEngine().maxRefTrajTrackNum();
 
     loginf << "max reftraj track num " << track_num;
 
@@ -906,7 +907,7 @@ void GPSTrailImportTask::run()
     }
 
 
-    dbcontent_man.maxRefTrajTrackNum(track_num+1); // increment for next
+    dbcontent_man.dataEngine().maxRefTrajTrackNum(track_num+1); // increment for next
 
     loginf << "inserting data";
 

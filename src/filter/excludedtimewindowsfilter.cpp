@@ -85,6 +85,38 @@ std::string ExcludedTimeWindowsFilter::getConditionString(const std::string& dbc
     return ss.str();
 }
 
+FilterClause ExcludedTimeWindowsFilter::getClause(const std::string& dbcontent_name)
+{
+    FilterClause clause;
+
+    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_))
+        return clause;
+
+    if (!active_ || !time_windows_.size())
+        return clause;
+
+    string col_name = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
+
+    stringstream ss;
+    ss << "NOT (";
+
+    for (unsigned int cnt = 0; cnt < time_windows_.size(); cnt++)
+    {
+        const Utils::TimeWindow& tw = time_windows_.get(cnt);
+
+        if (cnt != 0)
+            ss << " OR";
+
+        ss << " " << col_name << " BETWEEN " << Time::toLong(tw.begin())
+           << " AND " << Time::toLong(tw.end());
+    }
+
+    ss << ")";
+
+    clause.sql = ss.str();
+    return clause;
+}
+
 DBFilterWidget* ExcludedTimeWindowsFilter::createWidget()
 {
     return new ExcludedTimeWindowsFilterWidget(*this);

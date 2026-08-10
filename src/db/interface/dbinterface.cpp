@@ -28,6 +28,7 @@
 
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
 #include "dbcontent/target/target.h"
@@ -2551,8 +2552,8 @@ void DBInterface::initDBContentBuffer(DBContent& dbcontent,
 
     buffer->addProperty(rec_num_col_str, PropertyDataType::ULONGINT);
 
-    traced_assert(dbcontent_man_.hasMaxRecordNumberWODBContentID());
-    unsigned long max_rec_num = dbcontent_man_.maxRecordNumberWODBContentID();
+    traced_assert(dbcontent_man_.dataEngine().hasMaxRecordNumberWODBContentID());
+    unsigned long max_rec_num = dbcontent_man_.dataEngine().maxRecordNumberWODBContentID();
 
     NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(rec_num_col_str);
 
@@ -2565,7 +2566,7 @@ void DBInterface::initDBContentBuffer(DBContent& dbcontent,
         rec_num_vec.set(cnt, Number::recNumAddDBContId(max_rec_num, dbcont_id));
     }
 
-    dbcontent_man_.maxRecordNumberWODBContentID(max_rec_num);
+    dbcontent_man_.dataEngine().maxRecordNumberWODBContentID(max_rec_num);
 }
 
 /**

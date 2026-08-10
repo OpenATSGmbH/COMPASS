@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "filterclause.h"
+
 #include <QComboBox>
 #include <QList>
 
@@ -29,29 +31,29 @@ class FilterConditionOperatorComboBox : public QComboBox
 
         if (stringlist.size() == 0)
         {
-            stringlist.append("=");
-            stringlist.append("!=");
+            stringlist.append(QString::fromStdString(filter_op::equal));
+            stringlist.append(QString::fromStdString(filter_op::not_equal));
 
             if (!string_only)
             {
-                stringlist.append(">");
-                stringlist.append(">=");
-                stringlist.append("<");
-                stringlist.append("<=");
-                stringlist.append("BETWEEN");
+                stringlist.append(QString::fromStdString(filter_op::greater));
+                stringlist.append(QString::fromStdString(filter_op::greater_equal));
+                stringlist.append(QString::fromStdString(filter_op::less));
+                stringlist.append(QString::fromStdString(filter_op::less_equal));
+                stringlist.append(QString::fromStdString(filter_op::between));
             }
 
-            stringlist.append("IN");
-            stringlist.append("NOT IN");
+            stringlist.append(QString::fromStdString(filter_op::in));
+            stringlist.append(QString::fromStdString(filter_op::not_in));
 
             if (!numeric_only)
             {
-                stringlist.append("LIKE");
-                stringlist.append("NOT LIKE");
+                stringlist.append(QString::fromStdString(filter_op::like));
+                stringlist.append(QString::fromStdString(filter_op::not_like));
             }
 
-            stringlist.append("IS");
-            stringlist.append("IS NOT");
+            stringlist.append(QString::fromStdString(filter_op::is));
+            stringlist.append(QString::fromStdString(filter_op::is_not));
         }
 
         /* Populate the comboBox */

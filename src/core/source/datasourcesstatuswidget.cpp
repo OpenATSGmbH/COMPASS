@@ -24,6 +24,7 @@
 #include "dbcontentmanager.h"
 
 #include "compass.h"
+#include "viewmanager.h"
 
 #include "timeconv.h"
 #include "number.h"
@@ -218,7 +219,8 @@ DataSourcesStatusWidget::DataSourcesStatusWidget(context::DBContextManager& ctx_
 
     showLastUpdates(ctx_man.sensorConfig().sensor_status_show_last_updates);
 
-    connect(&dbcontent_man_, &DBContentManager::loadedDataSignal, this, &DataSourcesStatusWidget::dataLoaded, Qt::QueuedConnection);
+    connect(&dbcontent_man_.compass().viewManager(), &ViewManager::dataDistributedSignal,
+            this, &DataSourcesStatusWidget::dataLoaded, Qt::QueuedConnection);
 }
 
 /**
@@ -491,7 +493,7 @@ void DataSourcesStatusWidget::dataLoaded()
     initSensorStatesForParse();
 
     //determine new sensor status from data
-    auto data = dbcontent_man_.data();
+    auto data = dbcontent_man_.compass().viewManager().currentBuffers();
     auto it = data.find(DBCType);
 
     if (it != data.end() && it->second->size() > 0)
@@ -657,7 +659,7 @@ void DataSourcesStatusWidget::dataLoaded()
                 bool already_scanned     = sen_stat.second.last_update_found_in_scan;
 
                 if (status_changed)
-                    loginf << tracker_status.first.first << ":" << sen_stat.first 
+                    logdbg << tracker_status.first.first << ":" << sen_stat.first 
                         << " has last item " << has_last_item_state
                         << " already scanned " << already_scanned
                         << " status changed " << status_changed;

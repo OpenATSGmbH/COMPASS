@@ -33,6 +33,7 @@ class TaskManager;
 
 class DBContent;
 class Buffer;
+class LoadOperation;
 
 namespace dbContent {
 class Variable;
@@ -47,9 +48,7 @@ public slots:
     void dialogRunSlot();
 
     void createDoneSlot();
-    void createObsoleteSlot();
 
-    void loadedDataDataSlot(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
     void loadingDoneSlot();
 
     void associationStatusSlot(QString status);
@@ -93,6 +92,18 @@ public:
 
         bool ignore_track_coasting_associations_{true};
         bool mark_track_coasting_associations_dubious_{false};
+    };
+
+    struct ResultStats
+    {
+        size_t found_hashes_{0};
+        size_t missing_hashes_at_beginning_{0};
+        size_t missing_hashes_{0};
+        size_t found_hash_duplicates_{0};
+        size_t dubious_associations_{0};
+
+        std::map<std::string, std::pair<unsigned int, unsigned int>> association_counts_;
+        // dbcontent name -> (total count, associated count)
     };
 
     CreateARTASAssociationsTask(nlohmann::json& config, TaskManager* parent);
@@ -144,6 +155,8 @@ public:
 
     bool wasRun();
 
+    const ResultStats& resultStats() const;
+
     Error checkError() const;
 
     static const std::string DONE_PROPERTY_NAME;
@@ -156,6 +169,7 @@ protected:
 
     bool save_associations_{true};
 
+    std::shared_ptr<LoadOperation> load_op_; // isolated batch load, released after harvest
     std::map<std::string, std::shared_ptr<Buffer>> data_;
 
     std::unique_ptr<CreateARTASAssociationsStatusDialog> status_dialog_{nullptr};
@@ -164,6 +178,8 @@ protected:
 
     std::shared_ptr<CreateARTASAssociationsJob> create_job_;
     bool create_job_done_{false};
+
+    ResultStats result_stats_;
 
     dbContent::VariableSet getReadSetFor(const std::string& dbcontent_name);
 };

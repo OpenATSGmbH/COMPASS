@@ -77,6 +77,7 @@ class ReconstructorBaseSettings
     boost::posix_time::ptime data_timestamp_min;
     boost::posix_time::ptime data_timestamp_max;
 
+
     // slicing
     unsigned int slice_duration_in_minutes    {15};
     unsigned int outdated_duration_in_minutes {2};
@@ -86,6 +87,16 @@ class ReconstructorBaseSettings
 
     // maximum time difference in target reports to do comparisons
     float max_time_diff_ {10}; // sec
+    // maximum age of remembered identity values (Mode 3/A, ACID) to use in comparisons,
+    // older values are UNKNOWN (neither confirm nor contradict); bounds attribute
+    // volatility, deliberately independent of max_time_diff_
+    float identity_value_max_age_ {60}; // sec
+    // minimum evidence per side (sustaining measurements and duration) for a transition
+    unsigned int identity_transition_min_updates_ {5};
+    float identity_transition_min_duration_ {10}; // sec
+    // mode 3/A codes shared by many aircraft (conspicuity, emergency), which therefore
+    // carry no identity information; octal, comma separated
+    std::string identity_conspicuity_codes_ {"0000,1000,2000,7000,7500,7600,7700"};
     // maximum altitude difference to consider mode c the "same"
     float max_altitude_diff_ {300.0};
     // maximimum time difference between track updates, otherwise considered new track
@@ -94,6 +105,8 @@ class ReconstructorBaseSettings
     bool do_track_number_disassociate_using_distance_ {true};
     // if do tn disassc, factor for "normal" assoc threshold to calc threshold
     float tn_disassoc_distance_factor_ {3};
+    // cut tracker track streams at detected identity changes (swap candidates)
+    bool do_identity_change_cut_ {true};
 
     // compare targets related
     double target_prob_min_time_overlap_ {0.1};
@@ -199,6 +212,10 @@ public:
                                                  std::pair<unsigned int, boost::posix_time::ptime>>>> tn2utn_;
 
         std::map<unsigned int, dbContent::ReconstructorTarget> targets_; // utn -> tgt
+
+        // utn pairs separated by an identity cut this slice, self-association must not
+        // merge them back (pairs stored ordered, smaller utn first)
+        std::set<std::pair<unsigned int, unsigned int>> do_not_merge_pairs_;
         //std::vector<unsigned int> removed_utns_;
 
         unsigned int createNewTarget(const dbContent::targetReport::ReconstructorInfo& tr);
@@ -222,6 +239,11 @@ public:
         // -1 if failed, else utn
 
         void eraseTrackNumberLookup(dbContent::targetReport::ReconstructorInfo& tr);
+
+        // creates a target from existing target reports (identity cut remainder) and
+        // repoints the track number / ACAD / ACID lookups that moved with them
+        unsigned int createTargetFromReports(const std::vector<unsigned long>& rec_nums,
+                                             unsigned int source_utn);
 
         void clear();
     };

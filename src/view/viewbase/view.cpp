@@ -270,12 +270,13 @@ void View::loadingStarted()
 
 /**
 */
-void View::loadedData(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
+/**
+ */
+void View::updateFromSource(const DBContentDataSet& source,
+                            const std::vector<std::string>& names, bool reset, bool last)
 {
-    logdbg;
-
     if (widget_ && widget_->getViewDataWidget())
-        widget_->getViewDataWidget()->updateData(data, requires_reset);
+        widget_->getViewDataWidget()->updateFromSource(source, names, reset, last);
 }
 
 /**
@@ -500,11 +501,12 @@ void View::notifyViewUpdateNeeded(int flags, bool add)
         if (flags & VU_Reload)
         {
             //in live mode a view handles its reload internally in its data widget
+            //(not via the global DB based reload)
             widget_->getViewDataWidget()->liveReload();
         }
         else if (flags & VU_Redraw)
         {
-            //just redraw
+            //immediate redraw
             updateView(VU_PureRedraw);
         }
         return;
@@ -631,7 +633,7 @@ void View::updateView(int flags)
     {
         //start reload (will reset all cached updates)
         if (view_manager_.compass().dbOpened())
-            view_manager_.compass().dbContentManager().load(LoadRequest::standard());
+            view_manager_.reload();
     }
     else //handle all other updates
     {

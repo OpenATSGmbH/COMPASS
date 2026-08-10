@@ -25,6 +25,7 @@
 #include "db_context_delete_dialog.h"
 #include "db_context_edit_dialog.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 #include "dbcontent/target/targetlistwidget.h"
 #include "datasourcestoolwidget.h"
 #include "datasourcesstatustoolwidget.h"
@@ -87,6 +88,7 @@
 #include <QInputDialog>
 #include <QLineEdit>
 #include "questiondialog.h"
+#include "dialogs.h"
 
 #include <QMessageBox>
 #include <QPushButton>
@@ -203,6 +205,7 @@ void MainWindow::createUI()
 
     // initialize toolbox
     tool_box_ = new ToolBox(this);
+    tool_box_->setObjectName("toolbox");
     
     tool_ds_      = tool_box_->addTool(compass_.dbContextManager().loadWidget()); // 0
     tool_filters_ = tool_box_->addTool(compass_.filterManager().widget()); // 1
@@ -287,9 +290,9 @@ void MainWindow::createUI()
     connect (&compass_, &COMPASS::appModeSwitchSignal,
             this, &MainWindow::appModeSwitchSlot);
 
-    connect(&compass_.dbContentManager(), &DBContentManager::loadingStartedSignal,
+    connect(&compass_.viewManager(), &ViewManager::loadingStartedSignal,
             this, &MainWindow::loadingStartedSlot);
-    connect(&compass_.dbContentManager(), &DBContentManager::loadingDoneSignal,
+    connect(&compass_.viewManager(), &ViewManager::loadingDoneSignal,
             this, &MainWindow::loadingDoneSlot);
     connect (&compass_.dbContentManager(), &DBContentManager::associationStatusChangedSignal,
             this, &MainWindow::updateMenus);
@@ -1057,9 +1060,9 @@ void MainWindow::importJSONRecordingSlot()
 
 void MainWindow::importGPSTrailSlot()
 {
-    string filename = QFileDialog::getOpenFileName(this, "Import GPS Trail",
-                                                   compass_.lastUsedPath().c_str(),
-                                                   "Text Files (*.nmea *.txt)").toStdString();
+    string filename = Dialogs::getOpenFileName(this, "Import GPS Trail",
+                                               compass_.lastUsedPath().c_str(),
+                                               "Text Files (*.nmea *.txt)").toStdString();
 
     if (filename.size() > 0)
     {
@@ -1376,16 +1379,14 @@ void MainWindow::loadButtonSlot()
     if (loading_)
     {
         load_button_->setDisabled(true);
-        compass_.dbContentManager().quitLoading();
+        compass_.dbContentManager().dataEngine().cancelLoad();
         return;
     }
 
     loading_ = true;
     load_button_->setText("Stop");
 
-    LoadRequest req = LoadRequest::standard();
-    req.measure_db_performance_ = true;
-    compass_.dbContentManager().load(req);
+    compass_.viewManager().reload(/*blocking=*/false, /*measure_performance=*/true);
 }
 
 void MainWindow::loadingStartedSlot()

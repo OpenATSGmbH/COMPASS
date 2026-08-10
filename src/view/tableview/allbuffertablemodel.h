@@ -28,6 +28,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 class AllBufferCSVExportJob;
 class AllBufferTableWidget;
@@ -52,7 +53,7 @@ class AllBufferTableModel : public BaseBufferTableModel
     void saveAsCSV(const std::string& file_name) override;
     void rebuild() override;
 
-    std::pair<int,int> getSelectedRows(); // min, max selected row
+    std::vector<std::pair<int,int>> getSelectedRows(); // contiguous [first,last] runs of selected rows
 
     /// Installs a layer-level filter keyed by "<ds_type>:<ds_name>:L<n>:<dbcont>".
     /// nullopt = no filter (all rows shown). An empty set filters everything out.

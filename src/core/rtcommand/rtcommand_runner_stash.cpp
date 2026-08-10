@@ -82,7 +82,11 @@ void RTCommandRunnerStash::executeCommandAsync(RTCommandMetaTypeWrapper wrapper)
     if (wrapper.command)
     {
         wrapper.command->compass_ = &compass_;
-        wrapper.command->run();
+
+        //the runner does not track state for async commands, since execution
+        //happens after the command reply has already been sent
+        if (wrapper.command->run())
+            wrapper.command->setState(CmdState::Finished);
     }
 }
 
