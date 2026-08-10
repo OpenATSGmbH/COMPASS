@@ -86,6 +86,33 @@ std::string RefTrajAccuracyFilter::getConditionString(const std::string& dbconte
     return ss.str();
 }
 
+FilterClause RefTrajAccuracyFilter::getClause(const std::string& dbcontent_name)
+{
+    if (!active_)
+        return FilterClause{};
+
+    return sqlFor(variableResolver(), min_value_, dbcontent_name);
+}
+
+FilterClause RefTrajAccuracyFilter::sqlFor(IDBVariableResolver& resolver, float min,
+                                           const std::string& dbcontent_name)
+{
+    FilterClause clause;
+
+    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_)
+        || !resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_))
+        return clause;
+
+    string x_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_x_stddev_);
+    string y_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_y_stddev_);
+
+    stringstream ss;
+    ss << "sqrt(pow(" << x_col << ",2) + (pow(" << y_col << ",2))) <= " << min;
+
+    clause.sql = ss.str();
+    return clause;
+}
+
 DBFilterWidget* RefTrajAccuracyFilter::createWidget()
 {
     return new RefTrajAccuracyFilterWidget(*this);

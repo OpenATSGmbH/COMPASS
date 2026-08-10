@@ -23,6 +23,7 @@
 #include "dbcontentdeletedbjob.h"
 
 #include "compass.h"
+#include "viewmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "jobmanager.h"
@@ -38,6 +39,7 @@
 
 #include <QLabel>
 #include <QCheckBox>
+#include <QSignalBlocker>
 #include <QPainter>
 #include <QPen>
 #include <QPixmap>
@@ -699,82 +701,54 @@ void DataSourceLineButton::updateContent()
     {
         if (!last_checked_set_ || last_checked_ != c)
         {
+            // programmatic visual update must not emit toggled -> lineChanged,
+            // which would mutate the user's line selection (lineLoadingWanted).
+            // e.g. greying out a temporarily-empty line on pause must not
+            // deselect it, or its live data would be filtered out on resume.
+            QSignalBlocker blocker(this);
             setChecked(c);
             last_checked_     = c;
             last_checked_set_ = true;
         }
     };
 
-    auto apply_palette_color = [this](const QColor& col)
-    {
-        if (last_auto_fill_bg_ && last_palette_color_ == col)
-            return;
-        QPalette pal = palette();
-        pal.setColor(QPalette::Button, col);
-        setAutoFillBackground(true);
-        setPalette(pal);
-        update();
-        last_palette_color_ = col;
-        last_auto_fill_bg_  = true;
-    };
-
-    // Color Mode: DataSource + Line -> paint a 3px border in the corresponding line color
-    unsigned int color_mode = ctx_man.compass().colorMode();
-    const auto* ds = dataSource();
-    if (color_mode == 3 /*DataSourceLine*/ && ds && ds->lineColor(line_id_).isValid())
-    {
-        QString color_name = ds->lineColor(line_id_).name();
-        apply_stylesheet(QString(" QPushButton { border: 3px solid %1; } "
-                                 " QPushButton:pressed { border: 3px outset %1; } "
-                                 " QPushButton:checked { border: 3px outset %1; }").arg(color_name));
-    }
-    else
-    {
-        if (dark_mode)
-        {
-            apply_stylesheet(" QPushButton:pressed { border: 3px outset white; } "
-                             " QPushButton:checked { border: 3px outset white; }");
-        }
-        else
-        {
-            apply_stylesheet(" QPushButton:pressed { border: 3px outset; } "
-                             " QPushButton:checked { border: 3px outset; }");
-        }
-    }
+    // Decide the visual state (hidden / disabled / background) per mode, then assemble a
+    // single stylesheet that owns background + border + disabled text together. Mixing a
+    // palette-driven background with a border-only stylesheet flips the widget to
+    // stylesheet rendering the moment :checked fires, which drops the palette background
+    // and leaves the disabled label with no contrast (checked+disabled lost its "L1").
+    bool   hidden   = false;
+    bool   disabled = false;
+    QColor bg_color; // invalid -> no explicit background (native look, non-live)
 
     if (live_mode)
     {
         auto net_lines = ctx_man.getNetworkLines();
 
-        bool hidden = !net_lines.count(ds_id_) || !net_lines.at(ds_id_).count(line_str_); // hide if not defined
-
-        apply_hidden(hidden);
+        hidden = !net_lines.count(ds_id_) || !net_lines.at(ds_id_).count(line_str_); // hide if not defined
 
         if (!hidden)
         {
-            bool disabled = app_mode == AppMode::LivePaused ?
+            disabled = app_mode == AppMode::LivePaused ?
                 (ctx_man.numInsertedPerLine(ds_id_, "").count(line_id_) == 0) : false;
-            apply_disabled(disabled);
 
             if (disabled)
             {
-                apply_checked(false);
-                apply_palette_color(QColor(dark_mode ? Qt::darkGray : Qt::lightGray));
+                // no-data placeholder during pause: greyed, but the true retained
+                // selection stays visible (checked = getUseDSLine), and lineLoadingWanted
+                // is untouched thanks to the signal blocker in apply_checked.
+                bg_color = QColor(dark_mode ? Qt::darkGray : Qt::lightGray);
             }
             else
             {
-                apply_checked(widget_->getUseDSLine(ds_id_, line_id_));
-
                 boost::posix_time::ptime current_time = Utils::Time::currentUTCTime();
 
                 auto max_ts = ctx_man.maxTimestamp(ds_id_, line_id_);
                 bool has_live = !max_ts.is_not_a_date_time() &&
                     Utils::Time::partialSeconds(current_time - max_ts) < 30.0;
 
-                if (has_live)
-                    apply_palette_color(QColor(dark_mode ? Qt::darkGreen : Qt::green));
-                else
-                    apply_palette_color(QColor(dark_mode ? Qt::darkGray : Qt::lightGray));
+                bg_color = has_live ? QColor(dark_mode ? Qt::darkGreen : Qt::green)
+                                    : QColor(dark_mode ? Qt::darkGray  : Qt::lightGray);
             }
         }
     }
@@ -782,9 +756,46 @@ void DataSourceLineButton::updateContent()
     {
         std::map<unsigned int, unsigned int> inserted_lines = ctx_man.numInsertedLinesMap(ds_id_);
 
-        apply_checked(widget_->getUseDSLine(ds_id_, line_id_));
-        apply_hidden(!inserted_lines.count(line_id_)); // hide if no data
+        hidden = !inserted_lines.count(line_id_); // hide if no data
     }
+
+    // Border: Color Mode DataSource+Line paints a solid line-colored border, otherwise a
+    // 3D outset (white in dark mode) on the pressed/checked states.
+    unsigned int color_mode = ctx_man.compass().colorMode();
+    const auto* ds = dataSource();
+
+    QString base_border;  // solid border for color mode; empty otherwise
+    QString outset_color; // color token for the pressed/checked outset; empty = default
+
+    if (color_mode == 3 /*DataSourceLine*/ && ds && ds->lineColor(line_id_).isValid())
+    {
+        QString color_name = ds->lineColor(line_id_).name();
+        base_border  = QString("border: 3px solid %1;").arg(color_name);
+        outset_color = color_name;
+    }
+    else if (dark_mode)
+    {
+        outset_color = "white";
+    }
+
+    QString bg_decl = bg_color.isValid()
+        ? QString("background-color: %1;").arg(bg_color.name()) : QString();
+
+    // dimmed but readable on the grey disabled background
+    QString disabled_text = dark_mode ? "#c0c0c0" : "#404040";
+
+    QString css =
+        QString(" QPushButton { %1 %2 } ").arg(bg_decl, base_border)
+      + QString(" QPushButton:pressed { border: 3px outset %1; } ").arg(outset_color)
+      + QString(" QPushButton:checked { border: 3px outset %1; } ").arg(outset_color);
+
+    if (bg_color.isValid())
+        css += QString(" QPushButton:disabled { %1 color: %2; } ").arg(bg_decl, disabled_text);
+
+    apply_stylesheet(css);
+    apply_hidden(hidden);
+    apply_disabled(disabled);
+    apply_checked(widget_->getUseDSLine(ds_id_, line_id_));
 }
 
 /**************************************************************************************************
@@ -1895,7 +1906,7 @@ void DataSourcesWidget::runDeleteDialog(std::function<void(DeleteDataDialog&)> p
         return;
 
     // clear loaded dataset
-    ctx_man_.compass().dbContentManager().clearData();
+    ctx_man_.compass().viewManager().clearDataInViews();
 
     // show blocking wait dialog
     delete_wait_dialog_ = new QMessageBox(this);

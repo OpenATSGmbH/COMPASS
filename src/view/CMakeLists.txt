@@ -10,11 +10,15 @@ include("${CMAKE_CURRENT_LIST_DIR}/points/CMakeLists.txt")
 target_sources(compass_view
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/viewmanager.h"
+        "${CMAKE_CURRENT_LIST_DIR}/loadcontroller.h"
+        "${CMAKE_CURRENT_LIST_DIR}/livecontroller.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewmanagerwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewcontainer.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewcontainerwidget.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/viewmanager.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/loadcontroller.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/livecontroller.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/viewmanagerwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/viewcontainer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/viewcontainerwidget.cpp"

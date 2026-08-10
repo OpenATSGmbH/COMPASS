@@ -682,20 +682,23 @@ void AllBufferTableModel::saveAsCSV(const std::string& file_name)
         view_.settings().show_only_selected_, view_.settings().use_presentation_);
 
     export_job_ = std::shared_ptr<AllBufferCSVExportJob>(export_job);
-    connect(export_job, &AllBufferCSVExportJob::obsoleteSignal, this,
-            &AllBufferTableModel::exportJobObsoleteSlot, Qt::QueuedConnection);
     connect(export_job, &AllBufferCSVExportJob::doneSignal, this,
             &AllBufferTableModel::exportJobDoneSlot, Qt::QueuedConnection);
 
     view_.compass().jobManager().addBlockingJob(export_job_);
 }
 
-std::pair<int,int> AllBufferTableModel::getSelectedRows()
+std::vector<std::pair<int,int>> AllBufferTableModel::getSelectedRows()
 {
     loginf;
 
-    int first_row = -1;
-    int last_row = -1;
+    // Collect the actually-selected rows as contiguous [first,last] runs. Returning a
+    // single (min,max) span would make a sparse selection (e.g. a geo rectangle spread
+    // across the time-sorted table) select every row in between - millions of rows -
+    // which is both wrong and extremely slow to apply/render in Qt.
+    std::vector<std::pair<int,int>> ranges;
+    int run_start = -1;
+    int run_end   = -1;
 
     for (unsigned int cnt = 0; cnt < row_indexes_.size(); ++cnt)
     {
@@ -710,18 +713,27 @@ std::pair<int,int> AllBufferTableModel::getSelectedRows()
         std::shared_ptr<Buffer> buffer = buffers_.at(dbcontent_name);
 
         traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
-        if (buffer->get<bool>(dbcontent_vars::selected_var_.name()).isNull(buffer_index))
-            continue;
+        const auto& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
 
-        if (buffer->get<bool>(dbcontent_vars::selected_var_.name()).get(buffer_index))
+        bool selected = !selected_vec.isNull(buffer_index) && selected_vec.get(buffer_index);
+
+        if (selected)
         {
-            if (first_row == -1)
-                first_row = cnt;
-
-            last_row = cnt;
+            if (run_start == -1)                 // begin a new run
+                run_start = run_end = (int)cnt;
+            else if ((int)cnt == run_end + 1)    // extend the current run
+                run_end = (int)cnt;
+            else                                 // gap: close the run, start a new one
+            {
+                ranges.emplace_back(run_start, run_end);
+                run_start = run_end = (int)cnt;
+            }
         }
     }
 
-    return std::make_pair(first_row, last_row);
+    if (run_start != -1)
+        ranges.emplace_back(run_start, run_end);
+
+    return ranges;
 }
 

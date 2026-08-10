@@ -34,7 +34,7 @@ The categories COMPASS supports (`data/jasterix_definitions/categories/categorie
 | 065 | SDPS service messages | service-level status of the system data processor |
 | 247 | Version number message | identifies ASTERIX version of the stream |
 
-Categories COMPASS does **not** import but jASTERIX can decode (030/031/032/252) are ARTAS-internal formats described in the ARTAS interface spec.
+Categories COMPASS does **not** import but jASTERIX can decode (030/252) are ARTAS-internal formats described in the ARTAS interface spec.
 
 The natural processing chain in an ATC system is therefore: **048 / 021 / 020 -> 062**, with 034 / 019 / 023 / 063 / 065 as the status side-channel and 004 as the safety-net output.
 
@@ -279,16 +279,11 @@ The same conceptual layer thus shows up under different item numbers in differen
 
 ## How COMPASS uses and imports ASTERIX
 
-COMPASS does not parse ASTERIX bytes itself - it links against **jASTERIX**, an OpenATS-maintained C++ library that turns ASTERIX bytes into JSON using **definition files only** - no recompile is needed to support a new edition.
+COMPASS does not parse ASTERIX bytes itself - it links against **jASTERIX**, an OpenATS-maintained C++ library that turns ASTERIX bytes into JSON (and can encode JSON back to bytes) using **definition files only** - no recompile is needed to support a new edition. The library itself - repo layout, supported editions, definition file format, output formats, decode/encode API, CLI client - is documented in [readme_jasterix.md](/home/sk/workspace/jasterix/readme_jasterix.md) (jasterix skill).
 
 ### Two layers of definitions
 
-1. **jASTERIX side** - byte-level decoding rules in `data/jasterix_definitions/`:
-   - `data_block_definition.json` - the CAT/LEN/content envelope
-   - `framings/{ioss,ioss_seq,rff}.json` - recording wrappers
-   - `categories/categories.json` - lists supported editions and the default per category
-   - `categories/<NNN>/cat<NNN>_<edition>.json` - per-edition UAP plus per-item bitfield layout (FSPEC, UAP list, then each item's `data_fields` with `fixed_bytes` / `fixed_bitfield` / `lsb` / etc.)
-   - `cat<NNN>_ref_*.json` for REFs, `cat<NNN>_spf_*.json` for SPFs (e.g. ARTAS TRIs in 062)
+1. **jASTERIX side** - byte-level decoding rules in `data/jasterix_definitions/` (a copy of `~/workspace/jasterix/definitions/`, kept in sync): the CAT/LEN envelope, framings, the `categories.json` edition registry, and per-edition item layouts plus REF/SPF definitions. Format details in [readme_jasterix.md](/home/sk/workspace/jasterix/readme_jasterix.md).
 
 2. **COMPASS side** - JSON-to-DB-column mapping in `conf/default/`:
    - `task_import_asterix.json` - master config: framing, chunk sizes, packet overload thresholds, geo/time/Mode-C filters, SAC/SIC/ToD overrides, and one `ASTERIXCategoryConfig` sub-config per category selecting **edition / REF / SPF**
@@ -300,8 +295,8 @@ COMPASS does not parse ASTERIX bytes itself - it links against **jASTERIX**, an 
 Code in `src/task/import/asterix/` and `src/import/asterix/`:
 
 1. `ASTERIXImportTask` (`asteriximporttask.h`) owns one `std::shared_ptr<jASTERIX::jASTERIX>` instance. `initjASTERIX()` constructs the decoder against `data/jasterix_definitions/`; `configurejASTERIX()` applies the active context's per-category edition/REF/SPF picks.
-2. A decoder backend - file (`asterixfiledecoder.cpp`), pcap (`asterixpcapdecoder.h`), live network (`asterixnetworkdecoder.cpp`), or replayed JSON (`asterixjsondecoder.cpp`) - feeds bytes to jASTERIX, which emits JSON records in chunks.
-3. `ASTERIXJSONMappingJob` (`asterixjsonmappingjob.cpp`) walks each JSON record using the per-category `ASTERIXJSONParser` mappings and writes typed values into Buffers.
+2. A decoder backend - file (`asterixfiledecoder.cpp`), pcap (`asterixpcapdecoder.h`), live network (`asterixnetworkdecoder.cpp`), or replayed JSON (`asterixjsondecoder.cpp`) - feeds bytes to jASTERIX, which emits JSON in chunks using jASTERIX's **flat (columnar) format**: per category, one array column per leaf field with one entry per record.
+3. `ASTERIXJSONMappingJob` (`asterixjsonmappingjob.cpp`) maps the flat columns via the per-category `ASTERIXJSONParser` mappings (`parseFlatJSON` -> `JSONDataMapping::setFlatArrayValues`) and writes typed values into Buffers. Repetitive-item leaves (e.g. the CAT062 ARTAS SPF TRIs, flat column `SPF.Target Report Identifiers.TRI`) arrive as an array of scalars per record cell; mappings with `in_array` iterate these and, with `append_value`, join them into one value (TRIs become a semicolon-separated string in `target_report_identifiers`).
 4. `ASTERIXPostProcessJob` (`asterixpostprocessjob.h`) fixes ToD wrap/offset, applies SAC/SIC overrides, computes derived fields, then hands buffers off for DuckDB insertion.
 5. The pipeline runs in parallel via JobManager + TBB, with the `num_packets_overload` / `max_packets_in_processing` knobs in `task_import_asterix.json` keeping memory bounded for large files or sustained live feeds.
 
@@ -345,13 +340,13 @@ The original EUROCONTROL specification PDFs are kept locally under `~/Nextcloud/
 | Part 1 (general) | ed 3.1 / ed 2.4 | `eurocontrol-specification-asterix-part1-ed-3-1.pdf`, `part_1_-_eurocontrol_specification_asterix_spec-149_ed_2.4.pdf` |
 | Categories overview | 2021-09-27 | `asterix-categories-and-statuses-20210927.pdf` |
 
-Older editions of each category are kept alongside in the same folder for diffing against historical recordings. The jASTERIX-side per-edition decoders in `data/jasterix_definitions/categories/<NNN>/cat<NNN>_<edition>.json` are derived from these PDFs.
+Older editions of each category are kept alongside in the same folder for diffing against historical recordings. The jASTERIX-side per-edition decoders in `data/jasterix_definitions/categories/<NNN>/cat<NNN>_<edition>.json` are derived from these PDFs (see [readme_jasterix.md](/home/sk/workspace/jasterix/readme_jasterix.md) for the definition format).
 
 In-project ASTERIX-related locations:
 
 | Path | What lives there |
 |---|---|
-| `~/workspace/jasterix/` | jASTERIX library source (sibling repo). C++ decoder under `src/` (`asterix/`, `frames/`, `items/`, `write/`), the canonical decoding rules under `definitions/` (`data_block_definition.json`, `framings/`, `categories/<NNN>/cat<NNN>_<edition>.json`, REF/SPF JSONs), plus a copy of the EUROCONTROL spec PDFs at the repo root for offline reference |
-| `data/jasterix_definitions/` | The byte-level decoding rules shipped *with* COMPASS - kept in sync with `~/workspace/jasterix/definitions/`. `data_block_definition.json` (CAT/LEN envelope), `framings/{ioss,ioss_seq,rff}.json` (recording wrappers), `categories/categories.json` (supported editions per category + default), and `categories/<NNN>/cat<NNN>_<edition>.json` plus `cat<NNN>_ref_*.json` / `cat<NNN>_spf_*.json` for REFs and SPFs. This is what jASTERIX is constructed against at runtime |
+| `~/workspace/jasterix/` | jASTERIX library source (sibling repo), holding the canonical definition files under `definitions/` and the spec PDFs at the repo root. Documented in [readme_jasterix.md](/home/sk/workspace/jasterix/readme_jasterix.md) (jasterix skill) |
+| `data/jasterix_definitions/` | The byte-level decoding rules shipped *with* COMPASS - a copy of `~/workspace/jasterix/definitions/`, kept in sync. This is what jASTERIX is constructed against at runtime; the definition file format is documented in [readme_jasterix.md](/home/sk/workspace/jasterix/readme_jasterix.md) |
 | `conf/default/` | The COMPASS-side mappings: `task_import_asterix.json` (master config: framing, chunk sizes, packet overload thresholds, geo/time/Mode-C filters, SAC/SIC/ToD overrides, plus one `ASTERIXCategoryConfig` per category selecting the active edition / REF / SPF), `task_import_asterix_cat<NNN>.json` (one `ASTERIXJSONParser` per category with the JSON-to-`DBContent` `JSONDataMapping` entries), and `db_content.json` + `db_content_cat<NNN>.json` (destination DBContent table definitions) |
 | [`.claude/skills/adsb_accuracy/SKILL.md`](../../../.claude/skills/adsb_accuracy/SKILL.md) | In-depth notes on ADS-B accuracy/integrity indicators: NUCp/NACp/NIC/NACv/SIL/SDA/GVA per MOPS version, the I021/090 → CAT021 DBContent variable mapping, conversion of QI values to position σ in COMPASS, and how `ADSBAccuracyEstimator` consumes them in the reconstructor. Read this whenever the Layer 1 / Layer 4 CAT021 quality fields above need actual numbers or COMPASS-side semantics |

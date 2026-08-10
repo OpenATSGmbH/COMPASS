@@ -42,7 +42,6 @@ class BaseBufferTableModel : public QAbstractTableModel
 
   public slots:
     virtual void setChangedSlot();
-    void exportJobObsoleteSlot();
     void exportJobDoneSlot();
 
   public:

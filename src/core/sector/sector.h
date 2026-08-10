@@ -132,7 +132,7 @@ public:
     void name(const std::string& name);
 
     std::string layerName() const;
-    void layerName(const std::string& layer_name);
+    void layerName(const std::string& layer_name, bool notify = true);
 
     bool readJSON(const std::string& json_str);
     bool readJSON(const nlohmann::json& json_obj);

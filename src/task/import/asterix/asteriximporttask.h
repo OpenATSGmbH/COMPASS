@@ -77,16 +77,13 @@ signals:
 
 public slots:
     void decodeASTERIXDoneSlot();
-    void decodeASTERIXObsoleteSlot();
     void addDecodedASTERIXSlot();
 
     void mapJSONDoneSlot();
-    void mapJSONObsoleteSlot();
 
     void timestampCalculationDoneSlot();
 
     void postprocessDoneSlot();
-    void postprocessObsoleteSlot();
 
     void insertDoneSlot();
 

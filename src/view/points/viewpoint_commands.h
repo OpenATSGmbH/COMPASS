@@ -31,7 +31,10 @@ struct RTCommandSetViewPoint : public rtcommand::RTCommand
 {
 public:
     std::string vp_json_str_;
-    std::unique_ptr<ViewableDataConfig> viewable_data_cfg_;
+    /// Shared with ViewManager: this command is destroyed before the load it
+    /// starts completes, and the views report consumption errors back into this
+    /// same instance for checkResult_impl() to read.
+    std::shared_ptr<ViewableDataConfig> viewable_data_cfg_;
 
     RTCommandSetViewPoint();
 

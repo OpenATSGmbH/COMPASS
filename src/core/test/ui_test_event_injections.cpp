@@ -29,6 +29,11 @@
 #include <QObject>
 #include <QMenu>
 #include <QMenuBar>
+#include <QTreeView>
+#include <QAbstractItemModel>
+#include <QAbstractItemView>
+#include <QContextMenuEvent>
+#include <QDateTimeEdit>
 #include <QComboBox>
 #include <QTabWidget>
 #include <QToolBar>
@@ -569,6 +574,71 @@ bool injectMenuBarEvent(QWidget* root,
 }
 
 /**
+ * Triggers a menu bar action deferred via the event loop instead of
+ * synchronously. Required when the action must not run inside a runtime
+ * command execution - e.g. because it opens a database whose conflict handling
+ * is suppressed during automated processing.
+ */
+bool injectMenuBarEventDeferred(QWidget* root,
+                                const QString& obj_name,
+                                const QStringList& path_to_action,
+                                int delay)
+{
+    auto obj = findObjectAs<QMenuBar>(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectMenuBarEventDeferred", obj_name, obj.first);
+        return false;
+    }
+
+    //resolve the action by path directly - click traversal through nested
+    //submenus is not reliable for menus which were never shown
+    QWidget* current_menu   = obj.second;
+    QAction* current_action = nullptr;
+
+    int np = path_to_action.size();
+
+    for (int i = 0; i < np; ++i)
+    {
+        QString p = path_to_action[ i ].trimmed();
+        bool is_menu = (i < np - 1);
+
+        current_action = nullptr;
+        for (auto a : current_menu->actions())
+        {
+            if (!a || a->isSeparator() || (is_menu && !a->menu()))
+                continue;
+
+            QString txt_cur = is_menu ? normalizedMenuName(a->text()) :
+                                        normalizedActionName(a->text());
+            if (txt_cur == p)
+            {
+                current_action = a;
+                break;
+            }
+        }
+
+        if (!current_action)
+        {
+            loginf << "item text '" << p.toStdString() << "' not found";
+            return false;
+        }
+
+        if (is_menu)
+            current_menu = current_action->menu();
+    }
+
+    loginf << "triggering action '" << current_action->text().toStdString() << "' deferred";
+
+    QTimer::singleShot(0, current_action, [ current_action ] ()
+    {
+        current_action->trigger();
+    });
+
+    return true;
+}
+
+/**
  * Injects a trigger event to a subitem of the given menu.
  */
 bool injectMenuEvent(QWidget* root,
@@ -589,6 +659,110 @@ bool injectMenuEvent(QWidget* root,
     
     //seems that for popup menus the key based traversal works better
     return traverseMenuKeys(obj.second, path_to_action, delay, true);
+}
+
+/**
+ * Selects an item of a tree view via a path of display texts, by expanding
+ * the parent items and injecting a click event onto the item.
+ */
+bool injectTreeViewEvent(QWidget* root,
+                         const QString& obj_name,
+                         const QStringList& path_to_item,
+                         int delay)
+{
+    auto obj = findObjectAs<QTreeView>(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectTreeViewEvent", obj_name, obj.first);
+        return false;
+    }
+
+    QTreeView* tree = obj.second;
+    QAbstractItemModel* model = tree->model();
+
+    if (!model || path_to_item.empty())
+        return false;
+
+    //traverse the model along the given display text path
+    QModelIndex current; //invalid index = root
+    for (const QString& p : path_to_item)
+    {
+        QString part = p.trimmed();
+
+        QModelIndex found;
+        int nrows = model->rowCount(current);
+        for (int r = 0; r < nrows; ++r)
+        {
+            QModelIndex idx = model->index(r, 0, current);
+            if (idx.isValid() && idx.data(Qt::DisplayRole).toString().trimmed() == part)
+            {
+                found = idx;
+                break;
+            }
+        }
+
+        if (!found.isValid())
+        {
+            loginf << "item text '" << part.toStdString() << "' not found";
+            return false;
+        }
+
+        current = found;
+
+        //expand parents so the final item obtains a valid visual rect
+        if (model->hasChildren(current))
+            tree->expand(current);
+    }
+
+    tree->scrollTo(current);
+
+    QRect r = tree->visualRect(current);
+    if (!r.isValid())
+        return false;
+
+    //injectClickEvent redirects to the tree's viewport, which visualRect refers to
+    return injectClickEvent(tree, "", r.center().x(), r.center().y(), Qt::LeftButton, delay);
+}
+
+/**
+ * Posts a context menu event to the given widget. For item views the event is
+ * posted at the current item, otherwise at the widget center.
+ * The event is posted (not sent), so this returns before a context menu shown
+ * via QMenu::exec() blocks - the resulting popup menu can then be driven via
+ * injectPopupMenuEvent.
+ */
+bool injectContextMenuEvent(QWidget* root,
+                            const QString& obj_name,
+                            int delay)
+{
+    auto obj = findObjectAs<QWidget>(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectContextMenuEvent", obj_name, obj.first);
+        return false;
+    }
+
+    QWidget* target = obj.second;
+    QPoint pos = target->rect().center();
+
+    if (auto* view = dynamic_cast<QAbstractItemView*>(target))
+    {
+        //for item views: target the current item inside the viewport
+        QModelIndex idx = view->currentIndex();
+        if (idx.isValid())
+        {
+            view->scrollTo(idx);
+            pos = view->visualRect(idx).center();
+        }
+        target = view->viewport();
+    }
+
+    loginf << "posting context menu event at (" << pos.x() << "," << pos.y() << ")";
+
+    QApplication::postEvent(target, new QContextMenuEvent(
+        QContextMenuEvent::Mouse, pos, target->mapToGlobal(pos)));
+
+    return true;
 }
 
 /**
@@ -814,12 +988,51 @@ bool injectLineEditEvent(QWidget* root,
     //highlight text
     if (!injectKeyCmdEvent(obj.second, "", Qt::Key_A, Qt::ControlModifier, delay))
         return false;
- 
+
+    //empty text means clearing the edit - typing nothing would keep the
+    //highlighted old content
+    if (text.isEmpty())
+        return injectKeyEvent(obj.second, "", Qt::Key_Delete, delay);
+
     //fill with new content
     if (!injectKeysEvent(obj.second, "", text, PageBreakMode::Forbidden, delay))
         return false;
 
     return true;
+}
+
+/**
+ * Injects a new date time into the given date time edit by typing the given
+ * text, which must match the display format of the widget
+ * (e.g. "2023-04-22 08:15:00.000" for format "yyyy-MM-dd hh:mm:ss.zzz").
+ */
+bool injectDateTimeEditEvent(QWidget* root,
+                             const QString& obj_name,
+                             const QString& text,
+                             int delay)
+{
+    auto obj = findObjectAs<QDateTimeEdit>(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectDateTimeEditEvent", obj_name, obj.first);
+        return false;
+    }
+
+    //typed keystrokes are scattered over the edit sections in a hard to predict
+    //way, so the value is set programmatically - this emits dateTimeChanged
+    //exactly like a user edit does
+    QDateTime dt = QDateTime::fromString(text, obj.second->displayFormat());
+    if (!dt.isValid())
+    {
+        loginf << "'" << text.toStdString() << "' does not match display format '"
+               << obj.second->displayFormat().toStdString() << "'";
+        return false;
+    }
+
+    obj.second->setDateTime(dt);
+
+    //the widget clamps to its minimum / maximum - verify the value was taken
+    return obj.second->dateTime() == dt;
 }
 
 /**
@@ -1070,6 +1283,12 @@ bool injectCheckBoxEvent(QWidget* root,
 
     //toggle check state
     if (!injectClickEvent(obj.second, "", 2, 2, Qt::LeftButton, delay))
+        return false;
+
+    //style sheets may exclude the corner from the clickable area - retry at
+    //the widget center
+    if (obj.second->isChecked() != on &&
+        !injectClickEvent(obj.second, "", -1, -1, Qt::LeftButton, delay))
         return false;
 
     return obj.second->isChecked() == on;

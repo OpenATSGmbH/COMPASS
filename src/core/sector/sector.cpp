@@ -531,14 +531,17 @@ void Sector::name(const std::string& name)
     save();
 }
 
-void Sector::layerName(const std::string& layer_name)
+void Sector::layerName(const std::string& layer_name, bool notify)
 {
+    if (layer_name == layer_name_)
+        return;
+
     loginf << "'" << layer_name << "'";
 
     string old_layer_name = layer_name_;
     layer_name_ = layer_name;
 
-    if (move_cb_)
+    if (notify && move_cb_)
         move_cb_(id_, old_layer_name, layer_name); // moves and saves
 }
 

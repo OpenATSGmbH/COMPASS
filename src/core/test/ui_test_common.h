@@ -64,21 +64,39 @@ inline QString normalizedToolName(const QString& text)
 }
 
 /**
+ * Removes Qt mnemonic markers: single '&' characters are dropped, '&&' becomes a literal '&'.
+ */
+inline QString strippedMnemonics(const QString& text)
+{
+    QString txt;
+    for (int i = 0; i < text.size(); ++i)
+    {
+        if (text[ i ] == '&')
+        {
+            if (i + 1 < text.size() && text[ i + 1 ] == '&')
+            {
+                txt += '&';
+                ++i;
+            }
+            continue;
+        }
+        txt += text[ i ];
+    }
+    return txt;
+}
+
+/**
  */
 inline QString normalizedMenuName(const QString& text)
 {
-    QString txt = text;
-    if (txt.startsWith("&"))
-        txt = txt.mid(1);
-
-    return txt.trimmed();
+    return strippedMnemonics(text).trimmed();
 }
 
 /**
  */
 inline QString normalizedActionName(const QString& text)
 {
-    QString txt = text.trimmed();
+    QString txt = strippedMnemonics(text).trimmed();
     txt.remove(QRegularExpression("[.]+$"));
 
     return txt;

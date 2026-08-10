@@ -36,6 +36,7 @@ DBContextCopyDialog::DBContextCopyDialog(DBContextManager& manager, QWidget* par
     , manager_(manager)
 {
     setWindowTitle("Copy Data Context");
+    setObjectName("ctx_copy_dialog");
     setMinimumWidth(400);
     setModal(true);
 
@@ -45,6 +46,7 @@ DBContextCopyDialog::DBContextCopyDialog(DBContextManager& manager, QWidget* par
     auto* source_layout = new QHBoxLayout();
     source_layout->addWidget(new QLabel("Source context:"));
     source_combo_ = new QComboBox();
+    source_combo_->setObjectName("ctx_copy_source_combo");
     for (const auto& name : manager_.contextNames())
         source_combo_->addItem(QString::fromStdString(name));
 
@@ -64,6 +66,7 @@ DBContextCopyDialog::DBContextCopyDialog(DBContextManager& manager, QWidget* par
     auto* name_layout = new QHBoxLayout();
     name_layout->addWidget(new QLabel("New name:"));
     name_edit_ = new QLineEdit();
+    name_edit_->setObjectName("ctx_copy_name_edit");
     connect(name_edit_, &QLineEdit::textChanged, this, &DBContextCopyDialog::updateCopyButton);
     name_layout->addWidget(name_edit_);
     layout->addLayout(name_layout);
@@ -74,6 +77,7 @@ DBContextCopyDialog::DBContextCopyDialog(DBContextManager& manager, QWidget* par
     auto* button_layout = new QHBoxLayout();
 
     auto* cancel_btn = new QPushButton("Cancel");
+    cancel_btn->setObjectName("ctx_copy_cancel_button");
     cancel_btn->setIcon(QIcon());
     connect(cancel_btn, &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_btn);
@@ -81,6 +85,7 @@ DBContextCopyDialog::DBContextCopyDialog(DBContextManager& manager, QWidget* par
     button_layout->addStretch();
 
     copy_button_ = new QPushButton("Copy");
+    copy_button_->setObjectName("ctx_copy_apply_button");
     copy_button_->setIcon(QIcon());
     copy_button_->setEnabled(false);
     connect(copy_button_, &QPushButton::clicked, this, &DBContextCopyDialog::copySlot);

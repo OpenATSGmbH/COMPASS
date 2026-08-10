@@ -30,6 +30,7 @@
 
 class TaskManager;
 class DBContent;
+class LoadOperation;
 class Buffer;
 class ReconstructorBase;
 class SimpleReconstructor;
@@ -54,6 +55,11 @@ class ReconstructorTask : public Task, public Configurable
     Q_OBJECT
 
 public:
+    // applies parameters from --reconstruct_references_cfg; intercepts the session-only
+    // data timeframe restriction (data_timestamp_min/max, equivalent to the dialog first
+    // tab), which is deliberately not a persisted parameter
+    virtual Result applyJSONParameters(const nlohmann::json& params_json) override;
+
     struct DebugSettings
     {
         std::set<unsigned int> debug_utns_;
@@ -104,7 +110,6 @@ public slots:
 
     void sectorsChangedSlot();
 
-    void loadedDataSlot(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
     void loadingDoneSlot();
 
     void processingDoneSlot();
@@ -182,6 +187,11 @@ protected:
     void deleteCalculatedReferences();
 
     void loadDataSlice();
+    // per-content load WHERE for the current slice via the shared clause toolkit
+    // (half-open timestamp bounds + optional sector bbox on target-report content)
+    std::string loadFilterClause(const std::string& dbcontent_name, bool has_bbox,
+                                 double lat_min, double lat_max,
+                                 double long_min, double long_max);
     void processDataSlice();
     void writeDataSlice();
     void endReconstruction();
@@ -209,6 +219,7 @@ protected:
     size_t current_slice_idx_ = 0;
     bool write_initialized_ = false;
 
+    std::shared_ptr<LoadOperation> load_op_; // isolated per-slice batch load
     std::unique_ptr<ReconstructorBase::DataSlice> loading_slice_;
     bool loading_data_ {false};
     std::unique_ptr<ReconstructorBase::DataSlice> processing_slice_;

@@ -21,6 +21,7 @@
 #include "evaluationmanager.h"
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -67,8 +68,8 @@ EvaluationTimestampConditionsDialog::EvaluationTimestampConditionsDialog(Evaluat
     auto min_max_func = [&dbcont_man]()
         -> boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
     {
-        if (dbcont_man.hasMinMaxTimestamp())
-            return dbcont_man.minMaxTimestamp();
+        if (dbcont_man.dataEngine().hasMinMaxTimestamp())
+            return dbcont_man.dataEngine().minMaxTimestamp();
         return boost::none;
     };
     tw_widget_ = new TimeWindowCollectionWidget(eval_man.excludedTimeWindows(), min_max_func);

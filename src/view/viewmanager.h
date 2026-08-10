@@ -25,9 +25,17 @@
 #include <QObject>
 
 #include "boost/date_time/posix_time/ptime.hpp"
+#include "boost/date_time/posix_time/posix_time_duration.hpp"
+
+#include <memory>
+#include <vector>
+#include <set>
 
 class COMPASS;
 class Buffer;
+class DBContentDataSet;
+class LiveDataFeed;
+struct LoadRequest;
 class ViewContainer;
 class ViewContainerWidget;
 //class ViewManagerWidget;
@@ -38,6 +46,8 @@ class ViewPointsReportGenerator;
 
 class QWidget;
 class QTabWidget;
+class LoadController;
+class LiveController;
 
 /**
 */
@@ -47,6 +57,14 @@ class ViewManager : public QObject, public Configurable
 
   signals:
     void selectionChangedSignal();
+    // data has been distributed to the views (offline finalize + each live tick);
+    // the data-sources status widget connects here to refresh (acts only in live)
+    void dataDistributedSignal(bool reset);
+    // display-load lifecycle bookends (offline load + the live session as one cycle).
+    // UI/view chrome consumers (MainWindow, TargetListWidget, RT waits) connect here,
+    // never to DBContentManager, whose loads may be issuer-private batch loads.
+    void loadingStartedSignal();
+    void loadingDoneSignal();
     void unshowViewPointSignal (ViewableDataConfig* vp);
     void showViewPointSignal (ViewableDataConfig* vp);
     void reloadStateChanged();
@@ -60,13 +78,17 @@ class ViewManager : public QObject, public Configurable
     void databaseClosedSlot();
 
     void loadingStartedSlot();
-    
-    // all data contained, also new one. requires_reset true indicates that all shown info should be re-created,
-    // e.g. when data in the beginning was removed, or order of previously emitted data was changed, etc.
-    void loadedDataSlot (const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset);
+
+    // driven by the current source's dataChangedSignal: pulls source->buffers()
+    // and pushes them to the views. names empty = synthetic finalize event (skipped;
+    // completion runs on loadingDoneSlot). reset = re-create all shown info.
+    void sourceDataChangedSlot(const std::vector<std::string>& names, bool reset, bool last);
     void loadingDoneSlot(); // emitted when all dbconts have finished loading
 
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);
+
+    // ASTERIX live watchdog trigger -> one live tick (delegates to the live session)
+    void forceLiveUpdate();
 
   public:
     struct Config
@@ -84,6 +106,27 @@ class ViewManager : public QObject, public Configurable
     void close();
 
     void clearDataInViews();
+
+    // reload the view content: builds the standard view LoadRequest, makes the
+    // resulting operation the current source, and runs it through DBContentManager
+    void reload(bool blocking = false, bool measure_performance = false);
+
+    // the currently displayed data set (LoadOperation offline, LiveDataFeed live);
+    // null when nothing is loaded. The single owner of the displayed buffers.
+    std::shared_ptr<DBContentDataSet> currentSource() const { return current_source_; }
+
+    // the displayed buffers (the current source's, or empty when nothing is loaded).
+    // The accessor lives here, on the owner - not on DBContentManager, which holds no dataset.
+    const std::map<std::string, std::shared_ptr<Buffer>>& currentBuffers() const;
+
+    // live-session latency, delegated to the live session (the geo view reads it via the
+    // DBContentManager façade). The feed + the two controllers stay private, not exposed.
+    bool hasMaxLatency() const;
+    boost::posix_time::time_duration maxLatency() const;
+
+    // selection carried to the next load (set by FilterManager / view-point selection)
+    void storeSelectedRecNums(const std::vector<unsigned long>& selected);
+    void clearSelectedRecNums();
 
     void registerView(View* view);
     void unregisterView(View* view);
@@ -129,6 +172,13 @@ class ViewManager : public QObject, public Configurable
 
     void setCurrentViewPoint (ViewableDataConfig* viewable,
                               bool load_blocking = false);
+    /// Same, but takes shared ownership. Use this whenever the caller cannot
+    /// guarantee that the viewable outlives the load it starts - the
+    /// set_view_point command is destroyed before its load completes, which
+    /// would leave current_viewable_ (and the views' current_view_point_)
+    /// dangling in doViewPointAfterLoad().
+    void setCurrentViewPoint (std::shared_ptr<ViewableDataConfig> viewable,
+                              bool load_blocking = false);
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
 
@@ -150,7 +200,6 @@ class ViewManager : public QObject, public Configurable
     std::string newViewInstanceId(const std::string& class_name);
     std::string newViewName(const std::string& class_name);
 
-    void disableDataDistribution(bool value);
     // disables propagation of data to the views. used when loading is performed for processing purposes
 
     bool isProcessingData() const;
@@ -192,6 +241,30 @@ protected:
     void enableStoredReadSets();
     void disableStoredReadSets();
 
+    // runs a request as the new display source (selection carry-over + view clear +
+    // setCurrentSource); used by reload() and by the paused-display load
+    void issueLoad(const LoadRequest& req, bool blocking = false);
+
+    // loads the DB contents into the display when live is paused; posted from
+    // appModeSwitchSlot so it runs after the app-mode switch has been fully delivered
+    void loadPausedDisplay();
+
+    // subscribes to the source's dataChangedSignal and takes ownership; set by
+    // issueLoad() (offline/paused op) and appModeSwitchSlot (live feed)
+    void setCurrentSource(std::shared_ptr<DBContentDataSet> source);
+
+    // live-session bookends (distinct from the offline op-driven loadingStarted/DoneSlot):
+    // view chrome + external loadingStarted/DoneSignal, no offline dialog/progress/viewpoint
+    void beginLiveSession();
+    void endLiveSession();
+
+    // selection carry-over across (re)loads (owned here - a view concern):
+    // captureSelection() reads selected_ from the current source before a reload swaps
+    // it away; applyCarriedSelection() restores it onto freshly arrived buffers.
+    void captureSelection();
+    void applyCarriedSelection(const std::vector<std::string>& names);
+    void restoreSelectionInto(const std::string& dbcontent_name, Buffer& buffer);
+
     COMPASS& compass_;
 
     ViewPointsWidget* view_points_widget_{nullptr};
@@ -204,7 +277,7 @@ protected:
 
     // Diagnostic state for loading lifecycle:
     //   loading_done_dispatched_: set true after a loadingDoneSlot body completes,
-    //     reset on loadingStartedSlot. Used to detect late loadedDataSlot calls.
+    //     reset on loadingStartedSlot. Used to detect late sourceDataChangedSlot calls.
     //   current_dispatch_: name of slot currently inside its per-view loop, or
     //     empty when idle. Logged when re-entry happens.
     bool loading_done_dispatched_ = false;
@@ -216,16 +289,25 @@ protected:
     std::map<std::string, ViewContainerWidget*> container_widgets_;
     std::map<std::string, View*> views_;
 
+    std::shared_ptr<DBContentDataSet> current_source_; // subscribed data source
+
+    std::unique_ptr<LoadController> load_controller_; // view-load dialog/cursor/progress
+    std::unique_ptr<LiveController> live_controller_; // live session: feed + tick
+
+    std::map<std::string, std::set<unsigned long>> carried_selection_; // selected rec nums carried between loads
+
     std::unique_ptr<ViewPointsReportGenerator> view_points_report_gen_;
 
     ViewableDataConfig* current_viewable_ {nullptr};
+    /// Set when the viewable was handed over with shared ownership, to keep it
+    /// alive for as long as current_viewable_ points at it. Empty for the
+    /// ViewPoints owned by ViewPointsTableModel, which are passed raw.
+    std::shared_ptr<ViewableDataConfig> current_viewable_owned_;
     bool view_point_data_selected_ {false};
 
     unsigned int container_count_{0};
 
     std::map<std::string, std::string> view_class_list_; // class name -> name (without appended number)
-
-    bool disable_data_distribution_ {false};
 
     bool use_tmp_stored_readset_ {false};
     std::map<std::string, dbContent::VariableSet> tmp_stored_readset_;

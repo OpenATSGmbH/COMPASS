@@ -18,6 +18,7 @@
 #include "client.h"
 
 #include "compass.h"
+#include "crashbreadcrumbs.h"
 #include "dbcontent.h"
 #include "db_context_manager.h"
 #include "config.h"
@@ -784,6 +785,8 @@ static std::string describeNotifyContext(QObject* receiver, QEvent* event)
 
 bool Client::notify(QObject* receiver, QEvent* event)
 {
+    crash_breadcrumbs::record(receiver, event);
+
     try
     {
         return QApplication::notify(receiver, event);

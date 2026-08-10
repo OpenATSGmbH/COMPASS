@@ -38,6 +38,8 @@
 #include "sectorlayer.h"
 #include "logger.h"
 
+#include <set>
+
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 
@@ -115,6 +117,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
     loginf << "opening edit dialog";
 
     setWindowTitle("Edit Data Contexts");
+    setObjectName("ctx_edit_dialog");
     setMinimumSize(1100, 600);
     setModal(true);
 
@@ -127,6 +130,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
         top_layout->addWidget(new QLabel("Context:"));
 
         context_combo_ = new QComboBox();
+        context_combo_->setObjectName("ctx_combo");
         context_combo_->setMinimumWidth(200);
         connect(context_combo_, &QComboBox::currentTextChanged,
                 this, &DBContextEditDialog::contextComboChangedSlot);
@@ -135,30 +139,35 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
         top_layout->addStretch();
 
         copy_button_ = new QPushButton("Copy");
+        copy_button_->setObjectName("ctx_copy_button");
         copy_button_->setIcon(QIcon());
         copy_button_->setToolTip("Copy this context under a new name");
         connect(copy_button_, &QPushButton::clicked, this, &DBContextEditDialog::copySlot);
         top_layout->addWidget(copy_button_);
 
         rename_button_ = new QPushButton("Rename");
+        rename_button_->setObjectName("ctx_rename_button");
         rename_button_->setIcon(QIcon());
         rename_button_->setToolTip("Rename the current context");
         connect(rename_button_, &QPushButton::clicked, this, &DBContextEditDialog::renameSlot);
         top_layout->addWidget(rename_button_);
 
         delete_button_ = new QPushButton("Delete");
+        delete_button_->setObjectName("ctx_delete_button");
         delete_button_->setIcon(QIcon());
         delete_button_->setToolTip("Delete one or more contexts");
         connect(delete_button_, &QPushButton::clicked, this, &DBContextEditDialog::deleteSlot);
         top_layout->addWidget(delete_button_);
 
         auto* export_button = new QPushButton("Export as ZIP");
+        export_button->setObjectName("ctx_export_button");
         export_button->setIcon(QIcon());
         export_button->setToolTip("Export the current context as a zip archive");
         connect(export_button, &QPushButton::clicked, this, &DBContextEditDialog::exportZipSlot);
         top_layout->addWidget(export_button);
 
         auto* import_button = new QPushButton("Import from ZIP");
+        import_button->setObjectName("ctx_import_button");
         import_button->setIcon(QIcon());
         import_button->setToolTip("Import a context from a zip archive");
         connect(import_button, &QPushButton::clicked, this, &DBContextEditDialog::importZipSlot);
@@ -173,6 +182,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
 
         // tree view
         tree_view_ = new QTreeView();
+        tree_view_->setObjectName("ctx_tree");
         tree_view_->setHeaderHidden(true);
         tree_view_->setItemDelegate(new TreeItemDelegate(tree_view_));
         tree_view_->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -187,6 +197,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
         scroll->setWidgetResizable(true);
 
         detail_stack_ = new QStackedWidget();
+        detail_stack_->setObjectName("ctx_detail_stack");
         scroll->setWidget(detail_stack_);
 
         splitter->addWidget(scroll);
@@ -202,6 +213,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
         button_layout->addStretch();
 
         auto* close_button = new QPushButton("Close");
+        close_button->setObjectName("ctx_close_button");
         close_button->setIcon(QIcon());
         connect(close_button, &QPushButton::clicked, this, &QDialog::accept);
         button_layout->addWidget(close_button);
@@ -357,8 +369,11 @@ void DBContextEditDialog::rebuildTree()
     }
     if (shown_sector_id)
     {
-        if (auto sector = manager_.sector(*shown_sector_id))
-            sector_edit_widget_->show(*sector);
+        if (manager_.hasSector(*shown_sector_id))
+        {
+            if (auto sector = manager_.sector(*shown_sector_id))
+                sector_edit_widget_->show(*sector);
+        }
     }
     if (shown_fft_name)
     {
@@ -642,6 +657,25 @@ void DBContextEditDialog::showDataSourceItemMenu(unsigned int ds_id)
 // Context menu: Sector Layers
 // ============================================================
 
+// collects names which would overwrite an existing sector, including duplicates within the
+// imported set itself
+std::vector<std::string> collectSectorNameCollisions(
+        const DBContextManager& manager,
+        const std::vector<sector_utils::ImportedSector>& sectors,
+        const std::string& layer_name)
+{
+    std::vector<std::string> collisions;
+    std::set<std::string> seen;
+
+    for (const auto& sec : sectors)
+    {
+        if (manager.hasSector(sec.name, layer_name) || !seen.insert(sec.name).second)
+            collisions.push_back(sec.name);
+    }
+
+    return collisions;
+}
+
 void DBContextEditDialog::showSectorLayersGroupMenu()
 {
     loginf << "showing sector layers group menu";
@@ -651,7 +685,7 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
     menu.addAction("Import from File...", [this]()
     {
         QString path = QFileDialog::getOpenFileName(this, "Import Sectors",  "",
-            "Vector Files (*.shp *.geojson *.json *.gml);;All Files (*)");
+            "Vector Files (*.shp *.geojson *.json *.gml *.kml);;All Files (*)");
         if (path.isEmpty()) return;
 
         auto sectors = sector_utils::parseGDALFile(path.toStdString());
@@ -676,10 +710,28 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
         bool exclude = dialog.exclude();
         QColor color = dialog.color();
 
-        for (const auto& sec : sectors)
-            manager_.createSector(sec.name, layer_name, exclude, color, sec.points);
+        auto collisions = collectSectorNameCollisions(manager_, sectors, layer_name);
+        if (collisions.size())
+        {
+            // @TODO: a dialog could be shown here, offering skip / replace / rename
+            logwrn << collisions.size() << " sector name collision(s) in layer '"
+                   << layer_name << "', replacing existing sectors";
+        }
 
-        loginf << "imported " << sectors.size() << " sectors into layer '" << layer_name << "'";
+        unsigned int imported_cnt = 0;
+        unsigned int replaced_cnt = 0;
+
+        for (const auto& sec : sectors)
+        {
+            bool replaced = false;
+            if (manager_.createOrReplaceSector(sec.name, layer_name, exclude, color, sec.points, &replaced))
+                ++imported_cnt;
+            if (replaced)
+                ++replaced_cnt;
+        }
+
+        loginf << "imported " << imported_cnt << " of " << sectors.size() << " sectors into layer '"
+               << layer_name << "', " << replaced_cnt << " replaced";
 
         rebuildTree();
     });
@@ -749,6 +801,18 @@ void DBContextEditDialog::showSectorLayerMenu(const std::string& layer_name)
 
     QMenu menu;
 
+    menu.addAction("Rename Layer...", [this, layer_name]()
+    {
+        bool ok = false;
+        QString new_name = QInputDialog::getText(this, "Rename Sector Layer",
+            "New layer name:", QLineEdit::Normal,
+            QString::fromStdString(layer_name), &ok);
+        if (!ok || new_name.isEmpty()) return;
+
+        manager_.renameSectorLayer(layer_name, new_name.toStdString());
+        rebuildTree();
+    });
+
     menu.addAction("Delete Layer", [this, layer_name]()
     {
         if (!QuestionDialog::ask(this, "Delete Sector Layer",
@@ -780,7 +844,9 @@ void DBContextEditDialog::showSectorItemMenu(unsigned int sector_id)
             QString::fromStdString(sector->layerName()), &ok);
         if (!ok || new_layer.isEmpty()) return;
 
-        manager_.moveSector(sector_id, sector->layerName(), new_layer.toStdString());
+        // route through the setter - its move callback triggers
+        // DBContextManager::moveSector, which persists and rebuilds
+        sector->layerName(new_layer.toStdString());
         rebuildTree();
     });
 
@@ -830,6 +896,7 @@ void DBContextEditDialog::importAirSpace()
 
     QDialog dlg(this);
     dlg.setWindowTitle("Import Air Space Sectors");
+    dlg.setObjectName("airspace_import_dialog");
 
     auto* layout = new QVBoxLayout;
     dlg.setLayout(layout);
@@ -838,12 +905,14 @@ void DBContextEditDialog::importAirSpace()
     auto* layer_layout = new QHBoxLayout;
     layer_layout->addWidget(new QLabel("Layer name:"));
     auto* layer_edit = new QLineEdit(QString::fromStdString(default_layer));
+    layer_edit->setObjectName("airspace_layer_edit");
     layer_edit->setToolTip("All imported sectors will be placed into this layer");
     layer_layout->addWidget(layer_edit);
     layout->addLayout(layer_layout);
 
     // sector selection tree
     auto* list = new QTreeWidget(&dlg);
+    list->setObjectName("airspace_sector_list");
     list->setHeaderLabels({ "", "Sector", "#Points", "Altitude min", "Altitude max" });
     list->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     list->header()->setSectionResizeMode(1, QHeaderView::Stretch);
@@ -855,9 +924,11 @@ void DBContextEditDialog::importAirSpace()
 
     auto* button_layout = new QHBoxLayout;
     auto* button_import = new QPushButton("Import");
+    button_import->setObjectName("airspace_import_button");
     button_import->setIcon(QIcon());
     button_import->setToolTip("Import selected sectors");
     auto* button_cancel = new QPushButton("Cancel");
+    button_cancel->setObjectName("airspace_cancel_button");
     button_cancel->setIcon(QIcon());
     button_cancel->setToolTip("Cancel import");
 

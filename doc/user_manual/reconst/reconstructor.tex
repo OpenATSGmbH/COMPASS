@@ -85,6 +85,10 @@ The following steps are performed for each target report:
 In case of a match, this match is verified. A match based on the Track Number can e.g. be revoked if the time difference to the last target update is larger than the 'Maximum Track Time Difference' parameter, 
 or if the distance threshold is larger than the 'Track Number Disassoc. Distance Factor' parameter, assuming the 'Do Track Number Disassoc. Using Distance' parameter is set. \\
 
+If the 'Do Identity Change Cut' parameter is set, system tracks are additionally checked for permanent Mode 3/A code changes, as caused by a track swap (seduction) onto a different target. 
+A change is only accepted as such if the new code is sustained, the old code ceases, neither code is a conspicuity code, the Mode S address and identification do not indicate the same aircraft on both sides, and another tracker data source observed the old identity without performing the same change (which would indicate a regular code change of the same aircraft). 
+At an accepted identity change, the track number to UTN association is cut: the target reports of the wrongly continued track part are separated into an own UTN, avoiding the merging of 2 different real-world targets into one UTN. \\
+
 If still valid, the target report is associated to the specific UTN, which in turn updates the respective lookup lists.
 
 \subsubsection{Position Matching}

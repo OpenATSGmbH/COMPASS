@@ -60,16 +60,9 @@ class JSONImportTask : public Task, public Configurable
 
     void addReadJSONSlot();
     void readJSONFileDoneSlot();
-    void readJSONFileObsoleteSlot();
-
     void parseJSONDoneSlot();
-    void parseJSONObsoleteSlot();
-
     void mapJSONDoneSlot();
-    void mapJSONObsoleteSlot();
-
     void postprocessDoneSlot();
-    void postprocessObsoleteSlot();
 
     void insertDoneSlot();
 

@@ -54,7 +54,7 @@ public slots:
     void deleteRequirementSlot(Group& group, EvaluationRequirement::BaseConfig& req);
 
     void refMaxTimeDiffEditSlot(QString value);
-    void refMinAccEditSlot(QString value);
+    //void refMinAccEditSlot(QString value);
 
 public:
     EvaluationStandardWidget(EvaluationStandard& standard);

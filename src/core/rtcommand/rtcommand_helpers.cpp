@@ -164,6 +164,12 @@ std::pair<rtcommand::FindObjectErrCode, QObject *> getCommandReceiver(const std:
     {
         return ui_test::findObject(QApplication::activePopupWidget(), remainder.c_str());
     }
+    else if (first_part == "focus")
+    {
+        //the widget currently holding keyboard focus - reaches input widgets of
+        //dialogs which do not name their children (e.g. QInputDialog)
+        return ui_test::findObject(QApplication::focusWidget(), remainder.c_str());
+    }
     else if (first_part == "compass")
     {
         std::pair<rtcommand::FindObjectErrCode, Configurable*> ret = compass.findSubConfigurablePath(remainder);

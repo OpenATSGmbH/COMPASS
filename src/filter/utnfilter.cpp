@@ -111,6 +111,53 @@ std::string UTNFilter::getConditionString(const std::string& dbcontent_name, dbC
     return ss.str();
 }
 
+FilterClause UTNFilter::getClause(const std::string& dbcontent_name)
+{
+    if (!active_)
+        return FilterClause{};
+
+    return sqlFor(variableResolver(), values_, null_wanted_, dbcontent_name);
+}
+
+FilterClause UTNFilter::sqlFor(IDBVariableResolver& resolver,
+                               const std::vector<unsigned int>& values, bool null_wanted,
+                               const std::string& dbcontent_name)
+{
+    FilterClause clause;
+
+    // non-associated content (no utn column): exclude it entirely unless NULL is wanted
+    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_))
+    {
+        if (!null_wanted)
+            clause.sql = "false";
+        return clause;
+    }
+
+    if (!(values.size() || null_wanted))
+        return clause;
+
+    string col_name = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_utn_);
+
+    string s;
+
+    if (null_wanted)
+        s += "(";
+
+    if (values.size())
+        s += col_name + " IN (" + String::compress(values, ',') + ")";
+
+    if (null_wanted)
+    {
+        if (values.size())
+            s += " OR";
+
+        s += " " + col_name + " IS NULL)";
+    }
+
+    clause.sql = s;
+    return clause;
+}
+
 DBFilterWidget* UTNFilter::createWidget()
 {
     return new UTNFilterWidget(*this);

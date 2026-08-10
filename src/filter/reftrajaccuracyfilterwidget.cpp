@@ -33,6 +33,7 @@ RefTrajAccuracyFilterWidget::RefTrajAccuracyFilterWidget(RefTrajAccuracyFilter& 
     : DBFilterWidget(filter), filter_(filter)
 {
     min_value_edit_ = new QLineEdit();
+    min_value_edit_->setObjectName("filter_min_edit");
     min_value_edit_->setValidator(new TextFieldDoubleValidator(0, 10e6, Precision));
     connect(min_value_edit_, &QLineEdit::textEdited, this, &RefTrajAccuracyFilterWidget::minValueEditedSlot);
 

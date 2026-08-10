@@ -710,9 +710,9 @@ void TaskManager::databaseClosedSlot()
 void TaskManager::setViewableDataConfig(const nlohmann::json::object_t& data,
                                         bool load_blocking)
 {
-    viewable_data_cfg_.reset(new ViewableDataConfig(data));
+    viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 
-    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_.get(), load_blocking);
+    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_, load_blocking);
 }
 
 /**

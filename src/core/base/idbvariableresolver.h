@@ -206,6 +206,7 @@ namespace dbcontent_vars
     inline const Property var_cat062_type_lm_       {"Type LM", PropertyDataType::UCHAR};
     inline const Property var_cat062_baro_alt_      {"Barometric Altitude Calculated", PropertyDataType::FLOAT};
     inline const Property var_cat062_fl_measured_    {"Flight Level Measured", PropertyDataType::FLOAT};
+    inline const Property var_cat062_m3a_age_        {"Mode 3/A Age", PropertyDataType::FLOAT};
 
     inline const Property var_cat062_num_contrib_sensors_     {"Num Contributing Sensors", PropertyDataType::UCHAR};
     inline const Property var_cat062_num_contrib_sensors_tn_  {"Num Contributing Sensors Track Number", PropertyDataType::UCHAR};

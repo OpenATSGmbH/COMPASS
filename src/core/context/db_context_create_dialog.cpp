@@ -35,6 +35,7 @@ DBContextCreateDialog::DBContextCreateDialog(DBContextManager& manager, QWidget*
     , manager_(manager)
 {
     setWindowTitle("Create Data Context");
+    setObjectName("ctx_create_dialog");
     setMinimumWidth(400);
     setModal(true);
 
@@ -46,6 +47,7 @@ DBContextCreateDialog::DBContextCreateDialog(DBContextManager& manager, QWidget*
     auto* name_layout = new QHBoxLayout();
     name_layout->addWidget(new QLabel("Context name:"));
     name_edit_ = new QLineEdit();
+    name_edit_->setObjectName("ctx_create_name_edit");
     name_edit_->setPlaceholderText("e.g. Test_2026");
     name_layout->addWidget(name_edit_);
     layout->addLayout(name_layout);
@@ -55,6 +57,7 @@ DBContextCreateDialog::DBContextCreateDialog(DBContextManager& manager, QWidget*
     auto* button_layout = new QHBoxLayout();
 
     auto* cancel_button = new QPushButton("Cancel");
+    cancel_button->setObjectName("ctx_create_cancel_button");
     cancel_button->setIcon(QIcon());
     connect(cancel_button, &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button);
@@ -62,6 +65,7 @@ DBContextCreateDialog::DBContextCreateDialog(DBContextManager& manager, QWidget*
     button_layout->addStretch();
 
     create_button_ = new QPushButton("Create");
+    create_button_->setObjectName("ctx_create_apply_button");
     create_button_->setIcon(QIcon());
     create_button_->setEnabled(false);
     create_button_->setDefault(true);

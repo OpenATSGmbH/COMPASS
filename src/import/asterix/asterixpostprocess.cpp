@@ -75,160 +75,13 @@ void ASTERIXPostProcess::postProcessFlat(unsigned int category, unsigned int lin
     }
 
     // category-specific post-processing
-    // jASTERIX now handles CAT001 truncated time fix and writes "140.Time-of-Day" directly
-    // if (category == 1)
-    //     postProcessFlatCAT001(d, num_records);
-    // else if (category == 2)
-    //     postProcessFlatCAT002(d, num_records);
-    // else
+    // (CAT001 truncated time reconstruction is done by jASTERIX in flat mode,
+    // which writes "140.Time-of-Day" directly)
     if (category == 20)
         postProcessFlatCAT020(d, num_records);
     else if (category == 62)
         postProcessFlatCAT062(d, num_records);
 }
-
-// jASTERIX now handles CAT001 truncated time fix and writes "140.Time-of-Day" directly,
-// so postProcessFlatCAT001/CAT002 are no longer needed.
-//
-// void ASTERIXPostProcess::postProcessFlatCAT001(nlohmann::json& d, size_t num_records)
-// {
-//     const json* sac_arr = d.contains("010.SAC") ? &d.at("010.SAC") : nullptr;
-//     const json* sic_arr = d.contains("010.SIC") ? &d.at("010.SIC") : nullptr;
-//     const json* trunc_tod_arr = d.contains("141.Truncated Time of Day") ? &d.at("141.Truncated Time of Day") : nullptr;
-//
-//     // ensure 140.Time-of-Day array exists
-//     if (!d.contains("140.Time-of-Day"))
-//     {
-//         d["140.Time-of-Day"] = json::array();
-//         d["140.Time-of-Day"].get_ref<json::array_t&>().resize(num_records, nullptr);
-//     }
-//     json& tod_out = d["140.Time-of-Day"];
-//     if (tod_out.size() < num_records)
-//         tod_out.get_ref<json::array_t&>().resize(num_records, nullptr);
-//
-//     for (size_t i = 0; i < num_records; ++i)
-//     {
-//         int sac = -1, sic = -1;
-//         if (sac_arr && i < sac_arr->size() && !(*sac_arr)[i].is_null())
-//             sac = (*sac_arr)[i].get<int>();
-//         if (sic_arr && i < sic_arr->size() && !(*sic_arr)[i].is_null())
-//             sic = (*sic_arr)[i].get<int>();
-//
-//         bool has_trunc = trunc_tod_arr && i < trunc_tod_arr->size() && !(*trunc_tod_arr)[i].is_null();
-//
-//         if (has_trunc)
-//         {
-//             if (sac > -1 && sic > -1)
-//             {
-//                 std::pair<unsigned int, unsigned int> sac_sic({(unsigned int)sac, (unsigned int)sic});
-//
-//                 if (cat002_last_tod_period_.count(sac_sic))
-//                 {
-//                     double tod = (*trunc_tod_arr)[i].get<double>();
-//
-//                     if (tod < 0 || tod >= tod_24h)
-//                     {
-//                         logwrn << "impossible tod " << String::timeStringFromDouble(tod);
-//                         tod_out[i] = nullptr;
-//                         continue;
-//                     }
-//
-//                     if (cat002_last_tod_period_.at(sac_sic) < 0 || cat002_last_tod_period_.at(sac_sic) >= tod_24h)
-//                     {
-//                         logwrn << "impossible cat002 time "
-//                                << String::timeStringFromDouble(cat002_last_tod_period_.at(sac_sic));
-//                         tod_out[i] = nullptr;
-//                         continue;
-//                     }
-//
-//                     tod += cat002_last_tod_period_.at(sac_sic);
-//
-//                     if (tod < 0 || tod >= tod_24h)
-//                     {
-//                         logwrn << "impossible corrected tod " << String::timeStringFromDouble(tod);
-//                         tod_out[i] = nullptr;
-//                         continue;
-//                     }
-//
-//                     tod_out[i] = tod;
-//                 }
-//                 else
-//                 {
-//                     loginf << "removing truncated tod since no CAT002 from sensor "
-//                            << sac << "/" << sic << " is present";
-//                     tod_out[i] = nullptr;
-//                 }
-//             }
-//             else
-//             {
-//                 logdbg << "skipping cat001 report without sac/sic";
-//                 tod_out[i] = nullptr;
-//             }
-//         }
-//         else
-//         {
-//             if (sac > -1 && sic > -1)
-//             {
-//                 std::pair<unsigned int, unsigned int> sac_sic({(unsigned int)sac, (unsigned int)sic});
-//
-//                 if (cat002_last_tod_.count(sac_sic))
-//                 {
-//                     double tod = cat002_last_tod_.at(sac_sic);
-//                     traced_assert(tod >= 0 && tod <= tod_24h);
-//                     tod_out[i] = tod;
-//                 }
-//                 else
-//                     logdbg << "skipping cat001 report without truncated time of day or last cat002 time";
-//             }
-//             else
-//                 logdbg << "skipping cat001 report without truncated time of day or sac/sic";
-//         }
-//     }
-// }
-//
-// void ASTERIXPostProcess::postProcessFlatCAT002(nlohmann::json& d, size_t num_records)
-// {
-//     const json* sac_arr = d.contains("010.SAC") ? &d.at("010.SAC") : nullptr;
-//     const json* sic_arr = d.contains("010.SIC") ? &d.at("010.SIC") : nullptr;
-//     const json* tod_arr = d.contains("030.Time of Day") ? &d.at("030.Time of Day") : nullptr;
-//
-//     if (!tod_arr || !sac_arr || !sic_arr)
-//         return;
-//
-//     for (size_t i = 0; i < num_records; ++i)
-//     {
-//         if (i >= tod_arr->size() || (*tod_arr)[i].is_null())
-//             continue;
-//         if (i >= sac_arr->size() || (*sac_arr)[i].is_null())
-//             continue;
-//         if (i >= sic_arr->size() || (*sic_arr)[i].is_null())
-//             continue;
-//
-//         int sac = (*sac_arr)[i].get<int>();
-//         int sic = (*sic_arr)[i].get<int>();
-//
-//         if (sac < 0 || sic < 0)
-//             continue;
-//
-//         double cat002_last_tod = (*tod_arr)[i].get<double>();
-//         double cat002_last_tod_period = 512.0 * ((int)(cat002_last_tod / 512));
-//
-//         if (cat002_last_tod < 0 || cat002_last_tod > tod_24h)
-//         {
-//             logerr << "cat002_last_tod " << String::timeStringFromDouble(cat002_last_tod);
-//             continue;
-//         }
-//
-//         if (cat002_last_tod_period < 0 || cat002_last_tod_period > tod_24h)
-//         {
-//             logerr << "cat002_last_tod_period " << String::timeStringFromDouble(cat002_last_tod_period);
-//             continue;
-//         }
-//
-//         cat002_last_tod_period_[std::make_pair((unsigned int)sac, (unsigned int)sic)] = cat002_last_tod_period;
-//         cat002_last_tod_[std::make_pair((unsigned int)sac, (unsigned int)sic)] = cat002_last_tod;
-//     }
-// }
 
 void ASTERIXPostProcess::postProcessFlatCAT020(nlohmann::json& d, size_t num_records)
 {
@@ -269,19 +122,16 @@ void ASTERIXPostProcess::postProcessFlatCAT020(nlohmann::json& d, size_t num_rec
         }
     }
 
-    // 400 contributing receivers: decode per-record [{RUx: byte}, ...] (each byte is an
-    // 8-RU bitmap; the array is in spec order, last byte = lowest RUs) into a list of
-    // 1-based RU indexes for set bits, written under "400.Contributing Receivers.RUx"
-    if (d.contains("400.Contributing Receivers"))
+    // 400 contributing receivers: per-record array of raw bitmap bytes (each byte is an
+    // 8-RU bitmap; the array is in spec order, last byte = lowest RUs), decoded in place
+    // into a list of 1-based RU indexes for set bits
+    if (d.contains("400.Contributing Receivers.RUx"))
     {
-        const json& contrib_arr = d.at("400.Contributing Receivers");
+        json& rux_arr = d.at("400.Contributing Receivers.RUx");
 
-        json out_arr = json::array();
-        out_arr.get_ref<json::array_t&>().resize(num_records, nullptr);
-
-        for (size_t i = 0; i < contrib_arr.size() && i < num_records; ++i)
+        for (size_t i = 0; i < rux_arr.size() && i < num_records; ++i)
         {
-            const json& rec = contrib_arr[i];
+            json& rec = rux_arr[i];
             if (rec.is_null() || !rec.is_array() || rec.empty())
                 continue;
 
@@ -290,8 +140,8 @@ void ASTERIXPostProcess::postProcessFlatCAT020(nlohmann::json& d, size_t num_rec
 
             for (auto it = rec.crbegin(); it != rec.crend(); ++it)
             {
-                traced_assert(it->contains("RUx"));
-                unsigned int rux_bits = it->at("RUx").get<unsigned int>();
+                traced_assert(it->is_number_unsigned());
+                unsigned int rux_bits = it->get<unsigned int>();
                 traced_assert(rux_bits < 256);
 
                 for (unsigned int bit = 0; bit < 8; ++bit)
@@ -302,11 +152,8 @@ void ASTERIXPostProcess::postProcessFlatCAT020(nlohmann::json& d, size_t num_rec
                 prev_bit_cnt += 8;
             }
 
-            out_arr[i] = std::move(ru_indexes);
+            rec = std::move(ru_indexes);
         }
-
-        d["400.Contributing Receivers.RUx"] = std::move(out_arr);
-        d.erase("400.Contributing Receivers");
     }
 }
 

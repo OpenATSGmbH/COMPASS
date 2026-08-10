@@ -22,6 +22,10 @@
 #include "rtcommand_defs.h"
 
 #include <QWidget>
+#include <QApplication>
+#include <QFocusEvent>
+
+#include <map>
 
 namespace ui_test
 {
@@ -171,6 +175,65 @@ bool injectUIEvent(QWidget* parent,
             return false;
 
         return injectKeySequenceEvent(w.second, "", QKeySequence(params[ 0 ]));
+    }
+    else if (evt_type == "menu_deferred")
+    {
+        //menu bar action path, triggered deferred via the event loop so it does
+        //not run inside the runtime command execution (e.g. database open with
+        //user interaction)
+        if (params.size() != 1)
+            return false;
+
+        return injectMenuBarEventDeferred(w.second, "", params[ 0 ].split("|"), delay);
+    }
+    else if (evt_type == "contextmenu")
+    {
+        //no parameters - posts a context menu event to the widget
+        //(at the current item for item views)
+        return injectContextMenuEvent(w.second, "", delay);
+    }
+    else if (evt_type == "focusout")
+    {
+        //makes a QLineEdit emit editingFinished. the event is sent directly
+        //because injected key events never move keyboard focus, so the widget
+        //usually does not hold focus that could be cleared.
+        //never inject Return for this inside a dialog - it triggers the
+        //dialog's auto-default button instead
+        QFocusEvent focus_event(QEvent::FocusOut, Qt::OtherFocusReason);
+        QApplication::sendEvent(w.second, &focus_event);
+
+        return true;
+    }
+    else if (evt_type == "key")
+    {
+        //single named key. do NOT use Return/Enter on a widget inside a dialog,
+        //it activates the dialog's default button - use focusout() to commit
+        //a line edit
+        if (params.size() != 1)
+            return false;
+
+        static const std::map<QString, Qt::Key> keys =
+        {
+            { "Return",    Qt::Key_Return    },
+            { "Enter",     Qt::Key_Enter     },
+            { "Tab",       Qt::Key_Tab       },
+            { "Escape",    Qt::Key_Escape    },
+            { "Delete",    Qt::Key_Delete    },
+            { "Backspace", Qt::Key_Backspace },
+            { "Space",     Qt::Key_Space     },
+            { "Up",        Qt::Key_Up        },
+            { "Down",      Qt::Key_Down      },
+            { "Left",      Qt::Key_Left      },
+            { "Right",     Qt::Key_Right     },
+            { "Home",      Qt::Key_Home      },
+            { "End",       Qt::Key_End       }
+        };
+
+        auto it = keys.find(params[ 0 ].trimmed());
+        if (it == keys.end())
+            return false;
+
+        return injectKeyEvent(w.second, "", it->second, delay);
     }
 
     //unknown event

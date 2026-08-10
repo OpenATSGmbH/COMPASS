@@ -3,6 +3,9 @@ pipeline {
 
     options {
         timestamps()
+        // Two builds of the same branch share one workspace, so a second build
+        // would compile into the build dir of the first one.
+        disableConcurrentBuilds()
     }
 
     parameters {
@@ -20,14 +23,22 @@ pipeline {
         booleanParam(name: 'TAG_HISTOGRAMVIEW',   defaultValue: true, description: 'Tag: histogramview')
         booleanParam(name: 'TAG_SCATTERPLOTVIEW', defaultValue: true, description: 'Tag: scatterplotview')
         booleanParam(name: 'TAG_GEOGRAPHICVIEW',  defaultValue: true, description: 'Tag: geographicview')
+        booleanParam(name: 'TAG_ANALYZE',         defaultValue: true, description: 'Tag: analyze (Analyze Data Source, MLAT + ADS-B)')
+        booleanParam(name: 'TAG_ARTAS_SPF',       defaultValue: true, description: 'Tag: artas_spf (ARTAS TRI import/association/display, at_20230422)')
+        booleanParam(name: 'TAG_MLAT_RU',         defaultValue: true, description: 'Tag: mlat_ru (MLAT contributing receivers, loww_20260609)')
+        booleanParam(name: 'TAG_SENSOR_STATUS',   defaultValue: true, description: 'Tag: sensor_status (CAT063 sensor status, skeyes_20251203)')
+        booleanParam(name: 'TAG_TRACKER_CONTRIB', defaultValue: true, description: 'Tag: tracker_contrib (CAT062 contributing sensors, skeyes_20251203)')
 
         // Build options
         booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove build_deb10 before building)')
         booleanParam(name: 'ASAN',                   defaultValue: false, description: 'Build with AddressSanitizer (slower; use to diagnose heap/memory corruption)')
 
         // Datasets (checkboxes)
-        booleanParam(name: 'DATASET_05H', defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
-        booleanParam(name: 'DATASET_2H',  defaultValue: true,  description: 'Dataset: at_20230422_2h (2h)')
+        booleanParam(name: 'DATASET_05H',    defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
+        // the only one off by default: same data as at_20230422_05h, just a longer slice
+        booleanParam(name: 'DATASET_2H',     defaultValue: false, description: 'Dataset: at_20230422_2h (2h)')
+        booleanParam(name: 'DATASET_LOWW',   defaultValue: true,  description: 'Dataset: loww_20260609_4h (Vienna airport surface, 4h)')
+        booleanParam(name: 'DATASET_SKEYES', defaultValue: true,  description: 'Dataset: skeyes_20251203 (multi-sensor, sensor status + tracker, 7h)')
     }
 
     environment {
@@ -38,12 +49,25 @@ pipeline {
         DISPLAY             = ':0'
         COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
         PYTHONUNBUFFERED    = '1'
+        // Container identity. Killing a `docker run` client (abort, Jenkins
+        // restart) does not stop the container - it keeps compiling in the
+        // workspace and collides with the next build. Every container is
+        // labeled so it can be found and removed again, and named so it is
+        // recognizable in `docker ps`. Branch names may contain characters
+        // that are illegal in a container name.
+        CI_BRANCH           = "${env.BRANCH_NAME.replaceAll('[^A-Za-z0-9_.-]', '_')}"
+        CI_TAG              = "${env.BRANCH_NAME.replaceAll('[^A-Za-z0-9_.-]', '_')}-${env.BUILD_NUMBER}"
     }
 
     stages {
         stage('Checkout') {
             steps {
                 script {
+                    // Remove containers left behind by an earlier build of this
+                    // branch (aborted build, Jenkins restart). They still hold the
+                    // workspace and would compile into it while this build does.
+                    sh "docker ps -aq --filter label=compass_ci_branch=${CI_BRANCH} | xargs -r docker rm -f || true"
+
                     // Resolve branch parameters
                     // experimental_src: explicit param > pipeline branch > devel
                     def expBranch = params.EXPERIMENTAL_SRC_BRANCH?.trim() ?: env.BRANCH_NAME
@@ -69,7 +93,10 @@ pipeline {
                     def cleanFlag = params.CLEAN_BUILD ? '--clean' : ''
                     def asanFlag  = params.ASAN ? '--asan' : ''
                     sh """
-                        docker run --rm \
+                        docker run --rm --init \
+                            --name compass-build-${CI_TAG} \
+                            --label compass_ci_branch=${CI_BRANCH} \
+                            --label compass_ci_build=${CI_TAG} \
                             -v \$(pwd):/workspace/compass \
                             -v \$(pwd)/jasterix:/workspace/jasterix \
                             -w /workspace/compass/docker \
@@ -90,6 +117,9 @@ pipeline {
                     def lsanEnv = params.ASAN ? "LSAN_OPTIONS=exitcode=0 " : ''
                     sh """
                         docker run --rm --init \
+                            --name compass-unittests-${CI_TAG} \
+                            --label compass_ci_branch=${CI_BRANCH} \
+                            --label compass_ci_build=${CI_TAG} \
                             -v \$(pwd):/workspace/compass \
                             -v \$(pwd)/jasterix:/workspace/jasterix \
                             -w /workspace/compass \
@@ -105,13 +135,16 @@ pipeline {
                 script {
                     def asanFlag = params.ASAN ? '--asan' : ''
                     sh """
-                        docker run --rm \
+                        docker run --rm --init \
+                            --name compass-appimage-${CI_TAG} \
+                            --label compass_ci_branch=${CI_BRANCH} \
+                            --label compass_ci_build=${CI_TAG} \
                             -v \$(pwd):/workspace/compass \
                             -v \$(pwd)/jasterix:/workspace/jasterix \
                             -v ${CI_DIR}:${CI_DIR} \
                             -w /workspace/compass \
                             ${DOCKER_IMAGE} \
-                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo make -C /workspace/jasterix/build_deb10 install && sudo make -C /workspace/compass/build_deb10 install && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
+                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo cmake --install /workspace/jasterix/build_deb10 && sudo cmake --install /workspace/compass/build_deb10 && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
                     """
                     // Collect artifacts
                     sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME}"
@@ -124,8 +157,11 @@ pipeline {
                 expression {
                     def anyTag = params.TAG_SYSTEM || params.TAG_IMPORT || params.TAG_CALCULATE || params.TAG_EVAL ||
                                  params.TAG_UI || params.TAG_VIEWS || params.TAG_TABLEVIEW ||
-                                 params.TAG_HISTOGRAMVIEW || params.TAG_SCATTERPLOTVIEW || params.TAG_GEOGRAPHICVIEW
-                    def anyDataset = params.DATASET_05H || params.DATASET_2H
+                                 params.TAG_HISTOGRAMVIEW || params.TAG_SCATTERPLOTVIEW || params.TAG_GEOGRAPHICVIEW ||
+                                 params.TAG_ANALYZE || params.TAG_ARTAS_SPF || params.TAG_MLAT_RU ||
+                                 params.TAG_SENSOR_STATUS || params.TAG_TRACKER_CONTRIB
+                    def anyDataset = params.DATASET_05H || params.DATASET_2H || params.DATASET_LOWW ||
+                                     params.DATASET_SKEYES
                     return anyTag && anyDataset
                 }
             }
@@ -136,19 +172,29 @@ pipeline {
                     if (params.TAG_SYSTEM)          tags << 'system'
                     if (params.TAG_IMPORT)          tags << 'import'
                     if (params.TAG_CALCULATE)       tags << 'calculate'
-                    if (params.TAG_EVAL)            tags << 'eval'
+                    if (params.TAG_EVAL)            { tags << 'eval'; tags << 'eval_loww' }
                     if (params.TAG_UI)              tags << 'ui'
                     if (params.TAG_VIEWS)           tags << 'views'
                     if (params.TAG_TABLEVIEW)       tags << 'tableview'
                     if (params.TAG_HISTOGRAMVIEW)   tags << 'histogramview'
                     if (params.TAG_SCATTERPLOTVIEW) tags << 'scatterplotview'
                     if (params.TAG_GEOGRAPHICVIEW)  tags << 'geographicview'
+                    if (params.TAG_ANALYZE)         tags << 'analyze'
+                    if (params.TAG_ARTAS_SPF)       tags << 'artas_spf'
+                    if (params.TAG_MLAT_RU)         tags << 'mlat_ru'
+                    if (params.TAG_SENSOR_STATUS)   tags << 'sensor_status'
+                    if (params.TAG_TRACKER_CONTRIB) tags << 'tracker_contrib'
                     def tagsStr = tags.join(',')
 
-                    // Build dataset list from checkboxes
+                    // Build dataset list from checkboxes: name (used for the log file
+                    // name) + manifest path. Each manifest declares the tags its
+                    // dataset supports; unsupported selected tags simply resolve to
+                    // no targets for that dataset.
                     def datasets = []
-                    if (params.DATASET_05H) datasets << 'at_20230422_05h'
-                    if (params.DATASET_2H)  datasets << 'at_20230422_2h'
+                    if (params.DATASET_05H)  datasets << [name: 'at_20230422_05h',  manifest: "${TEST_DATA_PATH}/at_20230422/at_20230422_05h.json"]
+                    if (params.DATASET_2H)   datasets << [name: 'at_20230422_2h',   manifest: "${TEST_DATA_PATH}/at_20230422/at_20230422_2h.json"]
+                    if (params.DATASET_LOWW) datasets << [name: 'loww_20260609_4h', manifest: "${TEST_DATA_PATH}/loww_20260609/loww_20260609_4h.json"]
+                    if (params.DATASET_SKEYES) datasets << [name: 'skeyes_20251203', manifest: "${TEST_DATA_PATH}/skeyes_20251203/skeyes_20251203.json"]
 
                     // Find the run directory created by collect_artifacts.sh
                     def runDir = sh(
@@ -180,24 +226,59 @@ pipeline {
                     // force-kill slow shutdowns, spuriously flagging tests as crashed.
                     def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:log_path=${runDir}/asan' LSAN_OPTIONS='exitcode=0' ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer COMPASS_QUIT_TIMEOUT_SEC=180 " : ''
 
+                    def testFailures = []
+
+                    // Each dataset writes into its own output dir. A shared one
+                    // makes the second run overwrite the first's results - and
+                    // junit_results.xml with them, so only the last dataset ever
+                    // reached the Jenkins test report.
+                    sh "rm -rf ${TEST_DATA_PATH}/runs"
+
                     for (dataset in datasets) {
-                        def manifest = "${TEST_DATA_PATH}/at_20230422/${dataset}.json"
+                        echo "Running tests for dataset: ${dataset.name} (tags: ${tagsStr})${params.ASAN ? ' [ASan]' : ''}"
 
-                        echo "Running tests for dataset: ${dataset} (tags: ${tagsStr})${params.ASAN ? ' [ASan]' : ''}"
-
-                        sh """
-                            cd '${scriptsDir}/test_infra' && \
-                            ${asanEnv}PYTHONPATH='${scriptsDir}' python3 test_suite.py \
+                        // The exit code of test_suite.py has to survive the `tee`:
+                        // a shell pipeline reports the status of its LAST command,
+                        // so without this the suite could crash and the step would
+                        // still report success. `pipefail` is not used since it is
+                        // not available in every /bin/sh - instead the status is
+                        // written to a file inside the pipeline and re-raised after
+                        // it. Streaming through tee is kept so the Jenkins console
+                        // shows test progress live.
+                        // returnStatus keeps the loop going: every dataset runs even
+                        // if an earlier one failed, the stage is failed afterwards.
+                        def rcFile = "${runDir}/test_${dataset.name}.rc"
+                        def rc = sh(returnStatus: true, script: """
+                            set +e
+                            cd '${scriptsDir}/test_infra' || exit 2
+                            { ${asanEnv}PYTHONPATH='${scriptsDir}' python3 test_suite.py \
                                 --binary='${appimage}' \
                                 --path='${scriptsDir}/tests' \
-                                --manifest='${manifest}' \
-                                --output='${TEST_DATA_PATH}' \
+                                --manifest='${dataset.manifest}' \
+                                --output='${TEST_DATA_PATH}/runs/${dataset.name}' \
                                 --tags='${tagsStr}' \
                                 --deps=tests \
                                 --no-prompt \
-                                --cfg-override=none \
-                                2>&1 | tee '${runDir}/test_${dataset}.log'
-                        """
+                                --cfg-override=none ; \
+                              echo \$? > '${rcFile}' ; } \
+                                2>&1 | tee '${runDir}/test_${dataset.name}.log'
+                            exit `cat '${rcFile}'`
+                        """)
+
+                        // 0 = all tests passed, 1 = tests failed, 2 = suite could
+                        // not be run (see ExitCode* in test_suite.py)
+                        if (rc != 0) {
+                            def reason = (rc == 1) ? 'test failures' : "suite error (exit ${rc})"
+                            echo "Dataset ${dataset.name}: ${reason}"
+                            testFailures << "${dataset.name} (${reason})"
+                        }
+                    }
+
+                    // Fail the stage here, after all datasets have run, so the
+                    // Stage View shows the failure on Integration Tests instead of
+                    // on the post actions where the junit step publishes results.
+                    if (testFailures) {
+                        error "Integration tests failed: ${testFailures.join(', ')}"
                     }
                 }
             }
@@ -206,6 +287,10 @@ pipeline {
 
     post {
         always {
+            // Stop any container of this build that outlived its `docker run`
+            // client - on abort Jenkins kills the client, not the container, and
+            // the container would keep compiling into the workspace.
+            sh "docker ps -aq --filter label=compass_ci_build=${CI_TAG} | xargs -r docker rm -f || true"
             // Crash logs are kept on the host under
             // ${CI_DIR}/*-${BUILD_NUMBER}-${BRANCH_NAME}/compass_crash_*.log
             // so they're available per-build via SSH but don't clutter the
@@ -214,9 +299,18 @@ pipeline {
             sh "rm -f compass_crash_*.log"
             // Archive test logs
             archiveArtifacts artifacts: '**/test_*.log', allowEmptyArchive: true
-            // Copy JUnit XML into workspace and publish per-test results
-            sh "cp ${TEST_DATA_PATH}/results/junit_results.xml junit_results.xml || true"
-            junit testResults: 'junit_results.xml', allowEmptyResults: true
+            // Copy each dataset's JUnit XML into the workspace and publish
+            // per-test results. One file per dataset - a single file would only
+            // ever carry the last dataset's tests.
+            sh """
+                rm -rf junit_results && mkdir -p junit_results
+                for f in ${TEST_DATA_PATH}/runs/*/results/junit_results.xml; do
+                    [ -f "\$f" ] || continue
+                    ds=\$(basename \$(dirname \$(dirname "\$f")))
+                    cp "\$f" "junit_results/\$ds.xml"
+                done
+            """
+            junit testResults: 'junit_results/*.xml', allowEmptyResults: true
         }
         failure {
             echo 'Build or tests failed!'

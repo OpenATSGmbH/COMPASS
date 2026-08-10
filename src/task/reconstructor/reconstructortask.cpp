@@ -22,7 +22,14 @@
 #include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variableset.h"
+#include "filtermanager.h"
+#include "dbfiltercondition.h"
+#include "filterclause.h"
+#include "idbvariableresolver.h"
+#include "global.h"
 #include "stringconv.h"
 #include "taskmanager.h"
 #include "viewmanager.h"
@@ -489,8 +496,7 @@ void ReconstructorTask::run()
 
     updateProgressSlot("Deleting Previous References", false);
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-    dbcontent_man.clearData();
+    manager().compass().viewManager().clearDataInViews();
 
     manager().compass().evaluationManager().clearData(); // in case there are previous results
 
@@ -593,17 +599,7 @@ void ReconstructorTask::deleteAssociationsDoneSlot()
 
     run_start_time_after_del_ = boost::posix_time::microsec_clock::local_time();
 
-    manager().compass().viewManager().disableDataDistribution(true);
-    manager().compass().dbContentManager().enableDataDistribution(false);
-
     currentReconstructor()->reset();
-
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-
-    connect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-            this, &ReconstructorTask::loadedDataSlot);
-    connect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-            this, &ReconstructorTask::loadingDoneSlot);
 
     if (cancelled_)
         return;
@@ -628,23 +624,15 @@ void ReconstructorTask::loadDataSlice()
            << " max " << Time::toString(loading_slice_->next_slice_begin_)
            << " last " << loading_slice_->is_last_slice_;
 
-    string timestamp_filter;
-
-    timestamp_filter = "timestamp >= " + to_string(Time::toLong(loading_slice_->slice_begin_));
-
-    if (loading_slice_->is_last_slice_)
-        timestamp_filter += " AND timestamp <= " + to_string(Time::toLong(loading_slice_->next_slice_begin_));
-    else
-        timestamp_filter += " AND timestamp < " + to_string(Time::toLong(loading_slice_->next_slice_begin_));
-
-    string position_filter;
+    // optional sector bounding box, computed once and shared across contents
+    bool has_bbox = false;
+    double lat_min{0}, lat_max{0}, long_min{0}, long_max{0};
 
     if (use_sectors_extend_)
     {
         auto& ctx = manager().compass().dbContextManager();
 
         bool first = true;
-        double lat_min{0}, lat_max{0}, long_min{0}, long_max{0};
         double tmp_lat_min{0}, tmp_lat_max{0}, tmp_long_min{0}, tmp_long_max{0};
 
         for (auto& sect_it : used_sectors_)
@@ -676,18 +664,12 @@ void ReconstructorTask::loadDataSlice()
 
         if (!first)
         {
-            if (timestamp_filter.size())
-                position_filter += " AND";
+            has_bbox = true;
 
             lat_min -= sector_delta_deg_;
             lat_max += sector_delta_deg_;
             long_min -= sector_delta_deg_;
             long_max += sector_delta_deg_;
-
-            position_filter += " latitude >= " + String::doubleToStringPrecision(lat_min, 10) +
-                          " AND latitude <= " + String::doubleToStringPrecision(lat_max, 10) +
-                          " AND longitude >= " + String::doubleToStringPrecision(long_min, 10) +
-                          " AND longitude <= " + String::doubleToStringPrecision(long_max, 10);
         }
     }
 
@@ -709,24 +691,67 @@ void ReconstructorTask::loadDataSlice()
     req.dbcontents_            = targets;
     req.apply_datasrc_filters_ = false;
     req.apply_view_filters_    = false;
-    req.show_status_           = false;
-    req.cancellable_           = false;
     req.read_set_ = [this](const std::string& name) {
         return currentReconstructor()->getReadSetFor(name);
     };
-    req.custom_filter_clause_ = [&dbcontent_man, timestamp_filter, position_filter]
-        (const std::string& name) -> std::string {
-        return dbcontent_man.dbContent(name).containsTargetReports()
-                   ? timestamp_filter + position_filter
-                   : timestamp_filter;
-    };
+    // per-slice load WHERE from the shared clause toolkit (half-open timestamp bounds via the
+    // generic leaf; sector bbox only on target-report content), rendered per content up front
+    req.custom_filter_clause_ = LoadRequest::perContentClause(
+        targets,
+        [this, has_bbox, lat_min, lat_max, long_min, long_max](const std::string& name) {
+            return loadFilterClause(name, has_bbox, lat_min, lat_max, long_min, long_max);
+        });
 
-    dbcontent_man.load(req);
+    // isolated per-slice batch load: filled by the engine, read in loadingDoneSlot;
+    // the view dataset is never touched
+    load_op_ = std::make_shared<LoadOperation>(dbcontent_man, req);
+    connect(load_op_.get(), &LoadOperation::finishedSignal,
+            this, &ReconstructorTask::loadingDoneSlot);
+    dbcontent_man.dataEngine().load(load_op_);
 }
 
-void ReconstructorTask::loadedDataSlot(const std::map<std::string, std::shared_ptr<Buffer>>& data, bool requires_reset)
+/**
+ * Per-content load WHERE for the current slice, built from the shared clause toolkit:
+ * half-open timestamp bounds (>= slice begin, </<= next slice begin via the generic leaf)
+ * plus the sector bounding box (Latitude/Longitude >=/<=) on target-report content only.
+ */
+std::string ReconstructorTask::loadFilterClause(
+    const std::string& dbcontent_name, bool has_bbox,
+    double lat_min, double lat_max, double long_min, double long_max)
 {
-    traced_assert(loading_slice_);
+    IDBVariableResolver& resolver   = manager().compass().filterManager().variableResolver();
+    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+
+    std::vector<FilterClause> parts;
+
+    // sqlFor yields an empty clause for contents without the given variable, so no guards needed
+    const std::string ts_var = dbcontent_vars::meta_var_timestamp_.name();
+
+    parts.push_back(DBFilterCondition::sqlFor(
+        resolver, dbcontent_name, ts_var, META_OBJECT_NAME,
+        filter_op::greater_equal, std::to_string(Time::toLong(loading_slice_->slice_begin_))));
+
+    parts.push_back(DBFilterCondition::sqlFor(
+        resolver, dbcontent_name, ts_var, META_OBJECT_NAME,
+        loading_slice_->is_last_slice_ ? filter_op::less_equal : filter_op::less,
+        std::to_string(Time::toLong(loading_slice_->next_slice_begin_))));
+
+    if (has_bbox && dbcontent_man.dbContent(dbcontent_name).containsTargetReports())
+    {
+        const std::string lat_var  = dbcontent_vars::meta_var_latitude_.name();
+        const std::string long_var = dbcontent_vars::meta_var_longitude_.name();
+
+        parts.push_back(DBFilterCondition::sqlFor(resolver, dbcontent_name, lat_var,
+            META_OBJECT_NAME, filter_op::greater_equal, String::doubleToStringPrecision(lat_min, 10)));
+        parts.push_back(DBFilterCondition::sqlFor(resolver, dbcontent_name, lat_var,
+            META_OBJECT_NAME, filter_op::less_equal, String::doubleToStringPrecision(lat_max, 10)));
+        parts.push_back(DBFilterCondition::sqlFor(resolver, dbcontent_name, long_var,
+            META_OBJECT_NAME, filter_op::greater_equal, String::doubleToStringPrecision(long_min, 10)));
+        parts.push_back(DBFilterCondition::sqlFor(resolver, dbcontent_name, long_var,
+            META_OBJECT_NAME, filter_op::less_equal, String::doubleToStringPrecision(long_max, 10)));
+    }
+
+    return combineAnd(parts).sql;
 }
 
 void ReconstructorTask::loadingDoneSlot()
@@ -739,12 +764,10 @@ void ReconstructorTask::loadingDoneSlot()
     traced_assert(currentReconstructor());
     traced_assert(loading_slice_);
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-
     if (cancelled_)
     {
         loading_slice_ = nullptr;
-        dbcontent_man.clearData(); // clear previous
+        load_op_ = nullptr;
         return;
     }
 
@@ -754,28 +777,17 @@ void ReconstructorTask::loadingDoneSlot()
            << " current_slice_idx " << current_slice_idx_;
 
     // add data to slice
-    loading_slice_->data_ = dbcontent_man.data();
+    // @TODO: op state unchecked - a Failed/Cancelled load reconstructs the slice on partial data
+    loading_slice_->data_ = load_op_->buffers();
     loading_slice_->has_data_ = !loading_slice_->data_.empty();
     loading_slice_->loading_done_ = true;
+    load_op_ = nullptr; // release the operation
 
     for (auto& buf_it : loading_slice_->data_)
     {
         logdbg << buf_it.first << " size " << buf_it.second->size() 
         << " num prop " << buf_it.second->properties().size();
     }
-
-    //loading_slice_->data_.clear();
-
-    // for (auto& buf_it : dbcontent_man.data())
-    // {
-    //     if (dbcontent_man.dbContent(buf_it.first).containsTargetReports())
-    //         loading_slice_->data_[buf_it.first] = buf_it.second;
-
-    //     if (dbcontent_man.dbContent(buf_it.first).containsStatusContent())
-    //         loading_slice_->status_data_[buf_it.first] = buf_it.second;
-    // }
-
-    dbcontent_man.clearData(); // clear previous
 
     if (cancelled_)
         return;
@@ -833,17 +845,7 @@ void ReconstructorTask::loadingDoneSlot()
     if (cancelled_)
         return;
 
-    if (last_slice) // disconnect everything
-    {
-        disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-                   this, &ReconstructorTask::loadedDataSlot);
-        disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-                   this, &ReconstructorTask::loadingDoneSlot);
-
-        manager().compass().viewManager().disableDataDistribution(false);
-        manager().compass().dbContentManager().enableDataDistribution(true);
-    }
-    else // do next load
+    if (!last_slice) // do next load
     {
         loginf << "loading next slice";
 
@@ -1270,18 +1272,18 @@ void ReconstructorTask::runCancelledSlot()
 
     DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
-    if (dbcontent_man.loadInProgress())
-        dbcontent_man.quitLoading();
+    if (dbcontent_man.dataEngine().isLoading())
+        dbcontent_man.dataEngine().cancelLoad();
 
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                this, &ReconstructorTask::writeDoneSlot);
 
-    while (loading_data_ || dbcontent_man.loadInProgress()
+    while (loading_data_ || dbcontent_man.dataEngine().isLoading()
            || processing_data_slice_ || currentReconstructor()->processing()
            || dbcontent_man.insertInProgress())
     {
         logdbg << "waiting, load "
-               << (loading_data_ || dbcontent_man.loadInProgress())
+               << (loading_data_ || dbcontent_man.dataEngine().isLoading())
                << " proc " << (processing_data_slice_ || currentReconstructor()->processing())
                << " insert " << dbcontent_man.insertInProgress();
 
@@ -1290,18 +1292,11 @@ void ReconstructorTask::runCancelledSlot()
 
     loginf << "all done";
 
-    disconnect(&dbcontent_man, &DBContentManager::loadedDataSignal,
-               this, &ReconstructorTask::loadedDataSlot);
-    disconnect(&dbcontent_man, &DBContentManager::loadingDoneSignal,
-               this, &ReconstructorTask::loadingDoneSlot);
-
-    manager().compass().viewManager().disableDataDistribution(false);
-    manager().compass().dbContentManager().enableDataDistribution(true);
-
     manager().compass().logInfo("Reconstructor") << "canceled by user";
 
     currentReconstructor()->reset();
 
+    load_op_ = nullptr;
     loading_slice_ = nullptr;
     processing_slice_ = nullptr;
     writing_slice_ = nullptr;
@@ -1535,6 +1530,36 @@ void ReconstructorTask::checkSubConfigurables()
         traced_assert(probimm_reconstructor_);
     }
 #endif
+}
+
+Result ReconstructorTask::applyJSONParameters(const nlohmann::json& params_json)
+{
+    nlohmann::json params = params_json;
+
+    auto& settings = currentReconstructor()->settings();
+
+    if (params.contains("data_timestamp_min"))
+    {
+        settings.data_timestamp_min = Utils::Time::fromString(
+            params.at("data_timestamp_min").get<std::string>());
+        params.erase("data_timestamp_min");
+
+        loginf << "data timeframe min " << Utils::Time::toString(settings.data_timestamp_min);
+    }
+
+    if (params.contains("data_timestamp_max"))
+    {
+        settings.data_timestamp_max = Utils::Time::fromString(
+            params.at("data_timestamp_max").get<std::string>());
+        params.erase("data_timestamp_max");
+
+        loginf << "data timeframe max " << Utils::Time::toString(settings.data_timestamp_max);
+    }
+
+    if (params.empty())
+        return Result::succeeded();
+
+    return Configurable::applyJSONParameters(params);
 }
 
 void ReconstructorTask::deleteCalculatedReferences() // called in async

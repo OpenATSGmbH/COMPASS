@@ -108,6 +108,54 @@ std::string TrackerTrackNumberFilter::getConditionString(const std::string& dbco
     return ss.str();
 }
 
+FilterClause TrackerTrackNumberFilter::getClause(const std::string& dbcontent_name)
+{
+    FilterClause clause;
+
+    if (dbcontent_name != "CAT062")
+        return clause;
+
+    auto& resolver = variableResolver();
+
+    traced_assert(resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
+    traced_assert(resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
+
+    std::map<unsigned int, std::map<unsigned int, std::string>> active_tns = getActiveTrackerTrackNums();
+
+    if (!active_ || !active_tns.size())
+        return clause;
+
+    string ds_id_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_ds_id_);
+    string line_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_line_id_);
+    string tn_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_track_num_);
+
+    stringstream inner;
+    bool first_inside = true;
+
+    for (auto& ds_it : active_tns)
+    {
+        for (auto& line_it : ds_it.second)
+        {
+            if (String::trim(line_it.second).empty())
+                continue;
+
+            if (!first_inside)
+                inner << " OR ";
+
+            inner << " (" << ds_id_col << " = " << ds_it.first;
+            inner << " AND " << line_col << " = " << line_it.first;
+            inner << " AND " << tn_col << " IN (" << line_it.second << "))";
+
+            first_inside = false;
+        }
+    }
+
+    if (!first_inside)
+        clause.sql = "(" + inner.str() + ")";
+
+    return clause;
+}
+
 DBFilterWidget* TrackerTrackNumberFilter::createWidget()
 {
     return new TrackerTrackNumberFilterWidget(*this);
