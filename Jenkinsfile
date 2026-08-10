@@ -34,11 +34,11 @@ pipeline {
         booleanParam(name: 'ASAN',                   defaultValue: false, description: 'Build with AddressSanitizer (slower; use to diagnose heap/memory corruption)')
 
         // Datasets (checkboxes)
-        booleanParam(name: 'DATASET_05H',  defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
-        booleanParam(name: 'DATASET_2H',   defaultValue: true,  description: 'Dataset: at_20230422_2h (2h)')
-        booleanParam(name: 'DATASET_LOWW', defaultValue: true,  description: 'Dataset: loww_20260609_4h (Vienna airport surface, 4h)')
-        // off by default: ~1 GB of ASTERIX, adds a long import to every run
-        booleanParam(name: 'DATASET_SKEYES', defaultValue: false, description: 'Dataset: skeyes_20251203 (multi-sensor, sensor status + tracker, 7h)')
+        booleanParam(name: 'DATASET_05H',    defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
+        // the only one off by default: same data as at_20230422_05h, just a longer slice
+        booleanParam(name: 'DATASET_2H',     defaultValue: false, description: 'Dataset: at_20230422_2h (2h)')
+        booleanParam(name: 'DATASET_LOWW',   defaultValue: true,  description: 'Dataset: loww_20260609_4h (Vienna airport surface, 4h)')
+        booleanParam(name: 'DATASET_SKEYES', defaultValue: true,  description: 'Dataset: skeyes_20251203 (multi-sensor, sensor status + tracker, 7h)')
     }
 
     environment {
@@ -158,8 +158,10 @@ pipeline {
                     def anyTag = params.TAG_SYSTEM || params.TAG_IMPORT || params.TAG_CALCULATE || params.TAG_EVAL ||
                                  params.TAG_UI || params.TAG_VIEWS || params.TAG_TABLEVIEW ||
                                  params.TAG_HISTOGRAMVIEW || params.TAG_SCATTERPLOTVIEW || params.TAG_GEOGRAPHICVIEW ||
-                                 params.TAG_ANALYZE || params.TAG_ARTAS_SPF || params.TAG_MLAT_RU
-                    def anyDataset = params.DATASET_05H || params.DATASET_2H || params.DATASET_LOWW
+                                 params.TAG_ANALYZE || params.TAG_ARTAS_SPF || params.TAG_MLAT_RU ||
+                                 params.TAG_SENSOR_STATUS || params.TAG_TRACKER_CONTRIB
+                    def anyDataset = params.DATASET_05H || params.DATASET_2H || params.DATASET_LOWW ||
+                                     params.DATASET_SKEYES
                     return anyTag && anyDataset
                 }
             }
