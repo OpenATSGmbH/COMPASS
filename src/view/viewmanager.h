@@ -85,6 +85,10 @@ class ViewManager : public QObject, public Configurable
     void sourceDataChangedSlot(const std::vector<std::string>& names, bool reset, bool last);
     void loadingDoneSlot(); // emitted when all dbconts have finished loading
 
+    // a view finished its asynchronous processing (view processingFinishedSignal):
+    // fires the deferred load-done edge once no view is pending anymore
+    void viewProcessingFinishedSlot();
+
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);
 
     // ASTERIX live watchdog trigger -> one live tick (delegates to the live session)
@@ -204,6 +208,11 @@ class ViewManager : public QObject, public Configurable
 
     bool isProcessingData() const;
 
+    // any view still processing data asynchronously (e.g. geographic view geometry
+    // builds). Part of the "busy" condition: gates a second load, closing the
+    // database, applying a view point and rendering a report figure.
+    bool hasPendingViewProcessing() const;
+
     void resetToStartupConfiguration();
 
     bool isInitialized() const;
@@ -258,6 +267,9 @@ protected:
     void beginLiveSession();
     void endLiveSession();
 
+    // the deferred tail of loadingDoneSlot: dialog close + external done bookend
+    void finishLoadingDone();
+
     // selection carry-over across (re)loads (owned here - a view concern):
     // captureSelection() reads selected_ from the current source before a reload swaps
     // it away; applyCarriedSelection() restores it onto freshly arrived buffers.
@@ -274,6 +286,11 @@ protected:
     bool initialized_     = false;
     bool processing_data_ = false;
     bool reload_needed_   = false;
+
+    // the load-done edge (dialog close + loadingDoneSignal) is held back because a
+    // view still processes data asynchronously; released in viewProcessingFinishedSlot.
+    // Cleared when a new load starts (the deferred done of a superseded load is dropped).
+    bool done_pending_    = false;
 
     // Diagnostic state for loading lifecycle:
     //   loading_done_dispatched_: set true after a loadingDoneSlot body completes,

@@ -97,6 +97,11 @@ public:
     virtual void clearData();
     virtual void appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current);
 
+    // true while the view still processes data asynchronously after loadingDone()
+    // (e.g. the geographic view's geometry builds); such a view emits
+    // processingFinishedSignal() once done. Synchronous views are never pending.
+    virtual bool hasPendingProcessing() const { return false; }
+
     const std::string& getName() const;
     ViewManager& viewManager() { return view_manager_; }
 
@@ -154,6 +159,9 @@ public:
 signals:
     void selectionChangedSignal();  // do not emit manually, call emitSelectionChange()
     void presetChangedSignal();
+    // emitted when the view has finished asynchronous data processing (see
+    // hasPendingProcessing()); ViewManager defers the load-done edge on it
+    void processingFinishedSignal();
 
 public slots:
     void selectionChangedSlot();

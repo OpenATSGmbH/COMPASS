@@ -44,6 +44,7 @@
 #include "viewpointsreportgeneratordialog.h"
 #include "util/timeconv.h"
 #include "util/number.h"
+#include "util/async.h"
 #include "viewpoint_commands.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
@@ -792,6 +793,17 @@ bool ViewManager::isProcessingData() const
     return processing_data_;
 }
 
+/**
+ */
+bool ViewManager::hasPendingViewProcessing() const
+{
+    for (const auto& view_it : views_)
+        if (view_it.second->hasPendingProcessing())
+            return true;
+
+    return false;
+}
+
 void ViewManager::resetToStartupConfiguration()
 {
     loginf;
@@ -882,6 +894,11 @@ void ViewManager::registerView(View* view)
     traced_assert(view);
     traced_assert(!isRegistered(view));
     views_[view->instanceName()] = view;
+
+    // deferred load-done edge: a view with asynchronous processing (geo geometry
+    // builds) reports completion here; the connection dies with the view
+    connect(view, &View::processingFinishedSignal,
+            this, &ViewManager::viewProcessingFinishedSlot);
 }
 
 /**
@@ -896,6 +913,11 @@ void ViewManager::unregisterView(View* view)
 
     it = views_.find(view->instanceName());
     views_.erase(it);
+
+    // a removed view can no longer report processingFinishedSignal - re-evaluate a
+    // deferred done edge that may have been waiting on it
+    if (done_pending_)
+        viewProcessingFinishedSlot();
 }
 
 /**
@@ -1037,6 +1059,7 @@ void ViewManager::loadingStartedSlot()
     //reset reload flag
     reload_needed_ = false;
     loading_done_dispatched_ = false;
+    done_pending_ = false; // a deferred done of a superseded load is dropped
 
     // start the load dialog/cursor here (fired off the op's startedSignal, so after the
     // engine's single-op wait - the outgoing load is already cleaned up). Only for an
@@ -1211,6 +1234,16 @@ void ViewManager::loadPausedDisplay()
  */
 void ViewManager::issueLoad(const LoadRequest& req, bool blocking)
 {
+    // pending asynchronous view work (geo geometry builds) still reads the current
+    // source's buffers and groups - wait it out before swapping the display away.
+    // The modal load dialog makes this unreachable for the user; it guards RT- or
+    // task-triggered reloads.
+    if (hasPendingViewProcessing())
+    {
+        logwrn << "waiting for pending view processing before new load";
+        Utils::Async::pumpUntil([this] { return !hasPendingViewProcessing(); });
+    }
+
     // capture the outgoing selection BEFORE swapping the source away, so it can be
     // restored onto the freshly loaded buffers as they arrive (selection carry-over)
     captureSelection();
@@ -1423,6 +1456,28 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
         carried_selection_.clear();
     } // processing_data_ released here
 
+    // A view may still process data asynchronously (geo geometry builds). Then the
+    // load-done edge - dialog close + loadingDoneSignal - is deferred until every view
+    // has reported processingFinishedSignal, so the RT wait and the UI tests see done
+    // only after everything is attached, and the modal dialog keeps the user out of a
+    // half-attached scene.
+    if (hasPendingViewProcessing())
+    {
+        done_pending_ = true;
+        loginf << "deferring done, views still processing";
+        return;
+    }
+
+    finishLoadingDone();
+}
+
+/**
+ * The deferred tail of loadingDoneSlot: dialog close + the external done bookend.
+ * Runs directly when no view has pending processing, otherwise from
+ * viewProcessingFinishedSlot once the last view finished.
+ */
+void ViewManager::finishLoadingDone()
+{
     // Close the dialog OUTSIDE the re-entrancy guard (processing_data_ == false) so its
     // processEvents flushes any deferred view redraw (e.g. the geo view's) now, while the
     // dialog is still up - not after the load is marked done. Matches the pre-refactor
@@ -1436,6 +1491,25 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
     emit loadingDoneSignal();
 
     loginf << "end";
+}
+
+/**
+ * A view finished its asynchronous processing. Releases the deferred done edge once no
+ * view is pending anymore. No-op outside a deferred completion (done_pending_ unset).
+ */
+void ViewManager::viewProcessingFinishedSlot()
+{
+    if (!done_pending_)
+        return;
+
+    if (hasPendingViewProcessing())
+        return;
+
+    done_pending_ = false;
+
+    loginf << "all views finished processing";
+
+    finishLoadingDone();
 }
 
 /**
@@ -1457,6 +1531,7 @@ void ViewManager::beginLiveSession()
 
     reload_needed_ = false;
     loading_done_dispatched_ = false;
+    done_pending_ = false; // a deferred done of a superseded load is dropped
 
     for (auto& view_it : views_)
         view_it.second->loadingStarted();

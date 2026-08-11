@@ -522,7 +522,7 @@ void DBContentItemProvider::rebuildContent(unsigned int dbc_id)
         {
             traced_assert(line_it.second);
 
-            auto group = std::make_unique<dbContent::ItemGroup>();
+            auto group = std::make_shared<dbContent::ItemGroup>();
             group->dbc_id   = dbc_id;
             group->ds_id    = ds_it.first;
             group->line_id  = line_it.first;
