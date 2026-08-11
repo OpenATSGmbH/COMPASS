@@ -61,11 +61,22 @@ protected:
     virtual void updateVariableData(const std::string& dbcontent_name,
                                     Buffer& buffer) override final;
 
+    // Load-time asynchronous recompute: the stash fill + processing runs on a worker
+    // (13+ s on the main thread for large datasets otherwise), the display commit -
+    // commitStashDisplayData() + updateVariableDisplay() - on the main thread once
+    // done. Returns true so the default load-done redraw is skipped; the base widget
+    // defers dataLoaded until the commit ran.
+    virtual bool postLoadTrigger() override;
+
     virtual boost::optional<QRectF> getViewBounds() const;
 
-    /// derived behavior during postUpdateVariableDataEvent()
+    /// derived behavior during postUpdateVariableDataEvent(); must not touch Qt
+    /// models/widgets - it may run on a worker thread (see postLoadTrigger)
     virtual void processStash(const VariableViewStash<double>& stash) = 0;
-    /// clear data computed in processStash() 
+    /// Qt-side data commit after processStash() (e.g. the layer panel rebuild);
+    /// always runs on the main thread
+    virtual void commitStashDisplayData() {}
+    /// clear data computed in processStash()
     virtual void resetStashDependentData() = 0;
 
     void viewInfoJSON_impl(nlohmann::json& info) const override;
@@ -83,6 +94,9 @@ protected:
 private:
     void resetStash();
     void updateStash();
+
+    // the compute part of postUpdateVariableDataEvent (worker-safe)
+    void processStashData();
 
     void updateVariableData(size_t var_idx,
                             std::string group_name, const Buffer& buffer,

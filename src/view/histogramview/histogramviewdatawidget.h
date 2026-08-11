@@ -22,6 +22,7 @@
 //#include "dbcontent/variable/variable.h"
 #include "histogramviewchartview.h"
 #include "variableviewdatawidget.h"
+#include "viewlayerscan.h"
 #include "histogram_raw.h"
 //#include "histogram.h"
 //#include "results/base.h"
@@ -115,6 +116,11 @@ public slots:
     void clearSelectionSlot();
 
 protected:
+    // load-time asynchronous recompute: the generator update runs on a worker (it
+    // competes with the other views' workers and can exceed the ping budget on the
+    // main thread otherwise), the chart update commits on the main thread
+    virtual bool postLoadTrigger() override final;
+
     virtual void updateDataEvent(bool requires_reset) override final;
     virtual void resetVariableData() override final;
     virtual void resetIntermediateVariableData() override final;
@@ -165,16 +171,25 @@ protected:
     /// user's zoom survives. Cleared on data reload and on resetZoomSlot.
     boost::optional<std::pair<unsigned int, unsigned int>> saved_zoom_range_;
 
-    /// Per-dbcontent per-row layer id, recomputed each updateFromVariables.
-    /// Rows whose (ds_id, line_id) can't be mapped get an empty string.
-    /// Referenced via closures passed as the HistogramGeneratorBuffer row
-    /// filter + layer lookup, so this must outlive the generator.
+    /// Per-dbcontent per-row layer id, computed once per data change (on a worker for
+    /// asynchronous loads, see updateDataEvent). Rows whose (ds_id, line_id) can't be
+    /// mapped get an empty string. Referenced via closures passed as the
+    /// HistogramGeneratorBuffer row filter + layer lookup, so this must outlive the
+    /// generator.
     std::map<std::string, std::vector<std::string>> row_layer_ids_;
+
+    /// row_layer_ids_ matches the current data (invalidated on data change/clear,
+    /// NOT per redraw - the ids only depend on the loaded buffers)
+    bool row_layer_ids_valid_ {false};
 
 private:
     /// Rebuild payloads_ from the loaded buffers and repopulate the DBContent
     /// subtree. Emits layerTreeRebuiltSignal.
     void rebuildLayerTree();
+
+    /// Rebuild payloads_ + the DBContent subtree from precomputed layer aggregates
+    /// (the tree/payload part of rebuildLayerTree; the scan may run on a worker).
+    void applyLayerTree(const std::map<std::string, view_layer_scan::LayerAgg>& agg);
 
     /// Populate row_layer_ids_ from current viewData(). Empty string for
     /// rows without ds_id/line_id (unmappable).

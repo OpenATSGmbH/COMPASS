@@ -19,6 +19,7 @@
 #include "viewvariable.h"
 #include "variableview.h"
 #include "viewwidget.h"
+#include "viewasyncprocessor.h"
 
 #include "buffer.h"
 #include "dbcontent/dbcontent.h"
@@ -87,10 +88,23 @@ void VariableViewStashDataWidget::preUpdateVariableDataEvent()
 
 /**
 */
-void VariableViewStashDataWidget::postUpdateVariableDataEvent() 
+void VariableViewStashDataWidget::postUpdateVariableDataEvent()
 {
     loginf;
 
+    //compute part (worker-safe)
+    processStashData();
+
+    //Qt-side commit (layer panel etc.)
+    commitStashDisplayData();
+}
+
+/**
+ * The compute part of postUpdateVariableDataEvent: no Qt models/widgets touched, may
+ * run on a worker thread (see postLoadTrigger).
+ */
+void VariableViewStashDataWidget::processStashData()
+{
     //update the stash (bounds, counts, etc.)
     updateStash();
 
@@ -99,6 +113,47 @@ void VariableViewStashDataWidget::postUpdateVariableDataEvent()
 
     //invoke derived to process stash data
     processStash(stash_);
+}
+
+/**
+ * Load-time asynchronous recompute (offline): the stash fill and processing run on a
+ * worker, the display commit on the main thread once done. The selection and the
+ * manager state read along the way are stable in that window - the load-done edge
+ * (and with it any user or runtime-command interaction) waits for the commit.
+ */
+bool VariableViewStashDataWidget::postLoadTrigger()
+{
+    //annotations are display work, live mutates the buffers per tick - default redraw
+    if (variableView()->showsAnnotation())
+        return false;
+
+    if (variableView()->compass().appMode() == AppMode::LiveRunning)
+        return false;
+
+    if (viewData().empty())
+        return false;
+
+    asyncProcessor().launch(
+        variableView()->className() + " stash update",
+        [ this ] ()
+        {
+            //the compute phase of redrawData(true)
+            clearIntermediateRedrawData();
+            preUpdateVariableDataEvent();
+            updateFromVariables();
+            processStashData();
+        },
+        [ this ] ()
+        {
+            commitStashDisplayData();
+
+            setDrawState(updateVariableDisplay());
+
+            emit displayChanged();
+        });
+
+    //no default redraw; the base defers dataLoaded until the commit ran
+    return true;
 }
 
 /**

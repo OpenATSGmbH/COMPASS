@@ -98,9 +98,10 @@ public:
     virtual void appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current);
 
     // true while the view still processes data asynchronously after loadingDone()
-    // (e.g. the geographic view's geometry builds); such a view emits
-    // processingFinishedSignal() once done. Synchronous views are never pending.
-    virtual bool hasPendingProcessing() const { return false; }
+    // (e.g. the geographic view's geometry builds, the table view's row index build);
+    // processingFinishedSignal() is emitted once done (forwarded from the data
+    // widget). Synchronous views are never pending.
+    virtual bool hasPendingProcessing() const;
 
     const std::string& getName() const;
     ViewManager& viewManager() { return view_manager_; }

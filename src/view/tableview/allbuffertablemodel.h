@@ -18,6 +18,7 @@
 #pragma once
 
 #include "basetablemodel.h"
+#include "property.h"
 
 #include <QColor>
 #include <QIcon>
@@ -41,6 +42,46 @@ class AllBufferTableModel : public BaseBufferTableModel
     void setChangedSlot() override;
 
   public:
+    /// Snapshot input for prepareData(): everything the row data build reads from the
+    /// view/model/managers, captured on the main thread by makePrepareInput() so the
+    /// build itself can run on a worker thread.
+    struct PrepareInput
+    {
+        std::map<std::string, std::shared_ptr<Buffer>> buffers;
+        std::map<unsigned int, std::string> number_to_dbcont;
+        std::map<std::string, unsigned int> dbcont_to_number;
+
+        bool show_only_selected     = false;
+        bool compute_selected_ranges = false; // fill PreparedData::selected_ranges (load path)
+        std::optional<std::set<std::string>> allowed_layer_ids;
+
+        std::set<std::string> skipped_contents;               // ignore_non_target_reports
+        std::map<std::string, std::string> timestamp_columns; // dbcontent -> ts column
+        std::map<std::string, std::string> ds_id_columns;     // missing = no layer resolution
+        std::map<std::string, std::string> line_id_columns;
+        std::map<unsigned int, std::pair<std::string, std::string>> data_sources; // ds_id -> (type, name)
+
+        // active sort snapshot
+        int              sort_column       = -1;
+        Qt::SortOrder    sort_order        = Qt::AscendingOrder;
+        bool             sort_by_dbcontent = false; // sort column is the DBContent column
+        bool             sort_var_valid    = false;
+        PropertyDataType sort_var_type     = PropertyDataType::BOOL;
+        std::map<unsigned int, std::string> sort_var_names; // dbcont_num -> column
+    };
+
+    /// Result of prepareData(): the model's row data, applied via applyPrepared().
+    struct PreparedData
+    {
+        std::map<std::string, std::shared_ptr<Buffer>> buffers;
+        std::map<unsigned int, std::string> number_to_dbcont;
+        std::map<std::string, unsigned int> dbcont_to_number;
+        std::vector<std::pair<unsigned int, unsigned int>> row_indexes;
+        std::vector<unsigned int> row_layer_index;
+        std::vector<std::string>  layer_id_pool;
+        std::vector<std::pair<int,int>> selected_ranges; // as getSelectedRows()
+    };
+
     AllBufferTableModel(TableView& view, AllBufferTableWidget* table_widget,
                         TableViewDataSource& data_source);
     virtual ~AllBufferTableModel();
@@ -49,6 +90,17 @@ class AllBufferTableModel : public BaseBufferTableModel
 
     void clearData() override;
     void setData(std::map<std::string, std::shared_ptr<Buffer>> buffers);
+
+    // Asynchronous build support: makePrepareInput() snapshots all state the build
+    // reads (main thread; also extends the dbcontent numbering), prepareData() is pure
+    // over the snapshot (worker-safe), applyPrepared() commits the result (model reset,
+    // main thread). The synchronous paths (setData/rebuild) run through the same
+    // functions inline. for_load drops the layer filter - the layer tree of the fresh
+    // load is not built yet at snapshot time.
+    PrepareInput makePrepareInput(std::map<std::string, std::shared_ptr<Buffer>> buffers,
+                                  bool for_load);
+    static PreparedData prepareData(const PrepareInput& input);
+    void applyPrepared(PreparedData&& prepared);
 
     void saveAsCSV(const std::string& file_name) override;
     void rebuild() override;
@@ -111,6 +163,4 @@ class AllBufferTableModel : public BaseBufferTableModel
     mutable std::map<std::pair<unsigned int, std::string>, dbContent::Variable*> variable_cache_;
 
     QIcon iconFor(const std::string& layer_id, bool selected) const;
-
-    void buildRowIndexes();
 };

@@ -125,7 +125,8 @@ protected:
 
     virtual void toolChanged_impl(int mode) override;
 
-    virtual bool postLoadTrigger() override final;
+    // load-time asynchronous recompute inherited from VariableViewStashDataWidget
+    virtual void commitStashDisplayData() override final;
     virtual void resetVariableDisplay() override final;
     virtual DrawState updateVariableDisplay() override final;
     virtual bool updateFromAnnotations() override final;
@@ -190,6 +191,10 @@ private:
     AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
 
     std::vector<std::unique_ptr<GridLeafPayload>> payloads_;
+
+    /// previous payloads, kept alive until the layer tree was rebuilt in
+    /// commitStashDisplayData (old tree leaves hold raw pointers into them)
+    std::vector<std::unique_ptr<GridLeafPayload>> retired_payloads_;
 
     /// Re-entry guard for layersChangedSlot. rebuildLayerTree() refreshes the
     /// subtree, which re-applies the stored hidden state and re-emits

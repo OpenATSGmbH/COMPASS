@@ -260,7 +260,7 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
 bool ScatterPlotViewDataWidget::postLoadTrigger()
 {
     // disable connection lines?
-    if (view_->useConnectionLines() && loadedDataCount() > ConnectLinesDataCountMax) 
+    if (view_->useConnectionLines() && loadedDataCount() > ConnectLinesDataCountMax)
     {
         loginf << "loaded data items >" << ConnectLinesDataCountMax << ", disabling connection lines";
 
@@ -268,7 +268,16 @@ bool ScatterPlotViewDataWidget::postLoadTrigger()
         view_->useConnectionLines(false, false);
     }
 
-    return false;
+    //stash base: asynchronous load-time recompute
+    return VariableViewStashDataWidget::postLoadTrigger();
+}
+
+/**
+ * Qt-side commit after processStash (main thread): the layer panel rebuild.
+ */
+void ScatterPlotViewDataWidget::commitStashDisplayData()
+{
+    rebuildLayerTree();
 }
 
 /**
@@ -495,7 +504,8 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
     correctSeriesDateTime(scatter_series_);
 
-    rebuildLayerTree();
+    //the layer panel rebuild runs in commitStashDisplayData (main thread) - this
+    //function may run on a worker thread
 
     bounds_ = scatter_series_.getDataBounds();
 

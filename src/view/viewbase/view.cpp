@@ -132,6 +132,11 @@ bool View::init()
     //init view widget
     w->init();
 
+    // forward the data widget's asynchronous-processing completion; ViewManager's
+    // deferred load-done edge listens on the view-level signal
+    connect(w->getViewDataWidget(), &ViewDataWidget::processingFinishedSignal,
+            this, &View::processingFinishedSignal);
+
     init_ = true;
 
     //all init => run post init ops on some widget components
@@ -287,6 +292,13 @@ void View::loadingDone()
 
     if (widget_)
         widget_->loadingDone();
+}
+
+/**
+*/
+bool View::hasPendingProcessing() const
+{
+    return widget_ && widget_->getViewDataWidget()->hasPendingProcessing();
 }
 
 /**

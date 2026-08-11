@@ -69,9 +69,11 @@ is enforced by convention rather than by a queue. The rules the code follows:
    `delete_data` report busy), *skip* (the live tick drops its DB bound when a delete is in
    flight), *defer* (ASTERIX import postpones an insert while a load runs), or *ask the engine
    to wait* (`waitUntilEngineIdle()` — before closing the DB, applying a view point, or
-   rendering a report figure). Don't spin on `isLoading()` privately. The exception is a
-   consumer waiting on **its own** pipeline, of which engine state is one term — the
-   reconstructor's drain loop — which still belongs to that consumer.
+   rendering a report figure). `waitUntilEngineIdle()` also waits out pending asynchronous view
+   processing (`ViewManager::hasPendingViewProcessing()` - the geo view's geometry builds), as
+   do `issueLoad()` before a new load and `COMPASS::shutdown()`. Don't spin on `isLoading()`
+   privately. The exception is a consumer waiting on **its own** pipeline, of which engine
+   state is one term - the reconstructor's drain loop - which still belongs to that consumer.
    Where a wait guards an operation rather than a call site, put it **on the operation**:
    `setViewableDataConfig()` waits, so all four view-point entry points are covered, not just
    the one whose widget remembered.
@@ -173,6 +175,16 @@ nesting applies there. One consequence: exiting live **from paused** runs every 
 `loadingDone_impl()` a second time — once for the paused load, once for `endLiveSession()` — over
 unchanged data. Redundant work, not a wrong state.
 
+**The done edge is deferred while a view still processes asynchronously.** The geographic view
+builds its layer geometry on a worker per DBContent arrival (offline and paused only - see
+[readme_blocked_events.md](../../../readme_blocked_events.md)); `loadingDoneSlot` still runs its
+per-view loop at DB finish, but the tail (`finishLoadingDone`: dialog close +
+`loadingDoneSignal`) waits until no view reports `hasPendingProcessing()` anymore
+(`View::processingFinishedSignal` -> `viewProcessingFinishedSlot`). The RT wait and the UI tests
+therefore see done only after everything is attached, and the modal dialog keeps the user out of
+a half-attached scene. A new load drops a still-deferred done of the superseded load
+(`done_pending_` cleared in `loadingStartedSlot`).
+
 ## LoadController — the offline load UX
 
 `ViewManager` owns a **`LoadController`** ([loadcontroller.h](../../view/loadcontroller.h))
@@ -221,7 +233,10 @@ last)` (the old dual `loadedData`/`updateData` path is gone — step 8). The bas
   `applyChange(names, reset, last)` → `resetData()` (if `reset`) → `rebuildContent(id)` per name
   → `contentRebuilt()` (if `last`), reading `source.index()`/`source.buffers()`. So OSG never
   paints the empty intermediate state between wipe and rebuild. `GeographicView::updateFromSource`
-  overrides to skip the **whole** update (provider + finalize) on live overload.
+  overrides to skip the **whole** update (provider + finalize) on live overload. Offline (and
+  paused) the layer geometry itself is built asynchronously: `rebuildContent_impl` stages the
+  layers, one worker per arrival builds them, and they attach in a queued completion turn - the
+  live tick stays fully synchronous (see the deferred done edge under *Bookends*).
 
 Also in `sourceDataChangedSlot`: selection carry-over (`applyCarriedSelection`), data-source
 loaded counts (`dbContextManager().setLoadedCounts`), and — on `last` — `dataDistributedSignal`

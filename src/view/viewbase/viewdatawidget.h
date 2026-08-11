@@ -36,6 +36,7 @@ class Buffer;
 class LayerTreeModel;
 class DBContentItemProvider;
 class DBContentDataSet;
+class ViewAsyncProcessor;
 
 namespace dbContent
 {
@@ -61,7 +62,7 @@ public:
     typedef std::map<std::string, std::shared_ptr<Buffer>> BufferData;
 
     ViewDataWidget(ViewWidget* view_widget, QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
-    virtual ~ViewDataWidget() = default;
+    virtual ~ViewDataWidget(); // out-of-line: async_processor_ joins its workers here
 
     void setToolSwitcher(ViewToolSwitcher* tool_switcher);
 
@@ -89,6 +90,11 @@ public:
     bool hasVisibleContent() const;
     bool isDrawn() const;
     bool isContentDrawn() const;
+
+    // the widget still processes data asynchronously (a worker task is outstanding or
+    // load-done work is deferred on one); processingFinishedSignal is emitted once done.
+    // Drives ViewManager's deferred load-done edge via the owning View.
+    bool hasPendingProcessing() const;
 
     void databaseOpened();
     void databaseClosed();
@@ -143,8 +149,21 @@ signals:
     void redrawDone();
     void updateStarted();
     void updateDone();
-    
+    // asynchronous processing finished (see hasPendingProcessing); forwarded by the View
+    void processingFinishedSignal();
+
 protected:
+    // Asynchronous processing support. A widget runs heavy per-load computations via
+    // asyncProcessor() (work on a worker thread, commit on the main thread) or its own
+    // mechanism (the geo view's geometry builds), and reports outstanding work through
+    // hasPendingAsyncWork_impl(). loadingDone() then defers loadingDone_impl() (work
+    // pending at entry) or the dataLoaded emission (work launched inside the impl)
+    // until notifyProcessingFinished() runs - wired automatically for asyncProcessor(),
+    // called explicitly by widgets with their own mechanism.
+    ViewAsyncProcessor& asyncProcessor();                       // created on first use
+    virtual bool hasPendingAsyncWork_impl() const;              // default: asyncProcessor tasks
+    void notifyProcessingFinished();
+
     virtual void toolChanged_impl(int tool_id) = 0;        //implements reactions on tool switches
     virtual void loadingStarted_impl() = 0;                //implements behavior at starting a reload
     virtual void loadingDone_impl();                       //implements behavior at finishing a reload
@@ -163,6 +182,10 @@ protected:
     void addNullCount(size_t n);
     void addNanCount(size_t n);
 
+    // clears intermediate redraw data + counts (the compute-phase reset of redrawData);
+    // protected so asynchronous recomputes can run it in their worker phase
+    void clearIntermediateRedrawData();
+
     void endTool();
 
     void setDrawState(DrawState state) { draw_state_ = state; }
@@ -175,7 +198,6 @@ protected:
 private:
     friend class ViewLoadStateWidget;
 
-    void clearIntermediateRedrawData();
     void toolChanged(int mode, const QCursor& cursor);
 
     ViewWidget*       view_widget_   = nullptr;
@@ -192,4 +214,10 @@ private:
 
     boost::optional<size_t> count_null_ = 0;
     boost::optional<size_t> count_nan_  = 0;
+
+    // deferred load-done state (see loadingDone / notifyProcessingFinished)
+    bool pending_loading_done_ = false; // loadingDone_impl deferred on pending work
+    bool pending_data_loaded_  = false; // dataLoaded deferred on work launched in the impl
+
+    std::unique_ptr<ViewAsyncProcessor> async_processor_; // created on first use
 };

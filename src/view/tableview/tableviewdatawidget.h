@@ -18,8 +18,12 @@
 #pragma once
 
 #include "viewdatawidget.h"
+#include "viewlayerscan.h"
+#include "allbuffertablemodel.h"
 
+#include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 class TableView;
@@ -98,9 +102,22 @@ private:
     /// subtree. Emits layerTreeRebuiltSignal.
     void rebuildLayerTree();
 
+    /// Rebuild payloads_ + the DBContent subtree from precomputed layer aggregates
+    /// (the tree/payload part of rebuildLayerTree; the scan may run on a worker).
+    void applyLayerTree(const std::map<std::string, view_layer_scan::LayerAgg>& agg);
+
     /// Compute the allowed-layer-ids set + per-layer icon colors from current
     /// panel state and push them onto the AllBufferTableModel. Empty layer
     /// panel (no payloads) = no filter (std::nullopt); otherwise the set of
     /// currently-visible layer ids.
     void pushLayerStateToModel();
+
+    /// true when the current panel state hides any layer (the asynchronously prepared
+    /// row data is unfiltered and needs a re-filtering rebuild then)
+    bool anyLayerHidden() const;
+
+    /// main-thread commit of the asynchronously prepared load data: layer tree, model
+    /// row data, selection, draw state
+    void commitLoadedData(const std::map<std::string, view_layer_scan::LayerAgg>& agg,
+                          AllBufferTableModel::PreparedData&& prepared);
 };
