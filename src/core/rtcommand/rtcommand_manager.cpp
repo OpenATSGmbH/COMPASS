@@ -28,6 +28,9 @@
 #include "logger.h"
 
 #include <QCoreApplication>
+#include <QEventLoop>
+
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/bind.hpp>
@@ -216,14 +219,33 @@ void RTCommandManager::shutdown()
 
     msleep(100);
 
+    // The wait MUST dispatch events. The runner thread finishes a command by calling
+    // back into the main thread with a Qt::BlockingQueuedConnection (the result check in
+    // RTCommandRunner), so it can only reach its stop once the main thread dispatches
+    // that call. A plain sleep loop here deadlocks the two against each other: the
+    // runner waits for the main thread, the main thread waits for the runner. That
+    // happens for a command whose own execution ends the application - 'quit' in a
+    // batch run - where the result check lands after the main event loop is gone.
+    // User input stays excluded, as everywhere else in the shutdown path.
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
+
     while (!stopped_)
     {
         if (!started_)
             stopped_ = true;
 
-        loginf << "waiting on run stop";
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-        msleep(1000);
+        msleep(50);
+
+        auto elapsed = boost::posix_time::microsec_clock::local_time() - start_time;
+
+        if (elapsed.total_seconds() >= ShutdownTimeoutSecs)
+        {
+            logwrn << "runner did not stop within " << ShutdownTimeoutSecs
+                   << " s, continuing shutdown";
+            break;
+        }
     }
 
     started_ = false;

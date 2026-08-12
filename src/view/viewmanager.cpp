@@ -914,8 +914,10 @@ void ViewManager::unregisterView(View* view)
     it = views_.find(view->instanceName());
     views_.erase(it);
 
-    // a removed view can no longer report processingFinishedSignal - re-evaluate a
-    // deferred done edge that may have been waiting on it
+    // a removed view can no longer report processingFinishedSignal - drop it from the
+    // progress tracking and re-evaluate a deferred done edge waiting on it
+    pending_views_.erase(view);
+
     if (done_pending_)
         viewProcessingFinishedSlot();
 }
@@ -1060,6 +1062,7 @@ void ViewManager::loadingStartedSlot()
     reload_needed_ = false;
     loading_done_dispatched_ = false;
     done_pending_ = false; // a deferred done of a superseded load is dropped
+    pending_views_.clear();
 
     // start the load dialog/cursor here (fired off the op's startedSignal, so after the
     // engine's single-op wait - the outgoing load is already cleaned up). Only for an
@@ -1445,7 +1448,15 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
             view_it.second->loadingDone();
             loginf << "view " << view_it.first << " took "
                    << String::timeStringFromDouble((microsec_clock::local_time() - tmp_time).total_milliseconds() / 1000.0, true);
-            load_controller_->advanceViewPhase();
+
+            // Progress reflects views that have FINISHED processing, not ones that
+            // merely started: a view processing asynchronously returns from
+            // loadingDone() immediately, and advances the bar from
+            // viewProcessingFinishedSlot once its work is committed.
+            if (view_it.second->hasPendingProcessing())
+                pending_views_.insert(view_it.second);
+            else
+                load_controller_->advanceViewPhase();
 
             auto elapsed_ms = (microsec_clock::local_time() - loop_start).total_milliseconds();
             if (elapsed_ms > pump_threshold_ms)
@@ -1478,6 +1489,10 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
  */
 void ViewManager::finishLoadingDone()
 {
+    // the view phase is over: a late completion must not advance the progress of a
+    // dialog that is about to be destroyed
+    pending_views_.clear();
+
     // Close the dialog OUTSIDE the re-entrancy guard (processing_data_ == false) so its
     // processEvents flushes any deferred view redraw (e.g. the geo view's) now, while the
     // dialog is still up - not after the load is marked done. Matches the pre-refactor
@@ -1499,6 +1514,13 @@ void ViewManager::finishLoadingDone()
  */
 void ViewManager::viewProcessingFinishedSlot()
 {
+    // advance the view phase for the view that just finished - the dispatch loop only
+    // advanced for the views that were already done when it dispatched them
+    View* view = qobject_cast<View*>(sender());
+
+    if (view && !view->hasPendingProcessing() && pending_views_.erase(view))
+        load_controller_->advanceViewPhase();
+
     if (!done_pending_)
         return;
 
@@ -1532,6 +1554,7 @@ void ViewManager::beginLiveSession()
     reload_needed_ = false;
     loading_done_dispatched_ = false;
     done_pending_ = false; // a deferred done of a superseded load is dropped
+    pending_views_.clear();
 
     for (auto& view_it : views_)
         view_it.second->loadingStarted();

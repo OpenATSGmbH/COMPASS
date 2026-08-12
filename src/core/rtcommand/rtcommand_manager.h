@@ -81,7 +81,12 @@ public:
     virtual ~RTCommandManager();
 
     void startCommandProcessing(); // only process command after start has been called
+    // waits for the runner thread to stop, dispatching events while it does (the runner
+    // completes a command through a blocking call back into the main thread) - see the
+    // implementation. Gives up after ShutdownTimeoutSecs rather than hanging.
     void shutdown();
+
+    static const int ShutdownTimeoutSecs = 10;
 
     rtcommand::IssueInfo addCommand(const std::string& cmd_str, CommandId* id = nullptr);
     void addCommandFromConsole(const std::string& cmd_str); // throws on failure

@@ -57,7 +57,9 @@ public:
     void begin(const LoadOperation& op);
 
     void beginViewPhase(unsigned int num_views); // view loop starting: switch to 50..100
-    void advanceViewPhase();                // one view finished
+    // one view FINISHED updating (not merely dispatched - a view processing
+    // asynchronously reports here once its work is committed)
+    void advanceViewPhase();
     // load finished: close dialog + cursor. drain pumps the event loop before closing, so a
     // deferred view redraw runs while the dialog is still up (the normal completion path);
     // pass false when ending from inside another emit, where pumping would re-enter.
@@ -79,6 +81,12 @@ private:
     unsigned int load_total_  {0};
     unsigned int view_total_  {0};
     bool         cursor_active_{false};
+
+    // re-entrancy guards for the view-phase progress: QProgressDialog::setValue pumps
+    // events for a modal dialog, so a view completion can re-enter advanceViewPhase and
+    // end the cycle from inside it (see advanceViewPhase / end)
+    bool         in_advance_   {false};
+    bool         end_deferred_ {false};
 
     const LoadOperation*    op_ {nullptr}; // the running op (non-owning, valid for the cycle)
     QMetaObject::Connection op_conn_;      // op.dataChangedSignal -> opDataChangedSlot

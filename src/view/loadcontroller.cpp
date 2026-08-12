@@ -136,8 +136,29 @@ void LoadController::advanceViewPhase()
     value_ += 50.0 / static_cast<double>(view_total_);
     if (value_ > 100.0)
         value_ = 100.0;
+
+    // QProgressDialog::setValue() pumps the event loop for a modal dialog. A queued view
+    // completion dispatched by that pump re-enters here and can end the whole cycle -
+    // and Qt's setValue touches the dialog again after the pump returns, so destroying
+    // it in between is a use after free inside Qt. Hence: a nested advance does nothing
+    // but leave its value for the outer call, and an end() arriving while we are inside
+    // setValue is deferred until we have returned from it.
+    if (in_advance_)
+        return;
+
+    in_advance_ = true;
     dialog_->setValue(static_cast<int>(value_));
-    dialog_->repaint(); // see beginViewPhase
+    in_advance_ = false;
+
+    if (end_deferred_)
+    {
+        end_deferred_ = false;
+        end(false); // no drain: we are unwinding out of a pump already
+        return;
+    }
+
+    if (dialog_)
+        dialog_->repaint(); // see beginViewPhase
 }
 
 /**
@@ -169,6 +190,14 @@ void LoadController::end(bool drain)
     {
         disconnect(op_fin_conn_);
         op_fin_conn_ = {};
+    }
+
+    // Called from inside advanceViewPhase' setValue pump (see there): destroying the
+    // dialog now would pull it out from under Qt. Finish once that call has returned.
+    if (in_advance_)
+    {
+        end_deferred_ = true;
+        return;
     }
 
     if (dialog_)

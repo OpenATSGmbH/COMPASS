@@ -292,6 +292,11 @@ protected:
     // Cleared when a new load starts (the deferred done of a superseded load is dropped).
     bool done_pending_    = false;
 
+    // views whose asynchronous processing the view-phase progress is still waiting on:
+    // each advances the progress when it reports finished, so the dialog reflects
+    // finished views rather than dispatched ones
+    std::set<View*> pending_views_;
+
     // Diagnostic state for loading lifecycle:
     //   loading_done_dispatched_: set true after a loadingDoneSlot body completes,
     //     reset on loadingStartedSlot. Used to detect late sourceDataChangedSlot calls.
