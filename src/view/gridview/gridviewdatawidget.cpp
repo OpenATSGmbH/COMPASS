@@ -123,7 +123,21 @@ void GridViewDataWidget::resetGridChart()
     legend_->setVisible(false);
     legend_->showSelectionColor(false);
 
-    grid_chart_.reset();
+    // deleteLater, not a synchronous reset: the chart owns a QGraphicsScene with its
+    // axes, and this can run from the asynchronous load commit while Qt still has
+    // pending events for it - destroying it in place crashed inside QtCharts
+    // (QGraphicsScene::clear -> ~QChart -> deleteAllAxes)
+    if (grid_chart_)
+    {
+        auto* chart = grid_chart_.release();
+
+        if (layout())
+            layout()->removeWidget(chart);
+
+        chart->setParent(nullptr);
+        chart->hide();
+        chart->deleteLater();
+    }
 
     grid_rendering_ = QImage();
     grid_roi_       = QRectF();

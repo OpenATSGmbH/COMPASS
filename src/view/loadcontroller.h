@@ -18,6 +18,7 @@
 #pragma once
 
 #include <QObject>
+#include <QPointer>
 
 #include <memory>
 #include <string>
@@ -76,17 +77,22 @@ private slots:
 private:
     COMPASS& compass_;
 
-    std::unique_ptr<QProgressDialog> dialog_;
+    // QPointer, not unique_ptr: the dialog is parented to the active window, so Qt
+    // deletes it together with that window (application shutdown, or the window closing
+    // under a load). An owning pointer cannot see that and is left dangling, which a
+    // late view completion then dereferences - the guarded pointer nulls itself instead.
+    // Ownership is still ours in the normal path: end() closes and deletes it.
+    QPointer<QProgressDialog> dialog_;
     double       value_       {0.0};   // accumulator on a 0..100 scale
     unsigned int load_total_  {0};
     unsigned int view_total_  {0};
     bool         cursor_active_{false};
 
-    // re-entrancy guards for the view-phase progress: QProgressDialog::setValue pumps
-    // events for a modal dialog, so a view completion can re-enter advanceViewPhase and
-    // end the cycle from inside it (see advanceViewPhase / end)
+    // re-entrancy guard for the view-phase progress: QProgressDialog::setValue pumps
+    // events for a modal dialog, so a view completion can re-enter advanceViewPhase
+    // from inside it (see advanceViewPhase). The dialog's lifetime is handled by
+    // deleteLater in end(), so re-entrancy cannot leave a dangling pointer.
     bool         in_advance_   {false};
-    bool         end_deferred_ {false};
 
     const LoadOperation*    op_ {nullptr}; // the running op (non-owning, valid for the cycle)
     QMetaObject::Connection op_conn_;      // op.dataChangedSignal -> opDataChangedSlot

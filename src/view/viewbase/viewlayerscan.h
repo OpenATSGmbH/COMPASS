@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -78,5 +79,41 @@ std::map<std::string, LayerAgg> aggregateLayers(const ScanInput& input);
 /// per-dbcontent per-row layer id (empty string for unmappable rows); worker-safe.
 /// dbcontents without ds/line columns get no entry at all.
 std::map<std::string, std::vector<std::string>> computeRowLayerIds(const ScanInput& input);
+
+/**
+ * Per-row layer ids as a pool plus one index per row, instead of one string per row.
+ * A dataset has a handful of layers and millions of rows, so the string form costs one
+ * heap allocation per row (the ids exceed the small-string limit) and makes every
+ * consumer compare strings per row. Here a row costs two bytes and consumers can
+ * precompute whatever they need per pool entry.
+ *
+ * Index 0 is always the empty id, i.e. a row whose (ds_id, line_id) could not be mapped.
+ * dbcontents without ds/line columns get no entry at all.
+ */
+struct RowLayerIndex
+{
+    std::vector<std::string> pool;                                 // pool[0] is empty
+    std::map<std::string, std::vector<std::uint16_t>> rows;         // dbcontent -> per row pool index
+
+    static const std::uint16_t UnmappedIndex = 0;
+
+    /// pool index of a row, or UnmappedIndex when the dbcontent or row is not covered
+    std::uint16_t indexOf(const std::string& dbcontent_name, unsigned int row) const
+    {
+        auto it = rows.find(dbcontent_name);
+        if (it == rows.end() || row >= it->second.size())
+            return UnmappedIndex;
+        return it->second[ row ];
+    }
+
+    const std::string& id(std::uint16_t idx) const
+    {
+        static const std::string empty;
+        return idx < pool.size() ? pool[ idx ] : empty;
+    }
+};
+
+/// worker-safe; see RowLayerIndex
+RowLayerIndex computeRowLayerIndex(const ScanInput& input);
 
 } // namespace view_layer_scan

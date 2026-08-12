@@ -282,6 +282,8 @@ void ViewWidget::setDataWidget(ViewDataWidget* w)
 
     connect(data_widget_, &ViewDataWidget::redrawStarted, this, &ViewWidget::redrawStarted);
     connect(data_widget_, &ViewDataWidget::redrawDone, this, &ViewWidget::redrawDone);
+    connect(data_widget_, &ViewDataWidget::processingFinishedSignal,
+            this, &ViewWidget::dataWidgetProcessingFinished);
 
     //try to connect
     connectWidgets();
@@ -454,6 +456,30 @@ void ViewWidget::loadingDone()
     getViewLoadStateWidget()->loadingDone();
     getViewToolWidget()->loadingDone();
     getViewInfoWidget()->loadingDone();
+
+    // The data widget may process the load asynchronously, in which case its
+    // loadingDone() only launched the work. viewRefreshed() means "the view shows the
+    // new data" to everything waiting on it - runtime commands and the UI tests read
+    // the view right after it - so it must wait for the commit, not for the launch.
+    if (getViewDataWidget()->hasPendingProcessing())
+    {
+        refresh_pending_ = true;
+        return;
+    }
+
+    emit viewRefreshed();
+}
+
+/**
+ * The data widget finished its asynchronous processing: emit the refresh edge that
+ * loadingDone() held back.
+ */
+void ViewWidget::dataWidgetProcessingFinished()
+{
+    if (!refresh_pending_)
+        return;
+
+    refresh_pending_ = false;
 
     emit viewRefreshed();
 }

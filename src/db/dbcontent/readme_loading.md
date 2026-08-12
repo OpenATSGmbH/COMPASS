@@ -175,15 +175,25 @@ nesting applies there. One consequence: exiting live **from paused** runs every 
 `loadingDone_impl()` a second time — once for the paused load, once for `endLiveSession()` — over
 unchanged data. Redundant work, not a wrong state.
 
-**The done edge is deferred while a view still processes asynchronously.** The geographic view
-builds its layer geometry on a worker per DBContent arrival (offline and paused only - see
-[readme_blocked_events.md](../../../readme_blocked_events.md)); `loadingDoneSlot` still runs its
-per-view loop at DB finish, but the tail (`finishLoadingDone`: dialog close +
-`loadingDoneSignal`) waits until no view reports `hasPendingProcessing()` anymore
+**The done edge is deferred while a view still processes asynchronously.** Every view except the
+tiny ones now does its heavy per-load work on a worker thread (offline and paused only - live
+stays synchronous, see [readme_blocked_events.md](../../../readme_blocked_events.md)):
+geographic geometry builds, table row indexes, histogram scan and generator, scatter/grid stash.
+`loadingDoneSlot` still runs its per-view loop at DB finish, but the tail (`finishLoadingDone`:
+dialog close + `loadingDoneSignal`) waits until no view reports `hasPendingProcessing()` anymore
 (`View::processingFinishedSignal` -> `viewProcessingFinishedSlot`). The RT wait and the UI tests
-therefore see done only after everything is attached, and the modal dialog keeps the user out of
-a half-attached scene. A new load drops a still-deferred done of the superseded load
-(`done_pending_` cleared in `loadingStartedSlot`).
+therefore see done only after everything is committed, and the modal dialog keeps the user out of
+a half-updated display - its view-phase progress advances per **finished** view, not per
+dispatched one. A new load drops a still-deferred done of the superseded load (`done_pending_`
+cleared in `loadingStartedSlot`).
+
+The shared machinery is `ViewAsyncProcessor` plus the deferral in `ViewDataWidget`
+([viewasyncprocessor.h](../../view/viewbase/viewasyncprocessor.h)): a view launches
+`work` (worker thread, must touch no Qt object) and `commit` (main thread), and the base class
+handles the deferral, the invalidation on a new load and the completion signal. Two hazards it
+encodes, both hit in practice: results of a superseded generation are discarded rather than
+committed, and `QProgressDialog::setValue` pumps the event loop, so a commit can re-enter the
+load lifecycle - see the guards in `LoadController::advanceViewPhase`.
 
 ## LoadController — the offline load UX
 
@@ -235,8 +245,9 @@ last)` (the old dual `loadedData`/`updateData` path is gone — step 8). The bas
   paints the empty intermediate state between wipe and rebuild. `GeographicView::updateFromSource`
   overrides to skip the **whole** update (provider + finalize) on live overload. Offline (and
   paused) the layer geometry itself is built asynchronously: `rebuildContent_impl` stages the
-  layers, one worker per arrival builds them, and they attach in a queued completion turn - the
-  live tick stays fully synchronous (see the deferred done edge under *Bookends*).
+  layers, one worker per arrival builds them (its layers in parallel), and they attach in a queued
+  completion turn - the live tick stays fully synchronous (see the deferred done edge under
+  *Bookends*).
 
 Also in `sourceDataChangedSlot`: selection carry-over (`applyCarriedSelection`), data-source
 loaded counts (`dbContextManager().setLoadedCounts`), and — on `last` — `dataDistributedSignal`

@@ -226,6 +226,13 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
                 dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_).name());
         }
 
+        // The group of a row depends only on (ds_id, line_id), of which a dataset has a
+        // handful - so resolve the data source and build the group name once per pair
+        // and cache the target vector. Doing it per row cost a data source lookup, five
+        // string allocations and a string keyed map probe for every one of millions of
+        // rows. The map is node based, so the cached pointers stay valid across inserts.
+        std::map<std::pair<unsigned int, unsigned int>, std::vector<unsigned int>*> group_cache;
+
         for (unsigned int index = last_size; index < current_size; ++index)
         {
             traced_assert(!ds_ids.isNull(index));
@@ -242,33 +249,47 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
                     continue;
             }
 
-            std::string ds_type_str;
-            std::string ds_name_str;
+            const auto cache_key = std::make_pair(ds_id, line_id);
 
-            if (ds_man.hasDataSource(ds_id))
+            auto cache_it = group_cache.find(cache_key);
+            if (cache_it == group_cache.end())
             {
-                const auto* ds = ds_man.dataSource(ds_id);
-                ds_type_str = ds->dsType();
-                ds_name_str = ds->name();
-            }
-            else
-            {
-                ds_type_str = "Other";
-                ds_name_str = to_string(Number::sacFromDsId(ds_id))+"/"+to_string(Number::sicFromDsId(ds_id));
+                std::string ds_type_str;
+                std::string ds_name_str;
+
+                if (ds_man.hasDataSource(ds_id))
+                {
+                    const auto* ds = ds_man.dataSource(ds_id);
+                    ds_type_str = ds->dsType();
+                    ds_name_str = ds->name();
+                }
+                else
+                {
+                    ds_type_str = "Other";
+                    ds_name_str = to_string(Number::sacFromDsId(ds_id))+"/"+to_string(Number::sicFromDsId(ds_id));
+                }
+
+                group_name = ds_type_str + ":" + ds_name_str + ":"
+                           + String::lineStrFrom(line_id) + ":" + dbcontent_name;
+
+                cache_it = group_cache.emplace(cache_key, &grouped_indexes[group_name]).first;
             }
 
-            group_name = ds_type_str + ":" + ds_name_str + ":"
-                       + String::lineStrFrom(line_id) + ":" + dbcontent_name;
-
-            grouped_indexes[group_name].push_back(index);
+            cache_it->second->push_back(index);
         }
     }
     else // simple add
     {
         group_name = dbcontent_name;
 
+        //single group: resolve it once instead of probing the map per row
+        auto& indexes = grouped_indexes[dbcontent_name];
+
+        if (current_size > last_size)
+            indexes.reserve(indexes.size() + (current_size - last_size));
+
         for (unsigned int index = last_size; index < current_size; ++index)
-            grouped_indexes[dbcontent_name].push_back(index);
+            indexes.push_back(index);
     }
 
     // add selected flags & rec_nums

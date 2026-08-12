@@ -1514,6 +1514,11 @@ void ViewManager::finishLoadingDone()
  */
 void ViewManager::viewProcessingFinishedSlot()
 {
+    // a completion arriving during shutdown must not drive the load UX any more: the
+    // views and the progress dialog are being torn down around it
+    if (compass_.isShutDown())
+        return;
+
     // advance the view phase for the view that just finished - the dispatch loop only
     // advanced for the views that were already done when it dispatched them
     View* view = qobject_cast<View*>(sender());

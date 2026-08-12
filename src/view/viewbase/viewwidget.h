@@ -197,6 +197,14 @@ private:
     void createStandardLayout();
     void connectWidgets();
 
+    /// the data widget finished asynchronous processing - emits the deferred
+    /// viewRefreshed() edge (see loadingDone)
+    void dataWidgetProcessingFinished();
+
+    /// viewRefreshed() was held back in loadingDone() because the data widget was still
+    /// processing the load asynchronously
+    bool refresh_pending_ = false;
+
     static const int PresetSelectionWidth  = 200;
     static const int PresetSelectionSpacer = 20;
 

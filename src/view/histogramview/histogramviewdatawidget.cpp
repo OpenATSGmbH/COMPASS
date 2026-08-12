@@ -220,17 +220,17 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
             view_layer_scan::makeScanInput(viewData(), view_->compass()));
 
         auto agg     = std::make_shared<std::map<std::string, view_layer_scan::LayerAgg>>();
-        auto row_ids = std::make_shared<std::map<std::string, std::vector<std::string>>>();
+        auto row_ids = std::make_shared<view_layer_scan::RowLayerIndex>();
 
         asyncProcessor().launch("histogram view layer data",
             [ scan_input, agg, row_ids ] ()
             {
                 *agg     = view_layer_scan::aggregateLayers(*scan_input);
-                *row_ids = view_layer_scan::computeRowLayerIds(*scan_input);
+                *row_ids = view_layer_scan::computeRowLayerIndex(*scan_input);
             },
             [ this, agg, row_ids ] ()
             {
-                row_layer_ids_       = std::move(*row_ids);
+                row_layer_index_     = std::move(*row_ids);
                 row_layer_ids_valid_ = true;
 
                 applyLayerTree(*agg);
@@ -301,7 +301,32 @@ void HistogramViewDataWidget::resetIntermediateVariableData()
  */
 void HistogramViewDataWidget::resetVariableDisplay()
 {
-    chart_view_.reset();
+    releaseChartView();
+}
+
+/**
+ * Drops the current chart view without destroying it synchronously.
+ *
+ * The view owns a QChart with its axes and a QGraphicsScene, and Qt may still be inside
+ * that object graph when we get here: since the chart update runs from the asynchronous
+ * load commit (a queued call), the outgoing view can still have pending events. Deleting
+ * it in place crashed inside QtCharts (QGraphicsScene::clear -> ~QChart ->
+ * deleteAllAxes -> ~QObject). deleteLater lets it die once the event loop unwinds; it is
+ * taken out of the layout and hidden right away, so nothing shows it in the meantime.
+ */
+void HistogramViewDataWidget::releaseChartView()
+{
+    if (!chart_view_)
+        return;
+
+    auto* view = chart_view_.release();
+
+    if (main_layout_)
+        main_layout_->removeWidget(view);
+
+    view->setParent(nullptr);
+    view->hide();
+    view->deleteLater();
 }
 
 /**
@@ -434,33 +459,39 @@ void HistogramViewDataWidget::updateFromVariables()
 
     const unsigned int color_mode = view_->compass().colorMode();
 
-    buf_gen->setRowLayerLookup(
-        [this, color_mode](const std::string& dbc, unsigned int i) -> std::string
-        {
-            auto it = row_layer_ids_.find(dbc);
-            if (it == row_layer_ids_.end() || i >= it->second.size())
-                return {};
-            const std::string& full_id = it->second[i];
-            if (full_id.empty())
-                return {};
-            return groupKeyFor(full_id, color_mode);
-        });
-
+    // Everything the generator needs per row is precomputed per POOL ENTRY here - the
+    // color-mode group key and the hidden flag. A row then costs one array lookup;
+    // previously each row built its layer id, split it in groupKeyFor and probed two
+    // string keyed maps, over millions of rows.
     const std::set<std::string> hidden_layer_ids =
         layer_model_ ? layer_model_->storedHiddenIds() : std::set<std::string>{};
+
+    const auto& pool = row_layer_index_.pool;
+
+    std::vector<std::string> group_keys(pool.size());
+    std::vector<char>        hidden_by_group(pool.size(), 0);
+
+    for (size_t g = 1; g < pool.size(); ++g)
+    {
+        group_keys[ g ]      = groupKeyFor(pool[ g ], color_mode);
+        hidden_by_group[ g ] = hidden_layer_ids.count(pool[ g ]) ? 1 : 0;
+    }
+
+    buf_gen->setRowGroups(std::move(group_keys),
+        [this](const std::string& dbc, unsigned int i) -> std::uint16_t
+        {
+            return row_layer_index_.indexOf(dbc, i);
+        });
 
     if (!hidden_layer_ids.empty())
     {
         buf_gen->setRowFilter(
-            [this, hidden_layer_ids](const std::string& dbc, unsigned int i) -> bool
+            [this, hidden_by_group](const std::string& dbc, unsigned int i) -> bool
             {
-                auto it = row_layer_ids_.find(dbc);
-                if (it == row_layer_ids_.end() || i >= it->second.size())
-                    return true;   // no lookup -> allow (can't match a hidden id)
-                const std::string& lid = it->second[i];
-                if (lid.empty())
+                auto idx = row_layer_index_.indexOf(dbc, i);
+                if (idx == view_layer_scan::RowLayerIndex::UnmappedIndex)
                     return true;   // unmappable rows still contribute to scan nulls
-                return hidden_layer_ids.count(lid) == 0;
+                return idx >= hidden_by_group.size() || !hidden_by_group[ idx ];
             });
     }
 
@@ -569,7 +600,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     //check if data is present/valid
     bool has_data = histogram_raw_.hasData() && (variablesOk() || view_->showsAnnotation());
 
-    chart_view_.reset(nullptr);
+    releaseChartView();
 
     ViewDataWidget::DrawState draw_state = ViewDataWidget::DrawState::NotDrawn;
 
@@ -1095,7 +1126,7 @@ void HistogramViewDataWidget::applyLayerTree(const std::map<std::string, view_la
 void HistogramViewDataWidget::computeRowLayerIds()
 {
     // shared scan helper (worker version runs in updateDataEvent's task)
-    row_layer_ids_ = view_layer_scan::computeRowLayerIds(
+    row_layer_index_ = view_layer_scan::computeRowLayerIndex(
         view_layer_scan::makeScanInput(viewData(), view_->compass()));
 }
 

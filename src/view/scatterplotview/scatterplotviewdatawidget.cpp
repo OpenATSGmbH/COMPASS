@@ -284,8 +284,29 @@ void ScatterPlotViewDataWidget::commitStashDisplayData()
 */
 void ScatterPlotViewDataWidget::resetVariableDisplay()
 {
-    chart_view_.reset(nullptr);
+    releaseChartView();
     prior_draw_had_content_ = false;
+}
+
+/**
+ * Drops the current chart view without destroying it synchronously: the chart owns a
+ * QGraphicsScene with its axes, and this can run from the asynchronous load commit while
+ * Qt still has pending events for it. Destroying it in place crashed inside QtCharts
+ * (QGraphicsScene::clear -> ~QChart -> deleteAllAxes).
+ */
+void ScatterPlotViewDataWidget::releaseChartView()
+{
+    if (!chart_view_)
+        return;
+
+    auto* view = chart_view_.release();
+
+    if (main_layout_)
+        main_layout_->removeWidget(view);
+
+    view->setParent(nullptr);
+    view->hide();
+    view->deleteLater();
 }
 
 /**
@@ -860,7 +881,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateChart()
 
     traced_assert(main_layout_);
 
-    chart_view_.reset(nullptr);
+    releaseChartView();
 
     QChart* chart = new QChart();
     chart->layout()->setContentsMargins(0, 0, 0, 0);

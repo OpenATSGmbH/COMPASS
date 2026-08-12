@@ -135,6 +135,8 @@ protected:
     void viewInfoJSON_impl(nlohmann::json& info) const override;
 
     void resetHistogram();
+    /// drops the current chart view via deleteLater - see the implementation
+    void releaseChartView();
     void compileRawDataFromGenerator();
 
     DrawState updateChart();
@@ -171,12 +173,13 @@ protected:
     /// user's zoom survives. Cleared on data reload and on resetZoomSlot.
     boost::optional<std::pair<unsigned int, unsigned int>> saved_zoom_range_;
 
-    /// Per-dbcontent per-row layer id, computed once per data change (on a worker for
-    /// asynchronous loads, see updateDataEvent). Rows whose (ds_id, line_id) can't be
-    /// mapped get an empty string. Referenced via closures passed as the
-    /// HistogramGeneratorBuffer row filter + layer lookup, so this must outlive the
+    /// Per-row layer id as a pool index, computed once per data change (on a worker for
+    /// asynchronous loads, see updateDataEvent). Two bytes per row instead of a string -
+    /// with millions of rows the string form costs one heap allocation each, and made
+    /// every generator row do string work. Referenced via closures passed as the
+    /// HistogramGeneratorBuffer row filter + group lookup, so this must outlive the
     /// generator.
-    std::map<std::string, std::vector<std::string>> row_layer_ids_;
+    view_layer_scan::RowLayerIndex row_layer_index_;
 
     /// row_layer_ids_ matches the current data (invalidated on data change/clear,
     /// NOT per redraw - the ids only depend on the loaded buffers)

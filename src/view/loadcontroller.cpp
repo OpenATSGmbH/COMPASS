@@ -70,15 +70,15 @@ void LoadController::begin(const LoadOperation& op)
     if (load_total_ == 0)
         return; // nothing to load: wait cursor only
 
-    dialog_.reset(new QProgressDialog("Loading data...", "Cancel", 0, 100,
-                                      QApplication::activeWindow()));
+    dialog_ = new QProgressDialog("Loading data...", "Cancel", 0, 100,
+                                  QApplication::activeWindow());
     dialog_->setWindowModality(Qt::ApplicationModal);
     dialog_->setMinimumDuration(0);
     dialog_->setAutoClose(false);
     dialog_->setAutoReset(false);
     dialog_->setWindowTitle("Loading Data");
 
-    connect(dialog_.get(), &QProgressDialog::canceled, this, &LoadController::canceledSlot);
+    connect(dialog_.data(), &QProgressDialog::canceled, this, &LoadController::canceledSlot);
 
     // paint before the main thread gets busy submitting jobs / processing arrivals
     dialog_->show();
@@ -150,13 +150,8 @@ void LoadController::advanceViewPhase()
     dialog_->setValue(static_cast<int>(value_));
     in_advance_ = false;
 
-    if (end_deferred_)
-    {
-        end_deferred_ = false;
-        end(false); // no drain: we are unwinding out of a pump already
-        return;
-    }
-
+    // the pump inside setValue may have ended the cycle (dialog_ cleared) or started
+    // the next load (a different dialog) - re-check before touching it again
     if (dialog_)
         dialog_->repaint(); // see beginViewPhase
 }
@@ -192,20 +187,21 @@ void LoadController::end(bool drain)
         op_fin_conn_ = {};
     }
 
-    // Called from inside advanceViewPhase' setValue pump (see there): destroying the
-    // dialog now would pull it out from under Qt. Finish once that call has returned.
-    if (in_advance_)
-    {
-        end_deferred_ = true;
-        return;
-    }
-
     if (dialog_)
     {
         if (drain)
             QCoreApplication::processEvents();
         dialog_->close();
-        dialog_.reset();
+
+        // deleteLater, NOT a synchronous reset: Qt may still be executing inside this
+        // dialog further up the stack. QProgressDialog::setValue pumps the event loop
+        // for a modal dialog, a view completion dispatched by that pump can end the
+        // cycle (or start the next load) from inside it, and setValue then touches the
+        // dialog again after the pump returns. Deleting it here is a use after free in
+        // Qt's own code. Our pointer is cleared immediately, so nothing on this side
+        // touches it again, and the object dies once the event loop unwinds.
+        dialog_->deleteLater();
+        dialog_.clear();
     }
 
     if (cursor_active_)

@@ -201,4 +201,71 @@ std::map<std::string, std::vector<std::string>> computeRowLayerIds(const ScanInp
     return row_layer_ids;
 }
 
+/**
+ */
+RowLayerIndex computeRowLayerIndex(const ScanInput& input)
+{
+    RowLayerIndex result;
+
+    result.pool.push_back(std::string()); // index 0 = unmapped
+
+    std::map<std::string, std::uint16_t> id_to_index;
+
+    for (const auto& scan_buf : input.buffers)
+    {
+        const auto& ds_ids   = scan_buf.buffer->get<unsigned int>(scan_buf.ds_id_column);
+        const auto& line_ids = scan_buf.buffer->get<unsigned int>(scan_buf.line_id_column);
+
+        const unsigned int n = scan_buf.buffer->size();
+
+        std::vector<std::uint16_t> per_row(n, RowLayerIndex::UnmappedIndex);
+
+        // (ds_id, line_id) -> pool index; a layer id is built once per distinct pair
+        std::map<std::pair<unsigned int, unsigned int>, std::uint16_t> ds_line_to_index;
+
+        for (unsigned int i = 0; i < n; ++i)
+        {
+            if (ds_ids.isNull(i) || line_ids.isNull(i))
+                continue;   // stays unmapped
+
+            const auto cache_key = std::make_pair(ds_ids.get(i), line_ids.get(i));
+
+            auto cache_it = ds_line_to_index.find(cache_key);
+            if (cache_it != ds_line_to_index.end())
+            {
+                per_row[i] = cache_it->second;
+                continue;
+            }
+
+            std::string ds_type, ds_name;
+            resolveDataSource(input, cache_key.first, ds_type, ds_name);
+
+            std::string lid = ds_type + ":" + ds_name + ":"
+                            + Utils::String::lineStrFrom(cache_key.second) + ":"
+                            + scan_buf.dbcontent_name;
+
+            std::uint16_t idx;
+
+            auto pool_it = id_to_index.find(lid);
+            if (pool_it != id_to_index.end())
+            {
+                idx = pool_it->second;
+            }
+            else
+            {
+                idx = (std::uint16_t)result.pool.size();
+                id_to_index.emplace(lid, idx);
+                result.pool.push_back(std::move(lid));
+            }
+
+            ds_line_to_index.emplace(cache_key, idx);
+            per_row[i] = idx;
+        }
+
+        result.rows.emplace(scan_buf.dbcontent_name, std::move(per_row));
+    }
+
+    return result;
+}
+
 } // namespace view_layer_scan
