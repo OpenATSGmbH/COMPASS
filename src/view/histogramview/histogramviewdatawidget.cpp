@@ -206,8 +206,9 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
     //new data -> old zoom bin indices are meaningless
     saved_zoom_range_.reset();
 
-    //new data -> per-row layer ids are stale
+    //new data -> per-row layer ids and the layer aggregation are stale
     row_layer_ids_valid_ = false;
+    layer_agg_valid_     = false;
 
     // Offline the per-row scans - the layer aggregation for the panel and the row
     // layer ids the generator consumes - run on a worker; the commit installs them and
@@ -237,7 +238,10 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
                 row_layer_index_     = std::move(*row_ids);
                 row_layer_ids_valid_ = true;
 
-                applyLayerTree(*agg);
+                layer_agg_cache_ = std::move(*agg);
+                layer_agg_valid_ = true;
+
+                applyLayerTree(layer_agg_cache_);
             });
 
         return;
@@ -254,6 +258,7 @@ void HistogramViewDataWidget::resetVariableData()
     resetHistogram();
 
     row_layer_ids_valid_ = false;
+    layer_agg_valid_     = false;
 }
 
 /**
@@ -1082,10 +1087,22 @@ void HistogramViewDataWidget::rebuildLayerTree()
     if (!db_content_root_ || !layer_model_)
         return;
 
+    // the aggregation only depends on the loaded buffers - reuse it when the data is
+    // unchanged: a color mode change restyles the panel from the same aggregates, and
+    // the recompute is a full row scan (measured as a seconds-long main thread stall)
+    if (layer_agg_valid_)
+    {
+        applyLayerTree(layer_agg_cache_);
+        return;
+    }
+
     // shared scan helper; on the asynchronous load path the scan runs on a worker
     // instead, see updateDataEvent
-    applyLayerTree(view_layer_scan::aggregateLayers(
-        view_layer_scan::makeScanInput(viewData(), view_->compass())));
+    layer_agg_cache_ = view_layer_scan::aggregateLayers(
+        view_layer_scan::makeScanInput(viewData(), view_->compass()));
+    layer_agg_valid_ = true;
+
+    applyLayerTree(layer_agg_cache_);
 }
 
 /**

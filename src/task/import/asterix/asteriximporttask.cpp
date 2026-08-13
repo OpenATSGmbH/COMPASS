@@ -59,6 +59,7 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QThread>
+#include <QLabel>
 #include <QProgressDialog>
 #include <QMessageBox>
 #include <QPushButton>
@@ -1793,6 +1794,15 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
         file_progress_dialog_->setWindowModality(Qt::ApplicationModal);
         file_progress_dialog_->setAutoClose(false);
         file_progress_dialog_->setAutoReset(false);
+
+        // wrapping label with a bounded width: long recording paths otherwise
+        // stretch the dialog to the longest filename (the status table inserts break
+        // opportunities after every path separator, see statusInfoString)
+        auto* label = new QLabel;
+        label->setTextFormat(Qt::RichText);
+        label->setWordWrap(true);
+        label->setMaximumWidth(800);
+        file_progress_dialog_->setLabel(label);
 
         force = true;
     }

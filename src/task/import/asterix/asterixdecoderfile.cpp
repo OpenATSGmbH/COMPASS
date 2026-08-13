@@ -400,10 +400,24 @@ std::string ASTERIXDecoderFile::statusInfoString() const
         if (!file_info.used)
             continue;
 
+        // Long paths have no whitespace, so rich text cannot wrap them and the dialog
+        // grows as wide as the longest filename. A zero-width space after each
+        // separator gives the label a break opportunity at every path element (the
+        // label wraps, see updateFileProgressDialog).
+        std::string breakable_filename;
+        breakable_filename.reserve(file_info.filename.size() + 16);
+
+        for (char c : file_info.filename)
+        {
+            breakable_filename += c;
+            if (c == '/')
+                breakable_filename += "&#8203;";
+        }
+
         // Filename cell, bold if current
         std::string filename_cell = (file_info.filename == getCurrentFilename())
-                                   ? "<b>" + file_info.filename + "</b>"
-                                   : file_info.filename;
+                                   ? "<b>" + breakable_filename + "</b>"
+                                   : breakable_filename;
 
         // Size in megabytes
         double mb = file_info.sizeInBytes(/*used_only=*/true) / (1024.0 * 1024.0);

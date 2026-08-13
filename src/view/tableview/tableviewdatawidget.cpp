@@ -99,6 +99,8 @@ void TableViewDataWidget::clearData_impl()
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->clear();
 
+    layer_agg_valid_ = false;
+
     logdbg << "end";
 }
 
@@ -110,7 +112,10 @@ void TableViewDataWidget::clearIntermediateRedrawData_impl()
 void TableViewDataWidget::loadingStarted_impl()
 {
     loginf;
-    //nothing to do yet
+
+    //new data incoming - the cached layer aggregation goes stale; the async prepare
+    //commit refills it
+    layer_agg_valid_ = false;
 }
 
 void TableViewDataWidget::updateFromSource_impl(const DBContentDataSet& /*source*/,
@@ -204,7 +209,12 @@ void TableViewDataWidget::commitLoadedData(const std::map<std::string, view_laye
 
     setUpdatesEnabled(false);
 
-    applyLayerTree(agg);
+    //keep the worker-computed aggregation: color mode changes restyle the panel from
+    //it without another full row scan (see rebuildLayerTree)
+    layer_agg_cache_ = agg;
+    layer_agg_valid_ = true;
+
+    applyLayerTree(layer_agg_cache_);
 
     auto selected_ranges = std::move(prepared.selected_ranges);
 
@@ -390,11 +400,23 @@ void TableViewDataWidget::rebuildLayerTree()
     if (!db_content_root_ || !layer_model_)
         return;
 
+    // the aggregation only depends on the loaded buffers - reuse it when the data is
+    // unchanged: a color mode change restyles the panel from the same aggregates, and
+    // the recompute is a full row scan (measured as a seconds-long main thread stall)
+    if (layer_agg_valid_)
+    {
+        applyLayerTree(layer_agg_cache_);
+        return;
+    }
+
     // Count records per (ds_type, ds_name, line, dbcontent) layer by scanning
     // ds_id + line_id columns on each loaded buffer (shared scan helper; on the
     // asynchronous load path the scan runs on a worker instead, see loadingDone_impl).
-    applyLayerTree(view_layer_scan::aggregateLayers(
-        view_layer_scan::makeScanInput(viewData(), view_->compass())));
+    layer_agg_cache_ = view_layer_scan::aggregateLayers(
+        view_layer_scan::makeScanInput(viewData(), view_->compass()));
+    layer_agg_valid_ = true;
+
+    applyLayerTree(layer_agg_cache_);
 }
 
 /**

@@ -185,6 +185,13 @@ protected:
     /// NOT per redraw - the ids only depend on the loaded buffers)
     bool row_layer_ids_valid_ {false};
 
+    /// the layer aggregation of the current data, cached with the same validity as
+    /// the row layer ids: it depends only on the loaded buffers, but recomputing it
+    /// is a full row scan (seconds at millions of rows). rebuildLayerTree() consumers
+    /// that merely restyle the panel (color mode changes) reuse it
+    std::map<std::string, view_layer_scan::LayerAgg> layer_agg_cache_;
+    bool layer_agg_valid_ {false};
+
 private:
     /// Rebuild payloads_ from the loaded buffers and repopulate the DBContent
     /// subtree. Emits layerTreeRebuiltSignal.
