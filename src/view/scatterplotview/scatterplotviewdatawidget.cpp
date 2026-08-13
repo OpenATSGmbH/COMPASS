@@ -1118,18 +1118,23 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
                 chart_line_series->setColor(ds.color);
             }
 
-            for (const auto& pos : ds.scatter_series.points)
+            //hand the points to the chart in one replace instead of one append per
+            //point: per point appends realloc the series' internal list and signal
+            //per call, which showed up as 0.5 GB of allocation churn on large loads
             {
-                double x = pos.x();
-                double y = pos.y();
+                QList<QPointF> chart_points;
+                chart_points.reserve((int)ds.scatter_series.points.size());
 
-                chart_symbol_series->append(x, y);
+                for (const auto& pos : ds.scatter_series.points)
+                    chart_points.append(QPointF(pos.x(), pos.y()));
 
                 if (use_connection_lines)
                 {
                     traced_assert(chart_line_series);
-                    chart_line_series->append(x, y);
+                    chart_line_series->replace(chart_points);
                 }
+
+                chart_symbol_series->replace(std::move(chart_points));
             }
 
             chart_symbol_series->setName(ds.name.c_str());

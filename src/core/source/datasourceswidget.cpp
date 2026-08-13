@@ -34,6 +34,7 @@
 #include "timeconv.h"
 #include "json.hpp"
 
+#include <algorithm>
 #include <functional>
 #include <set>
 
@@ -472,7 +473,7 @@ QWidget* DataSourceItem::createLinesWidget()
     widget->setContentsMargins(0, 0, 0, 0);
 
     QHBoxLayout* button_layout = new QHBoxLayout();
-    button_layout->setContentsMargins(0, 1, 0, 1);
+    button_layout->setContentsMargins(0, 0, 0, 0);
 
     std::string line_str;
 
@@ -604,7 +605,16 @@ DataSourceLineButton::DataSourceLineButton(DataSourcesWidget* widget,
 
     setText(QString::fromStdString(line_str_));
 
-    setFixedSize(button_size_px, button_size_px);
+    // slightly smaller label font so the text fits the compact button
+    QFont label_font = font();
+    if (label_font.pointSizeF() > 0.0)
+        label_font.setPointSizeF(label_font.pointSizeF() - 1.0);
+    setFont(label_font);
+
+    // height matches the tree row height; width follows the label so the
+    // text fits inside the 3px pressed/checked border
+    int label_width = fontMetrics().boundingRect(QString::fromStdString(line_str_)).width();
+    setFixedSize(std::max((int)button_size_px, label_width + 10), button_size_px);
     setCheckable(true);
 
     // initial style - updateContent() will re-apply once init() has set ds_id_
@@ -612,12 +622,14 @@ DataSourceLineButton::DataSourceLineButton(DataSourcesWidget* widget,
 
     if (dark_mode)
     {
-        setStyleSheet(" QPushButton:pressed { border: 3px outset white; } " \
+        setStyleSheet(" QPushButton { padding: 0px; } " \
+                      " QPushButton:pressed { border: 3px outset white; } " \
                       " QPushButton:checked { border: 3px outset white; }");
         }
     else
     {
-        setStyleSheet(" QPushButton:pressed { border: 3px outset; } " \
+        setStyleSheet(" QPushButton { padding: 0px; } " \
+                      " QPushButton:pressed { border: 3px outset; } " \
                       " QPushButton:checked { border: 3px outset; }");
     }
 
@@ -785,7 +797,7 @@ void DataSourceLineButton::updateContent()
     QString disabled_text = dark_mode ? "#c0c0c0" : "#404040";
 
     QString css =
-        QString(" QPushButton { %1 %2 } ").arg(bg_decl, base_border)
+        QString(" QPushButton { padding: 0px; %1 %2 } ").arg(bg_decl, base_border)
       + QString(" QPushButton:pressed { border: 3px outset %1; } ").arg(outset_color)
       + QString(" QPushButton:checked { border: 3px outset %1; } ").arg(outset_color);
 
@@ -802,7 +814,7 @@ void DataSourceLineButton::updateContent()
  * DataSourcesWidget
  **************************************************************************************************/
 
-const int DataSourcesWidget::LineButtonSize = 25;
+const int DataSourcesWidget::LineButtonSize = 20;
 
 /**
  */
