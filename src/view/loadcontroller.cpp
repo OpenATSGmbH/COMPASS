@@ -26,7 +26,9 @@
 
 #include <QApplication>
 #include <QCoreApplication>
+#include <QEvent>
 #include <QProgressDialog>
+#include <QTimer>
 
 /**
  */
@@ -73,16 +75,22 @@ void LoadController::begin(const LoadOperation& op)
     dialog_ = new QProgressDialog("Loading data...", "Cancel", 0, 100,
                                   QApplication::activeWindow());
     dialog_->setWindowModality(Qt::ApplicationModal);
-    dialog_->setMinimumDuration(0);
+    // deferred native show: with a value-driven dialog Qt arms the minimum-duration
+    // timer on the first setValue and shows once it elapsed - a load finishing faster
+    // never flashes the dialog. setValue(0) arms it right here; the force-show timer
+    // fires through the event loop, which keeps running during a load (arrivals are
+    // queued events)
+    dialog_->setMinimumDuration(700);
     dialog_->setAutoClose(false);
     dialog_->setAutoReset(false);
     dialog_->setWindowTitle("Loading Data");
 
     connect(dialog_.data(), &QProgressDialog::canceled, this, &LoadController::canceledSlot);
 
-    // paint before the main thread gets busy submitting jobs / processing arrivals
-    dialog_->show();
-    QCoreApplication::processEvents();
+    // first paint runs synchronously when the deferred show fires (see eventFilter)
+    dialog_->installEventFilter(this);
+
+    dialog_->setValue(0);
 }
 
 /**
@@ -171,8 +179,78 @@ void LoadController::opFinishedSlot()
 
 /**
  */
+bool LoadController::eventFilter(QObject* watched, QEvent* event)
+{
+    // synchronous paint on show, delivered to this one widget only - NOT a
+    // processEvents(), which would interleave queued rt commands and other posted
+    // work into the load lifecycle (see readme_loading.md on threshold pumping)
+    if (event->type() == QEvent::Show)
+    {
+        auto* w = qobject_cast<QWidget*>(watched);
+        if (w)
+            w->repaint();
+    }
+
+    return QObject::eventFilter(watched, event);
+}
+
+/**
+ */
+void LoadController::beginViewProcessing()
+{
+    // a load cycle's own dialog already covers the busy state
+    if (op_ || dialog_ || busy_dialog_)
+        return;
+
+    // indeterminate and modal: the point is blocking user interaction while workers
+    // read view state, the bar itself is secondary
+    busy_dialog_ = new QProgressDialog("Updating views...", QString(), 0, 0,
+                                       QApplication::activeWindow());
+    busy_dialog_->setWindowModality(Qt::ApplicationModal);
+    busy_dialog_->setCancelButton(nullptr);
+    busy_dialog_->setMinimumDuration(0); // shown explicitly below
+    busy_dialog_->setAutoClose(false);
+    busy_dialog_->setAutoReset(false);
+    busy_dialog_->setWindowTitle("Updating Views");
+
+    // first paint runs synchronously when the deferred show fires (see eventFilter)
+    busy_dialog_->installEventFilter(this);
+
+    // deferred explicit show, so quick updates stay flicker free: an indeterminate
+    // dialog never arms QProgressDialog's minimum-duration timer (only setValue
+    // does), so relying on auto-show would never display it at all. QPointer
+    // capture: the dialog may be gone again (or replaced by the load dialog) by the
+    // time the timer fires
+    QPointer<QProgressDialog> dialog = busy_dialog_;
+    QTimer::singleShot(700, this, [ dialog ] ()
+    {
+        if (dialog)
+            dialog->show();
+    });
+}
+
+/**
+ */
+void LoadController::endViewProcessing()
+{
+    if (!busy_dialog_)
+        return;
+
+    busy_dialog_->close();
+
+    // deleteLater for the same reason as in end(): Qt may still be inside the dialog
+    // further up the stack
+    busy_dialog_->deleteLater();
+    busy_dialog_.clear();
+}
+
+/**
+ */
 void LoadController::end(bool drain)
 {
+    // a lingering interactive busy dialog is superseded by the load cycle's own ux
+    endViewProcessing();
+
     op_ = nullptr;
 
     if (op_conn_)

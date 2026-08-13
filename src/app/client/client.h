@@ -32,6 +32,7 @@ public:
     virtual bool notify(QObject* receiver, QEvent* event);
 
     bool quitRequested() const;
+    bool stallWatchdogRequested() const { return stall_watchdog_; }
 
     bool run ();
 
@@ -121,6 +122,7 @@ private:
     bool do_numerical_crash_ {false};
     bool do_segfault_ {false};
     bool do_sensor_status_hack_ {false};
+    bool stall_watchdog_ {false};
 
     void checkAndSetupConfig();
 

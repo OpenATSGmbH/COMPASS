@@ -505,6 +505,16 @@ void ViewWidget::redrawDone()
     getViewToolWidget()->redrawDone();
     getViewInfoWidget()->redrawDone();
 
+    // The data widget may run the redraw's compute phase asynchronously, in which
+    // case redrawData() only launched the work - the same edge loadingDone() holds
+    // back: viewRefreshed() means "the view shows the result", so it must wait for
+    // the commit (dataWidgetProcessingFinished), not for the launch.
+    if (getViewDataWidget()->hasPendingProcessing())
+    {
+        refresh_pending_ = true;
+        return;
+    }
+
     emit viewRefreshed();
 }
 

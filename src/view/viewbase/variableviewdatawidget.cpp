@@ -123,7 +123,7 @@ ViewDataWidget::DrawState VariableViewDataWidget::redrawData_impl(bool recompute
 
     //recompute data
     if (recompute)
-    {   
+    {
         if (variable_view_->showsAnnotation())
         {
             //update from annotations
@@ -131,12 +131,20 @@ ViewDataWidget::DrawState VariableViewDataWidget::redrawData_impl(bool recompute
         }
         else
         {
+            //offline, the recompute runs on a worker with a main thread display
+            //commit - the same trigger the load-done path uses. the view keeps
+            //showing the previous content until the commit, and viewRefreshed is
+            //held back by the pending processing guard. the trigger declines (and
+            //the synchronous path below runs) for live and annotation display
+            if (postLoadTrigger())
+                return drawState();
+
             //things to do before updating the variables
             preUpdateVariableDataEvent();
 
             //update from variables
             updateFromVariables();
-        
+
             //things to do after updating the variables
             postUpdateVariableDataEvent();
         }

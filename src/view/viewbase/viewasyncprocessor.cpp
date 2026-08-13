@@ -19,6 +19,8 @@
 
 #include "logger.h"
 
+#include <QTimer>
+
 /**
  */
 ViewAsyncProcessor::ViewAsyncProcessor(QObject* parent)
@@ -41,12 +43,17 @@ void ViewAsyncProcessor::launch(const std::string& name,
 {
     unsigned int task_id = next_task_id_++;
 
+    bool was_idle = pending_.empty();
+
     Task& task = pending_[ task_id ];
     task.generation = generation_;
     task.name       = name;
     task.commit     = std::move(commit);
 
     loginf << "starting " << name;
+
+    if (was_idle)
+        emit startedSignal();
 
     //tasks run one at a time: each worker waits for the previously launched task first
     std::shared_future<void> previous_task = chain_;
@@ -91,39 +98,93 @@ void ViewAsyncProcessor::invalidate()
 }
 
 /**
- * Completion of one task, invoked queued on the main thread. Runs the commit, or
- * discards the result when the task is stale (invalidate() ran while it worked) or
- * its work failed.
+ * Completion of one task, invoked queued on the main thread. The completion is NOT
+ * run here but drained via a zero timer, one commit per firing: several views'
+ * commits arrive as posted events and Qt dispatches a posted-event batch back to
+ * back, so seconds of apply work would run without a single native event in between
+ * - unanswered window manager pings ("not responding") and no repaints. One commit
+ * per timer firing lets the native loop breathe between commits. Deliberately NOT a
+ * pump inside the commit: that dispatches other posted events too, and a dispatched
+ * waiter (e.g. a runtime command gating on quiet views) then waits inside the pump
+ * for a finishedSignal that can only be emitted once the pump returns - a deadlock.
  */
 void ViewAsyncProcessor::completeTask(unsigned int task_id, bool ok)
 {
-    auto it = pending_.find(task_id);
-    if (it == pending_.end())
+    if (!pending_.count(task_id))
         return;
 
-    Task task = std::move(it->second);
-    pending_.erase(it);
+    completed_.emplace_back(task_id, ok);
 
-    //the worker posts this completion as its last action, but join anyway so the
-    //thread handle is released deterministically
-    if (task.future.valid())
-        task.future.wait();
+    armDrain();
+}
 
-    bool stale = task.generation != generation_;
+/**
+ */
+void ViewAsyncProcessor::armDrain()
+{
+    if (drain_armed_)
+        return;
 
-    if (!ok || stale)
+    drain_armed_ = true;
+
+    QTimer::singleShot(0, this, &ViewAsyncProcessor::drainOneCompletion);
+}
+
+/**
+ * Runs one queued completion: the commit, or a discard when the task is stale
+ * (invalidate() ran while it worked) or its work failed. Re-arms itself while
+ * completions remain, and reports all-finished once nothing is queued or pending.
+ */
+void ViewAsyncProcessor::drainOneCompletion()
+{
+    drain_armed_ = false;
+
+    bool drained = false;
+
+    if (!completed_.empty())
     {
-        //the commit never runs; the state captured in it dies here, on the main thread
-        loginf << "discarding " << task.name << (stale ? ", superseded" : ", failed");
+        drained = true;
+
+        auto [ task_id, ok ] = completed_.front();
+        completed_.pop_front();
+
+        auto it = pending_.find(task_id);
+        if (it != pending_.end())
+        {
+            Task task = std::move(it->second);
+            pending_.erase(it);
+
+            //the worker posts this completion as its last action, but join anyway so
+            //the thread handle is released deterministically
+            if (task.future.valid())
+                task.future.wait();
+
+            bool stale = task.generation != generation_;
+
+            if (!ok || stale)
+            {
+                //the commit never runs; the state captured in it dies here, on the
+                //main thread
+                loginf << "discarding " << task.name << (stale ? ", superseded" : ", failed");
+            }
+            else
+            {
+                task.commit();
+
+                loginf << "done with " << task.name;
+            }
+        }
     }
-    else
+
+    if (!completed_.empty())
     {
-        task.commit();
-
-        loginf << "done with " << task.name;
+        armDrain();
+        return;
     }
 
-    if (pending_.empty())
+    //only a firing that actually ran a completion may report all-finished: a stale
+    //firing after waitForPending() cleared the queues must not emit spuriously
+    if (drained && pending_.empty())
         emit finishedSignal();
 }
 
@@ -138,4 +199,8 @@ void ViewAsyncProcessor::waitForPending()
             p.second.future.wait();
 
     pending_.clear();
+
+    //queued but undrained completions die with the pending tasks - their commits
+    //must not run (the owner may be shutting down)
+    completed_.clear();
 }

@@ -271,6 +271,9 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("numerical_crash", po::bool_switch(&do_numerical_crash_), "")
         ("segfault", po::bool_switch(&do_segfault_), "")
         ("sensor_status_hack", po::bool_switch(&do_sensor_status_hack_), "")
+        // main-thread stall self-reporting (see main_thread_stall in main.cpp):
+        // diagnostic, so opt-in
+        ("stall_watchdog", po::bool_switch(&stall_watchdog_), "")
         ;
 
     // Print full command line for debugging

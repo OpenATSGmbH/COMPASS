@@ -19,10 +19,12 @@
 
 #include <QObject>
 
+#include <deque>
 #include <functional>
 #include <future>
 #include <map>
 #include <string>
+#include <utility>
 
 /**
  * Runs view data processing asynchronously: a work function on a std::async worker
@@ -48,6 +50,8 @@ class ViewAsyncProcessor : public QObject
     Q_OBJECT
 
 signals:
+    // first task launched while idle - the processor went busy; main thread
+    void startedSignal();
     // all outstanding tasks completed (committed or discarded); main thread
     void finishedSignal();
 
@@ -80,9 +84,16 @@ private:
     };
 
     void completeTask(unsigned int task_id, bool ok);
+    void armDrain();
+    void drainOneCompletion();
 
     unsigned int                  generation_   = 0;
     unsigned int                  next_task_id_ = 0;
     std::map<unsigned int, Task>  pending_;
     std::shared_future<void>      chain_; // previously launched task - one at a time
+
+    // completions queued for the timer-driven drain (see completeTask): one commit
+    // per zero-timer firing, so native events interleave between commits
+    std::deque<std::pair<unsigned int, bool>> completed_;
+    bool                                      drain_armed_ = false;
 };

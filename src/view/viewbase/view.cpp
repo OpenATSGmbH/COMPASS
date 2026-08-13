@@ -132,8 +132,10 @@ bool View::init()
     //init view widget
     w->init();
 
-    // forward the data widget's asynchronous-processing completion; ViewManager's
-    // deferred load-done edge listens on the view-level signal
+    // forward the data widget's asynchronous-processing edges; ViewManager's deferred
+    // load-done edge and the interactive busy state listen on the view-level signals
+    connect(w->getViewDataWidget(), &ViewDataWidget::processingStartedSignal,
+            this, &View::processingStartedSignal);
     connect(w->getViewDataWidget(), &ViewDataWidget::processingFinishedSignal,
             this, &View::processingFinishedSignal);
 

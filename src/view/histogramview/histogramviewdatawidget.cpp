@@ -140,7 +140,11 @@ HistogramViewDataWidget::HistogramViewDataWidget(HistogramViewWidget* view_widge
 
 /**
  */
-HistogramViewDataWidget::~HistogramViewDataWidget() = default;
+HistogramViewDataWidget::~HistogramViewDataWidget()
+{
+    //the generator workers capture this - join them before the members die
+    shutdownAsyncProcessor();
+}
 
 /**
  */
@@ -253,10 +257,11 @@ void HistogramViewDataWidget::resetVariableData()
 }
 
 /**
- * Load-time asynchronous recompute (offline): the generator update runs on a worker,
- * the chart update commits on the main thread once done. Launched after the layer
- * data job of updateDataEvent completed (same serialized processor; its commit
- * installed row_layer_ids_ and the layer panel this reads).
+ * Asynchronous recompute (offline), used by the load-done path and by interactive
+ * recompute redraws: the generator update runs on a worker, the chart update commits
+ * on the main thread once done. On load it is launched after the layer data job of
+ * updateDataEvent completed (same serialized processor; its commit installed
+ * row_layer_ids_ and the layer panel this reads).
  */
 bool HistogramViewDataWidget::postLoadTrigger()
 {

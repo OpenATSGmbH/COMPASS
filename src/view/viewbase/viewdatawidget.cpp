@@ -86,6 +86,8 @@ ViewAsyncProcessor& ViewDataWidget::asyncProcessor()
     {
         async_processor_.reset(new ViewAsyncProcessor);
 
+        connect(async_processor_.get(), &ViewAsyncProcessor::startedSignal,
+                this, &ViewDataWidget::processingStartedSignal);
         connect(async_processor_.get(), &ViewAsyncProcessor::finishedSignal,
                 this, &ViewDataWidget::notifyProcessingFinished);
     }
@@ -102,9 +104,21 @@ bool ViewDataWidget::hasPendingAsyncWork_impl() const
 
 /**
  */
+void ViewDataWidget::shutdownAsyncProcessor()
+{
+    if (!async_processor_)
+        return;
+
+    async_processor_->invalidate();     // commits of finishing tasks are discarded
+    async_processor_->waitForPending(); // block until the work functions returned
+}
+
+/**
+ */
 bool ViewDataWidget::hasPendingProcessing() const
 {
-    return pending_loading_done_ || pending_data_loaded_ || hasPendingAsyncWork_impl();
+    return pending_loading_done_ || pending_data_loaded_ || pending_recompute_redraw_ ||
+           hasPendingAsyncWork_impl();
 }
 
 /**
@@ -129,6 +143,21 @@ void ViewDataWidget::notifyProcessingFinished()
             pending_data_loaded_ = true;
             return;
         }
+    }
+    else if (pending_recompute_redraw_)
+    {
+        // a recompute redraw was requested while work was outstanding - run the
+        // coalesced redraw now; if it launches new work, completion is reported
+        // once that work finished
+        pending_recompute_redraw_ = false;
+
+        redrawData(true, false);
+
+        if (hasPendingAsyncWork_impl())
+            return;
+
+        emit processingFinishedSignal();
+        return;
     }
     else if (!pending_data_loaded_)
     {
@@ -292,9 +321,11 @@ void ViewDataWidget::loadingStarted()
 {
     loginf;
 
-    //a deferred load-done of a superseded cycle is dropped
-    pending_loading_done_ = false;
-    pending_data_loaded_  = false;
+    //a deferred load-done of a superseded cycle is dropped, as is a coalesced
+    //redraw - the load redraws everything anyway
+    pending_loading_done_     = false;
+    pending_data_loaded_      = false;
+    pending_recompute_redraw_ = false;
 
     //clear and update display
     clearData();
@@ -420,6 +451,15 @@ void ViewDataWidget::clearIntermediateRedrawData()
 ViewDataWidget::DrawState ViewDataWidget::redrawData(bool recompute, bool notify)
 {
     loginf << "recompute " << recompute << " notify " << notify;
+
+    //a recompute while asynchronous work is outstanding is coalesced: the running
+    //work's inputs are already stale, so remember the request and run one recompute
+    //when the work has finished (notifyProcessingFinished) instead of stacking jobs
+    if (recompute && hasPendingAsyncWork_impl())
+    {
+        pending_recompute_redraw_ = true;
+        return draw_state_;
+    }
 
     if (notify)
     {

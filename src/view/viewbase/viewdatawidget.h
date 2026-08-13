@@ -149,6 +149,8 @@ signals:
     void redrawDone();
     void updateStarted();
     void updateDone();
+    // asynchronous processing started (the processor went busy); forwarded by the View
+    void processingStartedSignal();
     // asynchronous processing finished (see hasPendingProcessing); forwarded by the View
     void processingFinishedSignal();
 
@@ -189,6 +191,13 @@ protected:
     void endTool();
 
     void setDrawState(DrawState state) { draw_state_ = state; }
+    DrawState drawState() const { return draw_state_; }
+
+    // Invalidates and joins outstanding asynchronous work. MUST be called from the
+    // destructor of any derived widget whose work functions capture `this`: the base
+    // destructor joins too, but only after the derived part is already destroyed, so
+    // a still-running worker would read a half-dead object.
+    void shutdownAsyncProcessor();
 
     const BufferData& viewData() const { return data_; }
     BufferData& viewData() { return data_; } //exposed because of selection
@@ -207,6 +216,10 @@ private:
 
     BufferData data_;
     DrawState  draw_state_ = DrawState::NotDrawn;
+
+    // a recompute redraw requested while asynchronous work was outstanding, run
+    // coalesced once the work finishes (see redrawData / notifyProcessingFinished)
+    bool pending_recompute_redraw_ = false;
 
     bool is_exporting_ = false;
 

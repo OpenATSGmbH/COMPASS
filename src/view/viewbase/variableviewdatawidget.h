@@ -75,7 +75,9 @@ protected:
 
     /// called on buffer data update (from updateFromSource_impl, on the load finalize)
     virtual void updateDataEvent(bool requires_reset) {}
-    /// called after loading buffers, should return true if it already triggered a redraw (e.g. by reconfiguring the view)
+    /// called after loading buffers and on interactive recompute redraws; should return
+    /// true if it already triggered a redraw (e.g. by launching the recompute on a
+    /// worker with a display commit, or by reconfiguring the view)
     virtual bool postLoadTrigger() { return false; }
     /// resets all variable related data collected during load (e.g. collected buffer data)
     virtual void resetVariableData() = 0;

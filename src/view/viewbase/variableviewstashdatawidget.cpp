@@ -58,7 +58,11 @@ VariableViewStashDataWidget::VariableViewStashDataWidget(ViewWidget* view_widget
 
 /**
 */
-VariableViewStashDataWidget::~VariableViewStashDataWidget() = default;
+VariableViewStashDataWidget::~VariableViewStashDataWidget()
+{
+    //the stash workers capture this - join them before the members die
+    shutdownAsyncProcessor();
+}
 
 /**
 */
@@ -116,10 +120,11 @@ void VariableViewStashDataWidget::processStashData()
 }
 
 /**
- * Load-time asynchronous recompute (offline): the stash fill and processing run on a
- * worker, the display commit on the main thread once done. The selection and the
- * manager state read along the way are stable in that window - the load-done edge
- * (and with it any user or runtime-command interaction) waits for the commit.
+ * Asynchronous recompute (offline), used by the load-done path and by interactive
+ * recompute redraws: the stash fill and processing run on a worker, the display
+ * commit on the main thread once done. The selection and the manager state read
+ * along the way are stable in that window - the load-done / refresh edge (and with
+ * it any user or runtime-command interaction) waits for the commit.
  */
 bool VariableViewStashDataWidget::postLoadTrigger()
 {

@@ -118,6 +118,7 @@ private:
 
     /// main-thread commit of the asynchronously prepared load data: layer tree, model
     /// row data, selection, draw state
+    bool launchAsyncPrepare();
     void commitLoadedData(const std::map<std::string, view_layer_scan::LayerAgg>& agg,
                           AllBufferTableModel::PreparedData&& prepared);
 };

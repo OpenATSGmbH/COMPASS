@@ -119,6 +119,51 @@ void TableViewDataWidget::updateFromSource_impl(const DBContentDataSet& /*source
     // nothing to do - the table model reads viewData() (source-fed) at redraw
 }
 
+// Offline the heavy per-redraw work - the layer scan, the row index build and the
+// sort - runs on a worker; commitLoadedData applies the results on completion, and
+// the base defers dataLoaded / viewRefreshed until then. Used by both the load-done
+// path and interactive recompute redraws (style, color mode, filter changes). Live
+// stays synchronous: the feed mutates the same buffers every tick. Returns false
+// when the synchronous path should run instead.
+bool TableViewDataWidget::launchAsyncPrepare()
+{
+    unsigned int num_records = 0;
+    for (auto& buf_it : viewData())
+        num_records += buf_it.second->size();
+
+    bool async = view_->compass().appMode() != AppMode::LiveRunning && num_records > 0;
+
+    if (!async)
+        return false;
+
+    traced_assert(all_buffer_table_widget_);
+
+    auto* model = all_buffer_table_widget_->allBufferTableModel();
+    traced_assert(model);
+
+    auto scan_input = std::make_shared<view_layer_scan::ScanInput>(
+        view_layer_scan::makeScanInput(viewData(), view_->compass()));
+    auto prep_input = std::make_shared<AllBufferTableModel::PrepareInput>(
+        model->makePrepareInput(viewData(), /*for_load*/ true));
+
+    auto agg      = std::make_shared<std::map<std::string, view_layer_scan::LayerAgg>>();
+    auto prepared = std::make_shared<AllBufferTableModel::PreparedData>();
+
+    asyncProcessor().launch(
+        "table view row data with " + std::to_string(num_records) + " records",
+        [ scan_input, prep_input, agg, prepared ] ()
+        {
+            *agg      = view_layer_scan::aggregateLayers(*scan_input);
+            *prepared = AllBufferTableModel::prepareData(*prep_input);
+        },
+        [ this, agg, prepared ] ()
+        {
+            commitLoadedData(*agg, std::move(*prepared));
+        });
+
+    return true;
+}
+
 void TableViewDataWidget::loadingDone_impl()
 {
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
@@ -129,41 +174,8 @@ void TableViewDataWidget::loadingDone_impl()
 
     loginf << "begin with " << num_records << " records";
 
-    // Offline the heavy load work - the layer scan, the row index build and the sort -
-    // runs on a worker; commitLoadedData applies the results on completion, and the
-    // base defers dataLoaded until then. Live stays synchronous: the feed mutates the
-    // same buffers every tick.
-    bool async = view_->compass().appMode() != AppMode::LiveRunning && num_records > 0;
-
-    if (async)
-    {
-        traced_assert(all_buffer_table_widget_);
-
-        auto* model = all_buffer_table_widget_->allBufferTableModel();
-        traced_assert(model);
-
-        auto scan_input = std::make_shared<view_layer_scan::ScanInput>(
-            view_layer_scan::makeScanInput(viewData(), view_->compass()));
-        auto prep_input = std::make_shared<AllBufferTableModel::PrepareInput>(
-            model->makePrepareInput(viewData(), /*for_load*/ true));
-
-        auto agg      = std::make_shared<std::map<std::string, view_layer_scan::LayerAgg>>();
-        auto prepared = std::make_shared<AllBufferTableModel::PreparedData>();
-
-        asyncProcessor().launch(
-            "table view row data with " + std::to_string(num_records) + " records",
-            [ scan_input, prep_input, agg, prepared ] ()
-            {
-                *agg      = view_layer_scan::aggregateLayers(*scan_input);
-                *prepared = AllBufferTableModel::prepareData(*prep_input);
-            },
-            [ this, agg, prepared ] ()
-            {
-                commitLoadedData(*agg, std::move(*prepared));
-            });
-
+    if (launchAsyncPrepare())
         return;
-    }
 
     // Rebuild the layer tree first so the panel reflects current data; the
     // base redraw below will then consult the allowed-layer-ids set we push
@@ -236,6 +248,12 @@ ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
     loginf << "start - recompute " << recompute << " records " << num_records;
 
     traced_assert(all_buffer_table_widget_);
+
+    //offline, the row data prepare runs on a worker and commitLoadedData applies it;
+    //the view keeps showing the previous rows until the commit, and viewRefreshed is
+    //held back by the pending processing guard
+    if (launchAsyncPrepare())
+        return (all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent : DrawState::Drawn);
 
     setUpdatesEnabled(false);
 

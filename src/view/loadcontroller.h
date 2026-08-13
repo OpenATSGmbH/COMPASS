@@ -52,6 +52,11 @@ public:
     LoadController(COMPASS& compass, QObject* parent = nullptr);
     virtual ~LoadController();
 
+    // paints a dialog synchronously the moment it gets shown (see the filter install
+    // sites): both dialogs appear via deferred shows, and the first paint event can
+    // starve behind long queued work - the window then maps black for a second
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
     // op has started running (post-wait): show the dialog (sized from the op's target set)
     // + wait cursor, and subscribe to the op's dataChangedSignal to advance the load phase.
     // No dialog when the op suppresses status or has nothing to load.
@@ -61,6 +66,14 @@ public:
     // one view FINISHED updating (not merely dispatched - a view processing
     // asynchronously reports here once its work is committed)
     void advanceViewPhase();
+
+    // busy state for asynchronous view processing OUTSIDE a load cycle (interactive
+    // redraws and reloads): an application-modal busy dialog, so the user cannot
+    // mutate view state or close views while workers still read them - the same
+    // protection the load dialog provides during a load. No-ops while a load cycle
+    // is active (its own dialog covers that).
+    void beginViewProcessing();
+    void endViewProcessing();
     // load finished: close dialog + cursor. drain pumps the event loop before closing, so a
     // deferred view redraw runs while the dialog is still up (the normal completion path);
     // pass false when ending from inside another emit, where pumping would re-enter.
@@ -97,4 +110,8 @@ private:
     const LoadOperation*    op_ {nullptr}; // the running op (non-owning, valid for the cycle)
     QMetaObject::Connection op_conn_;      // op.dataChangedSignal -> opDataChangedSlot
     QMetaObject::Connection op_fin_conn_;  // op.finishedSignal    -> opFinishedSlot
+
+    // the interactive view-processing busy dialog (see beginViewProcessing); QPointer
+    // for the same parenting reason as dialog_
+    QPointer<QProgressDialog> busy_dialog_;
 };

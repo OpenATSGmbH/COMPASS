@@ -20,11 +20,36 @@
 #include "rtcommand.h"
 #include "rtcommand_wait_condition.h"
 #include "compass.h"
+#include "viewmanager.h"
+#include "async.h"
+#include "logger.h"
 
 #include <QSignalSpy>
 
 namespace rtcommand
 {
+
+namespace
+{
+    /**
+     * Commands execute on a quiet view state: interactive redraws and reloads process
+     * their data asynchronously, and a command mutating view or manager state while a
+     * worker still reads it corrupts the computation (or worse). Pump until all views
+     * committed - the workers finish through queued commits, so pumping guarantees
+     * progress; user input stays excluded.
+     */
+    void waitForViewProcessing(COMPASS& compass)
+    {
+        ViewManager& view_man = compass.viewManager();
+
+        if (!view_man.hasPendingViewProcessing())
+            return;
+
+        loginf << "waiting for pending view processing before command execution";
+
+        Utils::Async::pumpUntil([ &view_man ] { return !view_man.hasPendingViewProcessing(); });
+    }
+}
 
 /**
 */
@@ -70,6 +95,8 @@ bool RTCommandRunnerStash::executeCommand(RTCommandMetaTypeWrapper wrapper) cons
     if (!wrapper.command)
         return false;
 
+    waitForViewProcessing(compass_);
+
     wrapper.command->compass_ = &compass_;
     return wrapper.command->run();
 }
@@ -81,6 +108,8 @@ void RTCommandRunnerStash::executeCommandAsync(RTCommandMetaTypeWrapper wrapper)
 {
     if (wrapper.command)
     {
+        waitForViewProcessing(compass_);
+
         wrapper.command->compass_ = &compass_;
 
         //the runner does not track state for async commands, since execution

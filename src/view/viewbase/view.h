@@ -160,6 +160,9 @@ public:
 signals:
     void selectionChangedSignal();  // do not emit manually, call emitSelectionChange()
     void presetChangedSignal();
+    // emitted when the view started asynchronous data processing (the data widget's
+    // processor went busy); ViewManager shows the busy state on it outside a load
+    void processingStartedSignal();
     // emitted when the view has finished asynchronous data processing (see
     // hasPendingProcessing()); ViewManager defers the load-done edge on it
     void processingFinishedSignal();

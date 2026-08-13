@@ -87,6 +87,7 @@ class ViewManager : public QObject, public Configurable
 
     // a view finished its asynchronous processing (view processingFinishedSignal):
     // fires the deferred load-done edge once no view is pending anymore
+    void viewProcessingStartedSlot();
     void viewProcessingFinishedSlot();
 
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);

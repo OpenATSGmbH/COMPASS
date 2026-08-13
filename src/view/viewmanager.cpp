@@ -899,6 +899,11 @@ void ViewManager::registerView(View* view)
     // builds) reports completion here; the connection dies with the view
     connect(view, &View::processingFinishedSignal,
             this, &ViewManager::viewProcessingFinishedSlot);
+
+    // interactive busy state: processing starting outside a load cycle shows the
+    // modal busy dialog, so user interaction cannot mutate view state under a worker
+    connect(view, &View::processingStartedSignal,
+            this, &ViewManager::viewProcessingStartedSlot);
 }
 
 /**
@@ -1512,6 +1517,18 @@ void ViewManager::finishLoadingDone()
  * A view finished its asynchronous processing. Releases the deferred done edge once no
  * view is pending anymore. No-op outside a deferred completion (done_pending_ unset).
  */
+void ViewManager::viewProcessingStartedSlot()
+{
+    // during a load cycle its own dialog covers the busy state; during shutdown the
+    // ux is being torn down
+    if (compass_.isShutDown() || processing_data_)
+        return;
+
+    load_controller_->beginViewProcessing();
+}
+
+/**
+ */
 void ViewManager::viewProcessingFinishedSlot()
 {
     // a completion arriving during shutdown must not drive the load UX any more: the
@@ -1525,6 +1542,10 @@ void ViewManager::viewProcessingFinishedSlot()
 
     if (view && !view->hasPendingProcessing() && pending_views_.erase(view))
         load_controller_->advanceViewPhase();
+
+    // interactive busy state: close it once every view committed
+    if (!hasPendingViewProcessing())
+        load_controller_->endViewProcessing();
 
     if (!done_pending_)
         return;

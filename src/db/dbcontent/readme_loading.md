@@ -195,6 +195,24 @@ encodes, both hit in practice: results of a superseded generation are discarded 
 committed, and `QProgressDialog::setValue` pumps the event loop, so a commit can re-enter the
 load lifecycle - see the guards in `LoadController::advanceViewPhase`.
 
+Commits are **drained one per zero-timer firing**, not run directly from the queued worker
+completion. Several views' completions arrive as posted events, and Qt dispatches a
+posted-event batch back to back - seconds of apply work without one native event in between,
+which is exactly the unanswered-window-manager-ping "not responding" case. One commit per
+timer firing lets the native loop breathe between commits (pings, repaints). Deliberately NOT
+a `processEvents()` inside the commit: that dispatches other posted events too, and a
+dispatched waiter (a runtime command gating on quiet views, see below) then waits inside the
+pump for a `finishedSignal` that can only be emitted once the pump returns - a deadlock, found
+the hard way. This is the same lesson as the threshold pumping note further down: treat
+`processEvents()` inside the view lifecycle as suspect.
+
+**Destruction contract:** the base destructor joins outstanding workers, but only after the
+derived widget is already destroyed - a work function capturing `this` would read a half-dead
+object. Any widget whose work functions capture `this` (the stash views, the histogram) calls
+`shutdownAsyncProcessor()` (invalidate + join; queued commits are discarded) in its OWN
+destructor. Snapshot-based workers (table) and the geo provider (owns its processor) do not
+need it.
+
 ## LoadController — the offline load UX
 
 `ViewManager` owns a **`LoadController`** ([loadcontroller.h](../../view/loadcontroller.h))
@@ -218,6 +236,55 @@ that holds the modal `QProgressDialog`, the wait cursor, and the two-phase progr
   **outside** the `processing_data_` guard, so a deferred `sourceDataChangedSlot` (e.g. the
   geo view's redraw) drains while the dialog is still up — matching the pre-refactor
   `finishLoading` ordering (no late geo update after "done").
+
+## Interactive redraws - the same contract outside a load
+
+An interactive **recompute redraw** (Color Mode, style or filter change, view preset apply)
+used to run its compute phase inline on the main thread - the "application is not responding"
+case for large datasets, long after loads had gone asynchronous. Offline it now runs on the
+same worker/commit machinery as the load path; live stays synchronous everywhere, as before.
+
+Per view, `redrawData(recompute = true)` routes as follows (`redrawData(false)` display-only
+refreshes stay synchronous where they were):
+
+- **Geographic View**: `GeometryItemProvider::redrawGeometry(RecomputeDisplay)` goes through
+  `applyChange(loaded contents, reset = false, last = true)` - the same staged asynchronous
+  rebuild as a data arrival. Layers are built detached on workers and swapped in on commit; a
+  later rebuild's attach replaces an earlier one's layers. The in-place per-layer recompute
+  survives only for live and the no-data case.
+- **Table View**: `launchAsyncPrepare()` (layer scan + row index + sort on a worker,
+  `commitLoadedData` applies) - shared verbatim with `loadingDone_impl`.
+- **Histogram / Scatterplot / Grid**: `VariableViewDataWidget::redrawData_impl` fires the same
+  `postLoadTrigger()` the load-done path uses (generator / stash fill on a worker, display
+  commit on the main thread). Annotation display and live decline and fall through to the
+  synchronous path.
+
+Three pieces make this safe against interaction, mirroring what the load dialog provides
+during loads:
+
+1. **`viewRefreshed` waits for the commit.** `ViewWidget::redrawDone()` holds the signal back
+   while the data widget reports `hasPendingProcessing()`, released by
+   `dataWidgetProcessingFinished()` - the exact mirror of the `loadingDone()` deferral. To
+   every consumer (runtime commands, UI tests) `viewRefreshed` means "the view shows the
+   result", launch or not. A recompute requested while work is still outstanding is
+   **coalesced** (`pending_recompute_redraw_`): the running work's inputs are already stale,
+   so one recompute runs after the commit instead of stacking jobs; a new load drops the
+   pending request.
+2. **Runtime commands gate on quiet views.** Both main-thread command execution entries
+   (`RTCommandRunnerStash::executeCommand[Async]`) pump via `Utils::Async::pumpUntil` until
+   `ViewManager::hasPendingViewProcessing()` is false. Without this, a `uiset` mutating view
+   state can land while a worker still reads it - a torn read that aborted in practice
+   (grid preset apply during a running stash worker). Same pattern as `issueLoad`'s wait.
+3. **A modal busy dialog covers user interaction.** `LoadController::beginViewProcessing()` /
+   `endViewProcessing()`: view processing starting OUTSIDE a load cycle (reported through
+   `ViewAsyncProcessor::startedSignal` -> `View::processingStartedSignal` ->
+   `ViewManager::viewProcessingStartedSlot`) shows an application-modal, cancel-less
+   "Updating views..." dialog; the last commit closes it. Modality is the point - the user
+   cannot mutate view config or close a view while workers read state. The dialog is shown by
+   an explicit deferred `show()` (700 ms single-shot): an indeterminate `QProgressDialog`
+   never arms its `minimumDuration` timer (only `setValue` does), so auto-show would never
+   display it, and showing immediately would flicker on every small selection update. A load
+   cycle's own dialog supersedes it (`begin` ends any interactive busy state first).
 
 ## Distribution
 
