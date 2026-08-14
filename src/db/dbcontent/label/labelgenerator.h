@@ -57,10 +57,16 @@ public:
     LabelGenerator(DBContentManager& manager);
     virtual ~LabelGenerator();
 
-    std::vector<std::string> getLabelTexts(const std::string& dbcontent_name, 
+    // the caller passes the buffer its indices refer into (e.g. the geometry
+    // layer's own buffer) - never resolved via the current view dataset, which
+    // may already have been swapped while old geometry is still displayed
+    std::vector<std::string> getLabelTexts(const std::string& dbcontent_name,
+                                           const std::shared_ptr<Buffer>& buffer,
                                            unsigned int buffer_index,
                                            const std::optional<unsigned int>& override_lod = std::optional<unsigned int>());
-    std::vector<std::string> getFullTexts(const std::string& dbcontent_name, unsigned int buffer_index);
+    std::vector<std::string> getFullTexts(const std::string& dbcontent_name,
+                                          const std::shared_ptr<Buffer>& buffer,
+                                          unsigned int buffer_index);
 
     bool autoLabel() const;
     void autoLabel(bool auto_label);
@@ -164,11 +170,11 @@ protected:
 
     std::string getVariableName(const std::string& dbcontent_name, unsigned int key);
     std::string getVariableValue(const std::string& dbcontent_name, unsigned int key,
-                                 std::shared_ptr<Buffer>& buffer, unsigned int index, bool long_val=false);
+                                 const std::shared_ptr<Buffer>& buffer, unsigned int index, bool long_val=false);
     std::string getVariableUnit(const std::string& dbcontent_name, unsigned int key);
 
     std::string getMode3AText (const std::string& dbcontent_name,
-                               unsigned int buffer_index, std::shared_ptr<Buffer>& buffer);
+                               unsigned int buffer_index, const std::shared_ptr<Buffer>& buffer);
 
     // Classifies a raw ACID into the space-stripped usable_id (if specific) or
     // fallback_id (if unspecific, e.g. "00000000"), without overwriting an
@@ -176,7 +182,7 @@ protected:
     void classifyIdentification(const std::string& raw_acid,
                                 std::string& usable_id, std::string& fallback_id) const;
     std::string getModeCText (const std::string& dbcontent_name,
-                              unsigned int buffer_index, std::shared_ptr<Buffer>& buffer);
+                              unsigned int buffer_index, const std::shared_ptr<Buffer>& buffer);
 
     //void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
 

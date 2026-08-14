@@ -79,21 +79,20 @@ void LabelGenerator::classifyIdentification(const std::string& raw_acid,
 }
 
 std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcontent_name,
+                                                       const std::shared_ptr<Buffer>& buffer,
                                                        unsigned int buffer_index,
                                                        const std::optional<unsigned int>& override_lod)
 {
     std::vector<std::string> tmp;
 
-    std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.compass().viewManager().currentBuffers();
-    if (!buffers.count(dbcontent_name))
+    if (!buffer)
     {
-        logerr << "dbcontent_name '" << dbcontent_name << "' not in buffers";
+        logerr << "no buffer given for dbcontent '" << dbcontent_name << "'";
         return tmp;
     }
 
     unsigned int lod = override_lod.has_value() ? override_lod.value() : round(config_.current_lod_);
 
-    std::shared_ptr<Buffer> buffer = buffers.at(dbcontent_name);
     if (buffer_index >= buffer->size())
     {
         logerr << "buffer index of dbcontent '" << dbcontent_name << "' out of range";
@@ -227,20 +226,20 @@ std::vector<std::string> LabelGenerator::getLabelTexts(const std::string& dbcont
     return tmp;
 }
 
-std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbcontent_name, unsigned int buffer_index)
+std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbcontent_name,
+                                                      const std::shared_ptr<Buffer>& buffer,
+                                                      unsigned int buffer_index)
 {
     std::vector<std::string> tmp;
-    
-    std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.compass().viewManager().currentBuffers();
-    if (!buffers.count(dbcontent_name))
+
+    if (!buffer)
     {
-        logerr << "dbcontent_name '" << dbcontent_name << "' not in buffers";
+        logerr << "no buffer given for dbcontent '" << dbcontent_name << "'";
         return tmp;
     }
 
     DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
 
-    std::shared_ptr<Buffer> buffer = buffers.at(dbcontent_name);
     if (buffer_index >= buffer->size())
     {
         logerr << "buffer index of dbcontent '" << dbcontent_name << "' out of range";
@@ -1693,7 +1692,7 @@ std::string LabelGenerator::getVariableName(const std::string& dbcontent_name, u
 }
 
 std::string LabelGenerator::getVariableValue(const std::string& dbcontent_name, unsigned int key,
-                                             std::shared_ptr<Buffer>& buffer, unsigned int index, bool long_val)
+                                             const std::shared_ptr<Buffer>& buffer, unsigned int index, bool long_val)
 {
     traced_assert(key != 0);
     traced_assert(config_.label_config_.contains(dbcontent_name));
@@ -2014,7 +2013,7 @@ std::string LabelGenerator::getVariableUnit(const std::string& dbcontent_name, u
 }
 
 std::string LabelGenerator::getMode3AText (const std::string& dbcontent_name,
-                                           unsigned int buffer_index, std::shared_ptr<Buffer>& buffer)
+                                           unsigned int buffer_index, const std::shared_ptr<Buffer>& buffer)
 {
     string text;
 
@@ -2071,7 +2070,7 @@ std::string LabelGenerator::getMode3AText (const std::string& dbcontent_name,
 }
 
 std::string LabelGenerator::getModeCText (const std::string& dbcontent_name,
-                                          unsigned int buffer_index, std::shared_ptr<Buffer>& buffer)
+                                          unsigned int buffer_index, const std::shared_ptr<Buffer>& buffer)
 {
     string text;
 
