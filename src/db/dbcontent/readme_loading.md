@@ -433,13 +433,33 @@ latency, and emits **one** atomic `dataChangedSignal(all, reset=true, last=true)
 finalizes in one event-loop turn (no empty intermediate OSG paint). The **display window** is
 bound by the feed's `cutCachedData`, independent of the DB delete.
 
-### Layer churn in the per-tick rebuild
+### Layer keep-alive in the per-tick rebuild
 
-The feed's per-tick wipe + rebuild is atomic, but `GeometryItemProvider::reset_impl()` still
-destroys every `GeometryItemGroupLayer` and rebuilds a new one — each label is torn down and
-re-registered per tick (visible label flicker). The deeper fix is to keep existing
-`(dbc, ds, line)` layers alive across ticks and refresh buffer/index references in place,
-destroying only vanished keys.
+The feed's per-tick wipe + rebuild is atomic, and the geo provider handles it as a
+**mark-and-sweep rebind** instead of destroying and recreating every layer
+(`live_inplace_dispatch_`, set for a live-running dispatch): `reset_impl` stashes the
+existing `(dbc, ds, line)` layers (mark), `rebuildContent_impl` hands a stashed layer of
+the same key the new item group via `GeometryItemGroupLayer::rebuildFromGroup` - an
+in-place data rebuild (point data, item ranges, asset geometry arrays) that keeps the
+scene-graph node, the labels and the render state alive - and the finalize destroys only
+the layers whose key vanished (sweep). Kept TR labels are re-anchored to the new point
+data by record number, vanished ones dropped; no per-tick label teardown (the old label
+flicker) and no per-tick label backup/restore JSON round trip. The layer holds its item
+group as `shared_ptr`, so the data a stashed layer references survives the provider
+reset until rebind or sweep. All other resets (offline load, paused display load,
+grouping change) stay on the full wipe + backup/restore path.
+
+**Label texts are part of the per-tick snapshot.** The feed mutates the shared
+buffers in place (merge + timestamp sort + front trim), so between a `processTick()`
+and its queued rebuild turn every stored point/buffer index is stale - a label text
+regeneration in that window would read other targets' rows. Kept labels therefore
+regenerate their texts only in the anchored per-tick path (the re-anchor in
+`updateItemLabels`/`updateTRLabels`, fresh indexes, same turn as the rebuild); all
+other triggers (LOD change in the overlay pass, `updateLabelContents` from a layer
+style update) go through `OverlayItem::requestContentUpdate()`, which in live-running
+mode only marks the content dirty for the next anchored update
+(`GeometryItemGroupPointLabel::deferContentRegen`). Offline regenerates immediately,
+as before - there the buffer never changes under the layer.
 
 ## Migrating away from per-content loads
 

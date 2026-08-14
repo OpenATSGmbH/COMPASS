@@ -539,7 +539,7 @@ void DBContentItemProvider::rebuildContent(unsigned int dbc_id)
             {
                 // collect item id of buffer index
                 auto item_id = group_func(idx);
-                
+
                 auto& item_indices = item_indices_map[ item_id ];
                 item_indices.push_back(idx);
             }
@@ -551,8 +551,8 @@ void DBContentItemProvider::rebuildContent(unsigned int dbc_id)
                 size_t idx0 = group->indices.size();
 
                 //insert item indices into group indices
-                group->indices.insert(group->indices.end(), 
-                                      item_indices_it.second.begin(), 
+                group->indices.insert(group->indices.end(),
+                                      item_indices_it.second.begin(),
                                       item_indices_it.second.end());
 
                 size_t idx1 = group->indices.size();
