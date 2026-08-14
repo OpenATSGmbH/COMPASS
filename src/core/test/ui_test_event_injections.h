@@ -67,13 +67,24 @@ namespace ui_test
                           Qt::MouseButton button = Qt::LeftButton, 
                           int delay = -1);
     bool injectRectEvent(QWidget* root,
-                         const QString& obj_name, 
-                         int x0 = -1, 
-                         int y0 = -1, 
-                         int x1 = -1, 
+                         const QString& obj_name,
+                         int x0 = -1,
+                         int y0 = -1,
+                         int x1 = -1,
                          int y1 = -1,
-                         Qt::MouseButton button = Qt::LeftButton, 
+                         Qt::MouseButton button = Qt::LeftButton,
                          int delay = -1);
+    bool injectDblClickEvent(QWidget* root,
+                             const QString& obj_name,
+                             int x = -1,
+                             int y = -1,
+                             Qt::MouseButton button = Qt::LeftButton,
+                             int delay = -1);
+    bool injectWheelEvent(QWidget* root,
+                          const QString& obj_name,
+                          int x = -1,
+                          int y = -1,
+                          int delta = 120);
 
     typedef std::function<bool()> EventFunc;
 

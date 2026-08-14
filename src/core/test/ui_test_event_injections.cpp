@@ -33,6 +33,7 @@
 #include <QAbstractItemModel>
 #include <QAbstractItemView>
 #include <QContextMenuEvent>
+#include <QWheelEvent>
 #include <QDateTimeEdit>
 #include <QComboBox>
 #include <QTabWidget>
@@ -287,6 +288,98 @@ bool injectClickEvent(QWidget* root,
     }
 
     return true;
+}
+
+/**
+ * Injects a mouse double click into widgets or windows.
+ */
+bool injectDblClickEvent(QWidget* root,
+                         const QString& obj_name,
+                         int x,
+                         int y,
+                         Qt::MouseButton button,
+                         int delay)
+{
+    auto obj = findObject(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectDblClickEvent", obj_name, obj.first);
+        return false;
+    }
+
+    if (!obj.second->isWidgetType() && !obj.second->isWindowType())
+    {
+        logObjectError("injectDblClickEvent", obj_name, rtcommand::FindObjectErrCode::WrongType);
+        return false;
+    }
+
+    //by default the click will by applied to the widget/window center...
+    QPoint pos;
+
+    //...but we can provide values
+    if (x >= 0 && y >= 0)
+        pos = QPoint(x, y);
+
+    loginf << "injecting mouse button '" << (int)button << "' double click at ("
+           << std::to_string(x) << "," << std::to_string(y) << ")";
+
+    if (obj.second->isWidgetType())
+    {
+        auto w = dynamic_cast<QWidget*>(obj.second);
+
+        //!for scroll areas we have to send the events to its viewport!
+        auto scroll_area = dynamic_cast<QAbstractScrollArea*>(w);
+        if (scroll_area)
+            w = scroll_area->viewport();
+
+        QTest::mouseDClick(w, button, Qt::NoModifier, pos, delay);
+    }
+    else //window
+    {
+        QTest::mouseDClick(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos, delay);
+    }
+
+    return true;
+}
+
+/**
+ * Injects a mouse wheel event into a widget, as a regular QWheelEvent sent
+ * through the widget's event path. 'delta' is in eighths of a degree, one
+ * wheel notch = 120, positive = scrolled away from the user.
+ */
+bool injectWheelEvent(QWidget* root,
+                      const QString& obj_name,
+                      int x,
+                      int y,
+                      int delta)
+{
+    auto obj = findObjectAs<QWidget>(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectWheelEvent", obj_name, obj.first);
+        return false;
+    }
+
+    QWidget* w = obj.second;
+
+    //!for scroll areas we have to send the events to its viewport!
+    auto scroll_area = dynamic_cast<QAbstractScrollArea*>(w);
+    if (scroll_area)
+        w = scroll_area->viewport();
+
+    QPoint pos = w->rect().center();
+
+    if (x >= 0 && y >= 0)
+        pos = QPoint(x, y);
+
+    loginf << "injecting mouse wheel delta " << delta
+           << " at (" << pos.x() << "," << pos.y() << ")";
+
+    QWheelEvent event(QPointF(pos), QPointF(w->mapToGlobal(pos)),
+                      QPoint(), QPoint(0, delta),
+                      Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+
+    return QApplication::sendEvent(w, &event);
 }
 
 /**

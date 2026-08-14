@@ -21,6 +21,7 @@
 #include "taskmanager.h"
 #include "viewpointsimporttask.h"
 #include "asteriximporttask.h"
+#include "asterixnetworkreplaysender.h"
 #include "jsonimporttask.h"
 #include "gpstrailimporttask.h"
 #include "viewpointsimporttask.h"
@@ -978,6 +979,27 @@ rtcommand::IsValid  RTCommandImportASTERIXNetworkStart::valid() const
         CHECK_RTCOMMAND_INVALID_CONDITION(!ok, "Given time offset '"+time_offset_str_+"' invalid")
     }
 
+    if (replay_files_.size())
+    {
+        for (const auto& replay_file : split_replay_files_)
+        {
+            CHECK_RTCOMMAND_INVALID_CONDITION(!Files::fileExists(replay_file),
+                                              "Replay file '"+replay_file+"' does not exist")
+
+            std::string error;
+            auto first_time = ASTERIXNetworkReplaySender::firstFrameTime(replay_file, &error);
+
+            CHECK_RTCOMMAND_INVALID_CONDITION(!first_time.has_value(),
+                                              "Replay file '"+replay_file+"' invalid: "+error)
+        }
+
+        CHECK_RTCOMMAND_INVALID_CONDITION(replay_speed_ <= 0.0f, "Given replay speed invalid")
+
+        CHECK_RTCOMMAND_INVALID_CONDITION(
+            replay_line_ != "L1" && replay_line_ != "L2" && replay_line_ != "L3" && replay_line_ != "L4",
+            "Given replay line '"+replay_line_+"' invalid")
+    }
+
     return RTCommand::valid();
 }
 
@@ -1034,6 +1056,32 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
 
         if (max_lines_ != -1)
             import_task.settings().max_network_lines_ = max_lines_;
+
+        if (replay_files_.size() && time_offset_str_.empty())
+        {
+            // align the recording start to the current wall clock: shift every
+            // record's ToD so the earliest replayed frame lands at the current UTC time
+            boost::optional<double> reference_time;
+
+            for (const auto& replay_file : split_replay_files_)
+            {
+                std::string error;
+                auto first_time = ASTERIXNetworkReplaySender::firstFrameTime(replay_file, &error);
+                traced_assert(first_time.has_value()); // was checked in valid
+
+                if (!reference_time.has_value() || first_time.value() < reference_time.value())
+                    reference_time = first_time;
+            }
+
+            double current_utc_tod =
+                boost::posix_time::microsec_clock::universal_time().time_of_day().total_milliseconds() / 1000.0;
+
+            import_task.settings().override_tod_active_ = true;
+            import_task.settings().override_tod_offset_ = current_utc_tod - reference_time.value();
+
+            loginf << "replay time offset "
+                   << String::timeStringFromDouble(import_task.settings().override_tod_offset_);
+        }
     }
     catch (exception& e)
     {
@@ -1054,7 +1102,24 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
         return false;
     }
 
+    if (replay_files_.size())
+    {
+        // resolve endpoint and create the senders before run(), so an invalid
+        // replay setup fails without starting the import
+        std::string error;
+
+        if (!import_task.prepareReplay(split_replay_files_, replay_speed_, replay_line_,
+                                       replay_stop_at_end_, error))
+        {
+            setResultMessage("Replay preparation failed: " + error);
+            return false;
+        }
+    }
+
     import_task.run();
+
+    if (import_task.hasReplay())
+        import_task.startReplay();
 
     // handle errors
 
@@ -1082,6 +1147,23 @@ void RTCommandImportASTERIXNetworkStart::collectOptions_impl(OptionsDescription&
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
      "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("replay_file", po::value<std::string>()->default_value(""),
+     "simulates live input by replaying the given IOSS-framed ASTERIX recordings via UDP "
+     "to a configured network line, e.g. '/data/file1.ff;/data/file2.ff'. the files are "
+     "replayed simultaneously keeping their relative timing, and record Time of Day values "
+     "are aligned to the current time unless a time_offset is given explicitly");
+
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("replay_speed", po::value<float>()->default_value(1.0f),
+     "replay speed factor during network replay, 1.0 replays in recorded time");
+
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("replay_line", po::value<std::string>()->default_value("L1"),
+     "network line the replayed data is sent to, L1..L4");
+
+    ADD_RTCOMMAND_OPTIONS(options)("replay_stop_at_end", "stop the network import when the replay file ends");
 }
 
 void RTCommandImportASTERIXNetworkStart::assignVariables_impl(const VariablesMap& variables)
@@ -1090,6 +1172,14 @@ void RTCommandImportASTERIXNetworkStart::assignVariables_impl(const VariablesMap
         RTCOMMAND_GET_VAR_OR_THROW(variables, "max_lines", int, max_lines_)
         RTCOMMAND_CHECK_VAR(variables, "ignore_future_ts", ignore_future_ts_)
         RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
+        RTCOMMAND_GET_VAR_OR_THROW(variables, "replay_file", std::string, replay_files_)
+        RTCOMMAND_GET_VAR_OR_THROW(variables, "replay_speed", float, replay_speed_)
+        RTCOMMAND_GET_VAR_OR_THROW(variables, "replay_line", std::string, replay_line_)
+        RTCOMMAND_CHECK_VAR(variables, "replay_stop_at_end", replay_stop_at_end_)
+
+        split_replay_files_.clear();
+        for (string filename : String::split(replay_files_, ';'))
+            split_replay_files_.push_back(filename);
     }
 
 // import asterix network stop

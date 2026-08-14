@@ -237,6 +237,19 @@ that holds the modal `QProgressDialog`, the wait cursor, and the two-phase progr
   geo view's redraw) drains while the dialog is still up — matching the pre-refactor
   `finishLoading` ordering (no late geo update after "done").
 
+Two dialog details, both flicker/black-frame related:
+
+- **Deferred show (700 ms).** The load dialog no longer shows immediately: `begin()` sets
+  `setMinimumDuration(700)` and arms it with `setValue(0)`, so Qt's own force-show timer
+  displays it only once 700 ms elapsed - a load finishing faster never flashes a dialog.
+  This works because the load dialog is value driven; the indeterminate busy dialog (below)
+  never arms that timer and needs an explicit deferred `show()` instead.
+- **Synchronous paint on show.** With the deferred shows, the first paint event can starve
+  behind long queued work and the window maps black for a second. A `LoadController`
+  event filter catches `QEvent::Show` on both dialogs and calls `repaint()` - the
+  single-widget synchronous paint, deliberately NOT a `processEvents()` (see the threshold
+  pumping section on why pumping inside the load lifecycle is suspect).
+
 ## Interactive redraws - the same contract outside a load
 
 An interactive **recompute redraw** (Color Mode, style or filter change, view preset apply)
@@ -286,6 +299,23 @@ during loads:
    display it, and showing immediately would flicker on every small selection update. A load
    cycle's own dialog supersedes it (`begin` ends any interactive busy state first).
 
+Two data-shape optimizations complete the picture; without them a Color Mode change stayed a
+multi-second stall even with all compute on workers:
+
+- **Layer aggregation caches** (histogram + table): `rebuildLayerTree()` used to rerun
+  `view_layer_scan::aggregateLayers` - a full row scan, seconds at millions of rows -
+  although the aggregation depends only on the loaded buffers, not on colors. Both views
+  now keep the aggregation (`layer_agg_cache_`, filled by the async commit or the sync
+  scan, invalidated on data change/clear), so a color mode change restyles the panel from
+  the cached aggregates in milliseconds.
+- **The geo compile stage** (see *Distribution*) covers the GPU side of the same scenario.
+
+**Measuring stalls:** the client has a hidden `--stall_watchdog` option - any main-thread
+stretch above 3 s dumps its own live backtrace to stderr (`=== MAIN THREAD STALL ===` in the
+captured test logs). Every improvement above was located and verified with it; see
+readme_testing.md for usage. The Color Mode cycling test (`ui_geographicview_style_modes` on
+the skeyes dataset) went from 204 s with 22 stall dumps to 21 s with zero.
+
 ## Distribution
 
 The displayed dataset is the **current source** — a `DBContentDataSet` (`LoadOperation`
@@ -315,6 +345,21 @@ last)` (the old dual `loadedData`/`updateData` path is gone — step 8). The bas
   layers, one worker per arrival builds them (its layers in parallel), and they attach in a queued
   completion turn - the live tick stays fully synchronous (see the deferred done edge under
   *Bookends*).
+
+  The attach itself has a **GPU compile stage** (`attachArrival`): with the viewer's
+  incremental compile operation available (the pager's ICO), the built layers attach
+  MASKED and their GL objects are uploaded in ~50 ms per-frame slices - a single-frame
+  upload of a large arrival blocks the main thread inside the GPU driver for seconds
+  (measured as fence waits in `drmSyncobjTimelineWait`). The completion callback fires
+  inside `frame()` (single threaded viewer) and hops out via a queued call
+  (`arrivalCompileDone`): unmask, swap into `group_layers_` - the OLD layers stayed
+  visible during the upload, so the switch is seamless. Because rendering is on demand
+  and the compile only progresses inside frames, a **frame pump** in the `ViewerWidget`
+  re-requests a frame every ~30 ms while compiles are outstanding
+  (`setFramePumpActive`). `hasPendingBuilds()` includes this stage, so the done edge,
+  `viewRefreshed`, the busy dialog and the command gate all wait for the RESIDENT
+  result; `cancelPendingBuilds` bumps a compile generation, and superseded completions
+  only clean up.
 
 Also in `sourceDataChangedSlot`: selection carry-over (`applyCarriedSelection`), data-source
 loaded counts (`dbContextManager().setLoadedCounts`), and — on `last` — `dataDistributedSignal`

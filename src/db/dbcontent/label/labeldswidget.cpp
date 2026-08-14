@@ -23,6 +23,7 @@
 #include "logger.h"
 #include "files.h"
 #include "stringconv.h"
+#include "ui_test_common.h"
 
 #include <QHBoxLayout>
 #include <QMenu>
@@ -128,6 +129,7 @@ void LabelDSWidget::updateListSlot()
         ++row;
 
         QCheckBox* box = new QCheckBox(ds.name().c_str());
+        UI_TEST_OBJ_NAME(box, QString("Label DS %1").arg(ds.name().c_str()))
         box->setProperty("ds_id", ds.id());
         box->setChecked(label_generator_.labelWanted(ds.id()));
         connect(box, &QCheckBox::clicked, this, &LabelDSWidget::sourceClickedSlot);

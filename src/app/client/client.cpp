@@ -215,6 +215,15 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
          "maximum number of lines per data source during ASTERIX network import, 1..4")
         ("import_asterix_network_ignore_future_ts", po::bool_switch(&import_asterix_network_ignore_future_ts_),
          "ignore future timestamps during ASTERIX network import'")
+        ("import_asterix_network_replay_file", po::value<std::string>(&import_asterix_network_replay_file_),
+         "simulates live input by replaying the given IOSS-framed ASTERIX recordings simultaneously "
+         "via UDP to a configured network line, e.g. '/data/file1.ff;/data/file2.ff'")
+        ("import_asterix_network_replay_speed", po::value<float>(&import_asterix_network_replay_speed_),
+         "replay speed factor during ASTERIX network replay, 1.0 replays in recorded time")
+        ("import_asterix_network_replay_line", po::value<std::string>(&import_asterix_network_replay_line_),
+         "network line the replayed data is sent to, L1..L4")
+        ("import_asterix_network_replay_stop_at_end", po::bool_switch(&import_asterix_network_replay_stop_at_end_),
+         "stop the ASTERIX network import when the replay file ends")
         ("asterix_framing", po::value<std::string>(&asterix_framing),
          "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'. if not set configuration value is used")
         ("asterix_decoder_cfg", po::value<std::string>(&asterix_decoder_cfg),
@@ -660,6 +669,20 @@ bool Client::run ()
 
             if (import_asterix_network_ignore_future_ts_)
                 cmd += " --ignore_future_ts";
+
+            if (import_asterix_network_replay_file_.size())
+            {
+                cmd += " --replay_file '" + import_asterix_network_replay_file_ + "'";
+
+                if (import_asterix_network_replay_speed_ != 1.0f)
+                    cmd += " --replay_speed " + to_string(import_asterix_network_replay_speed_);
+
+                if (import_asterix_network_replay_line_.size())
+                    cmd += " --replay_line " + import_asterix_network_replay_line_;
+
+                if (import_asterix_network_replay_stop_at_end_)
+                    cmd += " --replay_stop_at_end";
+            }
 
             rt_man.addCommandFromConsole(cmd);
         }

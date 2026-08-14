@@ -273,7 +273,9 @@ bool VariableViewDataWidget::canUpdate(int var_idx, const std::string& dbcontent
     bool ok = property_templates::invokeFunctor(data_type, func);
 
     // !var should be in buffer if no reload is required!
-    traced_assert(func.varInBuffer() || variable_view_->reloadNeeded());
+    // engine loads guarantee this via the read set; live feed buffers do not
+    // (columns no record carried are absent), there the graceful branch applies
+    traced_assert(func.varInBuffer() || variable_view_->reloadNeeded() || !dataFulfillsReadSet());
 
     if (!func.varInBuffer())
         variable_states_.at(var_idx) = VariableState::MissingFromBuffer;
