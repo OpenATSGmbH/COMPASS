@@ -28,6 +28,7 @@ pipeline {
         booleanParam(name: 'TAG_MLAT_RU',         defaultValue: true, description: 'Tag: mlat_ru (MLAT contributing receivers, loww_20260609)')
         booleanParam(name: 'TAG_SENSOR_STATUS',   defaultValue: true, description: 'Tag: sensor_status (CAT063 sensor status, skeyes_20251203)')
         booleanParam(name: 'TAG_TRACKER_CONTRIB', defaultValue: true, description: 'Tag: tracker_contrib (CAT062 contributing sensors, skeyes_20251203)')
+        booleanParam(name: 'TAG_LIVE',            defaultValue: true, description: 'Tag: live (live network replay, at_20230422 + skeyes_20251203)')
 
         // Build options
         booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove build_deb10 before building)')
@@ -184,6 +185,7 @@ pipeline {
                     if (params.TAG_MLAT_RU)         tags << 'mlat_ru'
                     if (params.TAG_SENSOR_STATUS)   tags << 'sensor_status'
                     if (params.TAG_TRACKER_CONTRIB) tags << 'tracker_contrib'
+                    if (params.TAG_LIVE)            tags << 'live'
                     def tagsStr = tags.join(',')
 
                     // Build dataset list from checkboxes: name (used for the log file

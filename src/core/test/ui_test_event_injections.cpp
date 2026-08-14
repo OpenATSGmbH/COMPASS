@@ -375,9 +375,17 @@ bool injectWheelEvent(QWidget* root,
     loginf << "injecting mouse wheel delta " << delta
            << " at (" << pos.x() << "," << pos.y() << ")";
 
+    // the AppImage builds against Qt 5.11 (Debian 10), which lacks the modern
+    // constructor; on newer Qt the old one is deprecated - use each where valid
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
     QWheelEvent event(QPointF(pos), QPointF(w->mapToGlobal(pos)),
                       QPoint(), QPoint(0, delta),
                       Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+#else
+    QWheelEvent event(QPointF(pos), QPointF(w->mapToGlobal(pos)),
+                      QPoint(), QPoint(0, delta), delta, Qt::Vertical,
+                      Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase);
+#endif
 
     return QApplication::sendEvent(w, &event);
 }
