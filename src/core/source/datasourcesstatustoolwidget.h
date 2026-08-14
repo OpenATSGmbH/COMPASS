@@ -56,6 +56,9 @@ public:
     void resetStatus();
     void resetEvents();
 
+    DataSourcesStatusWidget* statusWidget() { return ds_widget_; }
+    const DataSourcesStatusWidget* statusWidget() const { return ds_widget_; }
+
     static const int DefaultStretchDataSources;
     static const int DefaultStretchEvents;
 

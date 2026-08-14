@@ -103,7 +103,9 @@ unless `time_offset` is given), `replay_speed`, `replay_line`,
 **Data retrieval**: `get_utns` (with `nodesc`), `get_target`, `get_target_stats`,
 `get_dbcontent_data` (with `dbcontent`, `variables` `|`-separated, `utn`, `max_size`),
 `get_data_sources`, `get_data_source_counts` (per data source / dbcontent / line
-inserted record counts)
+inserted record counts), `get_sensor_status` (CAT063 based per data source status
+as shown in the Sensor Status tool: active tracker plus per source
+Operational/Degraded/Initializing/Not Connected/Fresh/Unknown and status time)
 
 **Reports**: `get_existing_reports`, `get_report` (with `section` for hierarchical
 drill-down, see below), `export_report` (with `report`, `dir`, `mode`),
