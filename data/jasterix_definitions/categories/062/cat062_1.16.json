@@ -683,6 +683,8 @@
                                             "name": "GA",
                                             "comment": "GNSS-derived Altitude of target, expressed as height above WGS 84 ellipsoid.",
                                             "type": "fixed_bits",
+                                            "data_type": "int",
+                                            "lsb": 25,
                                             "start_bit": 0,
                                             "bit_length": 14
                                         }

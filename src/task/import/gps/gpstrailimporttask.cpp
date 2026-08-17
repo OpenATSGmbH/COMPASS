@@ -498,10 +498,11 @@ void GPSTrailImportTask::parseCurrentFile ()
             if (gps_fixes_.back().latitude == gps.fix.latitude
                     && gps_fixes_.back().longitude == gps.fix.longitude)
                 ++gps_fixes_skipped_time_cnt_;
-            else // different position
-            {
-                gps_fixes_.back() = gps.fix;
-            }
+
+            // refresh with latest fix state, later sentences of the same epoch
+            // add information (e.g. GST error estimates)
+            gps_fixes_.back() = gps.fix;
+
             return;
         }
         else // new
@@ -895,11 +896,20 @@ void GPSTrailImportTask::run()
         }
 
         // accuracy
-        // Convert GPS horizontal accuracy (95% confidence radius) to 1-sigma standard deviation
-        double accuracy_1sigma = fix_it->horizontalAccuracy() / 2.45; // approximate conversion
+        if (fix_it->latitudeError > 0 && fix_it->longitudeError > 0)
+        {
+            // receiver-reported 1-sigma errors from the GST sentence, in meters
+            xstddev_vec.set(cnt, fix_it->longitudeError);
+            ystddev_vec.set(cnt, fix_it->latitudeError);
+        }
+        else
+        {
+            // Convert GPS horizontal accuracy (95% confidence radius) to 1-sigma standard deviation
+            double accuracy_1sigma = fix_it->horizontalAccuracy() / 2.45; // approximate conversion
 
-        xstddev_vec.set(cnt, accuracy_1sigma);
-        ystddev_vec.set(cnt, accuracy_1sigma);
+            xstddev_vec.set(cnt, accuracy_1sigma);
+            ystddev_vec.set(cnt, accuracy_1sigma);
+        }
 
         last_tod = tod;
 

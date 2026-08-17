@@ -75,7 +75,7 @@
                     "length": 1,
                     "items": [
                         {
-                            "name": "SIC",
+                            "name": "SID",
                             "comment": "Service Identification",
                             "type": "fixed_bits",
                             "start_bit": 4,

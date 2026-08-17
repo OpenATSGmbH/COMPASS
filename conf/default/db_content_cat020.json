@@ -1418,6 +1418,690 @@
                 "source": "Calculated from X StdDev, Y StdDev (max of the two)",
                 "unit": "Meter"
             }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd1",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_2_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode-2 reply in octal representation",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/050.Mode-2 reply",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd2",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_2_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code validated\n1 Code not validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Valid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/050.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd3",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_2_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/050.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd4",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_2_smoothed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode-2 code derived from the reply of the transponder\n1 Smoothed Mode-2 code as provided by a local tracker n",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Smoothed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/050.L",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd5",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_1_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode-1 Code in octal representation",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 1 Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/055.Mode-1 Code",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd6",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_1_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code validated\n1 Code not validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 1 Valid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/055.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd7",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_1_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 1 Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/055.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd8",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_1_smoothed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode-1 code derived from the reply of the transponder\n1 Smoothed Mode-2 code as provided by a local tracker n",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 1 Smoothed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/055.L",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd9",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_c_code_reply",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode-C reply in Gray notation",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Code Reply",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/100.Mode-C reply",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd10",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_reply_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code validated\n1 Code not validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Reply Valid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/100.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd11",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_reply_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Reply Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/100.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd12",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_c_code_confidence",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Code Confidence",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/100.QXi",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd13",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "geometric_height_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Standard deviation of Geometric Height of the target expressed in WGS-84 (ft).",
+                "dimension": "",
+                "is_key": false,
+                "name": "Geometric Height StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.PA.SDH.SDH",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd14",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "reported_ground_speed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Ground Speed referenced to WGS-84",
+                "dimension": "",
+                "is_key": false,
+                "name": "Reported Ground Speed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.GVV.Ground Speed",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd15",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "reported_track_angle",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Track Angle clockwise reference to 'True North'",
+                "dimension": "",
+                "is_key": false,
+                "name": "Reported Track Angle",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.GVV.Track Angle",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd16",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "range_exceeded",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "'Range Exceeded' Indicator\n0 Value in defined range\n1 Value exceeds defined range",
+                "dimension": "",
+                "is_key": false,
+                "name": "Range Exceeded",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.GVV.RE",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd17",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "ground_speed_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "IStandard deviation of the Ground Speed",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ground Speed StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.GVA.GSSD",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd18",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "track_angle_stddev",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Standard deviation of the Track Angle",
+                "dimension": "",
+                "is_key": false,
+                "name": "Track Angle StdDev",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.GVA.TASD",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd19",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "report_transmission_time",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "The time of ASTERIX report transmission value is reset to zero at every midnight. The Time of Report Transmission is the time used as a reference for the different data-ages provided in DA.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Report Transmission Time",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.TRT.Time Of ASTERIX Report Transmission",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd20",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "aic_capability_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the Aircraft Identification Capability information transmitted in data item I020/230 AIC subfield.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "AIC Capability Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.AIC.AIC",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd21",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "acas_ra_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the ACAS Advisory Report information transmitted in data item I020/260.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "ACAS RA Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.ARA.ARA",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd22",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "arc_capability_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the Altitude reporting capability information transmitted in item I020/230 ARC subfield.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "ARC Capability Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.ARC.ARC",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd23",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "flight_level_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the information transmitted in data item I020/090.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Flight Level Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.FL.FL",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd24",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "geometric_height_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the information transmitted in data item I020/105 or in data item I020/110.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Geometric Height Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.GH.GH",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd25",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_1_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of information transmitted in data item I020/055.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode 1 Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.M1.M1",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd26",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_2_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the information transmitted in data item I020/050.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode 2 Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.M2.M2",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd27",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode3a_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the information transmitted in data item I020/070.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode 3/A Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.M3A.M3A",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd28",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_c_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the information transmitted in data item I020/100.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode C Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.MC.MC",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd29",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "pre_programmed_message_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the information transmitted in data item I020/310.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Pre-programmed Message Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.MSG.MSG",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd30",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mssc_capability_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the Mode-S Specific Service Capability information transmitted in data item I020/230 MSSC subfield.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "MSSC Capability Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.MSSC.MSSC",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd31",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "spi_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the Special Position Information (SPI) information transmitted in data item I020/020 SPI field.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "SPI Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.SPI.SPI",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd32",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "flight_status_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the Flight Status information transmitted in data item I020/230 STAT subfield.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Flight Status Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.STAT.STAT",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd33",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "target_address_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the Target Address information transmitted in data item I020/220.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Target Address Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.TA.TA",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd34",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "target_identification_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the Target Identification information transmitted in data item I020/245.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Target Identification Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.TI.TI",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd35",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "vehicle_fleet_id_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the information transmitted in data item I020/300.",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Vehicle Fleet ID Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.VI.VI",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd36",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "mode_s_mb_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the information in the BDS report indicated in bits 16/9",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode S MB Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.MBD.Mode S MB Data.MBA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd37",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "mode_s_mb_age_bds1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Comm B Data Buffer Store 1 Address",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode S MB Age BDS1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.MBD.Mode S MB Data.BDS1",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd38",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "mode_s_mb_age_bds2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Comm B Data Buffer Store 2 Address",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode S MB Age BDS2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I020/REF.DA.MBD.Mode S MB Data.BDS2",
+                "unit": ""
+            }
         }
     ]
 }

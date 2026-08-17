@@ -3939,6 +3939,1014 @@
                 "source": "Calculated from X StdDev, Y StdDev (max of the two)",
                 "unit": "Meter"
             }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd1",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_5_coasting",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default value\n1 Age of the last received Mode-5 interrogation track update is higher than system dependent threshold",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 5 Coasting",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/080.M5I",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd2",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mlat_coasting",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default value\n1 Age of the last received MLAT track update is higher than system dependent threshold",
+                "dimension": "",
+                "is_key": false,
+                "name": "MLAT Coasting",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/080.MLAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd3",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_2_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode 2 Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/120.Mode-2 code",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd4",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "target_identification",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Target Identification",
+                "dimension": "",
+                "is_key": false,
+                "name": "Target Identification",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/245.Target Identification",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd5",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_1_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the last valid and credible Mode 1 code used to update the track (I062/110)",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode 1 Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/295.MD1.Age",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd6",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_2_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the last valid and credible Mode 2 code used to update the track (I062/120)",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode 2 Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/295.MD2.Age",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd7",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_4_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the last valid and credible Mode 4 code used to update the track",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode 4 Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/295.MD4.Age",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd8",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_5_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Age of the last valid and credible Mode 5 code used to update the track (I062/110)",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode 5 Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/295.MD5.Age",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd9",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "air_speed_im",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Air Speed = IAS, LSB (Bit-1) = 2^-14 NM/s\n1 Air Speed = Mach, LSB (Bit-1) = 0.001",
+                "dimension": "",
+                "is_key": false,
+                "name": "Air Speed IM",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.AIS.IM",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd10",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "trajectory_intent_nav",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Trajectory Intent Data is available for this aircraft\n1 Trajectory Intent Data is not available for this aircraft",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent NAV",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TIS.NAV",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd11",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "trajectory_intent_nvb",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Trajectory Intent Data is valid\n1 Trajectory Intent Data is not valid",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent NVB",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TIS.NVB",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd12",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_altitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "-1500 ft <= altitude <= 150000 ft",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent Altitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.Altitude",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd13",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_latitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "In WGS.84 in two's complement.\n-90 <= latitude <= 90 deg.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent Latitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.Latitude",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd14",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_longitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "In WGS.84 in two's complement.\n-180 <= latitude < 180",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent Longitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.Longitude",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd15",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_nc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 TCP compliance\n1 TCP non-compliance",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent NC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.NC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd16",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_point_type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Unknown\n1 Fly by waypoint (LT)\n2 Fly over waypoint (LT)\n3 Hold = 4 Procedure hold (LT)\n5 Procedure turn (LT)\n6 RF leg (LT)\n7 Top of climb (VT)\n8 Top of descent (VT)\n9 Start of level (VT)\n10 Cross-over altitude (VT)\n11 Transition altitude (VT)",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent Point Type",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.Point Type",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd17",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_tca",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 TCP number available\n1 TCP number not available",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent TCA",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.TCA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd18",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_tcp_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Trajectory Change Point number",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent TCP Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.TCP number",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd19",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_td",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 N/A\n 1 Turn right\n2 Turn left\n3 No turn",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent TD",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.TD",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd20",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_toa",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 TOV avilable\n1 TOV not available",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent TOA",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.TOA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd21",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_tov",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time Over Point",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent TOV",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.TOV",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd22",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_tra",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Turn Radius Availability\n0 TTR not available\n1 TTR available",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent TRA",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.TRA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd23",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "trajectory_intent_ttr",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "TCP Turn radius\n0 <= TTR <= 655.35 Nm",
+                "dimension": "",
+                "is_key": false,
+                "name": "Trajectory Intent TTR",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/380.TID.Trajectory Intent Data.TTR",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd24",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "tod_type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Scheduled off-block time\n1 Estimated off-block time\n2 Estimated take-off time\n3 Actual off-block time\n4 Predicted time at runway hold\n5 Actual time at runway hold\n6 Actual line-up time\n7 Actual take-off time\n8 Estimated time of arrival\n9 Predicted landing time\n10 Actual landing time\n11 Actual time off runway\n12 Predicted time to gate\n13 Actual on-block time",
+                "dimension": "",
+                "is_key": false,
+                "name": "TOD Type",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/390.TOD.Time of Departure / Arrival.TYP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd25",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "tod_day",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Today\n1 Yesterday\n2 Tomorrow\n3 Invalid",
+                "dimension": "",
+                "is_key": false,
+                "name": "TOD Day",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/390.TOD.Time of Departure / Arrival.DAY",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd26",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "tod_hours",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Hours, from 0 to 23",
+                "dimension": "",
+                "is_key": false,
+                "name": "TOD Hours",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/390.TOD.Time of Departure / Arrival.HOR",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd27",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "tod_minutes",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Minutes, from 0 to 59",
+                "dimension": "",
+                "is_key": false,
+                "name": "TOD Minutes",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/390.TOD.Time of Departure / Arrival.MIN",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd28",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "tod_seconds",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Seconds, from 0 to 59",
+                "dimension": "",
+                "is_key": false,
+                "name": "TOD Seconds",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/390.TOD.Time of Departure / Arrival.SEC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd29",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "tod_avs",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Seconds available\n1 Seconds not available",
+                "dimension": "",
+                "is_key": false,
+                "name": "TOD AVS",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/390.TOD.Time of Departure / Arrival.AVS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd30",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "flight_plan_retained",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Flight Data Retained\n0: Flight plan data from active FDPS\n1: Flight plan data retained from no longer active FDPS",
+                "dimension": "",
+                "is_key": false,
+                "name": "Flight Plan Retained",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/REF.STS.STS.FDR",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd31",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_m5",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No Mode 5 interrogation\n1 Mode 5 interrogation",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM M5",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.SUM.M5",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd32",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No authenticated Mode 5 ID reply\n1 Authenticated Mode 5 ID reply",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM ID",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.SUM.ID",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd33",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_da",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No authenticated Mode 5 Data reply or Report\n 1 Authenticated Mode 5 Data reply or Report (i.e any valid Mode 5 reply type other than ID)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM DA",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.SUM.DA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd34",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_m1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode 1 code not present or not from Mode 5 reply\n 1 Mode 1 code from Mode 5 reply.",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM M1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.SUM.M1",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd35",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_m2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode 2 code not present or not from Mode 5 reply\n 1 Mode 2 code from Mode 5 reply.",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM M2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.SUM.M2",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd36",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_m3",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode 3 code not present or not from Mode 5 reply\n 1 Mode 3 code from Mode 5 reply.",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM M3",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.SUM.M3",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd37",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_mc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode C altitude not present or not from Mode 5 reply\n1 Mode C altitude from Mode 5 reply",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM MC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.SUM.MC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd38",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_x",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 5 Data reply or Report.\n0 X-pulse set to zero or no authenticated Data reply or Report received.\n1 X-pulse set to one.",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM X",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.SUM.X",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd39",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "m5_pin",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "PIN Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 PIN",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.PMN.PIN",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd40",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "m5_national_origin",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "National Origin",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 National Origin",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.PMN.NAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd41",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "m5_mission_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mission Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 Mission Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.PMN.MIS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd42",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "m5_latitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "In WGS.84 in two?s complement. Range -90 <= latitude <= 90 deg.",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 Latitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.POS.Latitude",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd43",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "m5_longitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "In WGS.84 in two?s complement. Range -180 <= longitude < 180 deg.",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 Longitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.POS.Longitude",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd44",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "m5_gps_altitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "GNSS-derived Altitude of target, expressed as height above WGS 84 ellipsoid.",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 GPS Altitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.GA.GA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd45",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_gps_altitude_resolution",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Resolution with which the GNSS-derived Altitude (GA) is reported.\n0 GA reported in 100 ft increments,\n1 GA reported in 25 ft increments.",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 GPS Altitude Resolution",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.GA.RES",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd46",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "m5_em1_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Extended Mode 1 Code in octal representation",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 EM1 Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.EM1.Extended Mode 1 Code",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd47",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "m5_time_offset",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time Offset coded as a twos complement number with an LSB of 1/128 s. The time at which the Mode 5 Reported Position (Subfield #3) and Mode 5 GNSS- derived Altitude (Subfield #4) are valid is given by Time of Day (I048/140) plus Time Offset.",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 Time Offset",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.TOS.TOS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd48",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse_mode_1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 1 reply\n0 X-pulse set to zero or no Mode 1 reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse Mode 1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.XP.X1",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd49",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse_mode_2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 2 reply\n0 X-pulse set to zero or no Mode 2 reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse Mode 2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.XP.X2",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd50",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse_mode3a",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 3/A reply\n0 X-pulse set to zero or no Mode 3/A reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse Mode 3/A",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.XP.X3",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd51",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse_mode_5",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 5 Data reply or Report.\n0 X-pulse set to zero or no authenticated Data reply or Report received.\n1 X-pulse set to one (present).",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse Mode 5",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.XP.X5",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd52",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse_mode_c",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode C reply\n0 X-pulse set to zero or no Mode C reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse Mode C",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/110.XP.XC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd53",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "composed_track_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Composed Track Number",
+                "dimension": "",
+                "is_key": false,
+                "name": "Composed Track Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/510.Composed Track Number.SYSTEM TRACK NUMBER",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd54",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "composed_sui",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Composed SUI",
+                "dimension": "",
+                "is_key": false,
+                "name": "Composed SUI",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/510.Composed Track Number.SYSTEM UNIT IDENTIFICATION",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd55",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "tvs_vx",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "-8192m/s <= Vx <= 8191.75m/s",
+                "dimension": "",
+                "is_key": false,
+                "name": "TVS Vx",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/REF.TVS.Vx",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd56",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "tvs_vy",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "-8192m/s <= Vy <= 8191.75m/s",
+                "dimension": "",
+                "is_key": false,
+                "name": "TVS Vy",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I062/REF.TVS.Vy",
+                "unit": ""
+            }
         }
     ]
 }

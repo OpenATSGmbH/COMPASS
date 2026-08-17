@@ -3156,6 +3156,744 @@
                 "mandatory": false,
                 "unit": "Second"
             }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd1",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent NAV",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TIS.NAV",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd2",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent NVB",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TIS.NVB",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd3",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent Altitude",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.Altitude",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd4",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent Latitude",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.Latitude",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd5",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent Longitude",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.Longitude",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd6",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent NC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.NC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd7",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent Point Type",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.Point Type",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd8",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent TCA",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.TCA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd9",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent TCP Number",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.TCP number",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd10",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent TD",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.TD",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd11",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent TOA",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.TOA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd12",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent TOV",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.TOV",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd13",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent TRA",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.TRA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd14",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent TTR",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "110.TID.rep.TTR",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd15",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Air Speed IM",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "150.IM",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd16",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Link Technology",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "210.LTT",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd17",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "ACAS RA Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "295.ACAS Resolution Advisory.Age",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd18",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "Trajectory Intent Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "295.Trajectory Intent.Age",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd19",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 SUM M5",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.SUM.M5",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd20",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 SUM ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.SUM.ID",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd21",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 SUM DA",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.SUM.DA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd22",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 SUM M1",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.SUM.M1",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd23",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 SUM M2",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.SUM.M2",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd24",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 SUM M3",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.SUM.M3",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd25",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 SUM MC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.SUM.MC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd26",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 SUM PO",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.SUM.PO",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd27",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 PIN",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.PNO.PIN",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd28",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 National Origin",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.PNO.NO",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd29",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 EM1 Code",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.EM1.EM1",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd30",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 EM1 Valid",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.EM1.V",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd31",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 EM1 Smoothed",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.EM1.L",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd32",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 Figure of Merit",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.FOM.FOM",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd33",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 Mode 2 Code",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.M2.M2",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd34",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 Mode 2 Valid",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.M2.V",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd35",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 Mode 2 Smoothed",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.M2.L",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd36",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 X-Pulse",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.XP.XP",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd37",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 X-Pulse Mode 1",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.XP.X1",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd38",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 X-Pulse Mode 2",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.XP.X2",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd39",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 X-Pulse Mode 3/A",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.XP.X3",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd40",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 X-Pulse Mode 5",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.XP.X5",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd41",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT021",
+                "db_content_variable_name": "M5 X-Pulse Mode C",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.MES.XP.XC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
         }
     ]
 }

@@ -1230,6 +1230,42 @@
                 "mandatory": false,
                 "unit": ""
             }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd1",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT010",
+                "db_content_variable_name": "Presence DRHO",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "280.Presence.DRHO",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd2",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT010",
+                "db_content_variable_name": "Presence DTHETA",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "280.Presence.DTHETA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
         }
     ]
 }

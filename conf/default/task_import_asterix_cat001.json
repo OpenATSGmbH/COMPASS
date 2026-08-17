@@ -762,6 +762,258 @@
                 "mandatory": false,
                 "unit": ""
             }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd1",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Mode 2 Code",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "050.Mode-2 code",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd2",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Mode 2 Valid",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "050.V",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd3",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Mode 2 Garbled",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "050.G",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd4",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Mode 2 Smoothed",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "050.L",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd5",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Mode 2 Code Confidence",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "060.QXi",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd6",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Mode 3/A Code Confidence",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "080.QXi",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd7",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Mode C Code Reply",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.Mode-C reply",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd8",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Mode C Reply Valid",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.V",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd9",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Mode C Reply Garbled",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.G",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd10",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Mode C Code Confidence",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.QXi",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd11",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Radial Doppler Speed",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "120.Measured Radial Doppler Speed",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd12",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "X-Pulse Mode 3/A",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "150.XA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd13",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "X-Pulse Mode 2",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "150.X2",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd14",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "X-Pulse Mode C",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "150.XC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
         }
     ]
 }

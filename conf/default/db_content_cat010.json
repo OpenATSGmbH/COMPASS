@@ -1308,6 +1308,42 @@
                 "source": "Internal: ascending record number assigned at import",
                 "unit": ""
             }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd1",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "presence_drho",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Difference between the radial distance of the plot centre and that of the presence\nMax. Range = +/- 127 m",
+                "dimension": "",
+                "is_key": false,
+                "name": "Presence DRHO",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I010/280.Presence.DRHO",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd2",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "presence_dtheta",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Difference between the azimuth of the plot centre and that of the presence\nMax. Range = +/- 19.05 deg",
+                "dimension": "",
+                "is_key": false,
+                "name": "Presence DTHETA",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I010/280.Presence.DTHETA",
+                "unit": ""
+            }
         }
     ]
 }

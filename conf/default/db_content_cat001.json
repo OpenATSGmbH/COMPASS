@@ -855,6 +855,258 @@
                 "source": "I001/161.TRACK/PLOT NUMBER",
                 "unit": ""
             }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd1",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_2_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode 2 Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/050.Mode-2 code",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd2",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_2_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code validated\n1 Code not validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Valid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/050.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd3",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_2_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/050.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd4",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_2_smoothed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode-2 code as derived from the reply of the transponder\n1 Smoothed Mode-2 code as provided by a local tracker",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Smoothed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/050.L",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd5",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_2_code_confidence",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Code Confidence",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/060.QXi",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd6",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode3a_code_confidence",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Code Confidence",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/080.QXi",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd7",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_c_code_reply",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode-C reply in Gray notation",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Code Reply",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/100.Mode-C reply",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd8",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_reply_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code validated\n1 Code not validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Reply Valid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/100.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd9",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_reply_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Reply Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/100.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd10",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_c_code_confidence",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Code Confidence",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/100.QXi",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd11",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "radial_doppler_speed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Radial Doppler Speed",
+                "dimension": "",
+                "is_key": false,
+                "name": "Radial Doppler Speed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/120.Measured Radial Doppler Speed",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd12",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "x_pulse_mode3a",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 X-pulse received in Mode-3/A reply",
+                "dimension": "",
+                "is_key": false,
+                "name": "X-Pulse Mode 3/A",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/150.XA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd13",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "x_pulse_mode_2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 X-pulse received in Mode-2 reply",
+                "dimension": "",
+                "is_key": false,
+                "name": "X-Pulse Mode 2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/150.X2",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd14",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "x_pulse_mode_c",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 X-pulse received in Mode-C reply",
+                "dimension": "",
+                "is_key": false,
+                "name": "X-Pulse Mode C",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I001/150.XC",
+                "unit": ""
+            }
         }
     ]
 }

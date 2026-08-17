@@ -1233,6 +1233,1446 @@
                 "source": "I048/170.SUP",
                 "unit": ""
             }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd1",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "x_pulse_present",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No X-Pulse present\n1 X-Pulse present",
+                "dimension": "",
+                "is_key": false,
+                "name": "X-Pulse Present",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/020.XPP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd2",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_2_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode 2 Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/050.Mode-2 code",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd3",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_2_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code validated\n1 Code not validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Valid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/050.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd4",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_2_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/050.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd5",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_2_smoothed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode-2 code as derived from the reply of the transponder\n1 Smoothed Mode-2 code as provided by a local tracker",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Smoothed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/050.L",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd6",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_1_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode 1 Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 1 Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/055.Mode-1 code",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd7",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_1_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code validated\n1 Code not validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 1 Valid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/055.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd8",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_1_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 1 Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/055.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd9",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_1_smoothed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode-1 code as derived from the reply of the transponder.\n1 Smoothed Mode-1 code as provided by a local tracker.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 1 Smoothed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/055.L",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd10",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_2_code_confidence",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 2 Code Confidence",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/060.QXi",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd11",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_1_code_confidence",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 1 Code Confidence",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/065.QXi",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd12",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode3a_code_confidence",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 3/A Code Confidence",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/080.QXi",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd13",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_c_code_reply",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mode-C reply in Gray notation",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Code Reply",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/100.Mode-C reply",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd14",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_reply_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code validated\n1 Code not validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Reply Valid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/100.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd15",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "mode_c_reply_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Reply Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/100.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd16",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "mode_c_code_confidence",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 High quality pulse Xi\n1 Low quality pulse Xi",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode C Code Confidence",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/100.QXi",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd17",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "doppler_speed_doubtful",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Doppler speed is valid\n1 Doppler speed is doubtful",
+                "dimension": "",
+                "is_key": false,
+                "name": "Doppler Speed Doubtful",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/120.CAL.D",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd18",
+            "parameters": {
+                "data_type_str": "INT",
+                "db_column_name": "calculated_doppler_speed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Calculated Doppler Speed, coded in two?s complement",
+                "dimension": "",
+                "is_key": false,
+                "name": "Calculated Doppler Speed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/120.CAL.CAL",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd19",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "raw_doppler_speed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Doppler Speed",
+                "dimension": "",
+                "is_key": false,
+                "name": "Raw Doppler Speed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/120.RDS.Raw Doppler Speed.DOP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd20",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "raw_doppler_ambiguity_range",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Ambiguity Range",
+                "dimension": "",
+                "is_key": false,
+                "name": "Raw Doppler Ambiguity Range",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/120.RDS.Raw Doppler Speed.AMB",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd21",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "raw_doppler_frequency",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Transmitter Frequency",
+                "dimension": "",
+                "is_key": false,
+                "name": "Raw Doppler Frequency",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/120.RDS.Raw Doppler Speed.FRQ",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd22",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "acas_mb_data",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "56-bit message conveying Mode S Comm B message data of BDS Register 3,0.",
+                "dimension": "",
+                "is_key": false,
+                "name": "ACAS MB DATA",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/260.MB DATA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd23",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "extended_range_rho",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Adaptation of data item I048/040 to extended range radars for provision of the measured range of an aircraft in local polar coordinates when the range is greater than 256NM",
+                "dimension": "",
+                "is_key": false,
+                "name": "Extended Range Rho",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.ERR.RHO",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd24",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "mode_4_foe_friend",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Indication Foe/Friend (Mode4)\n00 No Mode 4 identification\n01 possibly friendly target\n10 probably friendly target\n11 friendly target",
+                "dimension": "",
+                "is_key": false,
+                "name": "Mode 4 Foe Friend",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M4E.FOE/FRI",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd25",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "score",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "The score describes the number of raw responses used to create the plot",
+                "dimension": "",
+                "is_key": false,
+                "name": "Score",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.RPC.SCO.SCO",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd26",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "signal_clutter_ratio",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "The Signal / Clutter Ratio describes the difference in signal strength between the signal constituting the raw plot and the signal of the clutter\n0.1 db < SCR < 2550",
+                "dimension": "",
+                "is_key": false,
+                "name": "Signal Clutter Ratio",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.RPC.SCR.SCR",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd27",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "range_width",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "The Range Width defines the difference in range between the closest proximity to the radar of the raw response and the point farthest away from the radar\nMax. value: 256 NM",
+                "dimension": "",
+                "is_key": false,
+                "name": "Range Width",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.RPC.RW.RW",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd28",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "ambiguous_range",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "The Ambiguous Range describes the Pulse Repetition Interval of the radar in range\nMax. value: 256 NM",
+                "dimension": "",
+                "is_key": false,
+                "name": "Ambiguous Range",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.RPC.AR.AR",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd29",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_m5",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No Mode 5 interrogation\n1 Mode 5 interrogation",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM M5",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.SUM.M5",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd30",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No authenticated Mode 5 ID reply/report\n1 Authenticated Mode 5 ID reply/report",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM ID",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.SUM.ID",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd31",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_da",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No authenticated Mode 5 Data reply/report\n1 Authenticated Mode 5 Data reply/report (i.e any valid Mode 5 reply type other than ID)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM DA",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.SUM.DA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd32",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_m1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode 1 code not present or not from Mode 5 reply/report\n1 Mode 1 code from Mode 5 reply/report",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM M1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.SUM.M1",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd33",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_m2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode 2 code not present or not from Mode 5 reply/report\n1 Mode 2 code from Mode 5 reply/report",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM M2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.SUM.M2",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd34",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_m3",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode 3 code not present or not from Mode 5 reply/report\n1 Mode 3 code from Mode 5 reply/report",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM M3",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.SUM.M3",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd35",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_sum_mc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode C altitude not present or not from Mode 5 reply/report\n1 Mode C altitude from Mode 5 reply/report",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 SUM MC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.SUM.MC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd36",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "m5_pin",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "PIN Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 PIN",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.PMN.PIN",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd37",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "m5_national_origin",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "National Origin",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 National Origin",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.PMN.NAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd38",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "m5_mission_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Mission Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 Mission Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.PMN.MIS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd39",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_national_origin_invalid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 National Origin is valid\n1 National Origin is invalid",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 National Origin Invalid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.PMN.NAV",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd40",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "m5_latitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Latitude in WGS 84\nRange -90 <= latitude <= 90",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 Latitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.POS.LAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd41",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "m5_longitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Longitude in WGS 84\nRange -180 <= latitude <= 180",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 Longitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.POS.LON",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd42",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "m5_gps_altitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "GNSS-derived Altitude of target, expressed as height above WGS 84 ellipsoid",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 GPS Altitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.GA.GA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd43",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_gps_altitude_resolution",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Resolution with which the GNSS-derived Altitude (GA) is reported\n0 GA reported in 100 ft increments\n1 GA reported in 25 ft increments",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 GPS Altitude Resolution",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.GA.RES",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd44",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "m5_em1_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Extended Mode 1 Code in octal representation",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 EM1 Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.EM1.EM1",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd45",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_em1_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code not validated\n1 Code validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 EM1 Valid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.EM1.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd46",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_em1_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 EM1 Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.EM1.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd47",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_em1_smoothed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode-1 code derived from the reply of the transponder\n1 Mode-1 code not extracted during the last scan",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 EM1 Smoothed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.EM1.L",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd48",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "m5_time_offset",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "The time at which the Mode 5 Reported Position (Subfield #3) and Mode 5 GNSS-derived Altitude (Subfield #4) are valid is given by Time of Day (I048/140) plus Time Offset",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 Time Offset",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.TOS.TOS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd49",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 5 PIN reply/report\n0 X-Pulse not present\n1 X-pulse present",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.XP.XP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd50",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse_mode_1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 1 reply\n0 X-pulse set to zero or no Mode 1 reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse Mode 1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.XP.X1",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd51",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse_mode_2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 2 reply\n0 X-pulse set to zero or no Mode 2 reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse Mode 2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.XP.X2",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd52",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse_mode3a",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 3/A reply\n0 X-pulse set to zero or no Mode 3/A reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse Mode 3/A",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.XP.X3",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd53",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse_mode_5",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 5 Data reply or Report\n0 X-pulse set to zero or no authenticated Data reply or Report received\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse Mode 5",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.XP.X5",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd54",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5_x_pulse_mode_c",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode C reply\n0 X-pulse set to zero or no Mode C reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5 X-Pulse Mode C",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.MD5.XP.XC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd55",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_sum_m5",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No Mode 5 interrogation\n1 Mode 5 interrogation",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N SUM M5",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.SUM.M5",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd56",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_sum_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No authenticated Mode 5 ID reply/report\n1 Authenticated Mode 5 ID reply/report",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N SUM ID",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.SUM.ID",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd57",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_sum_da",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 No authenticated Mode 5 Data reply/report\n1 Authenticated Mode 5 Data reply/report (i.e any valid Mode 5 reply type other than ID)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N SUM DA",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.SUM.DA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd58",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_sum_m1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode 1 code not present or not from Mode 5 reply/report\n1 Mode 1 code from Mode 5 reply/report",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N SUM M1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.SUM.M1",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd59",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_sum_m2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode 2 code not present or not from Mode 5 reply/report\n1 Mode 2 code from Mode 5 reply/report",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N SUM M2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.SUM.M2",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd60",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_sum_m3",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode 3 code not present or not from Mode 5 reply/report\n1 Mode 3 code from Mode 5 reply/report",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N SUM M3",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.SUM.M3",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd61",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_sum_mc",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode C altitude not present or not from Mode 5 reply/report\n1 Mode C altitude from Mode 5 reply/report",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N SUM MC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.SUM.MC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd62",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "m5n_pin",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "PIN Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N PIN",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.PMN.PIN",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd63",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "m5n_national_origin",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "National Origin Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N National Origin",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.PMN.NO",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd64",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_national_origin_invalid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 National Origin is valid\n1 National Origin is invalid",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N National Origin Invalid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.PMN.NOV",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd65",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "m5n_latitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Latitude in WGS 84\nRange -90 <= latitude <= 90",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N Latitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.POS.LAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd66",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "m5n_longitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Longitude in WGS 84\nRange -180 <= latitude <= 180",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N Longitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.POS.LON",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd67",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "m5n_gps_altitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "GNSS-derived Altitude of target, expressed as height above WGS 84 ellipsoid",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N GPS Altitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.GA.GA",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd68",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_gps_altitude_resolution",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Resolution with which the GNSS-derived Altitude (GA) is reported\n0 GA reported in 100 ft increments\n1 GA reported in 25 ft increments",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N GPS Altitude Resolution",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.GA.RES",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd69",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "m5n_em1_code",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Extended Mode 1 Code in octal representation",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N EM1 Code",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.EM1.EM1",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd70",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_em1_valid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Code not validated\n1 Code validated",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N EM1 Valid",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.EM1.V",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd71",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_em1_garbled",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Default\n1 Garbled code",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N EM1 Garbled",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.EM1.G",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd72",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_em1_smoothed",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "0 Mode-1 code derived from the reply of the transponder\n1 Mode-1 code not extracted during the last scan",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N EM1 Smoothed",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.EM1.L",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd73",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "m5n_time_offset",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "The time at which the Mode 5 Reported Position (Subfield #3) and Mode 5 GNSS-derived Altitude (Subfield #4) are valid is given by Time of Day (I048/140) plus Time Offset",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N Time Offset",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.TOS.TOS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd74",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "m5n_figure_of_merit",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Figure of Merit",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N Figure of Merit",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.FOM.FOM",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd75",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_x_pulse",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 5 PIN reply/report\n0 X-Pulse not present\n1 X-pulse present",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N X-Pulse",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.XP.XP",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd76",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_x_pulse_mode_1",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 1 reply\n0 X-pulse set to zero or no Mode 1 reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N X-Pulse Mode 1",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.XP.X1",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd77",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_x_pulse_mode_2",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 2 reply\n0 X-pulse set to zero or no Mode 2 reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N X-Pulse Mode 2",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.XP.X2",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd78",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_x_pulse_mode3a",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 3/A reply\n0 X-pulse set to zero or no Mode 3/A reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N X-Pulse Mode 3/A",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.XP.X3",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd79",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_x_pulse_mode_5",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode 5 Data reply or Report\n0 X-pulse set to zero or no authenticated Data reply or Report received\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N X-Pulse Mode 5",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.XP.X5",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableAdd80",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "m5n_x_pulse_mode_c",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "X-pulse from Mode C reply\n0 X-pulse set to zero or no Mode C reply\n1 X-pulse set to one (present)",
+                "dimension": "",
+                "is_key": false,
+                "name": "M5N X-Pulse Mode C",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I048/REF.M5N.XP.XC",
+                "unit": ""
+            }
         }
     ]
 }
