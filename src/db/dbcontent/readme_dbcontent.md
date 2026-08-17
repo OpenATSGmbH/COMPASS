@@ -28,7 +28,7 @@ The two layers meet on a *string*: the `db_content_variable_name` field of a JSO
 
 Identity and role:
 - `name()`, `id()`, `dbTableName()` - string name (`"CAT048"`), numeric id (48), DuckDB table (`data_cat048`).
-- `containsTargetReports()` - true for the categories that carry per-target plots (010, 020, 021, 048, 062, RefTraj). False for status / service categories (019, 023, 034, 063, 065).
+- `containsTargetReports()` - true for the categories that carry per-target plots (010, 020, 021, 048, 062, RefTraj). False for status / service categories (019, 023, 025, 034, 063, 065).
 - `containsStatusContent()` - the inverse role for service messages.
 - `isReferenceContent()` - true only for `RefTraj`.
 

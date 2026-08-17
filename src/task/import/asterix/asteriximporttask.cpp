@@ -505,6 +505,26 @@ void ASTERIXImportTask::configurejASTERIX() const
 
     auto& ctx_mgr = compass_.dbContextManager();
 
+    // contexts store their decoding configs from creation time - categories added to
+    // the jASTERIX definitions later would otherwise stay disabled forever, since
+    // decodeNoCategories() above only re-enables categories present in the context
+    for (auto& cat_it : jasterix_->categories())
+    {
+        unsigned int cat = cat_it.first;
+
+        if (!ctx_mgr.hasAsterixConfig(cat))
+        {
+            loginf << "adding missing decoding config for cat " << cat
+                   << " to context '" << ctx_mgr.activeContext().name()
+                   << "' with default edition '" << cat_it.second->defaultEdition() << "'";
+
+            ctx_mgr.getOrCreateAsterixConfig(cat,
+                                             cat_it.second->defaultEdition(),
+                                             cat_it.second->defaultREFEdition(),
+                                             cat_it.second->defaultSPFEdition());
+        }
+    }
+
     // Build a signature of what we're about to apply so we can decide whether to log
     // verbosely (first run, or config changed since last run) or quietly. Configure
     // is called on every refreshjASTERIX (i.e. once per analyze line) - full per-cat

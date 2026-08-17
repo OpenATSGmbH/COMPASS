@@ -1,0 +1,52 @@
+{
+    "name":"cat021_spf_aireon",
+    "type":"SimpleSpecialPurposeField",
+    "items":[
+        {
+            "name":"MsgID",
+            "comment":"Message Identifier",
+            "type":"fixed_bytes",
+            "length":3,
+            "data_type":"uint",
+            "lsb":1.0
+        },
+        {
+            "name":"SatVID",
+            "comment":"Satellite Vehicle Identifier",
+            "type":"fixed_bytes",
+            "length":1,
+            "data_type":"uint",
+            "lsb":1.0
+        },
+        {
+            "name":"Validation",
+            "type":"fixed_bitfield",
+            "length":2,
+            "items":[
+                {
+                    "name":"VDist",
+                    "comment":"Validation Distance (NM)",
+                    "type":"fixed_bits",
+                    "start_bit":9,
+                    "bit_length":7,
+                    "lsb":0.1
+                },
+                {
+                    "name":"ValidState",
+                    "comment":"0 Unknown\n1 Report invalid\n2 Reserved\n3 Report valid",
+                    "type":"fixed_bits",
+                    "start_bit":7,
+                    "bit_length":2
+                },
+                {
+                    "name":"VRadius",
+                    "comment":"Validation Radius (NM)",
+                    "type":"fixed_bits",
+                    "start_bit":0,
+                    "bit_length":7,
+                    "lsb":0.1
+                }
+            ]
+        }
+    ]
+}

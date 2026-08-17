@@ -61,7 +61,7 @@ DBContent::DBContent(nlohmann::json& config, DBContentManager* parent)
     registerParameter("contains_target_reports", &contains_target_reports_, contains_target_reports_);
 
     if (name_ == "CAT002" || name_ == "CAT010" || name_ == "CAT019" || name_ == "CAT023" ||
-        name_ == "CAT034" || name_ == "CAT063" || name_ == "CAT065")
+        name_ == "CAT025" || name_ == "CAT034" || name_ == "CAT063" || name_ == "CAT065")
     {
         contains_status_content_ = true;
     }

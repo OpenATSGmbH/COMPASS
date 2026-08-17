@@ -27,6 +27,7 @@ The categories COMPASS supports (`data/jasterix_definitions/categories/categorie
 | 020 | MLAT target reports | one report per MLAT update |
 | 021 | **ADS-B target reports** | air-derived position/velocity from Mode S ES |
 | 023 | CNS/ATM ground station status | ADS-B/VDL ground station health |
+| 025 | CNS/ATM ground system status | service/system status of a ground system (e.g. MLAT, ADS-B) - imported as status-only DBContent |
 | 034 | **Monoradar service messages** (sector crossings, north markers, status) | the sibling of 048 |
 | 048 | **Monoradar target reports** (PSR/SSR/Mode S) | one plot per radar return - the workhorse |
 | 062 | **System track messages** (multi-sensor tracker output, e.g. ARTAS) | smoothed tracks fused from many sensors |
@@ -354,6 +355,7 @@ The original EUROCONTROL specification PDFs are kept locally under `~/Nextcloud/
 | 010 | 1.1 (March 2007) | `010/cat010-asterix-monoradar-surface-movement-data-part-7.pdf` |
 | 020 | 1.8 (December 2010) | `020/cat020-asterix-p14-v1.8-20101201.pdf` |
 | 020 REF | 1.3 (April 2010) | `020/asterix-cat020-appendix-a-coding-rule-for-reserved-expansion-field-part14-v1.2-042010.pdf` |
+| 025 | 1.5 (July 2021) | `025/eurocontrol-asterix-cat025-pt26-ed15.pdf` (1.1 in `025/20151015-asterix-cat025-part26-v1.1.pdf`) |
 | 021 | 2.6 | `021/asterix-adsbtr-cat021-part12-v2-6.pdf` |
 | 048 | 1.28 | `048/eurocontrol-cat048-pt4-ed128.pdf` |
 | 062 | 1.21 | `062/asterix-cat062-system-track-data-p9-ed1-21.pdf` |

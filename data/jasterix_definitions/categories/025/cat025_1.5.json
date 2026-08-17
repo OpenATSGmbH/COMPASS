@@ -1,0 +1,405 @@
+{
+    "name":"cat025_1.5_record",
+    "type":"record",
+    "field_specification":{
+        "name":"FSPEC",
+        "type":"extendable_bits",
+        "reverse_bits":true,
+        "data_type":"bitfield"
+    },
+    "uap":[
+        "010",
+        "000",
+        "200",
+        "015",
+        "020",
+        "070",
+        "100",
+        "FX",
+        "105",
+        "120",
+        "140",
+        "SP",
+        "600",
+        "610",
+        "-",
+        "FX"
+    ],
+    "items":[
+        {
+            "number":"000",
+            "name":"Report Type",
+            "comment":"This Data Item allows for a more convenient handling of the reports at the receiver side by further defining the type of transaction.",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"Report Type",
+                    "type":"fixed_bitfield",
+                    "length":1,
+                    "items":[
+                        {
+                            "name":"Report Type",
+                            "comment":"Report Type\n1 Service and System Status report\n2 Component Status report\n3 Service Statistics report",
+                            "type":"fixed_bits",
+                            "start_bit":1,
+                            "bit_length":7
+                        },
+                        {
+                            "name":"RG",
+                            "comment":"Cat 025 Report Generation\n0 Periodic Report\n1 Event Driven Report",
+                            "type":"fixed_bits",
+                            "start_bit":0,
+                            "bit_length":1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number":"010",
+            "name":"Data Source Identifier",
+            "comment":"Identification of the Ground System from which the data is received.",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"SAC",
+                    "comment":"System Area Code",
+                    "type":"fixed_bytes",
+                    "length":1,
+                    "data_type":"uint"
+                },
+                {
+                    "name":"SIC",
+                    "comment":"System Identification Code",
+                    "type":"fixed_bytes",
+                    "length":1,
+                    "data_type":"uint"
+                }
+            ]
+        },
+        {
+            "number":"015",
+            "name":"Service Identification",
+            "comment":"Identifies the service being reported.",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"SID",
+                    "comment":"Service Identification",
+                    "type":"fixed_bytes",
+                    "length":1,
+                    "data_type":"uint"
+                }
+            ]
+        },
+        {
+            "number":"020",
+            "name":"Service Designator",
+            "comment":"Designator of the service being reported.",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"Service Designator",
+                    "comment":"",
+                    "type":"fixed_bitfield",
+                    "length":6,
+                    "items":[
+                       {
+                           "name":"Service Designator",
+                           "comment":"",
+                           "type":"fixed_bits",
+                           "data_type":"icao_characters",
+                           "start_bit":0,
+                           "bit_length":48,
+                           "num_characters":8,
+                           "character_bit_length":6
+                       }
+                    ]
+                }
+            ]
+        },
+        {
+            "number":"070",
+            "name":"Time of Day",
+            "comment":"Absolute time stamping expressed as UTC time.",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"Time of Day",
+                    "comment":"",
+                    "type":"fixed_bytes",
+                    "length":3,
+                    "data_type":"uint",
+                    "lsb":0.0078125
+                }
+            ]
+        },
+        {
+            "number":"100",
+            "name":"System and Service Status",
+            "comment":"Information concerning the status of Service Volume.",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"System and Service Status",
+                    "type":"fixed_bitfield",
+                    "length":1,
+                    "items":[
+                        {
+                            "name":"NOGO",
+                            "comment":"Operational Release Status of the Data\n0 Data is released for operational use\n1 Data must not be used operationally",
+                            "type":"fixed_bits",
+                            "start_bit":7,
+                            "bit_length":1
+                        },
+                        {
+                            "name":"OPS",
+                            "comment":"Operational Service Mode\n0 Operational\n1 Operational but in Standby\n2 Maintenance\n3 reserved for future use",
+                            "type":"fixed_bits",
+                            "start_bit":5,
+                            "bit_length":2
+                        },
+                        {
+                            "name":"SSTAT",
+                            "comment":"System and Service State\n0 Running\n1 Failed\n2 Degraded\n3 Undefined\n4-15 reserved for future use",
+                            "type":"fixed_bits",
+                            "start_bit":1,
+                            "bit_length":4
+                        },
+                        {
+                            "name":"FX",
+                            "comment":"Field extension indicator\n0 No extension\n1 Extension",
+                            "type":"fixed_bits",
+                            "start_bit":0,
+                            "bit_length":1
+                        }
+                    ]
+                },
+                {
+                    "name":"System and Service Status First Extension",
+                    "comment":"Detailed System and Service Status",
+                    "type":"fixed_bitfield",
+                    "length":1,
+                    "optional":true,
+                    "optional_variable_name":"FX",
+                    "optional_variable_value":1,
+                    "items":[
+                        {
+                            "name":"SPARE",
+                            "comment":"Spare bit set to 0",
+                            "type":"fixed_bits",
+                            "start_bit":7,
+                            "bit_length":1
+                        },
+                        {
+                            "name":"SySTAT",
+                            "comment":"System Status\n0 Running / OK\n1 Failed\n2 Degraded\n3 Undefined\n4-7 reserved for future use",
+                            "type":"fixed_bits",
+                            "start_bit":4,
+                            "bit_length":3
+                        },
+                        {
+                            "name":"SeSTAT",
+                            "comment":"Service Performance Status\n0 OK\n1 Failed\n2 Degraded\n3 Undefined\n4-7 reserved for future use",
+                            "type":"fixed_bits",
+                            "start_bit":1,
+                            "bit_length":3
+                        },
+                        {
+                            "name":"FX2",
+                            "comment":"Field extension indicator\n0 No extension\n1 Extension",
+                            "type":"fixed_bits",
+                            "start_bit":0,
+                            "bit_length":1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number":"105",
+            "name":"System and Service Error Codes",
+            "comment":"Error Status of the System and the Service.",
+            "type":"item",
+            "data_fields":[
+               {
+                  "name":"System and Service Error Codes",
+                  "type":"repetitive",
+                  "repetition_item":{
+                      "name":"REP",
+                      "type":"fixed_bytes",
+                      "length":1,
+                      "data_type":"uint"
+                  },
+                  "items":[
+                      {
+                          "name":"ERR",
+                          "comment":"0 No error detected\n1 Error Code Undefined\n2 Time Source Invalid\n3 Time Source Coasting\n4 Track ID numbering has restarted\n5 Data Processor Overload\n6 Ground Interface Data Communications Overload\n7 System stopped by operator\n8 CBIT failed\n9 Test Target Failure\n10-31 Reserved for allocation by the AMG\n32-255 Reserved for allocation by system manufacturers",
+                          "type":"fixed_bytes",
+                          "length":1,
+                          "data_type":"uint"
+                      }
+                  ]
+               }
+            ]
+        },
+        {
+            "number":"120",
+            "name":"Component Status",
+            "comment":"Indications of status of various system components and, when applicable, error codes.",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"Component Status",
+                    "type":"repetitive",
+                    "repetition_item":{
+                        "name":"REP",
+                        "type":"fixed_bytes",
+                        "length":1,
+                        "data_type":"uint"
+                    },
+                    "items":[
+                        {
+                            "name":"Component Status",
+                            "type":"fixed_bitfield",
+                            "length":3,
+                            "items":[
+                                {
+                                    "name":"CID",
+                                    "comment":"Component ID",
+                                    "type":"fixed_bits",
+                                    "start_bit":8,
+                                    "bit_length":16
+                                },
+                                {
+                                    "name":"Error Code",
+                                    "comment":"0 No Error Detected\n1 Error Code Undefined\n2-15 Reserved for allocation by the AMG\n16-63 Reserved for allocation by system manufacturers",
+                                    "type":"fixed_bits",
+                                    "start_bit":2,
+                                    "bit_length":6
+                                },
+                                {
+                                    "name":"CS",
+                                    "comment":"Component State\n0 Running\n1 Failed\n2 Maintenance\n3 reserved",
+                                    "type":"fixed_bits",
+                                    "start_bit":0,
+                                    "bit_length":2
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number":"140",
+            "name":"Service Statistics",
+            "comment":"Statistics concerning the service. Provides counts of various message types that have been received since the report was last sent.",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"Service Statistics",
+                    "type":"repetitive",
+                    "repetition_item":{
+                        "name":"REP",
+                        "type":"fixed_bytes",
+                        "length":1,
+                        "data_type":"uint"
+                    },
+                    "items":[
+                        {
+                            "name":"service_statistics",
+                            "type":"fixed_bitfield",
+                            "length":6,
+                            "items":[
+                                {
+                                    "name":"TYPE",
+                                    "comment":"0 Number of unknown messages received\n1 Number of 'too old' messages received\n2 Number of failed message conversions\n3 Total Number of messages received\n4 Total number of messages transmitted\n5-19 Reserved for AMG\n20 or greater implementation specific",
+                                    "type":"fixed_bits",
+                                    "start_bit":40,
+                                    "bit_length":8
+                                },
+                                {
+                                    "name":"REF",
+                                    "comment":"0 From UTC midnight\n1 From the previous report",
+                                    "type":"fixed_bits",
+                                    "start_bit":39,
+                                    "bit_length":1
+                                },
+                                {
+                                    "name":"SPARE",
+                                    "comment":"Spare bits set to 0",
+                                    "type":"fixed_bits",
+                                    "start_bit":32,
+                                    "bit_length":7
+                                },
+                                {
+                                    "name":"COUNTER",
+                                    "comment":"32-bit counter value",
+                                    "type":"fixed_bits",
+                                    "start_bit":0,
+                                    "bit_length":32
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "number":"200",
+            "name":"Message Identification",
+            "comment":"Identification of a unique message",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"Message Identification Number",
+                    "comment":"",
+                    "type":"fixed_bytes",
+                    "length":3,
+                    "data_type":"uint"
+                }
+            ]
+        },
+        {
+            "number":"600",
+            "name":"Position of the System Reference Point",
+            "comment":"Position of the reference point in WGS-84 Coordinates.",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"Latitude",
+                    "comment":"In WGS-84 in two's complement.\nRange -90 <= latitude < 90 deg.\nLSB 180/2^32 degrees",
+                    "type":"fixed_bytes",
+                    "length":4,
+                    "data_type":"int",
+                    "lsb":4.190951585769653e-08
+                },
+                {
+                    "name":"Longitude",
+                    "comment":"In WGS-84 in two's complement.\nRange -180 <= longitude < 180 deg.\nLSB 360/2^32 degrees",
+                    "type":"fixed_bytes",
+                    "length":4,
+                    "data_type":"int",
+                    "lsb":8.381903171539307e-08
+                }
+            ]
+        },
+        {
+            "number":"610",
+            "name":"Height of the System Reference Point",
+            "comment":"Height of the system reference point in two's complement form. The height shall use mean sea level as the zero reference level.\nShall only be sent together with item I025/600.",
+            "type":"item",
+            "data_fields":[
+                {
+                    "name":"Height",
+                    "comment":"Height (WGS-84) above MSL\nLSB 0.25 m\nRange -8192 m to +8191.75 m",
+                    "type":"fixed_bytes",
+                    "length":2,
+                    "data_type":"int",
+                    "lsb":0.25
+                }
+            ]
+        }
+    ]
+}

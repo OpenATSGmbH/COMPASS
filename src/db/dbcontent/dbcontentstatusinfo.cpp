@@ -78,6 +78,7 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
         // cat010: 002 Start of Update Cycle
         // cat019: 001 Start of Update Cycle
         // cat023: ?
+        // cat025: no scan-cycle semantics (service/system status reports)
         // cat034: 001 North marker message;002 Sector crossing message;
         // cat065: 002 End of Batch, I020 Batch Number
 
@@ -90,6 +91,8 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
         else if (dbcontent_name == "CAT019")
             message_type_cycle = 1;
         else if (dbcontent_name == "CAT023")
+            continue;
+        else if (dbcontent_name == "CAT025")
             continue;
         else if (dbcontent_name == "CAT034")
             message_type_cycle = 1;

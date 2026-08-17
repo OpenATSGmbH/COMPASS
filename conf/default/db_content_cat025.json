@@ -1,0 +1,500 @@
+{
+    "class_name": "DBContent",
+    "instance_name": "CAT025",
+    "parameters": {
+        "contains_status_content": true,
+        "contains_target_reports": false,
+        "db_table_name": "data_cat025",
+        "id": 25,
+        "info": "",
+        "name": "CAT025"
+    },
+    "sub_configs": [
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable1",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "report_type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "1 Service and System Status report\n2 Component Status report\n3 Service Statistics report",
+                "dimension": "",
+                "is_key": false,
+                "name": "Report Type",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/000.Report Type",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable2",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "rg",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Report Generation\n0 Periodic Report\n1 Event Driven Report",
+                "dimension": "",
+                "is_key": false,
+                "name": "RG",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/000.RG",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable3",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sac",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Area Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SAC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/010.SAC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable4",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sic",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Identification Code",
+                "dimension": "",
+                "is_key": false,
+                "name": "SIC",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/010.SIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable5",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "message_identification",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Identification of a unique message",
+                "dimension": "",
+                "is_key": false,
+                "name": "Message Identification",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/200.Message Identification Number",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable6",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sid",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Service Identification, allocated by the system",
+                "dimension": "",
+                "is_key": false,
+                "name": "SID",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/015.SID",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable7",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "service_designator",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Designator of the service being reported, 8 characters",
+                "dimension": "",
+                "is_key": false,
+                "name": "Service Designator",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/020.Service Designator",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable8",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "time_of_day",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Absolute time stamping expressed as UTC time",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Time of Day",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "source": "I025/070.Time of Day",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable9",
+            "parameters": {
+                "data_type_str": "BOOL",
+                "db_column_name": "nogo",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Operational Release Status of the Data\n0 Data is released for operational use\n1 Data must not be used operationally",
+                "dimension": "",
+                "is_key": false,
+                "name": "NOGO",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/100.NOGO",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable10",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "ops",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Operational Service Mode\n0 Operational\n1 Operational but in Standby\n2 Maintenance\n3 reserved for future use",
+                "dimension": "",
+                "is_key": false,
+                "name": "OPS",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/100.OPS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable11",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sstat",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System and Service State\n0 Running\n1 Failed\n2 Degraded\n3 Undefined\n4-15 reserved for future use",
+                "dimension": "",
+                "is_key": false,
+                "name": "SSTAT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/100.SSTAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable12",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "systat",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "System Status (first extension, edition 1.3+)\n0 Running / OK\n1 Failed\n2 Degraded\n3 Undefined\n4-7 reserved for future use",
+                "dimension": "",
+                "is_key": false,
+                "name": "SySTAT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/100.SySTAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable13",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "sestat",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Service Performance Status (first extension, edition 1.3+)\n0 OK\n1 Failed\n2 Degraded\n3 Undefined\n4-7 reserved for future use",
+                "dimension": "",
+                "is_key": false,
+                "name": "SeSTAT",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/100.SeSTAT",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable14",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "error_codes",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Error Status of the System and the Service\n0 No error detected\n1 Error Code Undefined\n2 Time Source Invalid\n3 Time Source Coasting\n4 Track ID numbering has restarted\n5 Data Processor Overload\n6 Ground Interface Data Communications Overload\n7 System stopped by operator\n8 CBIT failed\n9 Test Target Failure\n10-31 Reserved for allocation by the AMG\n32-255 Reserved for allocation by system manufacturers",
+                "dimension": "",
+                "is_key": false,
+                "name": "Error Codes",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/105.System and Service Error Codes.ERR",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable15",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "component_ids",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Component IDs of the reported system components",
+                "dimension": "",
+                "is_key": false,
+                "name": "Component IDs",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/120.Component Status.CID",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable16",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "component_error_codes",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Component error codes\n0 No Error Detected\n1 Error Code Undefined\n2-15 Reserved for allocation by the AMG\n16-63 Reserved for allocation by system manufacturers",
+                "dimension": "",
+                "is_key": false,
+                "name": "Component Error Codes",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/120.Component Status.Error Code",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable17",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "component_states",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Component States\n0 Running\n1 Failed\n2 Maintenance\n3 reserved",
+                "dimension": "",
+                "is_key": false,
+                "name": "Component States",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/120.Component Status.CS",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable18",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "counter_type",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Type of the service statistics counter\n0 Number of unknown messages received\n1 Number of 'too old' messages received\n2 Number of failed message conversions\n3 Total Number of messages received\n4 Total number of messages transmitted\n5-19 Reserved for AMG\n20 or greater implementation specific",
+                "dimension": "",
+                "is_key": false,
+                "name": "Counter Type",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/140.Service Statistics.TYPE",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable19",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "counter_ref",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Reference from which the messages are counted\n0 From UTC midnight\n1 From the previous report",
+                "dimension": "",
+                "is_key": false,
+                "name": "Counter Ref",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/140.Service Statistics.REF",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable20",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "counter_value",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "32-bit counter value",
+                "dimension": "",
+                "is_key": false,
+                "name": "Counter Value",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/140.Service Statistics.COUNTER",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable21",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "reference_point_latitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Latitude of the system reference point in WGS-84, degrees (edition 1.2+)",
+                "dimension": "",
+                "is_key": false,
+                "name": "Reference Point Latitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/600.Latitude",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable22",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "reference_point_longitude",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Longitude of the system reference point in WGS-84, degrees (edition 1.2+)",
+                "dimension": "",
+                "is_key": false,
+                "name": "Reference Point Longitude",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/600.Longitude",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variable23",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "reference_point_height",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Height of the system reference point above MSL, meters (edition 1.2+)",
+                "dimension": "",
+                "is_key": false,
+                "name": "Reference Point Height",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "I025/610.Height",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableTimestamp0",
+            "parameters": {
+                "data_type_str": "TIMESTAMP",
+                "db_column_name": "timestamp",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Epoch timestamp computed from Time of Day plus the resolved calendar date (handles midnight wrap).",
+                "dimension": "",
+                "is_key": false,
+                "name": "Timestamp",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Calculated from Time of Day, calendar date",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variableds_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "ds_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Data Source Identifier (bit-packed SAC/SIC)",
+                "dimension": "",
+                "is_key": false,
+                "name": "DS ID",
+                "representation_str": "DATA_SRC_NAME",
+                "short_name": "",
+                "source": "Calculated from I025/010.SAC, I025/010.SIC",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variableline_id0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "line_id",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Communication line ID determining the origin of the record.",
+                "dimension": "",
+                "is_key": false,
+                "name": "Line ID",
+                "representation_str": "LINE_NAME",
+                "short_name": "",
+                "source": "Internal: import line/source identifier",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "Variablerec_num0",
+            "parameters": {
+                "data_type_str": "ULONGINT",
+                "db_column_name": "record_number",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Unique record id starting with 0 on every new recording.",
+                "dimension": "",
+                "is_key": true,
+                "name": "Record Number",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Internal: ascending record number assigned at import",
+                "unit": ""
+            }
+        }
+    ]
+}
