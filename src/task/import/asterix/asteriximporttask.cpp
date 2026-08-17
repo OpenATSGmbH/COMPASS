@@ -1942,6 +1942,8 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
         file_progress_dialog_->setWindowModality(Qt::ApplicationModal);
         file_progress_dialog_->setAutoClose(false);
         file_progress_dialog_->setAutoReset(false);
+        // do not steal os focus from other applications when popping up
+        file_progress_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
 
         // wrapping label with a bounded width: long recording paths otherwise
         // stretch the dialog to the longest filename (the status table inserts break

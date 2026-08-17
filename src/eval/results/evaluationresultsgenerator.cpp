@@ -126,6 +126,8 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
     postprocess_dialog.setWindowTitle("Evaluating");
     postprocess_dialog.setCancelButton(nullptr);
     postprocess_dialog.setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    postprocess_dialog.setAttribute(Qt::WA_ShowWithoutActivating, true);
 
     QLabel* progress_label = new QLabel("", &postprocess_dialog);
     progress_label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -469,6 +471,8 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     dlg.setCancelButton(nullptr);
     dlg.setWindowModality(Qt::ApplicationModal);
     dlg.setMinimumWidth(500);
+    // do not steal os focus from other applications when popping up
+    dlg.setAttribute(Qt::WA_ShowWithoutActivating, true);
     dlg.show();
 
     auto& task_manager = calculator_.manager().compass().taskManager();

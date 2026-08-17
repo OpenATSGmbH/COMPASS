@@ -75,6 +75,8 @@ void LoadController::begin(const LoadOperation& op)
     dialog_ = new QProgressDialog("Loading data...", "Cancel", 0, 100,
                                   QApplication::activeWindow());
     dialog_->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
     // deferred native show: with a value-driven dialog Qt arms the minimum-duration
     // timer on the first setValue and shows once it elapsed - a load finishing faster
     // never flashes the dialog. setValue(0) arms it right here; the force-show timer
@@ -207,6 +209,8 @@ void LoadController::beginViewProcessing()
     busy_dialog_ = new QProgressDialog("Updating views...", QString(), 0, 0,
                                        QApplication::activeWindow());
     busy_dialog_->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    busy_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
     busy_dialog_->setCancelButton(nullptr);
     busy_dialog_->setMinimumDuration(0); // shown explicitly below
     busy_dialog_->setAutoClose(false);

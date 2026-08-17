@@ -138,6 +138,8 @@ void RadarPlotPositionCalculatorTask::run()
     msg_box_->setWindowTitle("Calculating Radar Plot Positions");
     msg_box_->setText(msg.c_str());
     msg_box_->setStandardButtons(QMessageBox::NoButton);
+    // do not steal os focus from other applications when popping up
+    msg_box_->setAttribute(Qt::WA_ShowWithoutActivating, true);
     msg_box_->show();
 
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -227,6 +229,8 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
         msg = "Writing object data";
         msg_box_->setText(msg.c_str());
         msg_box_->setStandardButtons(QMessageBox::NoButton);
+        // do not steal os focus from other applications when popping up
+        msg_box_->setAttribute(Qt::WA_ShowWithoutActivating, true);
         msg_box_->show();
 
         logdbg << "writing size " << buffers_size;
@@ -282,6 +286,8 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
         msg_box_->setWindowTitle("Calculating Radar Plot Positions");
         msg_box_->setText("Writing of object data done.");
         msg_box_->setStandardButtons(QMessageBox::Ok);
+        // do not steal os focus from other applications when popping up
+        msg_box_->setAttribute(Qt::WA_ShowWithoutActivating, true);
 
         if (allow_user_interactions_)
             msg_box_->exec();

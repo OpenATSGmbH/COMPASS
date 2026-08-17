@@ -66,6 +66,8 @@ bool waitDialogAsync(const std::function<bool()>& task,
     dialog.setWindowTitle(QString::fromStdString(task_name));
     dialog.setCancelButton(nullptr);
     dialog.setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    dialog.setAttribute(Qt::WA_ShowWithoutActivating, true);
 
     QLabel* progress_label = new QLabel("", &dialog);
     progress_label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);

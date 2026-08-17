@@ -772,14 +772,14 @@ void AnalyzeDataSourceTask::run()
     status_dialog->setMinimumWidth(420);
     status_dialog->setAutoClose(false);
     status_dialog->setAutoReset(false);
+    // do not steal os focus from other applications when popping up
+    status_dialog->setAttribute(Qt::WA_ShowWithoutActivating, true);
 
     QLabel* status_label = new QLabel("", status_dialog.get());
     status_label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     status_dialog->setLabel(status_label);
     status_dialog->setValue(0);
     status_dialog->show();
-    status_dialog->raise();
-    status_dialog->activateWindow();
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 

@@ -240,6 +240,8 @@ AsyncTaskDialog::AsyncTaskDialog(AsyncTask* task,
 
     setWindowTitle(task_->title());
     setMinimumWidth(500);
+    // do not steal os focus from other applications when popping up
+    setAttribute(Qt::WA_ShowWithoutActivating, true);
 
     createUI();
     updateState();
