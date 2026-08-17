@@ -18,6 +18,7 @@
 #include "createartasassociationstask.h"
 
 #include "compass.h"
+#include "dialogs.h"
 #include "createartasassociationstaskdialog.h"
 #include "createartasassociationsstatusdialog.h"
 #include "dbinterface.h"
@@ -206,7 +207,8 @@ void CreateARTASAssociationsTask::run()
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
     traced_assert(!status_dialog_);
-    status_dialog_.reset(new CreateARTASAssociationsStatusDialog(*this));
+    // parented to the main window so the dialog is centered over it
+    status_dialog_.reset(new CreateARTASAssociationsStatusDialog(*this, Dialogs::statusDialogParent()));
     connect(status_dialog_.get(), &CreateARTASAssociationsStatusDialog::closeSignal, this,
             &CreateARTASAssociationsTask::closeStatusDialogSlot);
     status_dialog_->markStartTime();

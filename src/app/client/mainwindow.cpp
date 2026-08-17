@@ -1282,7 +1282,8 @@ void MainWindow::autoResumeTimerSlot()
 
     traced_assert(!auto_resume_dialog_);
 
-    auto_resume_dialog_.reset(new AutoResumeDialog(compass_.autoLiveRunningResumeAskWaitTime() * 60));
+    // parented to the main window so the dialog is centered over it
+    auto_resume_dialog_.reset(new AutoResumeDialog(compass_.autoLiveRunningResumeAskWaitTime() * 60, this));
 
             // min to s
     connect (auto_resume_dialog_.get(), &AutoResumeDialog::resumeSignal, this, &MainWindow::autoResumeResumeSlot);

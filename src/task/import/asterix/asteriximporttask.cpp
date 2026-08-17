@@ -16,6 +16,7 @@
  */
 
 #include "asteriximporttask.h"
+#include "dialogs.h"
 #include "asteriximportprobeaggregator.h"
 #include "asterixnetworkreplaysender.h"
 #include "asterixreporthelpers.h"
@@ -1957,7 +1958,7 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
     {
         file_progress_dialog_.reset(
             new QProgressDialog(("Files '" + source_.filesAsString() + "'").c_str(), "Abort", 0, 100,
-                                QApplication::activeWindow()));
+                                Dialogs::statusDialogParent()));
         file_progress_dialog_->setWindowTitle("Importing ASTERIX Recording(s)");
         file_progress_dialog_->setWindowModality(Qt::ApplicationModal);
         file_progress_dialog_->setAutoClose(false);

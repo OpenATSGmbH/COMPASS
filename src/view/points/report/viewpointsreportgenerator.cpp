@@ -17,6 +17,7 @@
 
 #include "viewpointsreportgenerator.h"
 #include "viewpointsreportgeneratordialog.h"
+#include "dialogs.h"
 #include "viewmanager.h"
 #include "view.h"
 #include "viewpointswidget.h"
@@ -101,7 +102,10 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, Vie
 ViewPointsReportGeneratorDialog& ViewPointsReportGenerator::dialog()
 {
     if (!dialog_)
-        dialog_.reset(new ViewPointsReportGeneratorDialog(*this));
+    {
+        // parented to the main window so the dialog is centered over it
+        dialog_.reset(new ViewPointsReportGeneratorDialog(*this, Dialogs::statusDialogParent()));
+    }
 
     return *dialog_;
 }

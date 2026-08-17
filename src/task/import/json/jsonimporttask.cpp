@@ -16,6 +16,7 @@
  */
 
 #include "jsonimporttask.h"
+#include "dialogs.h"
 #include "compass.h"
 #include "buffer.h"
 #include "dbinterface.h"
@@ -890,7 +891,7 @@ void JSONImportTask::updateMsgBox()
 
     if (!msg_box_)
     {
-        msg_box_.reset(new QMessageBox(QApplication::activeWindow()));
+        msg_box_.reset(new QMessageBox(Dialogs::statusDialogParent()));
 
         loginf << "creating";
 

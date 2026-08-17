@@ -16,6 +16,7 @@
  */
 
 #include "async.h"
+#include "dialogs.h"
 #include "stringconv.h"
 #include "logger.h"
 #include "traced_assert.h"
@@ -62,7 +63,7 @@ bool waitDialogAsync(const std::function<bool()>& task,
 
     start_time = boost::posix_time::microsec_clock::local_time();
 
-    QProgressDialog dialog("", "", 0, steps, QApplication::activeWindow());
+    QProgressDialog dialog("", "", 0, steps, Dialogs::statusDialogParent());
     dialog.setWindowTitle(QString::fromStdString(task_name));
     dialog.setCancelButton(nullptr);
     dialog.setWindowModality(Qt::ApplicationModal);

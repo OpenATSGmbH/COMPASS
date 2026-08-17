@@ -22,6 +22,7 @@
 #include "dbcontent/dbcontentdataengine.h"
 #include "dbcontent/dbcontentdataset.h"
 #include "dbcontent/loadoperation.h"
+#include "dialogs.h"
 #include "logger.h"
 
 #include <QApplication>
@@ -73,7 +74,7 @@ void LoadController::begin(const LoadOperation& op)
         return; // nothing to load: wait cursor only
 
     dialog_ = new QProgressDialog("Loading data...", "Cancel", 0, 100,
-                                  QApplication::activeWindow());
+                                  Dialogs::statusDialogParent());
     dialog_->setWindowModality(Qt::ApplicationModal);
     // do not steal os focus from other applications when popping up
     dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
@@ -207,7 +208,7 @@ void LoadController::beginViewProcessing()
     // indeterminate and modal: the point is blocking user interaction while workers
     // read view state, the bar itself is secondary
     busy_dialog_ = new QProgressDialog("Updating views...", QString(), 0, 0,
-                                       QApplication::activeWindow());
+                                       Dialogs::statusDialogParent());
     busy_dialog_->setWindowModality(Qt::ApplicationModal);
     // do not steal os focus from other applications when popping up
     busy_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
