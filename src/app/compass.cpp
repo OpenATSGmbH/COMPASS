@@ -641,10 +641,12 @@ bool COMPASS::createNewDBFileFromMemory()
     msg_box->setText("Please wait ...");
     msg_box->setStandardButtons(QMessageBox::NoButton);
     msg_box->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    msg_box->setAttribute(Qt::WA_ShowWithoutActivating, true);
     msg_box->show();
 
     Async::waitAndProcessEventsFor(50);
-        
+
     auto result = createNewDBFileFromMemoryInternal();
 
     //@TODO: filename should be set as last path?
@@ -699,6 +701,8 @@ bool COMPASS::exportDBFile(const std::string& filename)
     msg_box->setText("Please wait ...");
     msg_box->setStandardButtons(QMessageBox::NoButton);
     msg_box->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    msg_box->setAttribute(Qt::WA_ShowWithoutActivating, true);
     msg_box->show();
 
     Async::waitAndProcessEventsFor(50);

@@ -1926,6 +1926,8 @@ void DataSourcesWidget::runDeleteDialog(std::function<void(DeleteDataDialog&)> p
     delete_wait_dialog_->setText("Please wait ...");
     delete_wait_dialog_->setStandardButtons(QMessageBox::NoButton);
     delete_wait_dialog_->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    delete_wait_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
     delete_wait_dialog_->show();
 
     // create and run delete job

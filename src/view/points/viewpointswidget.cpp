@@ -614,6 +614,9 @@ void ViewPointsWidget::exportPDFSlot()
     loginf;
 
     ViewPointsReportGeneratorDialog& dialog = view_manager_.viewPointsGenerator().dialog();
+    // interactive use needs focus for its inputs: clear a possibly set batch-export
+    // attribute (the dialog instance is shared with the export_view_points_report command)
+    dialog.setAttribute(Qt::WA_ShowWithoutActivating, false);
     dialog.exec();
 }
 

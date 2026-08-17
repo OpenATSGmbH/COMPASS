@@ -609,6 +609,8 @@ bool RTCommandExportViewPointsReport::run_impl()
     ViewPointsReportGenerator& gen = compass_->viewManager().viewPointsGenerator();
 
     ViewPointsReportGeneratorDialog& dialog = gen.dialog();
+    // batch export: pure progress display, do not steal os focus from other applications
+    dialog.setAttribute(Qt::WA_ShowWithoutActivating, true);
     dialog.show();
 
     QCoreApplication::processEvents();

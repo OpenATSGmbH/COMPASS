@@ -19,6 +19,7 @@
 
 #include "configurable.h"
 #include "task.h"
+#include "result.h"
 
 #include <QObject>
 
@@ -32,6 +33,9 @@ class TaskManager;
 class GPSTrailImportTaskDialog;
 class DBContent;
 class Buffer;
+
+struct AsyncTaskState;
+class AsyncTaskProgressWrapper;
 
 /**
 */
@@ -138,6 +142,7 @@ protected:
     virtual void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
 
     void parseCurrentFile ();
+    Result parseCurrentFileImpl (const AsyncTaskState& state, AsyncTaskProgressWrapper& progress);
     //void checkParsedData (); // throws exceptions for errors
 
     void updateDateFromString();

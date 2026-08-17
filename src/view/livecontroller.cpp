@@ -182,6 +182,8 @@ void LiveController::reloadWindow(const QString& title)
     msg_box.setText("Loading data ...");
     msg_box.setStandardButtons(QMessageBox::NoButton);
     msg_box.setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    msg_box.setAttribute(Qt::WA_ShowWithoutActivating, true);
     msg_box.show();
     QCoreApplication::processEvents(); // paint before the load busies the main thread
 

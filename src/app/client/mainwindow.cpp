@@ -1191,6 +1191,8 @@ void MainWindow::resetViewsMenuSlot()
         msg_box.setText( "Please wait...");
         msg_box.setStandardButtons(QMessageBox::NoButton);
         msg_box.setWindowModality(Qt::ApplicationModal);
+        // do not steal os focus from other applications when popping up
+        msg_box.setAttribute(Qt::WA_ShowWithoutActivating, true);
         msg_box.show();
 
         setVisible(false);

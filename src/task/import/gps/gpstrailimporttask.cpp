@@ -21,6 +21,7 @@
 #include "dbinterface.h"
 #include "stringconv.h"
 #include "taskmanager.h"
+#include "asynctask.h"
 #include "files.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
@@ -37,7 +38,6 @@
 #include <iomanip>
 #include <nmeaparse/nmea.h>
 
-#include <QApplication>
 #include <QMessageBox>
 
 const float tod_24h = 24 * 60 * 60;
@@ -442,10 +442,22 @@ void GPSTrailImportTask::parseCurrentFile ()
     gps_fixes_cnt_ = 0;
     gps_fixes_skipped_quality_cnt_ = 0;
     gps_fixes_skipped_time_cnt_ = 0;
+    gps_fixes_without_speedvec_ = 0;
     gps_fixes_zero_datetime_ = 0;
 
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    // parse in a background thread, the modal progress dialog keeps the GUI responsive
+    // and returns once parsing is done
+    AsyncFuncTask task([this](const AsyncTaskState& state, AsyncTaskProgressWrapper& progress)
+                       { return parseCurrentFileImpl(state, progress); },
+                       "Import GPS Trail NMEA", "Parsing NMEA file", false);
+    task.runAsyncDialog(true, nullptr);
+}
 
+/**
+*/
+Result GPSTrailImportTask::parseCurrentFileImpl (const AsyncTaskState& state,
+                                                 AsyncTaskProgressWrapper& progress)
+{
     NMEAParser parser;
     GPSService gps(parser);
     //parser.log = true;
@@ -520,6 +532,8 @@ void GPSTrailImportTask::parseCurrentFile ()
     ifstream file(current_filename_);
     unsigned int line_cnt = 0;
 
+    size_t file_size = Files::fileSize(current_filename_);
+
     while (getline(file, line))
     {
         try
@@ -540,6 +554,9 @@ void GPSTrailImportTask::parseCurrentFile ()
             // The previous data is ignored and the parser is reset.
         }
         ++line_cnt;
+
+        if (file_size > 0 && line_cnt % 10000 == 0)
+            progress.setPercent((float)file.tellg() / (float)file_size, false, true);
     }
 
     // Show the final fix information
@@ -600,7 +617,9 @@ void GPSTrailImportTask::parseCurrentFile ()
     loginf << "parsed " << gps_fixes_.size() << " fixes in "
            << line_cnt << " lines";
 
-    QApplication::restoreOverrideCursor();
+    progress.setFinished(true);
+
+    return Result::succeeded();
 }
 
 /**
