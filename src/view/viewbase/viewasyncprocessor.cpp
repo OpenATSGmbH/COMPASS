@@ -59,10 +59,18 @@ void ViewAsyncProcessor::launch(const std::string& name,
     std::shared_future<void> previous_task = chain_;
 
     task.future = std::async(std::launch::async,
-        [ this, task_id, previous_task, work = std::move(work) ] ()
+        [ this, task_id, previous_task, work = std::move(work) ] () mutable
     {
         if (previous_task.valid())
             previous_task.wait();
+
+        //release the predecessor's shared state NOW: an async state keeps its work
+        //function - including everything captured in it (e.g. buffer snapshots) -
+        //alive until the state dies. Holding the predecessor's future for this
+        //lambda's whole lifetime chains all past tasks' captures into a list that
+        //never frees (one retained dataset generation per load, see the reload
+        //memory investigation 2026-08-18)
+        previous_task = std::shared_future<void>();
 
         bool ok = true;
 
@@ -185,7 +193,13 @@ void ViewAsyncProcessor::drainOneCompletion()
     //only a firing that actually ran a completion may report all-finished: a stale
     //firing after waitForPending() cleared the queues must not emit spuriously
     if (drained && pending_.empty())
+    {
+        //idle: drop the chain anchor, else the last task's state (work function +
+        //captures) lingers until the next launch
+        chain_ = std::shared_future<void>();
+
         emit finishedSignal();
+    }
 }
 
 /**
@@ -203,4 +217,7 @@ void ViewAsyncProcessor::waitForPending()
     //queued but undrained completions die with the pending tasks - their commits
     //must not run (the owner may be shutting down)
     completed_.clear();
+
+    //see drainOneCompletion
+    chain_ = std::shared_future<void>();
 }
