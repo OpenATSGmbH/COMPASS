@@ -110,7 +110,14 @@ void LoadController::opDataChangedSlot(const std::vector<std::string>& names, bo
     value_ += 50.0 / static_cast<double>(load_total_);
     if (value_ > 50.0)
         value_ = 50.0;
+
+    // shared setValue guard - see in_set_value_ in the header
+    if (in_set_value_)
+        return;
+
+    in_set_value_ = true;
     dialog_->setValue(static_cast<int>(value_));
+    in_set_value_ = false;
 }
 
 /**
@@ -130,7 +137,19 @@ void LoadController::beginViewPhase(unsigned int num_views)
         dialog_->setLabelText("Updating views...");
     }
 
+    // shared setValue guard - see in_set_value_ in the header
+    if (in_set_value_)
+        return;
+
+    in_set_value_ = true;
     dialog_->setValue(static_cast<int>(value_));
+    in_set_value_ = false;
+
+    // the pump inside setValue may have ended the cycle (dialog_ cleared) or started
+    // the next load (a different dialog) - re-check before touching it again
+    if (!dialog_)
+        return;
+
     // synchronous paint, not processEvents() - pumping queued events here lets queued RT
     // commands fire mid view-loop and break UI-test injection
     dialog_->repaint();
@@ -152,13 +171,14 @@ void LoadController::advanceViewPhase()
     // and Qt's setValue touches the dialog again after the pump returns, so destroying
     // it in between is a use after free inside Qt. Hence: a nested advance does nothing
     // but leave its value for the outer call, and an end() arriving while we are inside
-    // setValue is deferred until we have returned from it.
-    if (in_advance_)
+    // setValue is deferred until we have returned from it. The guard is shared with the
+    // other setValue sites - see in_set_value_ in the header.
+    if (in_set_value_)
         return;
 
-    in_advance_ = true;
+    in_set_value_ = true;
     dialog_->setValue(static_cast<int>(value_));
-    in_advance_ = false;
+    in_set_value_ = false;
 
     // the pump inside setValue may have ended the cycle (dialog_ cleared) or started
     // the next load (a different dialog) - re-check before touching it again
