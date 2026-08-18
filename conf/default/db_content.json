@@ -28,6 +28,7 @@
                     "CAT062": "MOM Longitudinal Acc",
                     "RefTraj": "MOM Longitudinal Acc"
                 },
+                "group": "Movement",
                 "name": "MOM Longitudinal Acc"
             }
         },
@@ -39,6 +40,7 @@
                     "CAT062": "MOM Transversal Acc",
                     "RefTraj": "MOM Transversal Acc"
                 },
+                "group": "Movement",
                 "name": "MOM Transversal Acc"
             }
         },
@@ -50,6 +52,7 @@
                     "CAT062": "MOM Vertical Rate",
                     "RefTraj": "MOM Vertical Rate"
                 },
+                "group": "Movement",
                 "name": "MOM Vertical Rate"
             }
         },
@@ -67,6 +70,7 @@
                     "CAT034": "Message Type",
                     "CAT065": "Message Type"
                 },
+                "group": "Type",
                 "name": "Message Type"
             }
         },
@@ -78,6 +82,7 @@
                     "CAT062": "ADS-B ES Update Age",
                     "RefTraj": "ADS-B ES Update Age"
                 },
+                "group": "Ages",
                 "name": "ADS-B ES Update Age"
             }
         },
@@ -92,6 +97,7 @@
                     "CAT021": "ARTAS Hash",
                     "CAT048": "ARTAS Hash"
                 },
+                "group": "Origin",
                 "name": "ARTAS Hash"
             }
         },
@@ -107,6 +113,7 @@
                     "CAT062": "Aircraft Address",
                     "RefTraj": "Aircraft Address"
                 },
+                "group": "Secondary Identification",
                 "name": "Aircraft Address"
             }
         },
@@ -122,6 +129,7 @@
                     "CAT062": "Aircraft Identification",
                     "RefTraj": "Aircraft Identification"
                 },
+                "group": "Secondary Identification",
                 "name": "Aircraft Identification"
             }
         },
@@ -133,6 +141,7 @@
                     "CAT062": "TRI Record Numbers",
                     "RefTraj": "Associated Record Numbers"
                 },
+                "group": "Track",
                 "name": "Associated Record Numbers"
             }
         },
@@ -146,6 +155,7 @@
                     "CAT062": "Ax",
                     "RefTraj": "Ax"
                 },
+                "group": "Movement",
                 "name": "Ax"
             }
         },
@@ -159,6 +169,7 @@
                     "CAT062": "Ay",
                     "RefTraj": "Ay"
                 },
+                "group": "Movement",
                 "name": "Ay"
             }
         },
@@ -171,6 +182,7 @@
                     "CAT010": "Azimuth",
                     "CAT048": "Azimuth"
                 },
+                "group": "Position",
                 "name": "Azimuth"
             }
         },
@@ -195,6 +207,7 @@
                     "CAT065": "DS ID",
                     "RefTraj": "DS ID"
                 },
+                "group": "Origin",
                 "name": "DS ID"
             }
         },
@@ -210,6 +223,7 @@
                     "CAT048": "FFT",
                     "CAT062": "FFT LM"
                 },
+                "group": "Type",
                 "name": "FFT"
             }
         },
@@ -221,6 +235,7 @@
                     "CAT062": "Flight Level Measured Age",
                     "RefTraj": "Flight Level Measured Age"
                 },
+                "group": "Ages",
                 "name": "Flight Level Measured Age"
             }
         },
@@ -232,6 +247,7 @@
                     "CAT020": "Flight Status",
                     "CAT048": "Flight Status"
                 },
+                "group": "Secondary Identification",
                 "name": "Flight Status"
             }
         },
@@ -246,6 +262,7 @@
                     "CAT062": "Surface Target",
                     "RefTraj": "Surface Target"
                 },
+                "group": "Altitude",
                 "name": "Ground Bit"
             }
         },
@@ -256,6 +273,7 @@
                 "dbcont_variables": {
                     "CAT020": "Lat/Lon Cov"
                 },
+                "group": "Accuracy",
                 "name": "Lat/Long Cov"
             }
         },
@@ -268,6 +286,7 @@
                     "CAT062": "Latitude StdDev",
                     "RefTraj": "Latitude StdDev"
                 },
+                "group": "Accuracy",
                 "name": "Latitude StdDev"
             }
         },
@@ -284,6 +303,7 @@
                     "CAT062": "Latitude",
                     "RefTraj": "Latitude"
                 },
+                "group": "Position",
                 "name": "Latitude"
             }
         },
@@ -296,6 +316,7 @@
                     "CAT062": "Longitude StdDev",
                     "RefTraj": "Longitude StdDev"
                 },
+                "group": "Accuracy",
                 "name": "Longitude StdDev"
             }
         },
@@ -312,6 +333,7 @@
                     "CAT062": "Longitude",
                     "RefTraj": "Longitude"
                 },
+                "group": "Position",
                 "name": "Longitude"
             }
         },
@@ -323,6 +345,7 @@
                     "CAT062": "MLAT Update Age",
                     "RefTraj": "MLAT Update Age"
                 },
+                "group": "Ages",
                 "name": "MLAT Update Age"
             }
         },
@@ -335,6 +358,7 @@
                     "CAT048": "Military Emergency",
                     "CAT062": "Military Emergency"
                 },
+                "group": "Warning/Alert",
                 "name": "Military Emergency"
             }
         },
@@ -347,6 +371,7 @@
                     "CAT048": "Military Identification",
                     "CAT062": "Military Identification"
                 },
+                "group": "Secondary Identification",
                 "name": "Military Identification"
             }
         },
@@ -359,6 +384,7 @@
                     "CAT062": "Mode 3/A Age",
                     "RefTraj": "Mode 3/A Age"
                 },
+                "group": "Ages",
                 "name": "Mode 3/A Age"
             }
         },
@@ -375,6 +401,7 @@
                     "CAT062": "Mode 3/A Code",
                     "RefTraj": "Mode 3/A Code"
                 },
+                "group": "Secondary Identification",
                 "name": "Mode 3/A Code"
             }
         },
@@ -391,6 +418,7 @@
                     "CAT062": "Mode 3/A Garbled",
                     "RefTraj": "Mode 3/A Garbled"
                 },
+                "group": "Secondary Identification",
                 "name": "Mode 3/A Garbled"
             }
         },
@@ -405,6 +433,7 @@
                     "CAT021": "Mode 3/A Smoothed",
                     "CAT048": "Mode 3/A Smoothed"
                 },
+                "group": "Secondary Identification",
                 "name": "Mode 3/A Smoothed"
             }
         },
@@ -421,6 +450,7 @@
                     "CAT062": "Mode 3/A Valid",
                     "RefTraj": "Mode 3/A Valid"
                 },
+                "group": "Secondary Identification",
                 "name": "Mode 3/A Valid"
             }
         },
@@ -437,6 +467,7 @@
                     "CAT062": "Mode C Code LM",
                     "RefTraj": "Mode C Code"
                 },
+                "group": "Altitude",
                 "name": "Mode C Code"
             }
         },
@@ -452,6 +483,7 @@
                     "CAT062": "Mode C Garbled LM",
                     "RefTraj": "Mode C Garbled"
                 },
+                "group": "Altitude",
                 "name": "Mode C Garbled"
             }
         },
@@ -467,6 +499,7 @@
                     "CAT062": "Mode C Valid LM",
                     "RefTraj": "Mode C Valid"
                 },
+                "group": "Altitude",
                 "name": "Mode C Valid"
             }
         },
@@ -478,6 +511,7 @@
                     "CAT020": "Mode S Specific Service Capability",
                     "CAT048": "Mode S Specific Service Capability"
                 },
+                "group": "Secondary Identification",
                 "name": "Mode S Specific Service Capability"
             }
         },
@@ -489,6 +523,7 @@
                     "CAT062": "Mode S Update Age",
                     "RefTraj": "Mode S Update Age"
                 },
+                "group": "Ages",
                 "name": "Mode S Update Age"
             }
         },
@@ -500,6 +535,7 @@
                     "CAT062": "Sum Number Contributing Sensors",
                     "RefTraj": "Num Contributing Sensors"
                 },
+                "group": "Track",
                 "name": "Num Contributing Sensors"
             }
         },
@@ -511,6 +547,7 @@
                     "CAT062": "PSR Update Age",
                     "RefTraj": "PSR Update Age"
                 },
+                "group": "Ages",
                 "name": "PSR Update Age"
             }
         },
@@ -522,6 +559,7 @@
                     "CAT001": "RDP Chain",
                     "CAT048": "RDP Chain"
                 },
+                "group": "Origin",
                 "name": "RDP Chain"
             }
         },
@@ -534,6 +572,7 @@
                     "CAT010": "Range",
                     "CAT048": "Range"
                 },
+                "group": "Position",
                 "name": "Range"
             }
         },
@@ -558,6 +597,7 @@
                     "CAT065": "SAC",
                     "RefTraj": "SAC"
                 },
+                "group": "Origin",
                 "name": "SAC"
             }
         },
@@ -582,6 +622,7 @@
                     "CAT065": "SIC",
                     "RefTraj": "SIC"
                 },
+                "group": "Origin",
                 "name": "SIC"
             }
         },
@@ -598,6 +639,7 @@
                     "CAT062": "SPI",
                     "RefTraj": "SPI"
                 },
+                "group": "Secondary Identification",
                 "name": "SPI"
             }
         },
@@ -609,6 +651,7 @@
                     "CAT062": "SSR Update Age",
                     "RefTraj": "SSR Update Age"
                 },
+                "group": "Ages",
                 "name": "SSR Update Age"
             }
         },
@@ -622,6 +665,7 @@
                     "CAT063": "Service Identification",
                     "CAT065": "Service Identification"
                 },
+                "group": "Origin",
                 "name": "Service Identification"
             }
         },
@@ -637,6 +681,7 @@
                     "CAT048": "Simulated",
                     "CAT062": "Simulated"
                 },
+                "group": "Type",
                 "name": "Simulated"
             }
         },
@@ -651,6 +696,7 @@
                     "CAT021": "Test",
                     "CAT048": "Test"
                 },
+                "group": "Type",
                 "name": "Test"
             }
         },
@@ -675,6 +721,7 @@
                     "CAT065": "Time of Message",
                     "RefTraj": "Time of Day"
                 },
+                "group": "Time",
                 "name": "Time of Day"
             }
         },
@@ -699,6 +746,7 @@
                     "CAT065": "Timestamp",
                     "RefTraj": "Timestamp"
                 },
+                "group": "Time",
                 "name": "Timestamp"
             }
         },
@@ -710,6 +758,7 @@
                     "CAT062": "Track Age",
                     "RefTraj": "Track Age"
                 },
+                "group": "Ages",
                 "name": "Track Age"
             }
         },
@@ -726,6 +775,7 @@
                     "CAT062": "Track Angle",
                     "RefTraj": "Track Angle"
                 },
+                "group": "Movement",
                 "name": "Track Angle"
             }
         },
@@ -737,6 +787,7 @@
                     "CAT062": "Track Begin",
                     "RefTraj": "Track Begin"
                 },
+                "group": "Track",
                 "name": "Track Begin"
             }
         },
@@ -749,6 +800,7 @@
                     "CAT048": "Track Climbing/Descending",
                     "CAT062": "MOM Vertical Rate"
                 },
+                "group": "Movement",
                 "name": "Track Climbing/Descending"
             }
         },
@@ -762,6 +814,7 @@
                     "CAT062": "Coasting",
                     "RefTraj": "Coasting"
                 },
+                "group": "Track",
                 "name": "Track Coasting"
             }
         },
@@ -777,6 +830,7 @@
                     "CAT062": "Confirmed",
                     "RefTraj": "Confirmed"
                 },
+                "group": "Track",
                 "name": "Track Confirmed"
             }
         },
@@ -789,6 +843,7 @@
                     "CAT010": "Track Doubtful",
                     "CAT048": "Track Doubtful"
                 },
+                "group": "Track",
                 "name": "Track Doubtful"
             }
         },
@@ -804,6 +859,7 @@
                     "CAT062": "Track End",
                     "RefTraj": "Track End"
                 },
+                "group": "Track",
                 "name": "Track End"
             }
         },
@@ -817,6 +873,7 @@
                     "CAT020": "Track Ghost Target",
                     "CAT048": "Track Ghost Target"
                 },
+                "group": "Track",
                 "name": "Track Ghost Target"
             }
         },
@@ -833,6 +890,7 @@
                     "CAT062": "Ground Speed",
                     "RefTraj": "Ground Speed"
                 },
+                "group": "Movement",
                 "name": "Track Groundspeed"
             }
         },
@@ -846,6 +904,7 @@
                     "CAT020": "Track Horizontal Manoeuvre",
                     "CAT048": "Track Horizontal Manoeuvre"
                 },
+                "group": "Track",
                 "name": "Track Horizontal Manoeuvre"
             }
         },
@@ -862,6 +921,7 @@
                     "CAT062": "Track Number",
                     "RefTraj": "Track Number"
                 },
+                "group": "Track",
                 "name": "Track Number"
             }
         },
@@ -873,6 +933,7 @@
                     "CAT001": "Track Sensor Types",
                     "CAT048": "Track Sensor Types"
                 },
+                "group": "Track",
                 "name": "Track Sensor Types"
             }
         },
@@ -884,6 +945,7 @@
                     "CAT020": "Transponder Com. Capability",
                     "CAT048": "Transponder Com. Capability"
                 },
+                "group": "Secondary Identification",
                 "name": "Transponder Com. Capability"
             }
         },
@@ -896,6 +958,7 @@
                     "CAT048": "Type",
                     "CAT062": "Type LM"
                 },
+                "group": "Type",
                 "name": "Type"
             }
         },
@@ -912,6 +975,7 @@
                     "CAT062": "UTN",
                     "RefTraj": "UTN"
                 },
+                "group": "Track",
                 "name": "UTN"
             }
         },
@@ -925,6 +989,7 @@
                     "CAT062": "Vx",
                     "RefTraj": "Vx"
                 },
+                "group": "Movement",
                 "name": "Vx"
             }
         },
@@ -938,6 +1003,7 @@
                     "CAT062": "Vy",
                     "RefTraj": "Vy"
                 },
+                "group": "Movement",
                 "name": "Vy"
             }
         },
@@ -951,6 +1017,7 @@
                     "CAT062": "X StdDev",
                     "RefTraj": "X StdDev"
                 },
+                "group": "Accuracy",
                 "name": "X StdDev"
             }
         },
@@ -966,6 +1033,7 @@
                     "CAT062": "X",
                     "RefTraj": "X"
                 },
+                "group": "Position",
                 "name": "X"
             }
         },
@@ -979,6 +1047,7 @@
                     "CAT062": "X/Y Covariance",
                     "RefTraj": "X/Y Covariance"
                 },
+                "group": "Accuracy",
                 "name": "X/Y Covariance"
             }
         },
@@ -992,6 +1061,7 @@
                     "CAT062": "Y StdDev",
                     "RefTraj": "Y StdDev"
                 },
+                "group": "Accuracy",
                 "name": "Y StdDev"
             }
         },
@@ -1007,6 +1077,7 @@
                     "CAT062": "Y",
                     "RefTraj": "Y"
                 },
+                "group": "Position",
                 "name": "Y"
             }
         },
@@ -1031,6 +1102,7 @@
                     "CAT065": "Line ID",
                     "RefTraj": "Line ID"
                 },
+                "group": "Origin",
                 "name": "Line ID"
             }
         },
@@ -1055,6 +1127,7 @@
                     "CAT065": "Record Number",
                     "RefTraj": "Record Number"
                 },
+                "group": "Origin",
                 "name": "Record Number"
             }
         },
@@ -1067,6 +1140,7 @@
                     "CAT062": "Rate Of Climb/Descent",
                     "RefTraj": "Rate Of Climb/Descent"
                 },
+                "group": "Movement",
                 "name": "Rate Of Climb/Descent"
             }
         },
@@ -1081,6 +1155,7 @@
                     "CAT062": "X/Y StdDev Max",
                     "RefTraj": "X/Y StdDev Max"
                 },
+                "group": "Accuracy",
                 "name": "X/Y StdDev Max"
             }
         }

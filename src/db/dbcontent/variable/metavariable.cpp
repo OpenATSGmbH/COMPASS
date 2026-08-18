@@ -36,6 +36,7 @@ MetaVariable::MetaVariable(nlohmann::json& config, DBContentManager* parent)
       widget_(nullptr)
 {
     registerParameter("name", &name_, std::string());
+    registerParameter("group", &group_, std::string());
     registerParameter("dbcont_variables", &dbcont_variables_, nlohmann::json::object());
 
     traced_assert(name_.size() > 0);

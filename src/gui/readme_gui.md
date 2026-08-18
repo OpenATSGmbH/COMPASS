@@ -79,7 +79,7 @@ If you need to register a new tool, follow the existing widget classes in `src/c
 ## 1. Dialog shell
 
 - **Window title**: short, in Title Case, no trailing punctuation. Names what the dialog configures or what action it submits (e.g. "Reconstruct Reference Trajectories", "Evaluate", "Analyze MLAT Data Source").
-- **Minimum size**: at least `900 x 720`. Reports, threshold tables, and lists with long names need both the height and the width.
+- **Minimum size**: at least `900 x 720`. Reports, threshold tables, and lists with long names need both the height and the width. Stated exception: *picker dialogs* (modal dialogs whose only job is selecting an entry, e.g. the variable selection dialog) use at least `700 x 600`.
 - **Multi-page dialogs use a two-pane layout**: navigation on the left (`QTreeWidget`), `QStackedWidget` on the right, separated by a horizontal `QSplitter`.
   - `tree_->setHeaderHidden(true)` unless a header label adds information.
   - `tree_->setMinimumWidth(180)`.
@@ -341,6 +341,15 @@ Rules:
 - No abbreviated axis names ("X" alone is acceptable as an axis label inside the plot; the config widget uses the full "X Axis").
 
 For columns / ordered sets in a tabular view, use `VariableOrderedSetWidget`.
+
+Both widgets open the shared `VariableSelectionDialog` ([variableselectiondialog.h](../db/dbcontent/variable/variableselectiondialog.h)) - a modal picker with search, a content checkbox strip, and a variable tree grouped by ASTERIX data item or by variable group (`Variable::group()`). Rules for picker dialogs of this kind:
+
+- Minimum size `700 x 600` (stated exception to the `900 x 720` dialog rule).
+- Search field first (`setClearButtonEnabled(true)`), filtering recursively over all columns.
+- Bulk-selection actions live in a gear-button `PopupMenu` (`edit.png`, `UI_ICON_SIZE`, flat, menu indicator suppressed) at the **right end** of the checkbox strip row - same pattern as the Flight Deck ToolBox config button.
+- Bottom row: `[Cancel] [Select None (only when an empty selection is allowed)] -- stretch -- [Select]`; the action button is gated on a valid selection.
+- Double-click on a leaf selects and closes.
+- Grouping mode and content selection persist as `Configurable` parameters on the owning manager, not per picker instance.
 
 ### 10.7 Annotations / View Points
 

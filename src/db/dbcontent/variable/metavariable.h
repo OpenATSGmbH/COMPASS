@@ -57,6 +57,9 @@ public:
     std::string description() const;
     std::string info() const;
 
+    const std::string& group() const { return group_; }
+    void group(const std::string& group) { group_ = group; }
+
     //    std::string getMinString() const;
     //    std::string getMaxString() const;
     //    std::string getMinStringRepresentation() const;
@@ -74,6 +77,7 @@ public:
 protected:
     std::string name_;
     std::string description_;
+    std::string group_;
 
     nlohmann::json dbcont_variables_; // dbcont name -> var name
 

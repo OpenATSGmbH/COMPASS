@@ -19,7 +19,6 @@
 
 class QListWidget;
 
-#include <QMenu>
 #include <QWidget>
 
 #include "dbcontent/variable/variableorderedset.h"
@@ -40,8 +39,7 @@ public slots:
     void moveDownSlot();
 
 protected slots:
-    void triggerSlot(QAction* action);
-    void showMenuSlot();
+    void showDialogSlot();
 
 public:
     VariableOrderedSetWidget(VariableOrderedSet& set, QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());

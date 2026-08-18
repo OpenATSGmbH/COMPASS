@@ -19,9 +19,11 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/metavariable.h"
+#include "dbcontent/variable/variableselectiondialog.h"
 #include "files.h"
 #include "global.h"
 #include "rtcommand.h"
+#include "traced_assert.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -103,7 +105,7 @@ VariableOrderedSetWidget::VariableOrderedSetWidget(VariableOrderedSet& set,
         QPushButton* add_button = new QPushButton();
         add_button->setText("Add");
         connect(add_button, &QPushButton::clicked, this,
-                &VariableOrderedSetWidget::showMenuSlot);
+                &VariableOrderedSetWidget::showDialogSlot);
         button_layout->addWidget(add_button);
 
         main_layout->addLayout(button_layout);
@@ -116,81 +118,36 @@ VariableOrderedSetWidget::VariableOrderedSetWidget(VariableOrderedSet& set,
 
 VariableOrderedSetWidget::~VariableOrderedSetWidget() {}
 
-void VariableOrderedSetWidget::showMenuSlot()
+void VariableOrderedSetWidget::showDialogSlot()
 {
-    QMenu menu;
-
-    menu.setToolTipsVisible(true);
-
-    QMenu* meta_menu = menu.addMenu(META_OBJECT_NAME.c_str());
-    meta_menu->setToolTipsVisible(true);
-
-    QIcon tmp = Files::IconProvider::getIcon("db_empty.png");
-
-    QFont font_italic;
-    font_italic.setItalic(true);
-    font_italic.setWeight(QFont::Light);
-
-    for (auto& meta_it : set_.dbContentManager().metaVariables())
-    {
-        QAction* action = meta_menu->addAction(meta_it.first.c_str());
-        action->setToolTip(meta_it.second->info().c_str());
-        action->setData(QVariantMap({{meta_it.first.c_str(),QVariant(META_OBJECT_NAME.c_str())}}));
-
-        if (!meta_it.second->hasDBContent())
-        {
-            action->setFont(font_italic);
-            action->setIcon(tmp);
-        }
-    }
-
-    for (auto& object_it : set_.dbContentManager())
-    {
-        QMenu* m2 = menu.addMenu(object_it.first.c_str());
-        m2->setToolTipsVisible(true);
-
-        if (!object_it.second->hasData())
-        {
-            m2->menuAction()->setFont(font_italic);
-            m2->menuAction()->setIcon(tmp);
-        }
-
-        for (auto& var_it : object_it.second->variables())
-        {
-            QAction* action = m2->addAction(var_it.first.c_str());
-            action->setToolTip(var_it.second->info().c_str());
-            action->setData(QVariantMap({{var_it.first.c_str(), QVariant(object_it.first.c_str())}}));
-
-            if (!var_it.second->hasDBContent())
-            {
-                action->setFont(font_italic);
-                action->setIcon(tmp);
-            }
-        }
-    }
-
-    connect(&menu, &QMenu::triggered, this, &VariableOrderedSetWidget::triggerSlot);
-    menu.exec(QCursor::pos());
-}
-
-void VariableOrderedSetWidget::triggerSlot(QAction* action)
-{
-    QVariantMap vmap = action->data().toMap();
-    std::string var_name = vmap.begin().key().toStdString();
-    std::string obj_name = vmap.begin().value().toString().toStdString();
-
     DBContentManager& manager = set_.dbContentManager();
 
-    if (obj_name == META_OBJECT_NAME)
+    VariableSelectionDialog::Settings dialog_settings;
+
+    dialog_settings.show_meta_variables = true;
+    dialog_settings.multi_select = true;
+
+    VariableSelectionDialog dialog(manager, dialog_settings, this);
+
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+
+    for (const auto& sel_it : dialog.selection())
     {
-        traced_assert(manager.existsMetaVariable(var_name));
-        set_.add(manager.metaVariable(var_name));
-    }
-    else
-    {
-        traced_assert(manager.existsDBContent(obj_name));
-        traced_assert(manager.dbContent(obj_name).hasVariable(var_name));
-        set_.add(manager.dbContent(obj_name).variable(var_name));
+        const std::string& obj_name = sel_it.first;
+        const std::string& var_name = sel_it.second;
+
+        if (obj_name == META_OBJECT_NAME)
+        {
+            traced_assert(manager.existsMetaVariable(var_name));
+            set_.add(manager.metaVariable(var_name));
+        }
+        else
+        {
+            traced_assert(manager.existsDBContent(obj_name));
+            traced_assert(manager.dbContent(obj_name).hasVariable(var_name));
+            set_.add(manager.dbContent(obj_name).variable(var_name));
+        }
     }
 }
 

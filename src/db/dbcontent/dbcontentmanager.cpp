@@ -67,6 +67,9 @@ DBContentManager::DBContentManager(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass), compass_(compass)
 {
     registerParameter("show_data_counts", &show_data_counts_, false);
+    registerParameter("variable_selection_by_group", &variable_selection_by_group_, false);
+    registerParameter("variable_selection_hidden_contents", &variable_selection_hidden_contents_,
+                      nlohmann::json::array());
 
     logdbg << "creating subconfigurables";
 
@@ -1145,6 +1148,28 @@ void DBContentManager::showUTN (unsigned int utn)
 
     logdbg << "showing";
     setViewableDataConfig(data);
+}
+
+/**
+ */
+std::set<std::string> DBContentManager::variableSelectionHiddenContents() const
+{
+    std::set<std::string> hidden;
+
+    for (const auto& name : variable_selection_hidden_contents_)
+        hidden.insert(name.get<std::string>());
+
+    return hidden;
+}
+
+/**
+ */
+void DBContentManager::variableSelectionHiddenContents(const std::set<std::string>& hidden)
+{
+    variable_selection_hidden_contents_ = nlohmann::json::array();
+
+    for (const auto& name : hidden)
+        variable_selection_hidden_contents_.push_back(name);
 }
 
 /**

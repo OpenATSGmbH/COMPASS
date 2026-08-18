@@ -89,6 +89,9 @@ class Variable : public QObject, public Property, public Configurable
     const std::string& source() const { return source_; }
     void source(const std::string& source) { source_ = source; }
 
+    const std::string& group() const { return group_; }
+    void group(const std::string& group) { group_ = group; }
+
     std::string info() const;
 
     std::string dbColumnName() const;
@@ -252,6 +255,7 @@ private:
 
     std::string description_;
     std::string source_;
+    std::string group_;
 
     std::string db_column_name_;
     bool is_key_ {false};

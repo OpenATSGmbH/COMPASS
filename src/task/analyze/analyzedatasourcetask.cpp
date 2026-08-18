@@ -792,8 +792,6 @@ void AnalyzeDataSourceTask::run()
     {
         status_label->setText(QString::fromStdString(msg));
         status_dialog->setValue(step);
-        status_dialog->show();
-        status_dialog->raise();
         QCoreApplication::processEvents();
     };
 

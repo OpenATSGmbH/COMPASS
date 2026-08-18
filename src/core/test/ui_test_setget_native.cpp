@@ -142,6 +142,8 @@ nlohmann::json getUIElementNativeJSON(QWidget* parent,
         return {};
 
     TRY_INVOKE_UI_GETTER_JSON(QLabel, w.second, what)
+    TRY_INVOKE_UI_GETTER_JSON(QTreeView, w.second, what)
+    TRY_INVOKE_UI_GETTER_JSON(QMenu, w.second, what)
     TRY_INVOKE_UI_GETTER_JSON(QMenuBar, w.second, what)
     TRY_INVOKE_UI_GETTER_JSON(QComboBox, w.second, what)
     TRY_INVOKE_UI_GETTER_JSON(QTabWidget, w.second, what)

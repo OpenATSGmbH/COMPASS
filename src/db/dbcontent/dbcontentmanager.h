@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <memory>
+#include <set>
 
 class COMPASS;
 class DBContent;
@@ -193,6 +194,12 @@ public:
     bool showDataCounts() const { return show_data_counts_; }
     void showDataCounts(bool show) { show_data_counts_ = show; }
 
+    bool variableSelectionByGroup() const { return variable_selection_by_group_; }
+    void variableSelectionByGroup(bool by_group) { variable_selection_by_group_ = by_group; }
+
+    std::set<std::string> variableSelectionHiddenContents() const;
+    void variableSelectionHiddenContents(const std::set<std::string>& hidden);
+
 protected:
     void setViewableDataConfig (const nlohmann::json::object_t& data);
 
@@ -205,6 +212,9 @@ protected:
     std::string associations_id_;
 
     bool show_data_counts_{false};
+
+    bool variable_selection_by_group_{false};
+    nlohmann::json variable_selection_hidden_contents_; // list of content names unchecked in the variable selection dialog
 
     /// Container with all DBContent (DBContent name -> dbcont pointer)
     std::map<std::string, DBContent*> dbcontent_;

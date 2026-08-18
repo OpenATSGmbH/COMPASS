@@ -1367,16 +1367,6 @@ void MainWindow::loadButtonSlot()
 {
     loginf;
 
-    if (compass_.viewManager().getViews().size() == 0)
-    {
-        QMessageBox m_warning(QMessageBox::Warning, "Loading Not Possible",
-                              "There are no Views active, so loading is not possible.",
-                              QMessageBox::Ok, this);
-
-        m_warning.exec();
-        return;
-    }
-
     traced_assert(load_button_);
 
     if (loading_)

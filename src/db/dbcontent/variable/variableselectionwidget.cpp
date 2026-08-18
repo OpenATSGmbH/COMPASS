@@ -19,6 +19,7 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
+#include "dbcontent/variable/variableselectiondialog.h"
 #include "files.h"
 #include "global.h"
 #include "dbcontent/variable/metavariable.h"
@@ -87,7 +88,7 @@ VariableSelectionWidget::VariableSelectionWidget(DBContentManager& dbcont_man, b
     }
     setLayout(layout);
 
-    connect(sel_button_, SIGNAL(clicked()), this, SLOT(showMenuSlot()));
+    connect(sel_button_, SIGNAL(clicked()), this, SLOT(showDialogSlot()));
 }
 
 VariableSelectionWidget::~VariableSelectionWidget() {}
@@ -97,11 +98,6 @@ void VariableSelectionWidget::setReadOnly(bool read_only)
     traced_assert(sel_button_);
 
     sel_button_->setDisabled(read_only);
-}
-
-bool VariableSelectionWidget::showDataType(PropertyDataType type)
-{
-    return std::find(only_data_types_.begin(), only_data_types_.end(), type) != only_data_types_.end();
 }
 
 void VariableSelectionWidget::updateToolTip()
@@ -114,148 +110,41 @@ void VariableSelectionWidget::updateToolTip()
         setToolTip("");
 }
 
-void VariableSelectionWidget::showMenuSlot()
+void VariableSelectionWidget::showDialogSlot()
 {
-    QMenu menu;
-    menu.setToolTipsVisible(true);
+    VariableSelectionDialog::Settings dialog_settings;
 
-    if (show_empty_variable_) // show empty
+    dialog_settings.show_meta_variables = show_meta_variables_;
+    dialog_settings.show_meta_variables_only = show_meta_variables_only_;
+    dialog_settings.show_dbcont_only = show_dbcont_only_;
+    dialog_settings.only_dbcontent_name = only_dbcontent_name_;
+    dialog_settings.show_data_types_only = show_data_types_only_;
+    dialog_settings.only_data_types = only_data_types_;
+    dialog_settings.show_existing_in_db_only = show_existing_in_db_only_;
+    dialog_settings.show_empty_variable = show_empty_variable_;
+    dialog_settings.multi_select = false;
+
+    VariableSelectionDialog dialog(dbcont_man_, dialog_settings, this);
+
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+
+    if (dialog.emptySelected())
     {
-        QAction* action = menu.addAction("");
-        QVariantMap vmap;
-        vmap.insert(QString(""), QVariant(QString("")));
-        action->setData(QVariant(vmap));
+        applySelection("", "");
+        return;
     }
 
-    QIcon tmp = Files::IconProvider::getIcon("db_empty.png");
+    traced_assert(dialog.selection().size() == 1);
 
-    QFont font_italic;
-    font_italic.setItalic(true);
-    font_italic.setWeight(QFont::Light);
-
-    if (show_dbcont_only_)
-    {
-        traced_assert(dbcont_man_.existsDBContent(only_dbcontent_name_));
-
-        for (auto& var_it : dbcont_man_.dbContent(only_dbcontent_name_).variables())
-        {
-            bool has_dbc = var_it.second->hasDBContent();
-
-            logdbg << var_it.first << "show_data_types_only " << show_data_types_only_
-            << " showDataType " << showDataType(var_it.second->dataType())
-            << " show_existing_in_db_only " << show_existing_in_db_only_ << " has dbcont " << has_dbc;
-
-            if (show_data_types_only_ && !showDataType(var_it.second->dataType()))
-                continue;
-
-            if (show_existing_in_db_only_ && !has_dbc)
-                continue;
-
-            QAction* action = menu.addAction(var_it.first.c_str());
-
-            if (!has_dbc)
-            {
-                action->setFont(font_italic);
-                action->setIcon(tmp);
-            }
-
-            action->setToolTip(var_it.second->info().c_str());
-
-            QVariantMap vmap;
-            vmap.insert(QString::fromStdString(var_it.first),
-                        QVariant(QString::fromStdString(only_dbcontent_name_)));
-            action->setData(QVariant(vmap));
-        }
-    }
-    else
-    {
-        if (show_meta_variables_)
-        {
-            QMenu* meta_menu = menu.addMenu(QString::fromStdString(META_OBJECT_NAME));
-            meta_menu->setToolTipsVisible(true);
-
-            for (auto& meta_it : dbcont_man_.metaVariables())
-            {
-                if (show_data_types_only_ && !showDataType(meta_it.second->dataType()))
-                    continue;
-
-                bool has_dbc = meta_it.second->hasDBContent();
-                if (show_existing_in_db_only_ && !has_dbc)
-                    continue;
-
-                QAction* action = meta_menu->addAction(QString::fromStdString(meta_it.first));
-
-                if (!has_dbc)
-                    action->setFont(font_italic);
-
-                action->setToolTip(meta_it.second->info().c_str());
-
-                QVariantMap vmap;
-                vmap.insert(QString::fromStdString(meta_it.first),
-                            QVariant(QString::fromStdString(META_OBJECT_NAME)));
-                action->setData(QVariant(vmap));
-            }
-        }
-
-        if (!show_meta_variables_only_)
-        {
-            for (auto& object_it : dbcont_man_)
-            {
-                bool has_object_data = object_it.second->hasData();
-                if (show_existing_in_db_only_ && !has_object_data)
-                    continue;
-
-                QMenu* m2 = menu.addMenu(QString::fromStdString(object_it.first));
-                m2->setToolTipsVisible(true);
-
-                if (!has_object_data)
-                {
-                    m2->menuAction()->setFont(font_italic);
-                    m2->menuAction()->setIcon(tmp);
-                }
-
-                for (auto& var_it : object_it.second->variables())
-                {
-                    if (show_data_types_only_ && !showDataType(var_it.second->dataType()))
-                        continue;
-
-                    bool has_dbc = var_it.second->hasDBContent();
-                    if (show_existing_in_db_only_ && !has_dbc)
-                        continue;
-
-                    QAction* action = m2->addAction(QString::fromStdString(var_it.first));
-
-                    if (!has_dbc)
-                    {
-                        action->setFont(font_italic);
-                        action->setIcon(tmp);
-                    }
-
-                    action->setToolTip(var_it.second->info().c_str());
-
-                    QVariantMap vmap;
-                    vmap.insert(QString::fromStdString(var_it.first),
-                                QVariant(QString::fromStdString(object_it.first)));
-                    action->setData(QVariant(vmap));
-                }
-            }
-        }
-    }
-
-    connect(&menu, SIGNAL(triggered(QAction*)), this, SLOT(triggerSlot(QAction*)));
-
-    menu.exec(QCursor::pos());
-
+    applySelection(dialog.selection().front().first, dialog.selection().front().second);
 }
 
-void VariableSelectionWidget::triggerSlot(QAction* action)
+void VariableSelectionWidget::applySelection(const std::string& obj_name,
+                                             const std::string& var_name)
 {
     traced_assert(object_label_);
     traced_assert(variable_label_);
-
-    QVariantMap vmap = action->data().toMap();
-    std::string var_name = vmap.begin().key().toStdString();
-    std::string obj_name = vmap.begin().value().toString().toStdString();
 
     if (var_name.size() == 0 && obj_name.size() == 0)
     {
@@ -266,6 +155,8 @@ void VariableSelectionWidget::triggerSlot(QAction* action)
     {
         if (obj_name == META_OBJECT_NAME)
         {
+            traced_assert(dbcont_man_.existsMetaVariable(var_name));
+
             meta_variable_selected_ = true;
             variable_selected_ = false;
         }
@@ -450,9 +341,61 @@ boost::optional<QString> VariableSelectionWidget::uiGet(const QString& what) con
     return ui_test::conversions::stringFromValue<QStringList>(strings);
 }
 
+bool VariableSelectionWidget::uiSet(const QString& str)
+{
+    // value as used with the former menu-based selection, e.g. "Meta|Latitude",
+    // "CAT048|Time of Day", a plain variable name in single-content mode, or
+    // an empty string to clear the selection (if enabled)
+
+    auto strings = ui_test::conversions::valueFromString<QStringList>(str);
+
+    if (!strings.has_value() || strings.value().empty())
+    {
+        if (!show_empty_variable_)
+            return false;
+
+        applySelection("", "");
+        return true;
+    }
+
+    const QStringList& parts = strings.value();
+
+    std::string obj_name;
+    std::string var_name;
+
+    if (parts.size() == 1 && show_dbcont_only_)
+    {
+        obj_name = only_dbcontent_name_;
+        var_name = parts.at(0).toStdString();
+    }
+    else if (parts.size() == 2)
+    {
+        obj_name = parts.at(0).toStdString();
+        var_name = parts.at(1).toStdString();
+    }
+    else
+        return false;
+
+    if (obj_name == META_OBJECT_NAME)
+    {
+        if (!dbcont_man_.existsMetaVariable(var_name))
+            return false;
+    }
+    else
+    {
+        if (!dbcont_man_.existsDBContent(obj_name) ||
+            !dbcont_man_.dbContent(obj_name).hasVariable(var_name))
+            return false;
+    }
+
+    applySelection(obj_name, var_name);
+
+    return true;
+}
+
 QWidget* VariableSelectionWidget::uiRerouteToNative() const
 {
-    //selection button functions as a menu triggering button and can be handled by native qt ui injections.
+    //selection button triggers the selection dialog and can be handled by native qt ui injections.
     return sel_button_;
 }
 
