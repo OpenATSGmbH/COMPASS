@@ -64,6 +64,10 @@
 #include <QTabWidget>
 #include <QTimer>
 
+#include <malloc.h>
+
+#include "duckdbinstance.h"
+
 #include "traced_assert.h"
 
 #define SCAN_PRESETS
@@ -1509,6 +1513,13 @@ void ViewManager::finishLoadingDone()
 
     // bookend for external UI/view chrome consumers (owned here, not the manager)
     emit loadingDoneSignal();
+
+    // a load allocates and frees gigabytes, which the allocators keep instead of
+    // returning to the system, so the footprint grows with every load. Both halves are
+    // needed: malloc_trim covers what COMPASS allocated, duckDBClean what the database
+    // read allocated inside DuckDB's own jemalloc
+    malloc_trim(0);
+    duckDBClean();
 
     loginf << "end";
 }
