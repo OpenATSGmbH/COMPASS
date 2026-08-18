@@ -225,8 +225,8 @@ namespace dbcontent_vars
     inline const Property var_cat065_batch_number_  {"Batch Number", PropertyDataType::UCHAR};
 
     // reference trajectory
-    inline const Property var_reftraj_contrib_adsb_age_    {"Contributing ADS-B Age", PropertyDataType::FLOAT};
-    inline const Property var_reftraj_contrib_mlat_age_    {"Contributing MLAT Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_update_age_adsb_es_  {"ADS-B ES Update Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_update_age_mlat_     {"MLAT Update Age", PropertyDataType::FLOAT};
     inline const Property var_reftraj_contrib_radar_age_   {"Contributing Radar Age", PropertyDataType::FLOAT};
     inline const Property var_reftraj_contrib_tracker_age_ {"Contributing Tracker Age", PropertyDataType::FLOAT};
     inline const Property var_reftraj_contrib_reftraj_age_ {"Contributing RefTraj Age", PropertyDataType::FLOAT};
@@ -238,6 +238,20 @@ namespace dbcontent_vars
     inline const Property var_reftraj_update_age_primary_  {"Primary Update Age", PropertyDataType::FLOAT};
     inline const Property var_reftraj_update_age_modeac_   {"Mode A/C Update Age", PropertyDataType::FLOAT};
     inline const Property var_reftraj_update_age_modes_    {"Mode S Update Age", PropertyDataType::FLOAT};
+
+    inline const Property var_reftraj_track_age_       {"Track Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_update_age_psr_  {"PSR Update Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_update_age_ssr_  {"SSR Update Age", PropertyDataType::FLOAT};
+
+    inline const Property var_reftraj_m3a_age_         {"Mode 3/A Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_fl_measured_age_ {"Flight Level Measured Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_acid_age_        {"Aircraft Identification Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_acad_age_        {"Aircraft Address Age", PropertyDataType::FLOAT};
+
+    inline const Property var_reftraj_assoc_recnums_   {"Associated Record Numbers", PropertyDataType::JSON};
+
+    inline const Property var_reftraj_vx_stddev_       {"Vx StdDev", PropertyDataType::DOUBLE};
+    inline const Property var_reftraj_vy_stddev_       {"Vy StdDev", PropertyDataType::DOUBLE};
 
     inline const Property selected_var_             {"selected", PropertyDataType::BOOL};
 } // namespace dbcontent_vars

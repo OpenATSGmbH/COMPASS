@@ -93,8 +93,29 @@ void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorIn
     if (tr.isModeACDetection())
         mode_ac_age_ = 0.0;
 
-    if (tr.isModeSDetection())
-        modes_age_ = 0.0;
+    if (tr.ds_type_ == DataSourceType::Radar)
+    {
+        if (tr.isPrimaryOnlyDetection())
+            psr_radar_age_ = 0.0;
+
+        if (tr.isModeACDetection())
+            ssr_radar_age_ = 0.0;
+
+        if (tr.isModeSDetection())
+            modes_age_ = 0.0;
+    }
+
+    if (tr.mode_a_code_ && tr.mode_a_code_->hasReliableValue())
+        m3a_age_ = 0.0;
+
+    if (tr.barometric_altitude_ && tr.barometric_altitude_->hasReliableValue())
+        fl_measured_age_ = 0.0;
+
+    if (tr.acid_)
+        acid_age_ = 0.0;
+
+    if (tr.acad_)
+        acad_age_ = 0.0;
 
     if (add_to_rec_nums)
         rec_nums_.push_back(tr.record_num_);
@@ -112,61 +133,34 @@ void ContributingSourcesInfo::increaseTimeTo(boost::posix_time::ptime new_timest
         traced_assert(new_timestamp >= timestamp_);
         auto time_to_add = (new_timestamp - timestamp_).total_milliseconds() / 1000.0;
 
-        if (adsb_age_)
+        auto increaseAge = [ time_to_add ] (boost::optional<float>& age)
         {
-            *adsb_age_ += time_to_add;
-            if (*adsb_age_ > 60.0)
-                adsb_age_ = {};
-        }
+            if (age)
+            {
+                *age += time_to_add;
+                if (*age > 60.0)
+                    age = {};
+            }
+        };
 
-        if (mlat_age_)
-        {
-            *mlat_age_ += time_to_add;
-            if (*mlat_age_ > 60.0)
-                mlat_age_ = {};
-        }
+        increaseAge(adsb_age_);
+        increaseAge(mlat_age_);
+        increaseAge(radar_age_);
+        increaseAge(tracker_age_);
+        increaseAge(reftraj_age_);
+        increaseAge(other_age_);
 
-        if (radar_age_)
-        {
-            *radar_age_ += time_to_add;
-            if (*radar_age_ > 60.0)
-                radar_age_ = {};
-        }
+        increaseAge(primary_age_);
+        increaseAge(mode_ac_age_);
+        increaseAge(modes_age_);
 
-        if (tracker_age_)
-        {
-            *tracker_age_ += time_to_add;
-            if (*tracker_age_ > 60.0)
-                tracker_age_ = {};
-        }
+        increaseAge(psr_radar_age_);
+        increaseAge(ssr_radar_age_);
 
-        if (reftraj_age_)
-        {
-            *reftraj_age_ += time_to_add;
-            if (*reftraj_age_ > 60.0)
-                reftraj_age_ = {};
-        }
-
-        if (primary_age_)
-        {
-            *primary_age_ += time_to_add;
-            if (*primary_age_ > 60.0)
-                primary_age_ = {};
-        }
-
-        if (mode_ac_age_)
-        {
-            *mode_ac_age_ += time_to_add;
-            if (*mode_ac_age_ > 60.0)
-                mode_ac_age_ = {};
-        }
-
-        if (modes_age_)
-        {
-            *modes_age_ += time_to_add;
-            if (*modes_age_ > 60.0)
-                modes_age_ = {};
-        }
+        increaseAge(m3a_age_);
+        increaseAge(fl_measured_age_);
+        increaseAge(acid_age_);
+        increaseAge(acad_age_);
     }
 
     logdbg << "new_timestamp " << Time::toString(new_timestamp);
@@ -2435,6 +2429,12 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_));
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_xy_cov_));
 
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_vx_stddev_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_vy_stddev_));
+
+    // coasting
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_coasting_));
+
     // secondary
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
@@ -2448,8 +2448,8 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_vert_rate_));
 
     // contrib
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_adsb_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_mlat_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_adsb_es_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_mlat_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_radar_age_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_tracker_age_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_reftraj_age_));
@@ -2461,6 +2461,17 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modes_));
+
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_track_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_psr_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_ssr_));
+
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_m3a_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_fl_measured_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_acid_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_acad_age_));
+
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_assoc_recnums_));
 
     std::shared_ptr<Buffer> buffer_written = std::make_shared<Buffer>(buffer_list, dbcontent_name);
     std::shared_ptr<Buffer> buffer_glue    = std::make_shared<Buffer>(buffer_list, dbcontent_name);
@@ -2608,6 +2619,15 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
         NullableVector<double>& xy_cov_vec = buffer->get<double> (
             dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_xy_cov_).name());
 
+        NullableVector<double>& vx_stddev_vec = buffer->get<double> (
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_vx_stddev_).name());
+        NullableVector<double>& vy_stddev_vec = buffer->get<double> (
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_vy_stddev_).name());
+
+        // coasting
+        NullableVector<unsigned char>& coasting_vec = buffer->get<unsigned char> (
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_coasting_).name());
+
         // ground bit
         NullableVector<bool>& gb_vec = buffer->get<bool> (
             dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_bit_).name());
@@ -2629,9 +2649,9 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
 
         // contribution
         NullableVector<float>& cont_adsb_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_adsb_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_adsb_es_).name());
         NullableVector<float>& cont_mlat_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_mlat_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_mlat_).name());
         NullableVector<float>& cont_radar_age_vec = buffer->get<float>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_radar_age_).name());
         NullableVector<float>& cont_tracker_age_vec = buffer->get<float>(
@@ -2652,6 +2672,25 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_).name());
         NullableVector<float>& cont_modes_age_vec = buffer->get<float>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modes_).name());
+
+        NullableVector<float>& track_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_track_age_).name());
+        NullableVector<float>& cont_psr_radar_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_psr_).name());
+        NullableVector<float>& cont_ssr_radar_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_ssr_).name());
+
+        NullableVector<float>& cont_m3a_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_m3a_age_).name());
+        NullableVector<float>& cont_fl_measured_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_fl_measured_age_).name());
+        NullableVector<float>& cont_acid_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_acid_age_).name());
+        NullableVector<float>& cont_acad_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_acad_age_).name());
+
+        NullableVector<json>& assoc_recnums_vec = buffer->get<json>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_assoc_recnums_).name());
 
         NullableVector<unsigned int>& utn_vec = buffer->get<unsigned int> (
             dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_).name());
@@ -2851,6 +2890,11 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
                 xy_cov_vec.set(buffer_cnt, xy_cov);
             }
 
+            if (ref_it.second.vx_stddev.has_value())
+                vx_stddev_vec.set(buffer_cnt, *ref_it.second.vx_stddev);
+            if (ref_it.second.vy_stddev.has_value())
+                vy_stddev_vec.set(buffer_cnt, *ref_it.second.vy_stddev);
+
             // set other data
             {
                 if (altitude_series.hasValueAt(ref_it.second.t))
@@ -2948,13 +2992,37 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
                     cont_sources_vec.set(buffer_cnt, contrib.contributions(reconstructor_));
                 cont_source_num_vec.set(buffer_cnt, contrib.rec_nums_.size());
 
+                coasting_vec.set(buffer_cnt, contrib.rec_nums_.empty() ? 1 : 0);
+
                 if (contrib.primary_age_)
                     cont_primary_age_vec.set(buffer_cnt, *contrib.primary_age_);
                 if (contrib.mode_ac_age_)
                     cont_modeac_age_vec.set(buffer_cnt, *contrib.mode_ac_age_);
                 if (contrib.modes_age_)
                     cont_modes_age_vec.set(buffer_cnt, *contrib.modes_age_);
+
+                if (contrib.psr_radar_age_)
+                    cont_psr_radar_age_vec.set(buffer_cnt, *contrib.psr_radar_age_);
+                if (contrib.ssr_radar_age_)
+                    cont_ssr_radar_age_vec.set(buffer_cnt, *contrib.ssr_radar_age_);
+
+                if (contrib.m3a_age_)
+                    cont_m3a_age_vec.set(buffer_cnt, *contrib.m3a_age_);
+                if (contrib.fl_measured_age_)
+                    cont_fl_measured_age_vec.set(buffer_cnt, *contrib.fl_measured_age_);
+                if (contrib.acid_age_)
+                    cont_acid_age_vec.set(buffer_cnt, *contrib.acid_age_);
+                if (contrib.acad_age_)
+                    cont_acad_age_vec.set(buffer_cnt, *contrib.acad_age_);
+
+                if (contrib.rec_nums_.size())
+                    assoc_recnums_vec.set(buffer_cnt, json(contrib.rec_nums_));
             }
+
+            if (!total_timestamp_min_.is_not_a_date_time())
+                track_age_vec.set(
+                    buffer_cnt,
+                    (ref_it.second.t - total_timestamp_min_).total_milliseconds() / 1000.0);
 
             ++buffer_cnt;
 

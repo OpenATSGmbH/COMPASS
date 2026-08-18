@@ -72,6 +72,17 @@
         },
         {
             "class_name": "MetaVariable",
+            "instance_name": "MetaVariableADS-B ES Update Age0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT062": "ADS-B ES Update Age",
+                    "RefTraj": "ADS-B ES Update Age"
+                },
+                "name": "ADS-B ES Update Age"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
             "instance_name": "MetaVariableARTAS Hash0",
             "parameters": {
                 "dbcont_variables": {
@@ -112,6 +123,17 @@
                     "RefTraj": "Aircraft Identification"
                 },
                 "name": "Aircraft Identification"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
+            "instance_name": "MetaVariableAssociated Record Numbers0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT062": "TRI Record Numbers",
+                    "RefTraj": "Associated Record Numbers"
+                },
+                "name": "Associated Record Numbers"
             }
         },
         {
@@ -189,6 +211,17 @@
                     "CAT062": "FFT LM"
                 },
                 "name": "FFT"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
+            "instance_name": "MetaVariableFlight Level Measured Age0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT062": "Flight Level Measured Age",
+                    "RefTraj": "Flight Level Measured Age"
+                },
+                "name": "Flight Level Measured Age"
             }
         },
         {
@@ -284,6 +317,17 @@
         },
         {
             "class_name": "MetaVariable",
+            "instance_name": "MetaVariableMLAT Update Age0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT062": "MLAT Update Age",
+                    "RefTraj": "MLAT Update Age"
+                },
+                "name": "MLAT Update Age"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
             "instance_name": "MetaVariableMilitary Emergency0",
             "parameters": {
                 "dbcont_variables": {
@@ -312,7 +356,8 @@
             "parameters": {
                 "dbcont_variables": {
                     "CAT021": "Mode 3/A Age",
-                    "CAT062": "Mode 3/A Age"
+                    "CAT062": "Mode 3/A Age",
+                    "RefTraj": "Mode 3/A Age"
                 },
                 "name": "Mode 3/A Age"
             }
@@ -438,6 +483,28 @@
         },
         {
             "class_name": "MetaVariable",
+            "instance_name": "MetaVariableMode S Update Age0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT062": "Mode S Update Age",
+                    "RefTraj": "Mode S Update Age"
+                },
+                "name": "Mode S Update Age"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
+            "instance_name": "MetaVariablePSR Update Age0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT062": "PSR Update Age",
+                    "RefTraj": "PSR Update Age"
+                },
+                "name": "PSR Update Age"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
             "instance_name": "MetaVariableRDP Chain0",
             "parameters": {
                 "dbcont_variables": {
@@ -521,6 +588,17 @@
                     "RefTraj": "SPI"
                 },
                 "name": "SPI"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
+            "instance_name": "MetaVariableSSR Update Age0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT062": "SSR Update Age",
+                    "RefTraj": "SSR Update Age"
+                },
+                "name": "SSR Update Age"
             }
         },
         {
@@ -611,6 +689,17 @@
                     "RefTraj": "Timestamp"
                 },
                 "name": "Timestamp"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
+            "instance_name": "MetaVariableTrack Age0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT062": "Track Age",
+                    "RefTraj": "Track Age"
+                },
+                "name": "Track Age"
             }
         },
         {

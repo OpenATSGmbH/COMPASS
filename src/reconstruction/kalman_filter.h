@@ -147,6 +147,8 @@ public:
     virtual double xyCov(const kalman::Matrix& P) const;
     virtual boost::optional<double> xVel(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
     virtual boost::optional<double> yVel(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
+    virtual boost::optional<double> vxVar(const kalman::Matrix& P) const { return boost::optional<double>(); }
+    virtual boost::optional<double> vyVar(const kalman::Matrix& P) const { return boost::optional<double>(); }
     virtual boost::optional<double> xAcc(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
     virtual boost::optional<double> yAcc(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
 

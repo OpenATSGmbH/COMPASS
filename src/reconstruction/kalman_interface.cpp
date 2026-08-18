@@ -438,6 +438,14 @@ void KalmanInterface::storeState(Measurement& mm,
     mm.vx = filter->xVel(x);
     mm.vy = filter->yVel(x);
 
+    auto vx_var = filter->vxVar(P);
+    auto vy_var = filter->vyVar(P);
+
+    if (vx_var.has_value())
+        mm.vx_stddev = std::sqrt(vx_var.value());
+    if (vy_var.has_value())
+        mm.vy_stddev = std::sqrt(vy_var.value());
+
     mm.ax = filter->xAcc(x);
     mm.ay = filter->yAcc(x);
 }

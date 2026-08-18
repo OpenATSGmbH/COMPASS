@@ -386,36 +386,70 @@
         },
         {
             "class_name": "Variable",
-            "instance_name": "VariableRefTrajContribADSBAge",
+            "instance_name": "VariableRefTrajADSBESUpdateAge",
             "parameters": {
                 "data_type_str": "FLOAT",
-                "db_column_name": "contrib_adsb_age",
+                "db_column_name": "ads_b_es_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Time since last updated by contributing ADS-B",
+                "description": "Time since last associated ADS-B target report",
                 "dimension": "Time",
                 "is_key": false,
-                "name": "Contributing ADS-B Age",
-                "representation_str": "SECONDS_TO_TIME",
+                "name": "ADS-B ES Update Age",
+                "representation_str": "STANDARD",
                 "short_name": "",
                 "unit": "Second"
             }
         },
         {
             "class_name": "Variable",
-            "instance_name": "VariableRefTrajContribMLATAge",
+            "instance_name": "VariableRefTrajAircraftAddressAge",
             "parameters": {
                 "data_type_str": "FLOAT",
-                "db_column_name": "contrib_mlat_age",
+                "db_column_name": "aircraft_address_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Time since last updated by contributing MLAT",
+                "description": "Time since last associated target report with aircraft address",
                 "dimension": "Time",
                 "is_key": false,
-                "name": "Contributing MLAT Age",
-                "representation_str": "SECONDS_TO_TIME",
+                "name": "Aircraft Address Age",
+                "representation_str": "STANDARD",
                 "short_name": "",
                 "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajAircraftIdentificationAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "aircraft_identification_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last associated target report with aircraft identification",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Aircraft Identification Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajAssociatedRecNums",
+            "parameters": {
+                "data_type_str": "JSON",
+                "db_column_name": "associated_recnums",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Record numbers of the associated target reports",
+                "dimension": "",
+                "is_key": false,
+                "name": "Associated Record Numbers",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
             }
         },
         {
@@ -505,6 +539,57 @@
         },
         {
             "class_name": "Variable",
+            "instance_name": "VariableRefTrajFlightLevelMeasuredAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "flight_level_measured_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last associated target report with reliable barometric altitude",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Flight Level Measured Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajMLATUpdateAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mlat_update_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last associated MLAT target report",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "MLAT Update Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajMode3AAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "mode_3a_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last associated target report with reliable Mode 3/A code",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Mode 3/A Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
             "instance_name": "VariableRefTrajModeACUpdateAge",
             "parameters": {
                 "data_type_str": "FLOAT",
@@ -525,14 +610,14 @@
             "instance_name": "VariableRefTrajModeSUpdateAge",
             "parameters": {
                 "data_type_str": "FLOAT",
-                "db_column_name": "update_age_modes",
+                "db_column_name": "mode_s_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Time since last updated by Mode S",
+                "description": "Time since last associated Mode S radar target report",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Mode S Update Age",
-                "representation_str": "SECONDS_TO_TIME",
+                "representation_str": "STANDARD",
                 "short_name": "",
                 "unit": "Second"
             }
@@ -556,6 +641,23 @@
         },
         {
             "class_name": "Variable",
+            "instance_name": "VariableRefTrajPSRUpdateAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "psr_update_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last associated primary-only radar target report",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "PSR Update Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
             "instance_name": "VariableRefTrajPriUpdateAge",
             "parameters": {
                 "data_type_str": "FLOAT",
@@ -567,6 +669,23 @@
                 "is_key": false,
                 "name": "Primary Update Age",
                 "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajSSRUpdateAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "ssr_update_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since last associated Mode A/C radar target report",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "SSR Update Age",
+                "representation_str": "STANDARD",
                 "short_name": "",
                 "unit": "Second"
             }
@@ -586,6 +705,23 @@
                 "representation_str": "STANDARD",
                 "short_name": "",
                 "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableRefTrajTrackAge",
+            "parameters": {
+                "data_type_str": "FLOAT",
+                "db_column_name": "track_age",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Time since first associated target report",
+                "dimension": "Time",
+                "is_key": false,
+                "name": "Track Age",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": "Second"
             }
         },
         {

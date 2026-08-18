@@ -96,7 +96,17 @@ struct ContributingSourcesInfo
 
     boost::optional<float> primary_age_;
     boost::optional<float> mode_ac_age_;
-    boost::optional<float> modes_age_;
+    boost::optional<float> modes_age_; // Mode S radar update age (CAT062 I062/290 MDS style)
+
+    // radar-technology update ages (CAT062 I062/290 style)
+    boost::optional<float> psr_radar_age_;
+    boost::optional<float> ssr_radar_age_;
+
+    // data item ages (CAT062 I062/295 style)
+    boost::optional<float> m3a_age_;
+    boost::optional<float> fl_measured_age_;
+    boost::optional<float> acid_age_;
+    boost::optional<float> acad_age_;
 
     void add(const dbContent::targetReport::ReconstructorInfo& tr, bool add_to_rec_nums);
     void increaseTimeTo(boost::posix_time::ptime new_timestamp);
