@@ -101,11 +101,17 @@ private:
     unsigned int view_total_  {0};
     bool         cursor_active_{false};
 
-    // re-entrancy guard for the view-phase progress: QProgressDialog::setValue pumps
-    // events for a modal dialog, so a view completion can re-enter advanceViewPhase
-    // from inside it (see advanceViewPhase). The dialog's lifetime is handled by
-    // deleteLater in end(), so re-entrancy cannot leave a dangling pointer.
-    bool         in_advance_   {false};
+    // re-entrancy guard shared by ALL dialog_->setValue call sites (opDataChangedSlot,
+    // beginViewPhase, advanceViewPhase): QProgressDialog::setValue pumps events for a
+    // modal dialog, so a load/view completion can re-enter any of them from inside it.
+    // The guard ensures at most one setValue pump is ever on the stack - stacked pumps
+    // would let a deleteLater posted inside the inner pump (deeper scope level) be
+    // delivered by the outer pump while Qt still executes inside the dialog, a use
+    // after free in Qt's own code (crashed in QProgressBar::maximum on 2026-08-17).
+    // Nested calls only accumulate value_; the single active pump paints the final
+    // value. The dialog's lifetime is handled by deleteLater in end(), so re-entrancy
+    // cannot leave a dangling pointer.
+    bool         in_set_value_ {false};
 
     const LoadOperation*    op_ {nullptr}; // the running op (non-owning, valid for the cycle)
     QMetaObject::Connection op_conn_;      // op.dataChangedSignal -> opDataChangedSlot

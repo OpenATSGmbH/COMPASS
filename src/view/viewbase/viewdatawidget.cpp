@@ -408,16 +408,20 @@ void ViewDataWidget::clearData()
 {
     logdbg;
 
+    // results of in-flight asynchronous work are stale now; deferred load-done state
+    // of the outgoing cycle is dropped. Invalidate alone is not enough: the running
+    // work function keeps reading the buffers released below and writing the data
+    // cleared by clearData_impl() (e.g. the variable stash), racing the main thread
+    // into heap corruption (double free / freed-Buffer crash on close_db, 2026-08-17)
+    // - so block until the work functions returned, as the destructor does, BEFORE
+    // releasing anything they touch.
+    shutdownAsyncProcessor();
+    pending_loading_done_ = false;
+    pending_data_loaded_  = false;
+
     data_                   = {};
     data_fulfills_read_set_ = true;
     draw_state_             = DrawState::NotDrawn;
-
-    // results of in-flight asynchronous work are stale now; deferred load-done state
-    // of the outgoing cycle is dropped
-    if (async_processor_)
-        async_processor_->invalidate();
-    pending_loading_done_ = false;
-    pending_data_loaded_  = false;
 
     count_null_.reset();
     count_nan_.reset();

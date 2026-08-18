@@ -57,11 +57,12 @@ private slots:
     bool executeCommand(RTCommandMetaTypeWrapper wrapper) const;
     void executeCommandAsync(RTCommandMetaTypeWrapper wrapper) const;
     bool postCheckCommand(RTCommandMetaTypeWrapper wrapper) const;
-    
+    // slot: must run in the main thread - the QSignalSpy list is appended there
+    // on signal delivery, reading it from the runner thread is a data race
+    bool spySignalReceived() const;
+
 private:
     friend class RTCommandRunner;
-
-    bool spySignalReceived() const;
 
     COMPASS& compass_;
     std::unique_ptr<QSignalSpy> spy_;
