@@ -94,13 +94,10 @@ struct ContributingSourcesInfo
     boost::optional<float> tracker_age_;
     boost::optional<float> other_age_;
 
-    boost::optional<float> primary_age_;
-    boost::optional<float> mode_ac_age_;
-    boost::optional<float> modes_age_; // Mode S radar update age (CAT062 I062/290 MDS style)
-
-    // radar-technology update ages (CAT062 I062/290 style)
-    boost::optional<float> psr_radar_age_;
-    boost::optional<float> ssr_radar_age_;
+    // CAT062 I062/290 update ages per surveillance technology
+    boost::optional<float> psr_age_;
+    boost::optional<float> ssr_age_;
+    boost::optional<float> mds_age_;
 
     // data item ages (CAT062 I062/295 style)
     boost::optional<float> m3a_age_;

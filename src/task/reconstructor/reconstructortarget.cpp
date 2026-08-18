@@ -89,25 +89,19 @@ void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorIn
             break;
     }    
 
-    // ANY detection with a primary component counts (a combined PSR+SSR/Mode S plot
-    // refreshes the primary ages too), matching I062/290 semantics - not primary-only
-    if (tr.hasPrimaryDetection())
-        primary_age_ = 0.0;
-
-    if (tr.isModeACDetection())
-        mode_ac_age_ = 0.0;
-
     if (tr.ds_type_ == DataSourceType::Radar)
     {
+        // ANY detection with a primary component counts (a combined PSR+SSR/Mode S plot
+        // refreshes the primary age too), matching I062/290 semantics - not primary-only
         if (tr.hasPrimaryDetection())
-            psr_radar_age_ = 0.0;
+            psr_age_ = 0.0;
 
         // same for SSR: any detection with a secondary component
         if (tr.hasSSRDetection())
-            ssr_radar_age_ = 0.0;
+            ssr_age_ = 0.0;
 
         if (tr.isModeSDetection())
-            modes_age_ = 0.0;
+            mds_age_ = 0.0;
     }
 
     if (tr.mode_a_code_ && tr.mode_a_code_->hasReliableValue())
@@ -155,12 +149,9 @@ void ContributingSourcesInfo::increaseTimeTo(boost::posix_time::ptime new_timest
         increaseAge(reftraj_age_);
         increaseAge(other_age_);
 
-        increaseAge(primary_age_);
-        increaseAge(mode_ac_age_);
-        increaseAge(modes_age_);
-
-        increaseAge(psr_radar_age_);
-        increaseAge(ssr_radar_age_);
+        increaseAge(psr_age_);
+        increaseAge(ssr_age_);
+        increaseAge(mds_age_);
 
         increaseAge(m3a_age_);
         increaseAge(fl_measured_age_);
@@ -2464,8 +2455,6 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_num_contrib_sensors_));
 
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modes_));
 
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_track_age_));
@@ -2674,18 +2663,14 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
         NullableVector<unsigned char>& num_contrib_sensors_vec = buffer->get<unsigned char>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_num_contrib_sensors_).name());
 
-        NullableVector<float>& cont_primary_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_).name());
-        NullableVector<float>& cont_modeac_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_).name());
-        NullableVector<float>& cont_modes_age_vec = buffer->get<float>(
+        NullableVector<float>& cont_mds_age_vec = buffer->get<float>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modes_).name());
 
         NullableVector<float>& track_age_vec = buffer->get<float>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_track_age_).name());
-        NullableVector<float>& cont_psr_radar_age_vec = buffer->get<float>(
+        NullableVector<float>& cont_psr_age_vec = buffer->get<float>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_psr_).name());
-        NullableVector<float>& cont_ssr_radar_age_vec = buffer->get<float>(
+        NullableVector<float>& cont_ssr_age_vec = buffer->get<float>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_ssr_).name());
 
         NullableVector<float>& cont_m3a_age_vec = buffer->get<float>(
@@ -3013,17 +2998,13 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
 
                 coasting_vec.set(buffer_cnt, contrib.rec_nums_.empty() ? 1 : 0);
 
-                if (contrib.primary_age_)
-                    cont_primary_age_vec.set(buffer_cnt, *contrib.primary_age_);
-                if (contrib.mode_ac_age_)
-                    cont_modeac_age_vec.set(buffer_cnt, *contrib.mode_ac_age_);
-                if (contrib.modes_age_)
-                    cont_modes_age_vec.set(buffer_cnt, *contrib.modes_age_);
+                if (contrib.mds_age_)
+                    cont_mds_age_vec.set(buffer_cnt, *contrib.mds_age_);
 
-                if (contrib.psr_radar_age_)
-                    cont_psr_radar_age_vec.set(buffer_cnt, *contrib.psr_radar_age_);
-                if (contrib.ssr_radar_age_)
-                    cont_ssr_radar_age_vec.set(buffer_cnt, *contrib.ssr_radar_age_);
+                if (contrib.psr_age_)
+                    cont_psr_age_vec.set(buffer_cnt, *contrib.psr_age_);
+                if (contrib.ssr_age_)
+                    cont_ssr_age_vec.set(buffer_cnt, *contrib.ssr_age_);
 
                 if (contrib.m3a_age_)
                     cont_m3a_age_vec.set(buffer_cnt, *contrib.m3a_age_);

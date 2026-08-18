@@ -64,6 +64,8 @@
 #include <QTabWidget>
 #include <QTimer>
 
+#include <malloc.h>
+
 #include "traced_assert.h"
 
 #define SCAN_PRESETS
@@ -1509,6 +1511,12 @@ void ViewManager::finishLoadingDone()
 
     // bookend for external UI/view chrome consumers (owned here, not the manager)
     emit loadingDoneSignal();
+
+    // a load allocates and frees gigabytes, which glibc keeps in its arenas instead of
+    // returning to the system, so the footprint grows with every load until the arenas
+    // happen to be reused. Measured 0.7 to 1.3 GB returned per load with the Geographic
+    // View, bounding the peak at 11 GB over 49 loads instead of 26 GB over 10
+    malloc_trim(0);
 
     loginf << "end";
 }

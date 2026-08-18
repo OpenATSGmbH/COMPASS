@@ -624,24 +624,6 @@
         },
         {
             "class_name": "Variable",
-            "instance_name": "VariableRefTrajModeACUpdateAge",
-            "parameters": {
-                "data_type_str": "FLOAT",
-                "db_column_name": "update_age_modeac",
-                "db_expression": "",
-                "db_expression_variables": {},
-                "description": "Time since last updated by Mode A/C",
-                "dimension": "Time",
-                "group": "Ages",
-                "is_key": false,
-                "name": "Mode A/C Update Age",
-                "representation_str": "SECONDS_TO_TIME",
-                "short_name": "",
-                "unit": "Second"
-            }
-        },
-        {
-            "class_name": "Variable",
             "instance_name": "VariableRefTrajModeSUpdateAge",
             "parameters": {
                 "data_type_str": "FLOAT",
@@ -708,24 +690,6 @@
                 "is_key": false,
                 "name": "PSR Update Age",
                 "representation_str": "STANDARD",
-                "short_name": "",
-                "unit": "Second"
-            }
-        },
-        {
-            "class_name": "Variable",
-            "instance_name": "VariableRefTrajPriUpdateAge",
-            "parameters": {
-                "data_type_str": "FLOAT",
-                "db_column_name": "update_age_primary",
-                "db_expression": "",
-                "db_expression_variables": {},
-                "description": "Time since last associated target report with primary detection",
-                "dimension": "Time",
-                "group": "Ages",
-                "is_key": false,
-                "name": "Primary Update Age",
-                "representation_str": "SECONDS_TO_TIME",
                 "short_name": "",
                 "unit": "Second"
             }
@@ -810,7 +774,7 @@
                 "db_column_name": "geometric_altitude",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Calculated Track Geometric Altitude\n\nVertical distance between the target and the projection of its position on the earth’s ellipsoid, as defined by WGS84",
+                "description": "Calculated Track Geometric Altitude\n\nVertical distance between the target and the projection of its position on the earth\u2019s ellipsoid, as defined by WGS84",
                 "dimension": "Height",
                 "group": "Altitude",
                 "is_key": false,
