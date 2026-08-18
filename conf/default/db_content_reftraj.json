@@ -624,6 +624,23 @@
         },
         {
             "class_name": "Variable",
+            "instance_name": "VariableRefTrajNumContribSensors",
+            "parameters": {
+                "data_type_str": "UCHAR",
+                "db_column_name": "num_contrib_sensors",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Number of distinct data sources among the associated target reports",
+                "dimension": "",
+                "is_key": false,
+                "name": "Num Contributing Sensors",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
             "instance_name": "VariableRefTrajNumContribSources",
             "parameters": {
                 "data_type_str": "UINT",
@@ -647,7 +664,7 @@
                 "db_column_name": "psr_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Time since last associated primary-only radar target report",
+                "description": "Time since last associated radar target report with primary detection",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "PSR Update Age",
@@ -664,7 +681,7 @@
                 "db_column_name": "update_age_primary",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Time since last updated by primary source",
+                "description": "Time since last associated target report with primary detection",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "Primary Update Age",
@@ -681,7 +698,7 @@
                 "db_column_name": "ssr_update_age",
                 "db_expression": "",
                 "db_expression_variables": {},
-                "description": "Time since last associated Mode A/C radar target report",
+                "description": "Time since last associated radar target report with SSR detection",
                 "dimension": "Time",
                 "is_key": false,
                 "name": "SSR Update Age",

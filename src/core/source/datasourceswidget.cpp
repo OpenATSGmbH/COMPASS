@@ -473,7 +473,8 @@ QWidget* DataSourceItem::createLinesWidget()
     widget->setContentsMargins(0, 0, 0, 0);
 
     QHBoxLayout* button_layout = new QHBoxLayout();
-    button_layout->setContentsMargins(0, 0, 0, 0);
+    // 1px top/bottom margin so the line buttons of adjacent rows do not touch
+    button_layout->setContentsMargins(0, 1, 0, 1);
 
     std::string line_str;
 

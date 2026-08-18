@@ -282,6 +282,27 @@ bool ReconstructorInfo::isPrimaryOnlyDetection() const
     return !(acad_ || acid_ || mode_a_code_ || barometric_altitude_);
 }
 
+bool ReconstructorInfo::hasPrimaryDetection() const
+{
+    // I048/020 TYP: 1 single PSR, 3 SSR+PSR, 6 Mode S all-call + PSR, 7 Mode S roll-call + PSR
+    if (detection_type_)
+        return *detection_type_ == 1 || *detection_type_ == 3
+            || *detection_type_ == 6 || *detection_type_ == 7;
+
+    // no detection type transmitted: only a report without any secondary content
+    // can be recognized as primary
+    return isPrimaryOnlyDetection();
+}
+
+bool ReconstructorInfo::hasSSRDetection() const
+{
+    // I048/020 TYP: 2 single SSR, 3 SSR+PSR, 4-7 Mode S (Mode S is secondary surveillance)
+    if (detection_type_)
+        return *detection_type_ >= 2 && *detection_type_ <= 7;
+
+    return acad_ || acid_ || mode_a_code_ || barometric_altitude_;
+}
+
 bool ReconstructorInfo::isUnreliablePrimaryOnlyDetection() const
 {
     return dbcont_id_ != 62 && dbcont_id_ != 255 && isPrimaryOnlyDetection();

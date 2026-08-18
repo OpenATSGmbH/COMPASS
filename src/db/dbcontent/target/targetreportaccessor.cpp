@@ -82,6 +82,7 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(dbcontent_vars::var_cat062_fl_measured_, false);
     add(dbcontent_vars::var_cat062_baro_alt_, false);
     add(dbcontent_vars::meta_var_ground_bit_, true);
+    add(dbcontent_vars::meta_var_detection_type_, true);
 
     add(dbcontent_vars::var_cat021_mops_version_, false);
     add(dbcontent_vars::var_cat021_nacp_, false);
@@ -150,6 +151,7 @@ void TargetReportAccessor::cacheVectors()
     cat062_alt_sec_vec_     = varVector<float>(dbcontent_vars::var_cat062_baro_alt_);
     cat021_alt_geo_vec_     = varVector<float>(dbcontent_vars::var_cat021_geo_alt_);
     meta_ground_bit_vec_    = metaVarVector<bool>(dbcontent_vars::meta_var_ground_bit_);
+    meta_detection_type_vec_ = metaVarVector<unsigned char>(dbcontent_vars::meta_var_detection_type_);
 
     //position accuracy
     cat021_mops_version_vec_            = varVector<unsigned char>(dbcontent_vars::var_cat021_mops_version_);
@@ -541,6 +543,11 @@ boost::optional<double> TargetReportAccessor::trackAngle(unsigned int index) con
 boost::optional<bool> TargetReportAccessor::groundBit(unsigned int index) const
 {
     return getOptional<bool>(meta_ground_bit_vec_, index);
+}
+
+boost::optional<unsigned char> TargetReportAccessor::detectionType(unsigned int index) const
+{
+    return getOptional<unsigned char>(meta_detection_type_vec_, index);
 }
 
 boost::optional<targetReport::ModeACode> TargetReportAccessor::modeACode(unsigned int index) const

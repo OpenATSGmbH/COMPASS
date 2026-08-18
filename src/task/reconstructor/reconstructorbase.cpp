@@ -1271,6 +1271,7 @@ void ReconstructorBase::createTargetReports()
 
                 info.track_angle_ = tgt_acc.trackAngle(cnt);
                 info.ground_bit_ = tgt_acc.groundBit(cnt);
+                info.detection_type_ = tgt_acc.detectionType(cnt);
                 info.data_source_is_ground_only_ = ground_only_ds_ids.count(info.ds_id_);
 
                 // adsb stuff

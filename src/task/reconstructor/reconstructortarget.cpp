@@ -33,6 +33,8 @@
 #include "timeddataseries.h"
 #include "datasourcebase.h" // for dbContent::DataSourceType enum
 
+#include <set>
+
 #include <boost/optional/optional_io.hpp>
 
 #include <GeographicLib/LocalCartesian.hpp>
@@ -87,7 +89,9 @@ void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorIn
             break;
     }    
 
-    if (tr.isPrimaryOnlyDetection())
+    // ANY detection with a primary component counts (a combined PSR+SSR/Mode S plot
+    // refreshes the primary ages too), matching I062/290 semantics - not primary-only
+    if (tr.hasPrimaryDetection())
         primary_age_ = 0.0;
 
     if (tr.isModeACDetection())
@@ -95,10 +99,11 @@ void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorIn
 
     if (tr.ds_type_ == DataSourceType::Radar)
     {
-        if (tr.isPrimaryOnlyDetection())
+        if (tr.hasPrimaryDetection())
             psr_radar_age_ = 0.0;
 
-        if (tr.isModeACDetection())
+        // same for SSR: any detection with a secondary component
+        if (tr.hasSSRDetection())
             ssr_radar_age_ = 0.0;
 
         if (tr.isModeSDetection())
@@ -2457,6 +2462,7 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
 
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_num_contrib_sensors_));
 
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_));
@@ -2664,7 +2670,9 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
         NullableVector<json>& cont_sources_vec = buffer->get<json>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_).name());
         NullableVector<unsigned int>& cont_source_num_vec = buffer->get<unsigned int>(
-            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_).name());        
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_).name());
+        NullableVector<unsigned char>& num_contrib_sensors_vec = buffer->get<unsigned char>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_num_contrib_sensors_).name());
 
         NullableVector<float>& cont_primary_age_vec = buffer->get<float>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_).name());
@@ -2991,6 +2999,17 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
                 if (contrib.rec_nums_.size())
                     cont_sources_vec.set(buffer_cnt, contrib.contributions(reconstructor_));
                 cont_source_num_vec.set(buffer_cnt, contrib.rec_nums_.size());
+
+                // distinct data sources among the associated reports (CAT062
+                // "Sum Number Contributing Sensors" analog)
+                std::set<unsigned int> contrib_ds_ids;
+                for (auto rec_num : contrib.rec_nums_)
+                {
+                    if (reconstructor_.target_reports_.count(rec_num))
+                        contrib_ds_ids.insert(reconstructor_.target_reports_.at(rec_num).ds_id_);
+                }
+                num_contrib_sensors_vec.set(
+                    buffer_cnt, static_cast<unsigned char>(std::min<size_t>(contrib_ds_ids.size(), 255)));
 
                 coasting_vec.set(buffer_cnt, contrib.rec_nums_.empty() ? 1 : 0);
 

@@ -247,6 +247,9 @@ struct ReconstructorInfo : public BaseInfo
 
     boost::optional<targetReport::BarometricAltitude> barometric_altitude_;
 
+    // radar detection type ("Type" meta variable, CAT048 I048/020 TYP coding)
+    boost::optional<unsigned char> detection_type_;
+
     boost::optional<targetReport::Velocity> velocity_;
     boost::optional<targetReport::VelocityAccuracy> velocity_accuracy_;
 
@@ -272,6 +275,11 @@ struct ReconstructorInfo : public BaseInfo
     bool isModeSDetection() const;
     bool isModeACDetection() const;
     bool isPrimaryOnlyDetection() const;
+
+    // detection-type based (any component counts, unlike the exclusive classes above):
+    // a combined PSR+SSR/Mode S plot has BOTH a primary and an SSR detection
+    bool hasPrimaryDetection() const;
+    bool hasSSRDetection() const;
     bool isUnreliablePrimaryOnlyDetection() const;
 
     bool hasOnGroundInfo() const;

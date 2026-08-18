@@ -80,6 +80,7 @@ public:
     boost::optional<targetReport::VelocityAccuracy> velocityAccuracy(unsigned int index) const;
     boost::optional<double> trackAngle(unsigned int index) const;
     boost::optional<bool> groundBit(unsigned int index) const;
+    boost::optional<unsigned char> detectionType(unsigned int index) const; // CAT048 I048/020 TYP coding
     
     boost::optional<targetReport::ModeACode> modeACode(unsigned int index) const;
     boost::optional<unsigned int> modeA(unsigned int index) const;
@@ -149,6 +150,7 @@ private:
     const NullableVector<float>*  cat062_alt_sec_vec_     = nullptr;
     const NullableVector<float>*  cat021_alt_geo_vec_     = nullptr;
     const NullableVector<bool>*   meta_ground_bit_vec_    = nullptr;
+    const NullableVector<unsigned char>* meta_detection_type_vec_ = nullptr;
 
     const NullableVector<double>* meta_radar_range_vec_    = nullptr;
     const NullableVector<double>* meta_radar_azimuth_vec_  = nullptr;

@@ -494,6 +494,17 @@
         },
         {
             "class_name": "MetaVariable",
+            "instance_name": "MetaVariableNum Contributing Sensors0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT062": "Sum Number Contributing Sensors",
+                    "RefTraj": "Num Contributing Sensors"
+                },
+                "name": "Num Contributing Sensors"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
             "instance_name": "MetaVariablePSR Update Age0",
             "parameters": {
                 "dbcont_variables": {

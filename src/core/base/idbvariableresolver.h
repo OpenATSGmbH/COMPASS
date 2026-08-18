@@ -234,6 +234,7 @@ namespace dbcontent_vars
 
     inline const Property var_reftraj_contrib_sources_     {"Contributing Sources", PropertyDataType::JSON};
     inline const Property var_reftraj_contrib_sources_num_ {"Contributing Sources Number", PropertyDataType::UINT};
+    inline const Property var_reftraj_num_contrib_sensors_ {"Num Contributing Sensors", PropertyDataType::UCHAR};
 
     inline const Property var_reftraj_update_age_primary_  {"Primary Update Age", PropertyDataType::FLOAT};
     inline const Property var_reftraj_update_age_modeac_   {"Mode A/C Update Age", PropertyDataType::FLOAT};
