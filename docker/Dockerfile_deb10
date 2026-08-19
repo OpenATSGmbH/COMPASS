@@ -122,6 +122,8 @@ RUN cd osgearth-3.8/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_E
 RUN cd osgearth-3.8/build && make -j$(nproc)
 RUN cd osgearth-3.8/build && make install
 
+# bump when hpuhr/NemaTode master changes, to invalidate the cached layers below
+ARG NEMATODE_REV=15aad38
 RUN wget https://github.com/hpuhr/NemaTode/archive/refs/heads/master.zip
 RUN unzip master.zip
 RUN mkdir NemaTode-master/build
