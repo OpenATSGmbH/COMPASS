@@ -129,14 +129,14 @@ RUN cd NemaTode-master/build && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_
 RUN cd NemaTode-master/build && make -j$(nproc)
 RUN cd NemaTode-master/build && make install
 
-RUN wget https://github.com/duckdb/duckdb/releases/download/v1.5.3/libduckdb-linux-amd64.zip
+RUN wget https://github.com/duckdb/duckdb/releases/download/v1.5.5/libduckdb-linux-amd64.zip
 RUN mkdir libduckdb-linux-amd64
 RUN unzip libduckdb-linux-amd64.zip -d libduckdb-linux-amd64
 RUN cd libduckdb-linux-amd64 && cp *.h /usr/include
 RUN cd libduckdb-linux-amd64 && cp lib* /usr/lib
 
 # Download and Install DuckDB CLI Client
-RUN wget https://github.com/duckdb/duckdb/releases/download/v1.5.3/duckdb_cli-linux-amd64.zip
+RUN wget https://github.com/duckdb/duckdb/releases/download/v1.5.5/duckdb_cli-linux-amd64.zip
 RUN unzip duckdb_cli-linux-amd64.zip -d libduckdb-linux-amd64
 RUN mv libduckdb-linux-amd64/duckdb /usr/bin/
 RUN chmod +x /usr/bin/duckdb
