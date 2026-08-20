@@ -45,12 +45,16 @@ namespace
 
             root_.addAppender(appender_); //category takes ownership
             root_.setPriority(priority);
+
+            logger::refreshLevels(); //the macros read a cached flag, not the category
         }
 
         ~LogCapture()
         {
             root_.removeAppender(appender_); //deletes the appender
             root_.setPriority(previous_priority_);
+
+            logger::refreshLevels();
         }
 
         size_t count() const { return appender_->queueSize(); }
@@ -244,8 +248,10 @@ TEST_CASE("logdbg can be switched on through a log4cpp properties file", "[logge
     {
         writeProperties("DEBUG");
         log4cpp::PropertyConfigurator::configure(properties_fn.string());
+        logger::refreshLevels(); //this is what Logger::init does after configuring
 
         REQUIRE(root.isPriorityEnabled(log4cpp::Priority::DEBUG));
+        REQUIRE(logger::debug_enabled);
 
         emitDebugMarker();
 
@@ -261,8 +267,10 @@ TEST_CASE("logdbg can be switched on through a log4cpp properties file", "[logge
     {
         writeProperties("INFO");
         log4cpp::PropertyConfigurator::configure(properties_fn.string());
+        logger::refreshLevels(); //this is what Logger::init does after configuring
 
         REQUIRE(!root.isPriorityEnabled(log4cpp::Priority::DEBUG));
+        REQUIRE(!logger::debug_enabled);
 
         emitDebugMarker();
         loginf << "unit_test_info_still_logged";
@@ -280,6 +288,7 @@ TEST_CASE("logdbg can be switched on through a log4cpp properties file", "[logge
     //leave the root category as the rest of the suite expects it
     root.removeAllAppenders();
     root.setPriority(previous_priority);
+    logger::refreshLevels();
 
     std::error_code ec;
     fs::remove(properties_fn, ec);

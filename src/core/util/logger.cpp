@@ -23,6 +23,23 @@
 
 #define MAX_EVENTS_PER_CATEGORY 1000
 
+namespace logger
+{
+    bool debug_enabled = false;
+
+    log4cpp::Category& rootCategory()
+    {
+        static log4cpp::Category& root = log4cpp::Category::getRoot();
+
+        return root;
+    }
+
+    void refreshLevels()
+    {
+        debug_enabled = rootCategory().isPriorityEnabled(log4cpp::Priority::DEBUG);
+    }
+}
+
 std::string formatFuncName(const char* pretty_function)
 {
     std::string func_str(pretty_function);
@@ -55,9 +72,11 @@ void Logger::init(const std::string& log_config_filename, bool enable_event_log)
 {
     log4cpp::PropertyConfigurator::configure(log_config_filename);
 
+    logger::refreshLevels(); //the configured priority is cached, not queried per log call
+
     if (enable_event_log)
     {
-        log4cpp::Category::getRoot().addAppender(new logger::EventAppender("events", event_log_));
+        logger::rootCategory().addAppender(new logger::EventAppender("events", event_log_));
     }
 }
 

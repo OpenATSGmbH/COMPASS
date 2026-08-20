@@ -30,6 +30,29 @@
  */
 std::string formatFuncName(const char* pretty_function);
 
+namespace logger
+{
+    /**
+     * The root category, resolved once. log4cpp::Category::getRoot() goes through
+     * getInstance(""), which takes a mutex and looks the name up in a map on every call,
+     * measured at about 13 ns. The reference itself never changes.
+     */
+    log4cpp::Category& rootCategory();
+
+    /**
+     * Mirrors whether DEBUG is enabled on the root category, so logdbg costs a single load
+     * instead of a virtual priority query. Only valid because the level is configured once
+     * at startup. Anything changing the priority afterwards has to call refreshLevels().
+     */
+    extern bool debug_enabled;
+
+    /**
+     * Re-reads the root category priority into the cached flags. Called by Logger::init()
+     * after the properties file has been applied.
+     */
+    void refreshLevels();
+}
+
 /**
  * The signature is a compile time constant per function, so it is reduced once per call site
  * and returned by reference afterwards. Every macro expansion creates its own closure type,
@@ -99,19 +122,20 @@ public:
     void operator&(LogHelper&&) {} //logdbg used standalone, without streaming anything
 };
 
-#define logerr LogHelper(log4cpp::Category::getRoot().errorStream(), FORMAT_FUNC_NAME())
-#define logwrn LogHelper(log4cpp::Category::getRoot().warnStream(), FORMAT_FUNC_NAME())
-#define loginf LogHelper(log4cpp::Category::getRoot().infoStream(), FORMAT_FUNC_NAME())
+#define logerr LogHelper(logger::rootCategory().errorStream(), FORMAT_FUNC_NAME())
+#define logwrn LogHelper(logger::rootCategory().warnStream(), FORMAT_FUNC_NAME())
+#define loginf LogHelper(logger::rootCategory().infoStream(), FORMAT_FUNC_NAME())
 
 /**
  * Nothing right of the ':' is evaluated while DEBUG is disabled, neither the function name nor
- * the streamed arguments. The check is done at runtime, so the level stays configurable through
- * log4cpp.properties (log4cpp.rootCategory=DEBUG, ...).
+ * the streamed arguments, so a disabled logdbg costs one load of the cached flag.
+ * The level still comes from log4cpp.properties (log4cpp.rootCategory=DEBUG, ...), it is just
+ * read into the flag by Logger::init() instead of being queried per call.
  */
 #define logdbg \
-    !log4cpp::Category::getRoot().isPriorityEnabled(log4cpp::Priority::DEBUG) \
+    !logger::debug_enabled \
         ? (void)0 \
-        : LogVoidify() & LogHelper(log4cpp::Category::getRoot().debugStream(), FORMAT_FUNC_NAME())
+        : LogVoidify() & LogHelper(logger::rootCategory().debugStream(), FORMAT_FUNC_NAME())
 #define logdbg1 \
     if (false) \
     log4cpp::Category::getRoot().debugStream()  // for improved performance

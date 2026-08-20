@@ -464,6 +464,17 @@ boost::optional<targetReport::BarometricAltitude> TargetReportAccessor::barometr
     return {};
 }
 
+boost::optional<float> TargetReportAccessor::trackedBarometricAltitude(unsigned int index) const
+{
+    // CAT062 Barometric Altitude Calculated (I062/135) - the tracker's own
+    // altitude output, in contrast to the per-sensor measured FL that
+    // barometricAltitude() prefers for trackers
+    if (!is_tracker_)
+        return boost::none;
+
+    return getOptional<float>(cat062_alt_sec_vec_, index);
+}
+
 boost::optional<float> TargetReportAccessor::geometricAltitude(unsigned int index) const
 {
     return getOptional<float>(cat021_alt_geo_vec_, index);

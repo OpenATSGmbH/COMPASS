@@ -76,6 +76,7 @@ public:
     boost::optional<targetReport::Position> position(unsigned int index) const;
     boost::optional<targetReport::PositionAccuracy> positionAccuracy(unsigned int index) const;
     boost::optional<targetReport::BarometricAltitude> barometricAltitude(unsigned int index) const;
+    boost::optional<float> trackedBarometricAltitude(unsigned int index) const;
     boost::optional<float> geometricAltitude(unsigned int index) const;
     boost::optional<double> radarRange(unsigned int index) const;
     boost::optional<double> radarAzimuth(unsigned int index) const;

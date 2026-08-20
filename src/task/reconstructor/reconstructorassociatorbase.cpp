@@ -685,6 +685,9 @@ RESTART_SELF_ASSOC:
 
     std::map<std::pair<unsigned int, unsigned int>, ReconstructorAssociatorBase::AssociationOption> assoc_option_cache;
 
+    //targets are removed between rounds, so the candidates are collected per round
+    updateSelfAssociationCandidates();
+
     // collect scored pairs
     for (auto utn : reconstructor().targets_container_.utn_vec_)
     {
@@ -1380,6 +1383,28 @@ int ReconstructorAssociatorBase::findUTNByModeACPos (
     return -1;
 }
 
+void ReconstructorAssociatorBase::updateSelfAssociationCandidates()
+{
+    self_assoc_candidates_.clear();
+
+    const auto& targets_container = reconstructor().targets_container_;
+
+    self_assoc_candidates_.reserve(targets_container.utn_vec_.size());
+
+    for (auto utn : targets_container.utn_vec_)
+    {
+        auto target_it = targets_container.targets_.find(utn);
+
+        traced_assert(target_it != targets_container.targets_.end());
+
+        if (target_it->second.created_in_current_slice_)
+            self_assoc_candidates_.push_back(utn);
+    }
+
+    logdbg << "candidates " << self_assoc_candidates_.size()
+           << " of " << targets_container.utn_vec_.size();
+}
+
 std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssociatorBase::findUTNsForTarget (
     unsigned int utn,
     std::map<std::pair<unsigned int, unsigned int>, ReconstructorAssociatorBase::AssociationOption>& assoc_option_cache)
@@ -1401,7 +1426,8 @@ std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssocia
 
     vector<reconstruction::PredictionStats> prediction_stats;
 
-    unsigned int num_utns = reconstructor().targets_container_.utn_vec_.size();
+    //only targets created in the current slice can be merged with, see the check below
+    unsigned int num_utns = self_assoc_candidates_.size();
     results.resize(num_utns);
     prediction_stats.resize(num_utns);
 
@@ -1413,7 +1439,7 @@ std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssocia
     for (unsigned int cnt=0; cnt < num_utns; ++cnt)
 #endif
                       {
-                          unsigned int other_utn = reconstructor().targets_container_.utn_vec_.at(cnt);
+                          unsigned int other_utn = self_assoc_candidates_.at(cnt);
 
                           auto assoc_option_it = assoc_option_cache.find({utn, other_utn});
                           if (assoc_option_it != assoc_option_cache.end())

@@ -250,6 +250,11 @@ struct ReconstructorInfo : public BaseInfo
     bool is_pos_outlier_ {false}; // if set by outlier detection
 
     boost::optional<targetReport::BarometricAltitude> barometric_altitude_;
+    // CAT062 only: the tracker's own calculated barometric altitude (I062/135).
+    // barometric_altitude_ carries the per-sensor MEASURED FL for trackers,
+    // which alternates by 100s of ft between contributing sensors on high-rate
+    // outputs - dubious detection (D3) prefers this tracked value
+    boost::optional<float> tracked_baro_altitude_;
 
     // radar detection type ("Type" meta variable, CAT048 I048/020 TYP coding)
     boost::optional<unsigned char> detection_type_;

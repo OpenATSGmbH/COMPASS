@@ -1158,6 +1158,9 @@ void ReconstructorBase::createTargetReports()
         dbContent::TargetReportAccessor& tgt_acc = accessors_.at(dbcont_id);
         unsigned int buffer_size = tgt_acc.size();
 
+        //grow once for this buffer instead of rehashing repeatedly while inserting
+        target_reports_.reserve(target_reports_.size() + buffer_size);
+
         std::vector<bool> position_usable;
         position_usable.resize(buffer_size);
 
@@ -1265,6 +1268,7 @@ void ReconstructorBase::createTargetReports()
                         || (unused_lines.count(info.ds_id_) && unused_lines.at(info.ds_id_).count(info.line_id_)));
 
                 info.barometric_altitude_ = tgt_acc.barometricAltitude(cnt);
+                info.tracked_baro_altitude_ = tgt_acc.trackedBarometricAltitude(cnt);
 
                 info.velocity_ = tgt_acc.velocity(cnt);
                 info.velocity_accuracy_ = tgt_acc.velocityAccuracy(cnt);

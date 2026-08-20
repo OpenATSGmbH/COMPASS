@@ -165,6 +165,16 @@ protected:
     std::vector<ReconstructorAssociatorBase::AssociationOption> findUTNsForTarget (unsigned int utn,
                                                                                    std::map<std::pair<unsigned int, unsigned int>, ReconstructorAssociatorBase::AssociationOption>& assoc_option_cache);
 
+    /**
+     * Targets findUTNsForTarget can actually merge with, which are the ones created in the
+     * current slice. Scanning all accumulated utns instead and rejecting them inside the loop
+     * costs a lookup per target per call, plus result buffers sized to the full target count.
+     * Rebuilt at the start of every self association round, since targets are removed between them.
+     */
+    void updateSelfAssociationCandidates();
+
+    std::vector<unsigned int> self_assoc_candidates_;
+
     virtual bool canGetPositionOffsetTargets(
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
