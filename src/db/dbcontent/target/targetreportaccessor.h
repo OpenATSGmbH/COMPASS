@@ -63,6 +63,9 @@ public:
     boost::optional<unsigned char> nacp(unsigned int index) const;
     boost::optional<unsigned char> sil(unsigned int index) const;
     boost::optional<bool> posCheckFailed(unsigned int index) const;
+    boost::optional<bool> rangeCheckFailed(unsigned int index) const;
+    boost::optional<bool> cprValid(unsigned int index) const;
+    boost::optional<bool> localDecodingPositionJump(unsigned int index) const;
 
     boost::optional<unsigned int> ecat(unsigned int index) const;
     boost::optional<unsigned char> getGeoAltAcc(unsigned int index) const;
@@ -161,6 +164,9 @@ private:
     const NullableVector<unsigned char>* cat021_nucp_nic_vec_                = nullptr;
     const NullableVector<unsigned char>* cat021_sil_vec_                     = nullptr;
     const NullableVector<bool>* cat021_pos_check_failed_vec_                 = nullptr;
+    const NullableVector<bool>* cat021_range_check_failed_vec_               = nullptr;
+    const NullableVector<bool>* cat021_cpr_valid_vec_                        = nullptr;
+    const NullableVector<bool>* cat021_ldpj_vec_                             = nullptr;
 
     const NullableVector<double>*        meta_pos_std_dev_x_m_vec_           = nullptr;
     const NullableVector<double>*        meta_pos_std_dev_y_m_vec_           = nullptr;

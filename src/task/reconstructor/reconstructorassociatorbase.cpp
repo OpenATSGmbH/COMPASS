@@ -760,6 +760,8 @@ RESTART_SELF_ASSOC:
 
             reconstructor().targets_container_.replaceInLookup(other_utn, utn);
 
+            onTargetsMerged(other_utn, utn);
+
             ++num_merges_;
 
             assoc_option_cache.erase({other_utn, utn});

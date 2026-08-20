@@ -89,6 +89,9 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(dbcontent_vars::var_cat021_nucp_nic_, false);
     add(dbcontent_vars::var_cat021_sil_, false);
     add(dbcontent_vars::var_cat021_pos_check_failed_, false);
+    add(dbcontent_vars::var_cat021_range_check_failed_, false);
+    add(dbcontent_vars::var_cat021_cpr_valid_, false);
+    add(dbcontent_vars::var_cat021_ldpj_, false);
 
     add(dbcontent_vars::meta_var_x_stddev_, true);
     add(dbcontent_vars::meta_var_y_stddev_, true);
@@ -159,6 +162,9 @@ void TargetReportAccessor::cacheVectors()
     cat021_nucp_nic_vec_                = varVector<unsigned char>(dbcontent_vars::var_cat021_nucp_nic_);
     cat021_sil_vec_                     = varVector<unsigned char>(dbcontent_vars::var_cat021_sil_);
     cat021_pos_check_failed_vec_        = varVector<bool>(dbcontent_vars::var_cat021_pos_check_failed_);
+    cat021_range_check_failed_vec_      = varVector<bool>(dbcontent_vars::var_cat021_range_check_failed_);
+    cat021_cpr_valid_vec_               = varVector<bool>(dbcontent_vars::var_cat021_cpr_valid_);
+    cat021_ldpj_vec_                    = varVector<bool>(dbcontent_vars::var_cat021_ldpj_);
 
     meta_pos_std_dev_x_m_vec_           = metaVarVector<double>(dbcontent_vars::meta_var_x_stddev_);
     meta_pos_std_dev_y_m_vec_           = metaVarVector<double>(dbcontent_vars::meta_var_y_stddev_);
@@ -264,6 +270,21 @@ boost::optional<unsigned char> TargetReportAccessor::sil(unsigned int index) con
 boost::optional<bool> TargetReportAccessor::posCheckFailed(unsigned int index) const
 {
     return getOptional<bool>(cat021_pos_check_failed_vec_, index);
+}
+
+boost::optional<bool> TargetReportAccessor::rangeCheckFailed(unsigned int index) const
+{
+    return getOptional<bool>(cat021_range_check_failed_vec_, index);
+}
+
+boost::optional<bool> TargetReportAccessor::cprValid(unsigned int index) const
+{
+    return getOptional<bool>(cat021_cpr_valid_vec_, index);
+}
+
+boost::optional<bool> TargetReportAccessor::localDecodingPositionJump(unsigned int index) const
+{
+    return getOptional<bool>(cat021_ldpj_vec_, index);
 }
 
 boost::optional<unsigned int> TargetReportAccessor::ecat(unsigned int index) const

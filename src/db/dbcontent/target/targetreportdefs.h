@@ -267,6 +267,17 @@ struct ReconstructorInfo : public BaseInfo
     boost::optional<unsigned char> nucp_nic_;
     boost::optional<unsigned char> sil_;
 
+    // ADS-B GS position validation flags (CAT021 I021/040). NEVER invalidate on
+    // these alone: GSs flag correct surface traffic systematically (range check
+    // false alarms on whole taxiing streams, validated Malta 2026-08-14 and
+    // LOWW 2026-06-09); decisive only combined with risky quality indicators
+    bool adsb_rcf_ {false};         // Range Check Failed
+    bool adsb_cpr_invalid_ {false}; // CPR Validation failed
+    bool adsb_ldpj_ {false};        // Local Decoding Position Jump
+
+    bool hasADSBPositionValidationFlag() const
+    { return adsb_rcf_ || adsb_cpr_invalid_ || adsb_ldpj_; }
+
     boost::optional<unsigned int> ecat_;
 
     static const double GroundSpeedMin;

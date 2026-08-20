@@ -1507,12 +1507,19 @@ pair<bool, float> DBContextManager::isFromFFT(double latitude_deg, double longit
     for (const auto& f : activeContext().ffts())
     {
         bool match = true;
+        // at least one criterion must have POSITIVELY matched: an FFT defined
+        // only by identity fields (e.g. mode S address, no position) must not
+        // vacuously match every report that lacks those fields - that turned
+        // every primary-only plot into an FFT (Malta ARTAS_GND_TRK run 2)
+        unsigned int num_criteria_matched = 0;
 
         // mode S address check
         if (!ignore_mode_s && f.info().contains("mode_s_address") && mode_s_address)
         {
             if (f.info().at("mode_s_address").get<unsigned int>() != *mode_s_address)
                 match = false;
+            else
+                ++num_criteria_matched;
         }
 
         // mode 3/A check
@@ -1520,6 +1527,8 @@ pair<bool, float> DBContextManager::isFromFFT(double latitude_deg, double longit
         {
             if (f.info().at("mode_3a_code").get<unsigned int>() != *mode_a_code)
                 match = false;
+            else
+                ++num_criteria_matched;
         }
 
         // mode C check
@@ -1527,6 +1536,8 @@ pair<bool, float> DBContextManager::isFromFFT(double latitude_deg, double longit
         {
             if (f.info().at("mode_c_code").get<float>() != *mode_c_code)
                 match = false;
+            else
+                ++num_criteria_matched;
         }
 
         // position check
@@ -1542,7 +1553,12 @@ pair<bool, float> DBContextManager::isFromFFT(double latitude_deg, double longit
 
             if (dist_m > max_fft_plot_distance_m_)
                 match = false;
+            else
+                ++num_criteria_matched;
         }
+
+        if (match && !num_criteria_matched)
+            match = false;
 
         if (match)
         {

@@ -168,14 +168,16 @@ namespace
         if (img.isNull() || x < 0 || y < 0 || x >= img.width() || y >= img.height())
             return SectorInsideTest::CheckResult::Border;
 
-        //check color code at pixel
-        auto rgb = img.pixel(x, y);
+        //check gray code at pixel
+        //the image is Format_Grayscale8 and drawn without antialiasing, so only the
+        //three drawing colors occur: white = inside, black = outside, gray = border region.
+        //note: comparing against Qt::GlobalColor here would resolve to an integer comparison
+        //against the enumerator value (Qt::white == 3 etc.) and never match.
+        const uchar gray = img.constScanLine(y)[ x ];
 
-        if (rgb == Qt::gray)
-            return SectorInsideTest::CheckResult::Border;
-        else if (rgb == Qt::white)
+        if (gray == 255)
             return SectorInsideTest::CheckResult::Inside;
-        else if (rgb == Qt::black)
+        else if (gray == 0)
             return SectorInsideTest::CheckResult::Outside;
 
         //again: when in doubt assume border region
@@ -223,58 +225,6 @@ SectorInsideTest::CheckResult SectorInsideTest::isInside(double x, double y) con
 bool SectorInsideTest::isValid() const
 {
     return !img_.isNull();
-}
-
-SectorInsideTest::CheckResult SectorInsideTest::isInside(double x, double y, double delta) const
-{
-    traced_assert(isValid());
-
-    // First check the point itself
-    auto result = isInside(x, y);
-    
-    // If already inside, return inside
-    if (result == CheckResult::Inside)
-    {
-        loginf << "true inside";
-        return CheckResult::Inside;
-    }
-    
-    // If outside or border, check within delta distance
-    // Sample points around the original point within delta distance
-    const int num_samples = 16;
-    const double angle_step = 2.0 * M_PI / num_samples;
-    
-    for (int i = 0; i < num_samples; ++i)
-    {
-        double angle = i * angle_step;
-        double test_x = x + delta * std::cos(angle);
-        double test_y = y + delta * std::sin(angle);
-        
-        auto test_result = isInside(test_x, test_y);
-        if (test_result == CheckResult::Inside)
-        {
-            loginf << "second inside";
-            return CheckResult::Inside;
-        }
-    }
-    
-    // Also check at half delta distance
-    for (int i = 0; i < num_samples; ++i)
-    {
-        double angle = i * angle_step;
-        double test_x = x + (delta * 0.5) * std::cos(angle);
-        double test_y = y + (delta * 0.5) * std::sin(angle);
-        
-        auto test_result = isInside(test_x, test_y);
-        if (test_result == CheckResult::Inside)
-        {
-            loginf << "thirst inside";
-            return CheckResult::Inside;
-        }
-    }
-    
-    loginf << "not inside";
-    return result; // Return original result if no nearby point is inside
 }
 
 /***********************************************************************************
@@ -610,15 +560,17 @@ bool Sector::isInside(const dbContent::TargetPosition& pos,
         }
 
         //check fast inside test if available
+        //only usable if it was generated from the uninflated polygon, an inflated one
+        //describes the sector grown by a delta and would report positions outside of it as inside
         bool check_geom = true;
-        if (inside_test_.has_value())
+        if (inside_test_.has_value() && inside_test_delta_deg_ == 0.0)
         {
             auto res = inside_test_->isInside(pos.latitude_, pos.longitude_);
             if (res == SectorInsideTest::CheckResult::Outside)
                 return false;
             else if (res == SectorInsideTest::CheckResult::Inside)
                 check_geom = false; //geometrical check not needed
-            else 
+            else
                 check_geom = true;  //check yielded 'SectorInsideTest::CheckResult::Border' => check polygon geometrically
         }
 
@@ -635,6 +587,39 @@ bool Sector::isInside(const dbContent::TargetPosition& pos,
 }
 
 bool Sector::isInside(double latitude, double longitude, double delta_deg) const
+{
+    //no inflated polygon for this delta available => fall back to the slow probe ring
+    if (!ogr_polygon_delta_ || inside_test_delta_deg_ != delta_deg)
+        return isInsideProbeRing(latitude, longitude, delta_deg);
+
+    //check bounding rect of the inflated polygon
+    if ((lat_min_delta_.has_value() && latitude  < lat_min_delta_.value()) ||
+        (lat_max_delta_.has_value() && latitude  > lat_max_delta_.value()) ||
+        (lon_min_delta_.has_value() && longitude < lon_min_delta_.value()) ||
+        (lon_max_delta_.has_value() && longitude > lon_max_delta_.value()))
+    {
+        return false;
+    }
+
+    //check fast inside test if available
+    if (inside_test_.has_value())
+    {
+        auto res = inside_test_->isInside(latitude, longitude);
+
+        if (res == SectorInsideTest::CheckResult::Outside)
+            return false;
+        else if (res == SectorInsideTest::CheckResult::Inside)
+            return true;
+
+        //SectorInsideTest::CheckResult::Border => check the inflated polygon geometrically
+    }
+
+    OGRPoint ogr_pos(latitude, longitude);
+
+    return ogr_polygon_delta_->Contains(&ogr_pos);
+}
+
+bool Sector::isInsideProbeRing(double latitude, double longitude, double delta_deg) const
 {
     OGRPoint ogr_pos(latitude, longitude);
     if (ogr_polygon_->Contains(&ogr_pos))
@@ -726,13 +711,99 @@ void Sector::createPolygon()
     ogr_polygon_->addRingDirectly(ring);
 }
 
-void Sector::createFastInsideTest() const
+void Sector::createFastInsideTest(double delta_deg) const
 {
     traced_assert(lat_min_.has_value() && lat_max_.has_value());
     traced_assert(lon_min_.has_value() && lon_max_.has_value());
 
+    //already built for this delta?
+    if (inside_test_built_ && inside_test_delta_deg_ == delta_deg)
+        return;
+
+    inside_test_built_     = true;
+    inside_test_delta_deg_ = delta_deg;
+
+    ogr_polygon_delta_.reset();
+    lat_min_delta_.reset();
+    lat_max_delta_.reset();
+    lon_min_delta_.reset();
+    lon_max_delta_.reset();
+
+    //points and bounds the raster is generated from, by default the uninflated polygon
+    const std::vector<std::pair<double,double>>* points = &points_;
+    double lat_min = lat_min_.value();
+    double lat_max = lat_max_.value();
+    double lon_min = lon_min_.value();
+    double lon_max = lon_max_.value();
+
+    std::vector<std::pair<double,double>> points_delta;
+
+    if (delta_deg > 0.0)
+    {
+        //inflate the polygon by delta once, so that the delta check reduces to plain containment.
+        //num quadrant segments 8 => the arcs around convex corners are approximated well below
+        //the raster resolution
+        std::unique_ptr<OGRGeometry> buffered (ogr_polygon_->Buffer(delta_deg, 8));
+
+        if (buffered && wkbFlatten(buffered->getGeometryType()) == wkbPolygon)
+        {
+            std::unique_ptr<OGRPolygon> buffered_poly (buffered.release()->toPolygon());
+
+            const OGRLinearRing* ring = buffered_poly->getExteriorRing();
+
+            if (ring && ring->getNumPoints() >= 3)
+            {
+                OGREnvelope env;
+                buffered_poly->getEnvelope(&env);
+
+                lat_min_delta_ = env.MinX;
+                lat_max_delta_ = env.MaxX;
+                lon_min_delta_ = env.MinY;
+                lon_max_delta_ = env.MaxY;
+
+                //inflating a concave sector can close an opening and create a hole. the raster
+                //stores a single ring only and would report such a hole as inside, so in that
+                //case no raster is generated and the inflated polygon is checked geometrically.
+                if (buffered_poly->getNumInteriorRings() == 0)
+                {
+                    points_delta.reserve(ring->getNumPoints());
+
+                    for (int cnt = 0; cnt < ring->getNumPoints(); ++cnt)
+                        points_delta.emplace_back(ring->getX(cnt), ring->getY(cnt));
+
+                    points  = &points_delta;
+                    lat_min = env.MinX;
+                    lat_max = env.MaxX;
+                    lon_min = env.MinY;
+                    lon_max = env.MaxY;
+                }
+                else
+                {
+                    loginf << "sector '" << name_ << "' inflated by " << delta_deg
+                           << " has " << buffered_poly->getNumInteriorRings()
+                           << " holes, using the geometric check only";
+
+                    points = nullptr;
+                }
+
+                ogr_polygon_delta_ = std::move(buffered_poly);
+            }
+        }
+
+        if (!ogr_polygon_delta_)
+            logwrn << "sector '" << name_ << "' could not be inflated by delta " << delta_deg
+                   << ", falling back to the slow inside check";
+    }
+
+    if (!points)
+    {
+        //no raster for this shape, the geometric check on the inflated polygon is used instead
+        inside_test_.reset();
+        return;
+    }
+
     //create sector inside test
-    inside_test_ = SectorInsideTest(points_, lat_min_.value(), lon_min_.value(), lat_max_.value(), lon_max_.value());
+    inside_test_ = SectorInsideTest(*points, lat_min, lon_min, lat_max, lon_max);
 
 #if 0
     //[DEBUG]

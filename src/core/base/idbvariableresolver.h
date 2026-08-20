@@ -184,6 +184,9 @@ namespace dbcontent_vars
     inline const Property var_cat021_nucv_nacv_     {"NUCr or NACv", PropertyDataType::UCHAR};
     inline const Property var_cat021_sil_           {"SIL", PropertyDataType::UCHAR};
     inline const Property var_cat021_pos_check_failed_ {"Position Check Failed", PropertyDataType::BOOL};
+    inline const Property var_cat021_range_check_failed_ {"Range Check Failed", PropertyDataType::BOOL};
+    inline const Property var_cat021_cpr_valid_        {"CPR Valid", PropertyDataType::BOOL};
+    inline const Property var_cat021_ldpj_             {"Local Decoding Position Jump", PropertyDataType::BOOL};
     inline const Property var_cat021_geo_alt_       {"Geometric Height", PropertyDataType::FLOAT};
     inline const Property var_cat021_geo_alt_accuracy_ {"Geometric Altitude Accuracy", PropertyDataType::UCHAR};
     inline const Property var_cat021_ecat_          {"Emitter Category", PropertyDataType::UINT};

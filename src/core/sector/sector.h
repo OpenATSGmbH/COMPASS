@@ -63,7 +63,6 @@ public:
     virtual ~SectorInsideTest();
 
     CheckResult isInside(double x, double y) const;
-    CheckResult isInside(double x, double y, double delta) const;
 
     bool isValid() const;
 
@@ -167,8 +166,8 @@ public:
     void setSaveCallback(SaveCallback cb);
     void setMoveCallback(MoveCallback cb);
 
-    virtual bool isInside(const dbContent::TargetPosition& pos, 
-                          bool has_ground_bit, 
+    virtual bool isInside(const dbContent::TargetPosition& pos,
+                          bool has_ground_bit,
                           bool ground_bit_set,
                           InsideCheckType check_type = InsideCheckType::XYZ) const;
     bool isInside(double latitude, double longitude, double delta_deg) const;
@@ -176,10 +175,19 @@ public:
     std::pair<double, double> getMinMaxLatitude() const;
     std::pair<double, double> getMinMaxLongitude() const;
 
-    void createFastInsideTest() const;
+    /**
+     * Creates the fast inside test.
+     * If delta_deg > 0 the polygon is inflated by delta_deg first, so that
+     * isInside(lat, lon, delta_deg) reduces to a plain containment check against
+     * the inflated shape. Rebuilds only if the requested delta differs from the cached one.
+     */
+    void createFastInsideTest(double delta_deg = 0.0) const;
 
 protected:
     void createPolygon();
+
+    //slow reference implementation of the delta check, used if no inflated polygon is available
+    bool isInsideProbeRing(double latitude, double longitude, double delta_deg) const;
 
     virtual bool readJSON_impl(const nlohmann::json& json_obj) { return true; };
     virtual void writeJSON_impl(nlohmann::json& json_obj) const {};
@@ -207,6 +215,19 @@ protected:
     boost::optional<double> lon_max_;
 
     mutable boost::optional<SectorInsideTest> inside_test_;
+
+    //delta the fast inside test was built for, 0 = built from the uninflated polygon
+    mutable double inside_test_delta_deg_ = 0.0;
+    mutable bool   inside_test_built_     = false;
+
+    //polygon inflated by inside_test_delta_deg_, only set if that delta is > 0
+    mutable std::unique_ptr<OGRPolygon> ogr_polygon_delta_;
+
+    //bounding rect of ogr_polygon_delta_
+    mutable boost::optional<double> lat_min_delta_;
+    mutable boost::optional<double> lat_max_delta_;
+    mutable boost::optional<double> lon_min_delta_;
+    mutable boost::optional<double> lon_max_delta_;
 
     std::unique_ptr<OGRPolygon> ogr_polygon_;
 };

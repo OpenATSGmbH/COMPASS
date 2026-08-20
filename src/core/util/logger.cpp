@@ -23,6 +23,32 @@
 
 #define MAX_EVENTS_PER_CATEGORY 1000
 
+std::string formatFuncName(const char* pretty_function)
+{
+    std::string func_str(pretty_function);
+
+    size_t end_pos = func_str.find('(');
+    if (end_pos == std::string::npos) end_pos = func_str.length();
+
+    size_t start_pos = func_str.rfind(' ', end_pos) + 1;
+    size_t class_end = func_str.rfind("::", end_pos);
+
+    if (class_end != std::string::npos && class_end > start_pos)
+    {
+        size_t class_start = func_str.rfind(' ', class_end - 1);
+        if (class_start == std::string::npos) class_start = 0; else class_start++;
+
+        std::string class_name = func_str.substr(class_start, class_end - class_start);
+        std::string func_name  = func_str.substr(class_end + 2, end_pos - class_end - 2);
+
+        return class_name + ": " + func_name;
+    }
+    else
+    {
+        return func_str.substr(start_pos, end_pos - start_pos);
+    }
+}
+
 Logger::Logger() : console_appender_(0), file_appender_(0), event_log_(new logger::EventLog(MAX_EVENTS_PER_CATEGORY)) {}
 
 void Logger::init(const std::string& log_config_filename, bool enable_event_log)

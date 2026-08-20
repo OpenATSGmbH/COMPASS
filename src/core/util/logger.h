@@ -23,30 +23,30 @@
 #include "log4cpp/Category.hh"
 
 #include <cstdint>
+#include <string>
 
-#define FORMAT_FUNC_NAME() [&]() -> std::string { \
-    std::string func_str(__PRETTY_FUNCTION__); \
-    size_t end_pos = func_str.find('('); \
-    if (end_pos == std::string::npos) end_pos = func_str.length(); \
-    size_t start_pos = func_str.rfind(' ', end_pos) + 1; \
-    size_t class_end = func_str.rfind("::", end_pos); \
-    if (class_end != std::string::npos && class_end > start_pos) { \
-        size_t class_start = func_str.rfind(' ', class_end - 1); \
-        if (class_start == std::string::npos) class_start = 0; else class_start++; \
-        std::string class_name = func_str.substr(class_start, class_end - class_start); \
-        std::string func_name = func_str.substr(class_end + 2, end_pos - class_end - 2); \
-        return class_name + ": " + func_name; \
-    } else { \
-        std::string func_name = func_str.substr(start_pos, end_pos - start_pos); \
-        return func_name; \
-    } \
+/**
+ * Reduces a __PRETTY_FUNCTION__ signature to 'Class: function' or 'function'.
+ */
+std::string formatFuncName(const char* pretty_function);
+
+/**
+ * The signature is a compile time constant per function, so it is reduced once per call site
+ * and returned by reference afterwards. Every macro expansion creates its own closure type,
+ * and therefore its own static.
+ * __PRETTY_FUNCTION__ has to be expanded here and not inside a nested lambda, otherwise it
+ * names the lambda instead of the enclosing function.
+ */
+#define FORMAT_FUNC_NAME() []() -> const std::string& { \
+    static const std::string func_name = formatFuncName(__PRETTY_FUNCTION__); \
+    return func_name; \
 }()
 
 class LogHelper {
 public:
-    LogHelper(log4cpp::CategoryStream&& stream, const std::string& func_name) 
-        : stream_(std::move(stream)), used_with_stream_(false), func_name_(func_name) {
-        stream_ << func_name_;
+    LogHelper(log4cpp::CategoryStream&& stream, const std::string& func_name)
+        : stream_(std::move(stream)), used_with_stream_(false) {
+        stream_ << func_name;
     }
     
     ~LogHelper() {
@@ -85,14 +85,33 @@ public:
 private:
     log4cpp::CategoryStream stream_;
     bool used_with_stream_;
-    std::string func_name_;
+};
+
+/**
+ * Turns a log expression into void so it can be used as one arm of a conditional operator.
+ * operator& binds looser than operator<<, so 'LogVoidify() & LogHelper(...) << a << b' groups
+ * as 'LogVoidify() & (LogHelper(...) << a << b)'. Using a plain if instead would make a
+ * trailing else of the caller bind to the macro's if.
+ */
+class LogVoidify {
+public:
+    void operator&(log4cpp::CategoryStream&) {}
+    void operator&(LogHelper&&) {} //logdbg used standalone, without streaming anything
 };
 
 #define logerr LogHelper(log4cpp::Category::getRoot().errorStream(), FORMAT_FUNC_NAME())
 #define logwrn LogHelper(log4cpp::Category::getRoot().warnStream(), FORMAT_FUNC_NAME())
 #define loginf LogHelper(log4cpp::Category::getRoot().infoStream(), FORMAT_FUNC_NAME())
-#define logdbg LogHelper(log4cpp::Category::getRoot().isPriorityEnabled(log4cpp::Priority::DEBUG) ? \
-    log4cpp::Category::getRoot().debugStream() : log4cpp::Category::getRoot().debugStream(), FORMAT_FUNC_NAME())
+
+/**
+ * Nothing right of the ':' is evaluated while DEBUG is disabled, neither the function name nor
+ * the streamed arguments. The check is done at runtime, so the level stays configurable through
+ * log4cpp.properties (log4cpp.rootCategory=DEBUG, ...).
+ */
+#define logdbg \
+    !log4cpp::Category::getRoot().isPriorityEnabled(log4cpp::Priority::DEBUG) \
+        ? (void)0 \
+        : LogVoidify() & LogHelper(log4cpp::Category::getRoot().debugStream(), FORMAT_FUNC_NAME())
 #define logdbg1 \
     if (false) \
     log4cpp::Category::getRoot().debugStream()  // for improved performance

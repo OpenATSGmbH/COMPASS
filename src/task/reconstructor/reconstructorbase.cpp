@@ -1134,7 +1134,7 @@ void ReconstructorBase::createTargetReports()
                 continue;
 
             for (const auto& s : ctx.sectorLayer(sect_it.first)->sectors())
-                s->createFastInsideTest();
+                s->createFastInsideTest(task_.sectorDeltaDeg());
 
             used_sector_layers.push_back(ctx.sectorLayer(sect_it.first));
         }
@@ -1288,6 +1288,18 @@ void ReconstructorBase::createTargetReports()
                     info.invalidated_pos_ = true;
                     info.pos_check_failed_input_ = true;
                 }
+
+                // GS position validation flags: carried for calibration exclusion
+                // and re-validation, no invalidation on their own (see
+                // ReconstructorInfo comment)
+                boost::optional<bool> range_check_failed = tgt_acc.rangeCheckFailed(cnt);
+                info.adsb_rcf_ = range_check_failed && *range_check_failed;
+
+                boost::optional<bool> cpr_valid = tgt_acc.cprValid(cnt);
+                info.adsb_cpr_invalid_ = cpr_valid && !*cpr_valid;
+
+                boost::optional<bool> ldpj = tgt_acc.localDecodingPositionJump(cnt);
+                info.adsb_ldpj_ = ldpj && *ldpj;
 
                 // insert info
                 target_reports_[record_num] = info;

@@ -187,6 +187,10 @@ protected:
     // the ProbIMM associator for dubious reference detection
     virtual void onTrackNumberDisassociated (
         const dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn) {}
+    // notification hook: during self-association the reports of from_utn were
+    // merged into to_utn and from_utn is scheduled for removal; default no-op,
+    // overridden by the ProbIMM associator for dubious reference detection
+    virtual void onTargetsMerged (unsigned int from_utn, unsigned int to_utn) {}
     virtual void doOutlierDetection (
         dbContent::targetReport::ReconstructorInfo& tr,
         unsigned int utn, bool do_debug) {};
