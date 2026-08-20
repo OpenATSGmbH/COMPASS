@@ -73,6 +73,9 @@ void LoadController::begin(const LoadOperation& op)
     if (load_total_ == 0)
         return; // nothing to load: wait cursor only
 
+    if (dialogs_suppressed_)
+        return; // report export: the modal export dialog covers the busy state
+
     dialog_ = new QProgressDialog("Loading data...", "Cancel", 0, 100,
                                   Dialogs::statusDialogParent());
     dialog_->setWindowModality(Qt::ApplicationModal);
@@ -224,6 +227,9 @@ void LoadController::beginViewProcessing()
     // a load cycle's own dialog already covers the busy state
     if (op_ || dialog_ || busy_dialog_)
         return;
+
+    if (dialogs_suppressed_)
+        return; // report export: the modal export dialog covers the busy state
 
     // indeterminate and modal: the point is blocking user interaction while workers
     // read view state, the bar itself is secondary

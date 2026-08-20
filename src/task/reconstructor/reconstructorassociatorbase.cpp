@@ -1027,6 +1027,8 @@ START_TR_ASSOC:
 
                     reconstructor().targets_container_.eraseTrackNumberLookup(tr);
 
+                    onTrackNumberDisassociated(tr, utn);
+
                     goto START_TR_ASSOC;
                 }
             }

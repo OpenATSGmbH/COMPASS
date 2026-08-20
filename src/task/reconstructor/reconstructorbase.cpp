@@ -1284,7 +1284,10 @@ void ReconstructorBase::createTargetReports()
                 boost::optional<bool> pos_check_failed = tgt_acc.posCheckFailed(cnt);
 
                 if (pos_check_failed && *pos_check_failed)
+                {
                     info.invalidated_pos_ = true;
+                    info.pos_check_failed_input_ = true;
+                }
 
                 // insert info
                 target_reports_[record_num] = info;

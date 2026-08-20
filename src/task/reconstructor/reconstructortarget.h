@@ -376,6 +376,11 @@ public:
     bool created_from_tentative_ = false;
     bool contains_tentative_     = false;
 
+    // dubious reference detection results (check type key -> count), filled at
+    // run end by the reconstructor's finalizeAnalysis(), copied into the
+    // dbContent::Target info JSON by TargetModel::createNewTargets()
+    std::map<std::string, unsigned int> dubious_ref_counts_;
+
     void addTargetReport (unsigned long rec_num);
     void addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums);
     void addTargetReports (const ReconstructorTarget& other);

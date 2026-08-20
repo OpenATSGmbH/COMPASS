@@ -346,6 +346,12 @@ public:
     virtual void createAdditionalAnnotations() {}
 
     /// Main-thread hook called once at the end of a reconstruction run,
+    /// BEFORE saveTargets() and the report finalization. Used for run-end
+    /// analysis (e.g. dubious reference detection) whose results feed the
+    /// targets table and the task report. Must run before reset().
+    virtual void finalizeAnalysis() {}
+
+    /// Main-thread hook called once at the end of a reconstruction run,
     /// after all slices have been processed and written. Used for
     /// persisting derived artifacts (e.g. estimated radar biases) that
     /// may involve UI interaction.

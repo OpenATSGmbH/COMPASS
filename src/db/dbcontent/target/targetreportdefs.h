@@ -243,6 +243,10 @@ struct ReconstructorInfo : public BaseInfo
 
     bool unsused_ds_pos_ {false}; // set if data source should not be used for pos
     bool invalidated_pos_ {false}; // if invalidated by validate function
+    // invalidated by the import-time position check (posCheckFailed meta info),
+    // input data quality rather than a reconstruction decision; always set
+    // together with invalidated_pos_
+    bool pos_check_failed_input_ {false};
     bool is_pos_outlier_ {false}; // if set by outlier detection
 
     boost::optional<targetReport::BarometricAltitude> barometric_altitude_;

@@ -181,6 +181,12 @@ protected:
         dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn,
         bool secondary_verified, bool do_debug) = 0;
     // empty if not possible, else check passed or failed returned
+
+    // notification hook: track number lookup was severed because the position
+    // offset check failed (ghost/seduction case); default no-op, overridden by
+    // the ProbIMM associator for dubious reference detection
+    virtual void onTrackNumberDisassociated (
+        const dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn) {}
     virtual void doOutlierDetection (
         dbContent::targetReport::ReconstructorInfo& tr,
         unsigned int utn, bool do_debug) {};

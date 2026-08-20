@@ -74,6 +74,12 @@ public:
     // is active (its own dialog covers that).
     void beginViewProcessing();
     void endViewProcessing();
+
+    // suppress both progress dialogs (wait cursor stays): used during report export,
+    // where each figure triggers a load + view processing cycle - the modal export
+    // dialog already blocks user interaction, and the popping dialogs steal OS focus
+    // from other applications
+    void setDialogsSuppressed(bool suppressed) { dialogs_suppressed_ = suppressed; }
     // load finished: close dialog + cursor. drain pumps the event loop before closing, so a
     // deferred view redraw runs while the dialog is still up (the normal completion path);
     // pass false when ending from inside another emit, where pumping would re-enter.
@@ -120,4 +126,6 @@ private:
     // the interactive view-processing busy dialog (see beginViewProcessing); QPointer
     // for the same parenting reason as dialog_
     QPointer<QProgressDialog> busy_dialog_;
+
+    bool dialogs_suppressed_ {false}; // see setDialogsSuppressed()
 };

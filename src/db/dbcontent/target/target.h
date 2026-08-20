@@ -136,6 +136,13 @@ public:
     std::set<unsigned int> adsbMopsList() const;
     std::string adsbMopsStr() const;
 
+    // dubious reference detection results (reconstructor), counts per check type
+    bool hasDubiousRef() const;
+    void dubiousRefCounts(const std::map<std::string, unsigned int>& counts);
+    std::map<std::string, unsigned int> dubiousRefCounts() const;
+    unsigned int dubiousRefTotal() const;
+    std::string dubiousRefStr() const;
+
     static const std::string KEY_EVAL;
     static const std::string KEY_EVAL_USE;
     static const std::string KEY_EVAL_EXCLUDED_TIME_WINDOWS;
@@ -158,6 +165,8 @@ public:
     static const std::string KEY_LONGITUDE_MAX;
     static const std::string KEY_ECAT;
     static const std::string KEY_ADSB_INFO;
+    static const std::string KEY_DUBIOUS_REF;
+    static const std::string KEY_DUBIOUS_REF_COUNTS;
 
     static const Property     DBColumnID;
     static const Property     DBColumnInfo;

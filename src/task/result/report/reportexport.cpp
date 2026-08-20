@@ -23,6 +23,7 @@
 
 #include "taskmanager.h"
 #include "compass.h"
+#include "viewmanager.h"
 
 #include "system.h"
 #include "logger.h"
@@ -104,11 +105,18 @@ ResultT<nlohmann::json> ReportExport::exportReport(TaskResult& result,
 
     auto exporter_ptr = exporter.get();
 
-    connect(exporter.get(), &ReportExporter::progressChanged, 
+    connect(exporter.get(), &ReportExporter::progressChanged,
         [ this, exporter_ptr ] () { this->updateProgress(exporter_ptr); });
+
+    // figure rendering triggers a load + view processing cycle per figure - suppress
+    // the resulting progress dialogs for the export's duration (the modal export
+    // dialog covers the busy state, and the popups steal OS focus)
+    compass().viewManager().setLoadDialogsSuppressed(true);
 
     //export using exporter
     auto res = exporter->exportReport(result, section);
+
+    compass().viewManager().setLoadDialogsSuppressed(false);
 
     return res;
 }
