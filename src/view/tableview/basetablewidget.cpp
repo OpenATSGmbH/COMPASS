@@ -27,7 +27,6 @@
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QKeyEvent>
-#include <QMessageBox>
 #include <QTableView>
 #include <QVBoxLayout>
 
@@ -190,16 +189,6 @@ void BaseBufferTableWidget::keyPressEvent(QKeyEvent* event)
                         selected_headers.append('\n');
 
                     ++row_count;
-
-                    if (row_count == 999)
-                    {
-                        QMessageBox m_warning(
-                                    QMessageBox::Warning, "Too Many Rows Selected",
-                                    "If more than 1000 lines are selected, only the first 1000 are copied.",
-                                    QMessageBox::Ok);
-                        m_warning.exec();
-                        break;
-                    }
                 }
                 // Otherwise it's the same row, so append a column separator, which is a tab.
                 else

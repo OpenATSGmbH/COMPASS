@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <random>
 
 using namespace reconstruction;
 using namespace test_reconstruction;
@@ -19,6 +20,17 @@ std::unique_ptr<KalmanChain> makeChain(const std::vector<Measurement>& mms)
     chain->setMeasurementGetFunc(
         [&mms](unsigned long mm_id) -> const Measurement& { return mms.at(mm_id); });
     return chain;
+}
+
+//the full ordering invariant, checked through the public API so the test does not depend
+//on KalmanChain's internal validation helper
+bool isOrdered(KalmanChain& chain)
+{
+    for (size_t i = 1; i < chain.size(); ++i)
+        if (chain.getUpdate(i).t < chain.getUpdate(i - 1).t)
+            return false;
+
+    return true;
 }
 
 } // namespace
@@ -114,4 +126,66 @@ TEST_CASE("kalman chain rejects predictions too far from data", "[reconstruction
     // default prediction_max_tdiff_sec is 10 s
     CHECK(chain->canPredict(mms.back().t + boost::posix_time::seconds(5)));
     CHECK_FALSE(chain->canPredict(mms.back().t + boost::posix_time::seconds(60)));
+}
+
+/**
+ * insertAt only validates the adjacencies the inserted element creates, instead of rescanning
+ * the whole chain. That is exact only if the chain is ordered beforehand, so this drives a
+ * pseudo random insertion order and verifies the global ordering afterwards with the full scan.
+ */
+TEST_CASE("kalman chain stays ordered under random insert order", "[reconstruction][kalman_chain]")
+{
+    SyntheticTrack track;
+    track.sigma_m = 30.0;
+
+    const size_t n = 120;
+    auto mms = track.generate(n);
+
+    auto chain = makeChain(mms);
+
+    //deterministic shuffle, no dependency on a random device
+    std::vector<size_t> order(n);
+    for (size_t i = 0; i < n; ++i)
+        order[ i ] = i;
+
+    std::mt19937 rng (1234);
+    std::shuffle(order.begin(), order.end(), rng);
+
+    for (size_t cnt = 0; cnt < n; ++cnt)
+    {
+        size_t i = order[ cnt ];
+        REQUIRE(chain->insert(i, mms[ i ].t, mms[ i ].t, false));
+
+        //the full scan has to agree after every single insert
+        REQUIRE(isOrdered(*chain));
+    }
+
+    REQUIRE(chain->size() == n);
+    REQUIRE(isOrdered(*chain));
+
+    //and the result is the chronological order
+    for (size_t i = 1; i < n; ++i)
+        REQUIRE(chain->getUpdate(i - 1).t <= chain->getUpdate(i).t);
+}
+
+/**
+ * Appending in order must be accepted as well, that path reports a negative insertion index.
+ */
+TEST_CASE("kalman chain stays ordered when appended in order", "[reconstruction][kalman_chain]")
+{
+    SyntheticTrack track;
+    track.sigma_m = 30.0;
+
+    const size_t n = 50;
+    auto mms = track.generate(n);
+
+    auto chain = makeChain(mms);
+
+    for (size_t i = 0; i < n; ++i)
+    {
+        REQUIRE(chain->insert(i, mms[ i ].t, mms[ i ].t, false));
+        REQUIRE(isOrdered(*chain));
+    }
+
+    REQUIRE(chain->size() == n);
 }

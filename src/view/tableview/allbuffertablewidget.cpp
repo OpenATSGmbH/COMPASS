@@ -20,7 +20,6 @@
 #include "buffer.h"
 #include "logger.h"
 
-#include <QMessageBox>
 #include <QTableView>
 #include <QTimer>
 #include <QItemSelection>
@@ -107,7 +106,7 @@ void AllBufferTableWidget::selectSelectedRows(const std::vector<std::pair<int,in
     QTimer::singleShot(10, [this,first]{table_->scrollTo(first, QAbstractItemView::PositionAtCenter);});
 }
 
-std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText()
+std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText(unsigned int max_rows)
 {
     std::vector<std::vector<std::string>> data;
 
@@ -144,13 +143,9 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText()
 
             ++row_count;
 
-            if (row_count == 999)
+            if (max_rows && row_count >= max_rows)
             {
-                QMessageBox m_warning(
-                            QMessageBox::Warning, "Too Many Rows Selected",
-                            "If more than 1000 lines are selected, only the first 1000 are copied.",
-                            QMessageBox::Ok);
-                m_warning.exec();
+                logwrn << "selection truncated to " << max_rows << " rows";
                 break;
             }
         }

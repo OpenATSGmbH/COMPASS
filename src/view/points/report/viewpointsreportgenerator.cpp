@@ -33,6 +33,7 @@
 #include "dbconnection.h"
 #include "files.h"
 #include "latexdocument.h"
+#include "latexrun.h"
 #include "latexvisitor.h"
 #include "system.h"
 
@@ -249,8 +250,7 @@ void ViewPointsReportGenerator::run ()
             if (run_pdflatex_)
             {
                 std::string command_out;
-                std::string command = "cd "+report_path_+" && pdflatex --interaction=nonstopmode "+report_filename_
-                        +" | awk 'BEGIN{IGNORECASE = 1}/warning|!/,/^$/;'";
+                std::string command = latex::pdfLatexCommand(report_path_, report_filename_);
 
                 loginf << "running pdflatex";
                 dialog_->setStatus("Running pdflatex");
@@ -272,16 +272,7 @@ void ViewPointsReportGenerator::run ()
                 elapsed_time_str = String::timeStringFromDouble(ms / 1000.0, false);
                 dialog_->setElapsedTime(elapsed_time_str);
 
-                auto hasFatalLatexError = [&command_out]()
-                {
-                    return command_out.find("! LaTeX Error")    != std::string::npos
-                        || command_out.find("! Emergency stop") != std::string::npos
-                        || command_out.find("Fatal error")      != std::string::npos;
-                };
-
-                while (!hasFatalLatexError()
-                       && (command_out.find("Rerun to get outlines right") != std::string::npos
-                           || command_out.find("Rerun to get cross-references right") != std::string::npos))
+                while (!latex::hasFatalError(command_out) && latex::needsRerun(command_out))
                 {
                     loginf << "re-running pdflatex";
                     dialog_->setStatus("Re-running pdflatex");
@@ -300,7 +291,11 @@ void ViewPointsReportGenerator::run ()
 
                 loginf << "result '" << command_out << "'";
 
-                if (!command_out.size()) // no warnings
+                // pdflatex prints warnings on almost every run (underfull boxes,
+                // package notices), so only a fatal error means no PDF was produced
+                bool fatal_error = latex::hasFatalError(command_out);
+
+                if (!fatal_error)
                 {
                     pdf_created_ = true;
 
@@ -322,11 +317,22 @@ void ViewPointsReportGenerator::run ()
                             logerr << "opening not possible since wrong file ending";
                     }
                 }
-                else // show warnings
+                if (command_out.size())
                 {
-                    QMessageBox msgBox(QApplication::activeWindow());
-                    msgBox.setText("PDF Latex failed with warnings:\n\n"+QString(command_out.c_str()));
-                    msgBox.exec();
+                    // no modal dialog during automatic runs, it would block the run
+                    // until someone clicks it away
+                    if (view_manager_.compass().allowUserInteractions())
+                    {
+                        QMessageBox msgBox(QApplication::activeWindow());
+                        msgBox.setText(QString(fatal_error ? "PDF Latex failed:\n\n"
+                                                           : "PDF Latex warnings:\n\n")
+                                       + QString(command_out.c_str()));
+                        msgBox.exec();
+                    }
+                    else if (fatal_error)
+                        logerr << "pdflatex failed '" << command_out << "'";
+                    else
+                        logwrn << "pdflatex warnings '" << command_out << "'";
                 }
             }
         }
@@ -368,10 +374,13 @@ void ViewPointsReportGenerator::run ()
 
         running_ = false;
 
-        QMessageBox m_warning(QMessageBox::Warning, "Export PDF Failed",
-                              (string("Error message:\n")+e.what()).c_str(),
-                              QMessageBox::Ok, QApplication::activeWindow());
-        m_warning.exec();
+        if (view_manager_.compass().allowUserInteractions())
+        {
+            QMessageBox m_warning(QMessageBox::Warning, "Export PDF Failed",
+                                  (string("Error message:\n")+e.what()).c_str(),
+                                  QMessageBox::Ok, QApplication::activeWindow());
+            m_warning.exec();
+        }
     }
 }
 

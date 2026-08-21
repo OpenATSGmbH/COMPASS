@@ -62,6 +62,14 @@
 using namespace std;
 using namespace Utils;
 
+namespace
+{
+    // maximum number of Table View rows written into the generated LaTeX table.
+    // kept low on purpose: the table is emitted as a tabularx, which has to hold
+    // the whole table in TeX main memory to solve the column widths
+    const unsigned int MaxScrapedTableRows = 200;
+}
+
 /**
  */
 LatexVisitor::LatexVisitor(LatexDocument& report, 
@@ -184,7 +192,9 @@ void LatexVisitor::visit(TableView* e)
     AllBufferTableWidget* allbuf = e->getDataWidget()->getAllBufferTableWidget();
     traced_assert(allbuf);
 
-    std::vector<std::vector<std::string>> data = allbuf->getSelectedText();
+    // bound the scraped table: a view point selection can hold hundreds of thousands of
+    // rows, which exceeds the TeX main memory when written as a single tabularx
+    std::vector<std::vector<std::string>> data = allbuf->getSelectedText(MaxScrapedTableRows);
 
     if (data.size())
     {
