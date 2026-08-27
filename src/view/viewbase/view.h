@@ -97,6 +97,12 @@ public:
     virtual void clearData();
     virtual void appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current);
 
+    // true while the view still processes data asynchronously after loadingDone()
+    // (e.g. the geographic view's geometry builds, the table view's row index build);
+    // processingFinishedSignal() is emitted once done (forwarded from the data
+    // widget). Synchronous views are never pending.
+    virtual bool hasPendingProcessing() const;
+
     const std::string& getName() const;
     ViewManager& viewManager() { return view_manager_; }
 
@@ -154,6 +160,12 @@ public:
 signals:
     void selectionChangedSignal();  // do not emit manually, call emitSelectionChange()
     void presetChangedSignal();
+    // emitted when the view started asynchronous data processing (the data widget's
+    // processor went busy); ViewManager shows the busy state on it outside a load
+    void processingStartedSignal();
+    // emitted when the view has finished asynchronous data processing (see
+    // hasPendingProcessing()); ViewManager defers the load-done edge on it
+    void processingFinishedSignal();
 
 public slots:
     void selectionChangedSlot();

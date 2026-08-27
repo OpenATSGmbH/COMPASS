@@ -72,7 +72,29 @@ ChartView::ChartView(QtCharts::QChart* chart, SelectionStyle sel_style, QWidget*
 
 /**
  */
-ChartView::~ChartView() = default;
+/**
+ * Drops the axis label item before the base class runs.
+ *
+ * The item is parented to the QChart, so Qt destroys it together with the chart - but
+ * the chart is destroyed by ~QChartView, i.e. AFTER this destructor body, and the raw
+ * pointer here is also deleted by hand in setXAxisLabel(). Removing it from the chart
+ * and deleting it here, once, keeps those two paths from meeting: leaving it to Qt left
+ * a dangling child behind and crashed during the chart's own teardown
+ * (QGraphicsScene::clear -> ~QChart -> deleteAllAxes).
+ */
+ChartView::~ChartView()
+{
+    if (x_axis_label_item_)
+    {
+        x_axis_label_item_->setParentItem(nullptr);
+
+        if (chart() && chart()->scene())
+            chart()->scene()->removeItem(x_axis_label_item_);
+
+        delete x_axis_label_item_;
+        x_axis_label_item_ = nullptr;
+    }
+}
 
 void ChartView::changeEvent(QEvent* event)
 {

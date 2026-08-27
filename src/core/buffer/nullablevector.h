@@ -49,6 +49,13 @@ public:
     void clear();
     void clearData(); // removes all data
 
+    // releases the capacity slack left by geometric vector growth (chunked appends)
+    void shrinkToFit()
+    {
+        data_.shrink_to_fit();
+        null_flags_.shrink_to_fit();
+    }
+
     const T get(unsigned int index) const;
 
     const T& getRef(unsigned int index) const

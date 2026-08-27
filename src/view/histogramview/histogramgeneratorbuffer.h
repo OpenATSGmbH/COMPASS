@@ -53,6 +53,12 @@ public:
     /// falls back to per-dbcontent grouping.
     typedef std::function<std::string(const std::string&, unsigned int)> RowLayerLookup;
 
+    /// Row group index resolver: returns the group of a row as an index into the group
+    /// key list installed with setRowGroups(). Index 0 means "no group" (the row does
+    /// not contribute). Preferred over RowLayerLookup for large datasets - it costs an
+    /// array lookup per row instead of building and comparing a string per row.
+    typedef std::function<std::uint16_t(const std::string&, unsigned int)> RowGroupLookup;
+
     HistogramGeneratorBuffer(Data* buffer_data,
                              dbContent::Variable* variable,
                              dbContent::MetaVariable* meta_variable);
@@ -68,6 +74,20 @@ public:
     {
         return !row_filter_ || row_filter_(dbc, i);
     }
+
+    /// Installs the index-based grouping: keys[i] is the group key of index i, keys[0]
+    /// must be the "no group" entry. Takes precedence over setRowLayerLookup.
+    void setRowGroups(std::vector<std::string> keys, RowGroupLookup f)
+    {
+        group_keys_       = std::move(keys);
+        row_group_lookup_ = std::move(f);
+    }
+    bool hasRowGroups() const { return static_cast<bool>(row_group_lookup_) && !group_keys_.empty(); }
+    std::uint16_t rowGroup(const std::string& dbc, unsigned int i) const
+    {
+        return row_group_lookup_(dbc, i);
+    }
+    const std::vector<std::string>& groupKeys() const { return group_keys_; }
 
     void setRowLayerLookup(RowLayerLookup f) { row_layer_lookup_ = std::move(f); }
     bool hasRowLayerLookup() const { return static_cast<bool>(row_layer_lookup_); }
@@ -110,6 +130,8 @@ private:
 
     RowFilter                row_filter_;
     RowLayerLookup           row_layer_lookup_;
+    RowGroupLookup           row_group_lookup_;
+    std::vector<std::string> group_keys_;      // by group index, [0] = no group
 };
 
 /**
@@ -179,7 +201,33 @@ protected:
         //dbcontent (legacy fallback). Each bucket gets its own histogram copy
         //so zoom_impl and per-bucket bin counts can proceed independently.
         std::set<std::string> keys;
-        if (hasRowLayerLookup())
+        if (hasRowGroups())
+        {
+            //index based grouping: which groups actually carry allowed rows. Costs one
+            //array lookup per row instead of building and comparing a string per row.
+            std::vector<bool> group_used(groupKeys().size(), false);
+
+            for (auto& elem : *currentData())
+            {
+                const std::string& dbc = elem.first;
+                const Buffer&      buf = *elem.second;
+                const unsigned int n   = buf.size();
+                for (unsigned int i = 0; i < n; ++i)
+                {
+                    if (!rowAllowed(dbc, i))
+                        continue;
+
+                    auto g = rowGroup(dbc, i);
+                    if (g > 0 && g < group_used.size())
+                        group_used[ g ] = true;
+                }
+            }
+
+            for (size_t g = 1; g < group_used.size(); ++g)
+                if (group_used[ g ])
+                    keys.insert(groupKeys()[ g ]);
+        }
+        else if (hasRowLayerLookup())
         {
             for (auto& elem : *currentData())
             {
@@ -496,6 +544,35 @@ private:
 
         const bool has_filter        = hasRowFilter();
         const bool has_layer_lookup  = hasRowLayerLookup();
+        const bool has_groups        = hasRowGroups();
+
+        //index based grouping: resolve the per group targets once, so a row costs an
+        //array lookup instead of a string build plus two string keyed map lookups
+        typedef typename decltype(histograms_)::mapped_type HistogramType;
+        typedef typename decltype(intermediate_data_.content_data)::mapped_type IntermDataType;
+
+        std::vector<HistogramType*>  hist_by_group;
+        std::vector<IntermDataType*> interm_by_group;
+
+        if (has_groups)
+        {
+            hist_by_group.assign(groupKeys().size(), nullptr);
+            interm_by_group.assign(groupKeys().size(), nullptr);
+
+            for (size_t g = 1; g < groupKeys().size(); ++g)
+            {
+                auto hist_it = histograms_.find(groupKeys()[ g ]);
+                if (hist_it == histograms_.end() || hist_it->second.numBins() < 1)
+                    continue;
+
+                auto interm_it = intermediate_data_.content_data.find(groupKeys()[ g ]);
+                if (interm_it == intermediate_data_.content_data.end())
+                    continue;
+
+                hist_by_group[ g ]   = &hist_it->second;
+                interm_by_group[ g ] = &interm_it->second;
+            }
+        }
 
         //add variable content
         for (unsigned int cnt=0; cnt < data_size; ++cnt)
@@ -503,23 +580,44 @@ private:
             if (has_filter && !rowAllowed(db_content, cnt))
                 continue;
 
-            //resolve group key: layer id (per-layer mode) or dbcontent (legacy)
-            const std::string key = has_layer_lookup
-                                  ? rowLayerId(db_content, cnt)
-                                  : db_content;
-            if (key.empty())
-                continue; //unmappable row
+            HistogramType*  histogram_ptr   = nullptr;
+            IntermDataType* interm_data_ptr = nullptr;
 
-            auto hist_it = histograms_.find(key);
-            if (hist_it == histograms_.end() || hist_it->second.numBins() < 1)
-                continue;
+            if (has_groups)
+            {
+                auto g = rowGroup(db_content, cnt);
+                if (g == 0 || g >= hist_by_group.size())
+                    continue; //unmappable row
 
-            auto interm_it = intermediate_data_.content_data.find(key);
-            if (interm_it == intermediate_data_.content_data.end())
-                continue;
+                histogram_ptr   = hist_by_group[ g ];
+                interm_data_ptr = interm_by_group[ g ];
 
-            auto& histogram   = hist_it->second;
-            auto& interm_data = interm_it->second;
+                if (!histogram_ptr || !interm_data_ptr)
+                    continue;
+            }
+            else
+            {
+                //resolve group key: layer id (per-layer mode) or dbcontent (legacy)
+                const std::string key = has_layer_lookup
+                                      ? rowLayerId(db_content, cnt)
+                                      : db_content;
+                if (key.empty())
+                    continue; //unmappable row
+
+                auto hist_it = histograms_.find(key);
+                if (hist_it == histograms_.end() || hist_it->second.numBins() < 1)
+                    continue;
+
+                auto interm_it = intermediate_data_.content_data.find(key);
+                if (interm_it == intermediate_data_.content_data.end())
+                    continue;
+
+                histogram_ptr   = &hist_it->second;
+                interm_data_ptr = &interm_it->second;
+            }
+
+            auto& histogram   = *histogram_ptr;
+            auto& interm_data = *interm_data_ptr;
 
             bool selected = !selected_vec.isNull(cnt) && selected_vec.get(cnt);
             bool is_null  = data.isNull(cnt);

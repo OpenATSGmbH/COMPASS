@@ -27,8 +27,12 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <atomic>
+#include <chrono>
 #include <cstring>
 #include <dlfcn.h>
+#include <pthread.h>
+#include <thread>
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
@@ -307,6 +311,117 @@ static void logCoreDumpLimit()
                   << std::endl;
 }
 
+// ---------------------------------------------------------------------------
+// Main-thread stall watchdog: a heartbeat timer on the main thread bumps an atomic
+// timestamp; a watchdog thread signals the main thread (SIGUSR2) when the heartbeat
+// stops for longer than the threshold, and the async-signal-safe handler dumps the
+// main thread's LIVE backtrace to stderr. A "not responding" episode thereby
+// documents itself, with a stack, in whatever captures stderr (the test framework's
+// per-test logs included); the episode's end is logged with its duration. Long
+// stalls re-dump periodically, so a moving stall (several long stretches) shows its
+// progression.
+
+namespace main_thread_stall
+{
+
+static std::atomic<long long> last_beat_ms { 0 };
+static std::atomic<bool>      watchdog_run { false };
+static pthread_t              main_thread;
+static std::thread            watchdog;
+
+static long long nowMs()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+// runs on the main thread, interrupting whatever it is stuck in - only
+// async-signal-safe calls allowed
+static void stallSignalHandler(int, siginfo_t*, void*)
+{
+    using crash_breadcrumbs::writeStr;
+
+    void* frames[128];
+    int count = backtrace(frames, 128);
+
+    writeStr(STDERR_FILENO, "\n=== MAIN THREAD STALL: heartbeat stopped, live backtrace ===\n");
+    backtrace_symbols_fd(frames, count, STDERR_FILENO);
+    writeStr(STDERR_FILENO, "=== MAIN THREAD STALL: end of backtrace ===\n");
+}
+
+static void start(QObject* heartbeat_parent)
+{
+    const long long threshold_ms = 3000;  // below the window manager's patience
+    const long long redump_ms    = 10000; // progression dumps during long stalls
+
+    main_thread  = pthread_self();
+    last_beat_ms = nowMs();
+
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sigemptyset(&sa.sa_mask);
+    sa.sa_sigaction = stallSignalHandler;
+    sa.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_RESTART;
+    sigaction(SIGUSR2, &sa, nullptr);
+
+    auto* timer = new QTimer(heartbeat_parent);
+    QObject::connect(timer, &QTimer::timeout, [] () { last_beat_ms = nowMs(); });
+    timer->start(100);
+
+    watchdog_run = true;
+    watchdog = std::thread([ threshold_ms, redump_ms ] ()
+    {
+        long long stall_begin = 0;
+        long long last_dump   = 0;
+
+        while (watchdog_run)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+            long long now = nowMs();
+            long long gap = now - last_beat_ms;
+
+            if (gap > threshold_ms)
+            {
+                if (!stall_begin)
+                {
+                    stall_begin = now - gap;
+                    last_dump   = 0;
+                }
+
+                if (!last_dump || now - last_dump > redump_ms)
+                {
+                    last_dump = now;
+                    pthread_kill(main_thread, SIGUSR2);
+                }
+            }
+            else if (stall_begin)
+            {
+                logwrn << "main thread was stalled for "
+                       << (now - stall_begin) / 1000.0 << " s";
+
+                stall_begin = 0;
+            }
+        }
+    });
+}
+
+static void stop()
+{
+    watchdog_run = false;
+
+    if (watchdog.joinable())
+        watchdog.join();
+}
+
+// scope guard, so every return path out of main stops the watchdog thread
+struct Scope
+{
+    ~Scope() { stop(); }
+};
+
+} // namespace main_thread_stall
+
 // boost::stacktrace handler for signals where the stack is likely intact
 void signalHandler(int signum)
 {
@@ -402,6 +517,14 @@ int main(int argc, char** argv)
         if (client.quitRequested())
             return 0;
             // Alternative: _exit(0) to skip static destructors entirely
+
+        //stall self-reporting (hidden option --stall_watchdog): any main thread
+        //stretch above the threshold dumps its own live backtrace to stderr (see
+        //main_thread_stall)
+        main_thread_stall::Scope stall_watchdog_scope;
+
+        if (client.stallWatchdogRequested())
+            main_thread_stall::start(&client);
 
         if (!client.run())
         {

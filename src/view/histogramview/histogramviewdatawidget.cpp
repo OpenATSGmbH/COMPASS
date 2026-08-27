@@ -40,6 +40,7 @@
 #include "evaluationmanager.h"
 #include "histogramgenerator.h"
 #include "histogramgeneratorbuffer.h"
+#include "viewasyncprocessor.h"
 #include "viewvariable.h"
 #include "property_templates.h"
 #include "viewpointgenerator.h"
@@ -139,7 +140,11 @@ HistogramViewDataWidget::HistogramViewDataWidget(HistogramViewWidget* view_widge
 
 /**
  */
-HistogramViewDataWidget::~HistogramViewDataWidget() = default;
+HistogramViewDataWidget::~HistogramViewDataWidget()
+{
+    //the generator workers capture this - join them before the members die
+    shutdownAsyncProcessor();
+}
 
 /**
  */
@@ -201,6 +206,47 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
     //new data -> old zoom bin indices are meaningless
     saved_zoom_range_.reset();
 
+    //new data -> per-row layer ids and the layer aggregation are stale
+    row_layer_ids_valid_ = false;
+    layer_agg_valid_     = false;
+
+    // Offline the per-row scans - the layer aggregation for the panel and the row
+    // layer ids the generator consumes - run on a worker; the commit installs them and
+    // rebuilds the panel, and the base defers the load-done redraw until then (the
+    // redraw then only runs the generator + chart with the ids already computed).
+    // Live stays synchronous: the feed mutates the same buffers every tick.
+    bool async = view_->compass().appMode() != AppMode::LiveRunning
+              && !viewData().empty()
+              && db_content_root_ && layer_model_;
+
+    if (async)
+    {
+        auto scan_input = std::make_shared<view_layer_scan::ScanInput>(
+            view_layer_scan::makeScanInput(viewData(), view_->compass()));
+
+        auto agg     = std::make_shared<std::map<std::string, view_layer_scan::LayerAgg>>();
+        auto row_ids = std::make_shared<view_layer_scan::RowLayerIndex>();
+
+        asyncProcessor().launch("histogram view layer data",
+            [ scan_input, agg, row_ids ] ()
+            {
+                *agg     = view_layer_scan::aggregateLayers(*scan_input);
+                *row_ids = view_layer_scan::computeRowLayerIndex(*scan_input);
+            },
+            [ this, agg, row_ids ] ()
+            {
+                row_layer_index_     = std::move(*row_ids);
+                row_layer_ids_valid_ = true;
+
+                layer_agg_cache_ = std::move(*agg);
+                layer_agg_valid_ = true;
+
+                applyLayerTree(layer_agg_cache_);
+            });
+
+        return;
+    }
+
     // Buffers have changed; repopulate the layer panel (empty if no data).
     rebuildLayerTree();
 }
@@ -210,6 +256,48 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
 void HistogramViewDataWidget::resetVariableData()
 {
     resetHistogram();
+
+    row_layer_ids_valid_ = false;
+    layer_agg_valid_     = false;
+}
+
+/**
+ * Asynchronous recompute (offline), used by the load-done path and by interactive
+ * recompute redraws: the generator update runs on a worker, the chart update commits
+ * on the main thread once done. On load it is launched after the layer data job of
+ * updateDataEvent completed (same serialized processor; its commit installed
+ * row_layer_ids_ and the layer panel this reads).
+ */
+bool HistogramViewDataWidget::postLoadTrigger()
+{
+    //annotations are display work, live mutates the buffers per tick - default redraw
+    if (view_->showsAnnotation())
+        return false;
+
+    if (view_->compass().appMode() == AppMode::LiveRunning)
+        return false;
+
+    if (viewData().empty())
+        return false;
+
+    asyncProcessor().launch("histogram view generator update",
+        [ this ] ()
+        {
+            //the compute phase of redrawData(true)
+            clearIntermediateRedrawData();
+            preUpdateVariableDataEvent();
+            updateFromVariables();
+            postUpdateVariableDataEvent();
+        },
+        [ this ] ()
+        {
+            setDrawState(updateVariableDisplay());
+
+            emit displayChanged();
+        });
+
+    //no default redraw; the base defers dataLoaded until the commit ran
+    return true;
 }
 
 /**
@@ -223,7 +311,32 @@ void HistogramViewDataWidget::resetIntermediateVariableData()
  */
 void HistogramViewDataWidget::resetVariableDisplay()
 {
-    chart_view_.reset();
+    releaseChartView();
+}
+
+/**
+ * Drops the current chart view without destroying it synchronously.
+ *
+ * The view owns a QChart with its axes and a QGraphicsScene, and Qt may still be inside
+ * that object graph when we get here: since the chart update runs from the asynchronous
+ * load commit (a queued call), the outgoing view can still have pending events. Deleting
+ * it in place crashed inside QtCharts (QGraphicsScene::clear -> ~QChart ->
+ * deleteAllAxes -> ~QObject). deleteLater lets it die once the event loop unwinds; it is
+ * taken out of the layout and hidden right away, so nothing shows it in the meantime.
+ */
+void HistogramViewDataWidget::releaseChartView()
+{
+    if (!chart_view_)
+        return;
+
+    auto* view = chart_view_.release();
+
+    if (main_layout_)
+        main_layout_->removeWidget(view);
+
+    view->setParent(nullptr);
+    view->hide();
+    view->deleteLater();
 }
 
 /**
@@ -338,13 +451,17 @@ void HistogramViewDataWidget::updateFromVariables()
 
     traced_assert(histogram_generator_);
 
-    // Build per-buffer row-layer ids once (covers every row). The row filter
-    // uses the full layer id (panel visibility is per-layer). The layer
-    // lookup fed to the generator returns the color-mode *group key* - that
-    // way the generator produces one bucket per visible group (e.g. 5 in
-    // DSType mode) rather than per full-layer, and no merge step is needed
-    // downstream.
-    computeRowLayerIds();
+    // Build per-buffer row-layer ids once per data change (covers every row; already
+    // computed on a worker for asynchronous loads). The row filter uses the full layer
+    // id (panel visibility is per-layer). The layer lookup fed to the generator
+    // returns the color-mode *group key* - that way the generator produces one bucket
+    // per visible group (e.g. 5 in DSType mode) rather than per full-layer, and no
+    // merge step is needed downstream.
+    if (!row_layer_ids_valid_)
+    {
+        computeRowLayerIds();
+        row_layer_ids_valid_ = true;
+    }
 
     HistogramGeneratorBuffer* buf_gen =
         dynamic_cast<HistogramGeneratorBuffer*>(histogram_generator_.get());
@@ -352,33 +469,39 @@ void HistogramViewDataWidget::updateFromVariables()
 
     const unsigned int color_mode = view_->compass().colorMode();
 
-    buf_gen->setRowLayerLookup(
-        [this, color_mode](const std::string& dbc, unsigned int i) -> std::string
-        {
-            auto it = row_layer_ids_.find(dbc);
-            if (it == row_layer_ids_.end() || i >= it->second.size())
-                return {};
-            const std::string& full_id = it->second[i];
-            if (full_id.empty())
-                return {};
-            return groupKeyFor(full_id, color_mode);
-        });
-
+    // Everything the generator needs per row is precomputed per POOL ENTRY here - the
+    // color-mode group key and the hidden flag. A row then costs one array lookup;
+    // previously each row built its layer id, split it in groupKeyFor and probed two
+    // string keyed maps, over millions of rows.
     const std::set<std::string> hidden_layer_ids =
         layer_model_ ? layer_model_->storedHiddenIds() : std::set<std::string>{};
+
+    const auto& pool = row_layer_index_.pool;
+
+    std::vector<std::string> group_keys(pool.size());
+    std::vector<char>        hidden_by_group(pool.size(), 0);
+
+    for (size_t g = 1; g < pool.size(); ++g)
+    {
+        group_keys[ g ]      = groupKeyFor(pool[ g ], color_mode);
+        hidden_by_group[ g ] = hidden_layer_ids.count(pool[ g ]) ? 1 : 0;
+    }
+
+    buf_gen->setRowGroups(std::move(group_keys),
+        [this](const std::string& dbc, unsigned int i) -> std::uint16_t
+        {
+            return row_layer_index_.indexOf(dbc, i);
+        });
 
     if (!hidden_layer_ids.empty())
     {
         buf_gen->setRowFilter(
-            [this, hidden_layer_ids](const std::string& dbc, unsigned int i) -> bool
+            [this, hidden_by_group](const std::string& dbc, unsigned int i) -> bool
             {
-                auto it = row_layer_ids_.find(dbc);
-                if (it == row_layer_ids_.end() || i >= it->second.size())
-                    return true;   // no lookup -> allow (can't match a hidden id)
-                const std::string& lid = it->second[i];
-                if (lid.empty())
+                auto idx = row_layer_index_.indexOf(dbc, i);
+                if (idx == view_layer_scan::RowLayerIndex::UnmappedIndex)
                     return true;   // unmappable rows still contribute to scan nulls
-                return hidden_layer_ids.count(lid) == 0;
+                return idx >= hidden_by_group.size() || !hidden_by_group[ idx ];
             });
     }
 
@@ -487,7 +610,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
     //check if data is present/valid
     bool has_data = histogram_raw_.hasData() && (variablesOk() || view_->showsAnnotation());
 
-    chart_view_.reset(nullptr);
+    releaseChartView();
 
     ViewDataWidget::DrawState draw_state = ViewDataWidget::DrawState::NotDrawn;
 
@@ -959,103 +1082,38 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
     }
 }
 
-namespace
-{
-    /// Aggregate a single loaded buffer into per-layer row counts, keyed by
-    /// "<ds_type>:<ds_name>:L<n>:<dbcontent>". Mirrors the grouping logic used
-    /// by the table view layer panel.
-    struct LayerAgg
-    {
-        std::string  ds_type;
-        std::string  ds_name;
-        std::string  line;
-        std::string  dbcontent;
-        unsigned int count      = 0;
-        int          line_index = 0;
-    };
-}
-
 void HistogramViewDataWidget::rebuildLayerTree()
 {
     if (!db_content_root_ || !layer_model_)
         return;
 
-    auto& compass    = view_->compass();
-    auto& dbcont_man = compass.dbContentManager();
-    auto& ctx_mgr    = compass.dbContextManager();
-
-    std::map<std::string, LayerAgg> agg;
-
-    for (auto& buf_it : viewData())
+    // the aggregation only depends on the loaded buffers - reuse it when the data is
+    // unchanged: a color mode change restyles the panel from the same aggregates, and
+    // the recompute is a full row scan (measured as a seconds-long main thread stall)
+    if (layer_agg_valid_)
     {
-        const std::string& dbcontent_name = buf_it.first;
-        Buffer&            buffer         = *buf_it.second;
-        if (buffer.size() == 0)
-            continue;
-
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) ||
-            !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
-            continue;
-
-        const std::string ds_id_name = dbcont_man.metaGetVariable(
-            dbcontent_name, dbcontent_vars::meta_var_ds_id_).name();
-        const std::string line_id_name = dbcont_man.metaGetVariable(
-            dbcontent_name, dbcontent_vars::meta_var_line_id_).name();
-
-        if (!buffer.has<unsigned int>(ds_id_name) ||
-            !buffer.has<unsigned int>(line_id_name))
-            continue;
-
-        const auto& ds_ids   = buffer.get<unsigned int>(ds_id_name);
-        const auto& line_ids = buffer.get<unsigned int>(line_id_name);
-
-        const unsigned int n = buffer.size();
-        for (unsigned int i = 0; i < n; ++i)
-        {
-            if (ds_ids.isNull(i) || line_ids.isNull(i))
-                continue;
-
-            const unsigned int ds_id   = ds_ids.get(i);
-            const unsigned int line_id = line_ids.get(i);
-
-            std::string ds_type, ds_name;
-            if (ctx_mgr.hasDataSource(ds_id))
-            {
-                const auto* ds = ctx_mgr.dataSource(ds_id);
-                ds_type = ds->dsType();
-                ds_name = ds->name();
-            }
-            else
-            {
-                ds_type = "Other";
-                ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
-                        + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
-            }
-
-            const std::string line_str = Utils::String::lineStrFrom(line_id);
-            const std::string full_key = ds_type + ":" + ds_name + ":"
-                                       + line_str + ":" + dbcontent_name;
-
-            auto it = agg.find(full_key);
-            if (it == agg.end())
-            {
-                LayerAgg a;
-                a.ds_type    = ds_type;
-                a.ds_name    = ds_name;
-                a.line       = line_str;
-                a.dbcontent  = dbcontent_name;
-                a.count      = 1;
-                a.line_index = (line_str.size() >= 2 && line_str[0] == 'L')
-                             ? std::max(0, std::atoi(line_str.c_str() + 1) - 1)
-                             : 0;
-                agg.emplace(full_key, std::move(a));
-            }
-            else
-            {
-                it->second.count++;
-            }
-        }
+        applyLayerTree(layer_agg_cache_);
+        return;
     }
+
+    // shared scan helper; on the asynchronous load path the scan runs on a worker
+    // instead, see updateDataEvent
+    layer_agg_cache_ = view_layer_scan::aggregateLayers(
+        view_layer_scan::makeScanInput(viewData(), view_->compass()));
+    layer_agg_valid_ = true;
+
+    applyLayerTree(layer_agg_cache_);
+}
+
+/**
+ * The tree/payload part of rebuildLayerTree, from precomputed layer aggregates.
+ */
+void HistogramViewDataWidget::applyLayerTree(const std::map<std::string, view_layer_scan::LayerAgg>& agg)
+{
+    if (!db_content_root_ || !layer_model_)
+        return;
+
+    auto& compass = view_->compass();
 
     std::vector<std::unique_ptr<HistogramLeafPayload>> new_payloads;
     std::vector<DBContentRootItem::LeafEntry>          entries;
@@ -1064,8 +1122,8 @@ void HistogramViewDataWidget::rebuildLayerTree()
 
     for (const auto& kv : agg)
     {
-        const std::string& full_key = kv.first;
-        const LayerAgg&    a        = kv.second;
+        const std::string&               full_key = kv.first;
+        const view_layer_scan::LayerAgg& a        = kv.second;
 
         QColor color = context::resolveSeriesColor(
             a.ds_type, a.ds_name, a.line_index, a.dbcontent, compass);
@@ -1089,84 +1147,8 @@ void HistogramViewDataWidget::rebuildLayerTree()
 
 void HistogramViewDataWidget::computeRowLayerIds()
 {
-    row_layer_ids_.clear();
-
-    auto& compass    = view_->compass();
-    auto& dbcont_man = compass.dbContentManager();
-    auto& ctx_mgr    = compass.dbContextManager();
-
-    for (auto& buf_it : viewData())
-    {
-        const std::string& dbcontent_name = buf_it.first;
-        Buffer&            buffer         = *buf_it.second;
-        const unsigned int n              = buffer.size();
-        if (n == 0)
-            continue;
-
-        // If a dbcontent has no ds_id/line_id we leave row_layer_ids_ with
-        // no entry for it - the generator falls back to the bare dbcontent
-        // as the group key (one bar per such dbcontent).
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) ||
-            !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
-            continue;
-
-        const std::string ds_id_name = dbcont_man.metaGetVariable(
-            dbcontent_name, dbcontent_vars::meta_var_ds_id_).name();
-        const std::string line_id_name = dbcont_man.metaGetVariable(
-            dbcontent_name, dbcontent_vars::meta_var_line_id_).name();
-
-        if (!buffer.has<unsigned int>(ds_id_name) ||
-            !buffer.has<unsigned int>(line_id_name))
-            continue;
-
-        const auto& ds_ids   = buffer.get<unsigned int>(ds_id_name);
-        const auto& line_ids = buffer.get<unsigned int>(line_id_name);
-
-        std::vector<std::string> per_row(n);
-
-        // Cache (ds_id, line_id) -> layer id to avoid a DataSourceManager
-        // lookup per row.
-        std::map<std::pair<unsigned int, unsigned int>, std::string> layer_id_cache;
-
-        for (unsigned int i = 0; i < n; ++i)
-        {
-            if (ds_ids.isNull(i) || line_ids.isNull(i))
-                continue;   // leave empty -> unmappable
-
-            const unsigned int ds_id   = ds_ids.get(i);
-            const unsigned int line_id = line_ids.get(i);
-
-            const auto cache_key = std::make_pair(ds_id, line_id);
-            auto cache_it = layer_id_cache.find(cache_key);
-            if (cache_it != layer_id_cache.end())
-            {
-                per_row[i] = cache_it->second;
-                continue;
-            }
-
-            std::string ds_type, ds_name;
-            if (ctx_mgr.hasDataSource(ds_id))
-            {
-                const auto* ds = ctx_mgr.dataSource(ds_id);
-                ds_type = ds->dsType();
-                ds_name = ds->name();
-            }
-            else
-            {
-                ds_type = "Other";
-                ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
-                        + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
-            }
-
-            std::string lid = ds_type + ":" + ds_name + ":"
-                            + Utils::String::lineStrFrom(line_id) + ":"
-                            + dbcontent_name;
-
-            layer_id_cache.emplace(cache_key, lid);
-            per_row[i] = std::move(lid);
-        }
-
-        row_layer_ids_.emplace(dbcontent_name, std::move(per_row));
-    }
+    // shared scan helper (worker version runs in updateDataEvent's task)
+    row_layer_index_ = view_layer_scan::computeRowLayerIndex(
+        view_layer_scan::makeScanInput(viewData(), view_->compass()));
 }
 

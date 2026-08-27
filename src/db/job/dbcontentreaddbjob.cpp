@@ -107,6 +107,11 @@ void DBContentReadDBJob::run_impl()
     if (obsolete_)
         cached_buffer_ = nullptr;
 
+    // the chunk appends above leave geometric growth slack in every column vector;
+    // release it here, still on the job thread, before the buffer is handed out
+    if (cached_buffer_)
+        cached_buffer_->shrinkToFit();
+
     logdbg << "start" << dbcontent_.name() << ": finalizing statement";
     db_interface_.finalizeReadStatement(dbcontent_);
 

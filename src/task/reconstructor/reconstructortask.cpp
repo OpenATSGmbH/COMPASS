@@ -488,6 +488,8 @@ void ReconstructorTask::run()
     progress_dialog_->setAutoReset(false);
     progress_dialog_->setCancelButton(nullptr);
     progress_dialog_->setModal(true);
+    // do not steal os focus from other applications when popping up
+    progress_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
 
     progress_dialog_->show();
 
@@ -1266,6 +1268,8 @@ void ReconstructorTask::runCancelledSlot()
     msg_box->setText("Please wait ...");
     msg_box->setStandardButtons(QMessageBox::NoButton);
     msg_box->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    msg_box->setAttribute(Qt::WA_ShowWithoutActivating, true);
     msg_box->show();
 
     Async::waitAndProcessEventsFor(50);

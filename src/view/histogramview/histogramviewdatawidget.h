@@ -22,6 +22,7 @@
 //#include "dbcontent/variable/variable.h"
 #include "histogramviewchartview.h"
 #include "variableviewdatawidget.h"
+#include "viewlayerscan.h"
 #include "histogram_raw.h"
 //#include "histogram.h"
 //#include "results/base.h"
@@ -115,6 +116,11 @@ public slots:
     void clearSelectionSlot();
 
 protected:
+    // load-time asynchronous recompute: the generator update runs on a worker (it
+    // competes with the other views' workers and can exceed the ping budget on the
+    // main thread otherwise), the chart update commits on the main thread
+    virtual bool postLoadTrigger() override final;
+
     virtual void updateDataEvent(bool requires_reset) override final;
     virtual void resetVariableData() override final;
     virtual void resetIntermediateVariableData() override final;
@@ -129,6 +135,8 @@ protected:
     void viewInfoJSON_impl(nlohmann::json& info) const override;
 
     void resetHistogram();
+    /// drops the current chart view via deleteLater - see the implementation
+    void releaseChartView();
     void compileRawDataFromGenerator();
 
     DrawState updateChart();
@@ -165,16 +173,33 @@ protected:
     /// user's zoom survives. Cleared on data reload and on resetZoomSlot.
     boost::optional<std::pair<unsigned int, unsigned int>> saved_zoom_range_;
 
-    /// Per-dbcontent per-row layer id, recomputed each updateFromVariables.
-    /// Rows whose (ds_id, line_id) can't be mapped get an empty string.
-    /// Referenced via closures passed as the HistogramGeneratorBuffer row
-    /// filter + layer lookup, so this must outlive the generator.
-    std::map<std::string, std::vector<std::string>> row_layer_ids_;
+    /// Per-row layer id as a pool index, computed once per data change (on a worker for
+    /// asynchronous loads, see updateDataEvent). Two bytes per row instead of a string -
+    /// with millions of rows the string form costs one heap allocation each, and made
+    /// every generator row do string work. Referenced via closures passed as the
+    /// HistogramGeneratorBuffer row filter + group lookup, so this must outlive the
+    /// generator.
+    view_layer_scan::RowLayerIndex row_layer_index_;
+
+    /// row_layer_ids_ matches the current data (invalidated on data change/clear,
+    /// NOT per redraw - the ids only depend on the loaded buffers)
+    bool row_layer_ids_valid_ {false};
+
+    /// the layer aggregation of the current data, cached with the same validity as
+    /// the row layer ids: it depends only on the loaded buffers, but recomputing it
+    /// is a full row scan (seconds at millions of rows). rebuildLayerTree() consumers
+    /// that merely restyle the panel (color mode changes) reuse it
+    std::map<std::string, view_layer_scan::LayerAgg> layer_agg_cache_;
+    bool layer_agg_valid_ {false};
 
 private:
     /// Rebuild payloads_ from the loaded buffers and repopulate the DBContent
     /// subtree. Emits layerTreeRebuiltSignal.
     void rebuildLayerTree();
+
+    /// Rebuild payloads_ + the DBContent subtree from precomputed layer aggregates
+    /// (the tree/payload part of rebuildLayerTree; the scan may run on a worker).
+    void applyLayerTree(const std::map<std::string, view_layer_scan::LayerAgg>& agg);
 
     /// Populate row_layer_ids_ from current viewData(). Empty string for
     /// rows without ds_id/line_id (unmappable).

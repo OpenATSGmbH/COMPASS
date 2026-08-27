@@ -26,6 +26,7 @@
 #include "logger.h"
 
 #include <QApplication>
+#include <QThread>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -138,7 +139,18 @@ bool RTCommandRunner::execWaitCondition(std::shared_ptr<RTCommand> cmd, RTComman
 
     if (c.type == RTCommandWaitCondition::Type::Signal)
     {
-        ok = waitForCondition([ = ] () { return stash->spySignalReceived(); }, c.signal_timeout_ms);
+        // the QSignalSpy lives in the main thread and its list is appended there on
+        // signal delivery - polling it directly from this thread is a data race, so
+        // each poll is a blocking queued invoke executing the check in the main thread
+        ok = waitForCondition([ = ] ()
+        {
+            bool received = false;
+            if (!QMetaObject::invokeMethod(stash, "spySignalReceived",
+                                           Qt::BlockingQueuedConnection,
+                                           Q_RETURN_ARG(bool, received)))
+                return false;
+            return received;
+        }, c.signal_timeout_ms);
     }
     else if (c.type == RTCommandWaitCondition::Type::Delay)
     {
@@ -192,13 +204,50 @@ bool RTCommandRunner::executeCommand(std::shared_ptr<RTCommand> cmd, RTCommandRu
     //execute command in main thread and block until finished
     //@TODO: handle thread cleanup
     bool ok      = true;
-    bool invoked = cmd->execute_async ? QMetaObject::invokeMethod(stash, "executeCommandAsync",
-                                                                  Qt::QueuedConnection,
-                                                                  Q_ARG(RTCommandMetaTypeWrapper, wrapper)) :
-                       QMetaObject::invokeMethod(stash, "executeCommand",
-                                                 Qt::BlockingQueuedConnection,
-                                                 Q_RETURN_ARG(bool, ok),
-                                                 Q_ARG(RTCommandMetaTypeWrapper, wrapper));
+    bool invoked = false;
+
+    if (cmd->execute_async)
+    {
+        invoked = QMetaObject::invokeMethod(stash, "executeCommandAsync",
+                                            Qt::QueuedConnection,
+                                            Q_ARG(RTCommandMetaTypeWrapper, wrapper));
+    }
+    else
+    {
+        //A command needs a quiet view state, and the main thread cannot wait for that
+        //itself - it may be running the command out of a nested event pump belonging to
+        //the very dispatch that would reach that state. So the stash answers Deferred and
+        //the waiting happens here, in this thread: the main thread returns to its event
+        //loop between attempts and can actually get there.
+        int  res      = static_cast<int>(ExecResult::Deferred);
+        auto deferred_since = boost::posix_time::microsec_clock::local_time();
+        bool reported = false;
+
+        while (true)
+        {
+            invoked = QMetaObject::invokeMethod(stash, "executeCommand",
+                                                Qt::BlockingQueuedConnection,
+                                                Q_RETURN_ARG(int, res),
+                                                Q_ARG(RTCommandMetaTypeWrapper, wrapper));
+
+            if (!invoked || res != static_cast<int>(ExecResult::Deferred))
+                break;
+
+            //a deferral outlasting a normal load points at a view that never goes quiet
+            auto waited_s = (boost::posix_time::microsec_clock::local_time()
+                             - deferred_since).total_seconds();
+            if (!reported && waited_s >= ExecDeferWarnSecs)
+            {
+                reported = true;
+                logwrn << "waiting for quiet views for " << waited_s << "s, cmd "
+                       << cmd->name().toStdString();
+            }
+
+            QThread::msleep(ExecRetryMSecs);
+        }
+
+        ok = (res == static_cast<int>(ExecResult::Succeeded));
+    }
 
     loginf << "executeCommand: main thread returned invoked " << invoked << " ok " << ok;
     bool succeeded = (ok && invoked);

@@ -41,6 +41,7 @@ class DBContentManager;
 class TaskManager;
 
 class ASTERIXStatusDialog;
+class ASTERIXNetworkReplaySender;
 
 class QProgressDialog;
 class QTimer;
@@ -89,6 +90,8 @@ public slots:
 
     void checkDataReceivedSlot(); // calls live update function if no data was received
 
+    void replaySenderDoneSlot();
+
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);
 
 public:
@@ -136,6 +139,12 @@ public:
     bool hasError() const { return error_; }
     const std::string& error() const { return error_message_; }
 
+    // network replay (live simulation from IOSS recordings, see ASTERIXNetworkReplaySender)
+    bool prepareReplay(const std::vector<std::string>& filenames, float speed,
+                       const std::string& line_key, bool stop_at_end, std::string& error);
+    void startReplay(); // requires prepareReplay, call after run()
+    bool hasReplay() const { return !replay_senders_.empty(); }
+
     void testFileDecoding();
 
 protected:
@@ -179,6 +188,9 @@ protected:
 
     std::unique_ptr<ASTERIXDecoderBase> decoder_;
     std::shared_ptr<ASTERIXDecodeJob>   decode_job_;
+
+    std::vector<std::unique_ptr<ASTERIXNetworkReplaySender>> replay_senders_;
+    bool replay_stop_at_end_ {false};
     
     std::string current_data_source_name_; // used to check for decode file changes
 

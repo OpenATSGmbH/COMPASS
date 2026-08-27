@@ -44,6 +44,14 @@ public:
     void clear();
     void clearData();
 
+    // releases the capacity slack left by geometric vector growth (chunked appends)
+    void shrinkToFit()
+    {
+        dictionary_.shrink_to_fit();
+        indices_.shrink_to_fit();
+        null_flags_.shrink_to_fit();
+    }
+
     const std::string get(unsigned int index) const;
     const std::string& getRef(unsigned int index) const;
     const std::string getAsString(unsigned int index) const;

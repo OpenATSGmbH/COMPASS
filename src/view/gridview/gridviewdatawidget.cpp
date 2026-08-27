@@ -123,7 +123,21 @@ void GridViewDataWidget::resetGridChart()
     legend_->setVisible(false);
     legend_->showSelectionColor(false);
 
-    grid_chart_.reset();
+    // deleteLater, not a synchronous reset: the chart owns a QGraphicsScene with its
+    // axes, and this can run from the asynchronous load commit while Qt still has
+    // pending events for it - destroying it in place crashed inside QtCharts
+    // (QGraphicsScene::clear -> ~QChart -> deleteAllAxes)
+    if (grid_chart_)
+    {
+        auto* chart = grid_chart_.release();
+
+        if (layout())
+            layout()->removeWidget(chart);
+
+        chart->setParent(nullptr);
+        chart->hide();
+        chart->deleteLater();
+    }
 
     grid_rendering_ = QImage();
     grid_roi_       = QRectF();
@@ -146,11 +160,15 @@ void GridViewDataWidget::resetGridLayers()
 }
 
 /**
-*/
-bool GridViewDataWidget::postLoadTrigger()
+ * Qt-side commit after processStash (main thread): the layer panel rebuild. The old
+ * payloads retired in processStash are released only now - the old tree leaves held
+ * raw pointers into them until the rebuild replaced them.
+ */
+void GridViewDataWidget::commitStashDisplayData()
 {
-    //no redraw triggered
-    return false;
+    rebuildLayerTree();
+
+    retired_payloads_.clear();
 }
 
 /**
@@ -226,20 +244,18 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 
     addNullCount(num_null_values);
 
-    // Swap rather than move-assign: the OLD payloads end up in new_payloads
-    // and stay alive until this function returns. rebuildLayerTree below
-    // walks the current (NEW) payloads_ to build fresh tree entries, and
-    // refreshSubtree inside it destroys the old DBContentLeafItems. Those
-    // old items held raw pointers into the OLD payloads - still valid here
-    // because new_payloads keeps them alive. After rebuildLayerTree returns,
-    // new_payloads goes out of scope and the OLD payloads are finally freed.
+    // Swap rather than move-assign: the OLD payloads end up in new_payloads and are
+    // retired below. The old tree leaves hold raw pointers into them, so they must
+    // stay alive until commitStashDisplayData rebuilt the tree on the main thread
+    // (this function may run on a worker thread; the tree rebuild does not).
     payloads_.swap(new_payloads);
+    retired_payloads_ = std::move(new_payloads);
 
     // Aggregate visible groups into the Grid2D.
     buildGridFromStash();
 
-    // Fresh tree with leaves pointing at the new payloads.
-    rebuildLayerTree();
+    // The fresh tree with leaves pointing at the new payloads is built in
+    // commitStashDisplayData.
 }
 
 /**

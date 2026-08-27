@@ -143,6 +143,7 @@ TabStyleViewConfigWidget::TabStyleViewConfigWidget(ViewWidget* view_widget, QWid
 
     //create tab widget
     tab_widget_ = new QTabWidget(this);
+    tab_widget_->setObjectName("config_tabs");
     //tab_widget_->setStyleSheet("QTabBar::tab { height: "+ QString::number(TabHeight) + "px; }");
     main_layout_->addWidget(tab_widget_);
 }

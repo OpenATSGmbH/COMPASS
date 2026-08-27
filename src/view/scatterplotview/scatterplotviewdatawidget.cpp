@@ -260,7 +260,7 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
 bool ScatterPlotViewDataWidget::postLoadTrigger()
 {
     // disable connection lines?
-    if (view_->useConnectionLines() && loadedDataCount() > ConnectLinesDataCountMax) 
+    if (view_->useConnectionLines() && loadedDataCount() > ConnectLinesDataCountMax)
     {
         loginf << "loaded data items >" << ConnectLinesDataCountMax << ", disabling connection lines";
 
@@ -268,15 +268,45 @@ bool ScatterPlotViewDataWidget::postLoadTrigger()
         view_->useConnectionLines(false, false);
     }
 
-    return false;
+    //stash base: asynchronous load-time recompute
+    return VariableViewStashDataWidget::postLoadTrigger();
+}
+
+/**
+ * Qt-side commit after processStash (main thread): the layer panel rebuild.
+ */
+void ScatterPlotViewDataWidget::commitStashDisplayData()
+{
+    rebuildLayerTree();
 }
 
 /**
 */
 void ScatterPlotViewDataWidget::resetVariableDisplay()
 {
-    chart_view_.reset(nullptr);
+    releaseChartView();
     prior_draw_had_content_ = false;
+}
+
+/**
+ * Drops the current chart view without destroying it synchronously: the chart owns a
+ * QGraphicsScene with its axes, and this can run from the asynchronous load commit while
+ * Qt still has pending events for it. Destroying it in place crashed inside QtCharts
+ * (QGraphicsScene::clear -> ~QChart -> deleteAllAxes).
+ */
+void ScatterPlotViewDataWidget::releaseChartView()
+{
+    if (!chart_view_)
+        return;
+
+    auto* view = chart_view_.release();
+
+    if (main_layout_)
+        main_layout_->removeWidget(view);
+
+    view->setParent(nullptr);
+    view->hide();
+    view->deleteLater();
 }
 
 /**
@@ -495,7 +525,8 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
 
     correctSeriesDateTime(scatter_series_);
 
-    rebuildLayerTree();
+    //the layer panel rebuild runs in commitStashDisplayData (main thread) - this
+    //function may run on a worker thread
 
     bounds_ = scatter_series_.getDataBounds();
 
@@ -850,7 +881,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateChart()
 
     traced_assert(main_layout_);
 
-    chart_view_.reset(nullptr);
+    releaseChartView();
 
     QChart* chart = new QChart();
     chart->layout()->setContentsMargins(0, 0, 0, 0);
@@ -1087,18 +1118,23 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
                 chart_line_series->setColor(ds.color);
             }
 
-            for (const auto& pos : ds.scatter_series.points)
+            //hand the points to the chart in one replace instead of one append per
+            //point: per point appends realloc the series' internal list and signal
+            //per call, which showed up as 0.5 GB of allocation churn on large loads
             {
-                double x = pos.x();
-                double y = pos.y();
+                QList<QPointF> chart_points;
+                chart_points.reserve((int)ds.scatter_series.points.size());
 
-                chart_symbol_series->append(x, y);
+                for (const auto& pos : ds.scatter_series.points)
+                    chart_points.append(QPointF(pos.x(), pos.y()));
 
                 if (use_connection_lines)
                 {
                     traced_assert(chart_line_series);
-                    chart_line_series->append(x, y);
+                    chart_line_series->replace(chart_points);
                 }
+
+                chart_symbol_series->replace(std::move(chart_points));
             }
 
             chart_symbol_series->setName(ds.name.c_str());

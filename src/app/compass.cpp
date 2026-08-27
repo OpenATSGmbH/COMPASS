@@ -1021,6 +1021,14 @@ void COMPASS::shutdown()
 
     app_state_ = AppState::Shutdown;
 
+    // asynchronous view processing (geo geometry builds) may still read manager state -
+    // wait it out before any manager is torn down
+    if (view_manager_ && view_manager_->hasPendingViewProcessing())
+    {
+        loginf << "waiting for pending view processing";
+        Utils::Async::pumpUntil([this] { return !view_manager_->hasPendingViewProcessing(); });
+    }
+
     traced_assert(task_manager_);
     task_manager_->shutdown();
     task_manager_ = nullptr;

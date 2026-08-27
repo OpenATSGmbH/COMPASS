@@ -76,6 +76,7 @@ bool injectUIEvent(QWidget* parent,
     {
         NoAction = 0,
         Click,
+        DblClick,
         Rect
     };
 
@@ -83,9 +84,11 @@ bool injectUIEvent(QWidget* parent,
     {
         if (str == "click")
             return MouseAction::Click;
+        else if (str == "dblclick")
+            return MouseAction::DblClick;
         else if (str == "rect")
             return MouseAction::Rect;
-        
+
         return MouseAction::NoAction;
     };
 
@@ -143,8 +146,18 @@ bool injectUIEvent(QWidget* parent,
 
             auto xc = coordFromString(params[ 2 ]);
             auto yc = coordFromString(params[ 3 ]);
-            
+
             return injectMouseClick(w.second, button, xc, yc, delay);
+        }
+        else if (action == MouseAction::DblClick)
+        {
+            if (params.size() != 4)
+                return false;
+
+            auto xc = coordFromString(params[ 2 ]);
+            auto yc = coordFromString(params[ 3 ]);
+
+            return injectMouseDblClick(w.second, button, xc, yc, delay);
         }
         else if (action == MouseAction::Rect)
         {
@@ -166,8 +179,35 @@ bool injectUIEvent(QWidget* parent,
     }
     else if (evt_type == "wheel")
     {
-        //@TODO
-        return false;
+        //wheel(<delta>) or wheel(<delta>,<x>,<y>), delta in eighths of a degree
+        //(one notch = 120), position defaults to the widget center
+        if (params.size() != 1 && params.size() != 3)
+            return false;
+
+        bool ok;
+        int delta = params[ 0 ].toInt(&ok);
+        if (!ok || delta == 0)
+            return false;
+
+        Coord xc, yc;
+
+        if (params.size() == 3)
+        {
+            xc = coordFromString(params[ 1 ]);
+            yc = coordFromString(params[ 2 ]);
+
+            if (!xc.valid() || !yc.valid())
+                return false;
+        }
+        else
+        {
+            xc.coord_system = Coord::CoordSystem::Percent;
+            xc.value        = 0.5;
+            yc.coord_system = Coord::CoordSystem::Percent;
+            yc.value        = 0.5;
+        }
+
+        return injectMouseWheel(w.second, delta, xc, yc);
     }
     else if (evt_type == "keys")
     {
@@ -259,6 +299,46 @@ bool injectMouseClick(QWidget* w,
                             ycoord.getValue(0.0, r.height()), 
                             button, 
                             delay);
+}
+
+/**
+*/
+bool injectMouseDblClick(QWidget* w,
+                         Qt::MouseButton button,
+                         const Coord& xcoord,
+                         const Coord& ycoord,
+                         int delay)
+{
+    if (!xcoord.valid() || !ycoord.valid())
+        return false;
+
+    QRect r = w->rect();
+
+    return injectDblClickEvent(w,
+                               "",
+                               xcoord.getValue(0.0, r.width()),
+                               ycoord.getValue(0.0, r.height()),
+                               button,
+                               delay);
+}
+
+/**
+*/
+bool injectMouseWheel(QWidget* w,
+                      int delta,
+                      const Coord& xcoord,
+                      const Coord& ycoord)
+{
+    if (!xcoord.valid() || !ycoord.valid())
+        return false;
+
+    QRect r = w->rect();
+
+    return injectWheelEvent(w,
+                            "",
+                            xcoord.getValue(0.0, r.width()),
+                            ycoord.getValue(0.0, r.height()),
+                            delta);
 }
 
 /**

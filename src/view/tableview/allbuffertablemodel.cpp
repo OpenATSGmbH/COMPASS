@@ -346,11 +346,27 @@ void AllBufferTableModel::clearData()
 
 void AllBufferTableModel::setData(std::map<std::string, std::shared_ptr<Buffer>> buffers)
 {
-    beginCustomResetModel();
+    //synchronous path: snapshot, prepare and apply inline
+    auto input = makePrepareInput(std::move(buffers), /*for_load*/ false);
+
+    applyPrepared(prepareData(input));
+}
+
+/**
+ * Snapshots everything prepareData() reads from the view/model/managers, so the build
+ * can run on a worker thread. Main thread only; also extends the dbcontent numbering.
+ * for_load drops the layer filter: the layer tree of the fresh load is not built yet
+ * at snapshot time (the caller re-filters via rebuild() if layers turn out hidden).
+ */
+AllBufferTableModel::PrepareInput AllBufferTableModel::makePrepareInput(
+    std::map<std::string, std::shared_ptr<Buffer>> buffers,
+    bool for_load)
+{
+    PrepareInput input;
 
     for (auto& buf_it : buffers)
     {
-        std::string dbcontent_name = buf_it.first;
+        const std::string& dbcontent_name = buf_it.first;
 
         if (dbcont_to_number_.count(dbcontent_name) == 0)
         {
@@ -362,26 +378,108 @@ void AllBufferTableModel::setData(std::map<std::string, std::shared_ptr<Buffer>>
 
     traced_assert(dbcont_to_number_.size() == number_to_dbcont_.size());
 
-    buffers_ = buffers;
+    input.buffers          = std::move(buffers);
+    input.number_to_dbcont = number_to_dbcont_;
+    input.dbcont_to_number = dbcont_to_number_;
 
-    buildRowIndexes();
-    sortRowIndexes();
+    input.show_only_selected = view_.settings().show_only_selected_;
 
-    endCustomResetModel();
+    // on the load path the selection ranges are prepared along (saves the extra scan
+    // in selectSelectedRows); the layer filter is dropped there - the fresh load's
+    // layer tree is not built yet at snapshot time
+    input.compute_selected_ranges = for_load;
+
+    if (!for_load)
+        input.allowed_layer_ids = allowed_layer_ids_;
+
+    DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    auto& ctx_mgr = view_.compass().dbContextManager();
+
+    for (const auto& buf_it : input.buffers)
+    {
+        const std::string& dbcontent_name = buf_it.first;
+
+        if (view_.settings().ignore_non_target_reports_
+            && !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_))
+        {
+            input.skipped_contents.insert(dbcontent_name);
+            continue;
+        }
+
+        input.timestamp_columns[ dbcontent_name ] =
+            dbcont_man.metaVariable(dbcontent_vars::meta_var_timestamp_.name()).getFor(dbcontent_name).name();
+
+        if (dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) &&
+            dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
+        {
+            input.ds_id_columns[ dbcontent_name ] = dbcont_man.metaGetVariable(
+                dbcontent_name, dbcontent_vars::meta_var_ds_id_).name();
+            input.line_id_columns[ dbcontent_name ] = dbcont_man.metaGetVariable(
+                dbcontent_name, dbcontent_vars::meta_var_line_id_).name();
+        }
+    }
+
+    if (ctx_mgr.hasActiveContext())
+    {
+        for (const auto& [ds_id, ds] : ctx_mgr.activeContext().dataSources())
+            input.data_sources[ ds_id ] = {ds.dsType(), ds.name()};
+    }
+
+    // active sort snapshot
+    input.sort_column = sort_column_;
+    input.sort_order  = sort_order_;
+
+    if (sort_column_ >= 1)
+    {
+        if (sort_column_ == 1)  // DBContent name column
+        {
+            input.sort_by_dbcontent = true;
+        }
+        else
+        {
+            unsigned int data_col = (unsigned int)sort_column_ - prefixColumnCount();
+
+            for (const auto& p : input.number_to_dbcont)
+            {
+                dbContent::Variable* var = nullptr;
+                if (resolveVariable(data_col, p.second, var) && var &&
+                    input.buffers.count(p.second) &&
+                    input.buffers.at(p.second)->properties().hasProperty(var->name()))
+                {
+                    input.sort_var_names[ p.first ] = var->name();
+                    if (!input.sort_var_valid)
+                    {
+                        input.sort_var_type  = var->dataType();
+                        input.sort_var_valid = true;
+                    }
+                }
+            }
+        }
+    }
+
+    return input;
 }
 
-void AllBufferTableModel::buildRowIndexes()
+/**
+ * Builds the model's row data from the snapshot input: row indexes with per-row layer
+ * ids, ordered by timestamp (or the active sort), plus the selected row ranges. Pure
+ * over the input - safe on a worker thread. Note the selection read: prepared on load
+ * from loadingDone on, when the selection is stable until the load-done edge fires.
+ */
+AllBufferTableModel::PreparedData AllBufferTableModel::prepareData(const PrepareInput& input)
 {
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
-    row_indexes_.clear();
-    row_layer_index_.clear();
-    layer_id_pool_.clear();
-    layer_id_pool_.push_back("");  // index 0 = unknown / no layer
+    PreparedData prepared;
+    prepared.buffers          = input.buffers;
+    prepared.number_to_dbcont = input.number_to_dbcont;
+    prepared.dbcont_to_number = input.dbcont_to_number;
+
+    prepared.layer_id_pool.push_back("");  // index 0 = unknown / no layer
 
     // count total records to reserve vector capacity
     unsigned int total_size = 0;
-    for (auto& buf_it : buffers_)
+    for (const auto& buf_it : input.buffers)
         total_size += buf_it.second->size();
 
     // (timestamp, dbcont_num, buffer_index, layer_id_index) per accepted row
@@ -395,51 +493,47 @@ void AllBufferTableModel::buildRowIndexes()
     std::vector<TimedEntry> timed_entries;
     timed_entries.reserve(total_size);
 
-    DBContentManager& dbcont_man = view_.compass().dbContentManager();
-    auto& ctx_mgr = view_.compass().dbContextManager();
-    const bool filter_enabled = allowed_layer_ids_.has_value();
+    const bool filter_enabled = input.allowed_layer_ids.has_value();
 
     // dedup pool across all buffers - typical datasets have a few dozen
     // distinct layer ids vs. millions of rows.
     std::map<std::string, unsigned int> layer_id_to_index;
 
-    for (auto& buf_it : buffers_)
+    for (const auto& buf_it : input.buffers)
     {
-        if (view_.settings().ignore_non_target_reports_
-            && !dbcont_man.metaCanGetVariable(buf_it.first, dbcontent_vars::meta_var_latitude_))
-            continue;
-
         const std::string& dbcontent_name = buf_it.first;
 
-        traced_assert(dbcont_to_number_.count(dbcontent_name) == 1);
-        unsigned int dbcont_num = dbcont_to_number_.at(dbcontent_name);
+        if (input.skipped_contents.count(dbcontent_name))
+            continue;
+
+        traced_assert(input.dbcont_to_number.count(dbcontent_name) == 1);
+        unsigned int dbcont_num = input.dbcont_to_number.at(dbcontent_name);
 
         unsigned int buffer_size = buf_it.second->size();
         if (buffer_size == 0)
             continue;
 
-        const dbContent::Variable& ts_var =
-                dbcont_man.metaVariable(dbcontent_vars::meta_var_timestamp_.name()).getFor(dbcontent_name);
+        traced_assert(input.timestamp_columns.count(dbcontent_name));
+        const std::string& ts_col = input.timestamp_columns.at(dbcontent_name);
 
-        traced_assert(buf_it.second->has<boost::posix_time::ptime>(ts_var.name()));
-        NullableVector<boost::posix_time::ptime>& ts_vec =
-            buf_it.second->get<boost::posix_time::ptime>(ts_var.name());
+        traced_assert(buf_it.second->has<boost::posix_time::ptime>(ts_col));
+        const NullableVector<boost::posix_time::ptime>& ts_vec =
+            buf_it.second->get<boost::posix_time::ptime>(ts_col);
 
         traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
+        const NullableVector<bool>& selected_vec =
+            buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
 
         // Per-row layer id resolution - wire ds_id/line_id columns up once
         // per buffer.
         const NullableVector<unsigned int>* ds_ids_vec   = nullptr;
         const NullableVector<unsigned int>* line_ids_vec = nullptr;
 
-        if (dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) &&
-            dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
+        if (input.ds_id_columns.count(dbcontent_name) &&
+            input.line_id_columns.count(dbcontent_name))
         {
-            const std::string ds_id_name = dbcont_man.metaGetVariable(dbcontent_name,
-                dbcontent_vars::meta_var_ds_id_).name();
-            const std::string line_id_name = dbcont_man.metaGetVariable(dbcontent_name,
-                dbcontent_vars::meta_var_line_id_).name();
+            const std::string& ds_id_name   = input.ds_id_columns.at(dbcontent_name);
+            const std::string& line_id_name = input.line_id_columns.at(dbcontent_name);
 
             if (buf_it.second->has<unsigned int>(ds_id_name) &&
                 buf_it.second->has<unsigned int>(line_id_name))
@@ -450,14 +544,14 @@ void AllBufferTableModel::buildRowIndexes()
         }
 
         // Per-buffer cache (ds_id, line_id) -> pool index, avoids a
-        // DataSourceManager lookup + layer-id string build per row.
+        // data source lookup + layer-id string build per row.
         std::map<std::pair<unsigned int, unsigned int>, unsigned int> ds_line_to_layer_idx;
 
         unsigned int num_time_none = 0;
 
         for (unsigned int buffer_index = 0; buffer_index < buffer_size; ++buffer_index)
         {
-            if (view_.settings().show_only_selected_)
+            if (input.show_only_selected)
             {
                 if (selected_vec.isNull(buffer_index) || !selected_vec.get(buffer_index))
                     continue;
@@ -481,11 +575,12 @@ void AllBufferTableModel::buildRowIndexes()
                 else
                 {
                     std::string ds_type, ds_name;
-                    if (ctx_mgr.hasDataSource(ds_id))
+
+                    auto ds_it = input.data_sources.find(ds_id);
+                    if (ds_it != input.data_sources.end())
                     {
-                        const auto* ds = ctx_mgr.dataSource(ds_id);
-                        ds_type = ds->dsType();
-                        ds_name = ds->name();
+                        ds_type = ds_it->second.first;
+                        ds_name = ds_it->second.second;
                     }
                     else
                     {
@@ -500,9 +595,9 @@ void AllBufferTableModel::buildRowIndexes()
                     auto pool_it = layer_id_to_index.find(layer_id);
                     if (pool_it == layer_id_to_index.end())
                     {
-                        layer_index = (unsigned int)layer_id_pool_.size();
+                        layer_index = (unsigned int)prepared.layer_id_pool.size();
                         layer_id_to_index[layer_id] = layer_index;
-                        layer_id_pool_.push_back(std::move(layer_id));
+                        prepared.layer_id_pool.push_back(std::move(layer_id));
                     }
                     else
                     {
@@ -516,7 +611,7 @@ void AllBufferTableModel::buildRowIndexes()
             {
                 // unknown layer (index 0) can't match anything
                 if (layer_index == 0 ||
-                    !allowed_layer_ids_->count(layer_id_pool_[layer_index]))
+                    !input.allowed_layer_ids->count(prepared.layer_id_pool[layer_index]))
                     continue;
             }
 
@@ -536,9 +631,9 @@ void AllBufferTableModel::buildRowIndexes()
             loginf << dbcontent_name << " skipped " << num_time_none << " indexes with no time";
     }
 
-    // Default ordering: timestamp. If a sort column is active, sortRowIndexes()
-    // will overwrite this anyway - skip the work in that case.
-    if (sort_column_ < 0)
+    // Default ordering: timestamp. If a sort column is active, the sort below
+    // overwrites this anyway - skip the work in that case.
+    if (input.sort_column < 0)
     {
         std::stable_sort(timed_entries.begin(), timed_entries.end(),
             [](const TimedEntry& a, const TimedEntry& b)
@@ -547,30 +642,126 @@ void AllBufferTableModel::buildRowIndexes()
             });
     }
 
-    row_indexes_.resize(timed_entries.size());
-    row_layer_index_.resize(timed_entries.size());
+    prepared.row_indexes.resize(timed_entries.size());
+    prepared.row_layer_index.resize(timed_entries.size());
     for (unsigned int i = 0; i < timed_entries.size(); ++i)
     {
-        row_indexes_[i] = std::make_pair(timed_entries[i].dbcont_num,
-                                         timed_entries[i].buffer_index);
-        row_layer_index_[i] = timed_entries[i].layer_index;
+        prepared.row_indexes[i] = std::make_pair(timed_entries[i].dbcont_num,
+                                                 timed_entries[i].buffer_index);
+        prepared.row_layer_index[i] = timed_entries[i].layer_index;
+    }
+
+    // active sort (mirrors sortRowIndexes over the prepared rows)
+    if (input.sort_column >= 1 && !prepared.row_indexes.empty())
+    {
+        bool ascending = (input.sort_order == Qt::AscendingOrder);
+
+        std::vector<unsigned int> perm;
+
+        if (input.sort_by_dbcontent)
+        {
+            unsigned int n = prepared.row_indexes.size();
+
+            std::vector<std::string> keys(n);
+            for (unsigned int i = 0; i < n; ++i)
+                keys[i] = prepared.number_to_dbcont.at(prepared.row_indexes[i].first);
+
+            perm.resize(n);
+            std::iota(perm.begin(), perm.end(), 0);
+
+            std::stable_sort(perm.begin(), perm.end(), [&](unsigned int a, unsigned int b)
+            {
+                return ascending ? (keys[a] < keys[b]) : (keys[b] < keys[a]);
+            });
+        }
+        else if (input.sort_var_valid)
+        {
+            perm = dispatchTypedSortPerm(prepared.row_indexes, prepared.number_to_dbcont,
+                                         prepared.buffers, input.sort_var_names,
+                                         input.sort_var_type, ascending);
+        }
+
+        if (!perm.empty())
+        {
+            std::vector<std::pair<unsigned int, unsigned int>> new_indexes(perm.size());
+            std::vector<unsigned int> new_layer(perm.size());
+            for (unsigned int i = 0; i < perm.size(); ++i)
+            {
+                new_indexes[i] = prepared.row_indexes[perm[i]];
+                new_layer[i]   = prepared.row_layer_index[perm[i]];
+            }
+            prepared.row_indexes     = std::move(new_indexes);
+            prepared.row_layer_index = std::move(new_layer);
+        }
+    }
+
+    // selected row ranges (as getSelectedRows over the prepared rows; load path only)
+    if (input.compute_selected_ranges)
+    {
+        int run_start = -1;
+        int run_end   = -1;
+
+        for (unsigned int cnt = 0; cnt < prepared.row_indexes.size(); ++cnt)
+        {
+            const std::string& dbcontent_name =
+                prepared.number_to_dbcont.at(prepared.row_indexes[cnt].first);
+            const auto& buffer = prepared.buffers.at(dbcontent_name);
+
+            const auto& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
+
+            unsigned int buffer_index = prepared.row_indexes[cnt].second;
+            bool selected = !selected_vec.isNull(buffer_index) && selected_vec.get(buffer_index);
+
+            if (selected)
+            {
+                if (run_start == -1)
+                    run_start = run_end = (int)cnt;
+                else if ((int)cnt == run_end + 1)
+                    run_end = (int)cnt;
+                else
+                {
+                    prepared.selected_ranges.emplace_back(run_start, run_end);
+                    run_start = run_end = (int)cnt;
+                }
+            }
+        }
+
+        if (run_start != -1)
+            prepared.selected_ranges.emplace_back(run_start, run_end);
     }
 
     boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
     double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
 
-    loginf << "built " << row_indexes_.size() << " row indexes in "
+    loginf << "built " << prepared.row_indexes.size() << " row indexes in "
            << Utils::String::timeStringFromDouble(elapsed_s, true);
+
+    return prepared;
+}
+
+/**
+ * Commits prepared row data: model reset plus move into the members. Main thread only.
+ */
+void AllBufferTableModel::applyPrepared(PreparedData&& prepared)
+{
+    beginCustomResetModel();
+
+    buffers_          = std::move(prepared.buffers);
+    number_to_dbcont_ = std::move(prepared.number_to_dbcont);
+    dbcont_to_number_ = std::move(prepared.dbcont_to_number);
+    row_indexes_      = std::move(prepared.row_indexes);
+    row_layer_index_  = std::move(prepared.row_layer_index);
+    layer_id_pool_    = std::move(prepared.layer_id_pool);
+
+    endCustomResetModel();
 }
 
 void AllBufferTableModel::rebuild()
 {
-    beginCustomResetModel();
+    //synchronous path: snapshot, prepare and apply inline
+    auto input = makePrepareInput(buffers_, /*for_load*/ false);
 
-    buildRowIndexes();
-    sortRowIndexes();
-
-    endCustomResetModel();
+    applyPrepared(prepareData(input));
 }
 
 void AllBufferTableModel::setAllowedLayerIds(std::optional<std::set<std::string>> keys)

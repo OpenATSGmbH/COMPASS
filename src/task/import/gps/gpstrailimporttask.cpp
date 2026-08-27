@@ -950,6 +950,8 @@ void GPSTrailImportTask::insertDoneSlot()
     msg_box.setWindowTitle("Import GPS Trail");
     msg_box.setText("Import of "+QString::number(gps_fixes_.size())+" GPS fixes done.");
     msg_box.setStandardButtons(QMessageBox::Ok);
+    // do not steal os focus from other applications when popping up
+    msg_box.setAttribute(Qt::WA_ShowWithoutActivating, true);
 
     if (allow_user_interactions_)
         msg_box.exec();

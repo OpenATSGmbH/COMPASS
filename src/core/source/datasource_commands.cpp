@@ -21,14 +21,19 @@
 #include "db_context_manager.h"
 #include "dbcontentmanager.h"
 #include "dbinterface.h"
+#include "datasourcesstatustoolwidget.h"
+#include "datasourcesstatuswidget.h"
 #include "compass.h"
 #include "logger.h"
+#include "traced_assert.h"
+#include "util/timeconv.h"
 #include "json.hpp"
 
 #include <boost/program_options.hpp>
 
 REGISTER_RTCOMMAND(dbContent::RTCommandGetDataSources)
 REGISTER_RTCOMMAND(dbContent::RTCommandGetDataSourceCounts)
+REGISTER_RTCOMMAND(dbContent::RTCommandGetSensorStatus)
 REGISTER_RTCOMMAND(dbContent::RTCommandSetDataSources)
 REGISTER_RTCOMMAND(dbContent::RTCommandDeleteData)
 
@@ -41,6 +46,7 @@ void init_data_source_commands()
 {
     dbContent::RTCommandGetDataSources::init();
     dbContent::RTCommandGetDataSourceCounts::init();
+    dbContent::RTCommandGetSensorStatus::init();
     dbContent::RTCommandSetDataSources::init();
     dbContent::RTCommandDeleteData::init();
 }
@@ -117,6 +123,98 @@ bool RTCommandGetDataSourceCounts::checkResult_impl()
                 dbc_json[std::to_string(line_id)] = count;
         }
     }
+
+    setJSONReply(reply);
+    return true;
+}
+
+// sensor status
+
+RTCommandGetSensorStatus::RTCommandGetSensorStatus()
+    : rtcommand::RTCommand()
+{
+    condition.setDelay(10);
+}
+
+bool RTCommandGetSensorStatus::run_impl()
+{
+    if (!compass_->dbContextManager().hasActiveContext())
+    {
+        setResultMessage("No active context");
+        return false;
+    }
+
+    return true;
+}
+
+bool RTCommandGetSensorStatus::checkResult_impl()
+{
+    auto& ctx_man = compass_->dbContextManager();
+
+    // the tool widget is created lazily and keeps its state updated off the
+    // distributed data, independent of the tool being open in the GUI
+    auto* tool_widget = ctx_man.statusWidget();
+    traced_assert(tool_widget);
+
+    const auto* status_widget = tool_widget->statusWidget();
+    traced_assert(status_widget);
+
+    nlohmann::json reply = nlohmann::json::object();
+
+    bool has_tracker = status_widget->hasActiveTracker();
+    reply["has_active_tracker"] = has_tracker;
+
+    if (has_tracker)
+    {
+        const auto& tracker = status_widget->activeTracker().value();
+
+        nlohmann::json tracker_json;
+        tracker_json["ds_id"]   = tracker.first;
+        tracker_json["line_id"] = tracker.second;
+
+        if (ctx_man.hasDataSource(tracker.first))
+            tracker_json["name"] = ctx_man.dataSource(tracker.first)->name();
+
+        reply["active_tracker"] = tracker_json;
+    }
+
+    // per data source status as shown in the tool, keyed by string ds id.
+    // sources without a state obtained from the active tracker report "Fresh"
+    const DataSourcesStatusWidget::SensorStateMap* states = nullptr;
+    if (status_widget->hasActiveTrackerStates())
+        states = &status_widget->activeTrackerStates().states;
+
+    nlohmann::json sensors = nlohmann::json::object();
+
+    for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
+    {
+        nlohmann::json sensor_json;
+
+        sensor_json["name"]    = ds.name();
+        sensor_json["sac"]     = ds.sac();
+        sensor_json["sic"]     = ds.sic();
+        sensor_json["ds_type"] = ds.dsType();
+
+        sensor_status::SensorStatus status = sensor_status::SensorStatus::Fresh;
+        boost::posix_time::ptime    status_time;
+
+        if (states && states->count(ds.id()))
+        {
+            const auto& state = states->at(ds.id()).state_current;
+
+            status      = state.status;
+            status_time = state.ts_con;
+        }
+
+        sensor_json["status"] = sensor_status::stringFromSensorStatus(status);
+
+        if (!status_time.is_not_a_date_time())
+            sensor_json["status_time"] = Utils::Time::toString(status_time);
+
+        sensors[std::to_string(ds.id())] = sensor_json;
+    }
+
+    reply["sensors"] = sensors;
 
     setJSONReply(reply);
     return true;

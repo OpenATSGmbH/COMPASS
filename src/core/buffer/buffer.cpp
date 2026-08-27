@@ -443,6 +443,34 @@ void Buffer::seizeBuffer(Buffer& org_buffer)
            << " done, final size=" << size_ << " props=" << properties_.size();
 }
 
+void Buffer::shrinkToFit()
+{
+    for (auto& it : getArrayListMap<bool>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<char>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<unsigned char>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<int>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<unsigned int>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<long int>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<unsigned long int>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<float>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<double>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<string>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<json>())
+        it.second->shrinkToFit();
+    for (auto& it : getArrayListMap<boost::posix_time::ptime>())
+        it.second->shrinkToFit();
+}
+
 size_t Buffer::size() const { return size_; }
 
 void Buffer::cutToSize(size_t size)

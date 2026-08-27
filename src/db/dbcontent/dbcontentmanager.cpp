@@ -36,6 +36,7 @@
 #include "filtermanager.h"
 #include "util/number.h"
 #include "util/timeconv.h"
+#include "util/async.h"
 #include "dbcontent/db_content_edit_dialog.h"
 #include "dbcontentdeletedbjob.h"
 #include "dbcontentdataengine.h"
@@ -213,6 +214,12 @@ bool DBContentManager::isEngineBusy() const
 void DBContentManager::waitUntilEngineIdle()
 {
     data_engine_->waitUntilIdle();
+
+    // pending asynchronous view processing (geo geometry builds) still reads the
+    // displayed buffers - the callers of this wait (DB close, view point apply,
+    // report figure rendering) must also wait that out
+    Utils::Async::pumpUntil(
+        [this] { return !compass_.viewManager().hasPendingViewProcessing(); });
 }
 
 /**
@@ -804,8 +811,9 @@ DBContentEditDialog* DBContentManager::dbContentEditDialog()
 void DBContentManager::setViewableDataConfig (const nlohmann::json::object_t& data)
 {
     // this triggers a load; applying a view point while one runs would hand the new viewable
-    // to the outgoing load's doViewPointAfterLoad
-    data_engine_->waitUntilIdle();
+    // to the outgoing load's doViewPointAfterLoad. Also waits out pending asynchronous view
+    // processing, which still reads the current display.
+    waitUntilEngineIdle();
 
     viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 

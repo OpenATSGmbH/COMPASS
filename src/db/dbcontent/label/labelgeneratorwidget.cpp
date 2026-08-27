@@ -65,6 +65,7 @@ LabelGeneratorWidget::LabelGeneratorWidget(LabelGenerator& label_generator)
 
     // lod
     QComboBox* lod_box = new QComboBox();
+    lod_box->setObjectName("label_lod");
     lod_box->addItems({"Auto", "1", "2", "3"});
 
     if (label_generator_.autoLOD())
@@ -91,6 +92,7 @@ LabelGeneratorWidget::LabelGeneratorWidget(LabelGenerator& label_generator)
 
     //auto labels
     QCheckBox* auto_label_check = new QCheckBox();
+    auto_label_check->setObjectName("auto_label");
     auto_label_check->setChecked(label_generator_.autoLabel());
     connect(auto_label_check, &QCheckBox::clicked,
             this, &LabelGeneratorWidget::autoLabelChangedSlot);

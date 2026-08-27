@@ -69,9 +69,11 @@ is enforced by convention rather than by a queue. The rules the code follows:
    `delete_data` report busy), *skip* (the live tick drops its DB bound when a delete is in
    flight), *defer* (ASTERIX import postpones an insert while a load runs), or *ask the engine
    to wait* (`waitUntilEngineIdle()` — before closing the DB, applying a view point, or
-   rendering a report figure). Don't spin on `isLoading()` privately. The exception is a
-   consumer waiting on **its own** pipeline, of which engine state is one term — the
-   reconstructor's drain loop — which still belongs to that consumer.
+   rendering a report figure). `waitUntilEngineIdle()` also waits out pending asynchronous view
+   processing (`ViewManager::hasPendingViewProcessing()` - the geo view's geometry builds), as
+   do `issueLoad()` before a new load and `COMPASS::shutdown()`. Don't spin on `isLoading()`
+   privately. The exception is a consumer waiting on **its own** pipeline, of which engine
+   state is one term - the reconstructor's drain loop - which still belongs to that consumer.
    Where a wait guards an operation rather than a call site, put it **on the operation**:
    `setViewableDataConfig()` waits, so all four view-point entry points are covered, not just
    the one whose widget remembered.
@@ -173,6 +175,44 @@ nesting applies there. One consequence: exiting live **from paused** runs every 
 `loadingDone_impl()` a second time — once for the paused load, once for `endLiveSession()` — over
 unchanged data. Redundant work, not a wrong state.
 
+**The done edge is deferred while a view still processes asynchronously.** Every view except the
+tiny ones now does its heavy per-load work on a worker thread (offline and paused only - live
+stays synchronous, see [readme_blocked_events.md](../../../readme_blocked_events.md)):
+geographic geometry builds, table row indexes, histogram scan and generator, scatter/grid stash.
+`loadingDoneSlot` still runs its per-view loop at DB finish, but the tail (`finishLoadingDone`:
+dialog close + `loadingDoneSignal`) waits until no view reports `hasPendingProcessing()` anymore
+(`View::processingFinishedSignal` -> `viewProcessingFinishedSlot`). The RT wait and the UI tests
+therefore see done only after everything is committed, and the modal dialog keeps the user out of
+a half-updated display - its view-phase progress advances per **finished** view, not per
+dispatched one. A new load drops a still-deferred done of the superseded load
+(`loading_done_deferred_` cleared in `loadingStartedSlot`).
+
+The shared machinery is `ViewAsyncProcessor` plus the deferral in `ViewDataWidget`
+([viewasyncprocessor.h](../../view/viewbase/viewasyncprocessor.h)): a view launches
+`work` (worker thread, must touch no Qt object) and `commit` (main thread), and the base class
+handles the deferral, the invalidation on a new load and the completion signal. Two hazards it
+encodes, both hit in practice: results of a superseded generation are discarded rather than
+committed, and `QProgressDialog::setValue` pumps the event loop, so a commit can re-enter the
+load lifecycle - see the guards in `LoadController::advanceViewPhase`.
+
+Commits are **drained one per zero-timer firing**, not run directly from the queued worker
+completion. Several views' completions arrive as posted events, and Qt dispatches a
+posted-event batch back to back - seconds of apply work without one native event in between,
+which is exactly the unanswered-window-manager-ping "not responding" case. One commit per
+timer firing lets the native loop breathe between commits (pings, repaints). Deliberately NOT
+a `processEvents()` inside the commit: that dispatches other posted events too, and a
+dispatched waiter (a runtime command gating on quiet views, see below) then waits inside the
+pump for a `finishedSignal` that can only be emitted once the pump returns - a deadlock, found
+the hard way. This is the same lesson as the threshold pumping note further down: treat
+`processEvents()` inside the view lifecycle as suspect.
+
+**Destruction contract:** the base destructor joins outstanding workers, but only after the
+derived widget is already destroyed - a work function capturing `this` would read a half-dead
+object. Any widget whose work functions capture `this` (the stash views, the histogram) calls
+`shutdownAsyncProcessor()` (invalidate + join; queued commits are discarded) in its OWN
+destructor. Snapshot-based workers (table) and the geo provider (owns its processor) do not
+need it.
+
 ## LoadController — the offline load UX
 
 `ViewManager` owns a **`LoadController`** ([loadcontroller.h](../../view/loadcontroller.h))
@@ -196,6 +236,85 @@ that holds the modal `QProgressDialog`, the wait cursor, and the two-phase progr
   **outside** the `processing_data_` guard, so a deferred `sourceDataChangedSlot` (e.g. the
   geo view's redraw) drains while the dialog is still up — matching the pre-refactor
   `finishLoading` ordering (no late geo update after "done").
+
+Two dialog details, both flicker/black-frame related:
+
+- **Deferred show (700 ms).** The load dialog no longer shows immediately: `begin()` sets
+  `setMinimumDuration(700)` and arms it with `setValue(0)`, so Qt's own force-show timer
+  displays it only once 700 ms elapsed - a load finishing faster never flashes a dialog.
+  This works because the load dialog is value driven; the indeterminate busy dialog (below)
+  never arms that timer and needs an explicit deferred `show()` instead.
+- **Synchronous paint on show.** With the deferred shows, the first paint event can starve
+  behind long queued work and the window maps black for a second. A `LoadController`
+  event filter catches `QEvent::Show` on both dialogs and calls `repaint()` - the
+  single-widget synchronous paint, deliberately NOT a `processEvents()` (see the threshold
+  pumping section on why pumping inside the load lifecycle is suspect).
+
+## Interactive redraws - the same contract outside a load
+
+An interactive **recompute redraw** (Color Mode, style or filter change, view preset apply)
+used to run its compute phase inline on the main thread - the "application is not responding"
+case for large datasets, long after loads had gone asynchronous. Offline it now runs on the
+same worker/commit machinery as the load path; live stays synchronous everywhere, as before.
+
+Per view, `redrawData(recompute = true)` routes as follows (`redrawData(false)` display-only
+refreshes stay synchronous where they were):
+
+- **Geographic View**: `GeometryItemProvider::redrawGeometry(RecomputeDisplay)` goes through
+  `applyChange(loaded contents, reset = false, last = true)` - the same staged asynchronous
+  rebuild as a data arrival. Layers are built detached on workers and swapped in on commit; a
+  later rebuild's attach replaces an earlier one's layers. The in-place per-layer recompute
+  survives only for live and the no-data case.
+- **Table View**: `launchAsyncPrepare()` (layer scan + row index + sort on a worker,
+  `commitLoadedData` applies) - shared verbatim with `loadingDone_impl`.
+- **Histogram / Scatterplot / Grid**: `VariableViewDataWidget::redrawData_impl` fires the same
+  `postLoadTrigger()` the load-done path uses (generator / stash fill on a worker, display
+  commit on the main thread). Annotation display and live decline and fall through to the
+  synchronous path.
+
+Three pieces make this safe against interaction, mirroring what the load dialog provides
+during loads:
+
+1. **`viewRefreshed` waits for the commit.** `ViewWidget::redrawDone()` holds the signal back
+   while the data widget reports `hasPendingProcessing()`, released by
+   `dataWidgetProcessingFinished()` - the exact mirror of the `loadingDone()` deferral. To
+   every consumer (runtime commands, UI tests) `viewRefreshed` means "the view shows the
+   result", launch or not. A recompute requested while work is still outstanding is
+   **coalesced** (`pending_recompute_redraw_`): the running work's inputs are already stale,
+   so one recompute runs after the commit instead of stacking jobs; a new load drops the
+   pending request.
+2. **Runtime commands gate on quiet views.** Both main-thread command execution entries
+   (`RTCommandRunnerStash::executeCommand[Async]`) pump via `Utils::Async::pumpUntil` until
+   `ViewManager::hasPendingViewProcessing()` is false. Without this, a `uiset` mutating view
+   state can land while a worker still reads it - a torn read that aborted in practice
+   (grid preset apply during a running stash worker). Same pattern as `issueLoad`'s wait.
+3. **A modal busy dialog covers user interaction.** `LoadController::beginViewProcessing()` /
+   `endViewProcessing()`: view processing starting OUTSIDE a load cycle (reported through
+   `ViewAsyncProcessor::startedSignal` -> `View::processingStartedSignal` ->
+   `ViewManager::viewProcessingStartedSlot`) shows an application-modal, cancel-less
+   "Updating views..." dialog; the last commit closes it. Modality is the point - the user
+   cannot mutate view config or close a view while workers read state. The dialog is shown by
+   an explicit deferred `show()` (700 ms single-shot): an indeterminate `QProgressDialog`
+   never arms its `minimumDuration` timer (only `setValue` does), so auto-show would never
+   display it, and showing immediately would flicker on every small selection update. A load
+   cycle's own dialog supersedes it (`begin` ends any interactive busy state first).
+
+Two data-shape optimizations complete the picture; without them a Color Mode change stayed a
+multi-second stall even with all compute on workers:
+
+- **Layer aggregation caches** (histogram + table): `rebuildLayerTree()` used to rerun
+  `view_layer_scan::aggregateLayers` - a full row scan, seconds at millions of rows -
+  although the aggregation depends only on the loaded buffers, not on colors. Both views
+  now keep the aggregation (`layer_agg_cache_`, filled by the async commit or the sync
+  scan, invalidated on data change/clear), so a color mode change restyles the panel from
+  the cached aggregates in milliseconds.
+- **The geo compile stage** (see *Distribution*) covers the GPU side of the same scenario.
+
+**Measuring stalls:** the client has a hidden `--stall_watchdog` option - any main-thread
+stretch above 3 s dumps its own live backtrace to stderr (`=== MAIN THREAD STALL ===` in the
+captured test logs). Every improvement above was located and verified with it; see
+readme_testing.md for usage. The Color Mode cycling test (`ui_geographicview_style_modes` on
+the skeyes dataset) went from 204 s with 22 stall dumps to 21 s with zero.
 
 ## Distribution
 
@@ -221,7 +340,26 @@ last)` (the old dual `loadedData`/`updateData` path is gone — step 8). The bas
   `applyChange(names, reset, last)` → `resetData()` (if `reset`) → `rebuildContent(id)` per name
   → `contentRebuilt()` (if `last`), reading `source.index()`/`source.buffers()`. So OSG never
   paints the empty intermediate state between wipe and rebuild. `GeographicView::updateFromSource`
-  overrides to skip the **whole** update (provider + finalize) on live overload.
+  overrides to skip the **whole** update (provider + finalize) on live overload. Offline (and
+  paused) the layer geometry itself is built asynchronously: `rebuildContent_impl` stages the
+  layers, one worker per arrival builds them (its layers in parallel), and they attach in a queued
+  completion turn - the live tick stays fully synchronous (see the deferred done edge under
+  *Bookends*).
+
+  The attach itself has a **GPU compile stage** (`attachArrival`): with the viewer's
+  incremental compile operation available (the pager's ICO), the built layers attach
+  MASKED and their GL objects are uploaded in ~50 ms per-frame slices - a single-frame
+  upload of a large arrival blocks the main thread inside the GPU driver for seconds
+  (measured as fence waits in `drmSyncobjTimelineWait`). The completion callback fires
+  inside `frame()` (single threaded viewer) and hops out via a queued call
+  (`arrivalCompileDone`): unmask, swap into `group_layers_` - the OLD layers stayed
+  visible during the upload, so the switch is seamless. Because rendering is on demand
+  and the compile only progresses inside frames, a **frame pump** in the `ViewerWidget`
+  re-requests a frame every ~30 ms while compiles are outstanding
+  (`setFramePumpActive`). `hasPendingBuilds()` includes this stage, so the done edge,
+  `viewRefreshed`, the busy dialog and the command gate all wait for the RESIDENT
+  result; `cancelPendingBuilds` bumps a compile generation, and superseded completions
+  only clean up.
 
 Also in `sourceDataChangedSlot`: selection carry-over (`applyCarriedSelection`), data-source
 loaded counts (`dbContextManager().setLoadedCounts`), and — on `last` — `dataDistributedSignal`
@@ -295,13 +433,33 @@ latency, and emits **one** atomic `dataChangedSignal(all, reset=true, last=true)
 finalizes in one event-loop turn (no empty intermediate OSG paint). The **display window** is
 bound by the feed's `cutCachedData`, independent of the DB delete.
 
-### Layer churn in the per-tick rebuild
+### Layer keep-alive in the per-tick rebuild
 
-The feed's per-tick wipe + rebuild is atomic, but `GeometryItemProvider::reset_impl()` still
-destroys every `GeometryItemGroupLayer` and rebuilds a new one — each label is torn down and
-re-registered per tick (visible label flicker). The deeper fix is to keep existing
-`(dbc, ds, line)` layers alive across ticks and refresh buffer/index references in place,
-destroying only vanished keys.
+The feed's per-tick wipe + rebuild is atomic, and the geo provider handles it as a
+**mark-and-sweep rebind** instead of destroying and recreating every layer
+(`live_inplace_dispatch_`, set for a live-running dispatch): `reset_impl` stashes the
+existing `(dbc, ds, line)` layers (mark), `rebuildContent_impl` hands a stashed layer of
+the same key the new item group via `GeometryItemGroupLayer::rebuildFromGroup` - an
+in-place data rebuild (point data, item ranges, asset geometry arrays) that keeps the
+scene-graph node, the labels and the render state alive - and the finalize destroys only
+the layers whose key vanished (sweep). Kept TR labels are re-anchored to the new point
+data by record number, vanished ones dropped; no per-tick label teardown (the old label
+flicker) and no per-tick label backup/restore JSON round trip. The layer holds its item
+group as `shared_ptr`, so the data a stashed layer references survives the provider
+reset until rebind or sweep. All other resets (offline load, paused display load,
+grouping change) stay on the full wipe + backup/restore path.
+
+**Label texts are part of the per-tick snapshot.** The feed mutates the shared
+buffers in place (merge + timestamp sort + front trim), so between a `processTick()`
+and its queued rebuild turn every stored point/buffer index is stale - a label text
+regeneration in that window would read other targets' rows. Kept labels therefore
+regenerate their texts only in the anchored per-tick path (the re-anchor in
+`updateItemLabels`/`updateTRLabels`, fresh indexes, same turn as the rebuild); all
+other triggers (LOD change in the overlay pass, `updateLabelContents` from a layer
+style update) go through `OverlayItem::requestContentUpdate()`, which in live-running
+mode only marks the content dirty for the next anchored update
+(`GeometryItemGroupPointLabel::deferContentRegen`). Offline regenerates immediately,
+as before - there the buffer never changes under the layer.
 
 ## Migrating away from per-content loads
 

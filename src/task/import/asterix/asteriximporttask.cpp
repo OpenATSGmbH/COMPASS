@@ -17,6 +17,7 @@
 
 #include "asteriximporttask.h"
 #include "asteriximportprobeaggregator.h"
+#include "asterixnetworkreplaysender.h"
 #include "asterixreporthelpers.h"
 #include "asterix_decoding_config.h"
 
@@ -59,6 +60,7 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QThread>
+#include <QLabel>
 #include <QProgressDialog>
 #include <QMessageBox>
 #include <QPushButton>
@@ -808,6 +810,10 @@ void ASTERIXImportTask::stop()
 
     stopped_ = true;
 
+    for (auto& sender : replay_senders_)
+        sender->stop();
+    replay_senders_.clear();
+
     if (data_received_timer_)
         data_received_timer_->stop();
 
@@ -1415,7 +1421,9 @@ void ASTERIXImportTask::insertData()
         current_num_records += job_it.second->size();
         num_records_ += job_it.second->size();
 
-        if (compass_.appMode() != AppMode::LiveRunning) // is cleaned special there
+        // paused still ingests live buffers, cleanup would e.g. strip an all-null
+        // timestamp column of a chunk without any ToD (CAT001) before insert
+        if (!isLiveSession(compass_.appMode())) // is cleaned special there
             job_it.second->deleteEmptyProperties();
     }
 
@@ -1515,6 +1523,147 @@ void ASTERIXImportTask::checkDataReceivedSlot()
         QMetaObject::invokeMethod(&compass_.viewManager(), "forceLiveUpdate", Qt::QueuedConnection);
         last_live_update_time_ = microsec_clock::local_time();
     }
+}
+
+/**
+ * Resolves the replay target endpoint and creates one replay sender per file,
+ * sharing a common pacing base so the relative timing between the files is kept.
+ * Fails without side effects, so it can be called before run().
+*/
+bool ASTERIXImportTask::prepareReplay(const std::vector<std::string>& filenames, float speed,
+                                      const std::string& line_key, bool stop_at_end,
+                                      std::string& error)
+{
+    traced_assert(replay_senders_.empty());
+
+    if (filenames.empty())
+    {
+        error = "no replay files given";
+        return false;
+    }
+
+    if (speed <= 0.0f)
+    {
+        error = "replay speed " + std::to_string(speed) + " invalid";
+        return false;
+    }
+
+    // common pacing base: the earliest first frame time across all files
+    boost::optional<double> reference_time;
+
+    for (const auto& filename : filenames)
+    {
+        std::string parse_error;
+        auto first_time = ASTERIXNetworkReplaySender::firstFrameTime(filename, &parse_error);
+
+        if (!first_time.has_value())
+        {
+            error = parse_error;
+            return false;
+        }
+
+        if (!reference_time.has_value() || first_time.value() < reference_time.value())
+            reference_time = first_time;
+    }
+
+    // resolve the target endpoint: the first configured endpoint of the given line.
+    // sending to a single endpoint is required, receivers of the same line merge
+    // into one buffer and would store duplicate records otherwise
+    std::string  configured_ip;
+    std::string  target_ip;
+    unsigned int target_port {0};
+
+    for (auto& ds_it : compass_.dbContextManager().getNetworkLines())
+    {
+        if (!ds_it.second.count(line_key))
+            continue;
+
+        const nlohmann::json& line_cfg = ds_it.second.at(line_key);
+
+        if (!line_cfg.contains("mcast_ip") || !line_cfg.contains("mcast_port"))
+            continue;
+
+        configured_ip = line_cfg.at("mcast_ip").get<std::string>();
+        target_port   = line_cfg.at("mcast_port").get<unsigned int>();
+
+        if (configured_ip.size() && target_port)
+        {
+            // the source address of locally sent datagrams cannot match a
+            // configured sender filter, the receiver will drop the replayed data
+            if (line_cfg.contains("sender_ip")
+                && line_cfg.at("sender_ip").is_string()
+                && line_cfg.at("sender_ip").get<std::string>().size())
+                logwrn << "line " << line_key << " filters sender ip '"
+                       << line_cfg.at("sender_ip").get<std::string>()
+                       << "', replayed data will be dropped by the receiver";
+
+            break;
+        }
+    }
+
+    if (configured_ip.empty() || !target_port)
+    {
+        error = "no network line '" + line_key + "' with valid endpoint defined in active context";
+        return false;
+    }
+
+    // multicast groups are usable as-is (sent host-local), listen addresses are not
+    target_ip = ASTERIXNetworkReplaySender::effectiveTargetIP(configured_ip);
+
+    if (target_ip != configured_ip)
+        loginf << "using target ip " << target_ip << " for configured " << configured_ip;
+
+    replay_stop_at_end_ = stop_at_end;
+
+    for (const auto& filename : filenames)
+    {
+        replay_senders_.emplace_back(
+            new ASTERIXNetworkReplaySender(filename, speed, target_ip, target_port, reference_time));
+
+        connect(replay_senders_.back().get(), &ASTERIXNetworkReplaySender::doneSignal,
+                this, &ASTERIXImportTask::replaySenderDoneSlot, Qt::QueuedConnection);
+
+        loginf << "file '" << filename << "' speed " << speed << " line " << line_key
+               << " target " << target_ip << ":" << target_port;
+    }
+
+    loginf << replay_senders_.size() << " files, reference time "
+           << String::timeStringFromDouble(reference_time.value());
+
+    return true;
+}
+
+/**
+*/
+void ASTERIXImportTask::startReplay()
+{
+    traced_assert(replay_senders_.size());
+
+    for (auto& sender : replay_senders_)
+        sender->start();
+}
+
+/**
+*/
+void ASTERIXImportTask::replaySenderDoneSlot()
+{
+    if (replay_senders_.empty()) // already torn down (e.g. manual stop)
+        return;
+
+    // act only once ALL senders finished
+    for (const auto& sender : replay_senders_)
+        if (sender->isRunning())
+            return;
+
+    loginf << "all " << replay_senders_.size() << " senders done, stop at end "
+           << replay_stop_at_end_;
+
+    for (auto& sender : replay_senders_)
+        sender->stop(); // joins the finished threads
+    replay_senders_.clear();
+
+    if (replay_stop_at_end_ && running_ && compass_.appMode() != AppMode::Offline)
+        compass_.mainWindow().liveStopSlot();
 }
 
 /**
@@ -1793,6 +1942,17 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
         file_progress_dialog_->setWindowModality(Qt::ApplicationModal);
         file_progress_dialog_->setAutoClose(false);
         file_progress_dialog_->setAutoReset(false);
+        // do not steal os focus from other applications when popping up
+        file_progress_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
+
+        // wrapping label with a bounded width: long recording paths otherwise
+        // stretch the dialog to the longest filename (the status table inserts break
+        // opportunities after every path separator, see statusInfoString)
+        auto* label = new QLabel;
+        label->setTextFormat(Qt::RichText);
+        label->setWordWrap(true);
+        label->setMaximumWidth(800);
+        file_progress_dialog_->setLabel(label);
 
         force = true;
     }

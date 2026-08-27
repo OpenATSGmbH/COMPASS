@@ -35,6 +35,7 @@
 #include "logger.h"
 #include "number.h"
 #include "stringconv.h"
+#include "viewasyncprocessor.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
@@ -98,6 +99,8 @@ void TableViewDataWidget::clearData_impl()
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->clear();
 
+    layer_agg_valid_ = false;
+
     logdbg << "end";
 }
 
@@ -109,13 +112,61 @@ void TableViewDataWidget::clearIntermediateRedrawData_impl()
 void TableViewDataWidget::loadingStarted_impl()
 {
     loginf;
-    //nothing to do yet
+
+    //new data incoming - the cached layer aggregation goes stale; the async prepare
+    //commit refills it
+    layer_agg_valid_ = false;
 }
 
 void TableViewDataWidget::updateFromSource_impl(const DBContentDataSet& /*source*/,
                                                 const std::vector<std::string>& /*names*/, bool /*reset*/, bool /*last*/)
 {
     // nothing to do - the table model reads viewData() (source-fed) at redraw
+}
+
+// Offline the heavy per-redraw work - the layer scan, the row index build and the
+// sort - runs on a worker; commitLoadedData applies the results on completion, and
+// the base defers dataLoaded / viewRefreshed until then. Used by both the load-done
+// path and interactive recompute redraws (style, color mode, filter changes). Live
+// stays synchronous: the feed mutates the same buffers every tick. Returns false
+// when the synchronous path should run instead.
+bool TableViewDataWidget::launchAsyncPrepare()
+{
+    unsigned int num_records = 0;
+    for (auto& buf_it : viewData())
+        num_records += buf_it.second->size();
+
+    bool async = view_->compass().appMode() != AppMode::LiveRunning && num_records > 0;
+
+    if (!async)
+        return false;
+
+    traced_assert(all_buffer_table_widget_);
+
+    auto* model = all_buffer_table_widget_->allBufferTableModel();
+    traced_assert(model);
+
+    auto scan_input = std::make_shared<view_layer_scan::ScanInput>(
+        view_layer_scan::makeScanInput(viewData(), view_->compass()));
+    auto prep_input = std::make_shared<AllBufferTableModel::PrepareInput>(
+        model->makePrepareInput(viewData(), /*for_load*/ true));
+
+    auto agg      = std::make_shared<std::map<std::string, view_layer_scan::LayerAgg>>();
+    auto prepared = std::make_shared<AllBufferTableModel::PreparedData>();
+
+    asyncProcessor().launch(
+        "table view row data with " + std::to_string(num_records) + " records",
+        [ scan_input, prep_input, agg, prepared ] ()
+        {
+            *agg      = view_layer_scan::aggregateLayers(*scan_input);
+            *prepared = AllBufferTableModel::prepareData(*prep_input);
+        },
+        [ this, agg, prepared ] ()
+        {
+            commitLoadedData(*agg, std::move(*prepared));
+        });
+
+    return true;
 }
 
 void TableViewDataWidget::loadingDone_impl()
@@ -127,6 +178,9 @@ void TableViewDataWidget::loadingDone_impl()
         num_records += buf_it.second->size();
 
     loginf << "begin with " << num_records << " records";
+
+    if (launchAsyncPrepare())
+        return;
 
     // Rebuild the layer tree first so the panel reflects current data; the
     // base redraw below will then consult the allowed-layer-ids set we push
@@ -143,6 +197,56 @@ void TableViewDataWidget::loadingDone_impl()
            << Utils::String::timeStringFromDouble(elapsed_s, true);
 }
 
+/**
+ * Main-thread commit of the asynchronously prepared load data.
+ */
+void TableViewDataWidget::commitLoadedData(const std::map<std::string, view_layer_scan::LayerAgg>& agg,
+                                           AllBufferTableModel::PreparedData&& prepared)
+{
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
+
+    traced_assert(all_buffer_table_widget_);
+
+    setUpdatesEnabled(false);
+
+    //keep the worker-computed aggregation: color mode changes restyle the panel from
+    //it without another full row scan (see rebuildLayerTree)
+    layer_agg_cache_ = agg;
+    layer_agg_valid_ = true;
+
+    applyLayerTree(layer_agg_cache_);
+
+    auto selected_ranges = std::move(prepared.selected_ranges);
+
+    all_buffer_table_widget_->showPrepared(std::move(prepared));
+
+    if (anyLayerHidden())
+    {
+        // the prepared row data is unfiltered; re-filter against the freshly pushed
+        // allowed set (rare - only when the stored panel state hides layers)
+        loginf << "hidden layers stored, re-filtering row data";
+
+        all_buffer_table_widget_->allBufferTableModel()->rebuild();
+        all_buffer_table_widget_->selectSelectedRows();
+    }
+    else
+    {
+        all_buffer_table_widget_->selectSelectedRows(selected_ranges);
+    }
+
+    setUpdatesEnabled(true);
+
+    setDrawState(all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent
+                                                          : DrawState::Drawn);
+    emit displayChanged();
+
+    boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
+    double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
+
+    loginf << "done with " << all_buffer_table_widget_->rowCount() << " rows in "
+           << Utils::String::timeStringFromDouble(elapsed_s, true);
+}
+
 ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
 {
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
@@ -154,6 +258,12 @@ ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
     loginf << "start - recompute " << recompute << " records " << num_records;
 
     traced_assert(all_buffer_table_widget_);
+
+    //offline, the row data prepare runs on a worker and commitLoadedData applies it;
+    //the view keeps showing the previous rows until the commit, and viewRefreshed is
+    //held back by the pending processing guard
+    if (launchAsyncPrepare())
+        return (all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent : DrawState::Drawn);
 
     setUpdatesEnabled(false);
 
@@ -285,105 +395,39 @@ void TableViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
     info[ "tables" ] = table_infos;
 }
 
-namespace
-{
-    /// Aggregate a single loaded buffer into per-layer row counts, keyed by
-    /// "<ds_type>:<ds_name>:L<n>:<dbcontent>". Mirrors the grouping logic
-    /// used by VariableViewStashDataWidget and AllBufferTableModel's filter.
-    struct LayerAgg
-    {
-        std::string ds_type;
-        std::string ds_name;
-        std::string line;
-        std::string dbcontent;
-        unsigned int count = 0;
-        int          line_index = 0;   // 0..3, for color resolution
-    };
-}
-
 void TableViewDataWidget::rebuildLayerTree()
 {
     if (!db_content_root_ || !layer_model_)
         return;
 
-    auto& compass = view_->compass();
-    auto& dbcont_man = compass.dbContentManager();
-    auto& ctx_mgr = compass.dbContextManager();
+    // the aggregation only depends on the loaded buffers - reuse it when the data is
+    // unchanged: a color mode change restyles the panel from the same aggregates, and
+    // the recompute is a full row scan (measured as a seconds-long main thread stall)
+    if (layer_agg_valid_)
+    {
+        applyLayerTree(layer_agg_cache_);
+        return;
+    }
 
     // Count records per (ds_type, ds_name, line, dbcontent) layer by scanning
-    // ds_id + line_id columns on each loaded buffer. Lookups cached.
-    std::map<std::string, LayerAgg> agg;  // full_key -> aggregate
+    // ds_id + line_id columns on each loaded buffer (shared scan helper; on the
+    // asynchronous load path the scan runs on a worker instead, see loadingDone_impl).
+    layer_agg_cache_ = view_layer_scan::aggregateLayers(
+        view_layer_scan::makeScanInput(viewData(), view_->compass()));
+    layer_agg_valid_ = true;
 
-    for (auto& buf_it : viewData())
-    {
-        const std::string& dbcontent_name = buf_it.first;
-        Buffer&            buffer         = *buf_it.second;
-        if (buffer.size() == 0)
-            continue;
+    applyLayerTree(layer_agg_cache_);
+}
 
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_) ||
-            !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_line_id_))
-            continue;
+/**
+ * The tree/payload part of rebuildLayerTree, from precomputed layer aggregates.
+ */
+void TableViewDataWidget::applyLayerTree(const std::map<std::string, view_layer_scan::LayerAgg>& agg)
+{
+    if (!db_content_root_ || !layer_model_)
+        return;
 
-        const std::string ds_id_name = dbcont_man.metaGetVariable(dbcontent_name,
-            dbcontent_vars::meta_var_ds_id_).name();
-        const std::string line_id_name = dbcont_man.metaGetVariable(dbcontent_name,
-            dbcontent_vars::meta_var_line_id_).name();
-
-        if (!buffer.has<unsigned int>(ds_id_name) ||
-            !buffer.has<unsigned int>(line_id_name))
-            continue;
-
-        const auto& ds_ids  = buffer.get<unsigned int>(ds_id_name);
-        const auto& line_ids = buffer.get<unsigned int>(line_id_name);
-
-        const unsigned int n = buffer.size();
-        for (unsigned int i = 0; i < n; ++i)
-        {
-            if (ds_ids.isNull(i) || line_ids.isNull(i))
-                continue;
-
-            const unsigned int ds_id   = ds_ids.get(i);
-            const unsigned int line_id = line_ids.get(i);
-
-            std::string ds_type, ds_name;
-            if (ctx_mgr.hasDataSource(ds_id))
-            {
-                const auto* ds = ctx_mgr.dataSource(ds_id);
-                ds_type = ds->dsType();
-                ds_name = ds->name();
-            }
-            else
-            {
-                ds_type = "Other";
-                ds_name = std::to_string(Utils::Number::sacFromDsId(ds_id))
-                        + "/" + std::to_string(Utils::Number::sicFromDsId(ds_id));
-            }
-
-            const std::string line_str = Utils::String::lineStrFrom(line_id);
-            const std::string full_key = ds_type + ":" + ds_name + ":"
-                                       + line_str + ":" + dbcontent_name;
-
-            auto it = agg.find(full_key);
-            if (it == agg.end())
-            {
-                LayerAgg a;
-                a.ds_type    = ds_type;
-                a.ds_name    = ds_name;
-                a.line       = line_str;
-                a.dbcontent  = dbcontent_name;
-                a.count      = 1;
-                a.line_index = (line_str.size() >= 2 && line_str[0] == 'L')
-                             ? std::max(0, std::atoi(line_str.c_str() + 1) - 1)
-                             : 0;
-                agg.emplace(full_key, std::move(a));
-            }
-            else
-            {
-                it->second.count++;
-            }
-        }
-    }
+    auto& compass = view_->compass();
 
     // Build payloads + LeafEntry list.
     std::vector<std::unique_ptr<TableLeafPayload>> new_payloads;
@@ -393,8 +437,8 @@ void TableViewDataWidget::rebuildLayerTree()
 
     for (const auto& kv : agg)
     {
-        const std::string& full_key = kv.first;
-        const LayerAgg&    a        = kv.second;
+        const std::string&              full_key = kv.first;
+        const view_layer_scan::LayerAgg& a       = kv.second;
 
         QColor color = context::resolveSeriesColor(
             a.ds_type, a.ds_name, a.line_index, a.dbcontent, compass);
@@ -418,6 +462,17 @@ void TableViewDataWidget::rebuildLayerTree()
     pushLayerStateToModel();
 
     emit layerTreeRebuiltSignal();
+}
+
+/**
+ */
+bool TableViewDataWidget::anyLayerHidden() const
+{
+    for (const auto& payload : payloads_)
+        if (payload && !payload->visible())
+            return true;
+
+    return false;
 }
 
 void TableViewDataWidget::pushLayerStateToModel()

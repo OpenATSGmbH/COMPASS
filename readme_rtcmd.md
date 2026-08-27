@@ -84,7 +84,11 @@ compass.interface.sendCommandAndUnpack('set_view_point ' + vp_escaped)
 **Import**: `import_asterix_file`, `import_asterix_files`, `import_asterix_pcap_file`,
 `import_asterix_pcap_files` (all with `framing`, `line`, `date`, `time_offset`,
 `ignore_time_jumps`, `config`), `import_asterix_network` (with `time_offset`,
-`max_lines`, `ignore_future_ts`, `config`), `import_asterix_network_stop`,
+`max_lines`, `ignore_future_ts`, `config`; live simulation via `replay_file`
+(`;`-separated IOSS recordings replayed simultaneously over UDP to a configured
+network line keeping their relative timing, ToD aligned to the current time
+unless `time_offset` is given), `replay_speed`, `replay_line`,
+`replay_stop_at_end`), `import_asterix_network_stop`,
 `import_json`, `import_gps_trail` (with `name`, `sac`, `sic`, `tod_offset`, `date`,
 `mode3a` octal, `address` hex, `id`, `config`), `import_view_points`,
 `import_sectors_json`, `import_data_sources`
@@ -99,7 +103,9 @@ compass.interface.sendCommandAndUnpack('set_view_point ' + vp_escaped)
 **Data retrieval**: `get_utns` (with `nodesc`), `get_target`, `get_target_stats`,
 `get_dbcontent_data` (with `dbcontent`, `variables` `|`-separated, `utn`, `max_size`),
 `get_data_sources`, `get_data_source_counts` (per data source / dbcontent / line
-inserted record counts)
+inserted record counts), `get_sensor_status` (CAT063 based per data source status
+as shown in the Sensor Status tool: active tracker plus per source
+Operational/Degraded/Initializing/Not Connected/Fresh/Unknown and status time)
 
 **Reports**: `get_existing_reports`, `get_report` (with `section` for hierarchical
 drill-down, see below), `export_report` (with `report`, `dir`, `mode`),

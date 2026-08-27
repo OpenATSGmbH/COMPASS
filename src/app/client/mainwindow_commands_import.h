@@ -142,6 +142,13 @@ struct RTCommandImportASTERIXNetworkStart : public rtcommand::RTCommand
     bool ignore_future_ts_ {false};
     std::string config_;
 
+    // live simulation: replay IOSS recordings via UDP to the configured network lines
+    std::string replay_files_;
+    std::vector<std::string> split_replay_files_;
+    float       replay_speed_ {1.0f};
+    std::string replay_line_ {"L1"};
+    bool        replay_stop_at_end_ {false};
+
     virtual rtcommand::IsValid valid() const override;
 
     RTCommandImportASTERIXNetworkStart();

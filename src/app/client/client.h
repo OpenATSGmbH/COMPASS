@@ -32,6 +32,7 @@ public:
     virtual bool notify(QObject* receiver, QEvent* event);
 
     bool quitRequested() const;
+    bool stallWatchdogRequested() const { return stall_watchdog_; }
 
     bool run ();
 
@@ -73,6 +74,10 @@ private:
     std::string import_asterix_network_time_offset_;
     int import_asterix_network_max_lines_ {-1};
     bool import_asterix_network_ignore_future_ts_ {false};
+    std::string import_asterix_network_replay_file_;
+    float import_asterix_network_replay_speed_ {1.0f};
+    std::string import_asterix_network_replay_line_;
+    bool import_asterix_network_replay_stop_at_end_ {false};
     std::string asterix_framing;
     std::string asterix_decoder_cfg;
     std::string import_asterix_parameters_;
@@ -121,6 +126,7 @@ private:
     bool do_numerical_crash_ {false};
     bool do_segfault_ {false};
     bool do_sensor_status_hack_ {false};
+    bool stall_watchdog_ {false};
 
     void checkAndSetupConfig();
 

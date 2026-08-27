@@ -103,6 +103,10 @@ protected:
     virtual void toolChanged_impl(int mode) override;
 
     virtual bool postLoadTrigger() override final;
+    virtual void commitStashDisplayData() override final;
+
+    /// drops the current chart view via deleteLater - see the implementation
+    void releaseChartView();
     virtual void resetVariableDisplay() override final;
     virtual DrawState updateVariableDisplay() override final;
     virtual bool updateFromAnnotations() override final;

@@ -55,6 +55,21 @@ protected:
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
+// get_sensor_status
+struct RTCommandGetSensorStatus : public rtcommand::RTCommand
+{
+public:
+    RTCommandGetSensorStatus();
+
+protected:
+    virtual bool run_impl() override;
+    virtual bool checkResult_impl() override;
+
+    DECLARE_RTCOMMAND(get_sensor_status,
+                      "retrieves the CAT063 based sensor status of the data sources, as shown in the Sensor Status tool")
+    DECLARE_RTCOMMAND_NOOPTIONS
+};
+
 // set_data_sources "{\"content_type\":\"data_sources\",\"content_version\":\"0.2\",\"data_sources\":[{\"ds_type\":\"RefTraj\",\"info\":{},\"name\":\"Reconst\",\"sac\":0,\"short_name\":\"Reconst\",\"sic\":0}]}"
 struct RTCommandSetDataSources : public rtcommand::RTCommand
 {

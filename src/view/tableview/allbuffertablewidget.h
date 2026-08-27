@@ -18,13 +18,13 @@
 #pragma once
 
 #include "basetablewidget.h"
+#include "allbuffertablemodel.h"
 
 #include <memory>
 #include <map>
 #include <vector>
 #include <string>
 
-class AllBufferTableModel;
 class Buffer;
 
 class AllBufferTableWidget : public BaseBufferTableWidget
@@ -37,8 +37,12 @@ class AllBufferTableWidget : public BaseBufferTableWidget
     virtual ~AllBufferTableWidget();
 
     void show(std::map<std::string, std::shared_ptr<Buffer>> buffers);
+    // commits row data prepared on a worker thread (see AllBufferTableModel::prepareData)
+    void showPrepared(AllBufferTableModel::PreparedData&& prepared);
 
     void selectSelectedRows();
+    // as above, with the selected row ranges already computed (from prepared data)
+    void selectSelectedRows(const std::vector<std::pair<int,int>>& ranges);
 
     int rowCount() const;
 

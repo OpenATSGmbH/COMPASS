@@ -75,5 +75,14 @@ namespace ui_test
                          const Coord& xcoord1,
                          const Coord& ycoord1,
                          int delay = -1);
+    bool injectMouseDblClick(QWidget* w,
+                             Qt::MouseButton button,
+                             const Coord& xcoord,
+                             const Coord& ycoord,
+                             int delay = -1);
+    bool injectMouseWheel(QWidget* w,
+                          int delta,
+                          const Coord& xcoord,
+                          const Coord& ycoord);
 
 } // namespace ui_test

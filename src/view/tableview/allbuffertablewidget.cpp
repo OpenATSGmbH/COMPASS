@@ -49,14 +49,28 @@ void AllBufferTableWidget::show(std::map<std::string, std::shared_ptr<Buffer>> b
     table_->resizeColumnsToContents();
 }
 
+void AllBufferTableWidget::showPrepared(AllBufferTableModel::PreparedData&& prepared)
+{
+    traced_assert(table_);
+    traced_assert(all_buffer_model_);
+
+    all_buffer_model_->applyPrepared(std::move(prepared));
+    table_->resizeColumnsToContents();
+}
+
 void AllBufferTableWidget::selectSelectedRows()
+{
+    traced_assert(all_buffer_model_);
+
+    selectSelectedRows(all_buffer_model_->getSelectedRows());
+}
+
+void AllBufferTableWidget::selectSelectedRows(const std::vector<std::pair<int,int>>& ranges)
 {
     loginf;
 
     traced_assert(table_);
     traced_assert(all_buffer_model_);
-
-    std::vector<std::pair<int,int>> ranges = all_buffer_model_->getSelectedRows();
 
     if (ranges.empty())
     {

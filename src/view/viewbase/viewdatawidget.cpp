@@ -27,6 +27,7 @@
 #include "stringconv.h"
 #include "dbcontentitemprovider.h"
 #include "dbcontentdataset.h"
+#include "viewasyncprocessor.h"
 
 #include <QApplication>
 #include <QPainter>
@@ -65,6 +66,110 @@ ViewDataWidget::ViewDataWidget(ViewWidget* view_widget, QWidget* parent, Qt::Win
     dbc_colors_["CAT048" ] = QColor(QString::fromStdString(Color_CAT048 ));
     dbc_colors_["RefTraj"] = QColor(QString::fromStdString(Color_RefTraj));
     dbc_colors_["CAT062" ] = QColor(QString::fromStdString(Color_CAT062 ));
+}
+
+/**
+ */
+ViewDataWidget::~ViewDataWidget()
+{
+    // async_processor_ joins its outstanding workers in its destructor; their commits
+    // (which may reference this widget) never run
+}
+
+/**
+ * The widget's asynchronous processor, created on first use. Its completions drive the
+ * deferred load-done handling via notifyProcessingFinished().
+ */
+ViewAsyncProcessor& ViewDataWidget::asyncProcessor()
+{
+    if (!async_processor_)
+    {
+        async_processor_.reset(new ViewAsyncProcessor);
+
+        connect(async_processor_.get(), &ViewAsyncProcessor::startedSignal,
+                this, &ViewDataWidget::processingStartedSignal);
+        connect(async_processor_.get(), &ViewAsyncProcessor::finishedSignal,
+                this, &ViewDataWidget::notifyProcessingFinished);
+    }
+
+    return *async_processor_;
+}
+
+/**
+ */
+bool ViewDataWidget::hasPendingAsyncWork_impl() const
+{
+    return async_processor_ && async_processor_->hasPending();
+}
+
+/**
+ */
+void ViewDataWidget::shutdownAsyncProcessor()
+{
+    if (!async_processor_)
+        return;
+
+    async_processor_->invalidate();     // commits of finishing tasks are discarded
+    async_processor_->waitForPending(); // block until the work functions returned
+}
+
+/**
+ */
+bool ViewDataWidget::hasPendingProcessing() const
+{
+    return pending_loading_done_ || pending_data_loaded_ || pending_recompute_redraw_ ||
+           hasPendingAsyncWork_impl();
+}
+
+/**
+ * All asynchronous work completed (committed or discarded): run the deferred load-done
+ * parts and report the view as finished. Connected to asyncProcessor()'s finishedSignal;
+ * widgets with their own asynchronous mechanism call it when their work completes.
+ */
+void ViewDataWidget::notifyProcessingFinished()
+{
+    if (hasPendingAsyncWork_impl())
+        return; // more work already outstanding, wait for it
+
+    if (pending_loading_done_)
+    {
+        pending_loading_done_ = false;
+
+        loadingDone_impl();
+
+        if (hasPendingAsyncWork_impl())
+        {
+            // the impl launched follow-up work; dataLoaded once that completed
+            pending_data_loaded_ = true;
+            return;
+        }
+    }
+    else if (pending_recompute_redraw_)
+    {
+        // a recompute redraw was requested while work was outstanding - run the
+        // coalesced redraw now; if it launches new work, completion is reported
+        // once that work finished
+        pending_recompute_redraw_ = false;
+
+        redrawData(true, false);
+
+        if (hasPendingAsyncWork_impl())
+            return;
+
+        emit processingFinishedSignal();
+        return;
+    }
+    else if (!pending_data_loaded_)
+    {
+        // finished outside a deferred load-done cycle (e.g. an interactive rebuild)
+        emit processingFinishedSignal();
+        return;
+    }
+
+    pending_data_loaded_ = false;
+
+    emit dataLoaded();
+    emit processingFinishedSignal();
 }
 
 /**
@@ -216,6 +321,12 @@ void ViewDataWidget::loadingStarted()
 {
     loginf;
 
+    //a deferred load-done of a superseded cycle is dropped, as is a coalesced
+    //redraw - the load redraws everything anyway
+    pending_loading_done_     = false;
+    pending_data_loaded_      = false;
+    pending_recompute_redraw_ = false;
+
     //clear and update display
     clearData();
     redrawData(false, false);
@@ -225,14 +336,31 @@ void ViewDataWidget::loadingStarted()
 }
 
 /**
- * Reacts on loading ended.
+ * Reacts on loading ended. With asynchronous processing outstanding the derived work is
+ * deferred: loadingDone_impl() runs once the pending work completed (it reads the
+ * processed results), and dataLoaded is emitted once the impl's own launched work
+ * completed. See notifyProcessingFinished().
  */
 void ViewDataWidget::loadingDone()
 {
     loginf;
 
+    if (hasPendingAsyncWork_impl())
+    {
+        loginf << "deferring load done work, view processing pending";
+        pending_loading_done_ = true;
+        return;
+    }
+
     //invoke derived
     loadingDone_impl();
+
+    if (hasPendingAsyncWork_impl())
+    {
+        //the impl launched asynchronous work; dataLoaded once that completed
+        pending_data_loaded_ = true;
+        return;
+    }
 
     //signal that view data has been loaded
     emit dataLoaded();
@@ -259,7 +387,8 @@ void ViewDataWidget::updateFromSource(const DBContentDataSet& source,
 {
     logdbg;
 
-    data_ = source.buffers();
+    data_                   = source.buffers();
+    data_fulfills_read_set_ = source.fulfillsReadSet();
 
     if (item_provider_)
     {
@@ -279,8 +408,20 @@ void ViewDataWidget::clearData()
 {
     logdbg;
 
-    data_       = {};
-    draw_state_ = DrawState::NotDrawn;
+    // results of in-flight asynchronous work are stale now; deferred load-done state
+    // of the outgoing cycle is dropped. Invalidate alone is not enough: the running
+    // work function keeps reading the buffers released below and writing the data
+    // cleared by clearData_impl() (e.g. the variable stash), racing the main thread
+    // into heap corruption (double free / freed-Buffer crash on close_db, 2026-08-17)
+    // - so block until the work functions returned, as the destructor does, BEFORE
+    // releasing anything they touch.
+    shutdownAsyncProcessor();
+    pending_loading_done_ = false;
+    pending_data_loaded_  = false;
+
+    data_                   = {};
+    data_fulfills_read_set_ = true;
+    draw_state_             = DrawState::NotDrawn;
 
     count_null_.reset();
     count_nan_.reset();
@@ -316,6 +457,15 @@ void ViewDataWidget::clearIntermediateRedrawData()
 ViewDataWidget::DrawState ViewDataWidget::redrawData(bool recompute, bool notify)
 {
     loginf << "recompute " << recompute << " notify " << notify;
+
+    //a recompute while asynchronous work is outstanding is coalesced: the running
+    //work's inputs are already stale, so remember the request and run one recompute
+    //when the work has finished (notifyProcessingFinished) instead of stacking jobs
+    if (recompute && hasPendingAsyncWork_impl())
+    {
+        pending_recompute_redraw_ = true;
+        return draw_state_;
+    }
 
     if (notify)
     {

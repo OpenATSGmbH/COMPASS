@@ -76,6 +76,10 @@ public:
     // Adds all containers of org_buffer and removes them from org_buffer.
     void seizeBuffer(Buffer& org_buffer);
 
+    // releases the capacity slack the chunked seizeBuffer appends leave in every
+    // column vector; call once after the last chunk of a read
+    void shrinkToFit();
+
     bool hasProperty(const Property& property);
     bool hasAnyPropertyNamed (const std::string& property_name);
     void addProperty(std::string id, PropertyDataType type);

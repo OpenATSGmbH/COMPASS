@@ -77,8 +77,10 @@ public:
     // Source-fed path: setSource points the provider at the current DBContentDataSet
     // (nullptr => no data); applyChange rebuilds the affected contents, keyed by content
     // name (the DBContentDataSet change contract). Driven by the view framework.
+    // Virtual so a subclass can wrap the dispatch (e.g. the geometry provider marks it
+    // as an asynchronous build opportunity) - overrides must call the base version.
     void setSource(const DBContentDataSet* source) { source_ = source; }
-    void applyChange(const std::vector<std::string>& names, bool reset, bool last);
+    virtual void applyChange(const std::vector<std::string>& names, bool reset, bool last);
 
     void setGrouping(Grouping grouping,
                      bool run_update = true);
@@ -87,7 +89,7 @@ public:
     bool groupingIsNumeric() const;
     bool groupingIsTargetSpecific() const;
 
-    const std::vector<std::unique_ptr<dbContent::ItemGroup>>& itemGroups() const { return item_groups_; }
+    const std::vector<std::shared_ptr<dbContent::ItemGroup>>& itemGroups() const { return item_groups_; }
     const std::map<nlohmann::json, ItemLocations>& itemLocations() const { return item_locations_; }
     const ItemLocations& itemLocations(const nlohmann::json& item_id) const;
 
@@ -161,7 +163,7 @@ protected:
     /// emit itemVisibilityChangedSignal() once after a batch.
     bool setItemVisibleSilent(const nlohmann::json& item_id, bool visible);
 
-    std::vector<std::unique_ptr<dbContent::ItemGroup>>& itemGroups() { return item_groups_; }
+    std::vector<std::shared_ptr<dbContent::ItemGroup>>& itemGroups() { return item_groups_; }
 
     /// The current source's full buffer map (empty when no source is set).
     const std::map<std::string, std::shared_ptr<Buffer>>& curBuffers() const;
@@ -186,7 +188,10 @@ private:
     const DBContentDataSet*                             source_ {nullptr};          // current source; null => no data
     context::DBContextManager&                          context_manager_;           // context manager
     Grouping                                            grouping_ = Grouping::None; // item grouping mode
-    std::vector<std::unique_ptr<dbContent::ItemGroup>>  item_groups_;               // per (dbcontent, ds, line) item groups
+    // shared_ptr so an in-flight asynchronous geometry build keeps its group alive
+    // across the clear() a reset performs; item_locations_ keeps raw pointers,
+    // pointee stability is unchanged
+    std::vector<std::shared_ptr<dbContent::ItemGroup>>  item_groups_;               // per (dbcontent, ds, line) item groups
     std::map<nlohmann::json, ItemLocations>             item_locations_;            // per item group locations
     std::map<nlohmann::json, bool>                      item_visibility_;           // per item visibility cache; missing entries default to true
     std::map<nlohmann::json, QColor>                    item_colors_;

@@ -300,6 +300,27 @@ Code in `src/task/import/asterix/` and `src/import/asterix/`:
 4. `ASTERIXPostProcessJob` (`asterixpostprocessjob.h`) fixes ToD wrap/offset, applies SAC/SIC overrides, computes derived fields, then hands buffers off for DuckDB insertion.
 5. The pipeline runs in parallel via JobManager + TBB, with the `num_packets_overload` / `max_packets_in_processing` knobs in `task_import_asterix.json` keeping memory bounded for large files or sustained live feeds.
 
+**Live simulation (network replay)**: the network import can be fed from IOSS-framed
+recordings instead of real sensors, without leaving the production code path.
+`ASTERIXNetworkReplaySender` (`asterixnetworkreplaysender.cpp`) walks the IOSS frames of a
+recording, paces by the frame header times (speed factor supported) and sends each frame's
+content as one UDP datagram to a configured network line endpoint of the active context.
+Multiple recordings are replayed simultaneously (one sender each, sharing the earliest
+first frame time as common pacing base so their relative timing is kept) -
+from the socket onward everything (UDP receivers, decode batching, live insert, display) is
+the normal live path. The context's network lines are used unchanged: multicast groups are
+sent host-local (multicast loopback enabled, hops 0, so the replayed recording never reaches
+a real network), non-multicast listen addresses (e.g. "0.0.0.0") are redirected to
+127.0.0.1. Limitation: a line with a `sender_ip` filter drops the replayed data (source
+address cannot be spoofed) - a warning is logged. Started via
+`import_asterix_network --replay_file '<file1>;<file2>'` (plus
+`replay_speed`, `replay_line`, `replay_stop_at_end`; also available as
+`--import_asterix_network_replay_*` command line options). Record Time of Day values are
+aligned to the current wall clock via the existing ToD override: unless `time_offset` is
+given explicitly, the offset is computed as current UTC time minus the first frame time.
+Note that faster-than-real-time replay pushes shifted ToD values into the future beyond the
+network import's +3 min check, so speeds > 1 should be paired with `ignore_future_ts`.
+
 The full chain is therefore:
 
 **ASTERIX bytes -> jASTERIX (definitions) -> JSON -> ASTERIXJSONParser (mappings) -> Buffer columns -> DBContent in DuckDB**
