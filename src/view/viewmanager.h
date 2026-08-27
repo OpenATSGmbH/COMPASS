@@ -291,7 +291,7 @@ protected:
     // the load-done edge (dialog close + loadingDoneSignal) is held back because a
     // view still processes data asynchronously; released in viewProcessingFinishedSlot.
     // Cleared when a new load starts (the deferred done of a superseded load is dropped).
-    bool done_pending_    = false;
+    bool loading_done_deferred_ = false;
 
     // views whose asynchronous processing the view-phase progress is still waiting on:
     // each advances the progress when it reports finished, so the dialog reflects
