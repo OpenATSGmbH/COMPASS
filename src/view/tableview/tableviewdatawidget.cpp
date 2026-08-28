@@ -75,9 +75,13 @@ void TableViewDataWidget::attachLayerPanel(DBContentRootItem* root, LayerTreeMod
     layer_model_     = layer_model;
 
     // Single fire at end of any visibility change (group toggles cascade
-    // through multiple leaves but emit hiddenChangedSignal once).
+    // through multiple leaves but emit hiddenChangedSignal once). The guard
+    // skips the signal re-emitted by applyLayerTree's own refreshSubtree
+    // (which re-applies the stored hidden state to the fresh leaves).
     connect(layer_model_, &LayerTreeModel::hiddenChangedSignal,
             this, [this]() {
+                if (in_layer_recompute_)
+                    return;
                 pushLayerStateToModel();
                 redrawData(true);
             });
@@ -451,11 +455,19 @@ void TableViewDataWidget::applyLayerTree(const std::map<std::string, view_layer_
     }
 
     // Scoped subtree refresh - keeps the header widths untouched. Also
-    // re-applies the stored hidden state to the fresh leaves.
+    // re-applies the stored hidden state to the fresh leaves, which emits
+    // hiddenChangedSignal - guarded so it does not trigger another redraw
+    // (see attachLayerPanel).
+    const bool was_guarded = in_layer_recompute_;
+    in_layer_recompute_ = true;
+
     layer_model_->refreshSubtree(db_content_root_, [&]() {
         payloads_ = std::move(new_payloads);
         return db_content_root_->buildChildrenFrom(entries);
     });
+
+    in_layer_recompute_ = was_guarded;
+
     db_content_root_->recomputeColorsRecursive();
 
     // Push initial allowed set to the model so the first redraw filters correctly.

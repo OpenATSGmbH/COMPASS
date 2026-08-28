@@ -107,6 +107,23 @@ class ReconstructorAssociatorBase
 
     const std::vector<unsigned long>& unassociatedRecNums() const;
 
+    // why a track number lookup was severed: the position offset check failed
+    // (ghost/seduction case), or the same track number turned out to be reused
+    // by a different ACAD transponder (canAssocByTrackNumber)
+    enum class TrackDisassocReason
+    {
+        PositionOffset = 0,
+        ACADReuse
+    };
+
+    // notification hook: track number lookup was severed; default no-op,
+    // overridden by the ProbIMM associator for dubious reference detection.
+    // Public: the ACAD-reuse severing happens in the targets container, which
+    // notifies through this hook from outside the associator
+    virtual void onTrackNumberDisassociated (
+        const dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn,
+        TrackDisassocReason reason) {}
+
 protected:
 
     boost::posix_time::time_duration max_time_diff_;
@@ -192,11 +209,6 @@ protected:
         bool secondary_verified, bool do_debug) = 0;
     // empty if not possible, else check passed or failed returned
 
-    // notification hook: track number lookup was severed because the position
-    // offset check failed (ghost/seduction case); default no-op, overridden by
-    // the ProbIMM associator for dubious reference detection
-    virtual void onTrackNumberDisassociated (
-        const dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn) {}
     // notification hook: during self-association the reports of from_utn were
     // merged into to_utn and from_utn is scheduled for removal; default no-op,
     // overridden by the ProbIMM associator for dubious reference detection

@@ -163,6 +163,16 @@ struct VelocityAccuracy
     double vy_stddev_ {0}; // m/s
 };
 
+// reported acceleration in Cartesian components (CAT062 I062/210: x east, y north)
+struct Acceleration
+{
+    Acceleration() = default;
+    Acceleration(double ax, double ay) : ax_(ax), ay_(ay) {}
+
+    double ax_ {0}; // m/s^2
+    double ay_ {0}; // m/s^2
+};
+
 struct AccelerationAccuracy
 {
     AccelerationAccuracy() = default;
@@ -209,6 +219,20 @@ class ModeACode
     virtual std::string asStr() const;
 };
 
+// why a position was invalidated by a validate function (set together with
+// ReconstructorInfo::invalidated_pos_); feeds the dubious references D5
+// exclusion breakdown
+enum class PosInvalidationReason : unsigned char
+{
+    None = 0,
+    InputPosCheck,       // import-time position check failed (posCheckFailed meta info)
+    RiskyEquipage,       // risky ADS-B equipage (no MOPS version / no or zero quality indicators)
+    ValidationFlagRisky, // GS position validation flag (RCF/CPR/LDPJ) combined with risky equipage
+    QIInconsistent       // NACp/NIC cross-check failed (EPU contradicts containment radius)
+};
+
+std::string posInvalidationReasonName(PosInvalidationReason reason);
+
 struct BaseInfo
 {
     unsigned int buffer_index_ {0};
@@ -243,6 +267,8 @@ struct ReconstructorInfo : public BaseInfo
 
     bool unsused_ds_pos_ {false}; // set if data source should not be used for pos
     bool invalidated_pos_ {false}; // if invalidated by validate function
+    // cause of the invalidation, set together with invalidated_pos_
+    targetReport::PosInvalidationReason pos_invalidation_reason_ {targetReport::PosInvalidationReason::None};
     // invalidated by the import-time position check (posCheckFailed meta info),
     // input data quality rather than a reconstruction decision; always set
     // together with invalidated_pos_
@@ -261,6 +287,9 @@ struct ReconstructorInfo : public BaseInfo
 
     boost::optional<targetReport::Velocity> velocity_;
     boost::optional<targetReport::VelocityAccuracy> velocity_accuracy_;
+
+    // CAT062 only (I062/210): the tracker's calculated Cartesian acceleration
+    boost::optional<targetReport::Acceleration> acceleration_;
 
     boost::optional<double> track_angle_;
     boost::optional<bool> ground_bit_;

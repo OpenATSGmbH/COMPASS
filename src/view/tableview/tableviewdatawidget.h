@@ -110,6 +110,12 @@ private:
     std::map<std::string, view_layer_scan::LayerAgg> layer_agg_cache_;
     bool layer_agg_valid_ {false};
 
+    /// Re-entry guard: refreshSubtree re-applies the stored hidden state to the
+    /// fresh leaves, which emits hiddenChangedSignal. Without this guard a
+    /// recompute redraw with hidden layers would trigger another redraw from
+    /// its own commit (commitLoadedData -> applyLayerTree), looping forever.
+    bool in_layer_recompute_ {false};
+
     /// Rebuild payloads_ + the DBContent subtree from precomputed layer aggregates
     /// (the tree/payload part of rebuildLayerTree; the scan may run on a worker).
     void applyLayerTree(const std::map<std::string, view_layer_scan::LayerAgg>& agg);

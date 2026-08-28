@@ -1032,7 +1032,7 @@ START_TR_ASSOC:
 
                     reconstructor().targets_container_.eraseTrackNumberLookup(tr);
 
-                    onTrackNumberDisassociated(tr, utn);
+                    onTrackNumberDisassociated(tr, utn, TrackDisassocReason::PositionOffset);
 
                     goto START_TR_ASSOC;
                 }

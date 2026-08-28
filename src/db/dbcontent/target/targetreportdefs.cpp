@@ -132,6 +132,19 @@ const std::map<int, float> AccuracyTables::adsb_v12_nic_accuracies =
     {0, 37000.0f}     // NIC = 0:  Rc > 20 NM (worst-case)
 };
 
+std::string posInvalidationReasonName(PosInvalidationReason reason)
+{
+    switch (reason)
+    {
+    case PosInvalidationReason::None:                return "none";
+    case PosInvalidationReason::InputPosCheck:       return "input_pos_check";
+    case PosInvalidationReason::RiskyEquipage:       return "risky_equipage";
+    case PosInvalidationReason::ValidationFlagRisky: return "validation_flag_risky";
+    case PosInvalidationReason::QIInconsistent:      return "qi_inconsistent";
+    }
+    return "unknown";
+}
+
 std::string BaseInfo::asStr() const
 {
     stringstream ss;

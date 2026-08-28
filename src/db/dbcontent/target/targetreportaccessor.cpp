@@ -104,6 +104,9 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(dbcontent_vars::var_cat062_vx_stddev_, false);
     add(dbcontent_vars::var_cat062_vy_stddev_, false);
 
+    add(dbcontent_vars::var_cat062_ax_, false);
+    add(dbcontent_vars::var_cat062_ay_, false);
+
     add(dbcontent_vars::meta_var_m3a_, true);
     add(dbcontent_vars::meta_var_m3a_g_, true);
     add(dbcontent_vars::meta_var_m3a_v_, true);
@@ -181,6 +184,10 @@ void TargetReportAccessor::cacheVectors()
     cat021_nucv_nacv_vec_ = varVector<unsigned char>(dbcontent_vars::var_cat021_nucv_nacv_);
     cat062_vx_stddev_vec_ = varVector<double>(dbcontent_vars::var_cat062_vx_stddev_);
     cat062_vy_stddev_vec_ = varVector<double>(dbcontent_vars::var_cat062_vy_stddev_);
+
+    //acceleration
+    cat062_ax_vec_ = varVector<double>(dbcontent_vars::var_cat062_ax_);
+    cat062_ay_vec_ = varVector<double>(dbcontent_vars::var_cat062_ay_);
 
     //mode a
     meta_mode_a_vec_          = metaVarVector<unsigned int>(dbcontent_vars::meta_var_m3a_);
@@ -561,6 +568,19 @@ boost::optional<targetReport::VelocityAccuracy> TargetReportAccessor::velocityAc
 
     //not implemented for dbcontent
     return {};
+}
+
+/**
+*/
+boost::optional<targetReport::Acceleration> TargetReportAccessor::acceleration(unsigned int index) const
+{
+    if (!cat062_ax_vec_ ||
+        !cat062_ay_vec_ ||
+        cat062_ax_vec_->isNull(index) ||
+        cat062_ay_vec_->isNull(index))
+        return {};
+
+    return targetReport::Acceleration(cat062_ax_vec_->get(index), cat062_ay_vec_->get(index));
 }
 
 /**

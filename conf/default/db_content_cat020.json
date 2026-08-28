@@ -1740,7 +1740,7 @@
                 "name": "Geometric Height StdDev",
                 "representation_str": "STANDARD",
                 "short_name": "",
-                "source": "I020/REF.PA.SDH.SDH",
+                "source": "I020/500.SDH.sigma-gh\nI020/REF.PA.SDH.SDH",
                 "unit": ""
             }
         },

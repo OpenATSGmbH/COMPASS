@@ -417,6 +417,9 @@ bool ReconstructorBase::TargetsContainer::canAssocByTrackNumber(
 
         eraseTrackNumberLookup(tr);
 
+        reconstructor_->associator().onTrackNumberDisassociated(
+            tr, utn, ReconstructorAssociatorBase::TrackDisassocReason::ACADReuse);
+
         if (tr.acid_ && acid_2_utn_.count(*tr.acid_))
         {
             if (do_debug || reconstructor_->task().debugSettings().debugUTN(utn))
@@ -1272,6 +1275,7 @@ void ReconstructorBase::createTargetReports()
 
                 info.velocity_ = tgt_acc.velocity(cnt);
                 info.velocity_accuracy_ = tgt_acc.velocityAccuracy(cnt);
+                info.acceleration_ = tgt_acc.acceleration(cnt);
 
                 info.track_angle_ = tgt_acc.trackAngle(cnt);
                 info.ground_bit_ = tgt_acc.groundBit(cnt);
@@ -1290,6 +1294,7 @@ void ReconstructorBase::createTargetReports()
                 if (pos_check_failed && *pos_check_failed)
                 {
                     info.invalidated_pos_ = true;
+                    info.pos_invalidation_reason_ = dbContent::targetReport::PosInvalidationReason::InputPosCheck;
                     info.pos_check_failed_input_ = true;
                 }
 

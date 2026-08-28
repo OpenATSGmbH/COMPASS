@@ -221,6 +221,9 @@ namespace dbcontent_vars
     inline const Property var_cat062_vx_stddev_     {"Vx StdDev", PropertyDataType::DOUBLE};
     inline const Property var_cat062_vy_stddev_     {"Vy StdDev", PropertyDataType::DOUBLE};
 
+    inline const Property var_cat062_ax_            {"Ax", PropertyDataType::DOUBLE};
+    inline const Property var_cat062_ay_            {"Ay", PropertyDataType::DOUBLE};
+
     inline const Property var_cat063_sensor_sac_    {"Sensor SAC", PropertyDataType::UCHAR};
     inline const Property var_cat063_sensor_sic_    {"Sensor SIC", PropertyDataType::UCHAR};
     inline const Property var_cat063_con_           {"CON", PropertyDataType::UCHAR};

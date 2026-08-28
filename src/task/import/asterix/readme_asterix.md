@@ -330,6 +330,21 @@ with categories chosen at the top of that chain determining what kind of surveil
 
 What happens *after* the buffers reach DuckDB - the DBContent / Variable / MetaVariable model, the `db_content*.json` schema, ToD wrap and SAC/SIC handling, how loaded data feeds views/filters/eval/reconstruction - is documented in [readme_dbcontent.md](../../db/dbcontent/readme_dbcontent.md).
 
+### Mapping coverage
+
+Everything jASTERIX decodes is mapped into DBContent variables - coverage is complete, not a curated subset. Audited 2026-08-27 with [`scripts/check_asterix_mapping_coverage.py`](../../../scripts/check_asterix_mapping_coverage.py), which reconstructs the flat JSON leaf-key space from the definition files (default edition + default REF edition per category, ~1300 leaf fields across the 14 imported categories) and compares it against the `JSONDataMapping` json_keys:
+
+- **Data item level**: every item of every default edition has at least one active mapping, REFs included.
+- **Leaf field level**: zero unmapped decoded fields. The audit found exactly one gap - the legacy `I020/500.SDH.sigma-gh` (Standard Deviation of Geometric Height) was decoded but only its `REF.PA.SDH` variant was mapped - closed same day by adding the fallback mapping to `Geometric Height StdDev`.
+- Spare bits and FX/extension markers carry no information and are excluded.
+- A small number of mapped keys (~14) lie *outside* the default-edition key space: deliberate multi-edition fallback mappings (e.g. deprecated `I021/030 Time of Day`, DO-260 `I021/090.PA` vs. DO-260A quality indicators, pre-1.21 CAT062 item shapes). They fire only when data in that shape arrives.
+
+Maintenance rules:
+
+- Adding a new edition, REF, or category, or changing mappings: re-run the checker; it exits non-zero when a decoded field has no mapping.
+- The checker audits the **default** editions from `categories.json`. When a category is switched to a non-default edition in the import configuration, the mapping set for that edition is not separately verified - extend the checker if that becomes a recurring case.
+- The two inactive placeholder mappings in `task_import_asterix_cat062.json` (`artas_md5`, `510.Composed Track Number.extend`, empty variable name, `active: false`) are intentional and ignored by the checker.
+
 ## Import result report
 
 Every successful ASTERIX import appends to a **single, persistent `TaskResult`** named `"ASTERIX Import"` (type `Generic`), stored in the task results browser and exportable to DOCX/LaTeX/JSON. Canceled or errored imports leave the result untouched (the task manager is opened with `clear_existing=false` only inside the success branch of `checkAllDone()`). One `"ASTERIX Import"` result lives per DB; opening another DB loads its own result from `db_info`-adjacent storage.

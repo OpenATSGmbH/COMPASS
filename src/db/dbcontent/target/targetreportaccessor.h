@@ -35,6 +35,7 @@ namespace targetReport
     class BarometricAltitude;
     class Velocity;
     class VelocityAccuracy;
+    class Acceleration;
     class ModeACode;
 }
 
@@ -82,6 +83,7 @@ public:
     boost::optional<double> radarAzimuth(unsigned int index) const;
     boost::optional<targetReport::Velocity> velocity(unsigned int index) const;
     boost::optional<targetReport::VelocityAccuracy> velocityAccuracy(unsigned int index) const;
+    boost::optional<targetReport::Acceleration> acceleration(unsigned int index) const; // CAT062 only (I062/210)
     boost::optional<double> trackAngle(unsigned int index) const;
     boost::optional<bool> groundBit(unsigned int index) const;
     boost::optional<unsigned char> detectionType(unsigned int index) const; // CAT048 I048/020 TYP coding
@@ -181,6 +183,10 @@ private:
     const NullableVector<unsigned char>* cat021_nucv_nacv_vec_ = nullptr;
     const NullableVector<double>*        cat062_vx_stddev_vec_ = nullptr;
     const NullableVector<double>*        cat062_vy_stddev_vec_ = nullptr;
+
+    //acceleration
+    const NullableVector<double>* cat062_ax_vec_ = nullptr;
+    const NullableVector<double>* cat062_ay_vec_ = nullptr;
 
     //mode a
     const NullableVector<unsigned int>* meta_mode_a_vec_          = nullptr;

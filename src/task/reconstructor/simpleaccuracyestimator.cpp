@@ -191,7 +191,10 @@ void SimpleAccuracyEstimator::validate (
     traced_assert(reconstructor_);
 
     if (tr.isRiskyADSB())
+    {
         tr.invalidated_pos_ = true;
+        tr.pos_invalidation_reason_ = dbContent::targetReport::PosInvalidationReason::RiskyEquipage;
+    }
 }
 
 bool SimpleAccuracyEstimator::canCorrectPosition(

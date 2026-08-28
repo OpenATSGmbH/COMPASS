@@ -207,6 +207,24 @@
         },
         {
             "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping109",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Geometric Height StdDev",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "500.SDH.sigma-gh",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
             "instance_name": "JSONDataMapping12",
             "parameters": {
                 "active": true,
