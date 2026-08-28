@@ -933,7 +933,7 @@ void ViewManager::unregisterView(View* view)
     // progress tracking and re-evaluate a deferred done edge waiting on it
     pending_views_.erase(view);
 
-    if (done_pending_)
+    if (loading_done_deferred_)
         viewProcessingFinishedSlot();
 }
 
@@ -1076,7 +1076,7 @@ void ViewManager::loadingStartedSlot()
     //reset reload flag
     reload_needed_ = false;
     loading_done_dispatched_ = false;
-    done_pending_ = false; // a deferred done of a superseded load is dropped
+    loading_done_deferred_ = false; // a deferred done of a superseded load is dropped
     pending_views_.clear();
 
     // start the load dialog/cursor here (fired off the op's startedSignal, so after the
@@ -1489,7 +1489,7 @@ void ViewManager::loadingDoneSlot() // emitted when all dbconts have finished lo
     // half-attached scene.
     if (hasPendingViewProcessing())
     {
-        done_pending_ = true;
+        loading_done_deferred_ = true;
         loginf << "deferring done, views still processing";
         return;
     }
@@ -1532,7 +1532,7 @@ void ViewManager::finishLoadingDone()
 
 /**
  * A view finished its asynchronous processing. Releases the deferred done edge once no
- * view is pending anymore. No-op outside a deferred completion (done_pending_ unset).
+ * view is pending anymore. No-op outside a deferred completion (loading_done_deferred_ unset).
  */
 void ViewManager::viewProcessingStartedSlot()
 {
@@ -1564,13 +1564,13 @@ void ViewManager::viewProcessingFinishedSlot()
     if (!hasPendingViewProcessing())
         load_controller_->endViewProcessing();
 
-    if (!done_pending_)
+    if (!loading_done_deferred_)
         return;
 
     if (hasPendingViewProcessing())
         return;
 
-    done_pending_ = false;
+    loading_done_deferred_ = false;
 
     loginf << "all views finished processing";
 
@@ -1596,7 +1596,7 @@ void ViewManager::beginLiveSession()
 
     reload_needed_ = false;
     loading_done_dispatched_ = false;
-    done_pending_ = false; // a deferred done of a superseded load is dropped
+    loading_done_deferred_ = false; // a deferred done of a superseded load is dropped
     pending_views_.clear();
 
     for (auto& view_it : views_)

@@ -184,8 +184,8 @@ dialog close + `loadingDoneSignal`) waits until no view reports `hasPendingProce
 (`View::processingFinishedSignal` -> `viewProcessingFinishedSlot`). The RT wait and the UI tests
 therefore see done only after everything is committed, and the modal dialog keeps the user out of
 a half-updated display - its view-phase progress advances per **finished** view, not per
-dispatched one. A new load drops a still-deferred done of the superseded load (`done_pending_`
-cleared in `loadingStartedSlot`).
+dispatched one. A new load drops a still-deferred done of the superseded load
+(`loading_done_deferred_` cleared in `loadingStartedSlot`).
 
 The shared machinery is `ViewAsyncProcessor` plus the deferral in `ViewDataWidget`
 ([viewasyncprocessor.h](../../view/viewbase/viewasyncprocessor.h)): a view launches
