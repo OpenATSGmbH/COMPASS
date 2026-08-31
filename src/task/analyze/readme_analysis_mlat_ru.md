@@ -197,7 +197,9 @@ The inspector reports MLAT position accuracy from two complementary perspectives
 **Per-target-report quantities collected** (matches `ScaledAccuracyEstimator::AccuracyInfo`):
 - `distance_m` - horizontal Cartesian distance between the MLAT reported position and the interpolated reference position at the same timestamp.
 - `tr_std_dev` - the reported position accuracy from the target report itself: x and y standard deviations from I020/500, from REF Position Accuracy (if present), or from I010/500 for CAT010. Reported as Cartesian magnitude `sqrt(std_dev_x^2 + std_dev_y^2)` for the per-cell heat-map; per-component values listed in the summary table only. For CAT020 with both legacy I020/500 and REF Position Accuracy present, both are tracked as separate reported quantities so the inspector can show whether they agree.
-- `ref_std_dev` - the reference accuracy at that time, used to gate / weight the comparison.
+- `ref_std_dev` - the reference accuracy at that time (Cartesian magnitude of the RefTraj x/y standard deviations; the worse of the two bracketing reference updates), used to gate the comparison.
+
+**Reference accuracy gate** (`ref_gate_factor`, default 2.0, 0 disables): the offset is only measured where the reference is sufficiently more accurate than the reported accuracy being assessed - `ref_gate_factor * ref_std_dev < tr_std_dev`. A sample failing the gate (including a reference update without accuracy) keeps contributing its `tr_std_dev` to the Reported Position Accuracy view, but produces no offset and no consistency ratio anywhere (aggregate, per-cell, per-sector), and is counted in the summary as "Test reports w/o accurate reference". Samples without a usable `tr_std_dev` are not gated (offset-only, as before) - there is no claim to gate against.
 
 Bucketing: `cell_of(MLAT target report position)` on `TargetReport3DGrid`. Per cell, the inspector keeps mean / median / P95 of `distance_m`, mean of `tr_std_dev`, and mean of `distance_m / tr_std_dev`.
 

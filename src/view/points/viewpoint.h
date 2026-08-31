@@ -66,6 +66,7 @@ class ViewPoint : public ViewableDataConfig
     static const std::string VP_DS_KEY;
     static const std::string VP_FILTERS_KEY;
     static const std::string VP_SELECTED_RECNUMS_KEY;
+    static const std::string VP_LABELS_KEY;
 
     static const std::string VP_POS_LAT_KEY;
     static const std::string VP_POS_LON_KEY;

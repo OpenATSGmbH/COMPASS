@@ -1571,6 +1571,23 @@ void LabelGenerator::updateFilterValuesFromStrings()
     updateTAValuesFromStr(config_.filter_ta_values_);
 }
 
+void LabelGenerator::setViewPointLabels(const std::map<unsigned long, unsigned int>& labels)
+{
+    loginf << labels.size() << " label(s)";
+
+    view_point_labels_ = labels;
+}
+
+void LabelGenerator::clearViewPointLabels()
+{
+    if (view_point_labels_.empty())
+        return;
+
+    loginf << view_point_labels_.size() << " label(s)";
+
+    view_point_labels_.clear();
+}
+
 float LabelGenerator::labelDistance() const
 {
     return label_distance_;

@@ -205,6 +205,9 @@ Algorithmic details are in the [Design](#pd-computation-feature-2) section.
 **Per-target-report quantities collected:**
 - `distance_m` - horizontal Cartesian distance (via `Transformation::distanceL2Cart`) between the ADS-B reported position and the mapped reference position at the same timestamp (max reference time difference 2 s).
 - `tr_std_dev` - reported position accuracy from `posAccuracy()` as above.
+- `ref_std_dev` - the reference accuracy at that time (Cartesian magnitude of the RefTraj x/y standard deviations; the worse of the two bracketing reference updates), used to gate the comparison.
+
+**Reference accuracy gate** (`ref_gate_factor`, default 2.0, 0 disables): the offset is only measured where the reference is sufficiently more accurate than the reported accuracy being assessed - `ref_gate_factor * ref_std_dev < tr_std_dev`. A sample failing the gate (including a reference update without accuracy) keeps contributing its `tr_std_dev` to the Reported Position Accuracy view, but produces no offset and no consistency sample anywhere (aggregate, per-cell, per-transponder / per-QI, per-sector, MOPS / target-type groups), and is counted in the summary as "Reports w/o accurate reference (reported accuracy only)". Reports without a usable quality indicator are not gated (offset-only, as before) - there is no claim to gate against.
 
 Bucketing for the spatial views: `cell_of(ADS-B reported position)` on `TargetReport3DGrid` via `addAccuracySample(lat, lon, alt_ft, distance, tr_std_dev)`. Each cell keeps running sums and counts for distance, reported std-dev, and the distance/std-dev ratio; **the per-cell value rendered is the mean** of each quantity. Per transponder, the inspector keeps the distance and reported samples and derives `median(distance) / median(reported)` as the consistency factor - the same quantity the online rescaler works with.
 

@@ -599,8 +599,12 @@ unsigned int AnalysisDataset::numTestChains() const
 }
 
 boost::optional<dbContent::TargetPosition>
-AnalysisDataset::mappedRefPos(unsigned int utn, ptime timestamp, time_duration d_max) const
+AnalysisDataset::mappedRefPos(unsigned int utn, ptime timestamp, time_duration d_max,
+                              boost::optional<dbContent::TargetPositionAccuracy>* ref_pos_acc_out) const
 {
+    if (ref_pos_acc_out)
+        *ref_pos_acc_out = boost::none;
+
     auto it = ref_chains_.find(utn);
     if (it == ref_chains_.end())
         return boost::none;
@@ -634,6 +638,25 @@ AnalysisDataset::mappedRefPos(unsigned int utn, ptime timestamp, time_duration d
     else
     {
         return boost::none;
+    }
+
+    if (ref_pos_acc_out)
+    {
+        // worse (larger std-dev) of the bracketing reference updates, like
+        // ReconstructorTarget::interpolatedRefPosForTime
+        boost::optional<dbContent::TargetPositionAccuracy> acc1, acc2;
+
+        if (mapping.has_ref1_)
+            acc1 = it->second->posAccuracy(mapping.dataid_ref1_);
+        if (mapping.has_ref2_)
+            acc2 = it->second->posAccuracy(mapping.dataid_ref2_);
+
+        if (acc1 && acc2)
+            *ref_pos_acc_out = acc1->max() > acc2->max() ? acc1 : acc2;
+        else if (acc1)
+            *ref_pos_acc_out = acc1;
+        else if (acc2)
+            *ref_pos_acc_out = acc2;
     }
 
     return mapping.pos_ref_;

@@ -146,10 +146,16 @@ public:
     /// Interpolate the reference position on `utn`'s RefTraj at `timestamp`.
     /// Returns boost::none if no RefTraj data exists for `utn` or the timestamp
     /// is outside the chain's bracket. `d_max` bounds the interpolation gap.
+    /// When `ref_pos_acc_out` is non-null it is filled with the reference
+    /// position accuracy at that time - the worse (larger std-dev) of the
+    /// bracketing reference updates, like
+    /// `ReconstructorTarget::interpolatedRefPosForTime` - or boost::none if
+    /// no bracketing update carries an accuracy.
     boost::optional<dbContent::TargetPosition>
         mappedRefPos(unsigned int utn,
                      boost::posix_time::ptime timestamp,
-                     boost::posix_time::time_duration d_max) const;
+                     boost::posix_time::time_duration d_max,
+                     boost::optional<dbContent::TargetPositionAccuracy>* ref_pos_acc_out = nullptr) const;
 
     /// Approximate center latitude of the loaded reference data (used for
     /// degree/meter conversion in the 3D grid). 0.0 if unknown.
