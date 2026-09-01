@@ -108,6 +108,19 @@ FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
     connect(mode_c_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::modeCEditedSlot);
     form->addRow(new QLabel("Mode C Code [ft]"), mode_c_edit_);
 
+    max_plot_distance_edit_ = new QLineEdit();
+    max_plot_distance_edit_->setValidator(new TextFieldDoubleValidator(0, 100000, 1, true));
+    max_plot_distance_edit_->setPlaceholderText(
+        QString("default (%1)").arg(FFT::DefaultMaxPlotDistanceM, 0, 'f', 0));
+    max_plot_distance_edit_->setToolTip(
+        QString("Maximum distance for position-based matching of target reports to this FFT.\n"
+                "Use a small value (e.g. 50 m) for FFTs on an airport surface, so passing\n"
+                "traffic is not matched by position alone. Empty uses the default of %1 m.")
+            .arg(FFT::DefaultMaxPlotDistanceM, 0, 'f', 0));
+    connect(max_plot_distance_edit_, &QLineEdit::editingFinished,
+            this, &FFTEditWidget::maxPlotDistanceEditedSlot);
+    form->addRow(new QLabel("Maximum Plot Distance [m]"), max_plot_distance_edit_);
+
     // object names for ui testing
     name_edit_->setObjectName("fft_edit_name_edit");
     latitude_edit_->setObjectName("fft_edit_latitude_edit");
@@ -116,6 +129,7 @@ FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
     mode_s_edit_->setObjectName("fft_edit_mode_s_edit");
     mode_3a_edit_->setObjectName("fft_edit_mode_3a_edit");
     mode_c_edit_->setObjectName("fft_edit_mode_c_edit");
+    max_plot_distance_edit_->setObjectName("fft_edit_max_plot_distance_edit");
 
     layout->addLayout(form);
     layout->addStretch();
@@ -168,6 +182,11 @@ void FFTEditWidget::show(FFT& fft)
     else
         mode_c_edit_->setText("");
 
+    if (info.contains("max_plot_distance_m"))
+        max_plot_distance_edit_->setText(QString::number(info.at("max_plot_distance_m").get<double>(), 'f', 1));
+    else
+        max_plot_distance_edit_->setText("");
+
     name_edit_->blockSignals(false);
 }
 
@@ -190,6 +209,7 @@ void FFTEditWidget::clear()
     mode_s_edit_->clear();
     mode_3a_edit_->clear();
     mode_c_edit_->clear();
+    max_plot_distance_edit_->clear();
 
     name_edit_->blockSignals(false);
 }
@@ -205,6 +225,7 @@ void FFTEditWidget::setReadOnly(bool read_only)
     mode_s_edit_->setReadOnly(read_only);
     mode_3a_edit_->setReadOnly(read_only);
     mode_c_edit_->setReadOnly(read_only);
+    max_plot_distance_edit_->setReadOnly(read_only);
 }
 
 void FFTEditWidget::nameEditedSlot()
@@ -355,6 +376,34 @@ void FFTEditWidget::modeCEditedSlot()
 
         if (ok)
             changed = setInfoValue(info, "mode_c_code", val);
+    }
+
+    if (changed && on_changed_)
+        on_changed_();
+}
+
+void FFTEditWidget::maxPlotDistanceEditedSlot()
+{
+    if (!current_fft_ || read_only_)
+        return;
+
+    auto& info = current_fft_->info();
+    QString text = max_plot_distance_edit_->text().trimmed();
+
+    bool changed = false;
+
+    if (text.isEmpty())
+    {
+        // empty means the global default is used
+        changed = eraseInfoValue(info, "max_plot_distance_m");
+    }
+    else
+    {
+        bool ok = false;
+        double val = text.toDouble(&ok);
+
+        if (ok && val > 0)
+            changed = setInfoValue(info, "max_plot_distance_m", val);
     }
 
     if (changed && on_changed_)

@@ -85,6 +85,13 @@ public:
     // pass false when ending from inside another emit, where pumping would re-enter.
     void end(bool drain = true);
 
+private:
+    // the deferred tail of an end() that arrived while Qt was executing inside
+    // dialog_->setValue(): deletes the dialogs parked in stale_dialogs_. Called by the
+    // setValue sites right after setValue returned, so Qt has left the dialog for good
+    // before its DeferredDelete can be delivered.
+    void deleteStaleDialogs();
+
 private slots:
     void canceledSlot();                    // dialog cancel -> cancel the running load
     // driven directly off the op's dataChangedSignal (un-guarded, so progress is immune to
@@ -110,14 +117,22 @@ private:
     // re-entrancy guard shared by ALL dialog_->setValue call sites (opDataChangedSlot,
     // beginViewPhase, advanceViewPhase): QProgressDialog::setValue pumps events for a
     // modal dialog, so a load/view completion can re-enter any of them from inside it.
-    // The guard ensures at most one setValue pump is ever on the stack - stacked pumps
-    // would let a deleteLater posted inside the inner pump (deeper scope level) be
-    // delivered by the outer pump while Qt still executes inside the dialog, a use
-    // after free in Qt's own code (crashed in QProgressBar::maximum on 2026-08-17).
-    // Nested calls only accumulate value_; the single active pump paints the final
-    // value. The dialog's lifetime is handled by deleteLater in end(), so re-entrancy
-    // cannot leave a dangling pointer.
+    // The guard ensures at most one setValue pump is ever on the stack; nested calls
+    // only accumulate value_, the single active pump paints the final value. It also
+    // marks "Qt is currently executing inside dialog_": an end() reached through the
+    // pump must NOT deleteLater the dialog - a deleteLater posted from nested event
+    // delivery carries an inflated scope level, so the pump still running inside
+    // setValue delivers the DeferredDelete before setValue returns, and Qt then
+    // touches the freed progress bar (crashed in QProgressBar::maximum on 2026-08-17
+    // and again on 2026-08-31). Such an end() closes the dialog and parks it in
+    // stale_dialogs_; the setValue site deletes it via deleteStaleDialogs() once
+    // setValue has returned.
     bool         in_set_value_ {false};
+
+    // dialogs whose end() arrived while Qt was executing inside their setValue (see
+    // in_set_value_): closed immediately there, deleted via deleteStaleDialogs() at
+    // the setValue call sites. QPointer for the same parenting reason as dialog_.
+    std::vector<QPointer<QProgressDialog>> stale_dialogs_;
 
     const LoadOperation*    op_ {nullptr}; // the running op (non-owning, valid for the cycle)
     QMetaObject::Connection op_conn_;      // op.dataChangedSignal -> opDataChangedSlot

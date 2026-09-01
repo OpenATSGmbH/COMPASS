@@ -583,6 +583,8 @@ ReconstructorBase::ReconstructorBase(nlohmann::json& config,
                           ReferenceCalculatorSettings().Q_std.Q_std_air);
         registerParameter("ref_Q_std_unknown", &ref_calc_settings_.Q_std.Q_std_unknown,
                           ReferenceCalculatorSettings().Q_std.Q_std_unknown);
+        registerParameter("ref_Q_std_stopped", &ref_calc_settings_.Q_std_stopped,
+                          ReferenceCalculatorSettings().Q_std_stopped);
 
         registerParameter("dynamic_process_noise", &ref_calc_settings_.dynamic_process_noise,
                           ReferenceCalculatorSettings().dynamic_process_noise);
@@ -1288,6 +1290,7 @@ void ReconstructorBase::createTargetReports()
                 info.nucp_nic_ = tgt_acc.nucp(cnt);
                 info.sil_ = tgt_acc.sil(cnt);
                 info.ecat_ = tgt_acc.ecat(cnt);
+                info.sgv_stp_ = tgt_acc.sgvStopped(cnt);
 
                 boost::optional<bool> pos_check_failed = tgt_acc.posCheckFailed(cnt);
 
@@ -2189,8 +2192,19 @@ void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,
         mm.pos_acc_corrected = true;
     }
 
-    //other flags
-    mm.stopped = !ri.isMoving();
+    //other flags: stopped state ONLY from ADS-B evidence (SGV STP bit or
+    //ADS-B ground speed close to zero, nearest report in a 6 s search
+    //window), plus per-definition static target categories; other sources
+    //(MLAT plots, trackers) carry no evidence either way
+    bool static_category = target && (target->targetCategory() == TargetBase::Category::Obstacle
+                                      || target->targetCategory() == TargetBase::Category::FFT);
+
+    if (static_category)
+        mm.stopped = true;
+    else if (target)
+        mm.stopped = target->isADSBStoppedAt(ri.timestamp_, boost::posix_time::seconds(6));
+    else
+        mm.stopped = ri.dbcont_id_ == 21 && !ri.isMoving();
 }
 
 void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,

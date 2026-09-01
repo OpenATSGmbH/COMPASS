@@ -50,6 +50,7 @@ private slots:
     void modeSEditedSlot();
     void mode3AEditedSlot();
     void modeCEditedSlot();
+    void maxPlotDistanceEditedSlot();
 
 private:
     std::function<void()> on_changed_;
@@ -64,6 +65,7 @@ private:
     QLineEdit* mode_s_edit_{nullptr};
     QLineEdit* mode_3a_edit_{nullptr};
     QLineEdit* mode_c_edit_{nullptr};
+    QLineEdit* max_plot_distance_edit_{nullptr};
 };
 
 } // namespace context

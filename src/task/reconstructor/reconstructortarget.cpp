@@ -526,8 +526,15 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
         bool is_from_fft;
         float fft_altitude_ft;
 
+        // identity-less plots (SMR/PSR) of an identified target must not
+        // classify the target as FFT by position alone - use the target's
+        // known Mode S address so the address criterion can veto
+        boost::optional<unsigned int> acad = tr.acad_;
+        if (!acad && !acads_.empty())
+            acad = *acads_.begin();
+
         std::tie(is_from_fft, fft_altitude_ft) = ctx_man.isFromFFT(
-            tr.position_->latitude_, tr.position_->longitude_, tr.acad_, tr.dbcont_id_ == 1,
+            tr.position_->latitude_, tr.position_->longitude_, acad, tr.dbcont_id_ == 1,
             mode_a_code, baro_altitude_ft);
 
         if (is_from_fft)
@@ -1858,6 +1865,40 @@ bool ReconstructorTarget::isOnGroundAt(const boost::posix_time::ptime& timestamp
         return true;
 
     return false;
+}
+
+bool ReconstructorTarget::isADSBStoppedAt(const boost::posix_time::ptime& timestamp,
+                                          const boost::posix_time::time_duration& max_time_diff) const
+{
+    //the nearest ADS-B report in the vicinity decides: SGV STP bit or ground
+    //speed close to zero means stopped, movement evidence means not stopped.
+    //ONLY ADS-B carries stopped/moving evidence - other sources (MLAT plots,
+    //trackers) must neither set nor end a stopped state
+    dbContent::targetReport::ReconstructorInfo* lower_tr, *upper_tr;
+
+    //only reports actually carrying evidence (STP bit or ground speed) count,
+    //evidence-less ADS-B reports are as transparent as any other source
+    tie(lower_tr, upper_tr) = dataFor(
+        timestamp, max_time_diff,
+        [] (const dbContent::targetReport::ReconstructorInfo& tr)
+        { return tr.dbcont_id_ == 21 && (tr.sgv_stp_.has_value() || tr.velocity_.has_value()); });
+
+    if (lower_tr && upper_tr)
+    {
+        //take the nearest of the two bracketing reports
+        if (timestamp - lower_tr->timestamp_ <= upper_tr->timestamp_ - timestamp)
+            return !lower_tr->isMoving();
+        else
+            return !upper_tr->isMoving();
+    }
+
+    if (lower_tr)
+        return !lower_tr->isMoving();
+
+    if (upper_tr)
+        return !upper_tr->isMoving();
+
+    return false; //no adsb evidence in vicinity
 }
 
 boost::optional<float> ReconstructorTarget::modeCCodeAt (boost::posix_time::ptime timestamp,

@@ -122,6 +122,8 @@ void LoadController::opDataChangedSlot(const std::vector<std::string>& names, bo
     in_set_value_ = true;
     dialog_->setValue(static_cast<int>(value_));
     in_set_value_ = false;
+
+    deleteStaleDialogs();
 }
 
 /**
@@ -149,6 +151,8 @@ void LoadController::beginViewPhase(unsigned int num_views)
     dialog_->setValue(static_cast<int>(value_));
     in_set_value_ = false;
 
+    deleteStaleDialogs();
+
     // the pump inside setValue may have ended the cycle (dialog_ cleared) or started
     // the next load (a different dialog) - re-check before touching it again
     if (!dialog_)
@@ -175,14 +179,17 @@ void LoadController::advanceViewPhase()
     // and Qt's setValue touches the dialog again after the pump returns, so destroying
     // it in between is a use after free inside Qt. Hence: a nested advance does nothing
     // but leave its value for the outer call, and an end() arriving while we are inside
-    // setValue is deferred until we have returned from it. The guard is shared with the
-    // other setValue sites - see in_set_value_ in the header.
+    // setValue only closes the dialog and defers its deletion to deleteStaleDialogs()
+    // below. The guard is shared with the other setValue sites - see in_set_value_ in
+    // the header.
     if (in_set_value_)
         return;
 
     in_set_value_ = true;
     dialog_->setValue(static_cast<int>(value_));
     in_set_value_ = false;
+
+    deleteStaleDialogs();
 
     // the pump inside setValue may have ended the cycle (dialog_ cleared) or started
     // the next load (a different dialog) - re-check before touching it again
@@ -298,19 +305,37 @@ void LoadController::end(bool drain)
 
     if (dialog_)
     {
-        if (drain)
-            QCoreApplication::processEvents();
-        dialog_->close();
+        if (in_set_value_)
+        {
+            // Qt is still executing inside this dialog's setValue further up the stack
+            // (this end() was reached through the event pump inside it). Closing is
+            // safe - it only hides the widget - but even deleteLater is NOT: posted
+            // from nested event delivery it carries an inflated scope level, and the
+            // pump still running inside setValue delivers the DeferredDelete before
+            // setValue returns; Qt then touches the freed progress bar (crashed in
+            // QProgressBar::maximum on 2026-08-17 and again on 2026-08-31). So close
+            // now and defer the deletion to the setValue call site
+            // (deleteStaleDialogs), which runs once Qt has fully left setValue. No
+            // drain either: we are inside a pump already, which is flushing the very
+            // events the drain is for.
+            dialog_->close();
+            stale_dialogs_.push_back(dialog_);
+            dialog_.clear();
+        }
+        else
+        {
+            if (drain)
+                QCoreApplication::processEvents();
+            dialog_->close();
 
-        // deleteLater, NOT a synchronous reset: Qt may still be executing inside this
-        // dialog further up the stack. QProgressDialog::setValue pumps the event loop
-        // for a modal dialog, a view completion dispatched by that pump can end the
-        // cycle (or start the next load) from inside it, and setValue then touches the
-        // dialog again after the pump returns. Deleting it here is a use after free in
-        // Qt's own code. Our pointer is cleared immediately, so nothing on this side
-        // touches it again, and the object dies once the event loop unwinds.
-        dialog_->deleteLater();
-        dialog_.clear();
+            // deleteLater, NOT a synchronous delete: Qt may still be executing further
+            // up the stack in dialog code that a synchronous delete would rip out
+            // (e.g. the canceled() emit). Our pointer is cleared immediately, so
+            // nothing on this side touches it again, and the object dies once the
+            // event loop unwinds.
+            dialog_->deleteLater();
+            dialog_.clear();
+        }
     }
 
     if (cursor_active_)
@@ -318,6 +343,22 @@ void LoadController::end(bool drain)
         QApplication::restoreOverrideCursor();
         cursor_active_ = false;
     }
+}
+
+/**
+ * The deferred tail of an end() that arrived while Qt was executing inside
+ * dialog_->setValue() (see the in_set_value_ branch in end()): the dialog was closed and
+ * parked in stale_dialogs_ there; here it is finally deleted. Called by the setValue
+ * sites right after setValue returned, so Qt has left the dialog for good before its
+ * DeferredDelete can be delivered.
+ */
+void LoadController::deleteStaleDialogs()
+{
+    for (auto& dialog : stale_dialogs_)
+        if (dialog)
+            dialog->deleteLater();
+
+    stale_dialogs_.clear();
 }
 
 /**

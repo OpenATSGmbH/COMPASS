@@ -123,7 +123,6 @@ bool ADSBCoverageInspector::prerequisitesMet(std::string& reason_out) const
 namespace
 {
 using Settings = ADSBCoverageInspectorSettings;
-using EvaluationRequirement::PDHelpers::MissTestParams;
 using EvaluationRequirement::PDHelpers::RefPeriod;
 
 double partialSeconds(const time_duration& d)
@@ -364,29 +363,26 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
             ptime gap_end   = walk[i + 1];
             if (gap_end <= gap_start)
                 continue;
-            const float gap_s = static_cast<float>(partialSeconds(gap_end - gap_start));
 
-            // Expected cadence inside the gap is set by the target's movement at
-            // the gap start (the last report there carries its own ground speed).
-            const double gap_ui = mv.uiAt(gap_start);
-            if (gap_ui <= 0.0)
-                continue;
+            const double tol_s = settings.use_miss_tolerance_
+                                     ? settings.miss_tolerance_s_ : 0.0;
 
-            MissTestParams miss_params;
-            miss_params.update_interval_s  = static_cast<float>(gap_ui);
-            miss_params.use_miss_tolerance = settings.use_miss_tolerance_;
-            miss_params.miss_tolerance_s   = settings.miss_tolerance_s_;
-
-            if (!EvaluationRequirement::PDHelpers::isMiss(gap_s, miss_params))
-                continue;
-
-            const unsigned int n_misses =
-                EvaluationRequirement::PDHelpers::numMisses(gap_s, miss_params);
-
-            for (unsigned int m = 0; m < n_misses; ++m)
+            // Step the expected slots through the gap with the local
+            // movement-adaptive cadence - the same rule as the expected-slot
+            // walk above. Every slot lying more than the miss tolerance before
+            // the next report is a missed update. Freezing the cadence at the
+            // gap-start classification instead over-counted long park-after-
+            // moving gaps at the moving cadence (more misses than expected
+            // slots, yielding negative PDs, e.g. a whole standing hour counted
+            // at 1 s instead of 5 s cadence).
+            std::size_t gap_guard = 0;
+            for (ptime t_miss = gap_start;;)
             {
-                ptime t_miss = addSeconds(gap_start, (m + 1) * gap_ui);
-                if (t_miss >= gap_end)
+                const double ui = mv.uiAt(t_miss);
+                if (ui <= 0.0 || ++gap_guard > max_iter)
+                    break;
+                t_miss = addSeconds(t_miss, ui);
+                if (t_miss >= gap_end || partialSeconds(gap_end - t_miss) < tol_s)
                     break;
                 auto ca = refCellAt(dataset, utn, t_miss, d_max);
                 if (ca.valid)

@@ -1551,7 +1551,11 @@ pair<bool, float> DBContextManager::isFromFFT(double latitude_deg, double longit
             double cos_lat = cos(latitude_deg * M_PI / 180.0);
             double dist_m = sqrt(dlat * dlat + dlon * dlon * cos_lat * cos_lat) * 111000.0;
 
-            if (dist_m > max_fft_plot_distance_m_)
+            // per-FFT radius override: the wide default suits remote FFTs
+            // measured by long-range radar, but an FFT on an airport surface
+            // must use a tight radius - otherwise every identity-less plot
+            // (SMR/PSR) within the default radius matches by position alone
+            if (dist_m > f.maxPlotDistanceM())
                 match = false;
             else
                 ++num_criteria_matched;

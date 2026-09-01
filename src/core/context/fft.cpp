@@ -74,6 +74,14 @@ void FFT::altitude(double value)
     info_[altitude_key] = value;
 }
 
+double FFT::maxPlotDistanceM() const
+{
+    if (info_.contains("max_plot_distance_m"))
+        return info_.at("max_plot_distance_m").get<double>();
+
+    return DefaultMaxPlotDistanceM;
+}
+
 json FFT::toJSON() const
 {
     json j;

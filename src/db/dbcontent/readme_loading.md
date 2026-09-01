@@ -236,6 +236,14 @@ that holds the modal `QProgressDialog`, the wait cursor, and the two-phase progr
   **outside** the `processing_data_` guard, so a deferred `sourceDataChangedSlot` (e.g. the
   geo view's redraw) drains while the dialog is still up — matching the pre-refactor
   `finishLoading` ordering (no late geo update after "done").
+  An `end()` reached **through the pump inside a running `setValue`** (a view completion
+  delivered by it ends the cycle) closes the dialog but must not delete it — not even via
+  `deleteLater`: posted from nested event delivery, the `DeferredDelete` carries an inflated
+  scope level and the pump still running inside `setValue` delivers it before `setValue`
+  returns, which then touches the freed progress bar (crashed in `QProgressBar::maximum`,
+  2026-08-17 and 2026-08-31). Such a dialog is parked in `stale_dialogs_` and deleted by
+  `deleteStaleDialogs()` at the `setValue` call sites, right after `setValue` has returned
+  (`in_set_value_` in [loadcontroller.h](../../view/loadcontroller.h) documents the guard).
 
 Two dialog details, both flicker/black-frame related:
 

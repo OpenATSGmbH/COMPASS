@@ -67,6 +67,7 @@ public:
     boost::optional<bool> rangeCheckFailed(unsigned int index) const;
     boost::optional<bool> cprValid(unsigned int index) const;
     boost::optional<bool> localDecodingPositionJump(unsigned int index) const;
+    boost::optional<bool> sgvStopped(unsigned int index) const; // CAT021 SGV STP bit
 
     boost::optional<unsigned int> ecat(unsigned int index) const;
     boost::optional<unsigned char> getGeoAltAcc(unsigned int index) const;
@@ -178,6 +179,7 @@ private:
     //velocity / angle
     const NullableVector<double>* meta_speed_vec_       = nullptr;
     const NullableVector<double>* meta_track_angle_vec_ = nullptr;
+    const NullableVector<bool>*   cat021_sgv_stp_vec_   = nullptr;
 
     //velocity accuracy
     const NullableVector<unsigned char>* cat021_nucv_nacv_vec_ = nullptr;

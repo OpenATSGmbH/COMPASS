@@ -132,6 +132,11 @@ struct ReferenceCalculatorSettings
     //stopped adsb tracking related
     bool track_stopped_adsb = true;
 
+    //process noise std dev applied to measurements in stopped state - keeps the
+    //forced zero-movement model anchored at the accuracy-weighted position over
+    //the whole standing window instead of random-walking between source groups
+    double Q_std_stopped = 0.1;
+
     //result resampling related
     bool                            resample_result     = true;
     ProcessNoise                    resample_Q_std      = ProcessNoise(3.0, 2.0, 5.0, 3.0); // (static, ground, air, unknown)

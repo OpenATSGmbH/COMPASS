@@ -314,6 +314,10 @@ struct ReconstructorInfo : public BaseInfo
 
     boost::optional<unsigned int> ecat_;
 
+    // ADS-B SGV STP bit (CAT021 surface ground vector "stopped"), only
+    // transmitted for surface targets - reliable standstill indication
+    boost::optional<bool> sgv_stp_;
+
     static const double GroundSpeedMin;
 
     boost::optional<targetReport::Position>& position();

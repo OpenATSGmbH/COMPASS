@@ -342,6 +342,11 @@ bool ReconstructorInfo::isOnGround() const
 
 bool ReconstructorInfo::isMoving() const
 {
+    // SGV STP bit: transmitted surface "stopped" state, never sent for
+    // airborne targets - reliable standstill indication
+    if (sgv_stp_ && *sgv_stp_)
+        return false;
+
     if (!velocity_)
         return true;
 

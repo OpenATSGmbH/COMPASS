@@ -157,6 +157,11 @@ public:
     virtual KalmanFilter* subModel(size_t idx) { return nullptr; }
     virtual const KalmanFilter* subModel(size_t idx) const { return nullptr; }
 
+    // force a static (zero-movement) motion model based on exogenous
+    // standstill knowledge (e.g. ADS-B SGV STP bit, fixed targets);
+    // no-op for filters without a static sub-model
+    virtual void setForceStaticModel(bool ok) {}
+
     bool isDebug() const { return debug_; }
     
     static bool checkState(const Vector& x, const Matrix& P);

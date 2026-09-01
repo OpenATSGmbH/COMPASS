@@ -99,6 +99,7 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
 
     add(dbcontent_vars::meta_var_ground_speed_, true);
     add(dbcontent_vars::meta_var_track_angle_, true);
+    add(dbcontent_vars::var_cat021_sgv_stp_, false);
 
     add(dbcontent_vars::var_cat021_nucv_nacv_, false);
     add(dbcontent_vars::var_cat062_vx_stddev_, false);
@@ -179,6 +180,7 @@ void TargetReportAccessor::cacheVectors()
     //velocity / angle
     meta_speed_vec_       = metaVarVector<double>(dbcontent_vars::meta_var_ground_speed_);
     meta_track_angle_vec_ = metaVarVector<double>(dbcontent_vars::meta_var_track_angle_);
+    cat021_sgv_stp_vec_   = varVector<bool>(dbcontent_vars::var_cat021_sgv_stp_);
 
     //velocity accuracy
     cat021_nucv_nacv_vec_ = varVector<unsigned char>(dbcontent_vars::var_cat021_nucv_nacv_);
@@ -292,6 +294,11 @@ boost::optional<bool> TargetReportAccessor::cprValid(unsigned int index) const
 boost::optional<bool> TargetReportAccessor::localDecodingPositionJump(unsigned int index) const
 {
     return getOptional<bool>(cat021_ldpj_vec_, index);
+}
+
+boost::optional<bool> TargetReportAccessor::sgvStopped(unsigned int index) const
+{
+    return getOptional<bool>(cat021_sgv_stp_vec_, index);
 }
 
 boost::optional<unsigned int> TargetReportAccessor::ecat(unsigned int index) const
