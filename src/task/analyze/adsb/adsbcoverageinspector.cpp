@@ -35,6 +35,7 @@
 #include "dbcontent/target/targetbase.h"
 
 #include "eval/requirement/detection/detection_pd_helpers.h"
+#include "coveragepdwalk.h"
 
 #include "grid2dlayer.h"
 #include "grid2dlayerrenderer.h"
@@ -124,16 +125,12 @@ namespace
 {
 using Settings = ADSBCoverageInspectorSettings;
 using EvaluationRequirement::PDHelpers::RefPeriod;
+using analysis::PDWalkParams;
+using analysis::walkReferencePeriodsTimeDifference;
 
 double partialSeconds(const time_duration& d)
 {
     return static_cast<double>(d.total_microseconds()) / 1.0e6;
-}
-
-ptime addSeconds(ptime t, double s)
-{
-    long long us = static_cast<long long>(std::llround(s * 1.0e6));
-    return t + boost::posix_time::microseconds(us);
 }
 
 time_duration durationFromSeconds(double s)
@@ -318,83 +315,29 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
         }
     };
 
-    for (const auto& period : periods)
+    PDWalkParams walk_params;
+    walk_params.mv                 = &mv;
+    walk_params.use_miss_tolerance = settings.use_miss_tolerance_;
+    walk_params.miss_tolerance_s   = settings.miss_tolerance_s_;
+
+    auto slotFunc = [ & ] (const ptime& t, bool is_miss)
     {
-        const double period_s = partialSeconds(period.end - period.begin);
-        if (period_s <= 0.0)
-            continue;
+        auto ca = refCellAt(dataset, utn, t, d_max);
+        if (!ca.valid)
+            return;
 
-        // Expected slots: step adaptively by the local update interval (standing
-        // targets are expected less often), so the cadence matches how the
-        // aircraft actually squitters.
-        std::size_t guard = 0;
-        const std::size_t max_iter = 50'000'000;
-        for (ptime t_slot = period.begin; t_slot < period.end; )
-        {
-            auto ca = refCellAt(dataset, utn, t_slot, d_max);
-            if (ca.valid)
-            {
-                for (auto* g : grids)
-                    g->addEUI(ca.lat, ca.lon, ca.alt_ft);
-                ++eui;
-                accumSectors(ca, false);
-            }
-            double ui = mv.uiAt(t_slot);
-            if (ui <= 0.0 || ++guard > max_iter)
-                break;
-            t_slot = addSeconds(t_slot, ui);
-        }
+        for (auto* g : grids)
+            is_miss ? g->addMUI(ca.lat, ca.lon, ca.alt_ft) : g->addEUI(ca.lat, ca.lon, ca.alt_ft);
 
-        auto first = std::lower_bound(tst_ts_sorted.begin(),
-                                      tst_ts_sorted.end(), period.begin);
-        auto last  = std::upper_bound(tst_ts_sorted.begin(),
-                                      tst_ts_sorted.end(), period.end);
+        if (is_miss) ++mui; else ++eui;
 
-        std::vector<ptime> walk;
-        walk.reserve(static_cast<std::size_t>(std::distance(first, last)) + 2);
-        walk.push_back(period.begin);
-        for (auto it = first; it != last; ++it)
-            walk.push_back(*it);
-        walk.push_back(period.end);
+        accumSectors(ca, is_miss);
+    };
 
-        for (std::size_t i = 0; i + 1 < walk.size(); ++i)
-        {
-            ptime gap_start = walk[i];
-            ptime gap_end   = walk[i + 1];
-            if (gap_end <= gap_start)
-                continue;
-
-            const double tol_s = settings.use_miss_tolerance_
-                                     ? settings.miss_tolerance_s_ : 0.0;
-
-            // Step the expected slots through the gap with the local
-            // movement-adaptive cadence - the same rule as the expected-slot
-            // walk above. Every slot lying more than the miss tolerance before
-            // the next report is a missed update. Freezing the cadence at the
-            // gap-start classification instead over-counted long park-after-
-            // moving gaps at the moving cadence (more misses than expected
-            // slots, yielding negative PDs, e.g. a whole standing hour counted
-            // at 1 s instead of 5 s cadence).
-            std::size_t gap_guard = 0;
-            for (ptime t_miss = gap_start;;)
-            {
-                const double ui = mv.uiAt(t_miss);
-                if (ui <= 0.0 || ++gap_guard > max_iter)
-                    break;
-                t_miss = addSeconds(t_miss, ui);
-                if (t_miss >= gap_end || partialSeconds(gap_end - t_miss) < tol_s)
-                    break;
-                auto ca = refCellAt(dataset, utn, t_miss, d_max);
-                if (ca.valid)
-                {
-                    for (auto* g : grids)
-                        g->addMUI(ca.lat, ca.lon, ca.alt_ft);
-                    ++mui;
-                    accumSectors(ca, true);
-                }
-            }
-        }
-    }
+    walkReferencePeriodsTimeDifference(
+        periods, tst_ts_sorted, walk_params,
+        [ & ] (const ptime& t) { slotFunc(t, false); },
+        [ & ] (const ptime& t) { slotFunc(t, true ); });
 
     return {eui, mui};
 }
