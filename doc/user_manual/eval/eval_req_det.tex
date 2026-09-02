@@ -9,6 +9,8 @@
   \caption{Evaluation Detection requirement}
 \end{figure}
 
+\textcolor{red}{\textbf{[TODO: update screenshot figures/eval\_req\_detection.png: new elements 'Use Time-Based Calculation', 'Use Stationary Update Interval', 'Stationary Update Interval [s]', 'Stationary Speed Threshold [m/s]']}} \\
+
 The 'Detection' requirement can be used to check whether targets are detected at all. For each target existing in the reference data (within the current sector) a target must be detected within e.g. each test update interval or other given interval. Missed update intervals are either called misses or gaps, which are used to calculate a probability of detection, which has to fulfill a given threshold. \\
 
 \begin{itemize}  
@@ -21,6 +23,10 @@ The 'Detection' requirement can be used to check whether targets are detected at
 \item Maximum Gap Length [s]: Maximum gap length to be considered
 \item Use Miss Tolerance: Checkbox if miss tolerance should be used
 \item Miss Tolerance [s]: Acceptable time delta for miss detection
+\item Use Time-Based Calculation: Checkbox if the probability should be calculated as missed time over reference duration (EUROCAE ED-129C Appendix C 'Interarrivaltime' method) instead of missed update intervals over expected update intervals
+\item Use Stationary Update Interval: Checkbox if a speed-dependent update interval should be used, for surface targets transmitting at a lower rate when stationary (EUROCAE ED-129C ORQ 627, APT services)
+\item Stationary Update Interval [s]: Update interval for stationary targets
+\item Stationary Speed Threshold [m/s]: Reference ground speed below this counts as stationary
 \item Hold for any Target: Whether the required threshold must hold for any single target (as opposed to the common sector aggregate)
 \end{itemize}
 \ \\
@@ -31,7 +37,27 @@ As a summary, the reference is used to calculate the number of expected update i
 
 Gaps are, if a minimum or maximum gap length is used, only counted if the detected gap fulfills the thresholds. \\
 
-The ratio of \#MUI and \#EUI gives the probability of missed update intervals, the counter-probability gives the Probability of Detection (PD). The PD must be greater or equal to the defined 'Probability' for the requirement to pass.
+The ratio of \#MUI and \#EUI gives the probability of missed update intervals, the counter-probability gives the Probability of Detection (PD). The PD must be greater or equal to the defined 'Probability' for the requirement to pass. \\
+
+\paragraph{Time-Based Calculation}
+
+With 'Use Time-Based Calculation' active, the PD is calculated per the EUROCAE ED-129C Appendix C 'Interarrivaltime' method instead of counting update intervals:
+\begin{itemize}
+\item Each gap classified as a miss contributes its length minus the update interval as missed time (MT).
+\item The total reference period duration inside the sector layer gives the reference duration (DT).
+\item PD = 1 - MT / DT.
+\end{itemize}
+\ \\
+
+The minimum/maximum gap length and miss tolerance filters apply unchanged. In the result tables, the values 'DT [s]' and 'MT [s]' replace '\#EUIs' and '\#MUIs'. \\
+
+This mode also expresses the EUROCAE ED-129C 'Ratio of Long Gaps' requirement (REQ 18): with a minimum gap length of 3 $\times$ update interval $\times$ 1.1, only long gaps contribute missed time, and the calculated value equals 1 minus the ratio of long gaps. The condition ratio $\leq$ 0.5\% is then expressed as PD $\geq$ 99.5\%. \\
+
+\paragraph{Stationary Update Interval}
+
+With 'Use Stationary Update Interval' active, the update interval is selected per gap. The reference ground speed of the target report nearest to the gap midpoint is compared against the 'Stationary Speed Threshold [m/s]': below the threshold, the 'Stationary Update Interval [s]' applies, otherwise the normal 'Update Interval [s]'. Without a usable reference ground speed the normal update interval applies. \\
+
+This supports the EUROCAE ED-129C APT service (ORQ 627), where surface targets transmit at a lower rate when stationary (1 s moving, 10 s stationary). It is recommended to combine this option with the time-based calculation, since the expected update interval count of the interval-counting mode is derived from the normal update interval only.
 
 \subsubsection{Result Values}
 
@@ -56,6 +82,8 @@ The ratio of \#MUI and \#EUI gives the probability of missed update intervals, t
 \end{tabularx}
 \end{table}
 \end{center}
+
+With 'Use Time-Based Calculation' active, the columns '\#EUIs [1]' (Expected Update Intervals) and '\#MUIs [1]' (Missed Update Intervals) are replaced by 'DT [s]' (Reference Duration) and 'MT [s]' (Missed Time), in both the sector and the single target tables. \\
 
 Also, a table is given for all single targets, sorted by PD.
 

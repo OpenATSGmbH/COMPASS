@@ -12,7 +12,6 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/radarazimuth.h"
         "${CMAKE_CURRENT_LIST_DIR}/along.h"
         "${CMAKE_CURRENT_LIST_DIR}/across.h"
-        "${CMAKE_CURRENT_LIST_DIR}/latency.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/positionbase.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/distance.cpp"
@@ -21,5 +20,4 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/radarazimuth.cpp"    
         "${CMAKE_CURRENT_LIST_DIR}/along.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/across.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/latency.cpp"
     )

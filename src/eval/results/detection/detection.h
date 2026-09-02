@@ -32,15 +32,16 @@ class DetectionBase
 {
 public:
     DetectionBase();
-    DetectionBase(int sum_uis, 
-                  int missed_uis);
+    DetectionBase(double sum_expected,
+                  double sum_missed);
 
-    unsigned int sumUIs() const;
-    unsigned int missedUIs() const;
+    double sumExpected() const;
+    double sumMissed() const;
 
 protected:
-    unsigned int sum_uis_    {0};
-    unsigned int missed_uis_ {0};
+    // number of update intervals (counting mode) or seconds (time-ratio mode)
+    double sum_expected_ {0};
+    double sum_missed_   {0};
 };
 
 /**
@@ -55,8 +56,8 @@ public:
                     const EvaluationTargetData* target,
                     EvaluationCalculator& calculator,
                     const EvaluationDetails& details,
-                    int sum_uis, 
-                    int missed_uis, 
+                    double sum_expected,
+                    double sum_missed,
                     TimePeriodCollection ref_periods);
 
     virtual std::shared_ptr<Joined> createEmptyJoined(const std::string& result_id) override;
@@ -68,7 +69,7 @@ public:
         MissOccurred,        //bool
         DiffTOD,             //float
         RefExists,           //bool
-        MissedUIs,           //unsigned int
+        MissedUIs,           //unsigned int (counting mode) or double seconds (time-ratio mode), cumulative
         MaxGapUIs,           //unsigned int
         NoRefUIs,            //unsigned int
     };
@@ -90,7 +91,7 @@ protected:
                                         TargetAnnotationType type,
                                         bool is_ok) const override;
 
-    virtual std::string targetTableCustomSortColumn() const override { return "#MUIs";};
+    virtual std::string targetTableCustomSortColumn() const override;
     virtual Qt::SortOrder targetTableSortOrder() const override  { return  Qt::SortOrder::DescendingOrder; }
 
 

@@ -148,8 +148,100 @@ identification detection, which has to fulfill a given threshold.
 \end{table}
 \end{center}
 
+\subsection{Identification Change Delay}
+\label{sec:eval_req_id_change_delay}
+
+\subsubsection{Configuration}
+
+\begin{figure}[H]
+    \centering
+    \fcolorbox{red}{white}{\parbox[c][4cm][c]{12cm}{\centering \textcolor{red}{\textbf{[TODO: screenshot figures/eval\_req\_id\_change\_delay.png: Identification Change Delay requirement configuration]}}}}
+  \caption{Evaluation Identification Change Delay requirement}
+\end{figure}
+
+The 'Identification Change Delay' requirement is used to check how fast a change of the aircraft identification (Aircraft ID) or the Mode 3/A code is reported by the test data with the new, correct value. It implements the change delay recommendation of EUROCAE ED-129C section 3.3.1 (REC 495). \\
+
+The delay is measured from the final value set in the reference data to the first test target report carrying that value. Transitional Mode 3/A codes (as transmitted by some control heads during code entry) are ignored: a new reference value only counts as a change event when it stays stable for a configurable minimum time. \\
+
+\begin{itemize}
+\item Probability [1]: Probability of acceptable change delay
+\item Probability Check Type: $\geq$
+\item Identification Type: Type of identification to check (\textit{Aircraft ID} or \textit{Mode A})
+\item Maximum Delay [s]: Maximum acceptable delay from the final reference value change to the first test report with the new value
+\item Minimum Stable Time [s]: Minimum time a new reference value must hold to count as a change event (transitional code filter)
+\end{itemize}
+\ \\
+
+\subsubsection{Calculation}
+
+The reference identification values are checked over time. A new value becomes stable when it holds for at least the 'Minimum Stable Time [s]'. Each stable value after the first one defines a change event, with the event time of the first reference target report carrying the new value. Only events inside the sector layer are used. \\
+
+For each change event, the first test target report at or after the event time with the new value is searched:
+\begin{itemize}
+\item If found, the change delay is the time from the event to that test target report. The event passes if the delay is within the 'Maximum Delay [s]' (\#CDOK), otherwise it fails (\#CDNOK).
+\item If the new value is never reported and enough test data time (at least the maximum delay) remained after the event, the event fails.
+\item If the new value is never reported and the test data ends less than the maximum delay after the event, the event is counted as not assessable and counts neither as passed nor as failed.
+\end{itemize}
+\ \\
+
+The Probability of Acceptable Change Delay is the ratio of \#CDOK to the number of assessed events. It must fulfill the given 'Probability' condition for the requirement to pass. For a strict check per EUROCAE ED-129C TABLE 4 (each change within 15 s for the 3NM service, within 24 s for the 5NM service), the probability is set to 1. \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that} targets without identity changes produce no result for this requirement.
+
+\subsubsection{Result Values}
+
+\paragraph{Sector}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Sector Layer & Name of the sector layer & osv \\ \hline
+    Requirement Group & Name of the requirement group & 3NM Service \\ \hline
+    Requirement & Name of the requirement & Mode A Change Delay \\ \hline
+    \#Events [1] & Number of identity change events & 42 \\ \hline
+    \#NotAssessable [1] & Number of events without sufficient data & 3 \\ \hline
+    CDMin [s] & Minimum of change delay & 0.9 \\ \hline
+    CDMax [s] & Maximum of change delay & 17.2 \\ \hline
+    CDAvg [s] & Average of change delay & 4.8 \\ \hline
+    CDSDev [s] & Standard Deviation of change delay & 3.1 \\ \hline
+    \#CDOK [1] & Number of events with acceptable delay & 38 \\ \hline
+    \#CDNOK [1] & Number of events with unacceptable delay & 1 \\ \hline
+    PAMCD [\%] & Probability of Acceptable Mode3A Change Delay & 97.44 \\ \hline
+    Condition &  & >= 100.00 \\ \hline
+    Condition Fulfilled &  & Failed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
+Also, a table is given for all single targets, sorted by \#CDNOK.
+
+\paragraph{Single Target}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Use & To be used in results & true \\ \hline
+    \#Events [1] & Number of identity change events & 1 \\ \hline
+    \#NotAssessable [1] & Number of events without sufficient data & 0 \\ \hline
+    CDMin [s] & Minimum of change delay & 2.4 \\ \hline
+    CDMax [s] & Maximum of change delay & 2.4 \\ \hline
+    CDAvg [s] & Average of change delay & 2.4 \\ \hline
+    CDSDev [s] & Standard Deviation of change delay & 0.0 \\ \hline
+    \#CDOK [1] & Number of events with acceptable delay & 1 \\ \hline
+    \#CDNOK [1] & Number of events with unacceptable delay & 0 \\ \hline
+    PAMCD [\%] & Probability of Acceptable Mode3A Change Delay & 100.00 \\ \hline
+    Condition &  & >= 100.00 \\ \hline
+    Condition Fulfilled &  & Passed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
 \subsection{Identification False}
-\label{sec:eval_req_id_false} 
+\label{sec:eval_req_id_false}
 
 \subsubsection{Configuration}
 

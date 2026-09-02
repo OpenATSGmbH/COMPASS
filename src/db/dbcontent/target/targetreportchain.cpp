@@ -599,6 +599,38 @@ boost::optional<unsigned int> Chain::nucpNic(const DataID& id) const
     return static_cast<unsigned int>(vec.get(index_ext));
 }
 
+boost::optional<float> Chain::tomrPosition(const DataID& id) const
+{
+    if (!accessor_->hasVar<float>(dbcontent_name_, dbcontent_vars::var_cat021_tomr_position_))
+        return {};
+
+    unsigned int index_ext = indexFromDataID(id).idx_external;
+
+    NullableVector<float>& vec = accessor_->getVar<float>(
+                dbcontent_name_, dbcontent_vars::var_cat021_tomr_position_);
+
+    if (vec.isNull(index_ext))
+        return {};
+
+    return vec.get(index_ext);
+}
+
+boost::optional<float> Chain::tort(const DataID& id) const
+{
+    if (!accessor_->hasVar<float>(dbcontent_name_, dbcontent_vars::var_cat021_tort_))
+        return {};
+
+    unsigned int index_ext = indexFromDataID(id).idx_external;
+
+    NullableVector<float>& vec = accessor_->getVar<float>(
+                dbcontent_name_, dbcontent_vars::var_cat021_tort_);
+
+    if (vec.isNull(index_ext))
+        return {};
+
+    return vec.get(index_ext);
+}
+
 boost::optional<bool> Chain::groundBit(const DataID& id) const
 {
     if (!accessor_->hasMetaVar<bool>(dbcontent_name_, dbcontent_vars::meta_var_ground_bit_))

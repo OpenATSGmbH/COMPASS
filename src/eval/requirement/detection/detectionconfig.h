@@ -65,6 +65,18 @@ public:
     float missTolerance() const;
     void missTolerance(float value);
 
+    bool useTimeRatio() const;
+    void useTimeRatio(bool value);
+
+    bool useStationaryUI() const;
+    void useStationaryUI(bool value);
+
+    float stationaryUI() const;
+    void stationaryUI(float value);
+
+    float stationarySpeedThreshold() const;
+    void stationarySpeedThreshold(float value);
+
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report) override;
 
     bool holdForAnyTarget() const;
@@ -86,6 +98,16 @@ public:
 
     bool use_miss_tolerance_{false};
     float miss_tolerance_s_{0};
+
+    // time-ratio calculation mode (ED-129C Appendix C "Interarrivaltime" method):
+    // missed time over reference duration instead of missed UIs over expected UIs
+    bool use_time_ratio_{false};
+
+    // speed-dependent update interval for surface targets (ED-129C ORQ 627):
+    // below the speed threshold the stationary update interval applies
+    bool use_stationary_ui_{false};
+    float stationary_ui_s_{10.0f};
+    float stationary_speed_threshold_ms_{0.5f};
 
     bool hold_for_any_target_ {false}; // if requirement must hold for any target (all single targets)
 

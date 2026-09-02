@@ -84,6 +84,18 @@ inline unsigned int numMisses(float gap_s, const MissTestParams& p)
     return static_cast<unsigned int>(std::floor(adj / p.update_interval_s));
 }
 
+// Missed time in seconds attributed to `gap_s` in the time-ratio calculation
+// mode (EUROCAE ED-129C Appendix C "Interarrivaltime" method, Equation 2-2):
+// max(adjusted_gap - UI, 0) for gaps that pass the miss test, 0 otherwise.
+inline float missDuration(float gap_s, const MissTestParams& p)
+{
+    if (!isMiss(gap_s, p))
+        return 0.0f;
+
+    const float adj = adjustedGap(gap_s, p);
+    return std::max(adj - p.update_interval_s, 0.0f);
+}
+
 // Contiguous reference-coverage window, as built by `buildReferencePeriods()`.
 struct RefPeriod
 {

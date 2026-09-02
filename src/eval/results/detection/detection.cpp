@@ -31,12 +31,34 @@
 
 #include "traced_assert.h"
 
+#include <cmath>
+
 using namespace std;
 using namespace Utils;
 using namespace nlohmann;
 
 namespace EvaluationRequirementResult
 {
+
+namespace
+{
+    // true if the requirement runs in the time-ratio calculation mode
+    // (ED-129C Appendix C "Interarrivaltime" method)
+    bool isTimeRatio(const std::shared_ptr<EvaluationRequirement::Base>& requirement)
+    {
+        auto req = std::dynamic_pointer_cast<EvaluationRequirement::Detection>(requirement);
+        return req && req->useTimeRatio();
+    }
+
+    // table/json representation: whole update interval counts in counting mode,
+    // seconds rounded to millisecond precision in time-ratio mode
+    nlohmann::json expectedMissedValue(double value, bool time_ratio)
+    {
+        if (time_ratio)
+            return std::round(value * 1000.0) / 1000.0;
+        return (unsigned int)(value + 0.5);
+    }
+}
 
 /**********************************************************************************************
  * DetectionBase
@@ -48,25 +70,25 @@ DetectionBase::DetectionBase() = default;
 
 /**
 */
-DetectionBase::DetectionBase(int sum_uis, 
-                             int missed_uis)
-:   sum_uis_    (sum_uis)
-,   missed_uis_ (missed_uis)
+DetectionBase::DetectionBase(double sum_expected,
+                             double sum_missed)
+:   sum_expected_ (sum_expected)
+,   sum_missed_   (sum_missed)
 {
 }
 
 /**
 */
-unsigned int DetectionBase::sumUIs() const
+double DetectionBase::sumExpected() const
 {
-    return sum_uis_;
+    return sum_expected_;
 }
 
 /**
 */
-unsigned int DetectionBase::missedUIs() const
+double DetectionBase::sumMissed() const
 {
-    return missed_uis_;
+    return sum_missed_;
 }
 
 /**********************************************************************************************
@@ -82,10 +104,10 @@ SingleDetection::SingleDetection(const std::string& result_id,
                                  const EvaluationTargetData* target,
                                  EvaluationCalculator& calculator,
                                  const EvaluationDetails& details,
-                                 int sum_uis,
-                                 int missed_uis,
+                                 double sum_expected,
+                                 double sum_missed,
                                  TimePeriodCollection ref_periods)
-:   DetectionBase(sum_uis, missed_uis)
+:   DetectionBase(sum_expected, sum_missed)
 ,   SingleProbabilityBase("SingleDetection", result_id, requirement, sector_layer, utn, target, calculator, details)
 ,   ref_periods_(ref_periods)
 {
@@ -103,39 +125,52 @@ std::shared_ptr<Joined> SingleDetection::createEmptyJoined(const std::string& re
 */
 boost::optional<double> SingleDetection::computeResult_impl() const
 {
-    if (!sum_uis_)
+    if (sum_expected_ <= 0.0)
         return {};
 
-    logdbg << "utn " << utn_ << " missed_uis " << missed_uis_ << " sum_uis " << sum_uis_;
+    logdbg << "utn " << utn_ << " sum_missed " << sum_missed_ << " sum_expected " << sum_expected_;
 
-    traced_assert(missed_uis_ <= sum_uis_);
+    traced_assert(sum_missed_ <= sum_expected_ + 1e-06);
 
     std::shared_ptr<EvaluationRequirement::Detection> req =
             std::static_pointer_cast<EvaluationRequirement::Detection>(requirement_);
     traced_assert(req);
 
-    return (1.0 - ((double)missed_uis_/(double)(sum_uis_)));
+    return (1.0 - (sum_missed_/sum_expected_));
 }
 
 /**
 */
 unsigned int SingleDetection::numIssues() const
 {
-    return missed_uis_;
+    return (unsigned int)(sum_missed_ + 0.5);
 }
 
 /**
 */
 std::vector<std::string> SingleDetection::targetTableHeadersCustom() const
 {
+    if (isTimeRatio(requirement_))
+        return { "DT [s]", "MT [s]" };
+
     return { "#EUIs", "#MUIs" };
+}
+
+/**
+*/
+std::string SingleDetection::targetTableCustomSortColumn() const
+{
+    return isTimeRatio(requirement_) ? "MT [s]" : "#MUIs";
 }
 
 /**
 */
 nlohmann::json::array_t SingleDetection::targetTableValuesCustom() const
 {
-    return { sum_uis_, missed_uis_ };
+    bool time_ratio = isTimeRatio(requirement_);
+
+    return { expectedMissedValue(sum_expected_, time_ratio),
+             expectedMissedValue(sum_missed_  , time_ratio) };
 }
 
 /**
@@ -145,8 +180,16 @@ std::vector<Single::TargetInfo> SingleDetection::targetInfos() const
     std::shared_ptr<EvaluationRequirement::Detection> req = std::static_pointer_cast<EvaluationRequirement::Detection>(requirement_);
     traced_assert(req);
 
-    std::vector<TargetInfo> infos = { TargetInfo("#EUIs [1]", "Expected Update Intervals", sum_uis_   ),
-                                      TargetInfo("#MUIs [1]", "Missed Update Intervals"  , missed_uis_) };
+    bool time_ratio = isTimeRatio(requirement_);
+
+    std::vector<TargetInfo> infos;
+
+    if (time_ratio)
+        infos = { TargetInfo("DT [s]", "Reference Duration", expectedMissedValue(sum_expected_, time_ratio)),
+                  TargetInfo("MT [s]", "Missed Time"       , expectedMissedValue(sum_missed_  , time_ratio)) };
+    else
+        infos = { TargetInfo("#EUIs [1]", "Expected Update Intervals", expectedMissedValue(sum_expected_, time_ratio)),
+                  TargetInfo("#MUIs [1]", "Missed Update Intervals"  , expectedMissedValue(sum_missed_  , time_ratio)) };
 
     for (unsigned int cnt=0; cnt < ref_periods_.size(); ++cnt)
         infos.emplace_back(("Reference Period " + std::to_string(cnt)), "Time inside sector", ref_periods_.period(cnt).str());
@@ -161,6 +204,9 @@ std::vector<Single::TargetInfo> SingleDetection::targetInfos() const
 */
 std::vector<std::string> SingleDetection::detailHeaders() const
 {
+    if (isTimeRatio(requirement_))
+        return { "ToD", "DToD", "MT [s]", "Comment" };
+
     return { "ToD", "DToD", "MUI", "Comment" };
 }
 
@@ -171,9 +217,14 @@ nlohmann::json::array_t SingleDetection::detailValues(const EvaluationDetail& de
 {
     auto d_tod = detail.getValue(DetailKey::DiffTOD);
 
+    bool time_ratio = isTimeRatio(requirement_);
+
+    // cumulative missed amount: update interval count or seconds, see evaluate()
+    auto missed = detail.getValue(DetailKey::MissedUIs);
+
     return { Utils::Time::toString(detail.timestamp()),
              d_tod.isValid() ? nlohmann::json(Utils::String::timeStringFromDouble(d_tod.toFloat())) : nlohmann::json(),
-             detail.getValue(DetailKey::MissedUIs).toUInt(),
+             time_ratio ? expectedMissedValue(missed.toDouble(), true) : nlohmann::json(missed.toUInt()),
              detail.comments().generalComment() };
 }
 
@@ -226,22 +277,22 @@ JoinedDetection::JoinedDetection(const std::string& result_id,
 */
 unsigned int JoinedDetection::numIssues() const
 {
-    return missed_uis_;
+    return (unsigned int)(sum_missed_ + 0.5);
 }
 
 /**
 */
 unsigned int JoinedDetection::numUpdates() const
 {
-    return sum_uis_;
+    return (unsigned int)(sum_expected_ + 0.5);
 }
 
 /**
 */
-void JoinedDetection::clearResults_impl() 
+void JoinedDetection::clearResults_impl()
 {
-    missed_uis_ = 0;
-    sum_uis_    = 0;
+    sum_missed_   = 0;
+    sum_expected_ = 0;
 }
 
 /**
@@ -252,8 +303,8 @@ void JoinedDetection::accumulateSingleResult(const std::shared_ptr<Single>& sing
 
     assert (single->resultUsable());
 
-    missed_uis_ += single->missedUIs();
-    sum_uis_    += single->sumUIs();
+    sum_missed_   += single->sumMissed();
+    sum_expected_ += single->sumExpected();
 }
 
 /**
@@ -261,23 +312,29 @@ void JoinedDetection::accumulateSingleResult(const std::shared_ptr<Single>& sing
 boost::optional<double> JoinedDetection::computeResult_impl() const
 {
     loginf << "start"
-            << " missed_uis " << missed_uis_
-            << " sum_uis " << sum_uis_;
+            << " sum_missed " << sum_missed_
+            << " sum_expected " << sum_expected_;
 
-    traced_assert(missed_uis_ <= sum_uis_);
+    traced_assert(sum_missed_ <= sum_expected_ + 1e-06);
 
-    if (sum_uis_ == 0)
+    if (sum_expected_ <= 0.0)
         return {};
 
-    return 1.0 - (double)missed_uis_ / (double)(sum_uis_);
+    return 1.0 - sum_missed_ / sum_expected_;
 }
 
 /**
 */
 std::vector<Joined::SectorInfo> JoinedDetection::sectorInfos() const
 {
-    return { { "#EUIs [1]", "Expected Update Intervals", sum_uis_    },
-             { "#MUIs [1]", "Missed Update Intervals"  , missed_uis_ } };
+    bool time_ratio = isTimeRatio(requirement_);
+
+    if (time_ratio)
+        return { { "DT [s]", "Reference Duration", expectedMissedValue(sum_expected_, time_ratio) },
+                 { "MT [s]", "Missed Time"       , expectedMissedValue(sum_missed_  , time_ratio) } };
+
+    return { { "#EUIs [1]", "Expected Update Intervals", expectedMissedValue(sum_expected_, time_ratio) },
+             { "#MUIs [1]", "Missed Update Intervals"  , expectedMissedValue(sum_missed_  , time_ratio) } };
 }
 
 /**

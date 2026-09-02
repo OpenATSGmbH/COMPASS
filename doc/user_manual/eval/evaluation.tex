@@ -174,12 +174,31 @@ Below, the following buttons exist:
 \end{itemize}
 \ \\
 
-At the bottom, the 'Reference Maximum Time Difference [s]' field can be edited to adjust the maximum time difference between reference updates. This value is used to find time-adjacent reference target reports for test target reports. Please adjust this value to e.g. the reference update period plus 1 second. \\
+At the bottom, the following general settings of the current standard can be edited:
+\begin{itemize}
+\item Reference Maximum Time Difference [s]: Maximum time difference between reference updates. This value is used to find time-adjacent reference target reports for test target reports. Please adjust this value to e.g. the reference update period plus 1 second.
+\item Ignore Primary Only Targets: Targets without any secondary attributes (no Mode S address, no aircraft identification, no Mode 3/A code, no Mode C code) are ignored
+\item Ignore Non-ADSB Targets: Targets never detected in ADS-B data (CAT021) are ignored
+\end{itemize}
+\ \\
+
+\textcolor{red}{\textbf{[TODO: update screenshot figures/eval\_standard.png: new elements 'Ignore Primary Only Targets' and 'Ignore Non-ADSB Targets']}} \\
+
+The 2 target settings define which targets are relevant for the standard. A standard for secondary surveillance, e.g. \nameref{sec:eval_req_detection} of an MLAT system, cannot be assessed with targets that carry no transponder, and an ADS-B standard cannot be assessed with targets that never transmit ADS-B. After the evaluation data is loaded, the current standard checks each target and marks the not relevant ones as ignored. \\
+
+\begin{itemize}
+\item The ignored state comes from the current standard and is not stored in the target. The target usage set in the Targets tab, or by the 'Filter UTNs' function, is not changed. Selecting a different standard therefore changes which targets are ignored, without any manual correction.
+\item Ignored targets are listed in the results as unusable results, with the reason 'Primary-only' or 'No ADS-B data'. They do not contribute to the sector sums.
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that} 'Ignore Non-ADSB Targets' uses the ADS-B data in the database as the only evidence. If the database contains a single ADS-B data source, and this source is the one under test, a target that the source never received is ignored as well, although it can be an ADS-B equipped target that was not detected. In this case, check the ignored targets before the assessment. \\
 
 Currently, the following standards are (partly) supported:
 \begin{itemize}  
 \item EUROCAE ED-116 (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-116/}{Link})
 \item EUROCAE ED-117/A (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-117a/}{Link})
+\item EUROCAE ED-129C (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-129c/}{Link})
 \item EUROCAE ED-87C/E (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-87c/}{Link})
 \item EUROCAE ED-142 (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-142/}{Link})
 \item Radar: EUROCONTROL Standard Document for Radar Surveillance in En-Route Airspace and Major Terminal Areas (\href{https://www.eurocontrol.int/sites/default/files/publication/files/surveillance-standard-document-for-radar-surveillance-in-en-route-airspace-and-major-terminal-areas199703.pdf}{Link})
@@ -193,7 +212,16 @@ Please note that, while the EUROCAE ED-117A has been tested using simulator data
 \end{itemize}
 \ \\
 
-Please note that these limitations will be corrected in the near future. \\ 
+Please note that these limitations will be corrected in the near future. \\
+
+For the EUROCAE ED-129C standard (ADS-B Ground Station performance), the following applies:
+\begin{itemize}
+\item The Probability of Update and Ratio of Long Gaps requirements use the \nameref{sec:eval_req_detection} requirement with the time-based calculation (ED-129C Appendix C 'Interarrivaltime' method).
+\item The latency requirements (\nameref{sec:eval_req_adsb_latency}) require CAT021 test data with the data items I021/073 (Time of Message Reception for Position) and I021/077 (Time of Report Transmission).
+\item The ACID and Mode A change delay recommendation (REC 495) is checked with the \nameref{sec:eval_req_id_change_delay} requirement.
+\item The requirements regarding time stamp accuracy relative to UTC (REQ 20, REQ 21, REQ 308) cannot be evaluated from recorded data and are not part of the standard definition.
+\end{itemize}
+\ \\
 
 The other standards have not yet been tested to the fullest degree, which is a work in progress.
 
@@ -236,6 +264,7 @@ The following requirements exist:
     \hline
     \textbf{Type} & \textbf{Description} \\ \hline
     \nameref{sec:eval_req_accel_correct} & Calculates probability of correct acceleration \\ \hline
+    \nameref{sec:eval_req_adsb_latency} & Calculates the probability of the ADS-B Ground Station latency being within a threshold (based on test data only) \\ \hline
     \nameref{sec:eval_req_trk_coast_correct} & Calculates probability of correct track coasting flag \\ \hline
     \nameref{sec:eval_req_detection} & Calculates probability of detection  \\ \hline
     \nameref{sec:eval_req_dubious_targets} & Calculates probability of dubious targets based on physical movement (based on test data only) \\ \hline
@@ -244,6 +273,7 @@ The following requirements exist:
     \nameref{sec:eval_req_extra_track} & Calculates probability of undetected tracks (based on reference data only) \\ \hline
     \nameref{sec:eval_req_id_correct} & Calculates probability of correct secondary identification \\ \hline
     \nameref{sec:eval_req_id_correct_periods} & Calculates probability of correct secondary identification based on UIs \\ \hline
+    \nameref{sec:eval_req_id_change_delay} & Calculates probability of acceptable identification change delay \\ \hline
     \nameref{sec:eval_req_id_false} & Calculates probability of false secondary identification \\ \hline
     \nameref{sec:eval_req_mom_long} & Calculates probability of correct MoM Longitudinal Acceleration \\ \hline
     \nameref{sec:eval_req_mom_trans} & Calculates probability of correct MoM Transversal Acceleration \\ \hline

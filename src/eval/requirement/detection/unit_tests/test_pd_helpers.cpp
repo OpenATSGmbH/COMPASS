@@ -26,6 +26,7 @@
 using EvaluationRequirement::PDHelpers::MissTestParams;
 using EvaluationRequirement::PDHelpers::isMiss;
 using EvaluationRequirement::PDHelpers::numMisses;
+using EvaluationRequirement::PDHelpers::missDuration;
 using EvaluationRequirement::PDHelpers::buildReferencePeriods;
 
 using boost::posix_time::ptime;
@@ -145,6 +146,59 @@ TEST_CASE("PDHelpers::numMisses - update_interval_s == 0 returns 0",
     MissTestParams p;
     p.update_interval_s = 0.0f;
     REQUIRE(numMisses(5.0f, p) == 0);
+}
+
+TEST_CASE("PDHelpers::missDuration - update interval only",
+          "[pd_helpers][misstest][timeratio]")
+{
+    // ED-129C Appendix C Equation 2-2: contribution max(G - UI, 0)
+    MissTestParams p;
+    p.update_interval_s = 1.0f;
+
+    REQUIRE(missDuration(0.5f, p) == Approx(0.0f));   // not a miss -> 0
+    REQUIRE(missDuration(1.0f, p) == Approx(0.0f));   // boundary, not a miss
+    REQUIRE(missDuration(1.5f, p) == Approx(0.5f));
+    REQUIRE(missDuration(4.0f, p) == Approx(3.0f));
+}
+
+TEST_CASE("PDHelpers::missDuration - miss tolerance",
+          "[pd_helpers][misstest][timeratio]")
+{
+    MissTestParams p;
+    p.update_interval_s  = 1.0f;
+    p.use_miss_tolerance = true;
+    p.miss_tolerance_s   = 0.2f;
+
+    REQUIRE(missDuration(1.1f, p) == Approx(0.0f));           // adj = 0.9, not a miss
+    REQUIRE(missDuration(2.2f, p) == Approx(1.0f));           // adj = 2.0
+}
+
+TEST_CASE("PDHelpers::missDuration - long gap configuration",
+          "[pd_helpers][misstest][timeratio]")
+{
+    // ED-129C REQ 18 setup for the 3NM service: UI 5s,
+    // min gap length 3 x UI x 1.1 = 16.5s; contribution G - UI
+    // for long gaps only (Appendix C Equation 4-2)
+    MissTestParams p;
+    p.update_interval_s  = 5.0f;
+    p.use_min_gap_length = true;
+    p.min_gap_length_s   = 16.5f;
+
+    REQUIRE(missDuration(10.0f, p) == Approx(0.0f));          // miss, but not a long gap
+    REQUIRE(missDuration(16.4f, p) == Approx(0.0f));          // just below long gap threshold
+    REQUIRE(missDuration(20.0f, p) == Approx(15.0f));         // long gap: 20 - 5
+}
+
+TEST_CASE("PDHelpers::missDuration - max gap length suppresses out-of-coverage gaps",
+          "[pd_helpers][misstest][timeratio]")
+{
+    MissTestParams p;
+    p.update_interval_s  = 1.0f;
+    p.use_max_gap_length = true;
+    p.max_gap_length_s   = 5.0f;
+
+    REQUIRE(missDuration(3.0f,   p) == Approx(2.0f));
+    REQUIRE(missDuration(100.0f, p) == Approx(0.0f));         // suppressed by max gap
 }
 
 TEST_CASE("PDHelpers::buildReferencePeriods - empty input",

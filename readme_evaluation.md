@@ -2,9 +2,9 @@
 
 Compares test data sources against reference data sources within defined airspace sectors. Pre-requisites: UTN associations, at least 1 sector, usable reference + test data.
 
-**Supported standards**: EUROCAE ED-116, ED-117/A, ED-87C/D/E, ED-142, EUROCONTROL Radar Surveillance Standard
+**Supported standards**: EUROCAE ED-116, ED-117/A, ED-129C, ED-87C/D/E, ED-142, EUROCONTROL Radar Surveillance Standard
 
-**Requirement types**: Detection (PD), Position (distance, along/across, latency, RMS, radar azm/rng), Identification (correct/false), Mode 3/A (present/false), Mode C (correct/false/present), Speed, Track angle, Dubious targets/tracks, Extra data/tracks, MoM (longitudinal/transversal/vertical), Acceleration, ROCD, Track coasting
+**Requirement types**: Detection (PD), Position (distance, along/across, RMS, radar azm/rng), Latency (position latency, ADS-B latency), Identification (correct/false/change delay), Mode 3/A (present/false), Mode C (correct/false/present), Speed, Track angle, Dubious targets/tracks, Extra data/tracks, MoM (longitudinal/transversal/vertical), Acceleration, ROCD, Track coasting
 
 **Results**: Per-sector averages + per-target statistics, drillable to per-target-report level. Exportable as PDF, LaTeX, or JSON reports. Optional splits by ADS-B MOPS version or Mode A/C vs Mode S.
 
@@ -19,7 +19,7 @@ The EUROCAE standard documents (ED-116, ED-117/A, ED-87 series, ED-142, and othe
 | `EvaluationManager` | `src/eval/evaluationmanager.h` | Top-level manager, owns the calculator and target filter |
 | `EvaluationCalculator` | `src/eval/evaluationcalculator.h` | Owns all standards, data source selection, sector usage, settings; runs `evaluate()` |
 | `EvaluationSettings` | `src/eval/evaluationsettings.h` | Evaluation parameters (report splits, filters, thresholds) |
-| `EvaluationStandard` | `src/eval/standard/evaluationstandard.h` | One named standard; holds requirement groups; `reference_max_time_diff` parameter |
+| `EvaluationStandard` | `src/eval/standard/evaluationstandard.h` | One named standard; holds requirement groups; general settings `reference_max_time_diff`, `ignore_primary_only_targets`, `ignore_non_adsb_targets`; `targetIgnoreReason()` |
 | `Group` | `src/eval/requirement/group.h` | Named requirement group inside a standard; holds requirement configs |
 | `EvaluationRequirement::BaseConfig` | `src/eval/requirement/base/baseconfig.h` | Configurable per-requirement config (name, short_name, comment, use, thresholds); factory `createRequirement()` |
 | `EvaluationRequirement::Base` | `src/eval/requirement/base/base.h` | Runtime requirement; `evaluate(target_data, instance, sector_layer)` returns a per-target result |
@@ -30,6 +30,8 @@ The EUROCAE standard documents (ED-116, ED-117/A, ED-87 series, ED-142, and othe
 | `ResultReport::Report` | `src/task/result/report/report.h` | Generic report structure (sections, tables, figures, viewables) |
 
 Intermediate base classes exist for common requirement kinds: `ProbabilityBase(Config)`, `IntervalBase(Config)`, `PositionBase(Config)` in `src/eval/requirement/base/`. Each config class has a matching `*ConfigWidget` for the GUI.
+
+The Detection requirement supports 2 calculation modes: counted update intervals (default, #MUI over #EUI) and, with `use_time_ratio`, missed time over reference duration per EUROCAE ED-129C Appendix C. `use_stationary_ui` selects the update interval per gap from the reference ground speed, for surface targets that transmit slower when stationary. Details and the derivation: [readme_detection.md](src/eval/requirement/detection/readme_detection.md), [readme_ed129c.md](readme_ed129c.md).
 
 ## How a standard is formed
 
@@ -44,9 +46,13 @@ Standards are pure configuration - no code change is needed to create or modify 
 
 To create a new standard: copy the closest existing one in the GUI, adjust the groups and requirement parameters, and cite the standard document sections in the `comment` fields. Alternatively add a new `EvaluationStandard` block in `eval.json` following the existing structure.
 
+Requirement sources are grouped by topic: `detection/`, `position/`, `latency/` (position latency and ADS-B latency), `identification/`, `mode_a/`, `mode_c/`, `speed/`, `trackangle/`, `mom/`, `dubious/`, `extra/`, `status/`, `generic/`, each with a matching folder in `src/eval/results/`. A worked example of a full standard, from requirement mapping to configuration and verification, is [readme_ed129c.md](readme_ed129c.md).
+
 To add a new requirement type (code change): create a `*Config` class + widget in `src/eval/requirement/<topic>/`, a requirement class derived from `EvaluationRequirement::Base` (or `ProbabilityBase` / `IntervalBase` / `PositionBase`), result classes derived from `Single` and `Joined` in `src/eval/results/<topic>/`, and register the config class in `Group::requirement_type_mapping_` and the group's `generateSubConfigurable()`.
 
 ## How results are calculated
+
+After loading, `EvaluationTargetData::finalize()` asks the current standard via `EvaluationStandard::targetIgnoreReason()` whether the target is relevant for it: `ignore_primary_only_targets` skips targets without any secondary attribute, `ignore_non_adsb_targets` skips targets never detected in CAT021 (`Target::dbContentCount`). The resulting `ignored_by_std_` flag plus reason lives on the target data only, is never persisted, and therefore does not touch the user-set `use_in_eval_` (manual selection, Filter UTNs). `Single::updateUseFromTarget()` turns it into an ignored result with that reason, so ignored targets appear as unusable results and do not enter the sector sums.
 
 `EvaluationCalculator::evaluate()` checks pre-conditions, then calls `EvaluationResultsGenerator::evaluate(standard, utns, requirements, update_report)`:
 

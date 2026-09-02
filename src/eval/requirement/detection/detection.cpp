@@ -51,8 +51,12 @@ Detection::Detection(const std::string& name,
                      bool use_max_gap_length, 
                      float max_gap_length_s, 
                      bool invert_prob,
-                     bool use_miss_tolerance, 
-                     float miss_tolerance_s, 
+                     bool use_miss_tolerance,
+                     float miss_tolerance_s,
+                     bool use_time_ratio,
+                     bool use_stationary_ui,
+                     float stationary_ui_s,
+                     float stationary_speed_threshold_ms,
                      bool hold_for_any_target, bool ignore_primary_only)
     : ProbabilityBase     (name, short_name, group_name, prob, prob_check_type, invert_prob, calculator, hold_for_any_target),
     update_interval_s_  (update_interval_s),
@@ -62,6 +66,10 @@ Detection::Detection(const std::string& name,
     max_gap_length_s_   (max_gap_length_s),
     use_miss_tolerance_ (use_miss_tolerance),
     miss_tolerance_s_   (miss_tolerance_s),
+    use_time_ratio_     (use_time_ratio),
+    use_stationary_ui_  (use_stationary_ui),
+    stationary_ui_s_    (stationary_ui_s),
+    stationary_speed_threshold_ms_(stationary_speed_threshold_ms),
     ignore_primary_only_(ignore_primary_only)
 {
 }
@@ -125,6 +133,34 @@ float Detection::missThreshold() const
 bool Detection::ignorePrimaryOnly() const
 {
     return ignore_primary_only_;
+}
+
+/**
+*/
+bool Detection::useTimeRatio() const
+{
+    return use_time_ratio_;
+}
+
+/**
+*/
+bool Detection::useStationaryUI() const
+{
+    return use_stationary_ui_;
+}
+
+/**
+*/
+float Detection::stationaryUI() const
+{
+    return stationary_ui_s_;
+}
+
+/**
+*/
+float Detection::stationarySpeedThreshold() const
+{
+    return stationary_speed_threshold_ms_;
 }
 
 /**
@@ -200,10 +236,16 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
     // evaluate test data
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
-    int sum_uis = ref_periods.getUIs(update_interval_s_);
+    // expected total: number of update intervals (counting mode) or
+    // reference duration in seconds (time-ratio mode)
+    double sum_expected = use_time_ratio_ ? ref_periods.getDurationSeconds()
+                                          : (double)ref_periods.getUIs(update_interval_s_);
 
     float t_diff;
-    int sum_missed_uis {0};
+    float gap_ui; // gap-specific update interval (stationary UI support)
+
+    // missed update intervals (counting mode) or missed seconds (time-ratio mode)
+    double sum_missed {0};
     bool was_outside {false};
     is_inside = false;
     //bool ok;
@@ -292,20 +334,21 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             timestamp = period_it.end();
 
             t_diff = Time::partialSeconds(timestamp - last_ts);
+            gap_ui = updateIntervalFor(target_data, last_ts, timestamp);
 
-            if (isMiss(t_diff))
+            if (isMiss(t_diff, gap_ui))
             {
-                sum_missed_uis += getNumMisses(t_diff);
+                sum_missed += getMissed(t_diff, gap_ui);
 
                 pos_current = target_data.refChain().pos(timestamp);
 
                 if (debug)
                     loginf << "'" << name_ << ": utn " << target_data.utn_
                            << " miss of " << String::timeStringFromDouble(t_diff)
-                           << " uis " << getNumMisses(t_diff)
+                           << " missed " << getMissed(t_diff, gap_ui)
                            << " at [" << Time::toString(last_ts)
                            << "," << Time::toString(timestamp)
-                           << "] sum_missed_uis " << sum_missed_uis;
+                           << "] sum_missed " << sum_missed;
 
                 string comment = "Miss detected (DToD > "
                                  +String::doubleToStringPrecision(missThreshold(), 2)
@@ -314,13 +357,13 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                 auto last_pos = target_data.refChain().pos(last_ts);
 
                 storeRefUpdates(ref_updates, last_ts, timestamp, last_pos, pos_current);
-                addDetail(timestamp, ref_updates, t_diff, true, true, sum_missed_uis, 0, 0, comment); 
+                addDetail(timestamp, ref_updates, t_diff, true, true, sum_missed, 0, 0, comment); 
             }
         }
 
         auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
             "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-            calculator_, details, sum_uis, sum_missed_uis, ref_periods);
+            calculator_, details, sum_expected, sum_missed, ref_periods);
 
         if (ignore_primary_only_ && target_data.isPrimaryOnly())
             ret->setIgnoreResult("Primary-only");
@@ -388,6 +431,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                     traced_assert(last_period_ts_end >= last_period_ts);
 
                     t_diff = Time::partialSeconds(last_period_ts_end - last_period_ts);
+                    gap_ui = updateIntervalFor(target_data, last_period_ts, last_period_ts_end);
 
                     pos_current = target_data.refChain().pos(last_period_ts_end);
 
@@ -398,17 +442,17 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                     else
                         last_pos = target_data.refChain().pos(last_period_ts);
                     
-                    if (isMiss(t_diff))
+                    if (isMiss(t_diff, gap_ui))
                     {
-                        sum_missed_uis += getNumMisses(t_diff);
+                        sum_missed += getMissed(t_diff, gap_ui);
 
                         if (debug)
                             loginf << "'" << name_ << ": utn " << target_data.utn_
                                    << " miss of " << String::timeStringFromDouble(t_diff)
-                                   << " uis " << getNumMisses(t_diff)
+                                   << " missed " << getMissed(t_diff, gap_ui)
                                    << " at [" << Time::toString(last_period_ts)
                                    << "," << Time::toString(ref_periods.period(period_cnt).end())
-                                   << "] missed_uis " << sum_missed_uis;
+                                   << "] missed_uis " << sum_missed;
 
                         comment = "Miss detected in previous period "+to_string(period_cnt)
                                   +" (DToD > " +String::doubleToStringPrecision(missThreshold(), 2)
@@ -416,7 +460,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                                   +Time::toString(ref_periods.period(period_cnt).end())+"]\n";
 
                         storeRefUpdates(ref_updates, last_period_ts, last_period_ts_end, tst_time_found ? OptPos() : OptPos(last_pos), pos_current);
-                        addDetail(timestamp, ref_updates, t_diff, true, true, sum_missed_uis, 0, 0, comment);
+                        addDetail(timestamp, ref_updates, t_diff, true, true, sum_missed, 0, 0, comment);
                     }
                     else
                     {
@@ -425,7 +469,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
 
                         storeRefUpdates(ref_updates, last_period_ts, last_period_ts_end,
                                         tst_time_found ? OptPos() : OptPos(last_pos), pos_current);
-                        addDetail(timestamp, ref_updates, t_diff, false, true, sum_missed_uis, 0, 0, comment);
+                        addDetail(timestamp, ref_updates, t_diff, false, true, sum_missed, 0, 0, comment);
                     }
 
                     finished_periods.insert(period_cnt);
@@ -439,7 +483,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                 loginf << "'" << name_ << ": utn " << target_data.utn_ << " outside ref time perionds";
 
             if (!skip_no_data_details)
-                addDetail(timestamp, { pos_current }, {}, false, false, sum_missed_uis, 0, 0,
+                addDetail(timestamp, { pos_current }, {}, false, false, sum_missed, 0, 0,
                           "Outside of reference time periods");
 
             // TODO undetected previous miss possible
@@ -461,7 +505,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                 loginf << "'" << name_ << ": utn " << target_data.utn_ << " no ref_pos value";
 
             if (!skip_no_data_details)
-                addDetail(timestamp, { pos_current }, {}, false, true, sum_missed_uis, 0, 0,
+                addDetail(timestamp, { pos_current }, {}, false, true, sum_missed, 0, 0,
                           "At exact beginning of reference time period");
 
             continue;
@@ -477,7 +521,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                        << " outside";
 
             if (!skip_no_data_details)
-                addDetail(timestamp, { pos_current }, {}, false, true, sum_missed_uis, 0, 0, "Outside sector");
+                addDetail(timestamp, { pos_current }, {}, false, true, sum_missed, 0, 0, "Outside sector");
 
             was_outside = true;
 
@@ -495,30 +539,31 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             if (was_outside)
             {
                 storeRefUpdate(ref_updates, tst_it);
-                addDetail(timestamp, ref_updates, {}, false, true, sum_missed_uis, 0, 0, "First target report after outside sector");
+                addDetail(timestamp, ref_updates, {}, false, true, sum_missed, 0, 0, "First target report after outside sector");
             }
             else // first in period
             {
                 storeRefUpdate(ref_updates, tst_it);
-                addDetail(timestamp, ref_updates, {}, false, true, sum_missed_uis, 0, 0, "First target report in period " + to_string(period_index));
+                addDetail(timestamp, ref_updates, {}, false, true, sum_missed, 0, 0, "First target report in period " + to_string(period_index));
 
                 // check if begin time in period is miss
 
                 t_diff = Time::partialSeconds(timestamp - ref_periods.period(period_index).begin());
+                gap_ui = updateIntervalFor(target_data, ref_periods.period(period_index).begin(), timestamp);
 
                 auto last_pos = target_data.refChain().pos(ref_periods.period(period_index).begin());
 
-                if (isMiss(t_diff))
+                if (isMiss(t_diff, gap_ui))
                 {
-                    sum_missed_uis += getNumMisses(t_diff);
+                    sum_missed += getMissed(t_diff, gap_ui);
 
                     if (debug)
                        loginf << "'" << name_ << ": utn " << target_data.utn_
                                << " miss of " << String::timeStringFromDouble(t_diff)
-                               << " uis " << getNumMisses(t_diff)
+                               << " missed " << getMissed(t_diff, gap_ui)
                                << " at [" << Time::toString(ref_periods.period(period_index).begin())
                                << "," << Time::toString(timestamp)
-                               << "] missed_uis " << sum_missed_uis;
+                               << "] missed_uis " << sum_missed;
 
                     comment = "Miss detected in current period " + to_string(period_index)
                               +" (DToD > " +String::doubleToStringPrecision(missThreshold(), 2)
@@ -526,7 +571,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                               +", "+Time::toString(timestamp)+"]\n";
 
                     storeRefUpdates(ref_updates, ref_periods.period(period_index).begin(), timestamp, last_pos, {});
-                    addDetail(timestamp, ref_updates, t_diff, true, false, sum_missed_uis, 0, 0, comment);
+                    addDetail(timestamp, ref_updates, t_diff, true, false, sum_missed, 0, 0, comment);
                 }
                 else
                 {
@@ -534,7 +579,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                                           + " OK (DToD <= " + String::doubleToStringPrecision(missThreshold(), 2) + ")\n";
 
                     storeRefUpdates(ref_updates, ref_periods.period(period_index).begin(), timestamp, last_pos, {});
-                    addDetail(timestamp, ref_updates, t_diff, false, false, sum_missed_uis, 0, 0, comment);
+                    addDetail(timestamp, ref_updates, t_diff, false, false, sum_missed, 0, 0, comment);
                 }
             }
 
@@ -546,29 +591,30 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
 
         traced_assert(timestamp >= last_ts);
         t_diff = Time::partialSeconds(timestamp - last_ts);
+        gap_ui = updateIntervalFor(target_data, last_ts, timestamp);
 
         if (debug)
             loginf << "'" << name_ << ": utn " << target_data.utn_
                    << " ts " << Time::toString(timestamp) << " d_tod " << String::timeStringFromDouble(t_diff);
 
-        if (isMiss(t_diff))
+        if (isMiss(t_diff, gap_ui))
         {
-            sum_missed_uis += getNumMisses(t_diff);
+            sum_missed += getMissed(t_diff, gap_ui);
 
             if (debug)
                 loginf << "'" << name_ << ": utn " << target_data.utn_
                        << " miss of " << String::timeStringFromDouble(t_diff)
-                       << " uis " << getNumMisses(t_diff)
+                       << " missed " << getMissed(t_diff, gap_ui)
                        << " at [" << Time::toString(last_ts)
                        << "," << Time::toString(timestamp)
-                       << "] sum_missed_uis " << sum_missed_uis;
+                       << "] sum_missed " << sum_missed;
 
             string comment = "Miss detected (DToD > "
                              +String::doubleToStringPrecision(missThreshold(), 2)
                              +"), last was "+Time::toString(last_ts);
             
             storeRefUpdates(ref_updates, last_ts, timestamp, {}, {});
-            addDetail(timestamp, ref_updates, t_diff, true, true, sum_missed_uis, 0, 0, comment);
+            addDetail(timestamp, ref_updates, t_diff, true, true, sum_missed, 0, 0, comment);
         }
         else
         {
@@ -579,7 +625,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             std::string comment = "OK (DToD <= " + String::doubleToStringPrecision(missThreshold(), 2) + ")";
 
             storeRefUpdates(ref_updates, last_ts, timestamp, {}, {});
-            addDetail(timestamp, ref_updates, t_diff, false, true, sum_missed_uis, 0, 0, comment);
+            addDetail(timestamp, ref_updates, t_diff, false, true, sum_missed, 0, 0, comment);
         }
 
         period_last_tst_times[period_index] = timestamp;
@@ -607,6 +653,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             traced_assert(last_period_end >= last_period_tod);
 
             t_diff = Time::partialSeconds(last_period_end - last_period_tod);
+            gap_ui = updateIntervalFor(target_data, last_period_tod, last_period_end);
 
             pos_current = target_data.refChain().pos(last_period_end);
 
@@ -617,17 +664,17 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             else
                 last_pos = target_data.refChain().pos(last_period_tod);
 
-            if (isMiss(t_diff))
+            if (isMiss(t_diff, gap_ui))
             {
-                sum_missed_uis += getNumMisses(t_diff); // TODO substract miss_tolerance_s_?
+                sum_missed += getMissed(t_diff, gap_ui); // TODO substract miss_tolerance_s_?
 
                 if (debug)
                     loginf << "'" << name_ << ": utn " << target_data.utn_
                            << " miss of " << String::timeStringFromDouble(t_diff)
-                           << " uis " << getNumMisses(t_diff)
+                           << " missed " << getMissed(t_diff, gap_ui)
                            << " at [" << Time::toString(last_period_tod) << ","
                            << Time::toString(ref_periods.period(period_cnt).end())
-                           << "] missed_uis " << sum_missed_uis;
+                           << "] missed_uis " << sum_missed;
 
                 comment = "Miss detected in previous period "+to_string(period_cnt)
                           +" (DToD > " +String::doubleToStringPrecision(missThreshold(), 2)
@@ -635,14 +682,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                           +Time::toString(ref_periods.period(period_cnt).end())+"]\n";
 
                 storeRefUpdates(ref_updates, last_period_tod, last_period_end, tst_time_found ? OptPos() : OptPos(last_pos), pos_current);
-                addDetail(timestamp, ref_updates, t_diff, true, true, sum_missed_uis, 0, 0, comment);
+                addDetail(timestamp, ref_updates, t_diff, true, true, sum_missed, 0, 0, comment);
             }
             else
             {
                 comment = "Previous period "+to_string(period_cnt) +" OK (DToD <= "+String::doubleToStringPrecision(missThreshold(), 2)+")\n";
 
                 storeRefUpdates(ref_updates, last_period_tod, last_period_end, tst_time_found ? OptPos() : OptPos(last_pos), pos_current);
-                addDetail(timestamp, ref_updates, t_diff, false, true, sum_missed_uis, 0, 0, comment);
+                addDetail(timestamp, ref_updates, t_diff, false, true, sum_missed, 0, 0, comment);
             }
 
             finished_periods.insert(period_cnt);
@@ -651,11 +698,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
 
     if (debug)
         loginf << "'" << name_ << ": utn " << target_data.utn_
-               << " sum_uis " << sum_uis;
+               << " sum_expected " << sum_expected;
 
     auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
         "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-        calculator_, details, sum_uis, sum_missed_uis, ref_periods);
+        calculator_, details, sum_expected, sum_missed, ref_periods);
 
     if (ignore_primary_only_ && target_data.isPrimaryOnly())
         ret->setIgnoreResult("Primary-only");
@@ -665,10 +712,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
 
 /**
 */
-PDHelpers::MissTestParams Detection::missTestParams() const
+PDHelpers::MissTestParams Detection::missTestParams(float update_interval_s) const
 {
     PDHelpers::MissTestParams p;
-    p.update_interval_s  = update_interval_s_;
+    p.update_interval_s  = update_interval_s;
     p.use_miss_tolerance = use_miss_tolerance_;
     p.miss_tolerance_s   = miss_tolerance_s_;
     p.use_min_gap_length = use_min_gap_length_;
@@ -680,17 +727,77 @@ PDHelpers::MissTestParams Detection::missTestParams() const
 
 /**
 */
-bool Detection::isMiss (float d_tod) const
+bool Detection::isMiss (float d_tod, float update_interval_s) const
 {
-    return PDHelpers::isMiss(d_tod, missTestParams());
+    return PDHelpers::isMiss(d_tod, missTestParams(update_interval_s));
 }
 
 /**
 */
-unsigned int Detection::getNumMisses(float d_tod) const
+unsigned int Detection::getNumMisses(float d_tod, float update_interval_s) const
 {
-    traced_assert(isMiss(d_tod));
-    return PDHelpers::numMisses(d_tod, missTestParams());
+    traced_assert(isMiss(d_tod, update_interval_s));
+    return PDHelpers::numMisses(d_tod, missTestParams(update_interval_s));
+}
+
+/**
+*/
+float Detection::getMissedTime(float d_tod, float update_interval_s) const
+{
+    traced_assert(isMiss(d_tod, update_interval_s));
+    return PDHelpers::missDuration(d_tod, missTestParams(update_interval_s));
+}
+
+/**
+ * Missed amount attributed to a gap classified as miss: number of missed
+ * update intervals (counting mode) or missed seconds (time-ratio mode).
+*/
+double Detection::getMissed(float d_tod, float update_interval_s) const
+{
+    return use_time_ratio_ ? (double)getMissedTime(d_tod, update_interval_s)
+                           : (double)getNumMisses(d_tod, update_interval_s);
+}
+
+/**
+ * Gap-specific update interval (ED-129C ORQ 627, APT services): the
+ * stationary update interval when the reference ground speed of the report
+ * nearest to the gap midpoint is below the speed threshold. Without a
+ * usable reference ground speed the normal update interval applies.
+*/
+float Detection::updateIntervalFor(const EvaluationTargetData& target_data,
+                                   const boost::posix_time::ptime& gap_begin,
+                                   const boost::posix_time::ptime& gap_end) const
+{
+    if (!use_stationary_ui_)
+        return update_interval_s_;
+
+    ptime mid = gap_begin + (gap_end - gap_begin) / 2;
+
+    auto times = target_data.refChain().findDataMappingTimes(mid);
+
+    boost::optional<float> speed;
+
+    // nearest surrounding reference report with a ground speed
+    bool other1_nearer = times.has_other1_ && (!times.has_other2_
+                         || (mid - times.timestamp_other1_) <= (times.timestamp_other2_ - mid));
+
+    if (other1_nearer)
+    {
+        speed = target_data.refChain().groundSpeed(times.dataid_other1_);
+        if (!speed.has_value() && times.has_other2_)
+            speed = target_data.refChain().groundSpeed(times.dataid_other2_);
+    }
+    else if (times.has_other2_)
+    {
+        speed = target_data.refChain().groundSpeed(times.dataid_other2_);
+        if (!speed.has_value() && times.has_other1_)
+            speed = target_data.refChain().groundSpeed(times.dataid_other1_);
+    }
+
+    if (!speed.has_value())
+        return update_interval_s_;
+
+    return speed.value() < stationary_speed_threshold_ms_ ? stationary_ui_s_ : update_interval_s_;
 }
 
 }

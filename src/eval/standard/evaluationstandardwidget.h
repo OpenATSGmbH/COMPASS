@@ -54,6 +54,8 @@ public slots:
     void deleteRequirementSlot(Group& group, EvaluationRequirement::BaseConfig& req);
 
     void refMaxTimeDiffEditSlot(QString value);
+    void toggleIgnorePrimaryOnlyTargetsSlot(bool checked);
+    void toggleIgnoreNonADSBTargetsSlot(bool checked);
     //void refMinAccEditSlot(QString value);
 
 public:

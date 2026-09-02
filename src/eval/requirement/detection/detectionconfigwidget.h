@@ -46,6 +46,12 @@ public slots:
     void toggleUseMissToleranceSlot();
     void missToleranceEditSlot(QString value);
 
+    void toggleUseTimeRatioSlot();
+
+    void toggleUseStationaryUISlot();
+    void stationaryUIEditSlot(QString value);
+    void stationarySpeedThresholdEditSlot(QString value);
+
     void toggleHoldForAnyTargetSlot();
     
     void toggleIgnorePrimaryOnlySlot();
@@ -65,6 +71,12 @@ protected:
 
     QCheckBox* use_miss_tolerance_check_{nullptr};
     QLineEdit* miss_tolerance_edit_{nullptr};
+
+    QCheckBox* use_time_ratio_check_{nullptr};
+
+    QCheckBox* use_stationary_ui_check_{nullptr};
+    QLineEdit* stationary_ui_edit_{nullptr};
+    QLineEdit* stationary_speed_threshold_edit_{nullptr};
 
     QCheckBox* hold_for_any_target_check_{nullptr};
 

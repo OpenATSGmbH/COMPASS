@@ -30,6 +30,7 @@
 
 #include "eval/requirement/group.h"
 #include "eval/requirement/base/baseconfig.h"
+#include "eval/data/evaluationtargetdata.h"
 
 #include <QTreeView>
 
@@ -49,6 +50,9 @@ EvaluationStandard::EvaluationStandard(nlohmann::json& config, EvaluationCalcula
     registerParameter("name", &name_, std::string());
     registerParameter("reference_max_time_diff", &reference_max_time_diff_, reference_max_time_diff_);
     //registerParameter("reference_min_accuracy", &reference_min_accuracy_, reference_min_accuracy_);
+
+    registerParameter("ignore_primary_only_targets", &ignore_primary_only_targets_, ignore_primary_only_targets_);
+    registerParameter("ignore_non_adsb_targets", &ignore_non_adsb_targets_, ignore_non_adsb_targets_);
 
     traced_assert(name_.size());
 
@@ -237,6 +241,23 @@ void EvaluationStandard::addToReport (std::shared_ptr<ResultReport::Report> repo
             req_it->addToReport(report);
         }
     }
+}
+
+/**
+ * Checks if the given target is not relevant for this standard, e.g. a primary-only
+ * target for a secondary surveillance standard, or a target never detected in ADS-B
+ * data for an ADS-B standard. Returns the reason, or an empty string if the target
+ * is to be used.
+ */
+std::string EvaluationStandard::targetIgnoreReason(const EvaluationTargetData& target) const
+{
+    if (ignore_primary_only_targets_ && target.isPrimaryOnly())
+        return "Primary-only";
+
+    if (ignore_non_adsb_targets_ && !target.hasADSBData())
+        return "No ADS-B data";
+
+    return {};
 }
 
 std::set<std::string> EvaluationStandard::getAllRequirementNames() const

@@ -358,6 +358,24 @@ unsigned int TimePeriodCollection::getUIs (float update_interval,
 
 /**
 */
+double TimePeriodCollection::getDurationSeconds (bool inside_sector_only) const
+{
+    double duration_s = 0.0;
+
+    for (auto& period_it : periods_)
+    {
+        //skip outside sectors?
+        if (inside_sector_only && period_it.type() == TimePeriod::Type::OutsideSector)
+            continue;
+
+        duration_s += Utils::Time::partialSeconds(period_it.duration());
+    }
+
+    return duration_s;
+}
+
+/**
+*/
 void TimePeriodCollection::fillInOutsidePeriods(const boost::optional<boost::posix_time::ptime>& data_tmin,
                                                 const boost::optional<boost::posix_time::ptime>& data_tmax)
 {

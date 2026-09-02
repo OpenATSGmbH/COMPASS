@@ -34,6 +34,7 @@
 
 #include <QMessageBox>
 #include <QFormLayout>
+#include <QCheckBox>
 
 using namespace std;
 
@@ -417,6 +418,25 @@ QWidget* EvaluationStandardWidget::createMainWidget()
 
     layout->addRow("Reference Maximum Time Difference [s]", ref_max_time_diff_edit);
 
+    // target selection
+    QCheckBox* ignore_primary_only_check = new QCheckBox();
+    ignore_primary_only_check->setChecked(standard_.ignorePrimaryOnlyTargets());
+    ignore_primary_only_check->setToolTip("Ignore targets without any secondary attributes"
+                                          " (no Mode S address, aircraft identification,"
+                                          " Mode 3/A code or Mode C code)");
+    connect(ignore_primary_only_check, &QCheckBox::clicked,
+            this, &EvaluationStandardWidget::toggleIgnorePrimaryOnlyTargetsSlot);
+
+    layout->addRow("Ignore Primary Only Targets", ignore_primary_only_check);
+
+    QCheckBox* ignore_non_adsb_check = new QCheckBox();
+    ignore_non_adsb_check->setChecked(standard_.ignoreNonADSBTargets());
+    ignore_non_adsb_check->setToolTip("Ignore targets never detected in ADS-B data (CAT021)");
+    connect(ignore_non_adsb_check, &QCheckBox::clicked,
+            this, &EvaluationStandardWidget::toggleIgnoreNonADSBTargetsSlot);
+
+    layout->addRow("Ignore Non-ADSB Targets", ignore_non_adsb_check);
+
     //QLineEdit* ref_min_acc_edit = new QLineEdit(QString::number(standard_.referenceMinAccuracy()));
     //ref_min_acc_edit->setValidator(new QDoubleValidator(0.1, 1000.0, 1, this));
     //connect(ref_min_acc_edit, &QLineEdit::textEdited,
@@ -427,6 +447,20 @@ QWidget* EvaluationStandardWidget::createMainWidget()
     widget->setLayout(layout);
 
     return widget;
+}
+
+void EvaluationStandardWidget::toggleIgnorePrimaryOnlyTargetsSlot(bool checked)
+{
+    loginf << "value " << checked;
+
+    standard_.ignorePrimaryOnlyTargets(checked);
+}
+
+void EvaluationStandardWidget::toggleIgnoreNonADSBTargetsSlot(bool checked)
+{
+    loginf << "value " << checked;
+
+    standard_.ignoreNonADSBTargets(checked);
 }
 
 void EvaluationStandardWidget::refMaxTimeDiffEditSlot(QString value)

@@ -32,8 +32,9 @@ public:
             double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator,
             float update_interval_s, bool use_min_gap_length, float min_gap_length_s,
             bool use_max_gap_length, float max_gap_length_s, bool invert_prob,
-            bool use_miss_tolerance, float miss_tolerance_s, bool hold_for_any_target,
-            bool ignore_primary_only);
+            bool use_miss_tolerance, float miss_tolerance_s, bool use_time_ratio,
+            bool use_stationary_ui, float stationary_ui_s, float stationary_speed_threshold_ms,
+            bool hold_for_any_target, bool ignore_primary_only);
 
   float updateInterval() const;
   bool useMinGapLength() const;
@@ -43,6 +44,10 @@ public:
   bool useMissTolerance() const;
   float missTolerance() const;
   float missThreshold() const;
+  bool useTimeRatio() const;
+  bool useStationaryUI() const;
+  float stationaryUI() const;
+  float stationarySpeedThreshold() const;
 
   bool ignorePrimaryOnly() const;
 
@@ -57,10 +62,18 @@ public:
   }
 
 protected:
-    PDHelpers::MissTestParams missTestParams() const;
+    PDHelpers::MissTestParams missTestParams(float update_interval_s) const;
 
-    bool isMiss (float d_tod) const;
-    unsigned int getNumMisses(float d_tod) const;
+    bool isMiss (float d_tod, float update_interval_s) const;
+    unsigned int getNumMisses(float d_tod, float update_interval_s) const;
+    float getMissedTime(float d_tod, float update_interval_s) const;
+    double getMissed(float d_tod, float update_interval_s) const;
+
+    // gap-specific update interval: the stationary UI when the reference
+    // ground speed near the gap midpoint is below the speed threshold
+    float updateIntervalFor(const EvaluationTargetData& target_data,
+                            const boost::posix_time::ptime& gap_begin,
+                            const boost::posix_time::ptime& gap_end) const;
 
     float update_interval_s_{0};
 
@@ -72,6 +85,14 @@ protected:
 
     bool  use_miss_tolerance_{false};
     float miss_tolerance_s_  {0};
+
+    // time-ratio calculation mode (ED-129C Appendix C "Interarrivaltime" method)
+    bool use_time_ratio_ {false};
+
+    // speed-dependent update interval for surface targets (ED-129C ORQ 627)
+    bool  use_stationary_ui_ {false};
+    float stationary_ui_s_   {10.0f};
+    float stationary_speed_threshold_ms_ {0.5f};
 
     bool ignore_primary_only_ {true};
 };

@@ -224,6 +224,10 @@ public:
     boost::optional<unsigned int> nacp(const DataID& id) const;        // I021/090 NACp
     boost::optional<unsigned int> nucpNic(const DataID& id) const;     // I021/090 NUCp (v0) / NIC (v1/v2)
 
+    // CAT021 time stamps in seconds of day (only set for the CAT021 chain).
+    boost::optional<float> tomrPosition(const DataID& id) const; // I021/073 Time of Message Reception for Position
+    boost::optional<float> tort(const DataID& id) const;         // I021/077 Time of Report Transmission
+
     boost::optional<bool> groundBit(const DataID& id) const; // gbs
 
     boost::optional<unsigned int> tstTrackNum(const DataID& id) const;

@@ -107,6 +107,45 @@ DetectionConfigWidget::DetectionConfigWidget(DetectionConfig& cfg)
 
     form_layout_->addRow("Miss Tolerance [s]", miss_tolerance_edit_);
 
+    // time-ratio calculation mode
+    use_time_ratio_check_ = new QCheckBox ();
+    use_time_ratio_check_->setChecked(config().useTimeRatio());
+    use_time_ratio_check_->setToolTip("Calculate the probability as missed time over reference"
+                                      " duration (ED-129C Appendix C Interarrivaltime method)"
+                                      " instead of missed update intervals over expected update"
+                                      " intervals");
+    connect(use_time_ratio_check_, &QCheckBox::clicked,
+            this, &DetectionConfigWidget::toggleUseTimeRatioSlot);
+
+    form_layout_->addRow("Use Time-Based Calculation", use_time_ratio_check_);
+
+    // stationary update interval
+    use_stationary_ui_check_ = new QCheckBox ();
+    use_stationary_ui_check_->setChecked(config().useStationaryUI());
+    use_stationary_ui_check_->setToolTip("Speed-dependent update interval: below the speed"
+                                         " threshold the stationary update interval applies"
+                                         " (ED-129C ORQ 627, APT services)");
+    connect(use_stationary_ui_check_, &QCheckBox::clicked,
+            this, &DetectionConfigWidget::toggleUseStationaryUISlot);
+
+    form_layout_->addRow("Use Stationary Update Interval", use_stationary_ui_check_);
+
+    stationary_ui_edit_ = new QLineEdit(QString::number(config().stationaryUI()));
+    stationary_ui_edit_->setValidator(new QDoubleValidator(0.1, 60.0, 2, this));
+    stationary_ui_edit_->setToolTip("Update interval for stationary targets");
+    connect(stationary_ui_edit_, &QLineEdit::textEdited,
+            this, &DetectionConfigWidget::stationaryUIEditSlot);
+
+    form_layout_->addRow("Stationary Update Interval [s]", stationary_ui_edit_);
+
+    stationary_speed_threshold_edit_ = new QLineEdit(QString::number(config().stationarySpeedThreshold()));
+    stationary_speed_threshold_edit_->setValidator(new QDoubleValidator(0.0, 100.0, 2, this));
+    stationary_speed_threshold_edit_->setToolTip("Reference ground speed below this counts as stationary");
+    connect(stationary_speed_threshold_edit_, &QLineEdit::textEdited,
+            this, &DetectionConfigWidget::stationarySpeedThresholdEditSlot);
+
+    form_layout_->addRow("Stationary Speed Threshold [m/s]", stationary_speed_threshold_edit_);
+
     // hold_for_any_target_check_
     hold_for_any_target_check_ = new QCheckBox ();
     hold_for_any_target_check_->setChecked(config().holdForAnyTarget());
@@ -224,6 +263,50 @@ void DetectionConfigWidget::missToleranceEditSlot(QString value)
         loginf << "invalid value";
 }
 
+void DetectionConfigWidget::toggleUseTimeRatioSlot()
+{
+    loginf;
+
+    traced_assert(use_time_ratio_check_);
+    config().useTimeRatio(use_time_ratio_check_->checkState() == Qt::Checked);
+}
+
+void DetectionConfigWidget::toggleUseStationaryUISlot()
+{
+    loginf;
+
+    traced_assert(use_stationary_ui_check_);
+    config().useStationaryUI(use_stationary_ui_check_->checkState() == Qt::Checked);
+
+    updateActive();
+}
+
+void DetectionConfigWidget::stationaryUIEditSlot(QString value)
+{
+    loginf << "value " << value.toStdString();
+
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        config().stationaryUI(val);
+    else
+        loginf << "invalid value";
+}
+
+void DetectionConfigWidget::stationarySpeedThresholdEditSlot(QString value)
+{
+    loginf << "value " << value.toStdString();
+
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        config().stationarySpeedThreshold(val);
+    else
+        loginf << "invalid value";
+}
+
 void DetectionConfigWidget::toggleHoldForAnyTargetSlot()
 {
     loginf;
@@ -259,6 +342,12 @@ void DetectionConfigWidget::updateActive()
 
     traced_assert(miss_tolerance_edit_);
     miss_tolerance_edit_->setEnabled(config().useMissTolerance());
+
+    traced_assert(stationary_ui_edit_);
+    stationary_ui_edit_->setEnabled(config().useStationaryUI());
+
+    traced_assert(stationary_speed_threshold_edit_);
+    stationary_speed_threshold_edit_->setEnabled(config().useStationaryUI());
 }
 
 }

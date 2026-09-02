@@ -15,70 +15,74 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/latencyconfig.h"
-#include "eval/requirement/position/latencyconfigwidget.h"
-#include "eval/requirement/position/latency.h"
+#include "eval/requirement/latency/adsblatencyconfig.h"
+#include "eval/requirement/latency/adsblatencyconfigwidget.h"
+#include "eval/requirement/latency/adsblatency.h"
 #include "eval/requirement/group.h"
-#include "eval/requirement/base/positionbase.h"
+#include "eval/requirement/base/base.h"
 
 #include "task/result/report/report.h"
 #include "task/result/report/section.h"
 #include "task/result/report/sectioncontenttable.h"
 
-using namespace std;
+#include "comparisontype.h"
 
+using namespace std;
 
 namespace EvaluationRequirement
 {
-PositionLatencyConfig::PositionLatencyConfig(
+
+ADSBLatencyConfig::ADSBLatencyConfig(
         nlohmann::json& config,
         Group* parent)
-    : PositionBaseProbConfig(config, parent)
+    : ProbabilityBaseConfig(config, parent)
 {
-    registerParameter("max_abs_value", &max_abs_value_, 0.050f);
+    registerParameter("max_value_s", &max_value_s_, 0.6f);
 }
 
-PositionLatencyConfig::~PositionLatencyConfig()
+ADSBLatencyConfig::~ADSBLatencyConfig()
 {
 }
 
-std::shared_ptr<Base> PositionLatencyConfig::createRequirement()
+std::shared_ptr<Base> ADSBLatencyConfig::createRequirement()
 {
-    shared_ptr<PositionLatency> req = make_shared<PositionLatency>(
-                name_, short_name_, group_.name(), prob_, prob_check_type_, 
-                ref_min_accuracy_, calculator_, max_abs_value_);
+    shared_ptr<ADSBLatency> req = make_shared<ADSBLatency>(
+                name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_,
+                max_value_s_);
 
     return req;
 }
 
-float PositionLatencyConfig::maxAbsValue() const
+float ADSBLatencyConfig::maxValue() const
 {
-    return max_abs_value_;
+    return max_value_s_;
 }
 
-void PositionLatencyConfig::maxAbsValue(float value)
+void ADSBLatencyConfig::maxValue(float value)
 {
-    max_abs_value_ = value;
+    max_value_s_ = value;
 }
 
-BaseConfigWidget* PositionLatencyConfig::createWidget()
+BaseConfigWidget* ADSBLatencyConfig::createWidget()
 {
-    return new PositionLatencyConfigWidget(*this);
+    return new ADSBLatencyConfigWidget(*this);
 }
 
-void PositionLatencyConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
+void ADSBLatencyConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
     auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
 
-    table.addRow({"Probability [1]", "Probability of acceptable position latency",
+    table.addRow({"Probability [1]", "Probability of acceptable latency",
                   roundf(prob_ * 10000.0) / 100.0});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 
-    table.addRow({"Maximum Absolute Value [HH:MM:SS.SSS]",
-                  "Maximum absolute latency",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Maximum Value [s]",
+                  "Maximum acceptable latency (Time of Report Transmission minus"
+                  " Time of Message Reception for Position)",
+                  max_value_s_});
 }
+
 }

@@ -2,6 +2,7 @@
 include("${CMAKE_CURRENT_LIST_DIR}/base/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/detection/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/position/CMakeLists.txt")
+include("${CMAKE_CURRENT_LIST_DIR}/latency/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/speed/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/trackangle/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/identification/CMakeLists.txt")

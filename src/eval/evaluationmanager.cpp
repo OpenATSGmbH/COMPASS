@@ -498,6 +498,15 @@ void EvaluationManager::addVariables (const std::string dbcontent_name, dbConten
         read_set.add(dbcontent_man.getVariable("CAT062", dbcontent_vars::var_cat062_fl_measured_));
     }
 
+    // CAT021 time stamps for the ADS-B Latency requirement
+    if (dbcontent_name == "CAT021")
+    {
+        if (dbcontent_man.canGetVariable("CAT021", dbcontent_vars::var_cat021_tomr_position_))
+            read_set.add(dbcontent_man.getVariable("CAT021", dbcontent_vars::var_cat021_tomr_position_));
+        if (dbcontent_man.canGetVariable("CAT021", dbcontent_vars::var_cat021_tort_))
+            read_set.add(dbcontent_man.getVariable("CAT021", dbcontent_vars::var_cat021_tort_));
+    }
+
     // m3a
     read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
 

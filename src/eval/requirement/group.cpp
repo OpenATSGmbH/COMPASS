@@ -25,12 +25,14 @@
 #include "eval/requirement/position/radarazimuthconfig.h"
 #include "eval/requirement/position/alongconfig.h"
 #include "eval/requirement/position/acrossconfig.h"
-#include "eval/requirement/position/latencyconfig.h"
+#include "eval/requirement/latency/latencyconfig.h"
+#include "eval/requirement/latency/adsblatencyconfig.h"
 #include "eval/requirement/speed/speedconfig.h"
 #include "eval/requirement/trackangle/trackangleconfig.h"
 #include "eval/requirement/identification/correctconfig.h"
 #include "eval/requirement/identification/falseconfig.h"
 #include "eval/requirement/identification/correct_period.h"
+#include "eval/requirement/identification/change_delay.h"
 #include "eval/requirement/mode_a/presentconfig.h"
 #include "eval/requirement/mode_a/falseconfig.h"
 #include "eval/requirement/mode_c/falseconfig.h"
@@ -61,6 +63,7 @@ const std::map<std::string, std::string> Group::requirement_type_mapping_
     {"EvaluationRequirementIdentificationCorrectConfig", "Identification Correct"},
     {"EvaluationRequirementIdentificationFalseConfig", "Identification False"},
     {"EvaluationRequirementIdentificationCorrectPeriodConfig", "Identification Correct (Periods)"},
+    {"EvaluationRequirementIdentificationChangeDelayConfig", "Identification Change Delay"},
     {"EvaluationRequirementModeAPresentConfig", "Mode 3/A Present"},
     {"EvaluationRequirementModeAFalseConfig", "Mode 3/A False"},
     {"EvaluationRequirementModeCPresentConfig", "Mode C Present"},
@@ -74,6 +77,7 @@ const std::map<std::string, std::string> Group::requirement_type_mapping_
     {"EvaluationRequirementPositionAlongConfig", "Position Along"},
     {"EvaluationRequirementPositionAcrossConfig", "Position Across"},
     {"EvaluationRequirementPositionLatencyConfig", "Position Latency"},
+    {"EvaluationRequirementADSBLatencyConfig", "ADS-B Latency"},
     {"EvaluationRequirementSpeedConfig", "Speed"},
     {"EvaluationRequirementTrackAngleConfig", "TrackAngle"},
     {"EvaluationRequirementMoMLongAccConfig", "MoM Longitudinal Acceleration Correct"},
@@ -247,6 +251,16 @@ void Group::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(!hasRequirementConfig(config->name()));
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
+    else if (class_name == "EvaluationRequirementADSBLatencyConfig")
+    {
+        EvaluationRequirement::ADSBLatencyConfig* config =
+                new EvaluationRequirement::ADSBLatencyConfig(
+                    child_json, this);
+        logdbg << "adding config " << config->name();
+
+        traced_assert(!hasRequirementConfig(config->name()));
+        configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
+    }
     else if (class_name == "EvaluationRequirementSpeedConfig")
     {
         EvaluationRequirement::SpeedConfig* config =
@@ -291,6 +305,16 @@ void Group::generateSubConfigurable(nlohmann::json& child_json)
     {
         EvaluationRequirement::IdentificationCorrectPeriodConfig* config =
                 new EvaluationRequirement::IdentificationCorrectPeriodConfig(
+                    child_json, this);
+        logdbg << "adding config " << config->name();
+
+        traced_assert(!hasRequirementConfig(config->name()));
+        configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
+    }
+    else if (class_name == "EvaluationRequirementIdentificationChangeDelayConfig")
+    {
+        EvaluationRequirement::IdentificationChangeDelayConfig* config =
+                new EvaluationRequirement::IdentificationChangeDelayConfig(
                     child_json, this);
         logdbg << "adding config " << config->name();
 
