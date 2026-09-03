@@ -102,6 +102,9 @@ public:
     ReconstructorTask& reconstructReferencesTask() const;
     AnalyzeDataSourceTask& analyzeMLATDataSourceTask() const;
     AnalyzeDataSourceTask& analyzeADSBDataSourceTask() const;
+    AnalyzeDataSourceTask& analyzeSMRDataSourceTask() const;
+    /// Analyze task bound to the DSType ("MLAT", "ADSB", "SMR"), nullptr if unknown.
+    AnalyzeDataSourceTask* analyzeDataSourceTask(const std::string& ds_type) const;
 
     TaskResultsWidget* widget();
 
@@ -170,6 +173,7 @@ protected:
     std::unique_ptr<ReconstructorTask> reconstruct_references_task_;
     std::unique_ptr<AnalyzeDataSourceTask> analyze_mlat_data_source_task_;
     std::unique_ptr<AnalyzeDataSourceTask> analyze_adsb_data_source_task_;
+    std::unique_ptr<AnalyzeDataSourceTask> analyze_smr_data_source_task_;
 
     std::map<std::string, Task*> tasks_;
 

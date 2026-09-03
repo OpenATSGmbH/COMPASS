@@ -162,6 +162,14 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(analyze_adsb_data_source_task_);
         addTask(class_name, analyze_adsb_data_source_task_.get());
     }
+    else if (class_name == "AnalyzeSMRDataSourceTask")
+    {
+        traced_assert(!analyze_smr_data_source_task_);
+        analyze_smr_data_source_task_.reset(
+            new AnalyzeDataSourceTask(child_json, this, "SMR", "AnalyzeSMRDataSourceTask"));
+        traced_assert(analyze_smr_data_source_task_);
+        addTask(class_name, analyze_smr_data_source_task_.get());
+    }
     else if (class_name == "ReportExport")
     {
         traced_assert(!report_export_);
@@ -250,6 +258,13 @@ void TaskManager::checkSubConfigurables()
         traced_assert(analyze_adsb_data_source_task_);
     }
 
+    if (!analyze_smr_data_source_task_)
+    {
+        generateSubConfigurableFromConfig("AnalyzeSMRDataSourceTask",
+                                          "AnalyzeSMRDataSourceTask0");
+        traced_assert(analyze_smr_data_source_task_);
+    }
+
     if (!report_export_)
     {
         generateSubConfigurableFromConfig("ReportExport", "ReportExport0");
@@ -295,6 +310,7 @@ void TaskManager::shutdown()
     reconstruct_references_task_ = nullptr;
     analyze_mlat_data_source_task_ = nullptr;
     analyze_adsb_data_source_task_ = nullptr;
+    analyze_smr_data_source_task_ = nullptr;
 }
 
 /**
@@ -387,6 +403,27 @@ AnalyzeDataSourceTask& TaskManager::analyzeADSBDataSourceTask() const
 {
     traced_assert(analyze_adsb_data_source_task_);
     return *analyze_adsb_data_source_task_;
+}
+
+/**
+ */
+AnalyzeDataSourceTask& TaskManager::analyzeSMRDataSourceTask() const
+{
+    traced_assert(analyze_smr_data_source_task_);
+    return *analyze_smr_data_source_task_;
+}
+
+/**
+ */
+AnalyzeDataSourceTask* TaskManager::analyzeDataSourceTask(const std::string& ds_type) const
+{
+    if (ds_type == "MLAT")
+        return analyze_mlat_data_source_task_.get();
+    if (ds_type == "ADSB")
+        return analyze_adsb_data_source_task_.get();
+    if (ds_type == "SMR")
+        return analyze_smr_data_source_task_.get();
+    return nullptr;
 }
 
 /**

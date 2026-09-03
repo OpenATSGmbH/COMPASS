@@ -44,11 +44,16 @@ class MLATCoverageInspectorSettings;
 class ADSBDataItemInspectorSettings;
 class ADSBCoverageInspectorSettings;
 
+class SMRDataItemInspectorSettings;
+class SMRCoverageInspectorSettings;
+
 #if USE_EXPERIMENTAL_SOURCE == true
 class MLATAccuracyInspectorSettings;
 class MLATRUCoverageInspectorSettings;
 class MLATRUEffectInspectorSettings;
 class ADSBAccuracyInspectorSettings;
+class SMRAccuracyInspectorSettings;
+class SMRUnassociatedInspectorSettings;
 #endif
 
 namespace ResultReport { class Section; }
@@ -58,9 +63,9 @@ class AnalyzeDataSourceTask : public Task, public Configurable
     Q_OBJECT
 
 public:
-    /// `ds_type_default` binds this task instance to a DSType ("MLAT" or "ADSB"):
-    /// it sets the default for the `ds_type` parameter and selects which
-    /// inspector set is registered. `object_name` distinguishes the two
+    /// `ds_type_default` binds this task instance to a DSType ("MLAT", "ADSB"
+    /// or "SMR"): it sets the default for the `ds_type` parameter and selects
+    /// which inspector set is registered. `object_name` distinguishes the
     /// instances (one per DSType menu entry). The defaults preserve the
     /// original MLAT-only behavior.
     AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent,
@@ -83,7 +88,7 @@ public:
 
     void showDialog();
 
-    /// DSType this task instance analyzes ("MLAT" or "ADSB").
+    /// DSType this task instance analyzes ("MLAT", "ADSB" or "SMR").
     const std::string& dsType() const { return ds_type_; }
 
     /// Per-data-source enable flags (test side).
@@ -94,6 +99,23 @@ public:
 
     /// IDs of selected test data sources of `ds_type_` (filters to existing DS only).
     std::set<unsigned int> selectedDataSourceIDs() const;
+
+    /// True if the data source qualifies as a test source of this task's
+    /// DSType. MLAT and ADSB compare the context DSType. SMR has no DSType
+    /// string of its own: an SMR is always a Radar data source, so the rule is
+    /// context DSType Radar with CAT010 data present (asterixInfo).
+    bool dataSourceMatches(unsigned int ds_id) const;
+
+    /// All existing data sources matching this DSType, before the per-source
+    /// enable flag is applied.
+    std::set<unsigned int> testDataSourceCandidateIDs() const;
+
+    /// Human-readable description of the candidate rule, e.g. "data sources of
+    /// type MLAT" or "Radar data sources with CAT010 data" (for the dialog).
+    std::string testDataSourceRequirementText() const;
+
+    /// True if the cumulative ASTERIX info of the data source has the category.
+    bool dataSourceHasCategory(unsigned int ds_id, unsigned int cat) const;
 
     /// Common test-side line ID (0..3, displayed as L1..L4).
     unsigned int lineIDTst() const { return line_id_tst_; }
@@ -196,11 +218,16 @@ public:
     ADSBDataItemInspectorSettings& adsbDataItemSettings() const;
     ADSBCoverageInspectorSettings& adsbCoverageSettings() const;
 
+    SMRDataItemInspectorSettings& smrDataItemSettings() const;
+    SMRCoverageInspectorSettings& smrCoverageSettings() const;
+
 #if USE_EXPERIMENTAL_SOURCE == true
     MLATAccuracyInspectorSettings&   accuracySettings()   const;
     MLATRUCoverageInspectorSettings& ruCoverageSettings() const;
     MLATRUEffectInspectorSettings&   ruEffectSettings()   const;
     ADSBAccuracyInspectorSettings&   adsbAccuracySettings() const;
+    SMRAccuracyInspectorSettings&     smrAccuracySettings() const;
+    SMRUnassociatedInspectorSettings& smrUnassociatedSettings() const;
 #endif
 
     /// True if the active license enables Professional features.
@@ -244,11 +271,16 @@ private:
     std::unique_ptr<ADSBDataItemInspectorSettings> adsb_data_item_settings_;
     std::unique_ptr<ADSBCoverageInspectorSettings> adsb_coverage_settings_;
 
+    std::unique_ptr<SMRDataItemInspectorSettings> smr_data_item_settings_;
+    std::unique_ptr<SMRCoverageInspectorSettings> smr_coverage_settings_;
+
 #if USE_EXPERIMENTAL_SOURCE == true
     std::unique_ptr<MLATAccuracyInspectorSettings>   accuracy_settings_;
     std::unique_ptr<MLATRUCoverageInspectorSettings> ru_coverage_settings_;
     std::unique_ptr<MLATRUEffectInspectorSettings>   ru_effect_settings_;
     std::unique_ptr<ADSBAccuracyInspectorSettings>   adsb_accuracy_settings_;
+    std::unique_ptr<SMRAccuracyInspectorSettings>     smr_accuracy_settings_;
+    std::unique_ptr<SMRUnassociatedInspectorSettings> smr_unassociated_settings_;
 #endif
 
     std::vector<std::unique_ptr<DataSourceInspectorBase>> inspectors_;

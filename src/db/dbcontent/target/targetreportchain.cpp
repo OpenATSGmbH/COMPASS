@@ -809,6 +809,79 @@ boost::optional<unsigned char> Chain::trackCoasting(const DataID& id) const
     return vec.get(index_ext);
 }
 
+namespace
+{
+// Direct (non-meta) variable of the chain's dbcontent at the given buffer index.
+template <typename T>
+boost::optional<T> chainVar(const std::shared_ptr<dbContent::DBContentAccessor>& accessor,
+                            const std::string& dbcontent_name,
+                            const Property& var,
+                            unsigned int index_ext)
+{
+    if (!accessor->hasVar<T>(dbcontent_name, var))
+        return {};
+
+    NullableVector<T>& vec = accessor->getVar<T>(dbcontent_name, var);
+
+    if (vec.isNull(index_ext))
+        return {};
+
+    return vec.get(index_ext);
+}
+}
+
+boost::optional<double> Chain::radarRange(const DataID& id) const // NM
+{
+    return chainVar<double>(accessor_, dbcontent_name_, dbcontent_vars::var_radar_range_,
+                            indexFromDataID(id).idx_external);
+}
+
+boost::optional<double> Chain::radarAzimuth(const DataID& id) const // deg
+{
+    return chainVar<double>(accessor_, dbcontent_name_, dbcontent_vars::var_radar_azimuth_,
+                            indexFromDataID(id).idx_external);
+}
+
+boost::optional<unsigned char> Chain::detectionType(const DataID& id) const
+{
+    return chainVar<unsigned char>(accessor_, dbcontent_name_,
+                                   dbcontent_vars::var_cat010_detection_type_,
+                                   indexFromDataID(id).idx_external);
+}
+
+boost::optional<bool> Chain::slantRangeCorrected(const DataID& id) const
+{
+    return chainVar<bool>(accessor_, dbcontent_name_,
+                          dbcontent_vars::var_cat010_slant_range_corrected_,
+                          indexFromDataID(id).idx_external);
+}
+
+boost::optional<float> Chain::targetLength(const DataID& id) const // m
+{
+    return chainVar<float>(accessor_, dbcontent_name_, dbcontent_vars::var_cat010_target_length_,
+                           indexFromDataID(id).idx_external);
+}
+
+boost::optional<float> Chain::targetWidth(const DataID& id) const // m
+{
+    return chainVar<float>(accessor_, dbcontent_name_, dbcontent_vars::var_cat010_target_width_,
+                           indexFromDataID(id).idx_external);
+}
+
+boost::optional<double> Chain::targetOrientation(const DataID& id) const // deg
+{
+    return chainVar<double>(accessor_, dbcontent_name_,
+                            dbcontent_vars::var_cat010_target_orientation_,
+                            indexFromDataID(id).idx_external);
+}
+
+boost::optional<unsigned char> Chain::psrAmplitude(const DataID& id) const
+{
+    return chainVar<unsigned char>(accessor_, dbcontent_name_,
+                                   dbcontent_vars::var_cat010_psr_amplitude_,
+                                   indexFromDataID(id).idx_external);
+}
+
 std::pair<bool, float> Chain::estimateAltitude (const boost::posix_time::ptime& timestamp,
                                                 unsigned int index_internal) const
 {

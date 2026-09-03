@@ -52,6 +52,13 @@ class VariableSet;
  * have separate test chains in different dbcontents, kept apart so that
  * cat-specific accessors (e.g. I020/500 std-devs) remain meaningful.
  *
+ * Test rows without a UTN (not associated by the reconstruction) are kept as
+ * an unassociated pool of buffer indices per dbcontent, for inspectors that
+ * analyze what the reconstruction could not attribute to a target (SMR).
+ *
+ * CAT010 Start of Update Cycle messages (I010/000 type 002) of the selected
+ * sources are extracted from the loaded test buffer as per-source scan cycles.
+ *
  * The dataset is general: the caller supplies the test dbcontents to load
  * and the set of selected data source IDs to filter by.
  */
@@ -81,6 +88,15 @@ public:
         bool limit_by_sectors = false;
         std::vector<std::shared_ptr<SectorLayer>> sectors;
 
+        // Reports of these data sources count as on ground even without a
+        // ground bit or a reconstructed target (ground-only radars, i.e. SMR).
+        std::set<unsigned int> ground_only_ds_ids;
+
+        // Keep only CAT010 rows with detection type PSR (I010/020 TYP 3), so a
+        // CAT010 source that also carries MLAT reports contributes SMR
+        // reports only.
+        bool smr_only = false;
+
         bool active() const
         {
             return ground_only || use_min_fl || use_max_fl
@@ -93,6 +109,11 @@ public:
 
     /// Set the per-report scope filter; must be called before `load()`.
     void setScopeFilter(const ScopeFilter& filter) { scope_filter_ = filter; }
+
+    /// When false, `load()` succeeds without any UTN that has both reference
+    /// and test data, as long as test rows (associated or not) were loaded.
+    /// Default true. Must be called before `load()`.
+    void setRequireReference(bool value) { require_reference_ = value; }
 
     /**
      * Configure load filters and block-load the requested dbcontents.
@@ -112,7 +133,8 @@ public:
               const std::set<std::string>& test_dbcontents,
               std::string& error_out);
 
-    /// True if at least one UTN has both reference and test data.
+    /// True if at least one UTN has both reference and test data, or, when
+    /// the reference is not required, if any test rows were loaded.
     bool hasUsableData() const;
 
     /// All UTNs that have any data in the dataset.
@@ -137,11 +159,25 @@ public:
     /// Reference content size (number of RefTraj rows folded in, before per-UTN filtering).
     unsigned int numReferenceRecordsTotal() const { return num_ref_records_total_; }
 
-    /// Total test record count across all dbcontents.
+    /// Total associated test record count across all dbcontents.
     unsigned int numTestRecordsTotal() const { return num_tst_records_total_; }
 
     /// Number of (utn, dbcontent) test chains.
     unsigned int numTestChains() const;
+
+    /// Buffer row indices (into the loaded buffer of `dbcontent_name`) of
+    /// in-scope test target reports without a UTN. Empty if none.
+    const std::vector<unsigned int>& unassociatedIndices(const std::string& dbcontent_name) const;
+
+    /// Total unassociated test record count across all dbcontents.
+    unsigned int numUnassociatedRecordsTotal() const { return num_unassoc_records_total_; }
+
+    /// Number of CAT010 rows that were skipped by the SMR-only filter.
+    unsigned int numNonPSRRecordsSkipped() const { return num_non_psr_skipped_; }
+
+    /// Accessor over the loaded buffers, for reading raw columns of pool rows
+    /// (unassociated reports) by buffer index.
+    std::shared_ptr<dbContent::DBContentAccessor> accessor() const { return accessor_; }
 
     /// Interpolate the reference position on `utn`'s RefTraj at `timestamp`.
     /// Returns boost::none if no RefTraj data exists for `utn` or the timestamp
@@ -156,6 +192,13 @@ public:
                      boost::posix_time::ptime timestamp,
                      boost::posix_time::time_duration d_max,
                      boost::optional<dbContent::TargetPositionAccuracy>* ref_pos_acc_out = nullptr) const;
+
+    /// Reference track angle (deg, true north) at `timestamp`, from the
+    /// bracketing reference update, under the same `d_max` rule as
+    /// `mappedRefPos`. boost::none if not available.
+    boost::optional<float> mappedRefTrackAngle(unsigned int utn,
+                                               boost::posix_time::ptime timestamp,
+                                               boost::posix_time::time_duration d_max) const;
 
     /// Approximate center latitude of the loaded reference data (used for
     /// degree/meter conversion in the 3D grid). 0.0 if unknown.
@@ -186,6 +229,14 @@ public:
     const std::vector<boost::posix_time::ptime>& statusCycles() const
     { return status_cycles_; }
 
+    /// Per-source scan cycles: sorted, deduplicated timestamps of the CAT010
+    /// Start of Update Cycle messages (I010/000 type 002) of a selected test
+    /// data source, taken from the loaded test buffer.
+    bool hasStatusCycles(unsigned int ds_id) const;
+    const std::vector<boost::posix_time::ptime>& statusCycles(unsigned int ds_id) const;
+    const std::map<unsigned int, std::vector<boost::posix_time::ptime>>& statusCyclesByDS() const
+    { return status_cycles_by_ds_; }
+
 private:
     void buildChains(const std::set<unsigned int>& selected_ds_ids,
                      const std::set<unsigned int>& ref_ds_ids,
@@ -198,13 +249,22 @@ private:
     /// True if the target's reconstructed category is ground-only (cached).
     bool targetGroundOnly(unsigned int utn) const;
 
+    /// Reference data mapping at `timestamp` when its bracketing updates lie
+    /// within `d_max`, else boost::none.
+    boost::optional<dbContent::TargetReport::DataMapping>
+        refMappingWithin(unsigned int utn,
+                         boost::posix_time::ptime timestamp,
+                         boost::posix_time::time_duration d_max) const;
+
     /// Build the per-DBContent read set (all variables the inspectors consume:
     /// position, altitude, ground bit, acad/acid, XY std-dev, ADS-B quality
-    /// indicators, contributing receivers). Mirrors EvaluationManager::addVariables.
+    /// indicators, contributing receivers, CAT010 SMR items).
+    /// Mirrors EvaluationManager::addVariables.
     dbContent::VariableSet buildReadSet(const std::string& dbcontent_name) const;
 
     COMPASS& compass_;
     ScopeFilter scope_filter_;
+    bool require_reference_ = true;
     mutable std::map<unsigned int, bool> ground_only_cache_;
     std::shared_ptr<dbContent::DBContentAccessor> accessor_;
 
@@ -216,11 +276,16 @@ private:
     std::map<std::pair<unsigned int, std::string>,
              std::unique_ptr<dbContent::TargetReport::Chain>> tst_chains_;
 
+    /// Map keyed by dbcontent_name -> buffer indices of unassociated test rows.
+    std::map<std::string, std::vector<unsigned int>> unassociated_idx_;
+
     std::set<unsigned int> utns_;
     std::set<std::string>  tst_dbcontents_present_;
 
-    unsigned int num_ref_records_total_ = 0;
-    unsigned int num_tst_records_total_ = 0;
+    unsigned int num_ref_records_total_     = 0;
+    unsigned int num_tst_records_total_     = 0;
+    unsigned int num_unassoc_records_total_ = 0;
+    unsigned int num_non_psr_skipped_       = 0;
 
     double center_lat_deg_ = 0.0;
     double min_lat_ = 0.0, max_lat_ = 0.0;
@@ -231,4 +296,5 @@ private:
     bool   has_altitude_extent_ = false;
 
     std::vector<boost::posix_time::ptime> status_cycles_;
+    std::map<unsigned int, std::vector<boost::posix_time::ptime>> status_cycles_by_ds_;
 };

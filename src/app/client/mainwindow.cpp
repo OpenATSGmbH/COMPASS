@@ -517,6 +517,14 @@ void MainWindow::createMenus ()
             this, &MainWindow::analyzeADSBDataSourceSlot);
     analyze_menu_->addAction(analyze_adsb_action);
 
+    QAction* analyze_smr_action = new QAction("SMR");
+    analyze_smr_action->setToolTip(
+        "Analyze one or more SMR (CAT010) data sources from multiple angles "
+        "(data items, scan-based sensor coverage, position accuracy, unassociated target reports)");
+    connect(analyze_smr_action, &QAction::triggered,
+            this, &MainWindow::analyzeSMRDataSourceSlot);
+    analyze_menu_->addAction(analyze_smr_action);
+
     QAction* eval_action = new QAction("Evaluate");
     eval_action->setToolTip("Evaluate test against reference data according to defined standards");
     connect(eval_action, &QAction::triggered, this, &MainWindow::evaluateSlot);
@@ -1141,6 +1149,13 @@ void MainWindow::analyzeADSBDataSourceSlot()
     loginf;
 
     compass_.taskManager().analyzeADSBDataSourceTask().showDialog();
+}
+
+void MainWindow::analyzeSMRDataSourceSlot()
+{
+    loginf;
+
+    compass_.taskManager().analyzeSMRDataSourceTask().showDialog();
 }
 
 void MainWindow::evaluateSlot()

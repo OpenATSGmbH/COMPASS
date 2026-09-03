@@ -244,6 +244,17 @@ public:
 
     boost::optional<unsigned char> trackCoasting(const DataID& id) const;
 
+    // Radar polar position (I0xx/040) and CAT010 SMR items. Empty optional when
+    // the dbcontent does not carry the variable or the record is null.
+    boost::optional<double> radarRange(const DataID& id) const;    // NM
+    boost::optional<double> radarAzimuth(const DataID& id) const;  // deg
+    boost::optional<unsigned char> detectionType(const DataID& id) const; // CAT010 I010/020 TYP
+    boost::optional<bool> slantRangeCorrected(const DataID& id) const;    // CAT010 I010/020 TCC
+    boost::optional<float> targetLength(const DataID& id) const;          // m, I010/270
+    boost::optional<float> targetWidth(const DataID& id) const;           // m, I010/270
+    boost::optional<double> targetOrientation(const DataID& id) const;    // deg, I010/270
+    boost::optional<unsigned char> psrAmplitude(const DataID& id) const;  // I010/131
+
     Index indexFromDataID(const DataID& id) const;
     boost::posix_time::ptime timestampFromDataID(const DataID& id) const;
 

@@ -171,6 +171,14 @@ namespace dbcontent_vars
     inline const Property var_radar_azimuth_        {"Azimuth", PropertyDataType::DOUBLE};
     inline const Property var_radar_altitude_       {"Mode C Code", PropertyDataType::FLOAT};
 
+    // CAT010 SMR items (I010/020 descriptor flags, I010/270 target size, I010/131 amplitude)
+    inline const Property var_cat010_detection_type_        {"Detection Type", PropertyDataType::UCHAR};
+    inline const Property var_cat010_slant_range_corrected_ {"Slant Range Corrected", PropertyDataType::BOOL};
+    inline const Property var_cat010_target_length_         {"Target Length", PropertyDataType::FLOAT};
+    inline const Property var_cat010_target_width_          {"Target Width", PropertyDataType::FLOAT};
+    inline const Property var_cat010_target_orientation_    {"Target Orientation", PropertyDataType::DOUBLE};
+    inline const Property var_cat010_psr_amplitude_         {"PSR Amplitude", PropertyDataType::UCHAR};
+
     inline const Property var_cat020_contrib_recv_  {"Contributing Receivers", PropertyDataType::JSON};
 
     inline const Property var_cat021_toa_position_  {"ToA Position", PropertyDataType::FLOAT};

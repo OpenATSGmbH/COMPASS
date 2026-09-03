@@ -57,9 +57,13 @@ bool RTCommandGetAnalyzeInspectors::run_impl()
         return false;
     }
 
-    AnalyzeDataSourceTask& task = (ds_type_ == "ADSB")
-        ? s_compass->taskManager().analyzeADSBDataSourceTask()
-        : s_compass->taskManager().analyzeMLATDataSourceTask();
+    AnalyzeDataSourceTask* task_ptr = s_compass->taskManager().analyzeDataSourceTask(ds_type_);
+    if (!task_ptr)
+    {
+        setResultMessage("Unknown DSType '" + ds_type_ + "' (expected MLAT, ADSB or SMR)");
+        return false;
+    }
+    AnalyzeDataSourceTask& task = *task_ptr;
 
     if (task.dsType() != ds_type_)
     {
@@ -73,9 +77,13 @@ bool RTCommandGetAnalyzeInspectors::run_impl()
 
 bool RTCommandGetAnalyzeInspectors::checkResult_impl()
 {
-    AnalyzeDataSourceTask& task = (ds_type_ == "ADSB")
-        ? s_compass->taskManager().analyzeADSBDataSourceTask()
-        : s_compass->taskManager().analyzeMLATDataSourceTask();
+    AnalyzeDataSourceTask* task_ptr = s_compass->taskManager().analyzeDataSourceTask(ds_type_);
+    if (!task_ptr)
+    {
+        setResultMessage("Unknown DSType '" + ds_type_ + "'");
+        return false;
+    }
+    AnalyzeDataSourceTask& task = *task_ptr;
 
     nlohmann::json inspectors_array = nlohmann::json::array();
 

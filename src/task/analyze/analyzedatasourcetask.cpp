@@ -26,6 +26,8 @@
 #include "mlatcoverageinspector.h"
 #include "adsbdataiteminspector.h"
 #include "adsbcoverageinspector.h"
+#include "smrdataiteminspector.h"
+#include "smrcoverageinspector.h"
 
 #include <array>
 #include <cmath>
@@ -35,6 +37,8 @@
 #include "mlatrucoverageinspector.h"
 #include "mlatrueffectinspector.h"
 #include "adsbaccuracyinspector.h"
+#include "smraccuracyinspector.h"
+#include "smrunassociatedinspector.h"
 #endif
 
 #include "compass.h"
@@ -139,7 +143,31 @@ void AnalyzeDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
         adsb_coverage_settings_.reset(new ADSBCoverageInspectorSettings(child_json, this));
         traced_assert(adsb_coverage_settings_);
     }
+    else if (class_name == "SMRDataItemInspectorSettings")
+    {
+        traced_assert(!smr_data_item_settings_);
+        smr_data_item_settings_.reset(new SMRDataItemInspectorSettings(child_json, this));
+        traced_assert(smr_data_item_settings_);
+    }
+    else if (class_name == "SMRCoverageInspectorSettings")
+    {
+        traced_assert(!smr_coverage_settings_);
+        smr_coverage_settings_.reset(new SMRCoverageInspectorSettings(child_json, this));
+        traced_assert(smr_coverage_settings_);
+    }
 #if USE_EXPERIMENTAL_SOURCE == true
+    else if (class_name == "SMRAccuracyInspectorSettings")
+    {
+        traced_assert(!smr_accuracy_settings_);
+        smr_accuracy_settings_.reset(new SMRAccuracyInspectorSettings(child_json, this));
+        traced_assert(smr_accuracy_settings_);
+    }
+    else if (class_name == "SMRUnassociatedInspectorSettings")
+    {
+        traced_assert(!smr_unassociated_settings_);
+        smr_unassociated_settings_.reset(new SMRUnassociatedInspectorSettings(child_json, this));
+        traced_assert(smr_unassociated_settings_);
+    }
     else if (class_name == "MLATAccuracyInspectorSettings")
     {
         traced_assert(!accuracy_settings_);
@@ -194,6 +222,32 @@ void AnalyzeDataSourceTask::checkSubConfigurables()
             generateSubConfigurableFromConfig("ADSBAccuracyInspectorSettings",
                                               "ADSBAccuracyInspectorSettings0");
         traced_assert(adsb_accuracy_settings_);
+#endif
+        return;
+    }
+
+    if (ds_type_ == "SMR")
+    {
+        if (!smr_data_item_settings_)
+            generateSubConfigurableFromConfig("SMRDataItemInspectorSettings",
+                                              "SMRDataItemInspectorSettings0");
+        traced_assert(smr_data_item_settings_);
+
+        if (!smr_coverage_settings_)
+            generateSubConfigurableFromConfig("SMRCoverageInspectorSettings",
+                                              "SMRCoverageInspectorSettings0");
+        traced_assert(smr_coverage_settings_);
+
+#if USE_EXPERIMENTAL_SOURCE == true
+        if (!smr_accuracy_settings_)
+            generateSubConfigurableFromConfig("SMRAccuracyInspectorSettings",
+                                              "SMRAccuracyInspectorSettings0");
+        traced_assert(smr_accuracy_settings_);
+
+        if (!smr_unassociated_settings_)
+            generateSubConfigurableFromConfig("SMRUnassociatedInspectorSettings",
+                                              "SMRUnassociatedInspectorSettings0");
+        traced_assert(smr_unassociated_settings_);
 #endif
         return;
     }
@@ -289,6 +343,18 @@ void AnalyzeDataSourceTask::registerInspectors()
         return;
     }
 
+    if (ds_type_ == "SMR")
+    {
+        inspectors_.emplace_back(new SMRDataItemInspector(*this, *smr_data_item_settings_));
+        inspectors_.emplace_back(new SMRCoverageInspector(*this, *smr_coverage_settings_));
+
+#if USE_EXPERIMENTAL_SOURCE == true
+        inspectors_.emplace_back(new SMRAccuracyInspector(*this, *smr_accuracy_settings_));
+        inspectors_.emplace_back(new SMRUnassociatedInspector(*this, *smr_unassociated_settings_));
+#endif
+        return;
+    }
+
     inspectors_.emplace_back(new MLATDataItemInspector(*this, *data_item_settings_));
     inspectors_.emplace_back(new MLATCoverageInspector(*this, *coverage_settings_));
 
@@ -333,19 +399,55 @@ void AnalyzeDataSourceTask::useDataSourceLine(unsigned int ds_id, unsigned int l
 std::set<unsigned int> AnalyzeDataSourceTask::selectedDataSourceIDs() const
 {
     std::set<unsigned int> ids;
-    auto& ctx = compass().dbContextManager();
-    auto types = ctx.dsTypes();
-
-    for (auto ds_id : ctx.allDataSourceIds())
+    for (auto ds_id : testDataSourceCandidateIDs())
     {
-        auto it = types.find(ds_id);
-        if (it == types.end() || it->second != ds_type_)
-            continue;
-        if (!useDataSource(ds_id))
-            continue;
-        ids.insert(ds_id);
+        if (useDataSource(ds_id))
+            ids.insert(ds_id);
     }
     return ids;
+}
+
+bool AnalyzeDataSourceTask::dataSourceHasCategory(unsigned int ds_id, unsigned int cat) const
+{
+    const auto& info_map = compass().dbContextManager().asterixInfo();
+    auto it = info_map.find(ds_id);
+    if (it == info_map.end())
+        return false;
+    return it->second.count(cat) > 0;
+}
+
+bool AnalyzeDataSourceTask::dataSourceMatches(unsigned int ds_id) const
+{
+    auto& ctx = compass().dbContextManager();
+    const auto* ds = ctx.dataSource(ds_id);
+    if (!ds)
+        return false;
+
+    // An SMR is always a Radar data source in the Data Context. There is no
+    // "SMR" DSType string, so the rule is DSType Radar with CAT010 data.
+    if (ds_type_ == "SMR")
+        return ds->dsType() == "Radar" && dataSourceHasCategory(ds_id, 10);
+
+    return ds->dsType() == ds_type_;
+}
+
+std::set<unsigned int> AnalyzeDataSourceTask::testDataSourceCandidateIDs() const
+{
+    std::set<unsigned int> ids;
+    auto& ctx = compass().dbContextManager();
+    for (auto ds_id : ctx.allDataSourceIds())
+    {
+        if (dataSourceMatches(ds_id))
+            ids.insert(ds_id);
+    }
+    return ids;
+}
+
+std::string AnalyzeDataSourceTask::testDataSourceRequirementText() const
+{
+    if (ds_type_ == "SMR")
+        return "Radar data sources with CAT010 data";
+    return "data sources of type " + ds_type_;
 }
 
 void AnalyzeDataSourceTask::setLineIDTst(unsigned int line_id)
@@ -587,7 +689,31 @@ ADSBCoverageInspectorSettings& AnalyzeDataSourceTask::adsbCoverageSettings() con
     return *adsb_coverage_settings_;
 }
 
+SMRDataItemInspectorSettings& AnalyzeDataSourceTask::smrDataItemSettings() const
+{
+    traced_assert(smr_data_item_settings_);
+    return *smr_data_item_settings_;
+}
+
+SMRCoverageInspectorSettings& AnalyzeDataSourceTask::smrCoverageSettings() const
+{
+    traced_assert(smr_coverage_settings_);
+    return *smr_coverage_settings_;
+}
+
 #if USE_EXPERIMENTAL_SOURCE == true
+SMRAccuracyInspectorSettings& AnalyzeDataSourceTask::smrAccuracySettings() const
+{
+    traced_assert(smr_accuracy_settings_);
+    return *smr_accuracy_settings_;
+}
+
+SMRUnassociatedInspectorSettings& AnalyzeDataSourceTask::smrUnassociatedSettings() const
+{
+    traced_assert(smr_unassociated_settings_);
+    return *smr_unassociated_settings_;
+}
+
 MLATAccuracyInspectorSettings& AnalyzeDataSourceTask::accuracySettings() const
 {
     traced_assert(accuracy_settings_);
@@ -728,7 +854,8 @@ void AnalyzeDataSourceTask::run()
     // Determine which inspectors will actually run, and what test dbcontents they need.
     std::vector<DataSourceInspectorBase*> active_inspectors;
     std::set<std::string> tst_dbcontents;
-    bool any_needs_dataset = false;
+    bool any_needs_dataset   = false;
+    bool any_needs_reference = false;
 
     for (const auto& ins : inspectors_)
     {
@@ -748,6 +875,8 @@ void AnalyzeDataSourceTask::run()
         if (ins->requiresLoadedDataset())
         {
             any_needs_dataset = true;
+            if (ins->requiresReferenceTrajectory())
+                any_needs_reference = true;
             for (const auto& dbc : ins->testDBContentNames())
                 tst_dbcontents.insert(dbc);
         }
@@ -882,14 +1011,30 @@ void AnalyzeDataSourceTask::run()
         scope_filter.use_max_fl  = use_max_fl_;
         scope_filter.max_fl      = max_fl_;
         scope_filter.limit_by_sectors = limit_by_sectors_;
-        if (limit_by_sectors_)
         {
             auto& ctx = compass().dbContextManager();
-            for (const auto& name : selectedSectorLayers())
-                if (ctx.hasSectorLayer(name))
-                    scope_filter.sectors.push_back(ctx.sectorLayer(name));
+
+            if (limit_by_sectors_)
+            {
+                for (const auto& name : selectedSectorLayers())
+                    if (ctx.hasSectorLayer(name))
+                        scope_filter.sectors.push_back(ctx.sectorLayer(name));
+            }
+
+            // Reports of ground-only data sources (SMR) carry no ground bit
+            // and count as on ground.
+            for (auto ds_id : selectedDataSourceIDs())
+            {
+                const auto* ds = ctx.dataSource(ds_id);
+                if (ds && ds->groundOnly())
+                    scope_filter.ground_only_ds_ids.insert(ds_id);
+            }
         }
+        // SMR: keep only PSR reports of CAT010 sources that also carry MLAT reports.
+        scope_filter.smr_only = (ds_type_ == "SMR");
+
         dataset->setScopeFilter(scope_filter);
+        dataset->setRequireReference(any_needs_reference);
 
         std::string error;
         if (!dataset->load(selectedDataSourceIDs(), line_id_tst_,
@@ -918,6 +1063,23 @@ void AnalyzeDataSourceTask::run()
                 dbcs += dbc;
             }
             info.addRow({"Test dbcontents present", dbcs});
+            info.addRow({"Unassociated test records",
+                         std::to_string(dataset->numUnassociatedRecordsTotal())});
+            if (dataset->numNonPSRRecordsSkipped() > 0)
+                info.addRow({"Non-PSR CAT010 records skipped",
+                             std::to_string(dataset->numNonPSRRecordsSkipped())});
+            if (!dataset->statusCyclesByDS().empty())
+            {
+                std::string cycles;
+                for (const auto& kv : dataset->statusCyclesByDS())
+                {
+                    const auto* ds = compass().dbContextManager().dataSource(kv.first);
+                    if (!cycles.empty()) cycles += "\n";
+                    cycles += (ds ? ds->name() : std::to_string(kv.first))
+                              + ": " + std::to_string(kv.second.size());
+                }
+                info.addRow({"Scan cycles per source", cycles});
+            }
         }
     }
 

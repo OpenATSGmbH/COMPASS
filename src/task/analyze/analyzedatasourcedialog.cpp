@@ -221,7 +221,6 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
     auto* outer = new QVBoxLayout(w);
 
     auto& ctx = task_.compass().dbContextManager();
-    auto types = ctx.dsTypes();
 
     // -- Reference Data ----------------------------------------------------
     auto* ref_box    = new QGroupBox("Reference Data");
@@ -295,13 +294,9 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
     auto* tst_box    = new QGroupBox("Test Data");
     auto* tst_layout = new QVBoxLayout(tst_box);
 
-    std::set<unsigned int> tst_cands;
-    for (auto ds_id : ctx.allDataSourceIds())
-    {
-        auto it = types.find(ds_id);
-        if (it != types.end() && it->second == task_.dsType())
-            tst_cands.insert(ds_id);
-    }
+    // Candidates follow the task's DSType rule (context DSType, or for SMR:
+    // Radar sources with CAT010 data).
+    std::set<unsigned int> tst_cands = task_.testDataSourceCandidateIDs();
 
     auto* tst_list = new QListWidget();
     populateDSList(
@@ -309,7 +304,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
         tst_cands,
         ctx,
         [this](unsigned int ds_id) { return task_.useDataSource(ds_id); },
-        QString("No data sources of type ") + QString::fromStdString(task_.dsType())
+        QString("No ") + QString::fromStdString(task_.testDataSourceRequirementText())
             + " present.");
     connect(tst_list, &QListWidget::itemChanged, this, [this](QListWidgetItem* it) {
         if (updating_ui_)
