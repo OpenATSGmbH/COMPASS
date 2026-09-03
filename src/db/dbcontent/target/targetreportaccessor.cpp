@@ -100,6 +100,7 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(dbcontent_vars::meta_var_ground_speed_, true);
     add(dbcontent_vars::meta_var_track_angle_, true);
     add(dbcontent_vars::var_cat021_sgv_stp_, false);
+    add(dbcontent_vars::var_cat021_toa_pos_, false);
 
     add(dbcontent_vars::var_cat021_nucv_nacv_, false);
     add(dbcontent_vars::var_cat062_vx_stddev_, false);
@@ -181,6 +182,7 @@ void TargetReportAccessor::cacheVectors()
     meta_speed_vec_       = metaVarVector<double>(dbcontent_vars::meta_var_ground_speed_);
     meta_track_angle_vec_ = metaVarVector<double>(dbcontent_vars::meta_var_track_angle_);
     cat021_sgv_stp_vec_   = varVector<bool>(dbcontent_vars::var_cat021_sgv_stp_);
+    cat021_toa_pos_vec_   = varVector<float>(dbcontent_vars::var_cat021_toa_pos_);
 
     //velocity accuracy
     cat021_nucv_nacv_vec_ = varVector<unsigned char>(dbcontent_vars::var_cat021_nucv_nacv_);
@@ -505,6 +507,14 @@ boost::optional<double> TargetReportAccessor::radarAzimuth(unsigned int index) c
 
 /**
 */
+boost::optional<bool> TargetReportAccessor::adsbToATimeSource(unsigned int index) const
+{
+    if (!is_adsb_)
+        return {};
+
+    return cat021_toa_pos_vec_ && !cat021_toa_pos_vec_->isNull(index);
+}
+
 boost::optional<targetReport::Velocity> TargetReportAccessor::velocity(unsigned int index) const
 {
     if (meta_speed_vec_

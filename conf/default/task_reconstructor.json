@@ -56,6 +56,8 @@
             "class_name": "ProbIMMReconstructor",
             "instance_name": "ProbIMMReconstructor0",
             "parameters": {
+                "adsb_anisotropic_accuracies": true,
+                "adsb_correct_timing_offset": false,
                 "adsb_pos_acc_fallback": 1000.0,
                 "adsb_vel_acc_fallback": 2.0,
                 "auto_clutter_density": true,

@@ -68,6 +68,9 @@ public:
     boost::optional<bool> cprValid(unsigned int index) const;
     boost::optional<bool> localDecodingPositionJump(unsigned int index) const;
     boost::optional<bool> sgvStopped(unsigned int index) const; // CAT021 SGV STP bit
+    // CAT021: true if the report timestamp stems from the time of applicability
+    // (I021/071), false if from the time of message reception (I021/073)
+    boost::optional<bool> adsbToATimeSource(unsigned int index) const;
 
     boost::optional<unsigned int> ecat(unsigned int index) const;
     boost::optional<unsigned char> getGeoAltAcc(unsigned int index) const;
@@ -180,6 +183,7 @@ private:
     const NullableVector<double>* meta_speed_vec_       = nullptr;
     const NullableVector<double>* meta_track_angle_vec_ = nullptr;
     const NullableVector<bool>*   cat021_sgv_stp_vec_   = nullptr;
+    const NullableVector<float>*  cat021_toa_pos_vec_   = nullptr;
 
     //velocity accuracy
     const NullableVector<unsigned char>* cat021_nucv_nacv_vec_ = nullptr;

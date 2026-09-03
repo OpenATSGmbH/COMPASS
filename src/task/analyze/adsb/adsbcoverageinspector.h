@@ -76,7 +76,7 @@ public:
  * addition, the per-target #EUI / #MUI totals are accumulated per aircraft
  * address so the report can surface individual transponders with coverage
  * gaps that an aggregate map averages away. See
- * src/task/analyze/readme_analysis_adsb.md (Feature 2).
+ * experimental_src/analysis/readme_analysis_adsb.md (Feature 2).
  */
 class ADSBCoverageInspector : public DataSourceInspectorBase
 {

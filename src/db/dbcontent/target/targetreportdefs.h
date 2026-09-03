@@ -317,6 +317,9 @@ struct ReconstructorInfo : public BaseInfo
     // ADS-B SGV STP bit (CAT021 surface ground vector "stopped"), only
     // transmitted for surface targets - reliable standstill indication
     boost::optional<bool> sgv_stp_;
+    // CAT021: true if the timestamp stems from the time of applicability (I021/071),
+    // false if from the time of message reception (I021/073), unset for other content
+    boost::optional<bool> adsb_toa_time_source_;
 
     static const double GroundSpeedMin;
 

@@ -1291,6 +1291,7 @@ void ReconstructorBase::createTargetReports()
                 info.sil_ = tgt_acc.sil(cnt);
                 info.ecat_ = tgt_acc.ecat(cnt);
                 info.sgv_stp_ = tgt_acc.sgvStopped(cnt);
+                info.adsb_toa_time_source_ = tgt_acc.adsbToATimeSource(cnt);
 
                 boost::optional<bool> pos_check_failed = tgt_acc.posCheckFailed(cnt);
 

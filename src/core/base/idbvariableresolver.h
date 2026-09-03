@@ -177,6 +177,7 @@ namespace dbcontent_vars
     inline const Property var_cat021_tomr_position_ {"ToMR Position", PropertyDataType::FLOAT};
     inline const Property var_cat021_tort_          {"ToRT", PropertyDataType::FLOAT};
     inline const Property var_cat021_tod_dep_       {"Time of Day Deprecated", PropertyDataType::FLOAT};
+    inline const Property var_cat021_toa_pos_       {"ToA Position", PropertyDataType::FLOAT};
 
     inline const Property var_cat021_mops_version_  {"MOPS Version", PropertyDataType::UCHAR};
     inline const Property var_cat021_nacp_          {"NACp", PropertyDataType::UCHAR};
