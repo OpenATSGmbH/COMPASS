@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class TargetReport3DGrid;
@@ -59,6 +60,20 @@ public:
     // Slots with a reference position farther from the antenna than this are
     // skipped (0 = no limit, also when the data source has no position).
     float max_range_m_ = 5000.0f;
+
+    // Estimated coverage. Per azimuth bin the radial band [r_min, r_max] of
+    // the source's own target reports is taken as the area the sensor covers
+    // in that direction. A slot whose reference position falls outside its
+    // source's band is not expected, so PD is measured only where the sensor
+    // has shown coverage. An SMR does not see the whole airport: buildings
+    // shadow whole azimuth wedges and stands, and the range is limited.
+    // `coverage_min_reports_` rejects bins carrying too few reports to define
+    // a band, they count as no coverage. `coverage_smooth_bins_` closes single
+    // empty bins between two covered ones. 0 as the bin width disables the
+    // estimate and every slot inside `max_range_m_` is expected again.
+    float        coverage_azimuth_bin_deg_ = 0.5f;
+    unsigned int coverage_min_reports_     = 20;
+    unsigned int coverage_smooth_bins_     = 1;
 
     // Reference-period construction: a gap larger than this in the loaded
     // reference chain starts a new period.
@@ -124,6 +139,13 @@ private:
         double        period_p5_s     = 0.0;
         double        period_p95_s    = 0.0;
         unsigned int  missing_scans   = 0;
+        // Estimated coverage of this source.
+        bool          coverage_valid        = false;
+        std::size_t   coverage_bins_total   = 0;
+        std::size_t   coverage_bins_covered = 0;
+        std::uint64_t coverage_reports      = 0;
+        double        coverage_r_min_median = 0.0;
+        double        coverage_r_max_median = 0.0;
         std::uint64_t eui = 0;
         std::uint64_t mui = 0;
         double        pd  = 0.0;
@@ -171,7 +193,9 @@ private:
         unsigned int  targets_walked = 0;
         unsigned int  targets_no_ref = 0;
         unsigned int  targets_no_tst = 0;
-        std::uint64_t slots_out_of_range = 0;
+        std::uint64_t slots_out_of_range    = 0;
+        std::uint64_t slots_out_of_coverage = 0;
+        bool          coverage_estimated    = false;
 
         std::uint64_t total_eui   = 0;
         std::uint64_t total_mui   = 0;
@@ -194,6 +218,11 @@ private:
         double ui_hist_bin_width  = 0.0;
         std::vector<std::uint32_t> ui_hist_bins;
         std::uint32_t ui_hist_overflow = 0;
+
+        // Estimated coverage per horizontal cell, for the coverage figure:
+        // share of the slots of that cell that were inside a source's band.
+        std::unordered_map<std::uint64_t, double>        coverage_by_key;
+        std::unordered_map<std::uint64_t, std::uint64_t> coverage_samples;
 
         std::vector<SourceRow>   sources;
         std::array<ClassRow, 2>  classes;   // 0 small, 1 large

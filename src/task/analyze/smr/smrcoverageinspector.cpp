@@ -27,7 +27,9 @@
 #include "data_source.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/target/targetbase.h"
+#include "dbcontent/dbcontentaccessor.h"
 #include "dbcontent/target/targetreportchain.h"
+#include "idbvariableresolver.h"
 #include "logger.h"
 #include "number.h"
 #include "section.h"
@@ -89,6 +91,13 @@ SMRCoverageInspectorSettings::SMRCoverageInspectorSettings(nlohmann::json& confi
                       &large_target_max_reports_per_scan_, large_target_max_reports_per_scan_);
 
     registerParameter("max_range_m",         &max_range_m_,         max_range_m_);
+
+    registerParameter("coverage_azimuth_bin_deg", &coverage_azimuth_bin_deg_,
+                      coverage_azimuth_bin_deg_);
+    registerParameter("coverage_min_reports",     &coverage_min_reports_,
+                      coverage_min_reports_);
+    registerParameter("coverage_smooth_bins",     &coverage_smooth_bins_,
+                      coverage_smooth_bins_);
     registerParameter("ref_max_time_diff_s", &ref_max_time_diff_s_, ref_max_time_diff_s_);
     registerParameter("standing_speed_max_mps",
                       &standing_speed_max_mps_, standing_speed_max_mps_);
@@ -372,6 +381,15 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
     const double nominal_period_s = settings.scan_period_s_;
 
     // Selected SMR sources: antenna position, scan cycles, cadence statistics.
+    // One azimuth bin of a source's estimated radial coverage band.
+    struct CoverageBin
+    {
+        std::uint64_t count   = 0;
+        double        r_min   = 0.0;
+        double        r_max   = 0.0;
+        bool          covered = false;
+    };
+
     struct SourceCtx
     {
         unsigned int              ds_id   = 0;
@@ -379,6 +397,10 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
         double                    lat     = 0.0;
         double                    lon     = 0.0;
         const std::vector<ptime>* cycles  = nullptr;
+
+        // Estimated coverage, one entry per azimuth bin. Empty when the
+        // estimate is disabled or the source has no position.
+        std::vector<CoverageBin> coverage;
     };
     std::vector<SourceCtx> sources;
 
@@ -451,6 +473,147 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
     {
         result_.error = "No data source selected.";
         return;
+    }
+
+    // Estimated coverage per source, from the source's own target reports.
+    // An SMR does not cover the whole airport: buildings shadow azimuth
+    // wedges and the range is limited. Expecting a report where the sensor
+    // never delivered one makes PD meaningless, so the radial band of each
+    // azimuth bin is taken as that source's coverage.
+    {
+        using namespace dbcontent_vars;
+
+        const double bin_deg = settings.coverage_azimuth_bin_deg_;
+        auto         acc     = dataset->accessor();
+
+        if (bin_deg > 0.0 && acc && acc->has(kTestDBContent)
+            && acc->hasMetaVar<unsigned int>(kTestDBContent, meta_var_ds_id_)
+            && acc->hasMetaVar<double>(kTestDBContent, meta_var_latitude_)
+            && acc->hasMetaVar<double>(kTestDBContent, meta_var_longitude_))
+        {
+            const std::size_t num_bins =
+                std::max<std::size_t>(1, static_cast<std::size_t>(std::ceil(360.0 / bin_deg)));
+
+            std::map<unsigned int, std::size_t> src_index;
+            for (std::size_t i = 0; i < sources.size(); ++i)
+                if (sources[i].has_pos)
+                    src_index[sources[i].ds_id] = i;
+
+            // Report ranges per source and azimuth bin. Kept as flat sample
+            // lists because the band uses percentiles, not sums.
+            std::vector<std::vector<std::vector<double>>> ranges(
+                sources.size(), std::vector<std::vector<double>>(num_bins));
+
+            auto& ds_vec  = acc->getMetaVar<unsigned int>(kTestDBContent, meta_var_ds_id_);
+            auto& lat_vec = acc->getMetaVar<double>(kTestDBContent, meta_var_latitude_);
+            auto& lon_vec = acc->getMetaVar<double>(kTestDBContent, meta_var_longitude_);
+
+            const unsigned int num_rows = acc->get(kTestDBContent)->size();
+            Transformation cov_trafo;
+
+            for (unsigned int idx = 0; idx < num_rows; ++idx)
+            {
+                if (ds_vec.isNull(idx) || lat_vec.isNull(idx) || lon_vec.isNull(idx))
+                    continue;
+
+                auto it = src_index.find(ds_vec.get(idx));
+                if (it == src_index.end())
+                    continue;
+
+                const SourceCtx& sc = sources[it->second];
+
+                bool   ok = false;
+                double dx = 0.0, dy = 0.0;
+                std::tie(ok, dx, dy) = cov_trafo.distanceCart(
+                    sc.lat, sc.lon, lat_vec.get(idx), lon_vec.get(idx));
+                if (!ok)
+                    continue;
+
+                const double rng = std::sqrt(dx * dx + dy * dy);
+                if (rng <= 0.0)
+                    continue;
+
+                double az = std::atan2(dx, dy) * (180.0 / M_PI);
+                if (az < 0.0)
+                    az += 360.0;
+
+                std::size_t bin = static_cast<std::size_t>(az / bin_deg);
+                if (bin >= num_bins)
+                    bin = num_bins - 1;
+
+                ranges[it->second][bin].push_back(rng);
+            }
+
+            // Band per bin: P1 and P99 of the report ranges, so a single
+            // spurious far return does not inflate it. A bin with too few
+            // reports carries no band at all.
+            for (std::size_t si = 0; si < sources.size(); ++si)
+            {
+                if (!sources[si].has_pos)
+                    continue;
+
+                std::vector<CoverageBin> bins(num_bins);
+                for (std::size_t b = 0; b < num_bins; ++b)
+                {
+                    auto& v = ranges[si][b];
+                    bins[b].count = v.size();
+                    if (v.size() < settings.coverage_min_reports_)
+                        continue;
+                    bins[b].r_min   = percentile(v, 0.01);
+                    bins[b].r_max   = percentile(v, 0.99);
+                    bins[b].covered = bins[b].r_max > bins[b].r_min;
+                }
+
+                // Close single empty bins between two covered ones, so a
+                // direction nothing happened to cross is not cut out.
+                for (unsigned int pass = 0; pass < settings.coverage_smooth_bins_; ++pass)
+                {
+                    std::vector<CoverageBin> next = bins;
+                    for (std::size_t b = 0; b < num_bins; ++b)
+                    {
+                        if (bins[b].covered)
+                            continue;
+                        const CoverageBin& prev = bins[(b + num_bins - 1) % num_bins];
+                        const CoverageBin& succ = bins[(b + 1) % num_bins];
+                        if (!prev.covered || !succ.covered)
+                            continue;
+                        next[b].covered = true;
+                        next[b].r_min   = std::min(prev.r_min, succ.r_min);
+                        next[b].r_max   = std::max(prev.r_max, succ.r_max);
+                    }
+                    bins.swap(next);
+                }
+
+                sources[si].coverage = std::move(bins);
+            }
+        }
+    }
+    for (std::size_t i = 0; i < sources.size(); ++i)
+    {
+        SourceRow& row = result_.sources[i];
+        const auto& cov = sources[i].coverage;
+        if (cov.empty())
+            continue;
+
+        std::vector<double> r_mins, r_maxs;
+        for (const auto& b : cov)
+        {
+            row.coverage_reports += b.count;
+            if (!b.covered)
+                continue;
+            ++row.coverage_bins_covered;
+            r_mins.push_back(b.r_min);
+            r_maxs.push_back(b.r_max);
+        }
+        row.coverage_valid      = row.coverage_bins_covered > 0;
+        row.coverage_bins_total = cov.size();
+        if (!r_mins.empty())
+        {
+            row.coverage_r_min_median = percentile(r_mins, 0.5);
+            row.coverage_r_max_median = percentile(r_maxs, 0.5);
+        }
+        if (row.coverage_valid)
+            result_.coverage_estimated = true;
     }
 
     const time_duration ref_max_gap         = durationFromSeconds(settings.ref_max_time_diff_s_);
@@ -587,6 +750,47 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
                         }
                     }
 
+                    // Estimated coverage gate. A slot outside the source's
+                    // radial band in its azimuth is not expected: the sensor
+                    // has never delivered a report there, so counting it as a
+                    // miss would measure the airport layout, not the sensor.
+                    // Both outcomes feed the coverage figure, so the map shows
+                    // what was kept and what was cut.
+                    if (!src.coverage.empty())
+                    {
+                        bool   ok = false;
+                        double dx = 0.0, dy = 0.0;
+                        std::tie(ok, dx, dy) = trafo.distanceCart(src.lat, src.lon,
+                                                                  ca.lat, ca.lon);
+                        bool inside = false;
+                        if (ok)
+                        {
+                            const double rng = std::sqrt(dx * dx + dy * dy);
+                            double az = std::atan2(dx, dy) * (180.0 / M_PI);
+                            if (az < 0.0)
+                                az += 360.0;
+
+                            std::size_t bin = static_cast<std::size_t>(
+                                az / settings.coverage_azimuth_bin_deg_);
+                            if (bin >= src.coverage.size())
+                                bin = src.coverage.size() - 1;
+
+                            const auto& cb = src.coverage[bin];
+                            inside = cb.covered && rng >= cb.r_min && rng <= cb.r_max;
+                        }
+
+                        const std::uint64_t ckey = grid.horizontalKey(ca.lat, ca.lon);
+                        ++result_.coverage_samples[ckey];
+                        if (inside)
+                            result_.coverage_by_key[ckey] += 1.0;
+
+                        if (!inside)
+                        {
+                            ++result_.slots_out_of_coverage;
+                            continue;
+                        }
+                    }
+
                     grid.addEUI(ca.lat, ca.lon, 0.0);
                     ++srow.eui;
                     ++cls.eui;
@@ -631,6 +835,17 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
             if (sec.touched[si])
                 ++sector_target_count[si];
     }
+
+    // Coverage figure values: share of the cell's slots that were inside a
+    // source's band. Accumulated as a count during the walk.
+    for (auto& kv : result_.coverage_by_key)
+    {
+        auto it = result_.coverage_samples.find(kv.first);
+        if (it != result_.coverage_samples.end() && it->second > 0)
+            kv.second /= static_cast<double>(it->second);
+    }
+    for (const auto& kv : result_.coverage_samples)
+        result_.coverage_by_key.emplace(kv.first, 0.0);
 
     // Aggregate per-cell PD over the horizontal projection.
     auto horizontal = grid.projectHorizontal();
@@ -750,7 +965,15 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
             "scans per source. The Reports per Scan table shows how often a target "
             "produced 0, 1, 2 or more reports in a scan. The PD breakdowns by "
             "movement, size class, source and sector locate where and for whom "
-            "detection fails.");
+            "detection fails.\n"
+            "PD is measured only inside the estimated coverage of each source. An "
+            "SMR does not see the whole airport: buildings shadow whole azimuth "
+            "wedges and stands, and the range is limited. The coverage is estimated "
+            "from the source's own target reports, per azimuth bin the radial band "
+            "between the 1st and the 99th percentile of the report ranges. A bin "
+            "with too few reports counts as not covered. Slots outside the band are "
+            "not expected and are reported separately. The Estimated Coverage map "
+            "shows which part of the walked area was kept.");
     }
 
     auto& recap = section.addTable("Settings", 2, {"Setting", "Value"}, false);
@@ -782,6 +1005,18 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
         else
             os << "none";
         recap.addRow({"Maximum range", os.str()});
+    }
+    {
+        std::ostringstream os;
+        if (settings.coverage_azimuth_bin_deg_ > 0.0f)
+            os << "radial band per " << settings.coverage_azimuth_bin_deg_
+               << " deg azimuth bin, P1 to P99 of the report ranges\n"
+               << "at least " << settings.coverage_min_reports_
+               << " reports per bin, " << settings.coverage_smooth_bins_
+               << " smoothing pass(es)";
+        else
+            os << "off (every slot inside the maximum range is expected)";
+        recap.addRow({"Estimated coverage", os.str()});
     }
     {
         std::ostringstream os;
@@ -844,6 +1079,35 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
         }
     }
 
+    // Estimated coverage per source.
+    if (result_.coverage_estimated)
+    {
+        auto& ct = section.addTable("Estimated Coverage", 6,
+                                    {"Data Source", "Reports", "Azimuth Bins",
+                                     "Bins with Coverage", "Median Inner Range (m)",
+                                     "Median Outer Range (m)"},
+                                    false);
+        for (const auto& r : result_.sources)
+        {
+            if (!r.coverage_valid)
+            {
+                ct.addRow({r.label, std::to_string(r.coverage_reports), "-", "-", "-", "-"});
+                continue;
+            }
+            std::ostringstream cov;
+            cov << r.coverage_bins_covered << " ("
+                << formatNumber(100.0 * static_cast<double>(r.coverage_bins_covered)
+                                / static_cast<double>(r.coverage_bins_total), 1)
+                << " %)";
+            ct.addRow({r.label,
+                       std::to_string(r.coverage_reports),
+                       std::to_string(r.coverage_bins_total),
+                       cov.str(),
+                       formatNumber(r.coverage_r_min_median, 1),
+                       formatNumber(r.coverage_r_max_median, 1)});
+        }
+    }
+
     auto& summary = section.addTable("Summary", 2, {"Property", "Value"}, false);
     summary.addRow({"Targets walked",         std::to_string(result_.targets_walked)});
     summary.addRow({"Targets w/o RefTraj",    std::to_string(result_.targets_no_ref)});
@@ -851,6 +1115,9 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
     summary.addRow({"Small targets",          std::to_string(result_.classes[0].num_targets)});
     summary.addRow({"Large targets",          std::to_string(result_.classes[1].num_targets)});
     summary.addRow({"Slots beyond maximum range", std::to_string(result_.slots_out_of_range)});
+    if (result_.coverage_estimated)
+        summary.addRow({"Slots outside estimated coverage",
+                        std::to_string(result_.slots_out_of_coverage)});
     summary.addRow({"Total expected slots (#EUI)", std::to_string(result_.total_eui)});
     summary.addRow({"Total missed slots (#MUI)",   std::to_string(result_.total_mui)});
     summary.addRow({"Overall PD",                  formatNumber(result_.overall_pd)});
@@ -1010,6 +1277,20 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
             rs.max_value = range.second;
 
             attachGridFigure(section, "PD - Horizontal", "PD", proj, rs);
+        }
+
+        if (!result_.coverage_by_key.empty())
+        {
+            auto proj = grid_->horizontalLayer(result_.coverage_by_key,
+                                               result_.coverage_samples, "coverage");
+            Grid2DRenderSettings rs;
+            rs.color_map.create(ColorMap::ColorScale::Red2Green, 5,
+                                ColorMap::Type::LinearSamples, std::make_pair(0.0, 1.0));
+            rs.min_value = 0.0;
+            rs.max_value = 1.0;
+
+            attachGridFigure(section, "Estimated Coverage - Horizontal",
+                             "In Coverage", proj, rs);
         }
 
         if (result_.total_extra > 0)
