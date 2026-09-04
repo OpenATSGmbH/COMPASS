@@ -71,9 +71,66 @@ public:
     // a band, they count as no coverage. `coverage_smooth_bins_` closes single
     // empty bins between two covered ones. 0 as the bin width disables the
     // estimate and every slot inside `max_range_m_` is expected again.
-    float        coverage_azimuth_bin_deg_ = 0.5f;
+    // 0.25 deg is 22 m at the 5 km maximum range, the resolution the sector
+    // inside test can still resolve, and it keeps the same 20 reports as
+    // evidence for half the angular area, so thin fingers of a few distant
+    // returns fall below the threshold instead of becoming coverage.
+    float        coverage_azimuth_bin_deg_ = 0.25f;
     unsigned int coverage_min_reports_     = 20;
     unsigned int coverage_smooth_bins_     = 1;
+
+    // A range gap of at least this length without a single report splits the
+    // reports of an azimuth bin into separate covered segments. A direction over
+    // a taxiway and a runway is covered twice with a dead gap between, and only
+    // segments carrying `coverage_min_reports_` reports survive. 0 keeps one
+    // segment per bin, from its first to its last report.
+    float        coverage_gap_m_           = 150.0f;
+
+    // Reports a single segment needs. The bin as a whole already has to show
+    // `coverage_min_reports_`, this is the evidence one cluster inside it needs,
+    // so splitting a bin into a near and a far segment does not raise the bar
+    // for the direction as a whole.
+    unsigned int coverage_min_segment_reports_ = 5;
+
+    // Sector generation only, the coverage gate keeps the exact segments. The
+    // sectors are meant to be usable as an evaluation scope, so they are glued
+    // and simplified and may include a bit more area than the sensor showed:
+    // segments of neighboring bins within `coverage_sector_link_m_` become one
+    // sector, a gap of up to `coverage_sector_bridge_bins_` bins without any
+    // segment is bridged instead of splitting the sector, its edges are smoothed
+    // over `coverage_sector_smooth_bins_` bins to
+    // each side (rolling maximum outward, rolling minimum inward, so smoothing
+    // never cuts a report out), and edges closer than `coverage_sector_simplify_m_`
+    // share one arc.
+    float        coverage_sector_link_m_     = 200.0f;
+    unsigned int coverage_sector_bridge_bins_ = 8;
+    unsigned int coverage_sector_smooth_bins_ = 2;
+    float        coverage_sector_simplify_m_ = 10.0f;
+
+    // Sectors below this area are dropped. What survives the segment and run
+    // checks can still be a sliver of a few hundred square meters, too small to
+    // be worth a sector of its own in the layer.
+    float        coverage_sector_min_area_m2_ = 5000.0f;
+
+    // A run of chained segments whose reports are spread thinly along a long band
+    // is a single pass through that direction, not coverage: one vehicle rolling
+    // radially fills the minimum report count over more than a kilometer, which
+    // shows up as a thin spike in the map and in the sectors. A run below this
+    // many reports per 100 m of its band is dropped, measured over the whole run
+    // so a wide lobe is judged by its own density. A short band is dense by
+    // nature and passes, the check is about long and thin runs. 0 disables it.
+    float        coverage_min_run_reports_per_100m_ = 25.0f;
+
+    // Write the estimated coverage into the active Data Context as sectors, one
+    // per contiguous run of covered azimuth bins, traced outward along the band
+    // maximum and back along its minimum. Off by default, an analysis run should
+    // not change the context unless asked. Sectors of the same names are
+    // replaced, so a re-run updates the layer instead of duplicating it.
+    bool         create_coverage_sectors_  = false;
+    // Sector layer name suffix, the layer of a source is its name plus this,
+    // e.g. "RETS SMR Nord Coverage". One layer per sensor keeps the layer list
+    // readable and lets a single sensor's coverage be picked as a scope.
+    std::string  coverage_sector_layer_suffix_ = "Coverage";
 
     // Reference-period construction: a gap larger than this in the loaded
     // reference chain starts a new period.
@@ -143,6 +200,7 @@ private:
         bool          coverage_valid        = false;
         std::size_t   coverage_bins_total   = 0;
         std::size_t   coverage_bins_covered = 0;
+        std::size_t   coverage_segments     = 0;
         std::uint64_t coverage_reports      = 0;
         double        coverage_r_min_median = 0.0;
         double        coverage_r_max_median = 0.0;
@@ -223,6 +281,19 @@ private:
         // share of the slots of that cell that were inside a source's band.
         std::unordered_map<std::uint64_t, double>        coverage_by_key;
         std::unordered_map<std::uint64_t, std::uint64_t> coverage_samples;
+
+        // Estimated coverage as polygons: one per contiguous run of covered
+        // azimuth bins, built by compute() and turned into Data Context sectors
+        // by writeReport(), which runs on the main thread. Writing them from
+        // compute() corrupts the context, the worker thread would mutate the
+        // sectors while the main thread rebuilds its views from them.
+        struct CoverageSector
+        {
+            unsigned int                           ds_id = 0;
+            std::string                            name;
+            std::vector<std::pair<double, double>> points;
+        };
+        std::vector<CoverageSector> coverage_sectors;
 
         std::vector<SourceRow>   sources;
         std::array<ClassRow, 2>  classes;   // 0 small, 1 large

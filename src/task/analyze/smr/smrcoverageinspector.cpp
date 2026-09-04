@@ -37,6 +37,7 @@
 #include "sectioncontenttext.h"
 #include "stringconv.h"
 #include "targetposition.h"
+#include "sector.h"
 #include "sectorlayer.h"
 #include "transformation.h"
 
@@ -98,6 +99,26 @@ SMRCoverageInspectorSettings::SMRCoverageInspectorSettings(nlohmann::json& confi
                       coverage_min_reports_);
     registerParameter("coverage_smooth_bins",     &coverage_smooth_bins_,
                       coverage_smooth_bins_);
+    registerParameter("coverage_gap_m",           &coverage_gap_m_,
+                      coverage_gap_m_);
+    registerParameter("coverage_min_segment_reports", &coverage_min_segment_reports_,
+                      coverage_min_segment_reports_);
+    registerParameter("coverage_sector_link_m",   &coverage_sector_link_m_,
+                      coverage_sector_link_m_);
+    registerParameter("coverage_sector_bridge_bins", &coverage_sector_bridge_bins_,
+                      coverage_sector_bridge_bins_);
+    registerParameter("coverage_sector_smooth_bins", &coverage_sector_smooth_bins_,
+                      coverage_sector_smooth_bins_);
+    registerParameter("coverage_sector_simplify_m", &coverage_sector_simplify_m_,
+                      coverage_sector_simplify_m_);
+    registerParameter("coverage_sector_min_area_m2", &coverage_sector_min_area_m2_,
+                      coverage_sector_min_area_m2_);
+    registerParameter("coverage_min_run_reports_per_100m", &coverage_min_run_reports_per_100m_,
+                      coverage_min_run_reports_per_100m_);
+    registerParameter("create_coverage_sectors",  &create_coverage_sectors_,
+                      create_coverage_sectors_);
+    registerParameter("coverage_sector_layer_suffix", &coverage_sector_layer_suffix_,
+                      coverage_sector_layer_suffix_);
     registerParameter("ref_max_time_diff_s", &ref_max_time_diff_s_, ref_max_time_diff_s_);
     registerParameter("standing_speed_max_mps",
                       &standing_speed_max_mps_, standing_speed_max_mps_);
@@ -382,12 +403,62 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
 
     // Selected SMR sources: antenna position, scan cycles, cadence statistics.
     // One azimuth bin of a source's estimated radial coverage band.
+    // One covered range segment of an azimuth bin. A direction can hold several:
+    // a taxiway close in and a runway far out, with a dead gap between them the
+    // sensor never reports in. A single interval per bin would claim that gap as
+    // coverage and, where only some bins catch the far returns, draw a needle
+    // across the map.
+    struct CoverageSegment
+    {
+        std::uint64_t count = 0;
+        double        r_min = 0.0;
+        double        r_max = 0.0;
+
+        bool overlaps(const CoverageSegment& other) const
+        { return r_min <= other.r_max && other.r_min <= r_max; }
+    };
+
     struct CoverageBin
     {
-        std::uint64_t count   = 0;
-        double        r_min   = 0.0;
-        double        r_max   = 0.0;
-        bool          covered = false;
+        std::uint64_t count = 0;   // all reports of the bin, covered or not
+
+        // Ordered by range, disjoint. Empty means the bin is not covered.
+        std::vector<CoverageSegment> segments;
+
+        bool covered() const { return !segments.empty(); }
+
+        double rMin() const { return segments.front().r_min; }
+        double rMax() const { return segments.back().r_max; }
+
+        bool contains(double range_m) const
+        {
+            for (const auto& seg : segments)
+                if (range_m >= seg.r_min && range_m <= seg.r_max)
+                    return true;
+            return false;
+        }
+
+        std::uint64_t coveredCount() const
+        {
+            std::uint64_t sum = 0;
+            for (const auto& seg : segments)
+                sum += seg.count;
+            return sum;
+        }
+    };
+
+    // One chain of overlapping segments across adjacent azimuth bins: what
+    // becomes one sector, and what the density check judges. `band` holds one
+    // range interval per bin, starting at walk index `begin_j` of the walk that
+    // started at bin `cut`, so the azimuth of entry i is (cut + begin_j + i)
+    // times the bin width and increases across the 360 degree seam.
+    struct CoverageRun
+    {
+        std::size_t   cut     = 0;
+        std::size_t   begin_j = 0;
+        std::uint64_t reports = 0;
+
+        std::vector<std::pair<double, double>> band;
     };
 
     struct SourceCtx
@@ -401,6 +472,9 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
         // Estimated coverage, one entry per azimuth bin. Empty when the
         // estimate is disabled or the source has no position.
         std::vector<CoverageBin> coverage;
+
+        // The same coverage as chains of overlapping segments, one per sector.
+        std::vector<CoverageRun> coverage_runs;
     };
     std::vector<SourceCtx> sources;
 
@@ -557,33 +631,442 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
                 {
                     auto& v = ranges[si][b];
                     bins[b].count = v.size();
+
                     if (v.size() < settings.coverage_min_reports_)
                         continue;
-                    bins[b].r_min   = percentile(v, 0.01);
-                    bins[b].r_max   = percentile(v, 0.99);
-                    bins[b].covered = bins[b].r_max > bins[b].r_min;
+
+                    // Split the bin's reports where a gap in range carries none,
+                    // each cluster is one covered segment from its first to its
+                    // last report. No percentile trimming: a lone far return does
+                    // not survive the report minimum of its own segment, so the
+                    // segment can keep the full extent of what was seen.
+                    std::sort(v.begin(), v.end());
+
+                    const double gap_m = settings.coverage_gap_m_;
+
+                    std::size_t seg_begin = 0;
+                    for (std::size_t i = 1; i <= v.size(); ++i)
+                    {
+                        if (i < v.size() && (gap_m <= 0.0 || v[i] - v[i - 1] <= gap_m))
+                            continue;
+
+                        const std::size_t n = i - seg_begin;
+                        if (n >= settings.coverage_min_segment_reports_)
+                        {
+                            CoverageSegment seg;
+                            seg.count = n;
+                            seg.r_min = v[seg_begin];
+                            seg.r_max = v[i - 1];
+
+                            if (seg.r_max > seg.r_min)
+                                bins[b].segments.push_back(seg);
+                        }
+
+                        seg_begin = i;
+                    }
                 }
 
                 // Close single empty bins between two covered ones, so a
-                // direction nothing happened to cross is not cut out.
+                // direction nothing happened to cross is not cut out. The closed
+                // bin takes the segments of both neighbors.
                 for (unsigned int pass = 0; pass < settings.coverage_smooth_bins_; ++pass)
                 {
                     std::vector<CoverageBin> next = bins;
                     for (std::size_t b = 0; b < num_bins; ++b)
                     {
-                        if (bins[b].covered)
+                        if (bins[b].covered())
                             continue;
+
                         const CoverageBin& prev = bins[(b + num_bins - 1) % num_bins];
                         const CoverageBin& succ = bins[(b + 1) % num_bins];
-                        if (!prev.covered || !succ.covered)
+
+                        if (!prev.covered() || !succ.covered())
                             continue;
-                        next[b].covered = true;
-                        next[b].r_min   = std::min(prev.r_min, succ.r_min);
-                        next[b].r_max   = std::max(prev.r_max, succ.r_max);
+
+                        std::vector<CoverageSegment> merged = prev.segments;
+                        merged.insert(merged.end(), succ.segments.begin(), succ.segments.end());
+                        std::sort(merged.begin(), merged.end(),
+                                  [](const CoverageSegment& a, const CoverageSegment& c)
+                                  { return a.r_min < c.r_min; });
+
+                        // union of the overlapping ones, the closed bin must not
+                        // claim more segments than its neighbors show
+                        std::vector<CoverageSegment> unioned;
+                        for (const auto& seg : merged)
+                        {
+                            if (!unioned.empty() && unioned.back().overlaps(seg))
+                            {
+                                unioned.back().r_max = std::max(unioned.back().r_max, seg.r_max);
+                                unioned.back().count += seg.count;
+                            }
+                            else
+                            {
+                                unioned.push_back(seg);
+                            }
+                        }
+
+                        next[b].segments = std::move(unioned);
                     }
                     bins.swap(next);
                 }
 
+                // Chain the segments into runs: a segment continues the run of a
+                // segment in the previous bin when their ranges overlap, or lie
+                // within `link_m` of each other. A run is what becomes one
+                // sector, and what the density check judges. The walk starts at
+                // an uncovered bin so a run across the 360 degree seam stays
+                // whole, and the walk index keeps the azimuths increasing.
+                auto chain_runs = [&](const std::vector<CoverageBin>& src, double link_m,
+                                      std::size_t bridge_bins)
+                {
+                    std::size_t cut = 0;
+                    while (cut < src.size() && src[cut].covered())
+                        ++cut;
+                    if (cut == src.size())   // fully covered, the seam falls somewhere
+                        cut = 0;
+
+                    std::vector<CoverageRun> runs;
+                    std::vector<std::size_t> open;   // active in the last bin
+
+                    for (std::size_t j = 0; j < src.size(); ++j)
+                    {
+                        const CoverageBin& bin = src[(cut + j) % src.size()];
+
+                        std::vector<std::size_t> next_open;
+
+                        for (const auto& seg : bin.segments)
+                        {
+                            std::vector<std::size_t> matches;
+                            for (std::size_t r : open)
+                            {
+                                const auto& last = runs[r].band.back();
+                                if (seg.r_min - link_m <= last.second
+                                    && last.first - link_m <= seg.r_max)
+                                    matches.push_back(r);
+                            }
+
+                            // a run whose last entry lies further back takes the
+                            // bridged bins, filled with the union of both ends
+                            for (std::size_t r : matches)
+                            {
+                                CoverageRun& run = runs[r];
+                                while (run.begin_j + run.band.size() < j)
+                                {
+                                    const auto& last = run.band.back();
+                                    run.band.emplace_back(std::min(last.first,  seg.r_min),
+                                                          std::max(last.second, seg.r_max));
+                                }
+                            }
+
+                            if (matches.empty())
+                            {
+                                CoverageRun run;
+                                run.cut     = cut;
+                                run.begin_j = j;
+                                run.band.emplace_back(seg.r_min, seg.r_max);
+                                run.reports = seg.count;
+                                runs.push_back(std::move(run));
+                                next_open.push_back(runs.size() - 1);
+                                continue;
+                            }
+
+                            // the first match takes the segment, the others merge
+                            // into it: their bands are unioned bin by bin
+                            CoverageRun& target = runs[matches[0]];
+
+                            for (std::size_t m = 1; m < matches.size(); ++m)
+                            {
+                                CoverageRun& other = runs[matches[m]];
+
+                                const std::size_t begin_j = std::min(target.begin_j, other.begin_j);
+                                const std::size_t end_j   = std::max(
+                                    target.begin_j + target.band.size(),
+                                    other.begin_j + other.band.size());
+
+                                std::vector<std::pair<double, double>> band(
+                                    end_j - begin_j,
+                                    std::make_pair(std::numeric_limits<double>::max(), 0.0));
+
+                                auto merge_into = [&](const CoverageRun& from)
+                                {
+                                    for (std::size_t i = 0; i < from.band.size(); ++i)
+                                    {
+                                        auto& dst = band[from.begin_j - begin_j + i];
+                                        dst.first  = std::min(dst.first,  from.band[i].first);
+                                        dst.second = std::max(dst.second, from.band[i].second);
+                                    }
+                                };
+                                merge_into(target);
+                                merge_into(other);
+
+                                target.band     = std::move(band);
+                                target.begin_j  = begin_j;
+                                target.reports += other.reports;
+
+                                other.band.clear();
+                                other.reports = 0;
+
+                                next_open.erase(std::remove(next_open.begin(), next_open.end(),
+                                                            matches[m]),
+                                                next_open.end());
+                            }
+
+                            if (target.begin_j + target.band.size() == j)
+                            {
+                                target.band.emplace_back(seg.r_min, seg.r_max);
+                            }
+                            else
+                            {
+                                auto& dst = target.band.back();
+                                dst.first  = std::min(dst.first,  seg.r_min);
+                                dst.second = std::max(dst.second, seg.r_max);
+                            }
+
+                            target.reports += seg.count;
+
+                            if (std::find(next_open.begin(), next_open.end(), matches[0])
+                                == next_open.end())
+                                next_open.push_back(matches[0]);
+                        }
+
+                        // runs without a segment in this bin stay open while the
+                        // gap is short enough to bridge
+                        for (std::size_t r : open)
+                            if (std::find(next_open.begin(), next_open.end(), r) == next_open.end()
+                                && !runs[r].band.empty()
+                                && j + 1 - (runs[r].begin_j + runs[r].band.size()) <= bridge_bins)
+                                next_open.push_back(r);
+
+                        open.swap(next_open);
+                    }
+
+                    runs.erase(std::remove_if(runs.begin(), runs.end(),
+                                              [](const CoverageRun& r) { return r.band.empty(); }),
+                               runs.end());
+                    return runs;
+                };
+
+                std::vector<CoverageRun> runs = chain_runs(bins, 0.0, 0);
+
+                // Cut thin runs: reports spread thinly along a long band are a
+                // single pass through that direction, not coverage.
+                for (auto& run : runs)
+                {
+                    if (run.band.empty())
+                        continue;
+
+                    double r_min = std::numeric_limits<double>::max();
+                    double r_max = 0.0;
+                    for (const auto& e : run.band)
+                    {
+                        r_min = std::min(r_min, e.first);
+                        r_max = std::max(r_max, e.second);
+                    }
+
+                    // No floor worth speaking of: with segments a short band is
+                    // dense by nature, the check is about long and thin runs.
+                    const double band_m  = std::max(1.0, r_max - r_min);
+                    const double density = run.reports * 100.0 / band_m;
+                    const bool   cut_run = settings.coverage_min_run_reports_per_100m_ > 0.0f
+                                           && density < settings.coverage_min_run_reports_per_100m_;
+
+                    loginf << sources[si].ds_id << ": coverage run "
+                           << Utils::String::doubleToStringPrecision(
+                                  (run.cut + run.begin_j) * bin_deg, 2)
+                           << " to "
+                           << Utils::String::doubleToStringPrecision(
+                                  (run.cut + run.begin_j + run.band.size()) * bin_deg, 2)
+                           << " deg, " << run.band.size() << " bin(s), " << run.reports
+                           << " report(s), band "
+                           << Utils::String::doubleToStringPrecision(r_max - r_min, 0)
+                           << " m, density "
+                           << Utils::String::doubleToStringPrecision(density, 1)
+                           << " per 100 m" << (cut_run ? " - cut" : "");
+
+                    if (!cut_run)
+                        continue;
+
+                    // drop the run's segments, so the gate and the sectors agree
+                    for (std::size_t i = 0; i < run.band.size(); ++i)
+                    {
+                        const std::size_t b = (run.cut + run.begin_j + i) % num_bins;
+                        auto& segs = bins[b].segments;
+
+                        segs.erase(std::remove_if(segs.begin(), segs.end(),
+                                                  [&](const CoverageSegment& seg)
+                                                  {
+                                                      return seg.r_min <= run.band[i].second
+                                                             && run.band[i].first <= seg.r_max;
+                                                  }),
+                                   segs.end());
+                    }
+
+                    run.band.clear();
+                }
+
+                runs.erase(std::remove_if(runs.begin(), runs.end(),
+                                          [](const CoverageRun& r) { return r.band.empty(); }),
+                           runs.end());
+
+                // The sector runs are glued and smoothed: segments of neighboring
+                // bins within the link distance become one sector, and its edges
+                // are widened by a rolling maximum outward and a rolling minimum
+                // inward. Both only ever grow the area, so no report the sensor
+                // delivered falls out of its sector. The gate above keeps the
+                // exact segments, only the drawn sectors are simplified.
+                auto sector_runs = chain_runs(bins, settings.coverage_sector_link_m_,
+                                              settings.coverage_sector_bridge_bins_);
+
+                const int smooth_w = static_cast<int>(settings.coverage_sector_smooth_bins_);
+
+                if (smooth_w > 0)
+                {
+                    for (auto& run : sector_runs)
+                    {
+                        const int n = static_cast<int>(run.band.size());
+                        std::vector<std::pair<double, double>> widened(run.band.size());
+
+                        for (int i = 0; i < n; ++i)
+                        {
+                            double lo = run.band[i].first;
+                            double hi = run.band[i].second;
+
+                            for (int d = -smooth_w; d <= smooth_w; ++d)
+                            {
+                                const int k = i + d;
+                                if (k < 0 || k >= n)
+                                    continue;
+                                lo = std::min(lo, run.band[k].first);
+                                hi = std::max(hi, run.band[k].second);
+                            }
+
+                            widened[i] = std::make_pair(lo, hi);
+                        }
+
+                        run.band.swap(widened);
+                    }
+                }
+
+                // Merge sector runs that would intersect: two runs sharing bins
+                // where their bands overlap, or come within the simplification
+                // tolerance of each other, become one sector. Two sectors of a
+                // source can then no longer cross, and the ones that stay apart
+                // keep a real gap between them. Repeated until nothing changes,
+                // a merge can create a new overlap.
+                {
+                    const double tol = settings.coverage_sector_simplify_m_;
+
+                    bool merged_any = true;
+                    while (merged_any)
+                    {
+                        merged_any = false;
+
+                        for (std::size_t i = 0; i < sector_runs.size() && !merged_any; ++i)
+                        {
+                            if (sector_runs[i].band.empty())
+                                continue;
+
+                            for (std::size_t j = i + 1; j < sector_runs.size() && !merged_any; ++j)
+                            {
+                                CoverageRun& a = sector_runs[i];
+                                CoverageRun& b = sector_runs[j];
+
+                                if (b.band.empty())
+                                    continue;
+
+                                const std::size_t a_end = a.begin_j + a.band.size();
+                                const std::size_t b_end = b.begin_j + b.band.size();
+
+                                const std::size_t from = std::max(a.begin_j, b.begin_j);
+                                const std::size_t to   = std::min(a_end, b_end);
+
+                                if (from >= to)
+                                    continue;   // no shared bin
+
+                                bool overlaps = false;
+                                for (std::size_t k = from; k < to && !overlaps; ++k)
+                                {
+                                    const auto& ea = a.band[k - a.begin_j];
+                                    const auto& eb = b.band[k - b.begin_j];
+
+                                    overlaps = ea.first - tol <= eb.second
+                                               && eb.first - tol <= ea.second;
+                                }
+
+                                if (!overlaps)
+                                    continue;
+
+                                const std::size_t begin_j = std::min(a.begin_j, b.begin_j);
+                                const std::size_t end_j   = std::max(a_end, b_end);
+
+                                std::vector<std::pair<double, double>> band(
+                                    end_j - begin_j,
+                                    std::make_pair(std::numeric_limits<double>::max(), 0.0));
+
+                                auto union_into = [&](const CoverageRun& from_run)
+                                {
+                                    for (std::size_t k = 0; k < from_run.band.size(); ++k)
+                                    {
+                                        auto& dst = band[from_run.begin_j - begin_j + k];
+                                        dst.first  = std::min(dst.first,  from_run.band[k].first);
+                                        dst.second = std::max(dst.second, from_run.band[k].second);
+                                    }
+                                };
+                                union_into(a);
+                                union_into(b);
+
+                                a.band     = std::move(band);
+                                a.begin_j  = begin_j;
+                                a.reports += b.reports;
+
+                                b.band.clear();
+                                b.reports = 0;
+
+                                merged_any = true;
+                            }
+                        }
+                    }
+
+                    sector_runs.erase(std::remove_if(sector_runs.begin(), sector_runs.end(),
+                                                     [](const CoverageRun& r)
+                                                     { return r.band.empty(); }),
+                                      sector_runs.end());
+                }
+
+                // Drop slivers: what survived the segment and run checks can
+                // still be a patch of a few hundred square meters, not worth a
+                // sector of its own.
+                if (settings.coverage_sector_min_area_m2_ > 0.0f)
+                {
+                    const double bin_share = bin_deg / 360.0;
+
+                    sector_runs.erase(
+                        std::remove_if(
+                            sector_runs.begin(), sector_runs.end(),
+                            [&](const CoverageRun& run)
+                            {
+                                double area = 0.0;
+                                for (const auto& e : run.band)
+                                    area += bin_share * M_PI
+                                            * (e.second * e.second - e.first * e.first);
+
+                                if (area >= settings.coverage_sector_min_area_m2_)
+                                    return false;
+
+                                loginf << sources[si].ds_id << ": coverage sector at "
+                                       << Utils::String::doubleToStringPrecision(
+                                              (run.cut + run.begin_j) * bin_deg, 2)
+                                       << " deg dropped, area "
+                                       << Utils::String::doubleToStringPrecision(area, 0)
+                                       << " m2 below "
+                                       << settings.coverage_sector_min_area_m2_ << " m2";
+                                return true;
+                            }),
+                        sector_runs.end());
+                }
+
+                sources[si].coverage_runs = std::move(sector_runs);
+                sources[si].coverage      = std::move(bins);
                 sources[si].coverage = std::move(bins);
             }
         }
@@ -599,11 +1082,12 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
         for (const auto& b : cov)
         {
             row.coverage_reports += b.count;
-            if (!b.covered)
+            if (!b.covered())
                 continue;
             ++row.coverage_bins_covered;
-            r_mins.push_back(b.r_min);
-            r_maxs.push_back(b.r_max);
+            row.coverage_segments += b.segments.size();
+            r_mins.push_back(b.rMin());
+            r_maxs.push_back(b.rMax());
         }
         row.coverage_valid      = row.coverage_bins_covered > 0;
         row.coverage_bins_total = cov.size();
@@ -614,6 +1098,138 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
         }
         if (row.coverage_valid)
             result_.coverage_estimated = true;
+    }
+
+    // Estimated coverage as polygons: one per run of chained segments, traced
+    // outward along the run's upper edge and back along its lower edge, so a
+    // shadowed wedge, a dead gap in range and the unreported area at the antenna
+    // all stay outside. Only built here, writeReport() writes the sectors on the
+    // main thread.
+    if (settings.create_coverage_sectors_ && settings.coverage_azimuth_bin_deg_ > 0.0f)
+    {
+        const double bin_deg = settings.coverage_azimuth_bin_deg_;
+
+        // The boundary follows range circle segments: consecutive bins whose
+        // edge differs by less than this share one arc at a constant range, the
+        // step between two arcs is radial. A straight line between two azimuths
+        // would cut the corner inward and leave own target reports outside.
+        const double range_tolerance_m = settings.coverage_sector_simplify_m_;
+        const double max_arc_step_deg  = 1.0;
+
+        for (const auto& sc : sources)
+        {
+            if (!sc.has_pos || sc.coverage_runs.empty())
+                continue;
+
+            const auto* ds = ctx.dataSource(sc.ds_id);
+            const std::string ds_name = ds ? ds->name() : std::to_string(sc.ds_id);
+
+            static const std::string kSectorName = "Coverage";
+
+            FixedTransformation sector_trafo(sc.lat, sc.lon);
+
+            auto add_point = [&sector_trafo](double az_deg, double range_m,
+                                             std::vector<std::pair<double, double>>& points)
+            {
+                const double rad = az_deg * M_PI / 180.0;
+
+                bool   ok  = false;
+                double lat = 0.0, lon = 0.0;
+                std::tie(ok, lat, lon) = sector_trafo.wgsAddCartOffset(std::sin(rad) * range_m,
+                                                                       std::cos(rad) * range_m);
+                if (ok)
+                    points.emplace_back(lat, lon);
+            };
+
+            // Sampled along the arc so the chord stays within centimeters of the
+            // circle, azimuths may run backwards for the lower edge.
+            auto add_arc = [&](double az_from_deg, double az_to_deg, double range_m,
+                               std::vector<std::pair<double, double>>& points)
+            {
+                const double delta = az_to_deg - az_from_deg;
+                const int    steps = std::max(
+                    1, static_cast<int>(std::ceil(std::fabs(delta) / max_arc_step_deg)));
+
+                for (int i = 0; i <= steps; ++i)
+                    add_point(az_from_deg + delta * i / steps, range_m, points);
+            };
+
+            unsigned int run_cnt = 0;
+
+            for (const auto& run : sc.coverage_runs)
+            {
+                const std::size_t len   = run.band.size();
+                const double      az0   = (run.cut + run.begin_j) * bin_deg;
+
+                // Arcs of one edge as (azimuth from, azimuth to, range). The group
+                // keeps the widest edge of its bins, outward for the upper and
+                // inward for the lower one, so grouping never cuts a report out.
+                auto build_arcs = [&](bool upper)
+                {
+                    std::vector<std::tuple<double, double, double>> arcs;
+
+                    auto edge_at = [&](std::size_t k)
+                    { return upper ? run.band[k].second : run.band[k].first; };
+
+                    std::size_t seg_begin = 0;
+                    double      seg_start = edge_at(0);   // bounds the tolerance
+                    double      seg_range = seg_start;    // the arc is drawn here
+
+                    for (std::size_t k = 1; k <= len; ++k)
+                    {
+                        // measured against the start of the group, so a slowly
+                        // rising edge can not collapse into one arc at its top:
+                        // an arc never leaves the tolerance around its own start
+                        if (k < len && std::fabs(edge_at(k) - seg_start) <= range_tolerance_m)
+                        {
+                            seg_range = upper ? std::max(seg_range, edge_at(k))
+                                              : std::min(seg_range, edge_at(k));
+                            continue;
+                        }
+
+                        arcs.emplace_back(az0 + seg_begin * bin_deg, az0 + k * bin_deg, seg_range);
+
+                        if (k < len)
+                        {
+                            seg_begin = k;
+                            seg_start = edge_at(k);
+                            seg_range = seg_start;
+                        }
+                    }
+
+                    return arcs;
+                };
+
+                ComputeResult::CoverageSector sector;
+                sector.ds_id = sc.ds_id;
+
+                for (const auto& arc : build_arcs(true))
+                    add_arc(std::get<0>(arc), std::get<1>(arc), std::get<2>(arc), sector.points);
+
+                const auto lower_arcs = build_arcs(false);
+                for (auto it = lower_arcs.rbegin(); it != lower_arcs.rend(); ++it)
+                    add_arc(std::get<1>(*it), std::get<0>(*it), std::get<2>(*it), sector.points);
+
+                if (sector.points.size() < 3)
+                    continue;
+
+                ++run_cnt;
+                sector.name = kSectorName;   // numbered below when there are several
+                result_.coverage_sectors.push_back(std::move(sector));
+            }
+
+            // the layer already carries the source name, the sectors are numbered
+            if (run_cnt > 1)
+            {
+                unsigned int idx = 0;
+                for (auto& sector : result_.coverage_sectors)
+                    if (sector.ds_id == sc.ds_id && sector.name == kSectorName)
+                        sector.name = kSectorName + " " + std::to_string(++idx);
+            }
+
+            loginf << ds_name << ": " << run_cnt << " coverage sector(s) from "
+                   << sc.coverage_runs.size() << " coverage run(s)";
+        }
     }
 
     const time_duration ref_max_gap         = durationFromSeconds(settings.ref_max_time_diff_s_);
@@ -775,8 +1391,7 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
                             if (bin >= src.coverage.size())
                                 bin = src.coverage.size() - 1;
 
-                            const auto& cb = src.coverage[bin];
-                            inside = cb.covered && rng >= cb.r_min && rng <= cb.r_max;
+                            inside = src.coverage[bin].contains(rng);
                         }
 
                         const std::uint64_t ckey = grid.horizontalKey(ca.lat, ca.lon);
@@ -946,6 +1561,50 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
     auto& settings = static_cast<SMRCoverageInspectorSettings&>(settings_);
     auto& section  = root.addSubSection(name());
 
+    // The estimated coverage as sectors of a Data Context sector layer. Done
+    // here and not in compute(): creating a sector rebuilds the sector layers
+    // and the views reading them, which only the main thread may do.
+    if (settings.create_coverage_sectors_ && !result_.coverage_sectors.empty())
+    {
+        auto& ctx = task_.compass().dbContextManager();
+
+        // One layer per sensor, named after it, e.g. "RETS SMR Nord Coverage".
+        auto layer_of = [&](unsigned int ds_id)
+        {
+            const auto* ds = ctx.dataSource(ds_id);
+            return (ds ? ds->name() : std::to_string(ds_id)) + " "
+                   + settings.coverage_sector_layer_suffix_;
+        };
+
+        // Clear what a previous run left in those layers, a new estimate can
+        // consist of fewer sectors than the one it replaces.
+        std::set<std::string> layer_names;
+        for (const auto& sector : result_.coverage_sectors)
+            layer_names.insert(layer_of(sector.ds_id));
+
+        std::vector<std::shared_ptr<Sector>> stale;
+        for (const auto& layer : ctx.sectorLayers())
+        {
+            if (!layer_names.count(layer->name()))
+                continue;
+            for (const auto& sector : layer->sectors())
+                stale.push_back(sector);
+        }
+        if (!stale.empty())
+            ctx.deleteSectors(stale);
+
+        for (const auto& sector : result_.coverage_sectors)
+        {
+            // Yellow, the sector layer is read on top of the target report
+            // colors of the source it was estimated from.
+            ctx.createOrReplaceSector(sector.name, layer_of(sector.ds_id), false,
+                                      QColor(Qt::yellow), sector.points);
+        }
+
+        loginf << "created " << result_.coverage_sectors.size() << " coverage sector(s) in "
+               << layer_names.size() << " layer(s)";
+    }
+
     {
         auto& intro = section.addText("About");
         intro.addText(
@@ -1009,14 +1668,29 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
     {
         std::ostringstream os;
         if (settings.coverage_azimuth_bin_deg_ > 0.0f)
+        {
             os << "radial band per " << settings.coverage_azimuth_bin_deg_
                << " deg azimuth bin, P1 to P99 of the report ranges\n"
                << "at least " << settings.coverage_min_reports_
                << " reports per bin, " << settings.coverage_smooth_bins_
                << " smoothing pass(es)";
+
+            if (settings.coverage_min_run_reports_per_100m_ > 0.0f)
+                os << "\nat least " << settings.coverage_min_run_reports_per_100m_
+                   << " reports per 100 m of band per covered run";
+        }
         else
             os << "off (every slot inside the maximum range is expected)";
         recap.addRow({"Estimated coverage", os.str()});
+    }
+    {
+        std::ostringstream os;
+        if (settings.create_coverage_sectors_ && settings.coverage_azimuth_bin_deg_ > 0.0f)
+            os << "one layer per source, named '<data source> "
+               << settings.coverage_sector_layer_suffix_ << "'";
+        else
+            os << "off";
+        recap.addRow({"Coverage sectors", os.str()});
     }
     {
         std::ostringstream os;
@@ -1082,16 +1756,16 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
     // Estimated coverage per source.
     if (result_.coverage_estimated)
     {
-        auto& ct = section.addTable("Estimated Coverage", 6,
+        auto& ct = section.addTable("Estimated Coverage", 7,
                                     {"Data Source", "Reports", "Azimuth Bins",
-                                     "Bins with Coverage", "Median Inner Range (m)",
-                                     "Median Outer Range (m)"},
+                                     "Bins with Coverage", "Segments",
+                                     "Median Inner Range (m)", "Median Outer Range (m)"},
                                     false);
         for (const auto& r : result_.sources)
         {
             if (!r.coverage_valid)
             {
-                ct.addRow({r.label, std::to_string(r.coverage_reports), "-", "-", "-", "-"});
+                ct.addRow({r.label, std::to_string(r.coverage_reports), "-", "-", "-", "-", "-"});
                 continue;
             }
             std::ostringstream cov;
@@ -1103,6 +1777,7 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
                        std::to_string(r.coverage_reports),
                        std::to_string(r.coverage_bins_total),
                        cov.str(),
+                       std::to_string(r.coverage_segments),
                        formatNumber(r.coverage_r_min_median, 1),
                        formatNumber(r.coverage_r_max_median, 1)});
         }
