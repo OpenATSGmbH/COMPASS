@@ -54,6 +54,8 @@ DetectionConfig::DetectionConfig(
 
     registerParameter("use_time_ratio", &use_time_ratio_, false);
 
+    registerParameter("use_gap_count", &use_gap_count_, false);
+
     registerParameter("use_stationary_ui", &use_stationary_ui_, false);
     registerParameter("stationary_ui_s", &stationary_ui_s_, 10.0f);
     registerParameter("stationary_speed_threshold_ms", &stationary_speed_threshold_ms_, 0.5f);
@@ -74,7 +76,7 @@ std::shared_ptr<Base> DetectionConfig::createRequirement()
     shared_ptr<Detection> req = make_shared<Detection>(
                 name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_, update_interval_s_,
                 use_min_gap_length_, min_gap_length_s_, use_max_gap_length_, max_gap_length_s_, invert_prob_,
-                use_miss_tolerance_, miss_tolerance_s_, use_time_ratio_,
+                use_miss_tolerance_, miss_tolerance_s_, use_time_ratio_, use_gap_count_,
                 use_stationary_ui_, stationary_ui_s_, stationary_speed_threshold_ms_,
                 hold_for_any_target_, ignore_primary_only_, pd_calculation_method_);
 
@@ -139,6 +141,16 @@ bool DetectionConfig::useTimeRatio() const
 void DetectionConfig::useTimeRatio(bool value)
 {
     use_time_ratio_ = value;
+}
+
+bool DetectionConfig::useGapCount() const
+{
+    return use_gap_count_;
+}
+
+void DetectionConfig::useGapCount(bool value)
+{
+    use_gap_count_ = value;
 }
 
 bool DetectionConfig::useStationaryUI() const
@@ -267,6 +279,12 @@ void DetectionConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
                   " (ED-129C Appendix C Interarrivaltime method) instead of missed"
                   " update intervals over expected update intervals",
                   String::boolToString(use_time_ratio_)});
+
+    table.addRow({"Use Gap Count", "Number of gaps over the number of test reports"
+                  " (ED-117A Section 6.4.8, ED-87E Section 5.3.14) instead of missed"
+                  " update intervals over expected update intervals. Each gap counts"
+                  " once, independent of its length",
+                  String::boolToString(use_gap_count_)});
 
     table.addRow({"Use Stationary Update Interval", "Speed-dependent update interval:"
                   " below the speed threshold the stationary update interval applies"

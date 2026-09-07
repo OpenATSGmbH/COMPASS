@@ -54,6 +54,7 @@ Detection::Detection(const std::string& name,
                      bool use_miss_tolerance,
                      float miss_tolerance_s,
                      bool use_time_ratio,
+                     bool use_gap_count,
                      bool use_stationary_ui,
                      float stationary_ui_s,
                      float stationary_speed_threshold_ms,
@@ -68,6 +69,7 @@ Detection::Detection(const std::string& name,
     use_miss_tolerance_ (use_miss_tolerance),
     miss_tolerance_s_   (miss_tolerance_s),
     use_time_ratio_     (use_time_ratio),
+    use_gap_count_      (use_gap_count),
     use_stationary_ui_  (use_stationary_ui),
     stationary_ui_s_    (stationary_ui_s),
     stationary_speed_threshold_ms_(stationary_speed_threshold_ms),
@@ -267,6 +269,13 @@ bool Detection::useTimeRatio() const
 
 /**
 */
+bool Detection::useGapCount() const
+{
+    return use_gap_count_;
+}
+
+/**
+*/
 bool Detection::useStationaryUI() const
 {
     return use_stationary_ui_;
@@ -354,8 +363,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                << " periods '" << ref_periods.print() << "'";
 
     // status-message method, when the test data source reports its update cycles.
-    // Without cycles the time-difference method below applies.
-    if (pd_calculation_method_ == "status_message")
+    // Without cycles the time-difference method below applies. The gap count mode
+    // always walks the time differences, so a status message setting on a gap count
+    // instance cannot turn it into a detection requirement.
+    if (pd_calculation_method_ == "status_message" && !use_gap_count_)
     {
         const auto& cycles = calculator_.testStatusCycles();
 
@@ -369,9 +380,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
     // evaluate test data
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
-    // expected total: number of update intervals (counting mode) or
-    // reference duration in seconds (time-ratio mode)
-    double sum_expected = use_time_ratio_ ? ref_periods.getDurationSeconds()
+    // expected total: number of test reports accepted by the walk (gap count mode),
+    // reference duration in seconds (time-ratio mode) or number of update intervals
+    // (counting mode). In gap count mode the accepted reports are counted below,
+    // wherever a report updates period_last_tst_times.
+    double sum_expected = use_gap_count_  ? 0.0
+                        : use_time_ratio_ ? ref_periods.getDurationSeconds()
                                           : (double)ref_periods.getUIs(update_interval_s_);
 
     float t_diff;
@@ -719,6 +733,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             was_outside = false;
             period_last_tst_times[period_index] = timestamp;
 
+            if (use_gap_count_)
+                sum_expected += 1.0;
+
             continue;
         }
 
@@ -762,6 +779,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         }
 
         period_last_tst_times[period_index] = timestamp;
+
+        if (use_gap_count_)
+            sum_expected += 1.0;
     }
 
     // finalize unfinished periods
@@ -882,11 +902,15 @@ float Detection::getMissedTime(float d_tod, float update_interval_s) const
 }
 
 /**
- * Missed amount attributed to a gap classified as miss: number of missed
- * update intervals (counting mode) or missed seconds (time-ratio mode).
+ * Missed amount attributed to a gap classified as miss: one gap (gap count mode),
+ * missed seconds (time-ratio mode) or number of missed update intervals
+ * (counting mode).
 */
 double Detection::getMissed(float d_tod, float update_interval_s) const
 {
+    if (use_gap_count_)
+        return 1.0;
+
     return use_time_ratio_ ? (double)getMissedTime(d_tod, update_interval_s)
                            : (double)getNumMisses(d_tod, update_interval_s);
 }

@@ -121,11 +121,30 @@ TEST_CASE("PDHelpers::isMiss - tolerance combined with min/max",
     p.use_max_gap_length = true;
     p.max_gap_length_s   = 10.0f;
 
-    // adj = gap - 0.5
-    REQUIRE_FALSE(isMiss(2.49f, p));  // adj = 1.99 -> below min
-    REQUIRE      (isMiss(2.55f, p));  // adj = 2.05 -> miss
-    REQUIRE      (isMiss(10.5f, p));  // adj = 10.0 -> at max boundary
-    REQUIRE_FALSE(isMiss(10.51f, p)); // adj = 10.01 -> above max
+    // min and max select on the raw gap, the tolerance only shifts the UI test
+    REQUIRE_FALSE(isMiss(1.99f, p));  // raw below min
+    REQUIRE      (isMiss(2.0f,  p));  // raw at min, adj = 1.5 -> miss
+    REQUIRE      (isMiss(2.49f, p));  // raw above min, adj = 1.99 -> miss
+    REQUIRE      (isMiss(10.0f, p));  // raw at max boundary
+    REQUIRE_FALSE(isMiss(10.01f, p)); // raw above max
+    REQUIRE_FALSE(isMiss(10.5f, p));  // raw above max, tolerance does not shift it
+}
+
+TEST_CASE("PDHelpers::isMiss - tolerance does not lift a raw gap over the minimum",
+          "[pd_helpers][misstest]")
+{
+    // ED-117A PLG on the manoeuvring area: gaps of 3 s and more count, and the
+    // 0.5 s tolerance must not turn that threshold into 3.5 s
+    MissTestParams p;
+    p.update_interval_s  = 1.0f;
+    p.use_miss_tolerance = true;
+    p.miss_tolerance_s   = 0.5f;
+    p.use_min_gap_length = true;
+    p.min_gap_length_s   = 3.0f;
+
+    REQUIRE_FALSE(isMiss(2.9f, p));
+    REQUIRE      (isMiss(3.0f, p));
+    REQUIRE      (isMiss(3.4f, p));
 }
 
 TEST_CASE("PDHelpers::numMisses - returns 0 for non-misses",

@@ -111,6 +111,10 @@ protected:
     virtual unsigned int numIssues() const override;
     virtual unsigned int numUpdates() const override;
 
+    // in gap count mode a target whose reports all fall outside the sector has no
+    // value of its own, but the gaps of its reference periods count for the sector
+    virtual bool resultUsed(const std::shared_ptr<Single>& result) const override;
+
     virtual void clearResults_impl() override;
     virtual void accumulateSingleResult(const std::shared_ptr<Single>& single_result, bool first, bool last) override;
     virtual boost::optional<double> computeResult_impl() const override;

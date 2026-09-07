@@ -83,9 +83,10 @@
                     "class_name": "EvaluationStandard",
                     "instance_name": "EvaluationStandard1171",
                     "parameters": {
+                        "ignore_mode_ac_only_targets": true,
+                        "ignore_primary_only_targets": true,
                         "name": "EUROCAE ED-117A",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 12.5
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -105,11 +106,10 @@
                                         "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
-                                        "miss_tolerance": 0.9990000128746033,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
                                         "short_name": "PTR",
@@ -130,13 +130,14 @@
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 15.0,
-                                        "miss_tolerance": 0.9990000128746033,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Long Horizontal Gaps",
                                         "prob": 0.001,
                                         "prob_check_type": 1,
                                         "short_name": "PLG",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -154,7 +155,7 @@
                                         "ref_min_accuracy": 12.5,
                                         "short_name": "PFTR",
                                         "threshold_value": 125.0,
-                                        "threshold_value_check_type": 3,
+                                        "threshold_value_check_type": 2,
                                         "use": true
                                     }
                                 },
@@ -193,11 +194,10 @@
                                         "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.9,
-                                        "miss_tolerance": 0.9990000128746033,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.7,
                                         "prob_check_type": 3,
                                         "short_name": "PTR",
@@ -218,13 +218,14 @@
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.9990000128746033,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Long Horizontal Gaps",
                                         "prob": 0.01,
                                         "prob_check_type": 1,
                                         "short_name": "PLG",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -242,7 +243,7 @@
                                         "ref_min_accuracy": 10.0,
                                         "short_name": "PFTR",
                                         "threshold_value": 100.0,
-                                        "threshold_value_check_type": 3,
+                                        "threshold_value_check_type": 2,
                                         "use": true
                                     }
                                 },
@@ -322,17 +323,49 @@
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationFalseConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigPropability of False Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-117A Table 3-1",
-                                        "name": "Probability of False Identification",
+                                        "comment": "From EUROCAE ED-117A Table 3-1, one instance per identity item as in Section 6.4.6",
+                                        "name": "Probability of False Identification MSAD",
                                         "prob": 0.0001,
                                         "prob_check_type": 1,
                                         "require_all_false": false,
-                                        "short_name": "PFID",
+                                        "short_name": "PFID TA",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117A Table 3-1, one instance per identity item as in Section 6.4.6",
+                                        "name": "Probability of False Identification MA",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "require_all_false": false,
+                                        "short_name": "PFID MA",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117A Table 3-1, one instance per identity item as in Section 6.4.6",
+                                        "name": "Probability of False Identification MSID",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "require_all_false": false,
+                                        "short_name": "PFID ID",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
                                         "use_ms_ti": true
                                     }
                                 }
@@ -355,11 +388,10 @@
                                         "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
-                                        "miss_tolerance": 0.20000000298023224,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.95,
                                         "prob_check_type": 3,
                                         "short_name": "PTR",
@@ -380,13 +412,14 @@
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.9990000128746033,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Long Horizontal Gaps",
                                         "prob": 0.001,
                                         "prob_check_type": 1,
                                         "short_name": "PLG",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -404,7 +437,7 @@
                                         "ref_min_accuracy": 6.0,
                                         "short_name": "PFTR",
                                         "threshold_value": 60.0,
-                                        "threshold_value_check_type": 3,
+                                        "threshold_value_check_type": 2,
                                         "use": true
                                     }
                                 },
@@ -486,6 +519,7 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -607,6 +641,7 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -629,6 +664,7 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -793,6 +829,7 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -815,6 +852,7 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -964,6 +1002,7 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -1068,6 +1107,7 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -1090,6 +1130,7 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -1237,6 +1278,7 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -1259,6 +1301,7 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -1967,7 +2010,7 @@
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Update",
                                         "pd_calculation_method": "status_message",
                                         "prob": 0.95,
@@ -1977,7 +2020,7 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true
                                     }
                                 }
                             ]
@@ -2000,7 +2043,7 @@
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Update",
                                         "pd_calculation_method": "status_message",
                                         "prob": 0.7,
@@ -2010,7 +2053,7 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true
                                     }
                                 },
                                 {
@@ -2187,7 +2230,7 @@
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Update",
                                         "pd_calculation_method": "status_message",
                                         "prob": 0.95,
@@ -2197,7 +2240,7 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true
                                     }
                                 },
                                 {
@@ -2242,7 +2285,7 @@
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of MLAT Detection",
                                         "pd_calculation_method": "status_message",
                                         "prob": 0.999,
@@ -2252,7 +2295,7 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true
                                     }
                                 }
                             ]
@@ -2275,7 +2318,7 @@
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of MLAT Detection",
                                         "pd_calculation_method": "status_message",
                                         "prob": 0.999,
@@ -2285,7 +2328,7 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true
                                     }
                                 },
                                 {
@@ -2298,7 +2341,7 @@
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Update",
                                         "pd_calculation_method": "status_message",
                                         "prob": 0.5,
@@ -2308,7 +2351,7 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true
                                     }
                                 },
                                 {
@@ -2425,6 +2468,7 @@
                                         "short_name": "PLG",
                                         "update_interval": 8.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false
@@ -2572,6 +2616,7 @@
                                         "short_name": "PLG",
                                         "update_interval": 5.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false
@@ -2754,6 +2799,7 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -2858,6 +2904,7 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -2880,6 +2927,7 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -3027,6 +3075,7 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true
@@ -3049,6 +3098,7 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true

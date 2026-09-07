@@ -68,6 +68,9 @@ public:
     bool useTimeRatio() const;
     void useTimeRatio(bool value);
 
+    bool useGapCount() const;
+    void useGapCount(bool value);
+
     bool useStationaryUI() const;
     void useStationaryUI(bool value);
 
@@ -105,6 +108,11 @@ public:
     // time-ratio calculation mode (ED-129C Appendix C "Interarrivaltime" method):
     // missed time over reference duration instead of missed UIs over expected UIs
     bool use_time_ratio_{false};
+
+    // gap count mode (ED-117A Section 6.4.8, ED-87E Section 5.3.14): number of gaps
+    // over the number of test reports, instead of missed UIs over expected UIs. Each
+    // gap counts once, independent of its length and of the update interval
+    bool use_gap_count_{false};
 
     // speed-dependent update interval for surface targets (ED-129C ORQ 627):
     // below the speed threshold the stationary update interval applies

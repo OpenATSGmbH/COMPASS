@@ -50,6 +50,14 @@ namespace
         return req && req->useTimeRatio();
     }
 
+    // true if the requirement runs in the gap count calculation mode
+    // (ED-117A Section 6.4.8, ED-87E Section 5.3.14)
+    bool isGapCount(const std::shared_ptr<EvaluationRequirement::Base>& requirement)
+    {
+        auto req = std::dynamic_pointer_cast<EvaluationRequirement::Detection>(requirement);
+        return req && req->useGapCount();
+    }
+
     // table/json representation: whole update interval counts in counting mode,
     // seconds rounded to millisecond precision in time-ratio mode
     nlohmann::json expectedMissedValue(double value, bool time_ratio)
@@ -130,7 +138,10 @@ boost::optional<double> SingleDetection::computeResult_impl() const
 
     logdbg << "utn " << utn_ << " sum_missed " << sum_missed_ << " sum_expected " << sum_expected_;
 
-    traced_assert(sum_missed_ <= sum_expected_ + 1e-06);
+    // in gap count mode the gaps are counted against the number of test reports, so
+    // more gaps than reports are possible and no longer indicate an error
+    if (!isGapCount(requirement_))
+        traced_assert(sum_missed_ <= sum_expected_ + 1e-06);
 
     std::shared_ptr<EvaluationRequirement::Detection> req =
             std::static_pointer_cast<EvaluationRequirement::Detection>(requirement_);
@@ -153,6 +164,9 @@ std::vector<std::string> SingleDetection::targetTableHeadersCustom() const
     if (isTimeRatio(requirement_))
         return { "DT [s]", "MT [s]" };
 
+    if (isGapCount(requirement_))
+        return { "#Reports", "#Gaps" };
+
     return { "#EUIs", "#MUIs" };
 }
 
@@ -160,7 +174,10 @@ std::vector<std::string> SingleDetection::targetTableHeadersCustom() const
 */
 std::string SingleDetection::targetTableCustomSortColumn() const
 {
-    return isTimeRatio(requirement_) ? "MT [s]" : "#MUIs";
+    if (isTimeRatio(requirement_))
+        return "MT [s]";
+
+    return isGapCount(requirement_) ? "#Gaps" : "#MUIs";
 }
 
 /**
@@ -187,6 +204,9 @@ std::vector<Single::TargetInfo> SingleDetection::targetInfos() const
     if (time_ratio)
         infos = { TargetInfo("DT [s]", "Reference Duration", expectedMissedValue(sum_expected_, time_ratio)),
                   TargetInfo("MT [s]", "Missed Time"       , expectedMissedValue(sum_missed_  , time_ratio)) };
+    else if (isGapCount(requirement_))
+        infos = { TargetInfo("#Reports [1]", "Test Reports inside Sector", expectedMissedValue(sum_expected_, time_ratio)),
+                  TargetInfo("#Gaps [1]"   , "Gaps"                     , expectedMissedValue(sum_missed_  , time_ratio)) };
     else
         infos = { TargetInfo("#EUIs [1]", "Expected Update Intervals", expectedMissedValue(sum_expected_, time_ratio)),
                   TargetInfo("#MUIs [1]", "Missed Update Intervals"  , expectedMissedValue(sum_missed_  , time_ratio)) };
@@ -289,6 +309,31 @@ unsigned int JoinedDetection::numUpdates() const
 
 /**
 */
+bool JoinedDetection::resultUsed(const std::shared_ptr<Single>& result) const
+{
+    if (Joined::resultUsed(result))
+        return true;
+
+    if (!isGapCount(requirement_))
+        return false;
+
+    // no value of its own, because no test report was accepted inside the sector.
+    // Its reference periods still produced gaps, and those belong to the sector
+    std::shared_ptr<SingleDetection> single = std::static_pointer_cast<SingleDetection>(result);
+
+    if (single->ignoreResult() || single->sumExpected() > 0.0 || single->sumMissed() <= 0.0)
+        return false;
+
+    const auto* target = single->target();
+
+    return target
+            && target->use()
+            && !target->ignoredByStandard()
+            && !target->excludedRequirements().count(requirement_->name());
+}
+
+/**
+*/
 void JoinedDetection::clearResults_impl()
 {
     sum_missed_   = 0;
@@ -301,7 +346,8 @@ void JoinedDetection::accumulateSingleResult(const std::shared_ptr<Single>& sing
 {
     std::shared_ptr<SingleDetection> single = std::static_pointer_cast<SingleDetection>(single_result);
 
-    assert (single->resultUsable());
+    // in gap count mode a result without an own value can still carry gaps, see resultUsed()
+    assert (single->resultUsable() || isGapCount(requirement_));
 
     sum_missed_   += single->sumMissed();
     sum_expected_ += single->sumExpected();
@@ -315,7 +361,9 @@ boost::optional<double> JoinedDetection::computeResult_impl() const
             << " sum_missed " << sum_missed_
             << " sum_expected " << sum_expected_;
 
-    traced_assert(sum_missed_ <= sum_expected_ + 1e-06);
+    // see SingleDetection::computeResult_impl()
+    if (!isGapCount(requirement_))
+        traced_assert(sum_missed_ <= sum_expected_ + 1e-06);
 
     if (sum_expected_ <= 0.0)
         return {};
@@ -332,6 +380,10 @@ std::vector<Joined::SectorInfo> JoinedDetection::sectorInfos() const
     if (time_ratio)
         return { { "DT [s]", "Reference Duration", expectedMissedValue(sum_expected_, time_ratio) },
                  { "MT [s]", "Missed Time"       , expectedMissedValue(sum_missed_  , time_ratio) } };
+
+    if (isGapCount(requirement_))
+        return { { "#Reports [1]", "Test Reports inside Sector", expectedMissedValue(sum_expected_, time_ratio) },
+                 { "#Gaps [1]"   , "Gaps"                     , expectedMissedValue(sum_missed_  , time_ratio) } };
 
     return { { "#EUIs [1]", "Expected Update Intervals", expectedMissedValue(sum_expected_, time_ratio) },
              { "#MUIs [1]", "Missed Update Intervals"  , expectedMissedValue(sum_missed_  , time_ratio) } };

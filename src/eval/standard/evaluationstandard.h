@@ -99,6 +99,9 @@ public:
     bool ignoreNonADSBTargets() const { return ignore_non_adsb_targets_; }
     void ignoreNonADSBTargets(bool value) { ignore_non_adsb_targets_ = value; }
 
+    bool ignoreModeACOnlyTargets() const { return ignore_mode_ac_only_targets_; }
+    void ignoreModeACOnlyTargets(bool value) { ignore_mode_ac_only_targets_ = value; }
+
     /// checks if a target is to be ignored by this standard, returns the reason
     /// or an empty string if the target is to be used
     std::string targetIgnoreReason(const EvaluationTargetData& target) const;
@@ -116,6 +119,7 @@ protected:
     // loading, without changing the persisted target usage flags
     bool ignore_primary_only_targets_ {false};
     bool ignore_non_adsb_targets_ {false};
+    bool ignore_mode_ac_only_targets_ {false};
 
     std::vector<std::unique_ptr<Group>> groups_;
 

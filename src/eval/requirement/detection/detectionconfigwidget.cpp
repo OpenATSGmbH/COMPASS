@@ -120,6 +120,19 @@ DetectionConfigWidget::DetectionConfigWidget(DetectionConfig& cfg)
 
     form_layout_->addRow("Use Time-Based Calculation", use_time_ratio_check_);
 
+    // gap count mode
+    use_gap_count_check_ = new QCheckBox ();
+    use_gap_count_check_->setChecked(config().useGapCount());
+    use_gap_count_check_->setToolTip("Calculate the probability as number of gaps over the"
+                                     " number of test reports (ED-117A Section 6.4.8, ED-87E"
+                                     " Section 5.3.14) instead of missed update intervals over"
+                                     " expected update intervals. Each gap counts once,"
+                                     " independent of its length");
+    connect(use_gap_count_check_, &QCheckBox::clicked,
+            this, &DetectionConfigWidget::toggleUseGapCountSlot);
+
+    form_layout_->addRow("Use Gap Count", use_gap_count_check_);
+
     // stationary update interval
     use_stationary_ui_check_ = new QCheckBox ();
     use_stationary_ui_check_->setChecked(config().useStationaryUI());
@@ -290,6 +303,14 @@ void DetectionConfigWidget::toggleUseTimeRatioSlot()
 
     traced_assert(use_time_ratio_check_);
     config().useTimeRatio(use_time_ratio_check_->checkState() == Qt::Checked);
+}
+
+void DetectionConfigWidget::toggleUseGapCountSlot()
+{
+    loginf;
+
+    traced_assert(use_gap_count_check_);
+    config().useGapCount(use_gap_count_check_->checkState() == Qt::Checked);
 }
 
 void DetectionConfigWidget::toggleUseStationaryUISlot()

@@ -437,6 +437,16 @@ QWidget* EvaluationStandardWidget::createMainWidget()
 
     layout->addRow("Ignore Non-ADSB Targets", ignore_non_adsb_check);
 
+    QCheckBox* ignore_mode_ac_only_check = new QCheckBox();
+    ignore_mode_ac_only_check->setChecked(standard_.ignoreModeACOnlyTargets());
+    ignore_mode_ac_only_check->setToolTip("Ignore targets with a Mode 3/A or Mode C code but"
+                                          " without any Mode S attribute, for standards that"
+                                          " state their requirements for Mode S targets only");
+    connect(ignore_mode_ac_only_check, &QCheckBox::clicked,
+            this, &EvaluationStandardWidget::toggleIgnoreModeACOnlyTargetsSlot);
+
+    layout->addRow("Ignore Mode A/C Only Targets", ignore_mode_ac_only_check);
+
     //QLineEdit* ref_min_acc_edit = new QLineEdit(QString::number(standard_.referenceMinAccuracy()));
     //ref_min_acc_edit->setValidator(new QDoubleValidator(0.1, 1000.0, 1, this));
     //connect(ref_min_acc_edit, &QLineEdit::textEdited,
@@ -461,6 +471,13 @@ void EvaluationStandardWidget::toggleIgnoreNonADSBTargetsSlot(bool checked)
     loginf << "value " << checked;
 
     standard_.ignoreNonADSBTargets(checked);
+}
+
+void EvaluationStandardWidget::toggleIgnoreModeACOnlyTargetsSlot(bool checked)
+{
+    loginf << "value " << checked;
+
+    standard_.ignoreModeACOnlyTargets(checked);
 }
 
 void EvaluationStandardWidget::refMaxTimeDiffEditSlot(QString value)

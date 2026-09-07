@@ -53,6 +53,7 @@ EvaluationStandard::EvaluationStandard(nlohmann::json& config, EvaluationCalcula
 
     registerParameter("ignore_primary_only_targets", &ignore_primary_only_targets_, ignore_primary_only_targets_);
     registerParameter("ignore_non_adsb_targets", &ignore_non_adsb_targets_, ignore_non_adsb_targets_);
+    registerParameter("ignore_mode_ac_only_targets", &ignore_mode_ac_only_targets_, ignore_mode_ac_only_targets_);
 
     traced_assert(name_.size());
 
@@ -245,9 +246,9 @@ void EvaluationStandard::addToReport (std::shared_ptr<ResultReport::Report> repo
 
 /**
  * Checks if the given target is not relevant for this standard, e.g. a primary-only
- * target for a secondary surveillance standard, or a target never detected in ADS-B
- * data for an ADS-B standard. Returns the reason, or an empty string if the target
- * is to be used.
+ * target for a secondary surveillance standard, a target never detected in ADS-B
+ * data for an ADS-B standard, or a Mode A/C-only target for a Mode S standard.
+ * Returns the reason, or an empty string if the target is to be used.
  */
 std::string EvaluationStandard::targetIgnoreReason(const EvaluationTargetData& target) const
 {
@@ -256,6 +257,9 @@ std::string EvaluationStandard::targetIgnoreReason(const EvaluationTargetData& t
 
     if (ignore_non_adsb_targets_ && !target.hasADSBData())
         return "No ADS-B data";
+
+    if (ignore_mode_ac_only_targets_ && target.isModeACOnly())
+        return "Mode A/C-only";
 
     return {};
 }
