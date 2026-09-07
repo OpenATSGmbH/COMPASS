@@ -1,0 +1,62 @@
+\subsection{EUROCAE ED-117A}
+\label{sec:appendix_eval_std_ed117a}
+
+The 'EUROCAE ED-117A' standard covers the MOPS for Mode S multilateration systems used for surface movement guidance and control, and is mapped from the edition of September 2016. \\
+
+The performance requirements of the source document address Mode S transmitting targets, and it states that no performance requirements apply to Mode A/C targets. The standard therefore sets both 'Ignore Primary Only Targets' and 'Ignore Mode A/C Only Targets', see the 'Standard' tab of the Evaluation dialog. \\
+
+\subsubsection{Requirement Mapping}
+
+The performance figures are taken from Table 3-1 of the source document, the assessment procedures from Section 6.4.
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | l | X | }
+    \hline
+    \textbf{Group} & \textbf{Req.} & \textbf{COMPASS Requirement, Configuration and Source Section} \\ \hline
+    Manoeuvring Area & PTR & \nameref{sec:eval_req_detection}, 95\%, update interval 1 s (Table 3-1) \\ \hline
+    Apron Taxiways & PTR & \nameref{sec:eval_req_detection}, 70\%, update interval 1 s (Table 3-1) \\ \hline
+    Active Stands & PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 5 s (Table 3-1) \\ \hline
+    Manoeuvring Area & PLG & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps of 3 s and longer, below 1e-3 (Table 3-1, 6.4.8) \\ \hline
+    Apron Taxiways & PLG & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps of 3 s and longer, below 1e-2 (Table 3-1, 6.4.8) \\ \hline
+    Active Stands & PLG & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps of 15 s and longer, below 1e-3 (Table 3-1, 6.4.8) \\ \hline
+    Manoeuvring Area & RPA & \nameref{sec:eval_req_pos_distance}, 12 m at 95\% (Table 3-1) \\ \hline
+    Apron Taxiways & RPA & \nameref{sec:eval_req_pos_distance}, 20 m at 95\% (Table 3-1) \\ \hline
+    Active Stands & RPA & \nameref{sec:eval_req_pos_distance}, 25 m at 95\% (Table 3-1) \\ \hline
+    Manoeuvring Area & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 60 m, below 1e-4 (Table 3-1, 3.3.5) \\ \hline
+    Apron Taxiways & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 100 m, below 1e-4 (Table 3-1, 3.3.5) \\ \hline
+    Active Stands & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 125 m, below 1e-4 (Table 3-1, 3.3.5) \\ \hline
+    Common & PID TA & \nameref{sec:eval_req_id_correct}, 99\%, Mode S address (Table 3-1) \\ \hline
+    Common & PID MA & \nameref{sec:eval_req_id_correct}, 97\%, Mode 3/A code (Table 3-1) \\ \hline
+    Common & PID ID & \nameref{sec:eval_req_id_correct}, 97\%, aircraft identification (Table 3-1) \\ \hline
+    Common & PFID TA & \nameref{sec:eval_req_id_false}, at most 1e-4, Mode S address (Table 3-1, 6.4.6) \\ \hline
+    Common & PFID MA & \nameref{sec:eval_req_id_false}, at most 1e-4, Mode 3/A code (Table 3-1, 6.4.6) \\ \hline
+    Common & PFID ID & \nameref{sec:eval_req_id_false}, at most 1e-4, aircraft identification (Table 3-1, 6.4.6) \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+\ \\
+
+\subsubsection{Implementation Notes}
+
+\begin{itemize}
+\item \textbf{Target report rate.} The source document counts fixed update periods derived from the target report update rate, starting at the begin of the assessment. The PTR instances therefore use the status message method, see \nameref{sec:eval_req_detection}, so that the periods come from the update cycles the system under test reports. Where the system reports no cycles, the time difference method applies, with a miss tolerance of 0.5 s. The tolerance is stated flat for all detection instances of this standard, rather than scaled with the update interval.
+\item \textbf{Long gaps.} The source document expresses this requirement as a number of gaps over a number of target reports. The 'Use Gap Count' option of the Detection requirement implements exactly that form: every gap counts once, independent of its length, and the denominator is the number of test target reports inside the sector layer. The update interval therefore does not influence the result.
+\item \textbf{Gap length threshold.} The minimum gap length selects on the measured gap. The miss tolerance applies only to the update interval comparison, so a configured tolerance does not shift the 3 s and 15 s figures of the source document.
+\item \textbf{Leading and trailing gaps.} A stretch without a test target report at the begin or at the end of a reference period counts as one gap, as does a reference period holding no test target report at all. The reference shows that the target was present, so a missing stretch is a reporting gap. The initiation time of a track is a different figure and is not assessed here.
+\item \textbf{Update rate on stands.} The target report update rate on active stands is lower than on the other areas. The stand instances are configured with the matching update interval, so that the update interval of the detection and of the gap requirement of one group agree.
+\item \textbf{False target report.} An outlier is defined relative to the reported position accuracy of the respective area. The threshold is therefore configured as five times the accuracy figure of that area, with a strict comparison as stated in Section 3.3.5. The spurious part of the definition is not assessed, since a spurious target report cannot be told apart from an undetected real one on the basis of the recorded output alone.
+\item \textbf{False identification split.} The source document asks for one figure per identity item. Three instances are configured, one per item, following the assessment procedure of Section 6.4.6.
+\item \textbf{Track update rate.} The track update rate requirement is covered by the target report rate requirement, as Section 6.4.2 of the source document states.
+\end{itemize}
+\ \\
+
+\subsubsection{Not Assessed}
+
+The following requirements of the source document are not part of the supplied definition:
+\begin{itemize}
+\item \textbf{Time synchronisation.} The requirement addresses the timing error of the Time of Day against the actual measurement time. It cannot be measured from the recorded output without a second, independently timed source. The \nameref{sec:eval_req_pos_latency} requirement gives a related figure on a moving reference, but it also carries the position noise of the system under test, and is therefore not configured as a substitute.
+\item \textbf{Spurious false target reports.} See the note on the false target report requirement above.
+\item \textbf{Per-polygon assessment.} The source document splits the coverage volume into polygons and assesses each one separately. COMPASS reports per sector layer. One sector layer per polygon gives the same split, at the cost of a more elaborate airspace definition, see \nameref{sec:ui_configure_sectors}. For a visual check, the grid annotations of the detection and position results show the spatial distribution inside one sector layer, see \nameref{sec:eval_inspect}.
+\item \textbf{Interrogation rate, capacity, switchover and failure reporting.} These cannot be assessed from recorded surveillance data.
+\end{itemize}

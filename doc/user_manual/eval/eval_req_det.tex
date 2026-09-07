@@ -9,7 +9,7 @@
   \caption{Evaluation Detection requirement}
 \end{figure}
 
-\textcolor{red}{\textbf{[TODO: update screenshot figures/eval\_req\_detection.png: new elements 'Use Time-Based Calculation', 'Use Stationary Update Interval', 'Stationary Update Interval [s]', 'Stationary Speed Threshold [m/s]']}} \\
+\textcolor{red}{\textbf{[TODO: update screenshot figures/eval\_req\_detection.png: new elements 'PD Calculation Method', 'Use Time-Based Calculation', 'Use Gap Count', 'Use Stationary Update Interval', 'Stationary Update Interval [s]', 'Stationary Speed Threshold [m/s]']}} \\
 
 The 'Detection' requirement can be used to check whether targets are detected at all. For each target existing in the reference data (within the current sector) a target must be detected within e.g. each test update interval or other given interval. Missed update intervals are either called misses or gaps, which are used to calculate a probability of detection, which has to fulfill a given threshold. \\
 
@@ -17,6 +17,7 @@ The 'Detection' requirement can be used to check whether targets are detected at
 \item Probability [1]: Probability of detection
 \item Probability Check Type: $\geq$
 \item Update Interval [s]: Update interval of the test data
+\item PD Calculation Method: Source of the expected periods, either 'time\_difference' (time differences between test target reports) or 'status\_message' (update cycles reported by the test data source)
 \item Use Minimum Gap Length: Checkbox if minimum gap length should be used
 \item Minimum Gap Length [s]: Minimum gap length to be considered
 \item Use Maximum Gap Length: Checkbox if maximum gap length should be used
@@ -24,6 +25,7 @@ The 'Detection' requirement can be used to check whether targets are detected at
 \item Use Miss Tolerance: Checkbox if miss tolerance should be used
 \item Miss Tolerance [s]: Acceptable time delta for miss detection
 \item Use Time-Based Calculation: Checkbox if the probability should be calculated as missed time over reference duration (EUROCAE ED-129C Appendix C 'Interarrivaltime' method) instead of missed update intervals over expected update intervals
+\item Use Gap Count: Checkbox if the probability should be calculated as number of gaps over number of test target reports (EUROCAE ED-117A Section 6.4.8, EUROCAE ED-87E Section 5.3.14) instead of missed update intervals over expected update intervals
 \item Use Stationary Update Interval: Checkbox if a speed-dependent update interval should be used, for surface targets transmitting at a lower rate when stationary (EUROCAE ED-129C ORQ 627, APT services)
 \item Stationary Update Interval [s]: Update interval for stationary targets
 \item Stationary Speed Threshold [m/s]: Reference ground speed below this counts as stationary
@@ -35,9 +37,38 @@ The 'Detection' requirement can be used to check whether targets are detected at
 
 As a summary, the reference is used to calculate the number of expected update intervals inside the sector layer (\#EUI). Then, for the test data, if the reference exists at the time, time differences between target reports are checked and the number of misses/gaps are calculated as number of missed update intervals (\#MUI). \\
 
-Gaps are, if a minimum or maximum gap length is used, only counted if the detected gap fulfills the thresholds. \\
+Gaps are, if a minimum or maximum gap length is used, only counted if the measured gap fulfills the thresholds. The miss tolerance is applied afterwards, and only to the comparison against the update interval. A configured tolerance therefore does not shift the gap length thresholds, which the standards state on the measured gap. \\
 
 The ratio of \#MUI and \#EUI gives the probability of missed update intervals, the counter-probability gives the Probability of Detection (PD). The PD must be greater or equal to the defined 'Probability' for the requirement to pass. \\
+
+\paragraph{Status Message Method}
+
+With the 'PD Calculation Method' set to 'status\_message', the expected periods are not derived from the configured update interval, but from the update cycles the test data source reports itself. This addresses systems whose output is event driven, where a nominal cadence describes the actual behavior only approximately.
+
+\begin{itemize}
+\item The start-of-update-cycle messages of the test data sources are loaded for the test line, from CAT019 message type 001 for multilateration systems and from CAT010 message type 002 for surface movement radars.
+\item Consecutive reported cycles are grouped into one expected period, so that the group length matches the configured 'Update Interval [s]'. A requirement asking for detection within 2 s on a source reporting 1 s cycles therefore groups 2 cycles.
+\item A period counts as expected if it lies fully inside a reference period, and as a miss if the target has no test target report inside it.
+\item The miss tolerance, the gap length filters and the stationary update interval do not apply in this method, since the period boundaries come from the source.
+\end{itemize}
+\ \\
+
+The time difference method is used instead if the test data source reports no cycles, if more than one test data source is selected, or if fewer than 2 cycles are found. The same configuration therefore also works on a recording without status messages, at the cost of falling back to the nominal cadence. \\
+
+\paragraph{Gap Count}
+
+With 'Use Gap Count' active, the probability is calculated as a number of gaps over a number of test target reports, as EUROCAE ED-117A Section 6.4.8 and EUROCAE ED-87E Section 5.3.14 state their gap requirements:
+
+\begin{itemize}
+\item Every gap passing the gap length filters counts once, independent of its length and of the update interval.
+\item The expected total is the number of test target reports accepted inside the sector layer during the reference periods.
+\item A stretch without a test target report at the begin or at the end of a reference period counts as one gap, as does a reference period holding no test target report at all.
+\end{itemize}
+\ \\
+
+The time differences between target reports are always used in this mode, so a 'PD Calculation Method' of 'status\_message' has no effect on such a requirement. In the result tables, the values '\#Reports' and '\#Gaps' replace '\#EUIs' and '\#MUIs'. \\
+
+Since gaps are counted against target reports rather than against expected update intervals, more gaps than target reports are possible, and the calculated value can become negative for a badly performing system. A target whose target reports all fall outside the sector layer carries no value of its own, but its gaps are counted for the sector layer. \\
 
 \paragraph{Time-Based Calculation}
 
@@ -84,6 +115,8 @@ This supports the EUROCAE ED-129C APT service (ORQ 627), where surface targets t
 \end{center}
 
 With 'Use Time-Based Calculation' active, the columns '\#EUIs [1]' (Expected Update Intervals) and '\#MUIs [1]' (Missed Update Intervals) are replaced by 'DT [s]' (Reference Duration) and 'MT [s]' (Missed Time), in both the sector and the single target tables. \\
+
+With 'Use Gap Count' active, the same 2 columns are replaced by '\#Reports [1]' (Test Reports inside Sector) and '\#Gaps [1]' (Gaps). \\
 
 Also, a table is given for all single targets, sorted by PD.
 

@@ -179,16 +179,17 @@ At the bottom, the following general settings of the current standard can be edi
 \item Reference Maximum Time Difference [s]: Maximum time difference between reference updates. This value is used to find time-adjacent reference target reports for test target reports. Please adjust this value to e.g. the reference update period plus 1 second.
 \item Ignore Primary Only Targets: Targets without any secondary attributes (no Mode S address, no aircraft identification, no Mode 3/A code, no Mode C code) are ignored
 \item Ignore Non-ADSB Targets: Targets never detected in ADS-B data (CAT021) are ignored
+\item Ignore Mode A/C Only Targets: Targets with a Mode 3/A code or a Mode C code, but without any Mode S attribute, are ignored
 \end{itemize}
 \ \\
 
-\textcolor{red}{\textbf{[TODO: update screenshot figures/eval\_standard.png: new elements 'Ignore Primary Only Targets' and 'Ignore Non-ADSB Targets']}} \\
+\textcolor{red}{\textbf{[TODO: update screenshot figures/eval\_standard.png: new elements 'Ignore Primary Only Targets', 'Ignore Non-ADSB Targets' and 'Ignore Mode A/C Only Targets']}} \\
 
-The 2 target settings define which targets are relevant for the standard. A standard for secondary surveillance, e.g. \nameref{sec:eval_req_detection} of an MLAT system, cannot be assessed with targets that carry no transponder, and an ADS-B standard cannot be assessed with targets that never transmit ADS-B. After the evaluation data is loaded, the current standard checks each target and marks the not relevant ones as ignored. \\
+The 3 target settings define which targets are relevant for the standard. A standard for secondary surveillance, e.g. \nameref{sec:eval_req_detection} of an MLAT system, cannot be assessed with targets that carry no transponder, an ADS-B standard cannot be assessed with targets that never transmit ADS-B, and a standard stating its requirements for Mode S targets only cannot be assessed with Mode A/C-only targets. After the evaluation data is loaded, the current standard checks each target and marks the not relevant ones as ignored. \\
 
 \begin{itemize}
 \item The ignored state comes from the current standard and is not stored in the target. The target usage set in the Targets tab, or by the 'Filter UTNs' function, is not changed. Selecting a different standard therefore changes which targets are ignored, without any manual correction.
-\item Ignored targets are listed in the results as unusable results, with the reason 'Primary-only' or 'No ADS-B data'. They do not contribute to the sector sums.
+\item Ignored targets are listed in the results as unusable results, with the reason 'Primary-only', 'No ADS-B data' or 'Mode A/C-only'. They do not contribute to the sector sums.
 \end{itemize}
 \ \\
 
@@ -197,7 +198,7 @@ The 2 target settings define which targets are relevant for the standard. A stan
 Currently, the following standards are (partly) supported:
 \begin{itemize}  
 \item EUROCAE ED-116 (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-116/}{Link})
-\item EUROCAE ED-117/A (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-117a/}{Link})
+\item EUROCAE ED-117/A (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-117a/}{Link}), see \nameref{sec:appendix_eval_std_ed117} and \nameref{sec:appendix_eval_std_ed117a}
 \item EUROCAE ED-129C (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-129c/}{Link})
 \item EUROCAE ED-87C/E (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-87c/}{Link})
 \item EUROCAE ED-142 (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-142/}{Link})
@@ -205,14 +206,12 @@ Currently, the following standards are (partly) supported:
 \end{itemize}
 \ \\
 
-Please note that, while the EUROCAE ED-117A has been tested using simulator data, the following limitations exist:
-\begin{itemize}  
-\item In the Stands area, the position accuracy should be calculated using a 5 second position averaging. This is currently not performed, since the averaging method is not specified, and is currently being discussed with users.
-\item Some MLAT sensors use a different update rate for non-moving targets. This is currently not regarded, since what constitutes non-movement is not (generally) specified, and will lower the probability of detection.
+For the EUROCAE ED-117 and ED-117A standards, the mapping of each requirement of the source document onto a COMPASS requirement is documented in \nameref{sec:appendix_eval_standards}. Both definitions were checked against the source documents and assessed with surface recordings. The two limitations stated in earlier versions of this document have since been addressed:
+\begin{itemize}
+\item The position accuracy on stands is calculated over a 5 second averaging window, using the 'Use Averaging' option of the \nameref{sec:eval_req_pos_distance} requirement.
+\item A lower update rate for non-moving targets is supported by the 'Use Stationary Update Interval' option of the \nameref{sec:eval_req_detection} requirement. It is not set in the supplied ED-117/A definitions, since neither document states what constitutes non-movement. It can be set per requirement where the assessed system is known to behave this way.
 \end{itemize}
 \ \\
-
-Please note that these limitations will be corrected in the near future. \\
 
 For the EUROCAE ED-129C standard (ADS-B Ground Station performance), the following applies:
 \begin{itemize}
