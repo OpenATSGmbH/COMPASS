@@ -31,7 +31,11 @@ The EUROCAE standard documents (ED-116, ED-117/A, ED-87 series, ED-142, and othe
 
 Intermediate base classes exist for common requirement kinds: `ProbabilityBase(Config)`, `IntervalBase(Config)`, `PositionBase(Config)` in `src/eval/requirement/base/`. Each config class has a matching `*ConfigWidget` for the GUI.
 
-The Detection requirement supports 2 calculation modes: counted update intervals (default, #MUI over #EUI) and, with `use_time_ratio`, missed time over reference duration per EUROCAE ED-129C Appendix C. `use_stationary_ui` selects the update interval per gap from the reference ground speed, for surface targets that transmit slower when stationary. Details and the derivation: [readme_detection.md](src/eval/requirement/detection/readme_detection.md), [readme_ed129c.md](readme_ed129c.md).
+The Detection requirement selects its period source with `pd_calculation_method`. With `time_difference`, the default, it derives the missed intervals from the gaps between test reports and the configured update interval. With `status_message` it takes the periods from the update cycles the test data source reports, that is CAT019 message type 001 or CAT010 message type 002, and falls back to the time difference method when the source reports none. On top of that it supports 2 counting modes: counted update intervals (default, #MUI over #EUI) and, with `use_time_ratio`, missed time over reference duration per EUROCAE ED-129C Appendix C. `use_stationary_ui` selects the update interval per gap from the reference ground speed, for surface targets that transmit slower when stationary. Details and the derivation: [readme_detection.md](src/eval/requirement/detection/readme_detection.md), [readme_ed129c.md](experimental_src/readme_ed129c.md).
+
+The Position Distance requirement compares one distance per test report by default. With `use_averaging` it instead compares one mean position error per `averaging_window_s` window, for requirements stated on an averaged position such as EUROCAE ED-117 Section 3.3.3 for stands.
+
+Probability results are shown in percent. The number of decimals follows the requirement threshold, one digit finer, so a value that fails a fine threshold such as 1e-6 is not rounded to zero in the report.
 
 ## How a standard is formed
 
@@ -46,7 +50,7 @@ Standards are pure configuration - no code change is needed to create or modify 
 
 To create a new standard: copy the closest existing one in the GUI, adjust the groups and requirement parameters, and cite the standard document sections in the `comment` fields. Alternatively add a new `EvaluationStandard` block in `eval.json` following the existing structure.
 
-Requirement sources are grouped by topic: `detection/`, `position/`, `latency/` (position latency and ADS-B latency), `identification/`, `mode_a/`, `mode_c/`, `speed/`, `trackangle/`, `mom/`, `dubious/`, `extra/`, `status/`, `generic/`, each with a matching folder in `src/eval/results/`. A worked example of a full standard, from requirement mapping to configuration and verification, is [readme_ed129c.md](readme_ed129c.md).
+Requirement sources are grouped by topic: `detection/`, `position/`, `latency/` (position latency and ADS-B latency), `identification/`, `mode_a/`, `mode_c/`, `speed/`, `trackangle/`, `mom/`, `dubious/`, `extra/`, `status/`, `generic/`, each with a matching folder in `src/eval/results/`. A worked example of a full standard, from requirement mapping to configuration and verification, is [readme_ed129c.md](experimental_src/readme_ed129c.md).
 
 To add a new requirement type (code change): create a `*Config` class + widget in `src/eval/requirement/<topic>/`, a requirement class derived from `EvaluationRequirement::Base` (or `ProbabilityBase` / `IntervalBase` / `PositionBase`), result classes derived from `Single` and `Joined` in `src/eval/results/<topic>/`, and register the config class in `Group::requirement_type_mapping_` and the group's `generateSubConfigurable()`.
 

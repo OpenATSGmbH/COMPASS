@@ -48,12 +48,24 @@ public:
     bool failedValuesOfInterest() const;
     void failedValuesOfInterest(bool value);
 
+    bool useAveraging() const;
+    void useAveraging(bool value);
+
+    float averagingWindow() const;
+    void averagingWindow(float value);
+
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report);
 
 protected:
     float threshold_value_ {0};
     COMPARISON_TYPE threshold_value_check_type_ {COMPARISON_TYPE::LESS_THAN_OR_EQUAL};
     bool failed_values_of_interest_ {true};
+
+    // averaged position mode: one comparison per averaging window, using the
+    // mean position error of the test reports in that window
+    // (EUROCAE ED-117 Section 3.3.3, stands: 20 m averaged over 5 seconds)
+    bool  use_averaging_ {false};
+    float averaging_window_s_ {5.0f};
 
     virtual BaseConfigWidget* createWidget() override;
 };

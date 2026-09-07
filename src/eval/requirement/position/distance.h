@@ -31,11 +31,14 @@ public:
             const std::string& name, const std::string& short_name, const std::string& group_name,
             double prob, COMPARISON_TYPE prob_check_type, float ref_min_accuracy, EvaluationCalculator& calculator,
             float threshold_value, COMPARISON_TYPE threshold_value_check_type,
-            bool failed_values_of_interest);
+            bool failed_values_of_interest,
+            bool use_averaging, float averaging_window_s);
 
     float thresholdValue() const;
     COMPARISON_TYPE thresholdValueCheckType() const;
     bool failedValuesOfInterest() const;
+    bool useAveraging() const;
+    float averagingWindow() const;
 
     virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate (
             const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
@@ -48,6 +51,10 @@ protected:
     float threshold_value_ {0};
     COMPARISON_TYPE threshold_value_check_type_ {COMPARISON_TYPE::LESS_THAN_OR_EQUAL};
     bool failed_values_of_interest_ {true};
+
+    // averaged position mode, see PositionDistanceConfig
+    bool  use_averaging_ {false};
+    float averaging_window_s_ {5.0f};
 };
 
 }

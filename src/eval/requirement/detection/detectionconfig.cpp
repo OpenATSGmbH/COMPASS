@@ -61,6 +61,8 @@ DetectionConfig::DetectionConfig(
     registerParameter("hold_for_any_target", &hold_for_any_target_, false);
 
     registerParameter("ignore_primary_only", &ignore_primary_only_, false);
+
+    registerParameter("pd_calculation_method", &pd_calculation_method_, std::string("time_difference"));
 }
 
 DetectionConfig::~DetectionConfig()
@@ -74,9 +76,19 @@ std::shared_ptr<Base> DetectionConfig::createRequirement()
                 use_min_gap_length_, min_gap_length_s_, use_max_gap_length_, max_gap_length_s_, invert_prob_,
                 use_miss_tolerance_, miss_tolerance_s_, use_time_ratio_,
                 use_stationary_ui_, stationary_ui_s_, stationary_speed_threshold_ms_,
-                hold_for_any_target_, ignore_primary_only_);
+                hold_for_any_target_, ignore_primary_only_, pd_calculation_method_);
 
     return req;
+}
+
+std::string DetectionConfig::pdCalculationMethod() const
+{
+    return pd_calculation_method_;
+}
+
+void DetectionConfig::pdCalculationMethod(const std::string& value)
+{
+    pd_calculation_method_ = value;
 }
 
 float DetectionConfig::updateInterval() const
@@ -227,6 +239,11 @@ void DetectionConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 
     table.addRow({"Update Interval [s]", "",
                   update_interval_s_});
+
+    table.addRow({"PD Calculation Method", "Status message: expected periods from the update"
+                  " cycles reported by the test data source. Time difference: gaps between test"
+                  " reports against the configured update interval",
+                  pd_calculation_method_});
 
     table.addRow({"Use Minimum Gap Length", "If minimum gap length should be used",
                   String::boolToString(use_min_gap_length_)});

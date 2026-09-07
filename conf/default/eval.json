@@ -1891,6 +1891,7 @@
                     "class_name": "EvaluationStandard",
                     "instance_name": "EvaluationStandardEUROCAE ED-1170",
                     "parameters": {
+                        "ignore_primary_only_targets": true,
                         "name": "EUROCAE ED-117",
                         "reference_max_time_diff": 5.0,
                         "reference_min_accuracy": 10.0
@@ -1968,6 +1969,7 @@
                                         "min_gap_length_s": 3.0,
                                         "miss_tolerance": 0.009999999776482582,
                                         "name": "Probability of Update",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.95,
                                         "prob_check_type": 3,
                                         "short_name": "PU",
@@ -2000,6 +2002,7 @@
                                         "min_gap_length_s": 3.0,
                                         "miss_tolerance": 0.009999999776482582,
                                         "name": "Probability of Update",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.7,
                                         "prob_check_type": 3,
                                         "short_name": "PU",
@@ -2008,6 +2011,38 @@
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
                                         "use_miss_tolerance": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigHorizontal Position Accuracy 20",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.3, apron area centerlines",
+                                        "failed_values_of_interest": true,
+                                        "name": "Horizontal Position Accuracy 2",
+                                        "prob": 0.99,
+                                        "prob_check_type": 3,
+                                        "ref_min_accuracy": 2.0,
+                                        "short_name": "HPA2",
+                                        "threshold_value": 12.0,
+                                        "threshold_value_check_type": 1,
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigHorizontal Position Accuracy0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.3, apron area centerlines",
+                                        "failed_values_of_interest": true,
+                                        "name": "Horizontal Position Accuracy 1",
+                                        "prob": 0.95,
+                                        "prob_check_type": 3,
+                                        "ref_min_accuracy": 2.0,
+                                        "short_name": "HPA1",
+                                        "threshold_value": 7.5,
+                                        "threshold_value_check_type": 1,
+                                        "use": true
                                     }
                                 }
                             ]
@@ -2022,17 +2057,97 @@
                             "sub_configs": [
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117 Section 3.3.5",
-                                        "name": "Probability of Identification",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
                                         "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.5",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "require_correctness_of_all": false,
+                                        "short_name": "PID MA",
                                         "use": true,
                                         "use_mode_a": true,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.5",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "require_correctness_of_all": false,
+                                        "short_name": "PID ID",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSAD0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.11, evaluated per target report, not per 5 s period",
+                                        "name": "Probability of False Identification MSAD",
+                                        "prob": 1e-06,
+                                        "prob_check_type": 0,
+                                        "require_all_false": false,
+                                        "short_name": "PFID TA",
+                                        "use": true,
+                                        "use_mode_a": false,
                                         "use_ms_ta": true,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.11, evaluated per target report, not per 5 s period",
+                                        "name": "Probability of False Identification MA",
+                                        "prob": 1e-06,
+                                        "prob_check_type": 0,
+                                        "require_all_false": false,
+                                        "short_name": "PFID MA",
+                                        "use": true,
+                                        "use_mode_a": true,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.11, evaluated per target report, not per 5 s period",
+                                        "name": "Probability of False Identification MSID",
+                                        "prob": 1e-06,
+                                        "prob_check_type": 0,
+                                        "require_all_false": false,
+                                        "short_name": "PFID ID",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
                                         "use_ms_ti": true
                                     }
                                 },
@@ -2040,7 +2155,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Detection0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-117 Secion 3.3.10",
+                                        "comment": "From EUROCAE ED-117 Section 3.3.10",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Detection",
                                         "prob": 0.0001,
@@ -2074,6 +2189,7 @@
                                         "min_gap_length_s": 3.0,
                                         "miss_tolerance": 0.009999999776482582,
                                         "name": "Probability of Update",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.95,
                                         "prob_check_type": 3,
                                         "short_name": "PU",
@@ -2115,22 +2231,12 @@
                                         "threshold_value_check_type": 1,
                                         "use": true
                                     }
-                                }
-                            ]
-                        },
-                        {
-                            "class_name": "EvaluationRequirementGroup",
-                            "instance_name": "EvaluationRequirementGroupRunways0",
-                            "parameters": {
-                                "name": "Runways",
-                                "use": true
-                            },
-                            "sub_configs": [
+                                },
                                 {
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigProbability of MLAT Detection0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-117 Section 3.3.4",
+                                        "comment": "From EUROCAE ED-117 Section 3.3.4, runways and taxiways",
                                         "hold_for_any_target": false,
                                         "ignore_primary_only": true,
                                         "invert_prob": false,
@@ -2138,6 +2244,7 @@
                                         "min_gap_length_s": 3.0,
                                         "miss_tolerance": 0.009999999776482582,
                                         "name": "Probability of MLAT Detection",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
                                         "short_name": "PD",
@@ -2170,6 +2277,7 @@
                                         "min_gap_length_s": 3.0,
                                         "miss_tolerance": 0.009999999776482582,
                                         "name": "Probability of MLAT Detection",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
                                         "short_name": "PD",
@@ -2192,6 +2300,7 @@
                                         "min_gap_length_s": 3.0,
                                         "miss_tolerance": 0.009999999776482582,
                                         "name": "Probability of Update",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.5,
                                         "prob_check_type": 3,
                                         "short_name": "PU",
@@ -2201,37 +2310,23 @@
                                         "use_min_gap_length": false,
                                         "use_miss_tolerance": false
                                     }
-                                }
-                            ]
-                        },
-                        {
-                            "class_name": "EvaluationRequirementGroup",
-                            "instance_name": "EvaluationRequirementGroupTaxiways0",
-                            "parameters": {
-                                "name": "Taxiways",
-                                "use": true
-                            },
-                            "sub_configs": [
+                                },
                                 {
-                                    "class_name": "EvaluationRequirementDetectionConfig",
-                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of MLAT Detection0",
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigHorizontal Position Accuracy0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-117 Section 3.3.4",
-                                        "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
-                                        "invert_prob": false,
-                                        "max_gap_length_s": 5.0,
-                                        "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
-                                        "name": "Probability of MLAT Detection",
-                                        "prob": 0.999,
+                                        "averaging_window_s": 5.0,
+                                        "comment": "From EUROCAE ED-117 Section 3.3.3, 20 m averaged over a period of 5 seconds",
+                                        "failed_values_of_interest": true,
+                                        "name": "Horizontal Position Accuracy",
+                                        "prob": 1.0,
                                         "prob_check_type": 3,
-                                        "short_name": "PD",
-                                        "update_interval": 2.0,
+                                        "ref_min_accuracy": 2.0,
+                                        "short_name": "HPA",
+                                        "threshold_value": 20.0,
+                                        "threshold_value_check_type": 1,
                                         "use": true,
-                                        "use_max_gap_length": false,
-                                        "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_averaging": true
                                     }
                                 }
                             ]

@@ -623,6 +623,44 @@ Result EvaluationCalculator::evaluateData()
 
 /**
  */
+/**
+ * The active test data sources with the test line, as a load selection.
+ */
+std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSourcesTst() const
+{
+    std::map<unsigned int, std::set<unsigned int>> data_sources;
+
+    if (!data_sources_tst_.count(settings_.dbcontent_name_tst_))
+        return data_sources;
+
+    for (const auto& ds_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
+        if (ds_it.second)
+            data_sources[std::stoul(ds_it.first)] = { settings_.line_id_tst_ };
+
+    return data_sources;
+}
+
+/**
+ * The update cycles the system under test reports. Cycles are per data source, so
+ * they are only unambiguous with exactly one active test data source.
+ */
+const std::vector<boost::posix_time::ptime>& EvaluationCalculator::testStatusCycles() const
+{
+    static const std::vector<boost::posix_time::ptime> no_cycles;
+
+    auto ds_selection = usedDataSourcesTst();
+
+    if (ds_selection.size() != 1)
+        return no_cycles;
+
+    const unsigned int ds_id = ds_selection.begin()->first;
+
+    if (!eval_man_.hasStatusCycles(ds_id, settings_.line_id_tst_))
+        return no_cycles;
+
+    return eval_man_.statusCycles(ds_id, settings_.line_id_tst_);
+}
+
 std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSources() const
 {
     std::map<unsigned int, std::set<unsigned int>> data_sources;

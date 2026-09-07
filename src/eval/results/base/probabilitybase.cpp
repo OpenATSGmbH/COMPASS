@@ -51,21 +51,26 @@ namespace common
 
 /**
 */
-nlohmann::json ProbabilityBase::formatProbability(double prob)
+const unsigned int ProbabilityBase::NumProbabilityDecimalsDefault = 2;
+
+/**
+*/
+nlohmann::json ProbabilityBase::formatProbability(double prob, unsigned int decimals)
 {
     //return Utils::String::percentToString(std::round(prob * 10000.0) / 100.0, 2).c_str();
 
-    return Number::round(100.0 * prob, 2);
+    return Number::round(100.0 * prob, decimals);
 }
 
 /**
 */
-nlohmann::json ProbabilityBase::formatProbabilityOptional(const boost::optional<double>& prob)
+nlohmann::json ProbabilityBase::formatProbabilityOptional(const boost::optional<double>& prob,
+                                                          unsigned int decimals)
 {
     if (!prob.has_value())
         return nlohmann::json();
 
-    return SingleProbabilityBase::formatProbability(prob.value());
+    return SingleProbabilityBase::formatProbability(prob.value(), decimals);
 }
 
 /****************************************************************************************
@@ -121,7 +126,9 @@ double SingleProbabilityBase::invertProb(double prob) const
 */
 nlohmann::json SingleProbabilityBase::resultValue(double value) const
 {
-    return formatProbability(value);
+    // follow the requirement threshold, so a value failing a fine threshold such
+    // as the ED-117 false identification 1e-6 is not shown as 0.00
+    return formatProbability(value, requirement_->getNumThresholdDecimals());
 }
 
 /****************************************************************************************
@@ -174,7 +181,8 @@ double JoinedProbabilityBase::invertProb(double prob) const
 */
 nlohmann::json JoinedProbabilityBase::resultValue(double value) const
 {
-    return formatProbability(value);
+    // follow the requirement threshold, see SingleProbabilityBase::resultValue
+    return formatProbability(value, requirement_->getNumThresholdDecimals());
 }
 
 }

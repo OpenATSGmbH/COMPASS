@@ -23,6 +23,7 @@
 #include <QLineEdit>
 #include <QFormLayout>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QDoubleValidator>
 
 using namespace std;
@@ -166,7 +167,27 @@ DetectionConfigWidget::DetectionConfigWidget(DetectionConfig& cfg)
 
     form_layout_->addRow("Ignore Primary Only", ignore_primary_only_check_);
 
+    // pd calculation method
+    pd_calculation_method_box_ = new QComboBox();
+    pd_calculation_method_box_->addItem("time_difference");
+    pd_calculation_method_box_->addItem("status_message");
+    pd_calculation_method_box_->setCurrentText(QString::fromStdString(config().pdCalculationMethod()));
+    pd_calculation_method_box_->setToolTip("Status message: expected periods from the update cycles"
+                                           " reported by the test data source. Time difference: gaps"
+                                           " between test reports against the configured update interval");
+    connect(pd_calculation_method_box_, &QComboBox::currentTextChanged,
+            this, &DetectionConfigWidget::changedPDCalculationMethodSlot);
+
+    form_layout_->addRow("PD Calculation Method", pd_calculation_method_box_);
+
     updateActive();
+}
+
+void DetectionConfigWidget::changedPDCalculationMethodSlot(const QString& value)
+{
+    loginf << "value " << value.toStdString();
+
+    config().pdCalculationMethod(value.toStdString());
 }
 
 

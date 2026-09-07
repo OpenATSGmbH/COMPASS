@@ -20,6 +20,11 @@
 #include "eval/requirement/base/probabilitybase.h"
 #include "eval/requirement/detection/detection_pd_helpers.h"
 
+#include <string>
+#include <vector>
+
+class TimePeriodCollection;
+
 namespace EvaluationRequirement
 {
 
@@ -34,7 +39,8 @@ public:
             bool use_max_gap_length, float max_gap_length_s, bool invert_prob,
             bool use_miss_tolerance, float miss_tolerance_s, bool use_time_ratio,
             bool use_stationary_ui, float stationary_ui_s, float stationary_speed_threshold_ms,
-            bool hold_for_any_target, bool ignore_primary_only);
+            bool hold_for_any_target, bool ignore_primary_only,
+            const std::string& pd_calculation_method);
 
   float updateInterval() const;
   bool useMinGapLength() const;
@@ -50,6 +56,7 @@ public:
   float stationarySpeedThreshold() const;
 
   bool ignorePrimaryOnly() const;
+  const std::string& pdCalculationMethod() const;
 
   virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate(
       const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
@@ -62,6 +69,13 @@ public:
   }
 
 protected:
+    // status-message method: one expected period per group of reported update
+    // cycles, missed when the target has no test report inside it
+    std::shared_ptr<EvaluationRequirementResult::Single> evaluateStatusCycles(
+        const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
+        const SectorLayer& sector_layer, TimePeriodCollection& ref_periods,
+        const std::vector<boost::posix_time::ptime>& cycles);
+
     PDHelpers::MissTestParams missTestParams(float update_interval_s) const;
 
     bool isMiss (float d_tod, float update_interval_s) const;
@@ -95,6 +109,9 @@ protected:
     float stationary_speed_threshold_ms_ {0.5f};
 
     bool ignore_primary_only_ {true};
+
+    // "status_message" or "time_difference", see DetectionConfig
+    std::string pd_calculation_method_ {"time_difference"};
 };
 
 }

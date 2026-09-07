@@ -32,6 +32,7 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/dbcontentstatusinfo.h"
 #include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variable.h"
 
@@ -640,9 +641,112 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator)
 
     dbcontent_man.dataEngine().load(load_op_);
     load_op_->wait();
+
+    loadStatusCycles(calculator);
+
     loadingDone();
 
     needs_additional_variables_ = false;
+}
+
+/**
+ * Isolated batch load of the start-of-update-cycle messages of the test data sources,
+ * for the status-message PD method of the detection requirement. Restricted to the
+ * test data sources and the test line, so nothing is read when the system under test
+ * reports no cycles. CAT019 carries them for MLAT systems, CAT010 for SMRs.
+ */
+void EvaluationManager::loadStatusCycles(const EvaluationCalculator& calculator)
+{
+    status_cycles_.clear();
+
+    DBContentManager& dbcontent_man = dbcontent_man_;
+
+    // contents carrying start-of-update-cycle messages, see DBContentStatusInfo
+    const std::vector<std::string> candidates { "CAT002", "CAT010", "CAT019", "CAT034", "CAT065" };
+
+    std::set<std::string> status_contents;
+
+    for (const auto& name : candidates)
+    {
+        if (!dbcontent_man.existsDBContent(name))
+            continue;
+
+        auto& dbcont = dbcontent_man.dbContent(name);
+
+        if (dbcont.loadable() && dbcont.containsStatusContent())
+            status_contents.insert(name);
+    }
+
+    if (status_contents.empty())
+        return;
+
+    auto ds_selection = calculator.usedDataSourcesTst();
+
+    if (ds_selection.empty())
+        return;
+
+    dbContent::DBContentStatusInfo status_info(dbcontent_man);
+
+    LoadRequest req;
+    req.dbcontents_            = status_contents;
+    req.apply_datasrc_filters_ = false;
+    req.apply_view_filters_    = false;
+    req.datasrc_selection_     = ds_selection;
+    req.read_set_              = [&status_info](const std::string& name)
+                                 { return status_info.getReadSetFor(name); };
+
+    auto op = std::make_shared<LoadOperation>(dbcontent_man, req);
+    dbcontent_man.dataEngine().load(op);
+    op->wait();
+
+    auto status_buffers = op->buffers();
+
+    if (status_buffers.empty())
+        return;
+
+    status_info.process(status_buffers);
+
+    unsigned int num_cycles = 0;
+
+    for (const auto& ds_it : status_info.getInfo())
+    {
+        for (const auto& line_it : ds_it.second)
+        {
+            auto times = line_it.second;
+
+            std::sort(times.begin(), times.end());
+            times.erase(std::unique(times.begin(), times.end()), times.end());
+
+            num_cycles += times.size();
+
+            status_cycles_[ds_it.first][line_it.first] = std::move(times);
+        }
+    }
+
+    loginf << "loaded " << num_cycles << " start of update cycle timestamps of "
+           << status_cycles_.size() << " test data sources";
+}
+
+/**
+ */
+bool EvaluationManager::hasStatusCycles(unsigned int ds_id, unsigned int line_id) const
+{
+    auto ds_it = status_cycles_.find(ds_id);
+
+    if (ds_it == status_cycles_.end())
+        return false;
+
+    return ds_it->second.count(line_id);
+}
+
+/**
+ */
+const std::vector<boost::posix_time::ptime>& EvaluationManager::statusCycles(
+        unsigned int ds_id, unsigned int line_id) const
+{
+    traced_assert(hasStatusCycles(ds_id, line_id));
+
+    return status_cycles_.at(ds_id).at(line_id);
 }
 
 /**

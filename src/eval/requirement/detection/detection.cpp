@@ -57,7 +57,8 @@ Detection::Detection(const std::string& name,
                      bool use_stationary_ui,
                      float stationary_ui_s,
                      float stationary_speed_threshold_ms,
-                     bool hold_for_any_target, bool ignore_primary_only)
+                     bool hold_for_any_target, bool ignore_primary_only,
+                     const std::string& pd_calculation_method)
     : ProbabilityBase     (name, short_name, group_name, prob, prob_check_type, invert_prob, calculator, hold_for_any_target),
     update_interval_s_  (update_interval_s),
     use_min_gap_length_ (use_min_gap_length),
@@ -70,7 +71,8 @@ Detection::Detection(const std::string& name,
     use_stationary_ui_  (use_stationary_ui),
     stationary_ui_s_    (stationary_ui_s),
     stationary_speed_threshold_ms_(stationary_speed_threshold_ms),
-    ignore_primary_only_(ignore_primary_only)
+    ignore_primary_only_(ignore_primary_only),
+    pd_calculation_method_(pd_calculation_method)
 {
 }
 
@@ -133,6 +135,127 @@ float Detection::missThreshold() const
 bool Detection::ignorePrimaryOnly() const
 {
     return ignore_primary_only_;
+}
+
+/**
+*/
+const std::string& Detection::pdCalculationMethod() const
+{
+    return pd_calculation_method_;
+}
+
+/**
+ * Status-message method: the expected periods are taken from the update cycles the
+ * test data source reports (CAT019 / CAT010 start of update cycle) instead of a
+ * configured nominal update interval. `cycles_per_period` consecutive reported
+ * cycles form one expected period, so a requirement asking for detection within
+ * 2 s on a 1 s cycle source groups 2 cycles. A period counts as expected when it
+ * lies fully inside a reference period, and as a miss when the target has no test
+ * report inside it. Miss tolerance and gap length filters do not apply here, the
+ * period boundaries come from the source.
+*/
+std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluateStatusCycles(
+        const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
+        const SectorLayer& sector_layer, TimePeriodCollection& ref_periods,
+        const std::vector<ptime>& cycles)
+{
+    typedef EvaluationRequirementResult::SingleDetection Result;
+    typedef EvaluationDetail                             Detail;
+    typedef Result::EvaluationDetails                    Details;
+    Details details;
+
+    // median reported cycle length, to map the configured update interval onto a
+    // whole number of reported cycles
+    std::vector<double> cycle_lengths;
+    cycle_lengths.reserve(cycles.size());
+
+    for (size_t i = 1; i < cycles.size(); ++i)
+        cycle_lengths.push_back(Time::partialSeconds(cycles[i] - cycles[i - 1]));
+
+    std::sort(cycle_lengths.begin(), cycle_lengths.end());
+
+    const double median_cycle_s = cycle_lengths.at(cycle_lengths.size() / 2);
+
+    unsigned int cycles_per_period = 1;
+
+    if (median_cycle_s > 0)
+        cycles_per_period = (unsigned int) std::max(1L, std::lround(update_interval_s_ / median_cycle_s));
+
+    const auto& tst_data = target_data.tstChain().timestampIndexes();
+
+    double sum_expected {0};
+    double sum_missed   {0};
+
+    for (auto& period_it : ref_periods)
+    {
+        auto cycle_it = std::lower_bound(cycles.begin(), cycles.end(), period_it.begin());
+
+        while (cycle_it != cycles.end())
+        {
+            auto next_it = cycle_it;
+
+            for (unsigned int cnt = 0; cnt < cycles_per_period && next_it != cycles.end(); ++cnt)
+                ++next_it;
+
+            if (next_it == cycles.end())
+                break; // incomplete period at the end of the cycle stream
+
+            const ptime period_begin = *cycle_it;
+            const ptime period_end   = *next_it;
+
+            if (period_end > period_it.end())
+                break; // period not fully inside the reference period
+
+            sum_expected += 1.0;
+
+            bool detected = false;
+
+            for (auto tst_it = tst_data.lower_bound(period_begin);
+                 tst_it != tst_data.end() && tst_it->first < period_end; ++tst_it)
+            {
+                if (target_data.isTimeStampNotExcluded(tst_it->first))
+                {
+                    detected = true;
+                    break;
+                }
+            }
+
+            if (!detected)
+            {
+                sum_missed += 1.0;
+
+                // the period boundaries are cycle timestamps, not reference report
+                // timestamps, so the reference reports inside the period carry the
+                // position of the miss
+                auto ref_updates = target_data.refChain().positionsBetween(
+                            period_begin, period_end, false, false);
+
+                if (!ref_updates.empty())
+                    details.push_back(Detail(period_end, ref_updates)
+                                          .setValue(Result::DetailKey::DiffTOD,
+                                                    Time::partialSeconds(period_end - period_begin))
+                                          .setValue(Result::DetailKey::MissOccurred, true)
+                                          .setValue(Result::DetailKey::RefExists, true)
+                                          .setValue(Result::DetailKey::MissedUIs, sum_missed)
+                                          .setValue(Result::DetailKey::MaxGapUIs, 0)
+                                          .setValue(Result::DetailKey::NoRefUIs, 0)
+                                          .generalComment("Miss detected, no target report in reported"
+                                                          " update cycle [" + Time::toString(period_begin)
+                                                          + ", " + Time::toString(period_end) + "]"));
+            }
+
+            cycle_it = next_it;
+        }
+    }
+
+    auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
+        "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
+        calculator_, details, sum_expected, sum_missed, ref_periods);
+
+    if (ignore_primary_only_ && target_data.isPrimaryOnly())
+        ret->setIgnoreResult("Primary-only");
+
+    return ret;
 }
 
 /**
@@ -229,6 +352,16 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
     if (debug)
         loginf << "'" << name_ << ": utn " << target_data.utn_
                << " periods '" << ref_periods.print() << "'";
+
+    // status-message method, when the test data source reports its update cycles.
+    // Without cycles the time-difference method below applies.
+    if (pd_calculation_method_ == "status_message")
+    {
+        const auto& cycles = calculator_.testStatusCycles();
+
+        if (cycles.size() >= 2)
+            return evaluateStatusCycles(target_data, instance, sector_layer, ref_periods, cycles);
+    }
 
     timestamp = {};
     last_ts   = {};

@@ -85,6 +85,9 @@ public:
     bool ignorePrimaryOnly() const;
     void ignorePrimaryOnly(bool value);
 
+    std::string pdCalculationMethod() const;
+    void pdCalculationMethod(const std::string& value);
+
   protected:
     float update_interval_s_{0};
 
@@ -112,6 +115,12 @@ public:
     bool hold_for_any_target_ {false}; // if requirement must hold for any target (all single targets)
 
     bool ignore_primary_only_ {false};
+
+    // "status_message": expected periods from the update cycles the test data source
+    // reports (CAT019 / CAT010 start of update cycle), "time_difference": gaps between
+    // test reports against the configured update interval. Falls back to the time
+    // difference method when no cycles are available.
+    std::string pd_calculation_method_ {"time_difference"};
 
     virtual BaseConfigWidget* createWidget() override;
 };

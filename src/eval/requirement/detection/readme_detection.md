@@ -229,8 +229,28 @@ Files:
 - [eval/requirement/detection/detection.cpp](detection.cpp)
 - User manual section: [doc/user_manual/eval/eval_req_det.tex](../../../../doc/user_manual/eval/eval_req_det.tex)
 
-The COMPASS "Detection" requirement is a textbook example of the
-time-difference method.
+The COMPASS "Detection" requirement implements both methods. The
+`pd_calculation_method` parameter selects which one applies:
+
+- `time_difference` (default) - the walk described in this section.
+- `status_message` - the period-based method of section 2.1, using the
+  update cycles the test data source reports. `EvaluationManager`
+  loads the start-of-update-cycle messages of the test data sources
+  through `DBContentStatusInfo` (CAT019 message type 001 for MLAT
+  systems, CAT010 message type 002 for SMRs), restricted to the test
+  sources and the test line.
+  `Detection::evaluateStatusCycles()` then groups
+  `round(update_interval / median_cycle_length)` consecutive reported
+  cycles into one expected period, so a requirement asking for
+  detection within 2 s on a 1 s cycle source groups 2 cycles. A period
+  counts as expected when it lies fully inside a reference period, and
+  as a miss when the target has no test report inside it. Miss
+  tolerance, minimum and maximum gap length and the stationary update
+  interval do not apply, the period boundaries come from the source.
+  Without cycles, with more than one active test data source, or with
+  fewer than 2 cycles, the time-difference walk below applies instead.
+
+The rest of this section describes the time-difference walk.
 
 ### 3.1 Inputs
 
@@ -352,8 +372,11 @@ aggregate value.
 ## 4. Differences vs the General Definitions
 
 The COMPASS implementation is faithful to the operational
-"probability-of-update" definition (§1.2) and uses the time-difference
-method (§2.2). Notable specifics worth knowing:
+"probability-of-update" definition (§1.2). It uses the time-difference
+method (§2.2) by default and the period-based method (§2.1) when
+`pd_calculation_method` is `status_message` and the test data source
+reports its update cycles. The points below describe the
+time-difference walk, which is the more intricate of the two:
 
 - **Reference time-based denominator.** #EUI is derived from reference
   coverage time, not from a count of reference reports. The reference
