@@ -28,6 +28,7 @@
 #include <memory>
 #include <vector>
 #include <bitset>
+#include <unordered_map>
 
 #include <boost/optional.hpp>
 
@@ -74,7 +75,7 @@ public:
     virtual QVariant data(int column) const override;
     virtual int row() const override;
 
-    std::string heading() const;
+    const std::string& heading() const;
     std::string compoundHeading() const; // "head1:head2" or "head1", starts with "Results"
     std::string compoundResultsHeading() const; // without "Results", can be ""
 
@@ -212,6 +213,9 @@ protected:
     QWidget*                 content_widget_                  = nullptr;
 
     std::vector<std::shared_ptr<Section>> sub_sections_;
+    // heading to index in sub_sections_, keeps findSubSection() constant time.
+    // sub_sections_ is only ever appended to, so the indexes stay valid.
+    std::unordered_map<std::string, size_t> sub_section_indexes_;
 
     static unsigned int current_content_id_;
 };

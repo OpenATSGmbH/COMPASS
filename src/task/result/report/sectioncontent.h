@@ -137,6 +137,10 @@ public:
     bool forceReload();
 
     void clearOnDemandContent();
+
+    // Serializes the content to JSON text. The default builds the JSON tree and dumps it.
+    // Overridden where the tree can be avoided, see SectionContentTable.
+    virtual void toJSONText(std::string& str) const;
     
     virtual void addContentUI(QVBoxLayout* layout, 
                               bool force_ui_reset) = 0;

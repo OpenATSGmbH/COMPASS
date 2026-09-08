@@ -284,10 +284,13 @@ public:
 
     static const double LatexIconWidth_cm;
 
+    void toJSONText(std::string& str) const override final;
+
 protected:
     void clearContent_impl() override final;
 
     void toJSON_impl(nlohmann::json& j) const override final; 
+    void fillJSON(nlohmann::json& j, bool move_rows) const;
     bool fromJSON_impl(const nlohmann::json& j) override final;
     Result toJSONDocument_impl(nlohmann::json& j,
                                const std::string* resource_dir,

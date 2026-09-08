@@ -335,6 +335,13 @@ void SectionContent::clearContent()
 
 /**
  */
+void SectionContent::toJSONText(std::string& str) const
+{
+    str = toJSON().dump();
+}
+
+/**
+ */
 QWidget* SectionContent::lockStatePlaceholderWidget() const
 {
     QFrame*      w      = new QFrame;

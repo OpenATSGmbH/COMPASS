@@ -76,6 +76,26 @@ using namespace Utils;
 using namespace std;
 using namespace dbContent;
 
+namespace
+{
+/**
+ * Property list used to insert report contents. The JSON text is produced once by the
+ * content itself, so the column is written as a plain string here and no second
+ * serialization takes place. The database column is VARCHAR either way, and the read
+ * path keeps using SectionContent::DBPropertyList, which parses the text back.
+ */
+const PropertyList& reportContentsInsertProperties()
+{
+    static const PropertyList props({
+        ResultReport::SectionContent::DBColumnContentID,
+        ResultReport::SectionContent::DBColumnResultID,
+        ResultReport::SectionContent::DBColumnType,
+        Property(ResultReport::SectionContent::DBColumnJSONContent.name(), PropertyDataType::STRING) });
+
+    return props;
+}
+}
+
 const string PROP_TIMESTAMP_MIN_NAME {"timestamp_min"};
 const string PROP_TIMESTAMP_MAX_NAME {"timestamp_max"};
 const string PROP_LATITUDE_MIN_NAME  {"latitude_min"};
@@ -2124,7 +2144,12 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
 
         //write contents
         {
-            size_t chunk_size_bytes = 1e09;
+            // Write the accumulated contents out early and often. A JSON tree in
+            // memory is several times larger than its serialized form, so a large
+            // chunk keeps gigabytes alive until it is flushed.
+            const size_t chunk_size_bytes = 16 * 1024 * 1024;
+            const size_t chunk_max_rows   = 500;
+
             size_t current_bytes    = 0;
             size_t current_row      = 0;
 
@@ -2133,11 +2158,11 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
             NullableVector<unsigned int>*   content_id_vec = nullptr;
             NullableVector<unsigned int>*   result_id_vec  = nullptr;
             NullableVector<int>*            type_vec       = nullptr;
-            NullableVector<nlohmann::json>* content_vec    = nullptr;
+            NullableVector<std::string>*    content_vec    = nullptr;
 
             for (const auto& c : report_contents)
             {
-                if (!buffer || current_bytes > chunk_size_bytes)
+                if (!buffer || current_bytes > chunk_size_bytes || current_row >= chunk_max_rows)
                 {
                     //insert old buffer if available
                     if (buffer)
@@ -2147,12 +2172,12 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
                     }
 
                     //create new buffer
-                    buffer.reset(new Buffer(ResultReport::SectionContent::DBPropertyList));
+                    buffer.reset(new Buffer(reportContentsInsertProperties()));
 
                     content_id_vec = &buffer->get<unsigned int>(ResultReport::SectionContent::DBColumnContentID.name());
                     result_id_vec  = &buffer->get<unsigned int>(ResultReport::SectionContent::DBColumnResultID.name());
                     type_vec       = &buffer->get<int>(ResultReport::SectionContent::DBColumnType.name());
-                    content_vec    = &buffer->get<nlohmann::json>(ResultReport::SectionContent::DBColumnJSONContent.name());
+                    content_vec    = &buffer->get<std::string>(ResultReport::SectionContent::DBColumnJSONContent.name());
 
                     current_bytes = 0;
                     current_row   = 0;
@@ -2162,13 +2187,16 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
 
                 //!this might trigger recomputations from temporarily generated data,
                 //which is immediately thrown away afterwards!
-                auto   c_json  = c->toJSON();
-                size_t c_bytes = c_json.dump().size();
+                //serialize once, straight to text, each content into its own string
+                std::string c_text;
+                c->toJSONText(c_text);
+
+                size_t c_bytes = c_text.size();
 
                 content_id_vec->set(current_row, c->contentID());
                 result_id_vec->set(current_row, result_id);
                 type_vec->set(current_row, (int)c->contentType());
-                content_vec->set(current_row, c_json);
+                content_vec->set(current_row, std::move(c_text));
 
                 current_bytes += c_bytes;
                 current_row   += 1;
