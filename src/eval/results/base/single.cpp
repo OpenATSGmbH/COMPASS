@@ -122,6 +122,15 @@ void Single::updateUseFromTarget()
     //target ignored by the current standard, e.g. primary-only or never detected in ADS-B
     if (target_->ignoredByStandard())
         setIgnoreResult(target_->ignoredByStandardReason());
+    else
+    {
+        //target not part of the requirement's target selection, e.g. a non-cooperative
+        //target in a requirement stated for cooperative targets only
+        std::string selection_reason = requirement_->targetSelectionIgnoreReason(*target_);
+
+        if (selection_reason.size())
+            setIgnoreResult(selection_reason);
+    }
 
     use_ = (resultUsable()
             && target_->use()

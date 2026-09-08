@@ -40,7 +40,7 @@ public:
             bool use_miss_tolerance, float miss_tolerance_s, bool use_time_ratio,
             bool use_gap_count,
             bool use_stationary_ui, float stationary_ui_s, float stationary_speed_threshold_ms,
-            bool hold_for_any_target, bool ignore_primary_only,
+            bool hold_for_any_target,
             const std::string& pd_calculation_method);
 
   float updateInterval() const;
@@ -57,7 +57,6 @@ public:
   float stationaryUI() const;
   float stationarySpeedThreshold() const;
 
-  bool ignorePrimaryOnly() const;
   const std::string& pdCalculationMethod() const;
 
   virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate(
@@ -114,7 +113,6 @@ protected:
     float stationary_ui_s_   {10.0f};
     float stationary_speed_threshold_ms_ {0.5f};
 
-    bool ignore_primary_only_ {true};
 
     // "status_message" or "time_difference", see DetectionConfig
     std::string pd_calculation_method_ {"time_difference"};

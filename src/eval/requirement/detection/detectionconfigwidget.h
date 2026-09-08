@@ -56,7 +56,6 @@ public slots:
 
     void toggleHoldForAnyTargetSlot();
     
-    void toggleIgnorePrimaryOnlySlot();
 
     void changedPDCalculationMethodSlot(const QString& value);
 public:
@@ -85,7 +84,6 @@ protected:
 
     QCheckBox* hold_for_any_target_check_{nullptr};
 
-    QCheckBox* ignore_primary_only_check_{nullptr};
 
     QComboBox* pd_calculation_method_box_{nullptr};
 

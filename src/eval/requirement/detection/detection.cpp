@@ -58,7 +58,7 @@ Detection::Detection(const std::string& name,
                      bool use_stationary_ui,
                      float stationary_ui_s,
                      float stationary_speed_threshold_ms,
-                     bool hold_for_any_target, bool ignore_primary_only,
+                     bool hold_for_any_target,
                      const std::string& pd_calculation_method)
     : ProbabilityBase     (name, short_name, group_name, prob, prob_check_type, invert_prob, calculator, hold_for_any_target),
     update_interval_s_  (update_interval_s),
@@ -73,7 +73,6 @@ Detection::Detection(const std::string& name,
     use_stationary_ui_  (use_stationary_ui),
     stationary_ui_s_    (stationary_ui_s),
     stationary_speed_threshold_ms_(stationary_speed_threshold_ms),
-    ignore_primary_only_(ignore_primary_only),
     pd_calculation_method_(pd_calculation_method)
 {
 }
@@ -132,11 +131,6 @@ float Detection::missTolerance() const
 float Detection::missThreshold() const
 {
     return use_miss_tolerance_ ? update_interval_s_+miss_tolerance_s_ : update_interval_s_;
-}
-
-bool Detection::ignorePrimaryOnly() const
-{
-    return ignore_primary_only_;
 }
 
 /**
@@ -253,9 +247,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluateStatusCy
     auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
         "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
         calculator_, details, sum_expected, sum_missed, ref_periods);
-
-    if (ignore_primary_only_ && target_data.isPrimaryOnly())
-        ret->setIgnoreResult("Primary-only");
 
     return ret;
 }
@@ -511,9 +502,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
             "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
             calculator_, details, sum_expected, sum_missed, ref_periods);
-
-        if (ignore_primary_only_ && target_data.isPrimaryOnly())
-            ret->setIgnoreResult("Primary-only");
 
         return ret;
     }
@@ -856,9 +844,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
     auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
         "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
         calculator_, details, sum_expected, sum_missed, ref_periods);
-
-    if (ignore_primary_only_ && target_data.isPrimaryOnly())
-        ret->setIgnoreResult("Primary-only");
 
     return ret;
 }

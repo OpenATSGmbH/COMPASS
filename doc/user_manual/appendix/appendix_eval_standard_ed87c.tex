@@ -1,0 +1,78 @@
+\subsection{EUROCAE ED-87C}
+\label{sec:appendix_eval_std_ed87c}
+
+The 'EUROCAE ED-87C' standard covers the MASPS for Advanced Surface Movement Guidance and Control Systems (A-SMGCS), and is mapped from the edition of January 2015. Like the later editions it assesses the fused track output of the system, not an individual sensor. \\
+
+This edition is superseded twice, by ED-87D of 2019 and ED-87E of 2022, see \nameref{sec:appendix_eval_std_ed87e}. It is supplied for the assessment of systems accepted against it. For a new assessment the latest edition applies. \\
+
+The structure follows the later editions: one requirement group per sub-volume of the coverage volume, 'Manoeuvring Area', 'Apron Taxiways' and 'Active Stands', plus a 'Common' group for the false identification figures. Each group has to be assigned to the sector layer describing that area. \\
+
+\subsubsection{Requirement Mapping}
+
+The performance figures are taken from Table 3.1 of the source document, which is held in Section 3.3.3, the assessment procedures from Section 5.8.
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | l | X | }
+    \hline
+    \textbf{Group} & \textbf{Req.} & \textbf{COMPASS Requirement, Configuration and Source Section} \\ \hline
+    Manoeuvring Area & PTR & \nameref{sec:eval_req_detection}, 95\%, update interval 1 s, cooperative targets (3.2.3.1) \\ \hline
+    Apron Taxiways & PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, cooperative targets (3.2.3.1) \\ \hline
+    Active Stands & PTR & \nameref{sec:eval_req_detection}, 95\%, update interval 5 s, cooperative targets (3.2.3.1) \\ \hline
+    Manoeuvring Area & PRI PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, non-cooperative targets (Table 3.1 NOTE [1], ED-116 3.4.2) \\ \hline
+    Apron Taxiways & PRI PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, non-cooperative targets (Table 3.1 NOTE [1], ED-116 3.4.2) \\ \hline
+    Active Stands & PRI PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, non-cooperative targets (Table 3.1 NOTE [1], ED-116 3.4.2) \\ \hline
+    Manoeuvring Area & TC/GAPS3 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps from 3 s to 5 s, at most 1e-3 (3.2.11, 5.8.12) \\ \hline
+    Manoeuvring Area & TC/GAPS5 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps above 5 s, at most 1e-6 (3.2.11, 5.8.12) \\ \hline
+    Apron Taxiways & TC/GAPS3 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps from 3 s to 5 s, at most 1e-3 (3.2.11, 5.8.12) \\ \hline
+    Apron Taxiways & TC/GAPS5 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps above 5 s, at most 1e-5 (3.2.11, 5.8.12) \\ \hline
+    Active Stands & TC/GAPS5 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps above 5 s, at most 1e-3 (3.2.11, 5.8.12) \\ \hline
+    Manoeuvring Area & RPA & \nameref{sec:eval_req_pos_distance}, 12 m at 95\% (3.2.6) \\ \hline
+    Apron Taxiways & RPA & \nameref{sec:eval_req_pos_distance}, 20 m at 95\% (3.2.6) \\ \hline
+    Active Stands & RPA & \nameref{sec:eval_req_pos_distance}, 25 m at 95\% (3.2.6) \\ \hline
+    Manoeuvring Area & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 60 m, at most 1e-4, cooperative targets (3.2.3.2) \\ \hline
+    Apron Taxiways & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 100 m, at most 1e-4, cooperative targets (3.2.3.2) \\ \hline
+    Active Stands & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 125 m, at most 1e-4, cooperative targets (3.2.3.2) \\ \hline
+    Manoeuvring Area & PRI PFTR & \nameref{sec:eval_req_pos_distance}, position error above 60 m, at most 1e-4, non-cooperative targets (Table 3.1 NOTE [1]) \\ \hline
+    Apron Taxiways & PRI PFTR & \nameref{sec:eval_req_pos_distance}, position error above 100 m, at most 1e-4, non-cooperative targets (Table 3.1 NOTE [1]) \\ \hline
+    Active Stands & PRI PFTR & \nameref{sec:eval_req_pos_distance}, position error above 125 m, at most 1e-4, non-cooperative targets (Table 3.1 NOTE [1]) \\ \hline
+    Manoeuvring Area & RVA & \nameref{sec:eval_req_speed}, 5 m/s or 10\% of the reference speed, the higher, at 90\% (3.2.8) \\ \hline
+    Apron Taxiways & RVA & \nameref{sec:eval_req_speed}, 5 m/s or 10\% of the reference speed, the higher, at 90\% (3.2.8) \\ \hline
+    Common & PID TA & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, Mode S address, cooperative targets (3.2.4.1) \\ \hline
+    Common & PID MA & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, Mode 3/A code, cooperative targets (3.2.4.1) \\ \hline
+    Common & PID ID & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, aircraft identification, cooperative targets (3.2.4.1) \\ \hline
+    Common & PFID TA & \nameref{sec:eval_req_id_false}, at most 1e-4, Mode S address, cooperative targets (3.2.4.2) \\ \hline
+    Common & PFID MA & \nameref{sec:eval_req_id_false}, at most 1e-4, Mode 3/A code, cooperative targets (3.2.4.2) \\ \hline
+    Common & PFID ID & \nameref{sec:eval_req_id_false}, at most 1e-4, aircraft identification, cooperative targets (3.2.4.2) \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+\ \\
+
+As in the later editions, the identification instances are held in the area groups where the figure differs per area, that is 99.9\% on the manoeuvring area and on the apron taxiways, and 98\% on the stands. \\
+
+\subsubsection{Differences to the Later Editions}
+
+\begin{itemize}
+\item \textbf{No target course accuracy.} This edition states no requirement on the direction of movement. The requirement was introduced with ED-87D. The standard therefore holds no course instance.
+\item \textbf{Detection on the manoeuvring area.} This edition asks for 95\%, the later editions ask for 99\%.
+\item \textbf{Reported velocity accuracy.} This edition words the requirement on the velocity, the later editions on the speed. The stated figures and the assessment procedure are the same, and the direction is not separately assessed in either reading, so the Speed requirement is configured identically for all three editions.
+\item \textbf{Wording and structure.} This edition speaks of a Surveillance element of a Level 1 or Level 2 system, the later editions of a Surveillance Service. The performance figures of the two levels are identical, so the level does not enter the configuration.
+\end{itemize}
+\ \\
+
+\subsubsection{Implementation Notes}
+
+The notes of \nameref{sec:appendix_eval_std_ed87e} apply to this edition as well, with the section numbers of the mapping table above. In particular:
+
+\begin{itemize}
+\item \textbf{Cooperative and non-cooperative targets.} The detection and false report figures may be relaxed to the figure of the non-cooperative sensor, and the identification figures apply to cooperative targets only. The target selection of each requirement carries this, and the PRI instances hold the ED-116 detection figure for the non-cooperative set.
+\item \textbf{Track continuity.} Counted as a number of gaps over a number of target reports, one instance per gap length band.
+\item \textbf{Identification split.} One instance per identity item, each carrying the stated figure.
+\item \textbf{Detection method.} The status message method where the system under test reports its update cycles, the time difference method with a 0.5 s miss tolerance otherwise.
+\end{itemize}
+\ \\
+
+\subsubsection{Not Assessed}
+
+The same requirements as in \nameref{sec:appendix_eval_std_ed87e} are not part of the supplied definition, that is the target display latency, the position and identification renewal time-out periods, the target report initiation time, the report resolutions, the spurious part of the false target report, the per-polygon assessment and the system capacity. This edition additionally states no assessment procedure for the three report resolutions.

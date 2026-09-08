@@ -62,7 +62,6 @@ DetectionConfig::DetectionConfig(
 
     registerParameter("hold_for_any_target", &hold_for_any_target_, false);
 
-    registerParameter("ignore_primary_only", &ignore_primary_only_, false);
 
     registerParameter("pd_calculation_method", &pd_calculation_method_, std::string("time_difference"));
 }
@@ -78,7 +77,7 @@ std::shared_ptr<Base> DetectionConfig::createRequirement()
                 use_min_gap_length_, min_gap_length_s_, use_max_gap_length_, max_gap_length_s_, invert_prob_,
                 use_miss_tolerance_, miss_tolerance_s_, use_time_ratio_, use_gap_count_,
                 use_stationary_ui_, stationary_ui_s_, stationary_speed_threshold_ms_,
-                hold_for_any_target_, ignore_primary_only_, pd_calculation_method_);
+                hold_for_any_target_, pd_calculation_method_);
 
     return req;
 }
@@ -223,16 +222,6 @@ void DetectionConfig::maxGapLength(float value)
     max_gap_length_s_ = value;
 }
 
-void DetectionConfig::ignorePrimaryOnly(bool value)
-{
-    ignore_primary_only_ = value;
-}
-
-bool DetectionConfig::ignorePrimaryOnly() const
-{
-    return ignore_primary_only_;;
-}
-
 BaseConfigWidget* DetectionConfig::createWidget()
 {
     return new DetectionConfigWidget(*this);
@@ -298,11 +287,6 @@ void DetectionConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 
     table.addRow({"Hold for any Target", "Must hold for any target (every single targets)",
                   String::boolToString(hold_for_any_target_)});
-
-    table.addRow({"Ignore Primary Only",
-                  "Requirement result is ignored if target is primary only (has no"
-                  " secondary attributes)",
-                  String::boolToString(ignore_primary_only_)});                  
 }
 
 bool DetectionConfig::holdForAnyTarget() const

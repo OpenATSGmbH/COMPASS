@@ -155,6 +155,7 @@ All requirement mappings thus should be deselected for this layer (see figure be
 \end{figure}
 
 \subsection{Standard Tab}
+\label{sec:eval_standard}
 
 \begin{figure}[H]
   \centering
@@ -306,9 +307,21 @@ Each requirement has the following common attributes:
 \item Name: Name of the requirement
 \item Short Name: Abbreviated name of the requirement
 \item Comment: Any text comment, e.g. reference to source document
+\item Target Selection: Target class the requirement is evaluated for
 \item Probability [1]: Probability threshold, as [0,1]
 \item Probability Check Type: Probability comparison type for calculated probability against probability threshold
 \end{itemize}
+\ \\
+
+The 'Target Selection' defines which targets the requirement is evaluated for:
+\begin{itemize}
+\item All Targets: Every target, the default
+\item Cooperative Only: Targets with a Mode 3/A code, a Mode C code or a Mode S attribute
+\item Non-cooperative Only: Targets with none of those, detected by primary means only
+\end{itemize}
+\ \\
+
+Standards state some requirements for cooperative targets only, and others for every target. A target of another class than the selected one is reported as an unusable result with the reason, and does not contribute to the sector sum. The same target may therefore be assessed by one requirement and skipped by another. This selection is applied in addition to the target filters of the 'Standard' tab, see \nameref{sec:eval_standard}. \\
 \ \\
 
 For detailed information about each requirement please refer to section \nameref{sec:eval_requirements}.

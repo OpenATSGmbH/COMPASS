@@ -218,7 +218,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                        << " group " << requirement_group_name
                        << " req '" << req_cfg_it->name() << "'";
 
-                std::shared_ptr<EvaluationRequirement::Base> req = req_cfg_it->createRequirement();
+                std::shared_ptr<EvaluationRequirement::Base> req = req_cfg_it->createRequirementInstance();
                 std::shared_ptr<Joined> result_sum;
                 map<string, std::shared_ptr<Joined>> extra_results_sums;
 

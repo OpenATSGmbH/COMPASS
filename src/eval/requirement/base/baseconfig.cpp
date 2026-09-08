@@ -16,6 +16,7 @@
  */
 
 #include "eval/requirement/base/baseconfig.h"
+#include "eval/requirement/base/base.h"
 #include "eval/requirement/group.h"
 #include "eval/requirement/base/comparisontype.h"
 #include "evaluationstandard.h"
@@ -77,6 +78,8 @@ BaseConfig::BaseConfig(
     registerParameter("name", &name_, std::string());
     registerParameter("short_name", &short_name_, std::string());
     registerParameter("comment", &comment_, std::string());
+    registerParameter("target_selection", &target_selection_,
+                      targetSelectionString(TargetSelection::All));
 
     traced_assert(name_.size());
     traced_assert(short_name_.size());
@@ -120,6 +123,27 @@ void BaseConfig::checkSubConfigurables()
 BaseConfigWidget* BaseConfig::widget()
 {
     return createWidget();
+}
+
+std::shared_ptr<Base> BaseConfig::createRequirementInstance()
+{
+    std::shared_ptr<Base> req = createRequirement();
+
+    traced_assert(req);
+
+    req->targetSelection(targetSelection());
+
+    return req;
+}
+
+TargetSelection BaseConfig::targetSelection() const
+{
+    return targetSelectionFromString(target_selection_);
+}
+
+void BaseConfig::targetSelection(TargetSelection selection)
+{
+    target_selection_ = targetSelectionString(selection);
 }
 
 std::string BaseConfig::comment() const
@@ -198,6 +222,8 @@ void BaseConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
     table.addRow({"Short Name", "Requirement short name", short_name_});
     table.addRow({"Comment", "", comment_});
     table.addRow({"Group", "Group name", group_.name()});
+    table.addRow({"Target Selection", "Target class the requirement is evaluated for",
+                  targetSelectionLongString(targetSelection())});
 
     // prob & check type added in subclass
 }

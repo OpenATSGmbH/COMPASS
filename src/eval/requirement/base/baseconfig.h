@@ -20,6 +20,7 @@
 #include "configurable.h"
 #include "evaluationstandardtreeitem.h"
 #include "eval/requirement/base/baseconfigwidget.h"
+#include "eval/requirement/base/targetselection.h"
 
 #include <QObject>
 
@@ -72,8 +73,15 @@ public:
     BaseConfigWidget* widget();
     virtual std::shared_ptr<Base> createRequirement() = 0;
 
+    // creates the requirement and applies the settings common to all requirement types,
+    // use this instead of createRequirement()
+    std::shared_ptr<Base> createRequirementInstance();
+
     std::string comment() const;
     void comment(const std::string& comment);
+
+    TargetSelection targetSelection() const;
+    void targetSelection(TargetSelection selection);
 
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report);
 
@@ -86,6 +94,7 @@ protected:
     std::string name_;
     std::string short_name_;
     std::string comment_;
+    std::string target_selection_;
 
     virtual void checkSubConfigurables() override;
     virtual BaseConfigWidget* createWidget(); // creates BaseConfigWidget, override to change

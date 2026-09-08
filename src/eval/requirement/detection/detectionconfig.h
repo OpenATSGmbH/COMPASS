@@ -85,8 +85,6 @@ public:
     bool holdForAnyTarget() const;
     void holdForAnyTarget(bool value);
 
-    bool ignorePrimaryOnly() const;
-    void ignorePrimaryOnly(bool value);
 
     std::string pdCalculationMethod() const;
     void pdCalculationMethod(const std::string& value);
@@ -122,7 +120,6 @@ public:
 
     bool hold_for_any_target_ {false}; // if requirement must hold for any target (all single targets)
 
-    bool ignore_primary_only_ {false};
 
     // "status_message": expected periods from the update cycles the test data source
     // reports (CAT019 / CAT010 start of update cycle), "time_difference": gaps between

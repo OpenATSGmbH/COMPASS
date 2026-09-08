@@ -21,6 +21,7 @@
 #include "evaluationdata.h"
 #include "util/timeconv.h"
 #include "eval/requirement/base/comparisontype.h"
+#include "eval/requirement/base/targetselection.h"
 #include "evaluationdefs.h"
 
 #include "boost/optional.hpp"
@@ -82,6 +83,13 @@ public:
     COMPARISON_TYPE conditionCheckType() const;
     const boost::optional<bool>& mustHoldForAnyTarget() const;
 
+    TargetSelection targetSelection() const;
+    void targetSelection(TargetSelection selection);
+
+    // reason why the target is not part of the requirement's target selection,
+    // empty if the target is to be evaluated
+    std::string targetSelectionIgnoreReason(const EvaluationTargetData& target) const;
+
     Qt::SortOrder resultSortOrder() const;
 
     bool conditionPassed(double value) const;
@@ -108,6 +116,8 @@ protected:
     std::string group_name_;
 
     EvaluationCalculator& calculator_;
+
+    TargetSelection target_selection_ {TargetSelection::All};
 
     virtual double convertValueToResult(double value) const;
 
