@@ -197,8 +197,14 @@ public:
     bool variableSelectionByGroup() const { return variable_selection_by_group_; }
     void variableSelectionByGroup(bool by_group) { variable_selection_by_group_ = by_group; }
 
-    std::set<std::string> variableSelectionHiddenContents() const;
-    void variableSelectionHiddenContents(const std::set<std::string>& hidden);
+    const std::string& variableSelectionContent() const { return variable_selection_content_; }
+    void variableSelectionContent(const std::string& content_name)
+        { variable_selection_content_ = content_name; }
+
+    bool variableSelectionHideStatusContents() const
+        { return variable_selection_hide_status_contents_; }
+    void variableSelectionHideStatusContents(bool hide)
+        { variable_selection_hide_status_contents_ = hide; }
 
 protected:
     void setViewableDataConfig (const nlohmann::json::object_t& data);
@@ -214,7 +220,8 @@ protected:
     bool show_data_counts_{false};
 
     bool variable_selection_by_group_{false};
-    nlohmann::json variable_selection_hidden_contents_; // list of content names unchecked in the variable selection dialog
+    std::string variable_selection_content_; // content selected in the variable selection dialog
+    bool variable_selection_hide_status_contents_{true}; // hide contents without target reports
 
     /// Container with all DBContent (DBContent name -> dbcont pointer)
     std::map<std::string, DBContent*> dbcontent_;

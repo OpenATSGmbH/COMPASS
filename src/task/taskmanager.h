@@ -139,9 +139,11 @@ public:
                                bool load_blocking = false);
     void unsetViewableDataConfig();
 
-    std::shared_ptr<ResultReport::SectionContent> loadContent(ResultReport::Section* section, 
+    std::shared_ptr<ResultReport::SectionContent> loadContent(ResultReport::Section* section,
                                                               unsigned int content_id,
                                                               bool show_dialog = false) const;
+
+    ResultT<nlohmann::json> loadResultContent(unsigned int result_id) const;
 
     void storeBackupSection();
     void restoreBackupSection();

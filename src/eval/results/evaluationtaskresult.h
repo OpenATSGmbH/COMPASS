@@ -93,6 +93,8 @@ protected:
                                    unsigned int row,
                                    unsigned int col) const override final;
 private:
+    /// creates the calculator on first use, null if the creation failed
+    EvaluationCalculator* calculator() const;
     Result createCalculator();
 
     void updateTargets();
@@ -114,6 +116,7 @@ private:
 
     COMPASS& compass_;
     mutable std::unique_ptr<EvaluationCalculator> calculator_;
+    mutable bool                                  calculator_failed_ = false; // creation failed, do not retry
     TargetMap                                     targets_;
     mutable InterestSwitches                      interest_factor_enabled_; //req sum result id => enabled
 

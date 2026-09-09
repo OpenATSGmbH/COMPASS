@@ -800,6 +800,40 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
 }
 
 /**
+ * Reads the stored content JSON of a result. Used by TaskResult for its on demand content load.
+ * The read and the JSON parse of a large report take seconds, so they run as an async task and
+ * the result widget is blocked while they run.
+ */
+ResultT<nlohmann::json> TaskManager::loadResultContent(unsigned int result_id) const
+{
+    //already running in a worker thread, e.g. the report loading task of TaskResultsWidget?
+    //then read directly, a dialog and widget calls are only allowed in the main thread
+    if (QThread::currentThread() != QCoreApplication::instance()->thread())
+        return compass_.dbInterface().loadResultContent(result_id);
+
+    ResultT<nlohmann::json> result;
+
+    if (widget_)
+        widget_->setDisabled(true);
+
+    auto result_ptr = &result;
+
+    auto cb = [ this, result_ptr, result_id ] (const AsyncTaskState&, AsyncTaskProgressWrapper&)
+    {
+        *result_ptr = compass_.dbInterface().loadResultContent(result_id);
+        return Result::succeeded();
+    };
+
+    AsyncFuncTask task(cb, "Loading", "Loading report content", false);
+    task.runAsyncDialog();
+
+    if (widget_)
+        widget_->setDisabled(false);
+
+    return result;
+}
+
+/**
  */
 void TaskManager::loadResults()
 {

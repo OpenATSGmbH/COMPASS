@@ -26,6 +26,7 @@
 #include "logger.h"
 #include "taskmanager.h"
 #include "asynctask.h"
+#include "dialogs.h"
 #include "compass.h"
 #include "reportdefs.h"
 #include "license/licensemanager.h"
@@ -45,6 +46,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QApplication>
+#include <QProgressDialog>
 
 using namespace Utils;
 
@@ -198,6 +200,39 @@ void TaskResultsWidget::setReport(const std::string name)
 
     traced_assert(task_man_.hasResult(name));
     auto result = task_man_.result(name);
+
+    //the content may still have to be read from the database, block the report until it is shown
+    report_widget_->setDisabled(true);
+
+    //status window stays open until the report is displayed, the content read of a big report
+    //takes seconds and the display which follows it is not free either
+    std::unique_ptr<QProgressDialog> status;
+
+    if (!result->contentLoaded())
+    {
+        status.reset(new QProgressDialog("Loading report", QString(), 0, 0,
+                                         Dialogs::statusDialogParent()));
+        status->setWindowTitle("Loading");
+        status->setWindowModality(Qt::ApplicationModal);
+        status->setCancelButton(nullptr);
+        status->setMinimumDuration(0);
+        status->show();
+
+        QApplication::processEvents();
+
+        //read and parse the stored content in a worker thread, runAsync keeps the ui alive
+        auto result_ptr = result.get();
+
+        auto cb = [ result_ptr ] (const AsyncTaskState&, AsyncTaskProgressWrapper&)
+        {
+            result_ptr->ensureContentLoaded();
+            return Result::succeeded();
+        };
+
+        AsyncFuncTask task(cb, "Loading", "Loading report", false);
+        task.runAsync();
+    }
+
     auto report = result->report();
 
     report_widget_->setReport(report);
@@ -212,6 +247,9 @@ void TaskResultsWidget::setReport(const std::string name)
     report_widget_->setDisabled(false);
 
     updateResultUI(name);
+
+    //report is displayed now
+    status.reset();
 }
 
 /**

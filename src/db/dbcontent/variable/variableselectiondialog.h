@@ -27,11 +27,13 @@
 #include <utility>
 #include <vector>
 
-class QCheckBox;
+class QAction;
+class QButtonGroup;
 class QComboBox;
 class QGridLayout;
 class QLineEdit;
 class QPushButton;
+class QRadioButton;
 class QSortFilterProxyModel;
 class QStandardItem;
 class QStandardItemModel;
@@ -48,8 +50,8 @@ class MetaVariable;
 
 /**
  * Modal variable picker replacing the former QMenu-based selection.
- * Shows all selectable variables in a tree (content -> data item or group -> variable),
- * with search, content selection checkboxes, and switchable grouping.
+ * Shows the variables of one content in a tree (content -> data item or group -> variable),
+ * with search, an exclusive content selection strip, and switchable grouping.
  */
 class VariableSelectionDialog : public QDialog
 {
@@ -87,7 +89,8 @@ class VariableSelectionDialog : public QDialog
   protected slots:
     void searchChangedSlot(const QString& text);
     void groupingChangedSlot(int index);
-    void contentToggledSlot();
+    void contentSelectedSlot();
+    void hideStatusContentsToggledSlot(bool hide);
     void selectionChangedSlot();
     void itemDoubleClickedSlot(const QModelIndex& index);
     void selectSlot();
@@ -96,14 +99,14 @@ class VariableSelectionDialog : public QDialog
   protected:
     void createUI();
     void createContentStrip();
+    void updateContentStrip();
     void updateModel();
     void updateSelectButton();
     void storeSettings();
 
     bool showDataType(PropertyDataType type) const;
-    bool contentChecked(const std::string& content_name) const;
-    void setAllContentsChecked(bool checked);
-    void checkContentsByRole(bool target_reports);
+    std::vector<std::string> selectableContents() const;
+    bool contentShown(const std::string& content_name) const;
 
     QStandardItem* makeVariableRow(const std::string& content_name, const std::string& var_name,
                                    const Variable* variable, const MetaVariable* meta_variable,
@@ -119,9 +122,13 @@ class VariableSelectionDialog : public QDialog
     QComboBox* grouping_combo_{nullptr};
 
     QGridLayout* content_strip_layout_{nullptr};
-    std::map<std::string, QCheckBox*> content_checkboxes_; // content name -> checkbox
+    QButtonGroup* content_group_{nullptr};
+    std::map<std::string, QRadioButton*> content_buttons_; // content name -> radio button
     QPushButton* content_menu_button_{nullptr};
     PopupMenu* content_menu_{nullptr};
+    QAction* hide_status_action_{nullptr};
+
+    std::string selected_content_; // content whose variables are shown, empty if none
 
     QTreeView* tree_view_{nullptr};
     QStandardItemModel* model_{nullptr};

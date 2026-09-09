@@ -26,7 +26,7 @@
 #include "popupmenu.h"
 #include "traced_assert.h"
 
-#include <QCheckBox>
+#include <QButtonGroup>
 #include <QComboBox>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -34,6 +34,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QRegularExpression>
 #include <QSortFilterProxyModel>
 #include <QStandardItemModel>
@@ -63,6 +64,9 @@ namespace
 
     const int ContentStripColumns = 6;
 
+    // holds the variable description for the search only, too long to be shown as a column
+    const int DescriptionColumn = 3;
+
     int groupOrderIndex(const std::string& group)
     {
         auto it = std::find(GroupOrder.begin(), GroupOrder.end(), group);
@@ -82,7 +86,7 @@ VariableSelectionDialog::VariableSelectionDialog(DBContentManager& dbcont_man,
 {
     setObjectName("variable_selection_dialog");
     setWindowTitle(settings_.multi_select ? "Select Variables" : "Select Variable");
-    setMinimumSize(700, 600);
+    setMinimumSize(900, 600);
 
     createUI();
     updateModel();
@@ -206,40 +210,8 @@ void VariableSelectionDialog::createContentStrip()
     content_strip_layout_ = new QGridLayout();
     content_strip_layout_->setContentsMargins(0, 0, 0, 0);
 
-    std::set<std::string> hidden = dbcont_man_.variableSelectionHiddenContents();
-
-    std::vector<std::string> contents;
-
-    if (settings_.show_meta_variables)
-        contents.push_back(META_OBJECT_NAME);
-
-    if (!settings_.show_meta_variables_only)
-    {
-        for (auto& object_it : dbcont_man_)
-        {
-            if (settings_.show_existing_in_db_only && !object_it.second->hasData())
-                continue;
-
-            contents.push_back(object_it.first);
-        }
-    }
-
-    unsigned int cnt = 0;
-
-    for (const auto& content_name : contents)
-    {
-        QCheckBox* checkbox = new QCheckBox(QString::fromStdString(content_name));
-        checkbox->setObjectName(QString::fromStdString("content_" + content_name));
-        checkbox->setChecked(!hidden.count(content_name));
-        connect(checkbox, &QCheckBox::toggled,
-                this, &VariableSelectionDialog::contentToggledSlot);
-
-        content_checkboxes_[content_name] = checkbox;
-
-        content_strip_layout_->addWidget(checkbox, cnt / ContentStripColumns,
-                                         cnt % ContentStripColumns);
-        ++cnt;
-    }
+    content_group_ = new QButtonGroup(this);
+    content_group_->setExclusive(true);
 
     strip_layout->addLayout(content_strip_layout_, 1);
 
@@ -255,27 +227,95 @@ void VariableSelectionDialog::createContentStrip()
     content_menu_ = new PopupMenu(content_menu_button_);
     content_menu_->setToolTipsVisible(true);
 
-    QAction* all_action = content_menu_->addAction("Select All");
-    all_action->setToolTip("Show variables of all contents");
-    connect(all_action, &QAction::triggered, this, [this]() { setAllContentsChecked(true); });
-
-    QAction* none_action = content_menu_->addAction("Select Nothing");
-    none_action->setToolTip("Hide variables of all contents");
-    connect(none_action, &QAction::triggered, this, [this]() { setAllContentsChecked(false); });
-
-    content_menu_->addSeparator();
-
-    QAction* target_action = content_menu_->addAction("Target Reports Only");
-    target_action->setToolTip("Show only contents containing target reports");
-    connect(target_action, &QAction::triggered, this, [this]() { checkContentsByRole(true); });
-
-    QAction* status_action = content_menu_->addAction("Status Messages Only");
-    status_action->setToolTip("Show only contents containing status messages");
-    connect(status_action, &QAction::triggered, this, [this]() { checkContentsByRole(false); });
+    hide_status_action_ = content_menu_->addAction("Hide Status Categories");
+    hide_status_action_->setObjectName("hide_status_action");
+    hide_status_action_->setCheckable(true);
+    hide_status_action_->setChecked(dbcont_man_.variableSelectionHideStatusContents());
+    hide_status_action_->setToolTip("Offer only contents containing target reports");
+    connect(hide_status_action_, &QAction::toggled,
+            this, &VariableSelectionDialog::hideStatusContentsToggledSlot);
 
     strip_layout->addWidget(content_menu_button_, 0, Qt::AlignTop | Qt::AlignRight);
 
-    static_cast<QVBoxLayout*>(main_layout)->addLayout(strip_layout);
+    main_layout->addLayout(strip_layout);
+
+    updateContentStrip();
+}
+
+/**
+ */
+std::vector<std::string> VariableSelectionDialog::selectableContents() const
+{
+    bool hide_status = hide_status_action_ && hide_status_action_->isChecked();
+
+    std::vector<std::string> contents;
+
+    if (settings_.show_meta_variables)
+        contents.push_back(META_OBJECT_NAME);
+
+    if (!settings_.show_meta_variables_only)
+    {
+        for (auto& object_it : dbcont_man_)
+        {
+            if (settings_.show_existing_in_db_only && !object_it.second->hasData())
+                continue;
+
+            if (hide_status && !object_it.second->containsTargetReports())
+                continue;
+
+            contents.push_back(object_it.first);
+        }
+    }
+
+    return contents;
+}
+
+/**
+ */
+void VariableSelectionDialog::updateContentStrip()
+{
+    traced_assert(content_strip_layout_);
+
+    // the offered contents change with the status filter, so rebuild the whole strip
+    for (auto& button_it : content_buttons_)
+    {
+        button_it.second->blockSignals(true);
+        content_group_->removeButton(button_it.second);
+        content_strip_layout_->removeWidget(button_it.second);
+        delete button_it.second;
+    }
+
+    content_buttons_.clear();
+
+    std::vector<std::string> contents = selectableContents();
+
+    // keep the current content if it is still offered, else use the stored one or the first
+    std::string wanted = selected_content_.empty() ? dbcont_man_.variableSelectionContent()
+                                                   : selected_content_;
+
+    if (std::find(contents.begin(), contents.end(), wanted) == contents.end())
+        wanted = contents.empty() ? "" : contents.front();
+
+    selected_content_ = wanted;
+
+    unsigned int cnt = 0;
+
+    for (const auto& content_name : contents)
+    {
+        QRadioButton* button = new QRadioButton(QString::fromStdString(content_name));
+        button->setObjectName(QString::fromStdString("content_" + content_name));
+        button->setProperty("content_name", QString::fromStdString(content_name));
+        button->setChecked(content_name == selected_content_);
+        connect(button, &QRadioButton::toggled,
+                this, &VariableSelectionDialog::contentSelectedSlot);
+
+        content_group_->addButton(button);
+        content_buttons_[content_name] = button;
+
+        content_strip_layout_->addWidget(button, cnt / ContentStripColumns,
+                                         cnt % ContentStripColumns);
+        ++cnt;
+    }
 }
 
 /**
@@ -291,52 +331,9 @@ bool VariableSelectionDialog::showDataType(PropertyDataType type) const
 
 /**
  */
-bool VariableSelectionDialog::contentChecked(const std::string& content_name) const
+bool VariableSelectionDialog::contentShown(const std::string& content_name) const
 {
-    auto it = content_checkboxes_.find(content_name);
-    if (it == content_checkboxes_.end())
-        return true; // no strip (single content mode) => always shown
-
-    return it->second->isChecked();
-}
-
-/**
- */
-void VariableSelectionDialog::setAllContentsChecked(bool checked)
-{
-    for (auto& check_it : content_checkboxes_)
-    {
-        check_it.second->blockSignals(true);
-        check_it.second->setChecked(checked);
-        check_it.second->blockSignals(false);
-    }
-
-    contentToggledSlot();
-}
-
-/**
- */
-void VariableSelectionDialog::checkContentsByRole(bool target_reports)
-{
-    for (auto& check_it : content_checkboxes_)
-    {
-        bool check;
-
-        if (check_it.first == META_OBJECT_NAME)
-            check = target_reports; // meta variables mainly resolve to target report contents
-        else
-        {
-            const DBContent& content = dbcont_man_.dbContent(check_it.first);
-            check = target_reports ? content.containsTargetReports()
-                                   : content.containsStatusContent();
-        }
-
-        check_it.second->blockSignals(true);
-        check_it.second->setChecked(check);
-        check_it.second->blockSignals(false);
-    }
-
-    contentToggledSlot();
+    return content_name == selected_content_;
 }
 
 /**
@@ -551,7 +548,7 @@ void VariableSelectionDialog::updateModel()
         auto add_content = [&](const std::string& content_name, bool has_data,
                                bool group_by_group)
         {
-            if (!contentChecked(content_name))
+            if (!contentShown(content_name))
                 return;
 
             QStandardItem* content_item =
@@ -585,7 +582,7 @@ void VariableSelectionDialog::updateModel()
         };
 
         // meta variables first, always grouped by group
-        if (settings_.show_meta_variables && content_checkboxes_.count(META_OBJECT_NAME))
+        if (settings_.show_meta_variables && contentShown(META_OBJECT_NAME))
         {
             bool meta_has_data = false;
             for (auto& meta_it : dbcont_man_.metaVariables())
@@ -616,10 +613,12 @@ void VariableSelectionDialog::updateModel()
     else
         tree_view_->expandAll();
 
+    // the description stays in the model so the search covers it, but it is not shown
+    tree_view_->setColumnHidden(DescriptionColumn, true);
+
     tree_view_->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     tree_view_->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    tree_view_->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    tree_view_->header()->setSectionResizeMode(3, QHeaderView::Stretch);
+    tree_view_->header()->setSectionResizeMode(2, QHeaderView::Stretch);
 }
 
 /**
@@ -646,16 +645,11 @@ void VariableSelectionDialog::storeSettings()
 {
     dbcont_man_.variableSelectionByGroup(grouping_combo_->currentIndex() == 1);
 
-    if (!content_checkboxes_.empty())
-    {
-        std::set<std::string> hidden;
+    if (!selected_content_.empty())
+        dbcont_man_.variableSelectionContent(selected_content_);
 
-        for (const auto& check_it : content_checkboxes_)
-            if (!check_it.second->isChecked())
-                hidden.insert(check_it.first);
-
-        dbcont_man_.variableSelectionHiddenContents(hidden);
-    }
+    if (hide_status_action_)
+        dbcont_man_.variableSelectionHideStatusContents(hide_status_action_->isChecked());
 }
 
 /**
@@ -683,8 +677,26 @@ void VariableSelectionDialog::groupingChangedSlot(int index)
 
 /**
  */
-void VariableSelectionDialog::contentToggledSlot()
+void VariableSelectionDialog::contentSelectedSlot()
 {
+    QRadioButton* button = qobject_cast<QRadioButton*>(sender());
+
+    if (!button || !button->isChecked())
+        return; // deselection of the previously active content
+
+    selected_content_ = button->property("content_name").toString().toStdString();
+
+    storeSettings();
+    updateModel();
+    updateSelectButton();
+}
+
+/**
+ */
+void VariableSelectionDialog::hideStatusContentsToggledSlot(bool hide)
+{
+    updateContentStrip();
+
     storeSettings();
     updateModel();
     updateSelectButton();
