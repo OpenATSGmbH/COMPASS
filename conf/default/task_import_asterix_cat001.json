@@ -693,6 +693,24 @@
         },
         {
             "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordData",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type string, original record data in hex",
+                "db_content_name": "CAT001",
+                "db_content_variable_name": "Record Data",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "record_data",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
             "instance_name": "JSONDataMapping8",
             "parameters": {
                 "active": true,

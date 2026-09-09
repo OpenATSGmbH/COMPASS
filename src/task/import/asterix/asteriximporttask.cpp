@@ -963,6 +963,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     refreshjASTERIX();
 
     jASTERIX::add_artas_md5_hash = true;
+    jASTERIX::add_record_data = true; // original record bytes as hex, mapped to Record Data
 
     // set up projections
     ProjectionManager& proj_man = compass_.projectionManager();

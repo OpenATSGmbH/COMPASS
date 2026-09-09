@@ -198,6 +198,19 @@ Most DBContent Variables are filled by direct `JSONDataMapping` from a single jA
 | `line_id` | The import line/source identifier passed to the decoder, constant per buffer. |
 | `ds_id` | Bit-packed `(SAC, SIC)` from `010.SAC` / `010.SIC` (`Number::dsIdFrom`). Falls back to `(0, 255)` with a warning when SAC or SIC is absent. |
 
+### Decoder-provided columns
+
+jASTERIX can add further flat top-level keys next to the decoded item keys. They are mapped like any other key, through a `JSONDataMapping` with the bare key name as `json_key`.
+
+| Column | Variable | DBContents | Source |
+|---|---|---|---|
+| `artas_md5` | `ARTAS Hash` (STRING, group Origin) | CAT001, CAT010, CAT020, CAT021, CAT048 | jASTERIX `add_artas_md5_hash`, set in `ASTERIXImportTask`. MD5 over the record bytes, used for ARTAS association. |
+| `record_data` | `Record Data` (STRING, group Origin), MetaVariable `Record Data` | CAT001, CAT010, CAT020, CAT021, CAT048, CAT062 | jASTERIX `add_record_data`, set in `ASTERIXImportTask`. The original ASTERIX record bytes as lowercase hex. |
+
+`Record Data` costs about 45 bytes per record on disk. DuckDB compresses the hex text well, so it is only about a fifth larger than a raw binary column would be. RefTraj has no source record and does not carry the variable.
+
+Both keys are listed in `SYNTHESIZED_KEYS` of [`check_asterix_mapping_coverage.py`](../../../scripts/check_asterix_mapping_coverage.py), so the coverage checker does not treat them as fields outside the definition key space.
+
 ### In-place wire-value rewrites
 
 The Variable still maps from a single ASTERIX item, but the value written into the buffer is no longer the raw decoded number. The `source` field includes a parenthetical note explaining the rewrite.

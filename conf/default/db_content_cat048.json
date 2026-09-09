@@ -867,6 +867,25 @@
         },
         {
             "class_name": "Variable",
+            "instance_name": "VariableRadarrecord_data0",
+            "parameters": {
+                "data_type_str": "STRING",
+                "db_column_name": "record_data",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Original ASTERIX record bytes in hexadecimal, as received from the data source.",
+                "dimension": "",
+                "group": "Origin",
+                "is_key": false,
+                "name": "Record Data",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Internal: record_data column",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
             "instance_name": "VariableRadarsac0",
             "parameters": {
                 "data_type_str": "UCHAR",
