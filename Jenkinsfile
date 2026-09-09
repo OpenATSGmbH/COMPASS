@@ -16,14 +16,14 @@ pipeline {
         booleanParam(name: 'TAG_SYSTEM',          defaultValue: true, description: 'Tag: system')
         booleanParam(name: 'TAG_IMPORT',          defaultValue: true, description: 'Tag: import')
         booleanParam(name: 'TAG_CALCULATE',       defaultValue: true, description: 'Tag: calculate')
-        booleanParam(name: 'TAG_EVAL',            defaultValue: true, description: 'Tag: eval')
+        booleanParam(name: 'TAG_EVAL',            defaultValue: true, description: 'Tag: eval (+ eval_loww, eval_eddf)')
         booleanParam(name: 'TAG_UI',              defaultValue: true, description: 'Tag: ui (all UI tests)')
         booleanParam(name: 'TAG_VIEWS',           defaultValue: true, description: 'Tag: views')
         booleanParam(name: 'TAG_TABLEVIEW',       defaultValue: true, description: 'Tag: tableview')
         booleanParam(name: 'TAG_HISTOGRAMVIEW',   defaultValue: true, description: 'Tag: histogramview')
         booleanParam(name: 'TAG_SCATTERPLOTVIEW', defaultValue: true, description: 'Tag: scatterplotview')
         booleanParam(name: 'TAG_GEOGRAPHICVIEW',  defaultValue: true, description: 'Tag: geographicview')
-        booleanParam(name: 'TAG_ANALYZE',         defaultValue: true, description: 'Tag: analyze (Analyze Data Source, MLAT + ADS-B)')
+        booleanParam(name: 'TAG_ANALYZE',         defaultValue: true, description: 'Tag: analyze (Analyze Data Source, MLAT + ADS-B + SMR)')
         booleanParam(name: 'TAG_ARTAS_SPF',       defaultValue: true, description: 'Tag: artas_spf (ARTAS TRI import/association/display, at_20230422)')
         booleanParam(name: 'TAG_MLAT_RU',         defaultValue: true, description: 'Tag: mlat_ru (MLAT contributing receivers, loww_20260609)')
         booleanParam(name: 'TAG_SENSOR_STATUS',   defaultValue: true, description: 'Tag: sensor_status (CAT063 sensor status, skeyes_20251203)')
@@ -40,6 +40,7 @@ pipeline {
         booleanParam(name: 'DATASET_2H',     defaultValue: false, description: 'Dataset: at_20230422_2h (2h)')
         booleanParam(name: 'DATASET_LOWW',   defaultValue: true,  description: 'Dataset: loww_20260609_4h (Vienna airport surface, 4h)')
         booleanParam(name: 'DATASET_SKEYES', defaultValue: true,  description: 'Dataset: skeyes_20251203 (multi-sensor, sensor status + tracker, 7h)')
+        booleanParam(name: 'DATASET_EDDF',   defaultValue: true,  description: 'Dataset: eddf_20251117 (Frankfurt airport surface, DGPS drive, 5h)')
     }
 
     environment {
@@ -162,7 +163,7 @@ pipeline {
                                  params.TAG_ANALYZE || params.TAG_ARTAS_SPF || params.TAG_MLAT_RU ||
                                  params.TAG_SENSOR_STATUS || params.TAG_TRACKER_CONTRIB
                     def anyDataset = params.DATASET_05H || params.DATASET_2H || params.DATASET_LOWW ||
-                                     params.DATASET_SKEYES
+                                     params.DATASET_SKEYES || params.DATASET_EDDF
                     return anyTag && anyDataset
                 }
             }
@@ -173,14 +174,14 @@ pipeline {
                     if (params.TAG_SYSTEM)          tags << 'system'
                     if (params.TAG_IMPORT)          tags << 'import'
                     if (params.TAG_CALCULATE)       tags << 'calculate'
-                    if (params.TAG_EVAL)            { tags << 'eval'; tags << 'eval_loww' }
+                    if (params.TAG_EVAL)            { tags << 'eval'; tags << 'eval_loww'; tags << 'eval_eddf' }
                     if (params.TAG_UI)              tags << 'ui'
                     if (params.TAG_VIEWS)           tags << 'views'
                     if (params.TAG_TABLEVIEW)       tags << 'tableview'
                     if (params.TAG_HISTOGRAMVIEW)   tags << 'histogramview'
                     if (params.TAG_SCATTERPLOTVIEW) tags << 'scatterplotview'
                     if (params.TAG_GEOGRAPHICVIEW)  tags << 'geographicview'
-                    if (params.TAG_ANALYZE)         tags << 'analyze'
+                    if (params.TAG_ANALYZE)         { tags << 'analyze'; tags << 'analyze_smr' }
                     if (params.TAG_ARTAS_SPF)       tags << 'artas_spf'
                     if (params.TAG_MLAT_RU)         tags << 'mlat_ru'
                     if (params.TAG_SENSOR_STATUS)   tags << 'sensor_status'
@@ -197,6 +198,7 @@ pipeline {
                     if (params.DATASET_2H)   datasets << [name: 'at_20230422_2h',   manifest: "${TEST_DATA_PATH}/at_20230422/at_20230422_2h.json"]
                     if (params.DATASET_LOWW) datasets << [name: 'loww_20260609_4h', manifest: "${TEST_DATA_PATH}/loww_20260609/loww_20260609_4h.json"]
                     if (params.DATASET_SKEYES) datasets << [name: 'skeyes_20251203', manifest: "${TEST_DATA_PATH}/skeyes_20251203/skeyes_20251203.json"]
+                    if (params.DATASET_EDDF) datasets << [name: 'eddf_20251117',   manifest: "${TEST_DATA_PATH}/eddf_20251117/eddf_20251117.json"]
 
                     // Find the run directory created by collect_artifacts.sh
                     def runDir = sh(
