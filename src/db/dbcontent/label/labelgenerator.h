@@ -25,6 +25,7 @@
 
 #include <QObject>
 
+#include <map>
 #include <set>
 
 class Buffer;
@@ -154,6 +155,13 @@ public:
     float labelOpacity() const;
     void labelOpacity(float label_opacity);
 
+    // view point defined labels: rec_num to label level (LOD 1-3), set when a view
+    // point with a "labels" key is shown, cleared when it is unshown
+    void setViewPointLabels(const std::map<unsigned long, unsigned int>& labels);
+    void clearViewPointLabels();
+    bool hasViewPointLabels() const { return !view_point_labels_.empty(); }
+    const std::map<unsigned long, unsigned int>& viewPointLabels() const { return view_point_labels_; }
+
     LabelGeneratorConfig& config() { return config_; }
     void updateFilterValuesFromStrings();
 
@@ -203,6 +211,9 @@ protected:
     bool filter_ti_null_wanted_ {false};
     std::set<unsigned int> filter_ta_values_set_; // dec
     bool filter_ta_null_wanted_ {false};
+
+    // view point defined labels: rec_num to label level (LOD 1-3)
+    std::map<unsigned long, unsigned int> view_point_labels_;
 
     //std::set<GeometryLeafItemLabels*> item_labels_;
     std::unique_ptr<LabelContentDialog> label_edit_dialog_;

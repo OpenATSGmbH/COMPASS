@@ -68,6 +68,45 @@ PositionDistanceConfigWidget::PositionDistanceConfigWidget(PositionDistanceConfi
             this, &PositionDistanceConfigWidget::toggleFailedValuesOfInterestSlot);
 
     form_layout_->addRow("Failed Values are of Interest", failed_values_of_interest_check_);
+
+    // averaged position
+    use_averaging_check_ = new QCheckBox ();
+    use_averaging_check_->setChecked(config().useAveraging());
+    use_averaging_check_->setToolTip("If one comparison per averaging window should be done, using the"
+                                     " mean position error of the test reports in that window");
+    connect(use_averaging_check_, &QCheckBox::clicked,
+            this, &PositionDistanceConfigWidget::toggleUseAveragingSlot);
+
+    form_layout_->addRow("Use Averaged Position", use_averaging_check_);
+
+    averaging_window_edit_ = new QLineEdit(QString::number(config().averagingWindow()));
+    averaging_window_edit_->setValidator(new QDoubleValidator(0.1, 3600.0, 2, this));
+    averaging_window_edit_->setToolTip("Length of one averaging window");
+    connect(averaging_window_edit_, &QLineEdit::textEdited,
+            this, &PositionDistanceConfigWidget::averagingWindowEditSlot);
+
+    form_layout_->addRow("Averaging Window [s]", averaging_window_edit_);
+}
+
+void PositionDistanceConfigWidget::toggleUseAveragingSlot()
+{
+    loginf;
+
+    traced_assert(use_averaging_check_);
+    config().useAveraging(use_averaging_check_->checkState() == Qt::Checked);
+}
+
+void PositionDistanceConfigWidget::averagingWindowEditSlot(QString value)
+{
+    loginf << "value " << value.toStdString();
+
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        config().averagingWindow(val);
+    else
+        loginf << "invalid value";
 }
 
 void PositionDistanceConfigWidget::thresholdValueEditSlot(QString value)

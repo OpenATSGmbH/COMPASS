@@ -52,9 +52,18 @@ DetectionConfig::DetectionConfig(
     registerParameter("use_miss_tolerance", &use_miss_tolerance_, false);
     registerParameter("miss_tolerance", &miss_tolerance_s_, 0.01f);
 
+    registerParameter("use_time_ratio", &use_time_ratio_, false);
+
+    registerParameter("use_gap_count", &use_gap_count_, false);
+
+    registerParameter("use_stationary_ui", &use_stationary_ui_, false);
+    registerParameter("stationary_ui_s", &stationary_ui_s_, 10.0f);
+    registerParameter("stationary_speed_threshold_ms", &stationary_speed_threshold_ms_, 0.5f);
+
     registerParameter("hold_for_any_target", &hold_for_any_target_, false);
 
-    registerParameter("ignore_primary_only", &ignore_primary_only_, false);
+
+    registerParameter("pd_calculation_method", &pd_calculation_method_, std::string("time_difference"));
 }
 
 DetectionConfig::~DetectionConfig()
@@ -66,9 +75,21 @@ std::shared_ptr<Base> DetectionConfig::createRequirement()
     shared_ptr<Detection> req = make_shared<Detection>(
                 name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_, update_interval_s_,
                 use_min_gap_length_, min_gap_length_s_, use_max_gap_length_, max_gap_length_s_, invert_prob_,
-                use_miss_tolerance_, miss_tolerance_s_, hold_for_any_target_, ignore_primary_only_);
+                use_miss_tolerance_, miss_tolerance_s_, use_time_ratio_, use_gap_count_,
+                use_stationary_ui_, stationary_ui_s_, stationary_speed_threshold_ms_,
+                hold_for_any_target_, pd_calculation_method_);
 
     return req;
+}
+
+std::string DetectionConfig::pdCalculationMethod() const
+{
+    return pd_calculation_method_;
+}
+
+void DetectionConfig::pdCalculationMethod(const std::string& value)
+{
+    pd_calculation_method_ = value;
 }
 
 float DetectionConfig::updateInterval() const
@@ -111,6 +132,56 @@ void DetectionConfig::missTolerance(float value)
     miss_tolerance_s_ = value;
 }
 
+bool DetectionConfig::useTimeRatio() const
+{
+    return use_time_ratio_;
+}
+
+void DetectionConfig::useTimeRatio(bool value)
+{
+    use_time_ratio_ = value;
+}
+
+bool DetectionConfig::useGapCount() const
+{
+    return use_gap_count_;
+}
+
+void DetectionConfig::useGapCount(bool value)
+{
+    use_gap_count_ = value;
+}
+
+bool DetectionConfig::useStationaryUI() const
+{
+    return use_stationary_ui_;
+}
+
+void DetectionConfig::useStationaryUI(bool value)
+{
+    use_stationary_ui_ = value;
+}
+
+float DetectionConfig::stationaryUI() const
+{
+    return stationary_ui_s_;
+}
+
+void DetectionConfig::stationaryUI(float value)
+{
+    stationary_ui_s_ = value;
+}
+
+float DetectionConfig::stationarySpeedThreshold() const
+{
+    return stationary_speed_threshold_ms_;
+}
+
+void DetectionConfig::stationarySpeedThreshold(float value)
+{
+    stationary_speed_threshold_ms_ = value;
+}
+
 bool DetectionConfig::useMinGapLength() const
 {
     return use_min_gap_length_;
@@ -151,16 +222,6 @@ void DetectionConfig::maxGapLength(float value)
     max_gap_length_s_ = value;
 }
 
-void DetectionConfig::ignorePrimaryOnly(bool value)
-{
-    ignore_primary_only_ = value;
-}
-
-bool DetectionConfig::ignorePrimaryOnly() const
-{
-    return ignore_primary_only_;;
-}
-
 BaseConfigWidget* DetectionConfig::createWidget()
 {
     return new DetectionConfigWidget(*this);
@@ -180,6 +241,11 @@ void DetectionConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
     table.addRow({"Update Interval [s]", "",
                   update_interval_s_});
 
+    table.addRow({"PD Calculation Method", "Status message: expected periods from the update"
+                  " cycles reported by the test data source. Time difference: gaps between test"
+                  " reports against the configured update interval",
+                  pd_calculation_method_});
+
     table.addRow({"Use Minimum Gap Length", "If minimum gap length should be used",
                   String::boolToString(use_min_gap_length_)});
     table.addRow({"Minimum Gap Length [s]", "Minimum gap length to be considered",
@@ -198,13 +264,29 @@ void DetectionConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
     table.addRow({"Miss Tolerance [s]", "Acceptable time delta for miss detection",
                   miss_tolerance_s_});
 
+    table.addRow({"Use Time-Based Calculation", "Missed time over reference duration"
+                  " (ED-129C Appendix C Interarrivaltime method) instead of missed"
+                  " update intervals over expected update intervals",
+                  String::boolToString(use_time_ratio_)});
+
+    table.addRow({"Use Gap Count", "Number of gaps over the number of test reports"
+                  " (ED-117A Section 6.4.8, ED-87E Section 5.3.14) instead of missed"
+                  " update intervals over expected update intervals. Each gap counts"
+                  " once, independent of its length",
+                  String::boolToString(use_gap_count_)});
+
+    table.addRow({"Use Stationary Update Interval", "Speed-dependent update interval:"
+                  " below the speed threshold the stationary update interval applies"
+                  " (ED-129C ORQ 627, APT services)",
+                  String::boolToString(use_stationary_ui_)});
+    table.addRow({"Stationary Update Interval [s]", "Update interval for stationary targets",
+                  stationary_ui_s_});
+    table.addRow({"Stationary Speed Threshold [m/s]", "Reference ground speed below this"
+                  " counts as stationary",
+                  stationary_speed_threshold_ms_});
+
     table.addRow({"Hold for any Target", "Must hold for any target (every single targets)",
                   String::boolToString(hold_for_any_target_)});
-
-    table.addRow({"Ignore Primary Only",
-                  "Requirement result is ignored if target is primary only (has no"
-                  " secondary attributes)",
-                  String::boolToString(ignore_primary_only_)});                  
 }
 
 bool DetectionConfig::holdForAnyTarget() const

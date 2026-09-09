@@ -171,12 +171,21 @@ namespace dbcontent_vars
     inline const Property var_radar_azimuth_        {"Azimuth", PropertyDataType::DOUBLE};
     inline const Property var_radar_altitude_       {"Mode C Code", PropertyDataType::FLOAT};
 
+    // CAT010 SMR items (I010/020 descriptor flags, I010/270 target size, I010/131 amplitude)
+    inline const Property var_cat010_detection_type_        {"Detection Type", PropertyDataType::UCHAR};
+    inline const Property var_cat010_slant_range_corrected_ {"Slant Range Corrected", PropertyDataType::BOOL};
+    inline const Property var_cat010_target_length_         {"Target Length", PropertyDataType::FLOAT};
+    inline const Property var_cat010_target_width_          {"Target Width", PropertyDataType::FLOAT};
+    inline const Property var_cat010_target_orientation_    {"Target Orientation", PropertyDataType::DOUBLE};
+    inline const Property var_cat010_psr_amplitude_         {"PSR Amplitude", PropertyDataType::UCHAR};
+
     inline const Property var_cat020_contrib_recv_  {"Contributing Receivers", PropertyDataType::JSON};
 
     inline const Property var_cat021_toa_position_  {"ToA Position", PropertyDataType::FLOAT};
     inline const Property var_cat021_tomr_position_ {"ToMR Position", PropertyDataType::FLOAT};
     inline const Property var_cat021_tort_          {"ToRT", PropertyDataType::FLOAT};
     inline const Property var_cat021_tod_dep_       {"Time of Day Deprecated", PropertyDataType::FLOAT};
+    inline const Property var_cat021_toa_pos_       {"ToA Position", PropertyDataType::FLOAT};
 
     inline const Property var_cat021_mops_version_  {"MOPS Version", PropertyDataType::UCHAR};
     inline const Property var_cat021_nacp_          {"NACp", PropertyDataType::UCHAR};
@@ -184,6 +193,9 @@ namespace dbcontent_vars
     inline const Property var_cat021_nucv_nacv_     {"NUCr or NACv", PropertyDataType::UCHAR};
     inline const Property var_cat021_sil_           {"SIL", PropertyDataType::UCHAR};
     inline const Property var_cat021_pos_check_failed_ {"Position Check Failed", PropertyDataType::BOOL};
+    inline const Property var_cat021_range_check_failed_ {"Range Check Failed", PropertyDataType::BOOL};
+    inline const Property var_cat021_cpr_valid_        {"CPR Valid", PropertyDataType::BOOL};
+    inline const Property var_cat021_ldpj_             {"Local Decoding Position Jump", PropertyDataType::BOOL};
     inline const Property var_cat021_geo_alt_       {"Geometric Height", PropertyDataType::FLOAT};
     inline const Property var_cat021_geo_alt_accuracy_ {"Geometric Altitude Accuracy", PropertyDataType::UCHAR};
     inline const Property var_cat021_ecat_          {"Emitter Category", PropertyDataType::UINT};
@@ -218,6 +230,9 @@ namespace dbcontent_vars
     inline const Property var_cat062_vx_stddev_     {"Vx StdDev", PropertyDataType::DOUBLE};
     inline const Property var_cat062_vy_stddev_     {"Vy StdDev", PropertyDataType::DOUBLE};
 
+    inline const Property var_cat062_ax_            {"Ax", PropertyDataType::DOUBLE};
+    inline const Property var_cat062_ay_            {"Ay", PropertyDataType::DOUBLE};
+
     inline const Property var_cat063_sensor_sac_    {"Sensor SAC", PropertyDataType::UCHAR};
     inline const Property var_cat063_sensor_sic_    {"Sensor SIC", PropertyDataType::UCHAR};
     inline const Property var_cat063_con_           {"CON", PropertyDataType::UCHAR};
@@ -225,8 +240,8 @@ namespace dbcontent_vars
     inline const Property var_cat065_batch_number_  {"Batch Number", PropertyDataType::UCHAR};
 
     // reference trajectory
-    inline const Property var_reftraj_contrib_adsb_age_    {"Contributing ADS-B Age", PropertyDataType::FLOAT};
-    inline const Property var_reftraj_contrib_mlat_age_    {"Contributing MLAT Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_update_age_adsb_es_  {"ADS-B ES Update Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_update_age_mlat_     {"MLAT Update Age", PropertyDataType::FLOAT};
     inline const Property var_reftraj_contrib_radar_age_   {"Contributing Radar Age", PropertyDataType::FLOAT};
     inline const Property var_reftraj_contrib_tracker_age_ {"Contributing Tracker Age", PropertyDataType::FLOAT};
     inline const Property var_reftraj_contrib_reftraj_age_ {"Contributing RefTraj Age", PropertyDataType::FLOAT};
@@ -234,10 +249,23 @@ namespace dbcontent_vars
 
     inline const Property var_reftraj_contrib_sources_     {"Contributing Sources", PropertyDataType::JSON};
     inline const Property var_reftraj_contrib_sources_num_ {"Contributing Sources Number", PropertyDataType::UINT};
+    inline const Property var_reftraj_num_contrib_sensors_ {"Num Contributing Sensors", PropertyDataType::UCHAR};
 
-    inline const Property var_reftraj_update_age_primary_  {"Primary Update Age", PropertyDataType::FLOAT};
-    inline const Property var_reftraj_update_age_modeac_   {"Mode A/C Update Age", PropertyDataType::FLOAT};
     inline const Property var_reftraj_update_age_modes_    {"Mode S Update Age", PropertyDataType::FLOAT};
+
+    inline const Property var_reftraj_track_age_       {"Track Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_update_age_psr_  {"PSR Update Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_update_age_ssr_  {"SSR Update Age", PropertyDataType::FLOAT};
+
+    inline const Property var_reftraj_m3a_age_         {"Mode 3/A Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_fl_measured_age_ {"Flight Level Measured Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_acid_age_        {"Aircraft Identification Age", PropertyDataType::FLOAT};
+    inline const Property var_reftraj_acad_age_        {"Aircraft Address Age", PropertyDataType::FLOAT};
+
+    inline const Property var_reftraj_assoc_recnums_   {"Associated Record Numbers", PropertyDataType::JSON};
+
+    inline const Property var_reftraj_vx_stddev_       {"Vx StdDev", PropertyDataType::DOUBLE};
+    inline const Property var_reftraj_vy_stddev_       {"Vy StdDev", PropertyDataType::DOUBLE};
 
     inline const Property selected_var_             {"selected", PropertyDataType::BOOL};
 } // namespace dbcontent_vars

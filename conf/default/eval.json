@@ -83,9 +83,10 @@
                     "class_name": "EvaluationStandard",
                     "instance_name": "EvaluationStandard1171",
                     "parameters": {
+                        "ignore_mode_ac_only_targets": true,
+                        "ignore_primary_only_targets": true,
                         "name": "EUROCAE ED-117A",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 12.5
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -102,14 +103,12 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
-                                        "miss_tolerance": 0.9990000128746033,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
                                         "short_name": "PTR",
@@ -117,7 +116,8 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -126,20 +126,21 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 15.0,
-                                        "miss_tolerance": 0.9990000128746033,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Long Horizontal Gaps",
                                         "prob": 0.001,
                                         "prob_check_type": 1,
                                         "short_name": "PLG",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -154,7 +155,7 @@
                                         "ref_min_accuracy": 12.5,
                                         "short_name": "PFTR",
                                         "threshold_value": 125.0,
-                                        "threshold_value_check_type": 3,
+                                        "threshold_value_check_type": 2,
                                         "use": true
                                     }
                                 },
@@ -190,14 +191,12 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.9,
-                                        "miss_tolerance": 0.9990000128746033,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.7,
                                         "prob_check_type": 3,
                                         "short_name": "PTR",
@@ -205,7 +204,8 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -214,20 +214,21 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.9990000128746033,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Long Horizontal Gaps",
                                         "prob": 0.01,
                                         "prob_check_type": 1,
                                         "short_name": "PLG",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -242,7 +243,7 @@
                                         "ref_min_accuracy": 10.0,
                                         "short_name": "PFTR",
                                         "threshold_value": 100.0,
-                                        "threshold_value_check_type": 3,
+                                        "threshold_value_check_type": 2,
                                         "use": true
                                     }
                                 },
@@ -322,17 +323,49 @@
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationFalseConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigPropability of False Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-117A Table 3-1",
-                                        "name": "Probability of False Identification",
+                                        "comment": "From EUROCAE ED-117A Table 3-1, one instance per identity item as in Section 6.4.6",
+                                        "name": "Probability of False Identification MSAD",
                                         "prob": 0.0001,
                                         "prob_check_type": 1,
                                         "require_all_false": false,
-                                        "short_name": "PFID",
+                                        "short_name": "PFID TA",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117A Table 3-1, one instance per identity item as in Section 6.4.6",
+                                        "name": "Probability of False Identification MA",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "require_all_false": false,
+                                        "short_name": "PFID MA",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117A Table 3-1, one instance per identity item as in Section 6.4.6",
+                                        "name": "Probability of False Identification MSID",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "require_all_false": false,
+                                        "short_name": "PFID ID",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
                                         "use_ms_ti": true
                                     }
                                 }
@@ -352,14 +385,12 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
-                                        "miss_tolerance": 0.20000000298023224,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.95,
                                         "prob_check_type": 3,
                                         "short_name": "PTR",
@@ -367,7 +398,8 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -376,20 +408,21 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117A Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.9990000128746033,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Long Horizontal Gaps",
                                         "prob": 0.001,
                                         "prob_check_type": 1,
                                         "short_name": "PLG",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -404,7 +437,7 @@
                                         "ref_min_accuracy": 6.0,
                                         "short_name": "PFTR",
                                         "threshold_value": 60.0,
-                                        "threshold_value_check_type": 3,
+                                        "threshold_value_check_type": 2,
                                         "use": true
                                     }
                                 },
@@ -433,8 +466,7 @@
                     "instance_name": "EvaluationStandard1172",
                     "parameters": {
                         "name": "EUROCAE ED-87E",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 12.5
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -451,13 +483,10 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
-                                        "miss_tolerance": 0.10000000149011612,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
                                         "prob": 0.95,
                                         "prob_check_type": 3,
@@ -466,7 +495,9 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative",
+                                        "pd_calculation_method": "status_message"
                                     }
                                 },
                                 {
@@ -475,7 +506,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 5.0,
@@ -484,27 +514,64 @@
                                         "prob": 0.001,
                                         "prob_check_type": 1,
                                         "short_name": "TC/GAPS5",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": false,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
-                                        "name": "Probability of Identification",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.2",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.98,
                                         "prob_check_type": 3,
-                                        "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.2",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.98,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.2",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.98,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_correctness_of_all": false
                                     }
                                 },
                                 {
@@ -519,8 +586,9 @@
                                         "ref_min_accuracy": 12.5,
                                         "short_name": "PFTR",
                                         "threshold_value": 125.0,
-                                        "threshold_value_check_type": 3,
-                                        "use": true
+                                        "threshold_value_check_type": 2,
+                                        "use": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -555,6 +623,48 @@
                                         "use": true,
                                         "use_minimum_speed": true
                                     }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.5,
+                                        "name": "Probability of Target Report PRI",
+                                        "pd_calculation_method": "status_message",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "PRI PTR",
+                                        "target_selection": "non_cooperative",
+                                        "update_interval": 1.0,
+                                        "use": true,
+                                        "use_gap_count": false,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": true,
+                                        "use_time_ratio": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "failed_values_of_interest": false,
+                                        "name": "Probability of False Target Report PRI",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "ref_min_accuracy": 12.5,
+                                        "short_name": "PRI PFTR",
+                                        "target_selection": "non_cooperative",
+                                        "threshold_value": 125.0,
+                                        "threshold_value_check_type": 2,
+                                        "use": true
+                                    }
                                 }
                             ]
                         },
@@ -572,13 +682,10 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.9,
-                                        "miss_tolerance": 0.10000000149011612,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -587,7 +694,9 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative",
+                                        "pd_calculation_method": "status_message"
                                     }
                                 },
                                 {
@@ -596,7 +705,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
@@ -607,9 +715,11 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
@@ -618,7 +728,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 5.0,
@@ -629,25 +738,62 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
-                                        "name": "Probability of Identification",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.2",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
-                                        "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.2",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.2",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_correctness_of_all": false
                                     }
                                 },
                                 {
@@ -662,8 +808,9 @@
                                         "ref_min_accuracy": 10.0,
                                         "short_name": "PFTR",
                                         "threshold_value": 100.0,
-                                        "threshold_value_check_type": 3,
-                                        "use": true
+                                        "threshold_value_check_type": 2,
+                                        "use": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -715,6 +862,48 @@
                                         "use": true,
                                         "use_minimum_speed": true
                                     }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.5,
+                                        "name": "Probability of Target Report PRI",
+                                        "pd_calculation_method": "status_message",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "PRI PTR",
+                                        "target_selection": "non_cooperative",
+                                        "update_interval": 1.0,
+                                        "use": true,
+                                        "use_gap_count": false,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": true,
+                                        "use_time_ratio": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "failed_values_of_interest": false,
+                                        "name": "Probability of False Target Report PRI",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "ref_min_accuracy": 10.0,
+                                        "short_name": "PRI PFTR",
+                                        "target_selection": "non_cooperative",
+                                        "threshold_value": 100.0,
+                                        "threshold_value_check_type": 2,
+                                        "use": true
+                                    }
                                 }
                             ]
                         },
@@ -728,18 +917,53 @@
                             "sub_configs": [
                                 {
                                     "class_name": "EvaluationRequirementIdentificationFalseConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigPropability of False Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
-                                        "name": "Propability of False Identification",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.3",
+                                        "name": "Probability of False Identification MSAD",
                                         "prob": 0.0001,
                                         "prob_check_type": 1,
-                                        "require_all_false": true,
-                                        "short_name": "PFID",
+                                        "short_name": "PFID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_all_false": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.3",
+                                        "name": "Probability of False Identification MA",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "short_name": "PFID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_all_false": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.3",
+                                        "name": "Probability of False Identification MSID",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "short_name": "PFID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_all_false": false
                                     }
                                 }
                             ]
@@ -758,13 +982,10 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
-                                        "miss_tolerance": 0.10000000149011612,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
                                         "prob": 0.99,
                                         "prob_check_type": 3,
@@ -773,7 +994,9 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative",
+                                        "pd_calculation_method": "status_message"
                                     }
                                 },
                                 {
@@ -782,7 +1005,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
@@ -793,9 +1015,11 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
@@ -804,7 +1028,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87E Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 5.0,
@@ -815,25 +1038,62 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
-                                        "name": "Probability of Identification",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.2",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
-                                        "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.2",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1, one instance per identity item, Section 3.3.7.2",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_correctness_of_all": false
                                     }
                                 },
                                 {
@@ -848,8 +1108,9 @@
                                         "ref_min_accuracy": 6.0,
                                         "short_name": "PFTR",
                                         "threshold_value": 60.0,
-                                        "threshold_value_check_type": 3,
-                                        "use": true
+                                        "threshold_value_check_type": 2,
+                                        "use": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -901,6 +1162,48 @@
                                         "use": true,
                                         "use_minimum_speed": true
                                     }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.5,
+                                        "name": "Probability of Target Report PRI",
+                                        "pd_calculation_method": "status_message",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "PRI PTR",
+                                        "target_selection": "non_cooperative",
+                                        "update_interval": 1.0,
+                                        "use": true,
+                                        "use_gap_count": false,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": true,
+                                        "use_time_ratio": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "failed_values_of_interest": false,
+                                        "name": "Probability of False Target Report PRI",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "ref_min_accuracy": 6.0,
+                                        "short_name": "PRI PFTR",
+                                        "target_selection": "non_cooperative",
+                                        "threshold_value": 60.0,
+                                        "threshold_value_check_type": 2,
+                                        "use": true
+                                    }
                                 }
                             ]
                         }
@@ -911,8 +1214,7 @@
                     "instance_name": "EvaluationStandard1421",
                     "parameters": {
                         "name": "EUROCAE ED-87D",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 12.5
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -929,13 +1231,10 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
-                                        "miss_tolerance": 0.10000000149011612,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
                                         "prob": 0.95,
                                         "prob_check_type": 3,
@@ -944,7 +1243,9 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative",
+                                        "pd_calculation_method": "status_message"
                                     }
                                 },
                                 {
@@ -953,7 +1254,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 5.0,
@@ -962,27 +1262,64 @@
                                         "prob": 0.001,
                                         "prob_check_type": 1,
                                         "short_name": "TC/GAPS5",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": false,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
-                                        "name": "Probability of Identification",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.2",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.98,
                                         "prob_check_type": 3,
-                                        "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.2",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.98,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.2",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.98,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_correctness_of_all": false
                                     }
                                 },
                                 {
@@ -997,8 +1334,9 @@
                                         "ref_min_accuracy": 12.5,
                                         "short_name": "PFTR",
                                         "threshold_value": 125.0,
-                                        "threshold_value_check_type": 3,
-                                        "use": true
+                                        "threshold_value_check_type": 2,
+                                        "use": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -1016,6 +1354,65 @@
                                         "threshold_value_check_type": 1,
                                         "use": true
                                     }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementTrackAngleConfig",
+                                    "instance_name": "EvaluationRequirementTrackAngleConfigTarget Course Accuracy0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "failed_values_of_interest": true,
+                                        "minimum_speed": 3.0,
+                                        "name": "Target Course Accuracy",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "TCA",
+                                        "threshold": 30.0,
+                                        "threshold_value_check_type": 1,
+                                        "use": true,
+                                        "use_minimum_speed": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.5,
+                                        "name": "Probability of Target Report PRI",
+                                        "pd_calculation_method": "status_message",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "PRI PTR",
+                                        "target_selection": "non_cooperative",
+                                        "update_interval": 1.0,
+                                        "use": true,
+                                        "use_gap_count": false,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": true,
+                                        "use_time_ratio": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "failed_values_of_interest": false,
+                                        "name": "Probability of False Target Report PRI",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "ref_min_accuracy": 12.5,
+                                        "short_name": "PRI PFTR",
+                                        "target_selection": "non_cooperative",
+                                        "threshold_value": 125.0,
+                                        "threshold_value_check_type": 2,
+                                        "use": true
+                                    }
                                 }
                             ]
                         },
@@ -1033,13 +1430,10 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.9,
-                                        "miss_tolerance": 0.10000000149011612,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -1048,7 +1442,9 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative",
+                                        "pd_calculation_method": "status_message"
                                     }
                                 },
                                 {
@@ -1057,7 +1453,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
@@ -1068,9 +1463,11 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
@@ -1079,7 +1476,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 5.0,
@@ -1090,25 +1486,62 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
-                                        "name": "Probability of Identification",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.2",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
-                                        "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.2",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.2",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_correctness_of_all": false
                                     }
                                 },
                                 {
@@ -1123,8 +1556,9 @@
                                         "ref_min_accuracy": 10.0,
                                         "short_name": "PFTR",
                                         "threshold_value": 100.0,
-                                        "threshold_value_check_type": 3,
-                                        "use": true
+                                        "threshold_value_check_type": 2,
+                                        "use": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -1144,6 +1578,23 @@
                                     }
                                 },
                                 {
+                                    "class_name": "EvaluationRequirementTrackAngleConfig",
+                                    "instance_name": "EvaluationRequirementTrackAngleConfigTarget Course Accuracy0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "failed_values_of_interest": true,
+                                        "minimum_speed": 3.0,
+                                        "name": "Target Course Accuracy",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "TCA",
+                                        "threshold": 15.0,
+                                        "threshold_value_check_type": 1,
+                                        "use": true,
+                                        "use_minimum_speed": true
+                                    }
+                                },
+                                {
                                     "class_name": "EvaluationRequirementSpeedConfig",
                                     "instance_name": "EvaluationRequirementSpeedConfigReported Velocity Accuracy0",
                                     "parameters": {
@@ -1159,6 +1610,48 @@
                                         "use": true,
                                         "use_percent_if_higher": true
                                     }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.5,
+                                        "name": "Probability of Target Report PRI",
+                                        "pd_calculation_method": "status_message",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "PRI PTR",
+                                        "target_selection": "non_cooperative",
+                                        "update_interval": 1.0,
+                                        "use": true,
+                                        "use_gap_count": false,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": true,
+                                        "use_time_ratio": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "failed_values_of_interest": false,
+                                        "name": "Probability of False Target Report PRI",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "ref_min_accuracy": 10.0,
+                                        "short_name": "PRI PFTR",
+                                        "target_selection": "non_cooperative",
+                                        "threshold_value": 100.0,
+                                        "threshold_value_check_type": 2,
+                                        "use": true
+                                    }
                                 }
                             ]
                         },
@@ -1172,18 +1665,53 @@
                             "sub_configs": [
                                 {
                                     "class_name": "EvaluationRequirementIdentificationFalseConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigPropability of False Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
-                                        "name": "Propability of False Identification",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.3",
+                                        "name": "Probability of False Identification MSAD",
                                         "prob": 0.0001,
                                         "prob_check_type": 1,
-                                        "require_all_false": true,
-                                        "short_name": "PFID",
+                                        "short_name": "PFID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_all_false": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.3",
+                                        "name": "Probability of False Identification MA",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "short_name": "PFID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_all_false": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.3",
+                                        "name": "Probability of False Identification MSID",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "short_name": "PFID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_all_false": false
                                     }
                                 }
                             ]
@@ -1202,13 +1730,10 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
-                                        "miss_tolerance": 0.10000000149011612,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
                                         "prob": 0.99,
                                         "prob_check_type": 3,
@@ -1217,7 +1742,9 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative",
+                                        "pd_calculation_method": "status_message"
                                     }
                                 },
                                 {
@@ -1226,7 +1753,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
@@ -1237,9 +1763,11 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
@@ -1248,7 +1776,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87D Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 5.0,
@@ -1259,25 +1786,62 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
-                                        "name": "Probability of Identification",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.2",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
-                                        "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.2",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1, one instance per identity item, Section 3.3.8.2",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_correctness_of_all": false
                                     }
                                 },
                                 {
@@ -1292,8 +1856,9 @@
                                         "ref_min_accuracy": 6.0,
                                         "short_name": "PFTR",
                                         "threshold_value": 60.0,
-                                        "threshold_value_check_type": 3,
-                                        "use": true
+                                        "threshold_value_check_type": 2,
+                                        "use": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -1313,6 +1878,23 @@
                                     }
                                 },
                                 {
+                                    "class_name": "EvaluationRequirementTrackAngleConfig",
+                                    "instance_name": "EvaluationRequirementTrackAngleConfigTarget Course Accuracy0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "failed_values_of_interest": true,
+                                        "minimum_speed": 3.0,
+                                        "name": "Target Course Accuracy",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "TCA",
+                                        "threshold": 15.0,
+                                        "threshold_value_check_type": 1,
+                                        "use": true,
+                                        "use_minimum_speed": true
+                                    }
+                                },
+                                {
                                     "class_name": "EvaluationRequirementSpeedConfig",
                                     "instance_name": "EvaluationRequirementSpeedConfigReported Velocity\nAccuracy0",
                                     "parameters": {
@@ -1327,6 +1909,48 @@
                                         "threshold_value_check_type": 0,
                                         "use": true,
                                         "use_percent_if_higher": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.5,
+                                        "name": "Probability of Target Report PRI",
+                                        "pd_calculation_method": "status_message",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "PRI PTR",
+                                        "target_selection": "non_cooperative",
+                                        "update_interval": 1.0,
+                                        "use": true,
+                                        "use_gap_count": false,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": true,
+                                        "use_time_ratio": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "failed_values_of_interest": false,
+                                        "name": "Probability of False Target Report PRI",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "ref_min_accuracy": 6.0,
+                                        "short_name": "PRI PFTR",
+                                        "target_selection": "non_cooperative",
+                                        "threshold_value": 60.0,
+                                        "threshold_value_check_type": 2,
+                                        "use": true
                                     }
                                 }
                             ]
@@ -1381,7 +2005,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": false,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "max_ref_time_diff": 5.0,
@@ -1851,7 +2474,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-116 3.4.2\n",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": false,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
@@ -1891,6 +2513,7 @@
                     "class_name": "EvaluationStandard",
                     "instance_name": "EvaluationStandardEUROCAE ED-1170",
                     "parameters": {
+                        "ignore_primary_only_targets": true,
                         "name": "EUROCAE ED-117",
                         "reference_max_time_diff": 5.0,
                         "reference_min_accuracy": 10.0
@@ -1962,12 +2585,12 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117 Section 3.3.2.4",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Update",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.95,
                                         "prob_check_type": 3,
                                         "short_name": "PU",
@@ -1975,7 +2598,8 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
                                 }
                             ]
@@ -1994,12 +2618,12 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117 Section 3.3.2.1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Update",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.7,
                                         "prob_check_type": 3,
                                         "short_name": "PU",
@@ -2007,7 +2631,40 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigHorizontal Position Accuracy 20",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.3, apron area centerlines",
+                                        "failed_values_of_interest": true,
+                                        "name": "Horizontal Position Accuracy 2",
+                                        "prob": 0.99,
+                                        "prob_check_type": 3,
+                                        "ref_min_accuracy": 2.0,
+                                        "short_name": "HPA2",
+                                        "threshold_value": 12.0,
+                                        "threshold_value_check_type": 1,
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigHorizontal Position Accuracy0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.3, apron area centerlines",
+                                        "failed_values_of_interest": true,
+                                        "name": "Horizontal Position Accuracy 1",
+                                        "prob": 0.95,
+                                        "prob_check_type": 3,
+                                        "ref_min_accuracy": 2.0,
+                                        "short_name": "HPA1",
+                                        "threshold_value": 7.5,
+                                        "threshold_value_check_type": 1,
+                                        "use": true
                                     }
                                 }
                             ]
@@ -2022,17 +2679,97 @@
                             "sub_configs": [
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117 Section 3.3.5",
-                                        "name": "Probability of Identification",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
                                         "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.5",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "require_correctness_of_all": false,
+                                        "short_name": "PID MA",
                                         "use": true,
                                         "use_mode_a": true,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.5",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "require_correctness_of_all": false,
+                                        "short_name": "PID ID",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSAD0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.11, evaluated per target report, not per 5 s period",
+                                        "name": "Probability of False Identification MSAD",
+                                        "prob": 1e-06,
+                                        "prob_check_type": 0,
+                                        "require_all_false": false,
+                                        "short_name": "PFID TA",
+                                        "use": true,
+                                        "use_mode_a": false,
                                         "use_ms_ta": true,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.11, evaluated per target report, not per 5 s period",
+                                        "name": "Probability of False Identification MA",
+                                        "prob": 1e-06,
+                                        "prob_check_type": 0,
+                                        "require_all_false": false,
+                                        "short_name": "PFID MA",
+                                        "use": true,
+                                        "use_mode_a": true,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-117 Section 3.3.11, evaluated per target report, not per 5 s period",
+                                        "name": "Probability of False Identification MSID",
+                                        "prob": 1e-06,
+                                        "prob_check_type": 0,
+                                        "require_all_false": false,
+                                        "short_name": "PFID ID",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
                                         "use_ms_ti": true
                                     }
                                 },
@@ -2040,7 +2777,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Detection0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-117 Secion 3.3.10",
+                                        "comment": "From EUROCAE ED-117 Section 3.3.10",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Detection",
                                         "prob": 0.0001,
@@ -2068,12 +2805,12 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117 Section 3.3.2.3",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Update",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.95,
                                         "prob_check_type": 3,
                                         "short_name": "PU",
@@ -2081,7 +2818,8 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -2115,29 +2853,19 @@
                                         "threshold_value_check_type": 1,
                                         "use": true
                                     }
-                                }
-                            ]
-                        },
-                        {
-                            "class_name": "EvaluationRequirementGroup",
-                            "instance_name": "EvaluationRequirementGroupRunways0",
-                            "parameters": {
-                                "name": "Runways",
-                                "use": true
-                            },
-                            "sub_configs": [
+                                },
                                 {
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigProbability of MLAT Detection0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-117 Section 3.3.4",
+                                        "comment": "From EUROCAE ED-117 Section 3.3.4, runways and taxiways",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of MLAT Detection",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
                                         "short_name": "PD",
@@ -2145,7 +2873,8 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
                                 }
                             ]
@@ -2164,12 +2893,12 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117 Section 3.3.4",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of MLAT Detection",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
                                         "short_name": "PD",
@@ -2177,7 +2906,8 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -2186,12 +2916,12 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-117 Section 3.3.2.2",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Update",
+                                        "pd_calculation_method": "status_message",
                                         "prob": 0.5,
                                         "prob_check_type": 3,
                                         "short_name": "PU",
@@ -2199,39 +2929,26 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative"
                                     }
-                                }
-                            ]
-                        },
-                        {
-                            "class_name": "EvaluationRequirementGroup",
-                            "instance_name": "EvaluationRequirementGroupTaxiways0",
-                            "parameters": {
-                                "name": "Taxiways",
-                                "use": true
-                            },
-                            "sub_configs": [
+                                },
                                 {
-                                    "class_name": "EvaluationRequirementDetectionConfig",
-                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of MLAT Detection0",
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigHorizontal Position Accuracy0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-117 Section 3.3.4",
-                                        "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
-                                        "invert_prob": false,
-                                        "max_gap_length_s": 5.0,
-                                        "min_gap_length_s": 3.0,
-                                        "miss_tolerance": 0.009999999776482582,
-                                        "name": "Probability of MLAT Detection",
-                                        "prob": 0.999,
+                                        "averaging_window_s": 5.0,
+                                        "comment": "From EUROCAE ED-117 Section 3.3.3, 20 m averaged over a period of 5 seconds",
+                                        "failed_values_of_interest": true,
+                                        "name": "Horizontal Position Accuracy",
+                                        "prob": 1.0,
                                         "prob_check_type": 3,
-                                        "short_name": "PD",
-                                        "update_interval": 2.0,
+                                        "ref_min_accuracy": 2.0,
+                                        "short_name": "HPA",
+                                        "threshold_value": 20.0,
+                                        "threshold_value_check_type": 1,
                                         "use": true,
-                                        "use_max_gap_length": false,
-                                        "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_averaging": true
                                     }
                                 }
                             ]
@@ -2319,7 +3036,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 16.399999618530273,
@@ -2330,9 +3046,11 @@
                                         "short_name": "PLG",
                                         "update_interval": 8.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": false,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -2341,7 +3059,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "hold_for_any_target": true,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
@@ -2354,7 +3071,8 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": false,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -2466,7 +3184,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 16.5,
@@ -2477,9 +3194,11 @@
                                         "short_name": "PLG",
                                         "update_interval": 5.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": false,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -2488,7 +3207,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "hold_for_any_target": true,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
@@ -2501,7 +3219,8 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": false
+                                        "use_miss_tolerance": false,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -2606,8 +3325,7 @@
                     "instance_name": "EvaluationStandardEUROCAE ED-87C0",
                     "parameters": {
                         "name": "EUROCAE ED-87C",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 12.5
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -2624,13 +3342,10 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
-                                        "miss_tolerance": 0.10000000149011612,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
                                         "prob": 0.95,
                                         "prob_check_type": 3,
@@ -2639,7 +3354,9 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative",
+                                        "pd_calculation_method": "status_message"
                                     }
                                 },
                                 {
@@ -2648,7 +3365,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 5.0,
@@ -2657,27 +3373,64 @@
                                         "prob": 0.001,
                                         "prob_check_type": 1,
                                         "short_name": "TC/GAPS5",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": false,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
-                                        "name": "Probability of Identification",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.1",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.98,
                                         "prob_check_type": 3,
-                                        "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.1",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.98,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.1",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.98,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_correctness_of_all": false
                                     }
                                 },
                                 {
@@ -2692,8 +3445,9 @@
                                         "ref_min_accuracy": 12.5,
                                         "short_name": "PFTR",
                                         "threshold_value": 125.0,
-                                        "threshold_value_check_type": 3,
-                                        "use": true
+                                        "threshold_value_check_type": 2,
+                                        "use": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -2709,6 +3463,48 @@
                                         "short_name": "RPA",
                                         "threshold_value": 25.0,
                                         "threshold_value_check_type": 1,
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.5,
+                                        "name": "Probability of Target Report PRI",
+                                        "pd_calculation_method": "status_message",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "PRI PTR",
+                                        "target_selection": "non_cooperative",
+                                        "update_interval": 1.0,
+                                        "use": true,
+                                        "use_gap_count": false,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": true,
+                                        "use_time_ratio": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2",
+                                        "failed_values_of_interest": false,
+                                        "name": "Probability of False Target Report PRI",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "ref_min_accuracy": 12.5,
+                                        "short_name": "PRI PFTR",
+                                        "target_selection": "non_cooperative",
+                                        "threshold_value": 125.0,
+                                        "threshold_value_check_type": 2,
                                         "use": true
                                     }
                                 }
@@ -2728,13 +3524,10 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.9,
-                                        "miss_tolerance": 0.10000000149011612,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -2743,7 +3536,9 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative",
+                                        "pd_calculation_method": "status_message"
                                     }
                                 },
                                 {
@@ -2752,7 +3547,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
@@ -2763,9 +3557,11 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
@@ -2774,7 +3570,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 5.0,
@@ -2785,25 +3580,62 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
-                                        "name": "Probability of Identification",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.1",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
-                                        "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.1",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.1",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_correctness_of_all": false
                                     }
                                 },
                                 {
@@ -2818,8 +3650,9 @@
                                         "ref_min_accuracy": 10.0,
                                         "short_name": "PFTR",
                                         "threshold_value": 100.0,
-                                        "threshold_value_check_type": 3,
-                                        "use": true
+                                        "threshold_value_check_type": 2,
+                                        "use": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -2854,6 +3687,48 @@
                                         "use": true,
                                         "use_percent_if_higher": true
                                     }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.5,
+                                        "name": "Probability of Target Report PRI",
+                                        "pd_calculation_method": "status_message",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "PRI PTR",
+                                        "target_selection": "non_cooperative",
+                                        "update_interval": 1.0,
+                                        "use": true,
+                                        "use_gap_count": false,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": true,
+                                        "use_time_ratio": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2",
+                                        "failed_values_of_interest": false,
+                                        "name": "Probability of False Target Report PRI",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "ref_min_accuracy": 10.0,
+                                        "short_name": "PRI PFTR",
+                                        "target_selection": "non_cooperative",
+                                        "threshold_value": 100.0,
+                                        "threshold_value_check_type": 2,
+                                        "use": true
+                                    }
                                 }
                             ]
                         },
@@ -2867,18 +3742,53 @@
                             "sub_configs": [
                                 {
                                     "class_name": "EvaluationRequirementIdentificationFalseConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigPropability of False Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3.1",
-                                        "name": "Propability of False Identification",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.2",
+                                        "name": "Probability of False Identification MSAD",
                                         "prob": 0.0001,
                                         "prob_check_type": 1,
-                                        "require_all_false": true,
-                                        "short_name": "PFID",
+                                        "short_name": "PFID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_all_false": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.2",
+                                        "name": "Probability of False Identification MA",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "short_name": "PFID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_all_false": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.2",
+                                        "name": "Probability of False Identification MSID",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "short_name": "PFID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_all_false": false
                                     }
                                 }
                             ]
@@ -2897,13 +3807,10 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
-                                        "miss_tolerance": 0.10000000149011612,
+                                        "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
                                         "prob": 0.95,
                                         "prob_check_type": 3,
@@ -2912,7 +3819,9 @@
                                         "use": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": false,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "cooperative",
+                                        "pd_calculation_method": "status_message"
                                     }
                                 },
                                 {
@@ -2921,7 +3830,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
@@ -2932,9 +3840,11 @@
                                         "short_name": "TC/GAPS3",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
@@ -2943,7 +3853,6 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-87C Table 3-1",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": true,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 5.0,
@@ -2954,25 +3863,62 @@
                                         "short_name": "TC/GAPS5",
                                         "update_interval": 1.0,
                                         "use": true,
+                                        "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true
+                                        "use_miss_tolerance": true,
+                                        "target_selection": "all"
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
-                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification0",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSAD0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
-                                        "name": "Probability of Identification",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.1",
+                                        "name": "Probability of Identification MSAD",
                                         "prob": 0.999,
                                         "prob_check_type": 3,
-                                        "require_correctness_of_all": false,
-                                        "short_name": "PID",
+                                        "short_name": "PID TA",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": true,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MA0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.1",
+                                        "name": "Probability of Identification MA",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID MA",
+                                        "target_selection": "cooperative",
                                         "use": true,
                                         "use_mode_a": true,
-                                        "use_ms_ta": true,
-                                        "use_ms_ti": true
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": false,
+                                        "require_correctness_of_all": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationCorrectConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Identification MSID0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1, one instance per identity item, Section 3.2.4.1",
+                                        "name": "Probability of Identification MSID",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "PID ID",
+                                        "target_selection": "cooperative",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true,
+                                        "require_correctness_of_all": false
                                     }
                                 },
                                 {
@@ -2987,8 +3933,9 @@
                                         "ref_min_accuracy": 6.0,
                                         "short_name": "PFTR",
                                         "threshold_value": 60.0,
-                                        "threshold_value_check_type": 3,
-                                        "use": true
+                                        "threshold_value_check_type": 2,
+                                        "use": true,
+                                        "target_selection": "cooperative"
                                     }
                                 },
                                 {
@@ -3023,6 +3970,48 @@
                                         "use": true,
                                         "use_percent_if_higher": true
                                     }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.5,
+                                        "name": "Probability of Target Report PRI",
+                                        "pd_calculation_method": "status_message",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "PRI PTR",
+                                        "target_selection": "non_cooperative",
+                                        "update_interval": 1.0,
+                                        "use": true,
+                                        "use_gap_count": false,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": true,
+                                        "use_time_ratio": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionDistanceConfig",
+                                    "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2",
+                                        "failed_values_of_interest": false,
+                                        "name": "Probability of False Target Report PRI",
+                                        "prob": 0.0001,
+                                        "prob_check_type": 1,
+                                        "ref_min_accuracy": 6.0,
+                                        "short_name": "PRI PFTR",
+                                        "target_selection": "non_cooperative",
+                                        "threshold_value": 60.0,
+                                        "threshold_value_check_type": 2,
+                                        "use": true
+                                    }
                                 }
                             ]
                         }
@@ -3051,7 +4040,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": false,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "min_gap_length_s": 3.0,
@@ -3202,7 +4190,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "hold_for_any_target": false,
-                                        "ignore_primary_only": false,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
                                         "max_ref_time_diff": 5.0,
@@ -3625,6 +4612,306 @@
                                         "threshold_value_check_type": 1,
                                         "use": true,
                                         "use_percent_if_higher": false
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "class_name": "EvaluationStandard",
+                    "instance_name": "EvaluationStandardEUROCAE ED-129C0",
+                    "parameters": {
+                        "ignore_non_adsb_targets": true,
+                        "ignore_primary_only_targets": true,
+                        "name": "EUROCAE ED-129C",
+                        "reference_max_time_diff": 5.0,
+                        "reference_min_accuracy": 10.0
+                    },
+                    "sub_configs": [
+                        {
+                            "class_name": "EvaluationRequirementGroup",
+                            "instance_name": "EvaluationRequirementGroupCommon0",
+                            "parameters": {
+                                "name": "Common",
+                                "use": true
+                            },
+                            "sub_configs": [
+                                {
+                                    "class_name": "EvaluationRequirementModeCFalseConfig",
+                                    "instance_name": "EvaluationRequirementModeCFalseConfigIncorrect Pressure Altitude0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.3 REQ 497: The ratio of incorrect decoding of Pressure Altitude shall be less than 1x10-5. Pressure Altitude jumps (e.g. more than 2000 ft in 10 s) should be considered incorrect unless investigated to be avionics or aircraft related.",
+                                        "max_difference": 300.0,
+                                        "max_ref_time_diff": 4.0,
+                                        "maximum_probability_false": 1e-05,
+                                        "minimum_probability_present": 0.97,
+                                        "name": "Incorrect Pressure Altitude",
+                                        "prob": 1e-05,
+                                        "prob_check_type": 1,
+                                        "short_name": "IPA",
+                                        "use": true,
+                                        "use_maximum_probability_false": true,
+                                        "use_minimum_probability_present": false
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationFalseConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationFalseConfigIncorrect Aircraft Identification0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.3 REQ 645: The ratio of incorrect decoding of Aircraft Identification shall be less than 1x10-5. ACID including non-defined characters should be considered incorrect unless investigated to be avionics related.",
+                                        "name": "Incorrect Aircraft Identification",
+                                        "prob": 1e-05,
+                                        "prob_check_type": 1,
+                                        "require_all_false": false,
+                                        "short_name": "IACID",
+                                        "use": true,
+                                        "use_mode_a": false,
+                                        "use_ms_ta": false,
+                                        "use_ms_ti": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementModeAFalseConfig",
+                                    "instance_name": "EvaluationRequirementModeAFalseConfigIncorrect Mode A Code0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.3 REQ 646: The ratio of incorrect decoding of Mode A code shall be less than 1x10-5. Changing Mode A between two different stable codes is not considered incorrect (including transitional states received during change of Mode A code).",
+                                        "max_ref_time_diff": 4.0,
+                                        "maximum_probability_false": 1e-05,
+                                        "name": "Incorrect Mode A Code",
+                                        "prob": 1e-05,
+                                        "prob_check_type": 1,
+                                        "short_name": "IMA",
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementADSBLatencyConfig",
+                                    "instance_name": "EvaluationRequirementADSBLatencyConfigLatency 95th Percentile0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.4 REQ 19: In the Data Driven Output Mode, the 95th Percentile Latency, as measured from the time of reception of an ADS-B horizontal position message to the ADS-B System outputting a Target Report, shall be less than or equal to 0.6 seconds. Computed per report as Time of Report Transmission (I021/077) minus Time of Message Reception for Position (I021/073); the percentile is expressed as probability of acceptable latency greater than or equal to 95%.",
+                                        "max_value_s": 0.6,
+                                        "name": "Latency 95th Percentile",
+                                        "prob": 0.95,
+                                        "prob_check_type": 3,
+                                        "short_name": "LT95",
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementADSBLatencyConfig",
+                                    "instance_name": "EvaluationRequirementADSBLatencyConfigLatency 99.9th Percentile0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.4 REQ 498: In the Data Driven Output Mode, the 99.9th Percentile Latency, as measured from the time of reception of an ADS-B horizontal position message to the ADS-B System outputting a Target Report, shall be less than or equal to 1.0 seconds. Computed per report as Time of Report Transmission (I021/077) minus Time of Message Reception for Position (I021/073); the percentile is expressed as probability of acceptable latency greater than or equal to 99.9%.",
+                                        "max_value_s": 1.0,
+                                        "name": "Latency 99.9th Percentile",
+                                        "prob": 0.999,
+                                        "prob_check_type": 3,
+                                        "short_name": "LT999",
+                                        "use": true
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "class_name": "EvaluationRequirementGroup",
+                            "instance_name": "EvaluationRequirementGroup3NM Service0",
+                            "parameters": {
+                                "name": "3NM Service",
+                                "use": true
+                            },
+                            "sub_configs": [
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Update0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.1 REQ 494 and TABLE 2: The Probability of Update of Horizontal Position shall at any place in the OSV be greater than or equal to 97% for the update interval of 5 s (3NM service). Calculated with the Appendix C Interarrivaltime method (time-based calculation).",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.01,
+                                        "name": "Probability of Update",
+                                        "prob": 0.97,
+                                        "prob_check_type": 3,
+                                        "short_name": "PU",
+                                        "update_interval": 5.0,
+                                        "use": true,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": false,
+                                        "use_time_ratio": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigRatio of Long Gaps0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.2 REQ 18 and TABLE 5: The Ratio of Long Gaps shall be less than or equal to 0.5% for the long gap interval of 16.5 s (3NM service, 3 x UI x 1.1). Expressed as probability of update greater than or equal to 99.5% with the time-based calculation restricted to long gaps via the minimum gap length (Appendix C Equations 4-1 to 4-4).",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 16.5,
+                                        "miss_tolerance": 0.01,
+                                        "name": "Ratio of Long Gaps",
+                                        "prob": 0.995,
+                                        "prob_check_type": 3,
+                                        "short_name": "RLG",
+                                        "update_interval": 5.0,
+                                        "use": true,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": true,
+                                        "use_miss_tolerance": false,
+                                        "use_time_ratio": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationChangeDelayConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationChangeDelayConfigACID Change Delay0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.1 REC 495 and TABLE 4: The delay of change of Aircraft Identity (ACID or Mode A code) with correct value should be better than or equal to 15 s (3NM service). The maximum change delay is measured from the final Mode A code set in the system, i.e. transitional Mode A codes are ignored (minimum stable time filter).",
+                                        "identification_type": 0,
+                                        "max_delay_s": 15.0,
+                                        "min_stable_time_s": 10.0,
+                                        "name": "ACID Change Delay",
+                                        "prob": 1.0,
+                                        "prob_check_type": 3,
+                                        "short_name": "ACD",
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationChangeDelayConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationChangeDelayConfigMode A Change Delay0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.1 REC 495 and TABLE 4: The delay of change of Aircraft Identity (ACID or Mode A code) with correct value should be better than or equal to 15 s (3NM service). The maximum change delay is measured from the final Mode A code set in the system, i.e. transitional Mode A codes are ignored (minimum stable time filter).",
+                                        "identification_type": 1,
+                                        "max_delay_s": 15.0,
+                                        "min_stable_time_s": 10.0,
+                                        "name": "Mode A Change Delay",
+                                        "prob": 1.0,
+                                        "prob_check_type": 3,
+                                        "short_name": "MACD",
+                                        "use": true
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "class_name": "EvaluationRequirementGroup",
+                            "instance_name": "EvaluationRequirementGroup5NM Service0",
+                            "parameters": {
+                                "name": "5NM Service",
+                                "use": true
+                            },
+                            "sub_configs": [
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Update0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.1 REQ 494 and TABLE 2: The Probability of Update of Horizontal Position shall at any place in the OSV be greater than or equal to 97% for the update interval of 8 s (5NM service; 10 s is permitted when delivering data to an appropriately configured tracker). Calculated with the Appendix C Interarrivaltime method (time-based calculation).",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.01,
+                                        "name": "Probability of Update",
+                                        "prob": 0.97,
+                                        "prob_check_type": 3,
+                                        "short_name": "PU",
+                                        "update_interval": 8.0,
+                                        "use": true,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": false,
+                                        "use_time_ratio": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigRatio of Long Gaps0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.2 REQ 18 and TABLE 5: The Ratio of Long Gaps shall be less than or equal to 0.5% for the long gap interval of 26.4 s (5NM service, 3 x UI x 1.1; 33 s for the 10 s update interval). Expressed as probability of update greater than or equal to 99.5% with the time-based calculation restricted to long gaps via the minimum gap length (Appendix C Equations 4-1 to 4-4).",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 26.4,
+                                        "miss_tolerance": 0.01,
+                                        "name": "Ratio of Long Gaps",
+                                        "prob": 0.995,
+                                        "prob_check_type": 3,
+                                        "short_name": "RLG",
+                                        "update_interval": 8.0,
+                                        "use": true,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": true,
+                                        "use_miss_tolerance": false,
+                                        "use_time_ratio": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationChangeDelayConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationChangeDelayConfigACID Change Delay0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.1 REC 495 and TABLE 4: The delay of change of Aircraft Identity (ACID or Mode A code) with correct value should be better than or equal to 24 s (5NM service). The maximum change delay is measured from the final Mode A code set in the system, i.e. transitional Mode A codes are ignored (minimum stable time filter).",
+                                        "identification_type": 0,
+                                        "max_delay_s": 24.0,
+                                        "min_stable_time_s": 10.0,
+                                        "name": "ACID Change Delay",
+                                        "prob": 1.0,
+                                        "prob_check_type": 3,
+                                        "short_name": "ACD",
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationChangeDelayConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationChangeDelayConfigMode A Change Delay0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.1 REC 495 and TABLE 4: The delay of change of Aircraft Identity (ACID or Mode A code) with correct value should be better than or equal to 24 s (5NM service). The maximum change delay is measured from the final Mode A code set in the system, i.e. transitional Mode A codes are ignored (minimum stable time filter).",
+                                        "identification_type": 1,
+                                        "max_delay_s": 24.0,
+                                        "min_stable_time_s": 10.0,
+                                        "name": "Mode A Change Delay",
+                                        "prob": 1.0,
+                                        "prob_check_type": 3,
+                                        "short_name": "MACD",
+                                        "use": true
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "class_name": "EvaluationRequirementGroup",
+                            "instance_name": "EvaluationRequirementGroupAPT Service0",
+                            "parameters": {
+                                "name": "APT Service",
+                                "use": true
+                            },
+                            "sub_configs": [
+                                {
+                                    "class_name": "EvaluationRequirementDetectionConfig",
+                                    "instance_name": "EvaluationRequirementDetectionConfigProbability of Update0",
+                                    "parameters": {
+                                        "comment": "From EUROCAE ED-129C Section 3.3.1 ORQ 627 and TABLE 3: The Probability of Update of Horizontal Position for APT services should be greater than or equal to 90% for the update interval of 1 s (moving) / 10 s (stationary). A target is stationary when the reference ground speed is below 0.5 m/s; the stationary update interval then applies. Calculated with the Appendix C Interarrivaltime method (time-based calculation).",
+                                        "hold_for_any_target": false,
+                                        "invert_prob": false,
+                                        "max_gap_length_s": 5.0,
+                                        "min_gap_length_s": 3.0,
+                                        "miss_tolerance": 0.01,
+                                        "name": "Probability of Update",
+                                        "prob": 0.9,
+                                        "prob_check_type": 3,
+                                        "short_name": "PU",
+                                        "stationary_speed_threshold_ms": 0.5,
+                                        "stationary_ui_s": 10.0,
+                                        "update_interval": 1.0,
+                                        "use": true,
+                                        "use_max_gap_length": false,
+                                        "use_min_gap_length": false,
+                                        "use_miss_tolerance": false,
+                                        "use_stationary_ui": true,
+                                        "use_time_ratio": true
                                     }
                                 }
                             ]

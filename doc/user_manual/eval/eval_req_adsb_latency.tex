@@ -1,0 +1,87 @@
+\subsection{ADS-B Latency}
+\label{sec:eval_req_adsb_latency}
+
+\subsubsection{Configuration}
+
+\begin{figure}[H]
+    \centering
+    \fcolorbox{red}{white}{\parbox[c][4cm][c]{12cm}{\centering \textcolor{red}{\textbf{[TODO: screenshot figures/eval\_req\_adsb\_latency.png: ADS-B Latency requirement configuration]}}}}
+  \caption{Evaluation ADS-B Latency requirement}
+\end{figure}
+
+The 'ADS-B Latency' requirement is used to check the internal latency of an ADS-B Ground Station, as defined in EUROCAE ED-129C section 3.3.4: the time from the reception of an ADS-B horizontal position message to the output of the ASTERIX target report. The latency is calculated per CAT021 test target report from the contained time stamps, no reference data is used for the value itself. \\
+
+\begin{itemize}
+\item Probability [1]: Probability of acceptable latency
+\item Probability Check Type: $\geq$
+\item Maximum Value [s]: Maximum acceptable latency (Time of Report Transmission minus Time of Message Reception for Position)
+\end{itemize}
+\ \\
+
+\subsubsection{Calculation}
+
+For each test target report inside the sector layer, the latency is calculated as the Time of Report Transmission (I021/077) minus the Time of Message Reception for Position (I021/073). A day wrap around midnight is corrected. \\
+
+Each latency value is checked against the 'Maximum Value [s]'. A value within the threshold counts as acceptable (\#LTOK), a value above the threshold or a negative value counts as not acceptable (\#LTNOK). Test target reports without both time stamps are counted separately (\#NoData) and count neither as acceptable nor as not acceptable. \\
+
+The Probability of Acceptable Latency (PALT) is the ratio of \#LTOK to the number of checked values. It must fulfill the given 'Probability' condition for the requirement to pass. \\
+
+The percentile conditions of EUROCAE ED-129C map to the probability check as follows: the 95th percentile latency $\leq$ 0.6 s (REQ 19) is expressed as probability 0.95 with a maximum value of 0.6 s, the 99.9th percentile latency $\leq$ 1.0 s (REQ 498) as probability 0.999 with a maximum value of 1.0 s, as 2 separate requirement instances. \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that} only CAT021 test data contains the required time stamps. For other test data all target reports are counted as \#NoData and no result is calculated.
+
+\subsubsection{Result Values}
+
+\paragraph{Sector}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Sector Layer & Name of the sector layer & osv \\ \hline
+    Requirement Group & Name of the requirement group & Common  \\ \hline
+    Requirement & Name of the requirement & Latency 95th Percentile  \\ \hline
+    \#Pos [1] & Number of updates & 20402  \\ \hline
+    \#NoData [1] & Number of updates w/o TOMR and/or TORT & 12  \\ \hline
+    \#PosOutside [1] & Number of updates outside sector & 331  \\ \hline
+    \#PosInside [1] & Number of updates inside sector & 20071  \\ \hline
+    LTMin [s] & Minimum of latency & 0.05  \\ \hline
+    LTMax [s] & Maximum of latency & 0.92  \\ \hline
+    LTAvg [s] & Average of latency & 0.21  \\ \hline
+    LTSDev [s] & Standard Deviation of latency & 0.11  \\ \hline
+    \#LTOK [1] & Number of updates with acceptable latency & 19855  \\ \hline
+    \#LTNOK [1] & Number of updates with unacceptable latency & 204  \\ \hline
+    PALT [\%] & Probability of Acceptable Latency & 98.98  \\ \hline
+    Condition &  & >= 95.00  \\ \hline
+    Condition Fulfilled &  & Passed  \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
+Also, a table is given for all single targets, sorted by \#LTNOK.
+
+\paragraph{Single Target}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    Use & To be used in results & true \\ \hline
+    \#Pos [1] & Number of updates & 322 \\ \hline
+    \#NoData [1] & Number of updates w/o TOMR and/or TORT & 0 \\ \hline
+    \#PosOutside [1] & Number of updates outside sector & 12 \\ \hline
+    \#PosInside [1] & Number of updates inside sector & 310 \\ \hline
+    LTMin [s] & Minimum of latency & 0.08 \\ \hline
+    LTMax [s] & Maximum of latency & 0.65 \\ \hline
+    LTAvg [s] & Average of latency & 0.22 \\ \hline
+    LTSDev [s] & Standard Deviation of latency & 0.09 \\ \hline
+    \#LTOK [1] & Number of updates with acceptable latency & 308 \\ \hline
+    \#LTNOK [1] & Number of updates with unacceptable latency & 2 \\ \hline
+    PALT [\%] & Probability of Acceptable Latency & 99.35 \\ \hline
+    Condition &  & >= 95.00 \\ \hline
+    Condition Fulfilled &  & Passed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}

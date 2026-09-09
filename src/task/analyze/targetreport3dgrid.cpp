@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numeric>
 
 namespace
@@ -68,6 +69,12 @@ void TargetReport3DGrid::addMUI(double lat_deg, double lon_deg, double baro_alt_
     cellAt(lat_deg, lon_deg, baro_alt_ft).num_mui += 1;
 }
 
+void TargetReport3DGrid::addExtra(double lat_deg, double lon_deg, double baro_alt_ft,
+                                  std::uint64_t num)
+{
+    cellAt(lat_deg, lon_deg, baro_alt_ft).num_extra += num;
+}
+
 void TargetReport3DGrid::addAccuracySample(double lat_deg, double lon_deg, double baro_alt_ft,
                                            double distance_m, double reported_stddev_m)
 {
@@ -93,6 +100,18 @@ void TargetReport3DGrid::addAccuracySample(double lat_deg, double lon_deg, doubl
     }
 }
 
+void TargetReport3DGrid::addOffsetSample(double lat_deg, double lon_deg, double baro_alt_ft,
+                                         double radial_m, double tangential_m)
+{
+    if (!std::isfinite(radial_m) || !std::isfinite(tangential_m))
+        return;
+
+    auto& c = cellAt(lat_deg, lon_deg, baro_alt_ft);
+    c.sum_radial_m     += radial_m;
+    c.sum_tangential_m += tangential_m;
+    ++c.num_offset;
+}
+
 std::uint64_t TargetReport3DGrid::pack2(std::int32_t a, std::int32_t b)
 {
     return (static_cast<std::uint64_t>(static_cast<std::uint32_t>(a)) << 32)
@@ -106,19 +125,37 @@ std::pair<std::int32_t, std::int32_t> TargetReport3DGrid::unpack2(std::uint64_t 
     return { hi, lo };
 }
 
+std::uint64_t TargetReport3DGrid::horizontalKey(double lat_deg, double lon_deg) const
+{
+    Key k = keyFor(lat_deg, lon_deg, 0.0);
+    return pack2(k.lat_bin, k.lon_bin);
+}
+
+std::pair<double, double> TargetReport3DGrid::horizontalCellCenter(std::uint64_t key) const
+{
+    std::int32_t lat_bin, lon_bin;
+    std::tie(lat_bin, lon_bin) = unpack2(key);
+    return { (static_cast<double>(lat_bin) + 0.5) * dlat_deg_,
+             (static_cast<double>(lon_bin) + 0.5) * dlon_deg_ };
+}
+
 namespace
 {
 inline void mergeInto(TargetReport3DGrid::Cell& dst, const TargetReport3DGrid::Cell& src)
 {
-    dst.num_eui        += src.num_eui;
-    dst.num_mui        += src.num_mui;
-    dst.num_samples    += src.num_samples;
-    dst.num_distance   += src.num_distance;
-    dst.sum_distance_m += src.sum_distance_m;
-    dst.num_stddev     += src.num_stddev;
-    dst.sum_stddev_m   += src.sum_stddev_m;
-    dst.num_ratio      += src.num_ratio;
-    dst.sum_ratio      += src.sum_ratio;
+    dst.num_eui          += src.num_eui;
+    dst.num_mui          += src.num_mui;
+    dst.num_extra        += src.num_extra;
+    dst.num_samples      += src.num_samples;
+    dst.num_distance     += src.num_distance;
+    dst.sum_distance_m   += src.sum_distance_m;
+    dst.num_stddev       += src.num_stddev;
+    dst.sum_stddev_m     += src.sum_stddev_m;
+    dst.num_ratio        += src.num_ratio;
+    dst.sum_ratio        += src.sum_ratio;
+    dst.num_offset       += src.num_offset;
+    dst.sum_radial_m     += src.sum_radial_m;
+    dst.sum_tangential_m += src.sum_tangential_m;
 }
 }
 
@@ -196,20 +233,10 @@ TargetReport3DGrid::projectionLayer(Projection projection,
     //    - AltLon:     pack2(alt_bin, lon_bin)  -> (a, b) = (alt, lon)
     //    - AltLat:     pack2(alt_bin, lat_bin)  -> (a, b) = (alt, lat)
     //    For all three the "x" of the resulting 2D layer is `b` (lon or lat)
-    //    and the "y" is `a` (lat or alt). For AltLat we swap so x = lat, y = alt.
-    struct Sample
-    {
-        std::int32_t  bin_x;
-        std::int32_t  bin_y;
-        double        value;
-        std::uint64_t samples;
-    };
-    std::vector<Sample> samples;
+    //    and the "y" is `a` (lat or alt).
+    std::vector<LayerSample> samples;
     samples.reserve(projected.size());
 
-    bool          have_x_range = false;
-    std::int32_t  x_min_bin = 0, x_max_bin = 0;
-    std::int32_t  y_min_bin = 0, y_max_bin = 0;
     std::uint64_t total_samples = 0;
     std::size_t   spc_min = std::numeric_limits<std::size_t>::max();
     std::size_t   spc_max = 0;
@@ -218,17 +245,6 @@ TargetReport3DGrid::projectionLayer(Projection projection,
     {
         std::int32_t a, b;
         std::tie(a, b) = unpack2(kv.first);
-
-        // pack2(a, b) order is (lat, lon) / (alt, lon) / (alt, lat) for the
-        // three projections; map to (x, y) so x is the geographic axis (lon
-        // or lat) and y is the secondary axis (lat or alt).
-        std::int32_t bin_x = 0, bin_y = 0;
-        switch (projection)
-        {
-            case Projection::Horizontal: bin_x = b; bin_y = a; break; // lon, lat
-            case Projection::AltLon:     bin_x = b; bin_y = a; break; // lon, alt
-            case Projection::AltLat:     bin_x = b; bin_y = a; break; // lat, alt
-        }
 
         std::uint64_t s = cell_samples ? cell_samples(kv.second) : 0;
         total_samples += s;
@@ -239,27 +255,75 @@ TargetReport3DGrid::projectionLayer(Projection projection,
         if (!v_opt.has_value() || !std::isfinite(*v_opt))
             continue;
 
-        if (!have_x_range)
-        {
-            x_min_bin = x_max_bin = bin_x;
-            y_min_bin = y_max_bin = bin_y;
-            have_x_range = true;
-        }
-        else
-        {
-            x_min_bin = std::min(x_min_bin, bin_x);
-            x_max_bin = std::max(x_max_bin, bin_x);
-            y_min_bin = std::min(y_min_bin, bin_y);
-            y_max_bin = std::max(y_max_bin, bin_y);
-        }
-
-        samples.push_back({bin_x, bin_y, *v_opt, s});
+        samples.push_back({b, a, *v_opt, s});
     }
 
-    if (samples.empty() || !have_x_range)
+    return buildLayer(projection, samples, total_samples, projected.size(),
+                      spc_min, spc_max, layer_name);
+}
+
+TargetReport3DGrid::ProjectionResult
+TargetReport3DGrid::horizontalLayer(
+    const std::unordered_map<std::uint64_t, double>& value_by_key,
+    const std::unordered_map<std::uint64_t, std::uint64_t>& samples_by_key,
+    const std::string& layer_name) const
+{
+    std::vector<LayerSample> samples;
+    samples.reserve(value_by_key.size());
+
+    std::uint64_t total_samples = 0;
+    std::size_t   spc_min = std::numeric_limits<std::size_t>::max();
+    std::size_t   spc_max = 0;
+
+    for (const auto& kv : value_by_key)
+    {
+        std::int32_t lat_bin, lon_bin;
+        std::tie(lat_bin, lon_bin) = unpack2(kv.first);
+
+        std::uint64_t s = 0;
+        auto s_it = samples_by_key.find(kv.first);
+        if (s_it != samples_by_key.end())
+            s = s_it->second;
+        total_samples += s;
+        spc_min = std::min(spc_min, static_cast<std::size_t>(s));
+        spc_max = std::max(spc_max, static_cast<std::size_t>(s));
+
+        if (!std::isfinite(kv.second))
+            continue;
+
+        samples.push_back({lon_bin, lat_bin, kv.second, s});
+    }
+
+    return buildLayer(Projection::Horizontal, samples, total_samples, value_by_key.size(),
+                      spc_min, spc_max, layer_name);
+}
+
+TargetReport3DGrid::ProjectionResult
+TargetReport3DGrid::buildLayer(Projection projection,
+                               const std::vector<LayerSample>& samples,
+                               std::uint64_t total_samples,
+                               std::size_t num_cells,
+                               std::size_t spc_min,
+                               std::size_t spc_max,
+                               const std::string& layer_name) const
+{
+    ProjectionResult out;
+
+    if (samples.empty())
         return out;
 
-    // 3. Determine continuous bounds and per-axis cell sizes.
+    // 1. Bin ranges over the valued samples.
+    std::int32_t x_min_bin = samples.front().bin_x, x_max_bin = samples.front().bin_x;
+    std::int32_t y_min_bin = samples.front().bin_y, y_max_bin = samples.front().bin_y;
+    for (const auto& s : samples)
+    {
+        x_min_bin = std::min(x_min_bin, s.bin_x);
+        x_max_bin = std::max(x_max_bin, s.bin_x);
+        y_min_bin = std::min(y_min_bin, s.bin_y);
+        y_max_bin = std::max(y_max_bin, s.bin_y);
+    }
+
+    // 2. Determine continuous bounds and per-axis cell sizes.
     double x_size = 0.0, y_size = 0.0;
     std::string srs = "wgs84";
     // `srs_is_north_up` is misnamed in the raster pipeline: it controls the y
@@ -298,7 +362,7 @@ TargetReport3DGrid::projectionLayer(Projection projection,
     const std::size_t nx = static_cast<std::size_t>(x_max_bin - x_min_bin + 1);
     const std::size_t ny = static_cast<std::size_t>(y_max_bin - y_min_bin + 1);
 
-    // 4. Build a Grid2D, deposit one value per occupied cell at its center.
+    // 3. Build a Grid2D, deposit one value per occupied cell at its center.
     Grid2D grid;
     QRectF roi(out.x_min, out.y_min, out.x_max - out.x_min, out.y_max - out.y_min);
     if (!grid.create(roi,
@@ -321,25 +385,22 @@ TargetReport3DGrid::projectionLayer(Projection projection,
     if (!out.layer)
         return out;
 
-    // 5. Stats over per-cell scalar values.
+    // 4. Stats over per-cell scalar values.
     out.cells_with_value = values.size();
-    if (!values.empty())
-    {
-        std::sort(values.begin(), values.end());
-        out.v_min    = values.front();
-        out.v_max    = values.back();
-        out.v_mean   = std::accumulate(values.begin(), values.end(), 0.0)
-                       / static_cast<double>(values.size());
-        out.v_median = percentileSorted(values, 0.5);
-        out.v_p95    = percentileSorted(values, 0.95);
-    }
+    std::sort(values.begin(), values.end());
+    out.v_min    = values.front();
+    out.v_max    = values.back();
+    out.v_mean   = std::accumulate(values.begin(), values.end(), 0.0)
+                   / static_cast<double>(values.size());
+    out.v_median = percentileSorted(values, 0.5);
+    out.v_p95    = percentileSorted(values, 0.95);
 
     out.total_samples = total_samples;
     out.spc_min       = (spc_min == std::numeric_limits<std::size_t>::max()) ? 0 : spc_min;
     out.spc_max       = spc_max;
-    out.spc_mean      = projected.empty()
+    out.spc_mean      = num_cells == 0
                             ? 0.0
-                            : static_cast<double>(total_samples) / static_cast<double>(projected.size());
+                            : static_cast<double>(total_samples) / static_cast<double>(num_cells);
 
     out.valid = true;
     return out;

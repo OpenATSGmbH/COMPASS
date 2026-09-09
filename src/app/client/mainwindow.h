@@ -87,6 +87,7 @@ public slots:
     void evaluateSlot();
     void analyzeMLATDataSourceSlot();
     void analyzeADSBDataSourceSlot();
+    void analyzeSMRDataSourceSlot();
 
     void quitRequestedSlot();
     void showAddViewMenuSlot();

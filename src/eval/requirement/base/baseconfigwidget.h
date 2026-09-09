@@ -21,6 +21,7 @@
 
 class QLineEdit;
 class QCheckBox;
+class QComboBox;
 
 class QFormLayout;
 
@@ -40,6 +41,7 @@ public slots:
     void changedNameSlot();
     void changedShortNameSlot();
     void changedCommentSlot();
+    void changedTargetSelectionSlot(int index);
 
 
 public:
@@ -50,6 +52,7 @@ protected:
     BaseConfig& config_;
 
     QFormLayout* form_layout_ {nullptr};
+    QComboBox* target_selection_box_ {nullptr};
 };
 
 }

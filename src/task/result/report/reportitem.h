@@ -70,6 +70,9 @@ public:
     static const std::string FieldExportFlags;
 
 protected:
+    // writes the fields common to every report item, as used by toJSON()
+    void fillCommonJSON(nlohmann::json& j) const;
+
     virtual void toJSON_impl(nlohmann::json& j) const = 0;
     virtual bool fromJSON_impl(const nlohmann::json& j) = 0;
 

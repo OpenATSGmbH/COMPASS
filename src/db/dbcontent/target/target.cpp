@@ -76,6 +76,8 @@ const std::string Target::KEY_ECAT                       = "emitter_category";
 const std::string Target::KEY_ADSB_INFO                  = "adsb_info";
 const std::string Target::KEY_ADSB_COUNT                 = "count";
 const std::string Target::KEY_ADSB_MOPS                  = "mops";
+const std::string Target::KEY_DUBIOUS_REF                = "dubious_ref";
+const std::string Target::KEY_DUBIOUS_REF_COUNTS         = "counts";
 
 const Property     Target::DBColumnID     = Property("utn" , PropertyDataType::UINT);
 const Property     Target::DBColumnInfo   = Property("json", PropertyDataType::JSON);
@@ -513,6 +515,71 @@ std::string Target::adsbMopsStr() const
 
             out << mops_it.first << " (" << count << ")";
         }
+    }
+
+    return out.str();
+}
+
+bool Target::hasDubiousRef() const
+{
+    return info_.contains(KEY_DUBIOUS_REF)
+           && info_.at(KEY_DUBIOUS_REF).contains(KEY_DUBIOUS_REF_COUNTS)
+           && info_.at(KEY_DUBIOUS_REF).at(KEY_DUBIOUS_REF_COUNTS).size();
+}
+
+void Target::dubiousRefCounts(const std::map<std::string, unsigned int>& counts)
+{
+    if (counts.empty())
+        return;
+
+    info_[KEY_DUBIOUS_REF][KEY_DUBIOUS_REF_COUNTS] = counts;
+}
+
+std::map<std::string, unsigned int> Target::dubiousRefCounts() const
+{
+    if (!hasDubiousRef())
+        return {};
+
+    return info_.at(KEY_DUBIOUS_REF).at(KEY_DUBIOUS_REF_COUNTS).get<
+        std::map<std::string, unsigned int>>();
+}
+
+unsigned int Target::dubiousRefTotal() const
+{
+    unsigned int total = 0;
+
+    for (const auto& count_it : dubiousRefCounts())
+        total += count_it.second;
+
+    return total;
+}
+
+std::string Target::dubiousRefStr() const
+{
+    // display labels for the check type keys written by the reconstructor's
+    // dubious reference detection; unknown keys shown as-is
+    static const std::map<std::string, std::string> labels {
+        {"pos_jumps"        , "Position Jumps"},
+        {"sim_tracks"       , "Simultaneous Tracks"},
+        {"mode_c_jumps"     , "Mode C Jumps"},
+        {"speed_accel"      , "Implausible Speed or Acceleration"},
+        {"acceptance_ratio" , "Low Acceptance Ratio"},
+        {"outlier_exclusion", "Outlier Exclusion"},
+        {"pos_offsets"      , "Sensor Position Offsets"},
+        {"track_disassoc"   , "Track Disassociations"},
+        {"accuracy_mismatch", "Accuracy Mismatch"}};
+
+    std::ostringstream out;
+
+    for (const auto& count_it : dubiousRefCounts())
+    {
+        if (out.str().size())
+            out << "\n";
+
+        auto label_it = labels.find(count_it.first);
+
+        out << (label_it != labels.end() ? label_it->second : count_it.first)
+            << " (" << count_it.second << ")";
     }
 
     return out.str();

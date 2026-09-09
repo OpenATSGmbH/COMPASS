@@ -38,6 +38,8 @@ namespace EvaluationRequirement
         void thresholdValueEditSlot(QString value);
         void changedThresholdValueCheckTypeSlot();
         void toggleFailedValuesOfInterestSlot();
+        void toggleUseAveragingSlot();
+        void averagingWindowEditSlot(QString value);
 
     public:
         PositionDistanceConfigWidget(PositionDistanceConfig& cfg);
@@ -46,6 +48,8 @@ namespace EvaluationRequirement
         QLineEdit* threshold_value_edit_{nullptr};
         ComparisonTypeComboBox* threshold_value_check_type_box_ {nullptr};
         QCheckBox* failed_values_of_interest_check_{nullptr};
+        QCheckBox* use_averaging_check_{nullptr};
+        QLineEdit* averaging_window_edit_{nullptr};
 
         PositionDistanceConfig& config();
     };

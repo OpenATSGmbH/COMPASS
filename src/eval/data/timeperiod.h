@@ -117,8 +117,10 @@ public:
 
     void removeSmallPeriods (boost::posix_time::time_duration min_duration);
 
-    unsigned int getUIs (float update_interval, 
+    unsigned int getUIs (float update_interval,
                          bool inside_sector_only = true) const;
+
+    double getDurationSeconds (bool inside_sector_only = true) const;
 
     void fillInOutsidePeriods(const boost::optional<boost::posix_time::ptime>& data_tmin = boost::optional<boost::posix_time::ptime>(),
                               const boost::optional<boost::posix_time::ptime>& data_tmax = boost::optional<boost::posix_time::ptime>());

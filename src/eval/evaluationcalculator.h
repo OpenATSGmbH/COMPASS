@@ -143,6 +143,11 @@ public:
     bool hasSelectedTestDataSources() const;
 
     std::map<unsigned int, std::set<unsigned int>> usedDataSources() const;
+    std::map<unsigned int, std::set<unsigned int>> usedDataSourcesTst() const;
+
+    // update cycles reported by the test data source, for the status-message PD
+    // method. Empty when no single test source is active or it reports none.
+    const std::vector<boost::posix_time::ptime>& testStatusCycles() const;
 
     // standards & requirements
     bool hasCurrentStandard() const;

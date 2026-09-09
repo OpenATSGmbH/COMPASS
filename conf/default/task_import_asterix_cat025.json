@@ -1,0 +1,461 @@
+{
+    "class_name": "ASTERIXJSONParser",
+    "instance_name": "CAT025",
+    "parameters": {
+        "category": 25,
+        "db_content_name": "CAT025",
+        "name": "CAT025"
+    },
+    "sub_configs": [
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping1",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Report Type",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "000.Report Type",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping2",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "RG",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "000.RG",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping3",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "SAC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "010.SAC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping4",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "SIC",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "010.SIC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping5",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "SID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "015.SID",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping6",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Service Designator",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "020.Service Designator",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping7",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Time of Day",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "070.Time of Day",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping8",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "NOGO",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.NOGO",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping9",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "OPS",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.OPS",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping10",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "SSTAT",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.SSTAT",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping11",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "SySTAT",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.SySTAT",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping12",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "SeSTAT",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.SeSTAT",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping13",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Error Codes",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "105.System and Service Error Codes.ERR",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping14",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Component IDs",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "120.Component Status.CID",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping15",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Component Error Codes",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "120.Component Status.Error Code",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping16",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Component States",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "120.Component Status.CS",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping17",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Counter Type",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "140.Service Statistics.TYPE",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping18",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Counter Ref",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "140.Service Statistics.REF",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping19",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Counter Value",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "140.Service Statistics.COUNTER",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping20",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Message Identification",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "200.Message Identification Number",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping21",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Reference Point Latitude",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "600.Latitude",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping22",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Reference Point Longitude",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "600.Longitude",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping23",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Reference Point Height",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "610.Height",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingDSID",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "DS ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "ds_id",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingLineID",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Line Identifer",
+                "db_content_name": "CAT025",
+                "db_content_variable_name": "Line ID",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "line_id",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        }
+    ]
+}

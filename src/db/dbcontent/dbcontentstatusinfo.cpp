@@ -52,6 +52,11 @@ dbContent::VariableSet DBContentStatusInfo::getReadSetFor(const std::string& dbc
     traced_assert(dbcont_man_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_message_type_));
     read_set.add(dbcont_man_.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_message_type_));
 
+    // process() needs the batch number of CAT065 to keep only the first message of a batch
+    if (dbcontent_name == "CAT065"
+        && dbcont_man_.canGetVariable(dbcontent_name, dbcontent_vars::var_cat065_batch_number_))
+        read_set.add(dbcont_man_.getVariable(dbcontent_name, dbcontent_vars::var_cat065_batch_number_));
+
     return read_set;
 }
 void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>> buffers)
@@ -78,6 +83,7 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
         // cat010: 002 Start of Update Cycle
         // cat019: 001 Start of Update Cycle
         // cat023: ?
+        // cat025: no scan-cycle semantics (service/system status reports)
         // cat034: 001 North marker message;002 Sector crossing message;
         // cat065: 002 End of Batch, I020 Batch Number
 
@@ -90,6 +96,8 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
         else if (dbcontent_name == "CAT019")
             message_type_cycle = 1;
         else if (dbcontent_name == "CAT023")
+            continue;
+        else if (dbcontent_name == "CAT025")
             continue;
         else if (dbcontent_name == "CAT034")
             message_type_cycle = 1;
@@ -122,12 +130,16 @@ void DBContentStatusInfo::process(std::map<std::string, std::shared_ptr<Buffer>>
 
         NullableVector<unsigned char>* batch_number_vec {nullptr};
 
-        if (dbcontent_name == "CAT065")
+        if (dbcontent_name == "CAT065"
+            && dbcont_man_.canGetVariable(dbcontent_name, dbcontent_vars::var_cat065_batch_number_))
         {
-            traced_assert(dbcont_man_.canGetVariable(dbcontent_name, dbcontent_vars::var_cat065_batch_number_));
             Variable& batch_number_var = dbcont_man_.getVariable(dbcontent_name, dbcontent_vars::var_cat065_batch_number_);
-            traced_assert(buf_it.second->has<unsigned char>(batch_number_var.name()));
-            batch_number_vec = &buf_it.second->get<unsigned char>(batch_number_var.name());
+
+            // without the batch number every cycle message counts, see getReadSetFor
+            if (buf_it.second->has<unsigned char>(batch_number_var.name()))
+                batch_number_vec = &buf_it.second->get<unsigned char>(batch_number_var.name());
+            else
+                logwrn << dbcontent_name << " buffer without batch number, batch filter disabled";
         }
 
         traced_assert(ds_id_vec.isNeverNull());

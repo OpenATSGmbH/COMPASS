@@ -16,6 +16,7 @@
  */
 
 #include "evaluationresultsgenerator.h"
+#include "dialogs.h"
 #include "evaluationmanager.h"
 #include "evaluationcalculator.h"
 #include "evaluationdata.h"
@@ -122,7 +123,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
         }
     }
 
-    QProgressDialog postprocess_dialog ("", "", 0, num_req_evals, QApplication::activeWindow());
+    QProgressDialog postprocess_dialog ("", "", 0, num_req_evals, Dialogs::statusDialogParent());
     postprocess_dialog.setWindowTitle("Evaluating");
     postprocess_dialog.setCancelButton(nullptr);
     postprocess_dialog.setWindowModality(Qt::ApplicationModal);
@@ -217,7 +218,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                        << " group " << requirement_group_name
                        << " req '" << req_cfg_it->name() << "'";
 
-                std::shared_ptr<EvaluationRequirement::Base> req = req_cfg_it->createRequirement();
+                std::shared_ptr<EvaluationRequirement::Base> req = req_cfg_it->createRequirementInstance();
                 std::shared_ptr<Joined> result_sum;
                 map<string, std::shared_ptr<Joined>> extra_results_sums;
 
@@ -464,7 +465,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 
     loading_start_time = boost::posix_time::microsec_clock::local_time();
 
-    QProgressDialog dlg(QApplication::activeWindow());
+    QProgressDialog dlg(Dialogs::statusDialogParent());
     dlg.setWindowTitle("Updating Results");
     dlg.setLabelText( "Please wait...");
     dlg.setRange(0, 0);

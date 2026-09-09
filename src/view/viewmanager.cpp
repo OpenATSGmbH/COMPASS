@@ -808,6 +808,12 @@ bool ViewManager::hasPendingViewProcessing() const
     return false;
 }
 
+void ViewManager::setLoadDialogsSuppressed(bool suppressed)
+{
+    traced_assert(load_controller_);
+    load_controller_->setDialogsSuppressed(suppressed);
+}
+
 void ViewManager::resetToStartupConfiguration()
 {
     loginf;

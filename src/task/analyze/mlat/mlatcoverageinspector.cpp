@@ -35,6 +35,7 @@
 #include "dbcontent/target/targetreportchain.h"
 
 #include "eval/requirement/detection/detection_pd_helpers.h"
+#include "coveragepdwalk.h"
 
 #include "grid2dlayer.h"
 #include "grid2dlayerrenderer.h"
@@ -120,18 +121,13 @@ bool MLATCoverageInspector::prerequisitesMet(std::string& reason_out) const
 namespace
 {
 using Settings = MLATCoverageInspectorSettings;
-using EvaluationRequirement::PDHelpers::MissTestParams;
 using EvaluationRequirement::PDHelpers::RefPeriod;
+using analysis::PDWalkParams;
+using analysis::walkReferencePeriodsTimeDifference;
 
 double partialSeconds(const time_duration& d)
 {
     return static_cast<double>(d.total_microseconds()) / 1.0e6;
-}
-
-ptime addSeconds(ptime t, double s)
-{
-    long long us = static_cast<long long>(std::llround(s * 1.0e6));
-    return t + boost::posix_time::microseconds(us);
 }
 
 time_duration durationFromSeconds(double s)
@@ -238,9 +234,11 @@ std::vector<ptime> gatherTestTimestamps(unsigned int utn,
 //   - walk the test timestamps that fall inside `[period.begin, period.end]`
 //     and form gaps (period.begin -> first test, between consecutive tests,
 //     last test -> period.end; or `period` itself when no tests are inside);
-//   - for each gap that passes the miss test, attribute one #MUI per missed
-//     UI slot at the cell of the reference position at the slot timestamp.
+//   - for each gap, attribute one #MUI per missed UI slot at the cell of the
+//     reference position at the slot timestamp.
 //
+// The walk itself is shared with the ADS-B coverage inspector, see
+// `analysis::walkReferencePeriodTimeDifference()`.
 // Both per-cell counters live on `grid`; the caller aggregates them.
 void walkTargetTimeDifference(unsigned int utn,
                               const std::vector<RefPeriod>& periods,
@@ -253,159 +251,28 @@ void walkTargetTimeDifference(unsigned int utn,
 {
     const time_duration d_max = boost::posix_time::seconds(60);
 
-    for (const auto& period : periods)
+    PDWalkParams walk_params;
+    walk_params.mv                 = &mv;
+    walk_params.use_miss_tolerance = settings.use_miss_tolerance_;
+    walk_params.miss_tolerance_s   = settings.miss_tolerance_s_;
+
+    auto slotFunc = [ & ] (const ptime& t, bool is_miss)
     {
-        const double period_s = partialSeconds(period.end - period.begin);
-        if (period_s <= 0.0)
-            continue;
+        auto ca = refCellAt(dataset, utn, t, d_max);
+        if (!ca.valid)
+            return;
 
-        // Expected slots: step adaptively by the local update interval, so a
-        // standing target (which the MLAT system updates less often) is expected
-        // less often instead of accruing false misses.
-        std::size_t guard = 0;
-        const std::size_t max_iter = 50'000'000;
-        for (ptime t_slot = period.begin; t_slot < period.end; )
-        {
-            auto ca = refCellAt(dataset, utn, t_slot, d_max);
-            if (ca.valid)
-            {
-                grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
-                if (sec) sec->accum(ca, false);
-            }
-            double ui = mv.uiAt(t_slot);
-            if (ui <= 0.0 || ++guard > max_iter)
-                break;
-            t_slot = addSeconds(t_slot, ui);
-        }
+        is_miss ? grid.addMUI(ca.lat, ca.lon, ca.alt_ft) : grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
 
-        // Test timestamps inside [period.begin, period.end].
-        auto first = std::lower_bound(tst_ts_sorted.begin(),
-                                      tst_ts_sorted.end(), period.begin);
-        auto last  = std::upper_bound(tst_ts_sorted.begin(),
-                                      tst_ts_sorted.end(), period.end);
+        if (sec) sec->accum(ca, is_miss);
+    };
 
-        std::vector<ptime> walk;
-        walk.reserve(static_cast<std::size_t>(std::distance(first, last)) + 2);
-        walk.push_back(period.begin);
-        for (auto it = first; it != last; ++it)
-            walk.push_back(*it);
-        walk.push_back(period.end);
-
-        for (std::size_t i = 0; i + 1 < walk.size(); ++i)
-        {
-            ptime gap_start = walk[i];
-            ptime gap_end   = walk[i + 1];
-            if (gap_end <= gap_start)
-                continue;
-            const float gap_s =
-                static_cast<float>(partialSeconds(gap_end - gap_start));
-
-            // Expected cadence inside the gap follows the target's movement at
-            // the gap start (moving vs standing update interval).
-            const double gap_ui = mv.uiAt(gap_start);
-            if (gap_ui <= 0.0)
-                continue;
-
-            MissTestParams miss_params;
-            miss_params.update_interval_s  = static_cast<float>(gap_ui);
-            miss_params.use_miss_tolerance = settings.use_miss_tolerance_;
-            miss_params.miss_tolerance_s   = settings.miss_tolerance_s_;
-
-            if (!EvaluationRequirement::PDHelpers::isMiss(gap_s, miss_params))
-                continue;
-
-            const unsigned int n_misses =
-                EvaluationRequirement::PDHelpers::numMisses(gap_s, miss_params);
-
-            for (unsigned int m = 0; m < n_misses; ++m)
-            {
-                ptime t_miss = addSeconds(gap_start, (m + 1) * gap_ui);
-                if (t_miss >= gap_end)
-                    break;
-                auto ca = refCellAt(dataset, utn, t_miss, d_max);
-                if (ca.valid)
-                {
-                    grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
-                    if (sec) sec->accum(ca, true);
-                }
-            }
-        }
-    }
+    walkReferencePeriodsTimeDifference(
+        periods, tst_ts_sorted, walk_params,
+        [ & ] (const ptime& t) { slotFunc(t, false); },
+        [ & ] (const ptime& t) { slotFunc(t, true ); });
 }
 }  // anonymous namespace
-
-namespace mlatcoverage_internal
-{
-std::vector<CycleEvent> evaluateCyclesInPeriod(
-    const EvaluationRequirement::PDHelpers::RefPeriod& period,
-    const std::vector<ptime>& cycles_sorted,
-    const std::vector<ptime>& tst_ts_sorted,
-    const analysis::MovementUI* mv)
-{
-    std::vector<CycleEvent> out;
-
-    auto cyc_begin = std::lower_bound(cycles_sorted.begin(),
-                                      cycles_sorted.end(),
-                                      period.begin);
-    auto cyc_end   = std::upper_bound(cycles_sorted.begin(),
-                                      cycles_sorted.end(),
-                                      period.end);
-
-    out.reserve(static_cast<std::size_t>(std::distance(cyc_begin, cyc_end)));
-
-    const double standing_ui = mv ? mv->ui_standing : 0.0;
-
-    for (auto it = cyc_begin; it != cyc_end; )
-    {
-        ptime t_cycle = *it;
-
-        // Standing targets are expected only once per standing UI, not every
-        // cycle; the window then spans that interval and the cycles inside it
-        // are skipped (a standing target legitimately reports less often than
-        // the cycle rate). Moving targets keep the per-cycle window.
-        const bool standing = mv && standing_ui > 0.0 && mv->standingAt(t_cycle);
-
-        ptime t_window_end;
-        if (standing)
-        {
-            t_window_end = t_cycle
-                + boost::posix_time::microseconds(
-                      static_cast<long long>(std::llround(standing_ui * 1.0e6)));
-            if (t_window_end > period.end)
-                t_window_end = period.end;
-        }
-        else
-        {
-            auto next_it = std::next(it);
-            t_window_end = (next_it != cyc_end) ? *next_it : period.end;
-        }
-
-        if (t_window_end <= t_cycle)
-        {
-            ++it;
-            continue;
-        }
-
-        auto tst_lo = std::lower_bound(tst_ts_sorted.begin(),
-                                       tst_ts_sorted.end(),
-                                       t_cycle);
-        const bool has_test =
-            (tst_lo != tst_ts_sorted.end() && *tst_lo < t_window_end);
-
-        CycleEvent ev;
-        ev.t_cycle = t_cycle;
-        ev.is_miss = !has_test;
-        out.push_back(ev);
-
-        if (standing)
-            it = std::lower_bound(it, cyc_end, t_window_end);  // skip covered cycles
-        else
-            ++it;
-    }
-
-    return out;
-}
-}  // namespace mlatcoverage_internal
 
 namespace
 {

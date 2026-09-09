@@ -82,12 +82,16 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
     add(dbcontent_vars::var_cat062_fl_measured_, false);
     add(dbcontent_vars::var_cat062_baro_alt_, false);
     add(dbcontent_vars::meta_var_ground_bit_, true);
+    add(dbcontent_vars::meta_var_detection_type_, true);
 
     add(dbcontent_vars::var_cat021_mops_version_, false);
     add(dbcontent_vars::var_cat021_nacp_, false);
     add(dbcontent_vars::var_cat021_nucp_nic_, false);
     add(dbcontent_vars::var_cat021_sil_, false);
     add(dbcontent_vars::var_cat021_pos_check_failed_, false);
+    add(dbcontent_vars::var_cat021_range_check_failed_, false);
+    add(dbcontent_vars::var_cat021_cpr_valid_, false);
+    add(dbcontent_vars::var_cat021_ldpj_, false);
 
     add(dbcontent_vars::meta_var_x_stddev_, true);
     add(dbcontent_vars::meta_var_y_stddev_, true);
@@ -95,10 +99,15 @@ dbContent::VariableSet TargetReportAccessor::getReadSetFor(const std::string& db
 
     add(dbcontent_vars::meta_var_ground_speed_, true);
     add(dbcontent_vars::meta_var_track_angle_, true);
+    add(dbcontent_vars::var_cat021_sgv_stp_, false);
+    add(dbcontent_vars::var_cat021_toa_pos_, false);
 
     add(dbcontent_vars::var_cat021_nucv_nacv_, false);
     add(dbcontent_vars::var_cat062_vx_stddev_, false);
     add(dbcontent_vars::var_cat062_vy_stddev_, false);
+
+    add(dbcontent_vars::var_cat062_ax_, false);
+    add(dbcontent_vars::var_cat062_ay_, false);
 
     add(dbcontent_vars::meta_var_m3a_, true);
     add(dbcontent_vars::meta_var_m3a_g_, true);
@@ -150,6 +159,7 @@ void TargetReportAccessor::cacheVectors()
     cat062_alt_sec_vec_     = varVector<float>(dbcontent_vars::var_cat062_baro_alt_);
     cat021_alt_geo_vec_     = varVector<float>(dbcontent_vars::var_cat021_geo_alt_);
     meta_ground_bit_vec_    = metaVarVector<bool>(dbcontent_vars::meta_var_ground_bit_);
+    meta_detection_type_vec_ = metaVarVector<unsigned char>(dbcontent_vars::meta_var_detection_type_);
 
     //position accuracy
     cat021_mops_version_vec_            = varVector<unsigned char>(dbcontent_vars::var_cat021_mops_version_);
@@ -157,6 +167,9 @@ void TargetReportAccessor::cacheVectors()
     cat021_nucp_nic_vec_                = varVector<unsigned char>(dbcontent_vars::var_cat021_nucp_nic_);
     cat021_sil_vec_                     = varVector<unsigned char>(dbcontent_vars::var_cat021_sil_);
     cat021_pos_check_failed_vec_        = varVector<bool>(dbcontent_vars::var_cat021_pos_check_failed_);
+    cat021_range_check_failed_vec_      = varVector<bool>(dbcontent_vars::var_cat021_range_check_failed_);
+    cat021_cpr_valid_vec_               = varVector<bool>(dbcontent_vars::var_cat021_cpr_valid_);
+    cat021_ldpj_vec_                    = varVector<bool>(dbcontent_vars::var_cat021_ldpj_);
 
     meta_pos_std_dev_x_m_vec_           = metaVarVector<double>(dbcontent_vars::meta_var_x_stddev_);
     meta_pos_std_dev_y_m_vec_           = metaVarVector<double>(dbcontent_vars::meta_var_y_stddev_);
@@ -168,11 +181,17 @@ void TargetReportAccessor::cacheVectors()
     //velocity / angle
     meta_speed_vec_       = metaVarVector<double>(dbcontent_vars::meta_var_ground_speed_);
     meta_track_angle_vec_ = metaVarVector<double>(dbcontent_vars::meta_var_track_angle_);
+    cat021_sgv_stp_vec_   = varVector<bool>(dbcontent_vars::var_cat021_sgv_stp_);
+    cat021_toa_pos_vec_   = varVector<float>(dbcontent_vars::var_cat021_toa_pos_);
 
     //velocity accuracy
     cat021_nucv_nacv_vec_ = varVector<unsigned char>(dbcontent_vars::var_cat021_nucv_nacv_);
     cat062_vx_stddev_vec_ = varVector<double>(dbcontent_vars::var_cat062_vx_stddev_);
     cat062_vy_stddev_vec_ = varVector<double>(dbcontent_vars::var_cat062_vy_stddev_);
+
+    //acceleration
+    cat062_ax_vec_ = varVector<double>(dbcontent_vars::var_cat062_ax_);
+    cat062_ay_vec_ = varVector<double>(dbcontent_vars::var_cat062_ay_);
 
     //mode a
     meta_mode_a_vec_          = metaVarVector<unsigned int>(dbcontent_vars::meta_var_m3a_);
@@ -262,6 +281,26 @@ boost::optional<unsigned char> TargetReportAccessor::sil(unsigned int index) con
 boost::optional<bool> TargetReportAccessor::posCheckFailed(unsigned int index) const
 {
     return getOptional<bool>(cat021_pos_check_failed_vec_, index);
+}
+
+boost::optional<bool> TargetReportAccessor::rangeCheckFailed(unsigned int index) const
+{
+    return getOptional<bool>(cat021_range_check_failed_vec_, index);
+}
+
+boost::optional<bool> TargetReportAccessor::cprValid(unsigned int index) const
+{
+    return getOptional<bool>(cat021_cpr_valid_vec_, index);
+}
+
+boost::optional<bool> TargetReportAccessor::localDecodingPositionJump(unsigned int index) const
+{
+    return getOptional<bool>(cat021_ldpj_vec_, index);
+}
+
+boost::optional<bool> TargetReportAccessor::sgvStopped(unsigned int index) const
+{
+    return getOptional<bool>(cat021_sgv_stp_vec_, index);
 }
 
 boost::optional<unsigned int> TargetReportAccessor::ecat(unsigned int index) const
@@ -441,6 +480,17 @@ boost::optional<targetReport::BarometricAltitude> TargetReportAccessor::barometr
     return {};
 }
 
+boost::optional<float> TargetReportAccessor::trackedBarometricAltitude(unsigned int index) const
+{
+    // CAT062 Barometric Altitude Calculated (I062/135) - the tracker's own
+    // altitude output, in contrast to the per-sensor measured FL that
+    // barometricAltitude() prefers for trackers
+    if (!is_tracker_)
+        return boost::none;
+
+    return getOptional<float>(cat062_alt_sec_vec_, index);
+}
+
 boost::optional<float> TargetReportAccessor::geometricAltitude(unsigned int index) const
 {
     return getOptional<float>(cat021_alt_geo_vec_, index);
@@ -457,6 +507,14 @@ boost::optional<double> TargetReportAccessor::radarAzimuth(unsigned int index) c
 
 /**
 */
+boost::optional<bool> TargetReportAccessor::adsbToATimeSource(unsigned int index) const
+{
+    if (!is_adsb_)
+        return {};
+
+    return cat021_toa_pos_vec_ && !cat021_toa_pos_vec_->isNull(index);
+}
+
 boost::optional<targetReport::Velocity> TargetReportAccessor::velocity(unsigned int index) const
 {
     if (meta_speed_vec_
@@ -531,6 +589,19 @@ boost::optional<targetReport::VelocityAccuracy> TargetReportAccessor::velocityAc
 
 /**
 */
+boost::optional<targetReport::Acceleration> TargetReportAccessor::acceleration(unsigned int index) const
+{
+    if (!cat062_ax_vec_ ||
+        !cat062_ay_vec_ ||
+        cat062_ax_vec_->isNull(index) ||
+        cat062_ay_vec_->isNull(index))
+        return {};
+
+    return targetReport::Acceleration(cat062_ax_vec_->get(index), cat062_ay_vec_->get(index));
+}
+
+/**
+*/
 boost::optional<double> TargetReportAccessor::trackAngle(unsigned int index) const
 {
     return getOptional<double>(meta_track_angle_vec_, index);
@@ -541,6 +612,11 @@ boost::optional<double> TargetReportAccessor::trackAngle(unsigned int index) con
 boost::optional<bool> TargetReportAccessor::groundBit(unsigned int index) const
 {
     return getOptional<bool>(meta_ground_bit_vec_, index);
+}
+
+boost::optional<unsigned char> TargetReportAccessor::detectionType(unsigned int index) const
+{
+    return getOptional<unsigned char>(meta_detection_type_vec_, index);
 }
 
 boost::optional<targetReport::ModeACode> TargetReportAccessor::modeACode(unsigned int index) const

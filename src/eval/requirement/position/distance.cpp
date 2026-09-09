@@ -22,8 +22,10 @@
 #include "logger.h"
 #include "util/timeconv.h"
 #include "sectorlayer.h"
+#include "stringconv.h"
 
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 using namespace Utils;
@@ -36,10 +38,12 @@ PositionDistance::PositionDistance(
         const std::string& name, const std::string& short_name, const std::string& group_name,
             double prob, COMPARISON_TYPE prob_check_type, float ref_min_accuracy, EvaluationCalculator& calculator,
             float threshold_value, COMPARISON_TYPE threshold_value_check_type,
-            bool failed_values_of_interest)
+            bool failed_values_of_interest,
+            bool use_averaging, float averaging_window_s)
     : PositionBaseProb(name, short_name, group_name, prob, prob_check_type, ref_min_accuracy, calculator),
       threshold_value_(threshold_value), threshold_value_check_type_(threshold_value_check_type),
-      failed_values_of_interest_(failed_values_of_interest)
+      failed_values_of_interest_(failed_values_of_interest),
+      use_averaging_(use_averaging), averaging_window_s_(averaging_window_s)
 {
 }
 
@@ -56,6 +60,16 @@ COMPARISON_TYPE PositionDistance::thresholdValueCheckType() const
 bool PositionDistance::failedValuesOfInterest() const
 {
     return failed_values_of_interest_;
+}
+
+bool PositionDistance::useAveraging() const
+{
+    return use_averaging_;
+}
+
+float PositionDistance::averagingWindow() const
+{
+    return averaging_window_s_;
 }
 
 std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate (
@@ -98,6 +112,18 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
 
     unsigned int num_distances {0};
     string comment;
+
+    // averaged position mode: usable samples with their error vector in the local
+    // Cartesian frame, compared per averaging window after the walk below
+    struct AveragingSample
+    {
+        ptime                     timestamp;
+        dbContent::TargetPosition tst_pos;
+        dbContent::TargetPosition ref_pos;
+        double                    dx {0};
+        double                    dy {0};
+    };
+    std::vector<AveragingSample> samples;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
@@ -206,6 +232,34 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
         bool   transform_ok;
         double distance;
 
+        if (use_averaging_)
+        {
+            // collect the error vector, one comparison per averaging window follows below
+            double sample_distance, sample_angle;
+
+            std::tie(transform_ok, sample_distance, sample_angle) = ogr_geo2cart.distanceAngleCart(
+                        ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
+            traced_assert(transform_ok);
+
+            if (std::isnan(sample_distance) || std::isinf(sample_distance)
+                    || std::isnan(sample_angle) || std::isinf(sample_angle))
+            {
+                addDetail(timestamp, tst_pos,
+                            ref_pos, // ref_pos
+                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
+                            num_comp_passed, num_comp_failed,
+                            "Distance Invalid");
+                ++num_pos_calc_errors;
+                continue;
+            }
+
+            samples.push_back({timestamp, tst_pos, *ref_pos,
+                               sample_distance * std::cos(sample_angle),
+                               sample_distance * std::sin(sample_angle)});
+            continue;
+        }
+
         std::tie(transform_ok, distance) = ogr_geo2cart.distanceL2Cart(ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
         traced_assert(transform_ok);
 
@@ -241,6 +295,67 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
                     num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                     num_comp_passed, num_comp_failed,
                     comment);
+    }
+
+    // averaged position mode: one comparison per averaging window, on the mean
+    // position error of the test reports inside it. A window is anchored at the
+    // first sample not yet consumed, so a data gap does not create empty windows.
+    if (use_averaging_)
+    {
+        const time_duration averaging_window = Time::partialSeconds(averaging_window_s_);
+
+        size_t sample_idx = 0;
+
+        while (sample_idx < samples.size())
+        {
+            const ptime window_begin = samples[sample_idx].timestamp;
+            const ptime window_end   = window_begin + averaging_window;
+
+            double sum_dx {0}, sum_dy {0};
+            size_t next_idx = sample_idx;
+
+            while (next_idx < samples.size() && samples[next_idx].timestamp < window_end)
+            {
+                sum_dx += samples[next_idx].dx;
+                sum_dy += samples[next_idx].dy;
+                ++next_idx;
+            }
+
+            const size_t num_in_window = next_idx - sample_idx;
+            traced_assert(num_in_window > 0);
+
+            const double mean_dx = sum_dx / (double) num_in_window;
+            const double mean_dy = sum_dy / (double) num_in_window;
+            const double mean_distance = std::sqrt(mean_dx * mean_dx + mean_dy * mean_dy);
+
+            ++num_distances;
+
+            const bool window_passed = compareValue(mean_distance, threshold_value_, threshold_value_check_type_);
+
+            if (window_passed)
+            {
+                ++num_comp_passed;
+                comment = "Passed";
+            }
+            else
+            {
+                ++num_comp_failed;
+                comment = "Failed";
+            }
+
+            comment += " (mean position error of " + to_string(num_in_window) + " reports over "
+                    + String::doubleToStringPrecision(
+                           Time::partialSeconds(samples[next_idx - 1].timestamp - window_begin), 1) + " s)";
+
+            addDetail(window_begin, samples[sample_idx].tst_pos,
+                        samples[sample_idx].ref_pos,
+                        true, mean_distance, window_passed, // pos_inside, value, check_passed
+                        num_pos, num_no_ref, num_pos_inside, num_pos_outside,
+                        num_comp_passed, num_comp_failed,
+                        comment);
+
+            sample_idx = next_idx;
+        }
     }
 
     //        logdbg << "'" << name_ << "': utn " << target_data.utn_

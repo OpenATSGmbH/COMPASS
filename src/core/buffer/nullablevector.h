@@ -238,7 +238,7 @@ void NullableVector<T>::set(unsigned int index, T value)
     if (BUFFER_PEDANTIC_CHECKING)
         traced_assert(index < data_.size());
 
-    data_.at(index) = value;
+    data_.at(index) = std::move(value);
     unsetNull(index);
 
     // logdbg2 << "size " << size_ << " max_size " << max_size_;

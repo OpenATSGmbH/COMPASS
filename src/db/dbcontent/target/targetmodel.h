@@ -79,7 +79,8 @@ public:
         ColModeCMin,
         ColModeCMax,
         ColADSBCount,
-        ColADSBMOPS
+        ColADSBMOPS,
+        ColDubiousRef
     };
 
     TargetModel(DBContentManager& dbcont_manager);
@@ -178,8 +179,8 @@ protected:
 
     QStringList               table_columns_   { "UTN", "Comment", "Category", "Eval", "Eval Excluded",
                                "#Updates", "Begin", "End", "Duration", "ACIDs", "ACADs", "M3/A", "MC Min", "MC Max",
-                               "ADS-B", "MOPS"};
-    std::vector<int>          main_columns_    { ColUTN, ColComment, ColCategory, ColUseInEval };
+                               "ADS-B", "MOPS", "Dubious Ref"};
+    std::vector<int>          main_columns_    { ColUTN, ColComment, ColCategory, ColUseInEval, ColDubiousRef };
     std::vector<int>          eval_columns_    { ColUseEvalDetails };
     std::vector<int>          duration_columns_{ ColNumUpdates, ColBegin, ColEnd, ColDuration };
     std::vector<int>          mode_s_columns_  { ColACIDs, ColACADs };

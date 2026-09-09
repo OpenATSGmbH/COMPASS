@@ -211,6 +211,7 @@ public:
     Result updateResultHeader(const TaskResult& result);
     Result updateResultContent(const TaskResult& result);
     ResultT<std::vector<std::shared_ptr<TaskResult>>> loadResults();
+    ResultT<nlohmann::json> loadResultContent(unsigned int result_id);
     ResultT<std::shared_ptr<ResultReport::SectionContent>> loadContent(ResultReport::Section* section, unsigned int content_id);
 
     void clearTableContent(const std::string& table_name);

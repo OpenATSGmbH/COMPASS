@@ -251,7 +251,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("reconstruct_references_cfg", po::value<std::string>(&reconstruct_references_cfg_),
          "reconstructor configuration as JSON string, e.g. ''{\"current_reconstructor_str\": \"Scoring + UMKalman\"}''")
         ("analyze_data_source", po::value<std::string>(&analyze_data_source_ds_type_),
-         "analyze data sources of the given DSType, e.g. 'MLAT'")
+         "analyze data sources of the given DSType, 'MLAT', 'ADSB' or 'SMR'")
         ("analyze_parameters", po::value<std::string>(&analyze_data_source_cfg_),
          "analyze data source parameters as JSON string, e.g. ''{\"line_id_tst\": 0, \"cell_size_m\": 50.0, \"inspector_settings\": {\"MLATCoverageInspector\": {\"pd_method_int\": 1}}}'' (including one pair of single quotes)")
         ("load_data", po::bool_switch(&load_data_), "load data after start")

@@ -19,6 +19,7 @@
 #include "taskresultswidget.h"
 
 #include "compass.h"
+#include "dialogs.h"
 #include "createartasassociationstask.h"
 #include "jsonimporttask.h"
 #include "radarplotpositioncalculatortask.h"
@@ -161,6 +162,14 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(analyze_adsb_data_source_task_);
         addTask(class_name, analyze_adsb_data_source_task_.get());
     }
+    else if (class_name == "AnalyzeSMRDataSourceTask")
+    {
+        traced_assert(!analyze_smr_data_source_task_);
+        analyze_smr_data_source_task_.reset(
+            new AnalyzeDataSourceTask(child_json, this, "SMR", "AnalyzeSMRDataSourceTask"));
+        traced_assert(analyze_smr_data_source_task_);
+        addTask(class_name, analyze_smr_data_source_task_.get());
+    }
     else if (class_name == "ReportExport")
     {
         traced_assert(!report_export_);
@@ -249,6 +258,13 @@ void TaskManager::checkSubConfigurables()
         traced_assert(analyze_adsb_data_source_task_);
     }
 
+    if (!analyze_smr_data_source_task_)
+    {
+        generateSubConfigurableFromConfig("AnalyzeSMRDataSourceTask",
+                                          "AnalyzeSMRDataSourceTask0");
+        traced_assert(analyze_smr_data_source_task_);
+    }
+
     if (!report_export_)
     {
         generateSubConfigurableFromConfig("ReportExport", "ReportExport0");
@@ -294,6 +310,7 @@ void TaskManager::shutdown()
     reconstruct_references_task_ = nullptr;
     analyze_mlat_data_source_task_ = nullptr;
     analyze_adsb_data_source_task_ = nullptr;
+    analyze_smr_data_source_task_ = nullptr;
 }
 
 /**
@@ -386,6 +403,27 @@ AnalyzeDataSourceTask& TaskManager::analyzeADSBDataSourceTask() const
 {
     traced_assert(analyze_adsb_data_source_task_);
     return *analyze_adsb_data_source_task_;
+}
+
+/**
+ */
+AnalyzeDataSourceTask& TaskManager::analyzeSMRDataSourceTask() const
+{
+    traced_assert(analyze_smr_data_source_task_);
+    return *analyze_smr_data_source_task_;
+}
+
+/**
+ */
+AnalyzeDataSourceTask* TaskManager::analyzeDataSourceTask(const std::string& ds_type) const
+{
+    if (ds_type == "MLAT")
+        return analyze_mlat_data_source_task_.get();
+    if (ds_type == "ADSB")
+        return analyze_adsb_data_source_task_.get();
+    if (ds_type == "SMR")
+        return analyze_smr_data_source_task_.get();
+    return nullptr;
 }
 
 /**
@@ -680,12 +718,13 @@ ResultT<nlohmann::json> TaskManager::exportResult(const std::string& name,
     auto r = result(name);
     traced_assert(r);
 
-    ResultReport::ReportExportDialog dlg(*r, 
-                                         *report_export_, 
+    ResultReport::ReportExportDialog dlg(*r,
+                                         *report_export_,
                                          mode,
                                          no_interaction_mode,
                                          export_dir,
-                                         section);
+                                         section,
+                                         Dialogs::statusDialogParent()); // centered over the main window
     dlg.exec();
 
     return dlg.result();
@@ -758,6 +797,40 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
     }
 
     return result.result();
+}
+
+/**
+ * Reads the stored content JSON of a result. Used by TaskResult for its on demand content load.
+ * The read and the JSON parse of a large report take seconds, so they run as an async task and
+ * the result widget is blocked while they run.
+ */
+ResultT<nlohmann::json> TaskManager::loadResultContent(unsigned int result_id) const
+{
+    //already running in a worker thread, e.g. the report loading task of TaskResultsWidget?
+    //then read directly, a dialog and widget calls are only allowed in the main thread
+    if (QThread::currentThread() != QCoreApplication::instance()->thread())
+        return compass_.dbInterface().loadResultContent(result_id);
+
+    ResultT<nlohmann::json> result;
+
+    if (widget_)
+        widget_->setDisabled(true);
+
+    auto result_ptr = &result;
+
+    auto cb = [ this, result_ptr, result_id ] (const AsyncTaskState&, AsyncTaskProgressWrapper&)
+    {
+        *result_ptr = compass_.dbInterface().loadResultContent(result_id);
+        return Result::succeeded();
+    };
+
+    AsyncFuncTask task(cb, "Loading", "Loading report content", false);
+    task.runAsyncDialog();
+
+    if (widget_)
+        widget_->setDisabled(false);
+
+    return result;
 }
 
 /**

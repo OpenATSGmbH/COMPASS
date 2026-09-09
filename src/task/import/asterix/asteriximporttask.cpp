@@ -16,6 +16,7 @@
  */
 
 #include "asteriximporttask.h"
+#include "dialogs.h"
 #include "asteriximportprobeaggregator.h"
 #include "asterixnetworkreplaysender.h"
 #include "asterixreporthelpers.h"
@@ -505,6 +506,26 @@ void ASTERIXImportTask::configurejASTERIX() const
 
     auto& ctx_mgr = compass_.dbContextManager();
 
+    // contexts store their decoding configs from creation time - categories added to
+    // the jASTERIX definitions later would otherwise stay disabled forever, since
+    // decodeNoCategories() above only re-enables categories present in the context
+    for (auto& cat_it : jasterix_->categories())
+    {
+        unsigned int cat = cat_it.first;
+
+        if (!ctx_mgr.hasAsterixConfig(cat))
+        {
+            loginf << "adding missing decoding config for cat " << cat
+                   << " to context '" << ctx_mgr.activeContext().name()
+                   << "' with default edition '" << cat_it.second->defaultEdition() << "'";
+
+            ctx_mgr.getOrCreateAsterixConfig(cat,
+                                             cat_it.second->defaultEdition(),
+                                             cat_it.second->defaultREFEdition(),
+                                             cat_it.second->defaultSPFEdition());
+        }
+    }
+
     // Build a signature of what we're about to apply so we can decide whether to log
     // verbosely (first run, or config changed since last run) or quietly. Configure
     // is called on every refreshjASTERIX (i.e. once per analyze line) - full per-cat
@@ -942,6 +963,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     refreshjASTERIX();
 
     jASTERIX::add_artas_md5_hash = true;
+    jASTERIX::add_record_data = true; // original record bytes as hex, mapped to Record Data
 
     // set up projections
     ProjectionManager& proj_man = compass_.projectionManager();
@@ -1937,7 +1959,7 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
     {
         file_progress_dialog_.reset(
             new QProgressDialog(("Files '" + source_.filesAsString() + "'").c_str(), "Abort", 0, 100,
-                                QApplication::activeWindow()));
+                                Dialogs::statusDialogParent()));
         file_progress_dialog_->setWindowTitle("Importing ASTERIX Recording(s)");
         file_progress_dialog_->setWindowModality(Qt::ApplicationModal);
         file_progress_dialog_->setAutoClose(false);

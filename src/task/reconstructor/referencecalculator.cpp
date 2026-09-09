@@ -292,6 +292,15 @@ void ReferenceCalculator::generateLineMeasurements(const dbContent::Reconstructo
         reconstruction::Measurement mm;
         reconstructor_.createMeasurement(mm, tr_info, &target);
 
+        //stopped state: stiffen the process noise so the forced zero-movement
+        //model holds its accuracy-weighted anchor position over the standing
+        //window (reference calculation only, association chains are untouched)
+        if (mm.stopped)
+        {
+            mm.Q_var        = (float)(settings_.Q_std_stopped * settings_.Q_std_stopped);
+            mm.Q_var_interp = mm.Q_var;
+        }
+
         // if (tr_info.track_number_.value() == 69 || target.utn_ == 69)
         // {
         //     loginf << "POS (" << mm.lat << "," << mm.lon << ") " << "(" << (mm.vx.has_value() ? mm.vx.value() : 666) << "," << (mm.vy.has_value() ? mm.vy.value() : 666) << ")";
@@ -299,6 +308,38 @@ void ReferenceCalculator::generateLineMeasurements(const dbContent::Reconstructo
         // }
 
         line_measurements.push_back(mm);
+    }
+
+    //@HACK temporary debug logging for the standing-jump investigation:
+    //per-line summary of the estimated position accuracies of UTN 7
+    if (target.utn_ == 7 && !line_measurements.empty())
+    {
+        std::vector<double> stddevs;
+        stddevs.reserve(line_measurements.size());
+
+        size_t num_stopped = 0;
+
+        for (const auto& mm : line_measurements)
+        {
+            if (mm.x_stddev.has_value() && mm.y_stddev.has_value())
+                stddevs.push_back(0.5 * (mm.x_stddev.value() + mm.y_stddev.value()));
+            if (mm.stopped)
+                ++num_stopped;
+        }
+
+        if (!stddevs.empty())
+        {
+            std::sort(stddevs.begin(), stddevs.end());
+
+            loginf << "UTN7ACC dbcont " << dbcontent_id
+                   << " ds " << sensor_id
+                   << " line " << line_id
+                   << " n " << stddevs.size()
+                   << " stopped " << num_stopped
+                   << " stddev min " << stddevs.front()
+                   << " med " << stddevs[ stddevs.size() / 2 ]
+                   << " max " << stddevs.back();
+        }
     }
 
     addMeasurements(target.utn_, dbcontent_id, line_measurements);

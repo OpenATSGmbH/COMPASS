@@ -101,7 +101,9 @@ public:
     static const std::string SectorOverviewTableName;
 
 protected:
-    bool resultUsed(const std::shared_ptr<Single>& result) const;
+    /// if a single result contributes to the sector sum. Overridden where a result
+    /// without an own value still carries counts for the sector, see JoinedDetection
+    virtual bool resultUsed(const std::shared_ptr<Single>& result) const;
     void iterateSingleResults(const SingleResultFunc& func,
                               const SingleResultFunc& func_used,
                               const SingleResultFunc& func_unused) const;

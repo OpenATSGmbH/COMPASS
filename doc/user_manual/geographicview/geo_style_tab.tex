@@ -49,7 +49,7 @@ The following presets exist (default 'Color by Speed'):
  \item Color by Line ID: Color per line ID (L1-L4), with the symbol still driven by DBContent
  \item Color by Num Contributing Sensors: Number of contributing sensors of a CAT062 target report (sum of REF.CSN.REP and REF.CST.REP)
  \item Color by Speed: Gradient by ground speed
- \item Color by Track Age: Color by track age, with 4 intervals plus 'None'
+ \item Color by Track Age: Color by the age of a selected age variable, with 4 intervals plus 'None' (see \nameref{sec:style_track_age})
  \item Color by Track Angle: Color by direction of movement (N / E / S / W gradient)
 \end{itemize}
 \ \\
@@ -59,6 +59,29 @@ Per-preset parameters (e.g. colors per interval, time interval used, variable us
 Please note that after changing the active preset a redraw or reload may be triggered automatically. \\
 
 \includegraphics[width=0.5cm]{../../data/icons/hint.png} Please also note that for presets relying on a specific data variable (e.g. flight level, ADS-B quality, contributing sensors), the corresponding data has to be present in the loaded target reports; otherwise the affected target reports are styled with the 'None' color.
+
+\subsubsection{Color by Track Age}
+\label{sec:style_track_age}
+
+The 'Color by Track Age' preset colors each target report by the age of a selected age variable, e.g. the time since the last PSR detection updated the track. In the configuration tree the following parameters exist:
+
+\begin{itemize}
+ \item Variable: Age variable used for the coloring (default 'PSR Update Age')
+ \item Interval: Time interval \textbf{i} in seconds, defining the interval limits (default 4 seconds)
+ \item '$<=$ i s Color', '$>$ i s Color', '$>$ 2i s Color', '$>$ 3i s Color': Colors of the 4 age intervals, interpolated between the limits
+ \item None Color: Color of target reports without a value in the selected variable
+\end{itemize}
+\ \\
+
+Clicking on the 'Variable' item opens a menu listing the age variables of the CAT062 and RefTraj DBContents. Two markers are used in this list:
+
+\begin{itemize}
+ \item A trailing asterisk marks variables existing in both the CAT062 and the RefTraj DBContent. Selecting such a variable colors the target reports of both, using the respective variable of each.
+ \item \includegraphics[width=0.5cm]{../../data/icons/db_empty.png} marks variables for which the opened database contains no data, e.g. RefTraj variables before reference trajectories have been calculated. Selecting such a variable results in all target reports being drawn in the 'None' color.
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please note that selecting a variable adds it to the loaded data, therefore triggering a reload.
 
 \subsubsection{Style Example}
 

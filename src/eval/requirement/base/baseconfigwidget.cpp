@@ -25,6 +25,7 @@
 #include <QLineEdit>
 #include <QFormLayout>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QPlainTextEdit>
 
 using namespace std;
@@ -64,6 +65,27 @@ BaseConfigWidget::BaseConfigWidget(BaseConfig& cfg)
     connect(comment_edit, &QPlainTextEdit::textChanged, this, &BaseConfigWidget::changedCommentSlot);
 
     form_layout_->addRow("Comment", comment_edit);
+
+    // target selection
+    target_selection_box_ = new QComboBox();
+
+    for (auto selection : {TargetSelection::All,
+                           TargetSelection::Cooperative,
+                           TargetSelection::NonCooperative})
+        target_selection_box_->addItem(targetSelectionLongString(selection).c_str(),
+                                       QVariant((int) selection));
+
+    target_selection_box_->setCurrentIndex(
+                target_selection_box_->findData(QVariant((int) config_.targetSelection())));
+
+    target_selection_box_->setToolTip("Target class the requirement is evaluated for. Targets of"
+                                      " another class are reported as ignored and do not enter the"
+                                      " sector sum");
+
+    connect(target_selection_box_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &BaseConfigWidget::changedTargetSelectionSlot);
+
+    form_layout_->addRow("Target Selection", target_selection_box_);
 
     main_layout->addLayout(form_layout_);
 
@@ -107,6 +129,20 @@ void BaseConfigWidget::changedShortNameSlot()
         config_.shortName(value_str);
     else
         logerr << "impossible name '" << value_str << "'";
+}
+
+void BaseConfigWidget::changedTargetSelectionSlot(int index)
+{
+    traced_assert(target_selection_box_);
+
+    if (index < 0)
+        return;
+
+    TargetSelection selection = (TargetSelection) target_selection_box_->itemData(index).toInt();
+
+    loginf << "target selection '" << targetSelectionString(selection) << "'";
+
+    config_.targetSelection(selection);
 }
 
 void BaseConfigWidget::changedCommentSlot()

@@ -76,6 +76,26 @@ using namespace Utils;
 using namespace std;
 using namespace dbContent;
 
+namespace
+{
+/**
+ * Property list used to insert report contents. The JSON text is produced once by the
+ * content itself, so the column is written as a plain string here and no second
+ * serialization takes place. The database column is VARCHAR either way, and the read
+ * path keeps using SectionContent::DBPropertyList, which parses the text back.
+ */
+const PropertyList& reportContentsInsertProperties()
+{
+    static const PropertyList props({
+        ResultReport::SectionContent::DBColumnContentID,
+        ResultReport::SectionContent::DBColumnResultID,
+        ResultReport::SectionContent::DBColumnType,
+        Property(ResultReport::SectionContent::DBColumnJSONContent.name(), PropertyDataType::STRING) });
+
+    return props;
+}
+}
+
 const string PROP_TIMESTAMP_MIN_NAME {"timestamp_min"};
 const string PROP_TIMESTAMP_MAX_NAME {"timestamp_max"};
 const string PROP_LATITUDE_MIN_NAME  {"latitude_min"};
@@ -2124,7 +2144,12 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
 
         //write contents
         {
-            size_t chunk_size_bytes = 1e09;
+            // Write the accumulated contents out early and often. A JSON tree in
+            // memory is several times larger than its serialized form, so a large
+            // chunk keeps gigabytes alive until it is flushed.
+            const size_t chunk_size_bytes = 16 * 1024 * 1024;
+            const size_t chunk_max_rows   = 500;
+
             size_t current_bytes    = 0;
             size_t current_row      = 0;
 
@@ -2133,11 +2158,11 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
             NullableVector<unsigned int>*   content_id_vec = nullptr;
             NullableVector<unsigned int>*   result_id_vec  = nullptr;
             NullableVector<int>*            type_vec       = nullptr;
-            NullableVector<nlohmann::json>* content_vec    = nullptr;
+            NullableVector<std::string>*    content_vec    = nullptr;
 
             for (const auto& c : report_contents)
             {
-                if (!buffer || current_bytes > chunk_size_bytes)
+                if (!buffer || current_bytes > chunk_size_bytes || current_row >= chunk_max_rows)
                 {
                     //insert old buffer if available
                     if (buffer)
@@ -2147,12 +2172,12 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
                     }
 
                     //create new buffer
-                    buffer.reset(new Buffer(ResultReport::SectionContent::DBPropertyList));
+                    buffer.reset(new Buffer(reportContentsInsertProperties()));
 
                     content_id_vec = &buffer->get<unsigned int>(ResultReport::SectionContent::DBColumnContentID.name());
                     result_id_vec  = &buffer->get<unsigned int>(ResultReport::SectionContent::DBColumnResultID.name());
                     type_vec       = &buffer->get<int>(ResultReport::SectionContent::DBColumnType.name());
-                    content_vec    = &buffer->get<nlohmann::json>(ResultReport::SectionContent::DBColumnJSONContent.name());
+                    content_vec    = &buffer->get<std::string>(ResultReport::SectionContent::DBColumnJSONContent.name());
 
                     current_bytes = 0;
                     current_row   = 0;
@@ -2162,13 +2187,16 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
 
                 //!this might trigger recomputations from temporarily generated data,
                 //which is immediately thrown away afterwards!
-                auto   c_json  = c->toJSON();
-                size_t c_bytes = c_json.dump().size();
+                //serialize once, straight to text, each content into its own string
+                std::string c_text;
+                c->toJSONText(c_text);
+
+                size_t c_bytes = c_text.size();
 
                 content_id_vec->set(current_row, c->contentID());
                 result_id_vec->set(current_row, result_id);
                 type_vec->set(current_row, (int)c->contentType());
-                content_vec->set(current_row, c_json);
+                content_vec->set(current_row, std::move(c_text));
 
                 current_bytes += c_bytes;
                 current_row   += 1;
@@ -2375,7 +2403,9 @@ ResultT<std::vector<std::shared_ptr<TaskResult>>> DBInterface::loadResults()
 
     try
     {
-        auto cmd = sqlGenerator().getSelectCommand(TaskResult::DBTableName, TaskResult::DBPropertyList, "");
+        // the content column is left out on purpose, it holds the whole report section tree.
+        // TaskResult reads it through loadResultContent() when the result is first used.
+        auto cmd = sqlGenerator().getSelectCommand(TaskResult::DBTableName, TaskResult::DBHeaderPropertyList, "");
         auto result = execute(*cmd);
         if (result->hasError() || !result->containsData() || !result->buffer())
             throw std::runtime_error("Could not obtain results table");
@@ -2386,7 +2416,6 @@ ResultT<std::vector<std::shared_ptr<TaskResult>>> DBInterface::loadResults()
         if (!b->hasProperty(TaskResult::DBColumnID) ||
             !b->hasProperty(TaskResult::DBColumnName) ||
             !b->hasProperty(TaskResult::DBColumnJSONHeader) ||
-            !b->hasProperty(TaskResult::DBColumnJSONContent) ||
             !b->hasProperty(TaskResult::DBColumnResultType))
             throw std::runtime_error("Results table invalid");
 
@@ -2395,7 +2424,6 @@ ResultT<std::vector<std::shared_ptr<TaskResult>>> DBInterface::loadResults()
         auto& id_vec      = b->get<unsigned int>(TaskResult::DBColumnID.name());
         auto& name_vec    = b->get<std::string>(TaskResult::DBColumnName.name());
         auto& header_vec  = b->get<nlohmann::json>(TaskResult::DBColumnJSONHeader.name());
-        auto& content_vec = b->get<nlohmann::json>(TaskResult::DBColumnJSONContent.name());
         auto& type_vec    = b->get<int>(TaskResult::DBColumnResultType.name());
 
         results.resize(nr);
@@ -2408,7 +2436,6 @@ ResultT<std::vector<std::shared_ptr<TaskResult>>> DBInterface::loadResults()
             const auto& result_type  = type_vec.get(i);
             const auto& result_id    = id_vec.get(i);
             const auto& json_header  = header_vec.get(i);
-            const auto& json_content = content_vec.get(i);
 
             //create result of given type
             results[ i ] = task_man.createResult(result_id, (task::TaskResultType)result_type);
@@ -2420,16 +2447,17 @@ ResultT<std::vector<std::shared_ptr<TaskResult>>> DBInterface::loadResults()
             if (!header.fromJSON(json_header))
                 throw std::runtime_error("Could not read header of result '" + result_name + "'");
 
-            //try to read result
-            if (!results[ i ]->fromJSON(json_content))
-                throw std::runtime_error("Could not read content of result '" + result_name + "'");
+            //name and type come from the table, the content is not read yet
+            results[ i ]->name(result_name);
 
-            //configure result using header information (update state etc.)
+            //configure result using header information (metadata, update state etc.)
             results[ i ]->configure(header);
 
+            //mark the content as stored but not read
+            results[ i ]->setContentStored();
+
             //final checks
-            if (results[ i ]->name() != result_name ||
-                results[ i ]->type() != result_type ||
+            if (results[ i ]->type() != result_type ||
                 results[ i ]->id()   != result_id)
                 throw std::runtime_error("Result '" + result_name + "' obtains invalid content");
         }
@@ -2449,8 +2477,62 @@ ResultT<std::vector<std::shared_ptr<TaskResult>>> DBInterface::loadResults()
 }
 
 /**
+ * Reads the content JSON of a single result. Called by TaskResult when the result is first used.
  */
-ResultT<std::shared_ptr<ResultReport::SectionContent>> DBInterface::loadContent(ResultReport::Section* section, 
+ResultT<nlohmann::json> DBInterface::loadResultContent(unsigned int result_id)
+{
+    traced_assert(ready());
+
+    if (!existsTaskResultsTable())
+        return ResultT<nlohmann::json>::failed("Results table does not exist");
+
+    try
+    {
+        auto filter = db::SQLFilter(TaskResult::DBColumnID.name(),
+                                    std::to_string(result_id),
+                                    db::SQLFilter::ComparisonOp::Is).statement();
+
+        auto cmd = sqlGenerator().getSelectCommand(TaskResult::DBTableName,
+                                                   PropertyList({ TaskResult::DBColumnJSONContent }),
+                                                   filter);
+        auto result = execute(*cmd);
+
+        if (result->hasError() || !result->containsData() || !result->buffer())
+            throw std::runtime_error("Could not obtain result content");
+
+        auto b = result->buffer();
+
+        if (!b->hasProperty(TaskResult::DBColumnJSONContent))
+            throw std::runtime_error("Results table invalid");
+
+        size_t nr = b->size();
+        if (nr == 0)
+            throw std::runtime_error("Result id not found in table");
+        else if (nr > 1)
+            throw std::runtime_error("Multiple result ids found in table");
+
+        auto& content_vec = b->get<nlohmann::json>(TaskResult::DBColumnJSONContent.name());
+
+        if (content_vec.isNull(0))
+            throw std::runtime_error("Result content is empty");
+
+        return ResultT<nlohmann::json>::succeeded(content_vec.get(0));
+    }
+    catch(const std::exception& ex)
+    {
+        logerr << "could not load result content: " << ex.what();
+        return ResultT<nlohmann::json>::failed(ex.what());
+    }
+    catch(...)
+    {
+        logerr << "could not load result content: Unknown error";
+        return ResultT<nlohmann::json>::failed("Unknown error");
+    }
+}
+
+/**
+ */
+ResultT<std::shared_ptr<ResultReport::SectionContent>> DBInterface::loadContent(ResultReport::Section* section,
                                                                                 unsigned int content_id)
 {
     traced_assert(ready());

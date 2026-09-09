@@ -206,6 +206,9 @@ QVariant TargetModel::data(const QModelIndex& index, int role) const
                     append_row(table_columns_.at(column), getCellContent(target, (Columns)column).toString());
             }
 
+            if (target.hasDubiousRef())
+                append_row(table_columns_.at(ColDubiousRef), target.dubiousRefStr().c_str());
+
             tooltip_html += "</table></body></html>";
             return tooltip_html;
         }
@@ -355,6 +358,8 @@ QVariant TargetModel::getCellContent(const Target& target, Columns col) const
         return target.adsbCount() ? target.adsbCount() : QVariant();
     case ColADSBMOPS:
         return target.adsbMopsStr().c_str();
+    case ColDubiousRef:
+        return target.hasDubiousRef() ? QVariant(target.dubiousRefTotal()) : QVariant();
     }
 
     return QVariant();
@@ -650,6 +655,9 @@ void TargetModel::createNewTargets(const std::map<unsigned int, dbContent::Recon
                 // set adsb stuff
         tgt.adsbCount(tgt_it.second.adsb_count_);
         tgt.adsbMOPSCount(tgt_it.second.adsb_mops_count_);
+
+        // dubious reference detection counts, only written when non-empty
+        tgt.dubiousRefCounts(tgt_it.second.dubious_ref_counts_);
 
         //if (tgt_it.second.createdFromTentative())
         //    tgt.comment("Created from tentative");

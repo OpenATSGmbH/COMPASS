@@ -517,6 +517,14 @@ void MainWindow::createMenus ()
             this, &MainWindow::analyzeADSBDataSourceSlot);
     analyze_menu_->addAction(analyze_adsb_action);
 
+    QAction* analyze_smr_action = new QAction("SMR");
+    analyze_smr_action->setToolTip(
+        "Analyze one or more SMR (CAT010) data sources from multiple angles "
+        "(data items, scan-based sensor coverage, position accuracy, unassociated target reports)");
+    connect(analyze_smr_action, &QAction::triggered,
+            this, &MainWindow::analyzeSMRDataSourceSlot);
+    analyze_menu_->addAction(analyze_smr_action);
+
     QAction* eval_action = new QAction("Evaluate");
     eval_action->setToolTip("Evaluate test against reference data according to defined standards");
     connect(eval_action, &QAction::triggered, this, &MainWindow::evaluateSlot);
@@ -1143,6 +1151,13 @@ void MainWindow::analyzeADSBDataSourceSlot()
     compass_.taskManager().analyzeADSBDataSourceTask().showDialog();
 }
 
+void MainWindow::analyzeSMRDataSourceSlot()
+{
+    loginf;
+
+    compass_.taskManager().analyzeSMRDataSourceTask().showDialog();
+}
+
 void MainWindow::evaluateSlot()
 {
     loginf;
@@ -1191,6 +1206,8 @@ void MainWindow::resetViewsMenuSlot()
         msg_box.setText( "Please wait...");
         msg_box.setStandardButtons(QMessageBox::NoButton);
         msg_box.setWindowModality(Qt::ApplicationModal);
+        // do not steal os focus from other applications when popping up
+        msg_box.setAttribute(Qt::WA_ShowWithoutActivating, true);
         msg_box.show();
 
         setVisible(false);
@@ -1280,7 +1297,8 @@ void MainWindow::autoResumeTimerSlot()
 
     traced_assert(!auto_resume_dialog_);
 
-    auto_resume_dialog_.reset(new AutoResumeDialog(compass_.autoLiveRunningResumeAskWaitTime() * 60));
+    // parented to the main window so the dialog is centered over it
+    auto_resume_dialog_.reset(new AutoResumeDialog(compass_.autoLiveRunningResumeAskWaitTime() * 60, this));
 
             // min to s
     connect (auto_resume_dialog_.get(), &AutoResumeDialog::resumeSignal, this, &MainWindow::autoResumeResumeSlot);
@@ -1363,16 +1381,6 @@ void MainWindow::toggleFullscreenSlot()
 void MainWindow::loadButtonSlot()
 {
     loginf;
-
-    if (compass_.viewManager().getViews().size() == 0)
-    {
-        QMessageBox m_warning(QMessageBox::Warning, "Loading Not Possible",
-                              "There are no Views active, so loading is not possible.",
-                              QMessageBox::Ok, this);
-
-        m_warning.exec();
-        return;
-    }
 
     traced_assert(load_button_);
 

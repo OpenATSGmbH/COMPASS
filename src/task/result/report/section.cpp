@@ -151,7 +151,7 @@ int Section::row() const
 
 /**
 */
-std::string Section::heading() const
+const std::string& Section::heading() const
 {
     return heading_;
 }
@@ -209,6 +209,8 @@ Section& Section::addSubSection (const std::string& heading)
     auto subsec = std::make_shared<Section>(heading, compoundHeading(), this, report_);
 
     sub_sections_.push_back(subsec);
+    sub_section_indexes_[ heading ] = sub_sections_.size() - 1;
+
     traced_assert(hasSubSection(heading));
 
     return *subsec;
@@ -645,13 +647,13 @@ void Section::perTargetSection(bool value)
 */
 Section* Section::findSubSection(const std::string& heading)
 {
-    for (auto& sec_it : sub_sections_)
-    {
-        if (sec_it->heading() == heading)
-            return sec_it.get();
-    }
+    auto it = sub_section_indexes_.find(heading);
+    if (it == sub_section_indexes_.end())
+        return nullptr;
 
-    return nullptr;
+    traced_assert(it->second < sub_sections_.size());
+
+    return sub_sections_.at(it->second).get();
 }
 
 /**
@@ -977,6 +979,7 @@ bool Section::fromJSON_impl(const nlohmann::json& j)
             return false;
 
         sub_sections_.push_back(section);
+        sub_section_indexes_[ section->heading() ] = sub_sections_.size() - 1;
     }
 
     return true;

@@ -147,6 +147,8 @@ public:
     virtual double xyCov(const kalman::Matrix& P) const;
     virtual boost::optional<double> xVel(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
     virtual boost::optional<double> yVel(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
+    virtual boost::optional<double> vxVar(const kalman::Matrix& P) const { return boost::optional<double>(); }
+    virtual boost::optional<double> vyVar(const kalman::Matrix& P) const { return boost::optional<double>(); }
     virtual boost::optional<double> xAcc(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
     virtual boost::optional<double> yAcc(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
 
@@ -154,6 +156,11 @@ public:
     virtual size_t numSubmodels() const { return 0; }
     virtual KalmanFilter* subModel(size_t idx) { return nullptr; }
     virtual const KalmanFilter* subModel(size_t idx) const { return nullptr; }
+
+    // force a static (zero-movement) motion model based on exogenous
+    // standstill knowledge (e.g. ADS-B SGV STP bit, fixed targets);
+    // no-op for filters without a static sub-model
+    virtual void setForceStaticModel(bool ok) {}
 
     bool isDebug() const { return debug_; }
     

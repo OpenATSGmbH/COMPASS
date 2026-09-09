@@ -133,12 +133,21 @@ protected:
     void loadData(const EvaluationCalculator& calculator); // blocking; harvested in loadingDone
     std::map<std::string, std::shared_ptr<Buffer>> fetchData();
 
+    // update cycles reported by the test data sources, used by the status-message
+    // PD method. Empty when the sources report none.
+    bool hasStatusCycles(unsigned int ds_id, unsigned int line_id) const;
+    const std::vector<boost::posix_time::ptime>& statusCycles(unsigned int ds_id,
+                                                              unsigned int line_id) const;
+
 private:
     // per-content load WHERE for eval, built from the shared clause toolkit
     // (ROI bbox / UTN set / timestamp bounds) - no global-filter hijack
     std::string loadFilterClause(const std::string& dbcontent_name,
                                  const EvaluationCalculator& calculator);
     void loadingDone();
+
+    // isolated batch load of the start-of-update-cycle messages of the test data sources
+    void loadStatusCycles(const EvaluationCalculator& calculator);
 
     COMPASS& compass_;
     DBContentManager& dbcontent_man_;
@@ -155,6 +164,9 @@ private:
     std::shared_ptr<LoadOperation>                 load_op_; // isolated batch load, released after harvest
     std::map<std::string, std::shared_ptr<Buffer>> raw_data_;
     bool                                           raw_data_available_ = false;
+
+    // ds_id -> line_id -> sorted start-of-update-cycle timestamps
+    std::map<unsigned int, std::map<unsigned int, std::vector<boost::posix_time::ptime>>> status_cycles_;
 
     bool                        use_timestamp_filter_ {false}; // enables/disables BOTH application of timestamp load filter and exclusion windows load filter
     boost::posix_time::ptime    load_timestamp_begin_;         // ts filter begin (added to timestamp load filter)

@@ -1,0 +1,52 @@
+\subsection{EUROCAE ED-117}
+\label{sec:appendix_eval_std_ed117}
+
+The 'EUROCAE ED-117' standard covers the MOPS for Mode S multilateration systems intended for airport surface surveillance, and is mapped from the edition of January 2004. \\
+
+The performance requirements of the source document address Mode S transmitting targets. The standard therefore sets 'Ignore Primary Only Targets', see the 'Standard' tab of the Evaluation dialog. Mode A/C-only targets are not excluded, since the 2004 edition does not state the restriction in the same form as the later edition. If the assessed system is expected to report Mode A/C-only targets as well, 'Ignore Mode A/C Only Targets' may be set in addition. \\
+
+\subsubsection{Requirement Mapping}
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | l | X | }
+    \hline
+    \textbf{Group} & \textbf{Req.} & \textbf{COMPASS Requirement, Configuration and Source Section} \\ \hline
+    Apron & PU & \nameref{sec:eval_req_detection}, 70\%, update interval 1 s (3.3.2.1) \\ \hline
+    Stand & PU & \nameref{sec:eval_req_detection}, 50\%, update interval 1 s (3.3.2.2) \\ \hline
+    Maneuvering Area & PU & \nameref{sec:eval_req_detection}, 95\%, update interval 1 s (3.3.2.3) \\ \hline
+    Airborne & PU & \nameref{sec:eval_req_detection}, 95\%, update interval 1 s (3.3.2.4) \\ \hline
+    Maneuvering Area & PD & \nameref{sec:eval_req_detection}, 99.9\%, update interval 2 s (3.3.4) \\ \hline
+    Stand & PD & \nameref{sec:eval_req_detection}, 99.9\%, update interval 5 s (3.3.4) \\ \hline
+    Maneuvering Area & HPA1 & \nameref{sec:eval_req_pos_distance}, 7.5 m at 95\% (3.3.3) \\ \hline
+    Maneuvering Area & HPA2 & \nameref{sec:eval_req_pos_distance}, 12 m at 99\% (3.3.3) \\ \hline
+    Apron & HPA1 & \nameref{sec:eval_req_pos_distance}, 7.5 m at 95\%, apron area centerlines (3.3.3) \\ \hline
+    Apron & HPA2 & \nameref{sec:eval_req_pos_distance}, 12 m at 99\%, apron area centerlines (3.3.3) \\ \hline
+    Stand & HPA & \nameref{sec:eval_req_pos_distance}, 20 m, with 'Use Averaging' and a 5 s averaging window (3.3.3) \\ \hline
+    Airborne RT-2.5nm & HPA & \nameref{sec:eval_req_pos_distance}, 20 m at 95\% (3.3.3) \\ \hline
+    Airborne 2.5-5nm & HPA & \nameref{sec:eval_req_pos_distance}, 40 m at 95\% (3.3.3) \\ \hline
+    Common & PID TA & \nameref{sec:eval_req_id_correct}, 99.9\%, Mode S address (3.3.5) \\ \hline
+    Common & PID MA & \nameref{sec:eval_req_id_correct}, 99.9\%, Mode 3/A code (3.3.5) \\ \hline
+    Common & PID ID & \nameref{sec:eval_req_id_correct}, 99.9\%, aircraft identification (3.3.5) \\ \hline
+    Common & PFID TA & \nameref{sec:eval_req_id_false}, below 1e-6, Mode S address (3.3.11) \\ \hline
+    Common & PFID MA & \nameref{sec:eval_req_id_false}, below 1e-6, Mode 3/A code (3.3.11) \\ \hline
+    Common & PFID ID & \nameref{sec:eval_req_id_false}, below 1e-6, aircraft identification (3.3.11) \\ \hline
+    Common & PFD & \nameref{sec:eval_req_pos_distance}, position error above 50 m, below 1e-4 (3.3.10) \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+\ \\
+
+\subsubsection{Implementation Notes}
+
+\begin{itemize}
+\item \textbf{Identification split into three requirements.} The source document states one figure for the correct identity. The identity under assessment consists of the 24-bit address, the Mode 3/A code and the aircraft identification. Three instances are configured, one per item, each carrying the stated figure. A missing Mode 3/A code or aircraft identification counts as not correct, so these two instances also measure presence. A single instance with 'Require Correctness of All' set gives the combined figure instead, if that reading is preferred.
+\item \textbf{Detection method.} The detection instances use the status message method, see \nameref{sec:eval_req_detection}. Where the system under test reports its update cycles, the expected periods are taken from those cycles rather than from a nominal cadence. Where it does not, the time difference method applies, with a miss tolerance of 0.5 s to cover the cadence jitter of an event driven multilateration output.
+\item \textbf{Stand position accuracy.} The source document states this requirement on an averaged position over a 5 s period. The 'Use Averaging' option of the Position Distance requirement implements it. The document states no confidence level for it, so the configured probability is 100\%, meaning every averaging window has to pass.
+\item \textbf{Maneuvering area.} ICAO defines the maneuvering area as runways plus taxiways. Both the update and the detection requirement are therefore held in one group, rather than in separate runway and taxiway groups.
+\item \textbf{False identification period.} The source document states this requirement over a 5 s period per target. The Identification False requirement counts per target report. The configured value is therefore an approximation, and is noted as such in the requirement comment.
+\item \textbf{False detection.} The definition of a false target report in the source document also covers spurious reports. Only the outlier part is configured, since the site test procedure of the document measures that part with a test vehicle. The \nameref{sec:eval_req_extra_data} requirement can be added to cover the spurious part, at the cost of a second figure that has to be added by hand.
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that} an assessment of the identification requirements needs reference data carrying the identity of the test vehicle. The GPS trail import can set the Mode S address, the Mode 3/A code and the callsign. With a calculated reference trajectory the address figure is of limited value, since the association itself uses the address.

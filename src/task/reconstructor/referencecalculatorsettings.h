@@ -122,7 +122,7 @@ struct ReferenceCalculatorSettings
     //reinit related
     //int    min_chain_size = 2;
     double min_dt         = 0.001;
-    double max_dt_ground  = 5.0;
+    double max_dt_ground  = 6.0;
     double max_dt_air     = 10.0;
     double max_distance   = 50000.0;
 
@@ -131,6 +131,11 @@ struct ReferenceCalculatorSettings
 
     //stopped adsb tracking related
     bool track_stopped_adsb = true;
+
+    //process noise std dev applied to measurements in stopped state - keeps the
+    //forced zero-movement model anchored at the accuracy-weighted position over
+    //the whole standing window instead of random-walking between source groups
+    double Q_std_stopped = 0.1;
 
     //result resampling related
     bool                            resample_result     = true;

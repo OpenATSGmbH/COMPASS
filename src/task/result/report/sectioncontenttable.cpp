@@ -1359,6 +1359,45 @@ void SectionContentTable::copySelectedRow(bool export_headings)
  */
 void SectionContentTable::toJSON_impl(nlohmann::json& j) const
 {
+    fillJSON(j, false);
+}
+
+/**
+ * Serializes to JSON text. The rows are the bulk of a table and are already JSON values,
+ * so they are moved into the temporary tree instead of deep-copied, and moved back
+ * afterwards. The table keeps its data, the copy is avoided.
+ */
+void SectionContentTable::toJSONText(std::string& str) const
+{
+    nlohmann::json j;
+
+    auto restore_rows = [ & ] ()
+    {
+        auto it = j.find(FieldRows);
+        if (it != j.end() && it->is_array())
+            rows_ = std::move(it->get_ref<nlohmann::json::array_t&>());
+    };
+
+    try
+    {
+        fillCommonJSON(j);
+        fillJSON(j, true);
+
+        str = j.dump();
+    }
+    catch (...)
+    {
+        restore_rows();
+        throw;
+    }
+
+    restore_rows();
+}
+
+/**
+ */
+void SectionContentTable::fillJSON(nlohmann::json& j, bool move_rows) const
+{
     //call base
     SectionContent::toJSON_impl(j);
 
@@ -1392,8 +1431,11 @@ void SectionContentTable::toJSON_impl(nlohmann::json& j) const
     //write content only if not on demand
     if (!isOnDemand())
     {
-        //write rows
-        j[ FieldRows ] = rows_;
+        //write rows, moved when the tree is only used to produce text
+        if (move_rows)
+            j[ FieldRows ] = std::move(rows_);
+        else
+            j[ FieldRows ] = rows_;
 
         //write annotations
         nlohmann::json j_annos = nlohmann::json::array();

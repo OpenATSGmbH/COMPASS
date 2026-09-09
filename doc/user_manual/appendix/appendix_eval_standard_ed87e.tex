@@ -1,0 +1,89 @@
+\subsection{EUROCAE ED-87E}
+\label{sec:appendix_eval_std_ed87e}
+
+The 'EUROCAE ED-87E' standard covers the MASPS for Advanced Surface Movement Guidance and Control Systems (A-SMGCS), and is mapped from the edition of 2022. It assesses the output of the Surveillance Service of an A-SMGCS, that is the fused track output, not an individual sensor. \\
+
+The performance figures are stated per sub-volume of the coverage volume. The standard therefore holds one requirement group per area, 'Manoeuvring Area', 'Apron Taxiways' and 'Active Stands', plus a 'Common' group for the identification figures. Each group has to be assigned to the sector layer describing that area. \\
+
+Unlike the multilateration standards, this standard sets none of the target filters of the 'Standard' tab. The position accuracy applies to every target, the detection and identification figures are restricted per requirement instead, see the target selection notes below. \\
+
+\subsubsection{Requirement Mapping}
+
+The performance figures are taken from Table 3-1 of the source document, the assessment procedures from Section 5.3.
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | l | X | }
+    \hline
+    \textbf{Group} & \textbf{Req.} & \textbf{COMPASS Requirement, Configuration and Source Section} \\ \hline
+    Manoeuvring Area & PTR & \nameref{sec:eval_req_detection}, 99\%, update interval 1 s, cooperative targets (3.3.6.1) \\ \hline
+    Apron Taxiways & PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, cooperative targets (3.3.6.1) \\ \hline
+    Active Stands & PTR & \nameref{sec:eval_req_detection}, 95\%, update interval 5 s, cooperative targets (3.3.6.1) \\ \hline
+    Manoeuvring Area & PRI PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, non-cooperative targets (Table 3-1 NOTE 19, ED-116 3.4.2) \\ \hline
+    Apron Taxiways & PRI PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, non-cooperative targets (Table 3-1 NOTE 19, ED-116 3.4.2) \\ \hline
+    Active Stands & PRI PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, non-cooperative targets (Table 3-1 NOTE 19, ED-116 3.4.2) \\ \hline
+    Manoeuvring Area & TC/GAPS3 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps from 3 s to 5 s, at most 1e-3 (3.3.13, 5.3.14) \\ \hline
+    Manoeuvring Area & TC/GAPS5 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps above 5 s, at most 1e-6 (3.3.13, 5.3.14) \\ \hline
+    Apron Taxiways & TC/GAPS3 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps from 3 s to 5 s, at most 1e-3 (3.3.13, 5.3.14) \\ \hline
+    Apron Taxiways & TC/GAPS5 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps above 5 s, at most 1e-5 (3.3.13, 5.3.14) \\ \hline
+    Active Stands & TC/GAPS5 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps above 5 s, at most 1e-3 (3.3.13, 5.3.14) \\ \hline
+    Manoeuvring Area & RPA & \nameref{sec:eval_req_pos_distance}, 12 m at 95\% (3.3.8) \\ \hline
+    Apron Taxiways & RPA & \nameref{sec:eval_req_pos_distance}, 20 m at 95\% (3.3.8) \\ \hline
+    Active Stands & RPA & \nameref{sec:eval_req_pos_distance}, 25 m at 95\% (3.3.8) \\ \hline
+    Manoeuvring Area & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 60 m, at most 1e-4, cooperative targets (3.3.6.2) \\ \hline
+    Apron Taxiways & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 100 m, at most 1e-4, cooperative targets (3.3.6.2) \\ \hline
+    Active Stands & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 125 m, at most 1e-4, cooperative targets (3.3.6.2) \\ \hline
+    Manoeuvring Area & PRI PFTR & \nameref{sec:eval_req_pos_distance}, position error above 60 m, at most 1e-4, non-cooperative targets (Table 3-1 NOTE 19) \\ \hline
+    Apron Taxiways & PRI PFTR & \nameref{sec:eval_req_pos_distance}, position error above 100 m, at most 1e-4, non-cooperative targets (Table 3-1 NOTE 19) \\ \hline
+    Active Stands & PRI PFTR & \nameref{sec:eval_req_pos_distance}, position error above 125 m, at most 1e-4, non-cooperative targets (Table 3-1 NOTE 19) \\ \hline
+    Manoeuvring Area & RVA & \nameref{sec:eval_req_speed}, 5 m/s or 10\% of the reference speed, the higher, at 90\% (3.3.10) \\ \hline
+    Apron Taxiways & RVA & \nameref{sec:eval_req_speed}, 5 m/s or 10\% of the reference speed, the higher, at 90\% (3.3.10) \\ \hline
+    Manoeuvring Area & TCA & \nameref{sec:eval_req_track_angle}, 15 degrees at 90\%, minimum speed 3 m/s (3.3.18) \\ \hline
+    Apron Taxiways & TCA & \nameref{sec:eval_req_track_angle}, 15 degrees at 90\%, minimum speed 3 m/s (3.3.18) \\ \hline
+    Active Stands & TCA & \nameref{sec:eval_req_track_angle}, 30 degrees at 90\%, minimum speed 3 m/s (3.3.18) \\ \hline
+    Common & PID TA & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, Mode S address, cooperative targets (3.3.7.2) \\ \hline
+    Common & PID MA & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, Mode 3/A code, cooperative targets (3.3.7.2) \\ \hline
+    Common & PID ID & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, aircraft identification, cooperative targets (3.3.7.2) \\ \hline
+    Common & PFID TA & \nameref{sec:eval_req_id_false}, at most 1e-4, Mode S address, cooperative targets (3.3.7.3) \\ \hline
+    Common & PFID MA & \nameref{sec:eval_req_id_false}, at most 1e-4, Mode 3/A code, cooperative targets (3.3.7.3) \\ \hline
+    Common & PFID ID & \nameref{sec:eval_req_id_false}, at most 1e-4, aircraft identification, cooperative targets (3.3.7.3) \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+\ \\
+
+The identification instances are held in the area groups rather than in the 'Common' group where the figure differs per area. The source document states 99.9\% on the manoeuvring area and on the apron taxiways, and 98\% on the stands. \\
+
+\subsubsection{Implementation Notes}
+
+\begin{itemize}
+\item \textbf{Cooperative and non-cooperative targets.} The source document states that the detection and false report figures of a non-cooperative target may be reduced to the figure of the non-cooperative sensor, and it states the identification figures for cooperative targets only. Each requirement therefore carries a target selection, see \nameref{sec:eval_config}. The PTR and PFTR instances assess cooperative targets, the PRI PTR and PRI PFTR instances assess non-cooperative targets against the ED-116 figure, and the position, velocity, course and track continuity instances assess every target.
+\item \textbf{Non-cooperative figures.} The source document names ED-116, the MOPS for surface movement radar, as the relaxed reference but states no separate value. The PRI instances therefore carry the detection figure of ED-116 Section 3.4.2, that is 90\% at a data renewal rate of one second, and keep the false report figure of the area, since ED-116 states its false alarm rate per scan over the whole coverage rather than per target report.
+\item \textbf{Target report rate.} The source document counts fixed update periods derived from the target report update rate. The detection instances therefore use the status message method, see \nameref{sec:eval_req_detection}, so that the periods come from the update cycles the system under test reports. Where the system reports no cycles, the time difference method applies, with a miss tolerance of 0.5 s.
+\item \textbf{Track continuity.} The source document expresses this requirement as a number of gaps over a number of target reports, and distinguishes two gap length bands. The 'Use Gap Count' option of the Detection requirement implements that form, and one instance per band is configured. Every gap counts once, independent of its length.
+\item \textbf{Gap length threshold.} The gap length filters select on the measured gap. On the stands the miss tolerance is switched off, so that the band boundary of the source document holds as written.
+\item \textbf{False target report.} An outlier is defined as a report more than five times the reported position accuracy of the area away from the true position. The threshold is configured accordingly, with a strict comparison. The spurious part of the definition is not assessed, see below.
+\item \textbf{Identification split.} The source document states one figure for the correct identity. The identity consists of the 24-bit address, the Mode 3/A code and the aircraft identification. Three instances are configured, one per item, each carrying the stated figure. A missing Mode 3/A code or aircraft identification counts as not correct, so these two instances also measure presence.
+\item \textbf{Reported velocity accuracy.} The source document restricts this requirement to the speed, the direction of movement is covered by the course accuracy. The Speed requirement compares the speed, with the percentage branch taken on the reference speed once it exceeds the absolute value. On the surface the absolute value applies almost everywhere. The requirement is not applicable on stands and is therefore absent from that group.
+\item \textbf{Target course accuracy.} The source document notes that the course corresponds to the track angle of the ASTERIX specifications, and it states a minimum speed below which no course is assessed. Both are configured.
+\item \textbf{Target report update rate.} This requirement is covered by the target report rate requirement, as Section 5.3.9 of the source document states.
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that} the source document recommends a calibrated test vehicle for the detection, position, velocity and course figures, and targets of opportunity for the false report and track continuity figures. The position accuracy is stated for a point target. With targets of opportunity the reported position of a large aircraft may sit anywhere inside its target position containment radius, which enters the measured figure without being an error of the system under test. \\
+
+\subsubsection{The EUROCAE ED-87D Standard}
+
+The 'EUROCAE ED-87D' standard, mapped from the edition of June 2019, is supplied as well and is configured identically. The two editions differ in the position renewal time-out period, the target display latency confidence level and the maximum target velocities, none of which can be assessed from recorded surveillance data. The section numbers of the source document are one higher than in the 2022 edition, which is reflected in the requirement comments. \\
+
+\subsubsection{Not Assessed}
+
+The following requirements of the source document are not part of the supplied definition:
+\begin{itemize}
+\item \textbf{Target display latency.} The requirement addresses the delay between the time of a report and the moment its content appears on the display. It cannot be measured from the recorded output of the Surveillance Service.
+\item \textbf{Position and identification renewal time-out periods, target report initiation time.} These three compare the output of the Surveillance Service against the input of the contributing sensors. They become assessable when the sensor level recordings are imported next to the fused track output, which the supplied definition does not assume.
+\item \textbf{Report resolutions.} The position, velocity and time resolution requirements address the granularity of the ASTERIX data fields, that is a property of the format rather than a per-target figure. They are checked by inspecting the recorded fields.
+\item \textbf{Spurious false target reports.} The definition of a false target report also covers a report that relates to no real target at all. The assessment procedure of the source document calls for visual observation. The \nameref{sec:eval_req_extra_data} requirement gives a related figure, at the cost of a second value that has to be added by hand.
+\item \textbf{Per-polygon assessment.} The source document splits the coverage volume into polygons with a statistically significant number of samples each, and assesses each one separately. COMPASS reports per sector layer. One sector layer per polygon gives the same split, see \nameref{sec:ui_configure_sectors}. For a visual check, the grid annotations of the detection and position results show the spatial distribution inside one sector layer, see \nameref{sec:eval_inspect}.
+\item \textbf{Surveillance capacity, coverage volume and maximum target velocities.} These are design and simulation figures and cannot be assessed from a recording.
+\end{itemize}

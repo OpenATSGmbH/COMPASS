@@ -229,8 +229,33 @@ Files:
 - [eval/requirement/detection/detection.cpp](detection.cpp)
 - User manual section: [doc/user_manual/eval/eval_req_det.tex](../../../../doc/user_manual/eval/eval_req_det.tex)
 
-The COMPASS "Detection" requirement is a textbook example of the
-time-difference method.
+The COMPASS "Detection" requirement implements both methods. The
+`pd_calculation_method` parameter selects which one applies:
+
+- `time_difference` (default) - the walk described in this section.
+- `status_message` - the period-based method of section 2.1, using the
+  update cycles the test data source reports. `EvaluationManager`
+  loads the start-of-update-cycle messages of the test data sources
+  through `DBContentStatusInfo` (CAT019 message type 001 for MLAT
+  systems, CAT010 message type 002 for SMRs), restricted to the test
+  sources and the test line.
+  `Detection::evaluateStatusCycles()` then groups
+  `round(update_interval / median_cycle_length)` consecutive reported
+  cycles into one expected period, so a requirement asking for
+  detection within 2 s on a 1 s cycle source groups 2 cycles. A period
+  counts as expected when it lies fully inside a reference period, and
+  as a miss when the target has no test report inside it. Miss
+  tolerance, minimum and maximum gap length and the stationary update
+  interval do not apply, the period boundaries come from the source.
+  Without cycles, with more than one active test data source, or with
+  fewer than 2 cycles, the time-difference walk below applies instead.
+
+Independent of that switch, `use_gap_count` selects what the walk
+counts. It is described in section 3.6 and always uses the
+time-difference walk, so a `status_message` setting on a gap count
+instance has no effect.
+
+The rest of this section describes the time-difference walk.
 
 ### 3.1 Inputs
 
@@ -246,6 +271,8 @@ time-difference method.
   - `Use Minimum Gap Length [s]` - gaps below this are ignored.
   - `Use Maximum Gap Length [s]` - gaps above this are ignored
     (avoids counting target-out-of-coverage periods).
+  - `Use Gap Count` - count gaps over test reports instead of missed
+    update intervals over expected update intervals, see section 3.6.
   - `Hold for any Target` - threshold must hold per individual target,
     not only at the sector aggregate.
 
@@ -310,12 +337,20 @@ every reference period contributes its full duration as one gap.
 
 For each gap the **miss test** is applied:
 
-1. If miss tolerance is enabled, subtract the tolerance from the gap.
-2. If the (adjusted) gap is below the configured minimum gap length,
-   it is not a miss.
-3. If the (adjusted) gap is above the configured maximum gap length,
-   it is not a miss (treated as out-of-coverage).
-4. Otherwise the gap is a miss iff it exceeds the update interval.
+1. If the **raw** gap is below the configured minimum gap length, it
+   is not a miss.
+2. If the **raw** gap is above the configured maximum gap length, it
+   is not a miss (treated as out-of-coverage).
+3. Otherwise, if miss tolerance is enabled, subtract the tolerance
+   from the gap. The gap is a miss iff the adjusted gap exceeds the
+   update interval.
+
+The order matters. The standards state the gap length thresholds on
+the measured gap, so the tolerance must not shift them: with a 3 s
+minimum gap length and a 0.5 s tolerance, gaps of 3 s and more count,
+not gaps of 3.5 s and more. The tolerance covers cadence jitter of the
+system under test and therefore belongs to the update interval test
+only.
 
 When a gap is classified as a miss, the number of missed UIs added to
 #MUI is `floor(adjusted_gap / update_interval)`. The miss-count step
@@ -349,16 +384,55 @@ passes only if **every individual target** meets the threshold; a
 single failing target fails the requirement regardless of the
 aggregate value.
 
+### 3.6 Gap count mode
+
+EUROCAE ED-117A section 6.4.8 and EUROCAE ED-87E section 5.3.14 state
+their gap requirements as a **number of gaps over a number of target
+reports**, not as missed time over expected time. `use_gap_count`
+switches the walk to that form. Everything above stays as it is, only
+the two sums change:
+
+- Every gap that passes the miss test of section 3.4 adds **1**,
+  independent of its length and of the update interval. A 3 s gap and
+  a 30 s gap count the same. The update interval therefore no longer
+  influences the result, except through the miss test itself.
+- The expected total is the **number of test reports the walk
+  accepted**: reports inside a reference period, inside the sector,
+  and not excluded. Reference duration and update interval do not
+  enter it.
+
+Leading gaps, trailing gaps and reference periods without any test
+report count as one gap each, for the same reason a mid-period gap
+does: the reference shows the target existed and the system under test
+reported nothing.
+
+Two consequences follow, and both are handled in the result classes:
+
+- More gaps than accepted reports are possible, so the check that
+  misses never exceed the expected total is off in this mode.
+- A target whose reports all fall outside the sector has no accepted
+  report and therefore no probability of its own. Its gaps still
+  belong to the sector, so the sector sum takes them even though the
+  per-target result carries no value.
+
+The report labels follow the mode: `#Reports` and `#Gaps` instead of
+`#EUIs` and `#MUIs`.
+
 ## 4. Differences vs the General Definitions
 
 The COMPASS implementation is faithful to the operational
-"probability-of-update" definition (§1.2) and uses the time-difference
-method (§2.2). Notable specifics worth knowing:
+"probability-of-update" definition (§1.2). It uses the time-difference
+method (§2.2) by default and the period-based method (§2.1) when
+`pd_calculation_method` is `status_message` and the test data source
+reports its update cycles. The points below describe the
+time-difference walk, which is the more intricate of the two:
 
 - **Reference time-based denominator.** #EUI is derived from reference
   coverage time, not from a count of reference reports. The reference
   sample rate therefore does not directly inflate or deflate PD as long
-  as it is dense enough to define continuous time periods.
+  as it is dense enough to define continuous time periods. In gap count
+  mode (§3.6) the denominator is a report count instead, which is what
+  the gap requirements of ED-117A and ED-87E ask for.
 - **No per-report association.** A test report is not paired against an
   individual reference report. Misses are inferred from gaps; matched
   detections are not labeled (only "no miss in this gap").

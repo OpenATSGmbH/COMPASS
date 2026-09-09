@@ -620,11 +620,20 @@ void KalmanChain::insertAt(int idx,
         needs_reestimate_ = true;
     }
 
-    bool ok = checkIntegrity();
+    //the chain is ordered before this insert, so shifting elements right from the insertion
+    //point leaves every existing adjacency intact. only the one or two adjacencies created by
+    //the inserted element can violate the ordering, and checking those is exact.
+    //a full scan here would be O(n) per insert, so O(n^2) over the lifetime of a chain.
+    //the bulk insert path does the same kind of O(1) boundary check.
+    const int n_updates    = (int)updates_.size();
+    const int idx_inserted = idx < 0 ? n_updates - 1 : idx;
+
+    bool ok = (idx_inserted <= 0             || updates_[ idx_inserted - 1 ].t <= updates_[ idx_inserted ].t) &&
+              (idx_inserted >= n_updates - 1 || updates_[ idx_inserted ].t     <= updates_[ idx_inserted + 1 ].t);
 
     if (!ok)
     {
-        int n = (int)updates_.size();
+        int n = n_updates;
 
         int idx_before = idx < 0 ? n - 2 : idx - 1;
         int idx_after  = idx < 0 ? -1    : idx + 1;

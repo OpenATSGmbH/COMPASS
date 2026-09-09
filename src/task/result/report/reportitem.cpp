@@ -140,13 +140,20 @@ nlohmann::json ReportItem::jsonProperty(const std::string& name) const
 
 /**
 */
+void ReportItem::fillCommonJSON(nlohmann::json& j) const
+{
+    j[ FieldName        ] = name_;
+    j[ FieldProperties  ] = properties_;
+    j[ FieldExportFlags ] = export_flags_.to_ulong();
+}
+
+/**
+*/
 nlohmann::json ReportItem::toJSON() const
 {
     nlohmann::json j;
 
-    j[ FieldName        ] = name_;
-    j[ FieldProperties  ] = properties_;
-    j[ FieldExportFlags ] = export_flags_.to_ulong();
+    fillCommonJSON(j);
 
     toJSON_impl(j);
 

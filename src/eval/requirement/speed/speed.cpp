@@ -236,8 +236,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
 
         spd_diff = fabs(ref_spd->speed_ - *tst_spd_ms);
 
-        if (use_percent_if_higher_ && *tst_spd_ms * threshold_percent_ > threshold_value_) // use percent based threshold
-            tmp_threshold_value = *tst_spd_ms * threshold_percent_;
+        // percent-based threshold on the reference speed, the "actual speed" of the standards
+        float percent_threshold_value = static_cast<float>(ref_spd->speed_) * threshold_percent_ / 100.0f;
+
+        if (use_percent_if_higher_ && percent_threshold_value > threshold_value_) // use percent based threshold
+            tmp_threshold_value = percent_threshold_value;
         else
             tmp_threshold_value = threshold_value_;
 

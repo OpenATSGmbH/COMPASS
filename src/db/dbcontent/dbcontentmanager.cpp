@@ -67,6 +67,10 @@ DBContentManager::DBContentManager(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass), compass_(compass)
 {
     registerParameter("show_data_counts", &show_data_counts_, false);
+    registerParameter("variable_selection_by_group", &variable_selection_by_group_, false);
+    registerParameter("variable_selection_content", &variable_selection_content_, std::string());
+    registerParameter("variable_selection_hide_status_contents",
+                      &variable_selection_hide_status_contents_, true);
 
     logdbg << "creating subconfigurables";
 

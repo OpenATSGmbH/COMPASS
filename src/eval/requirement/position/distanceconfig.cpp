@@ -41,6 +41,9 @@ PositionDistanceConfig::PositionDistanceConfig(
     registerParameter("threshold_value_check_type", (unsigned int*)&threshold_value_check_type_,
                       (unsigned int) COMPARISON_TYPE::LESS_THAN_OR_EQUAL);
     registerParameter("failed_values_of_interest", &failed_values_of_interest_, true);
+
+    registerParameter("use_averaging", &use_averaging_, false);
+    registerParameter("averaging_window_s", &averaging_window_s_, 5.0f);
 }
 
 PositionDistanceConfig::~PositionDistanceConfig()
@@ -51,7 +54,8 @@ std::shared_ptr<Base> PositionDistanceConfig::createRequirement()
 {
     shared_ptr<PositionDistance> req = make_shared<PositionDistance>(
                 name_, short_name_, group_.name(), prob_, prob_check_type_, ref_min_accuracy_, calculator_,
-                threshold_value_, threshold_value_check_type_, failed_values_of_interest_);
+                threshold_value_, threshold_value_check_type_, failed_values_of_interest_,
+                use_averaging_, averaging_window_s_);
 
     return req;
 }
@@ -86,6 +90,26 @@ void PositionDistanceConfig::failedValuesOfInterest(bool value)
     failed_values_of_interest_ = value;
 }
 
+bool PositionDistanceConfig::useAveraging() const
+{
+    return use_averaging_;
+}
+
+void PositionDistanceConfig::useAveraging(bool value)
+{
+    use_averaging_ = value;
+}
+
+float PositionDistanceConfig::averagingWindow() const
+{
+    return averaging_window_s_;
+}
+
+void PositionDistanceConfig::averagingWindow(float value)
+{
+    averaging_window_s_ = value;
+}
+
 BaseConfigWidget* PositionDistanceConfig::createWidget()
 {
     return new PositionDistanceConfigWidget(*this);
@@ -113,5 +137,12 @@ void PositionDistanceConfig::addToReport (std::shared_ptr<ResultReport::Report> 
     table.addRow({"Failed Values are of Interest",
                   "If the distances of interest are the ones not passing the check",
                   String::boolToString(failed_values_of_interest_)});
+
+    table.addRow({"Use Averaged Position", "One comparison per averaging window, using the mean"
+                  " position error of the test reports in that window, instead of one comparison"
+                  " per test report",
+                  String::boolToString(use_averaging_)});
+    table.addRow({"Averaging Window [s]", "Length of one averaging window",
+                  averaging_window_s_});
 }
 }

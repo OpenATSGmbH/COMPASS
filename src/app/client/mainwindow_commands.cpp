@@ -484,9 +484,13 @@ bool RTCommandAnalyzeDataSource::run_impl()
         return false;
     }
 
-    AnalyzeDataSourceTask& task = (ds_type_ == "ADSB")
-        ? compass_->taskManager().analyzeADSBDataSourceTask()
-        : compass_->taskManager().analyzeMLATDataSourceTask();
+    AnalyzeDataSourceTask* task_ptr = compass_->taskManager().analyzeDataSourceTask(ds_type_);
+    if (!task_ptr)
+    {
+        setResultMessage("Unknown DSType '" + ds_type_ + "' (expected MLAT, ADSB or SMR)");
+        return false;
+    }
+    AnalyzeDataSourceTask& task = *task_ptr;
 
     if (task.dsType() != ds_type_)
     {
@@ -535,12 +539,17 @@ void RTCommandAnalyzeDataSource::assignVariables_impl(const VariablesMap& variab
     RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
 
     // The completion signal is hardcoded to the MLAT task instance in the
-    // constructor. Redirect it to the ADS-B task instance so the wait condition
-    // (set up before run_impl) spies on the right object's doneSignal and the
-    // command completes - letting any queued follow-up such as --quit run.
+    // constructor. Every DSType has its own task instance under its own
+    // configurable class name, and the object path resolves by class name, so
+    // the signal must be redirected to the instance of the requested DSType.
+    // Without it the wait condition spies the MLAT instance, whose doneSignal
+    // never fires, and the command never completes - which also blocks any
+    // queued follow-up such as --quit.
     // Must happen here at configure time, before the runner registers the spy.
     if (ds_type_ == "ADSB")
         condition.setSignal("compass.taskmanager.analyzeadsbdatasourcetask.doneSignal", -1);
+    else if (ds_type_ == "SMR")
+        condition.setSignal("compass.taskmanager.analyzesmrdatasourcetask.doneSignal", -1);
 }
 
 // load data
@@ -609,6 +618,8 @@ bool RTCommandExportViewPointsReport::run_impl()
     ViewPointsReportGenerator& gen = compass_->viewManager().viewPointsGenerator();
 
     ViewPointsReportGeneratorDialog& dialog = gen.dialog();
+    // batch export: pure progress display, do not steal os focus from other applications
+    dialog.setAttribute(Qt::WA_ShowWithoutActivating, true);
     dialog.show();
 
     QCoreApplication::processEvents();

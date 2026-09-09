@@ -133,6 +133,11 @@ public:
 
     void configure(const TaskResultHeader& header);
 
+    /// content is read from the database on first use, see ensureContentLoaded()
+    bool contentLoaded() const { return content_loaded_; }
+    void setContentStored() { content_loaded_ = false; }
+    bool ensureContentLoaded() const;
+
     void setJSONConfiguration(const nlohmann::json& config);
     bool hasJSONConfiguration() const;
     const nlohmann::json& jsonConfiguration() const;
@@ -189,6 +194,7 @@ public:
     static const Property     DBColumnJSONContent;
     static const Property     DBColumnResultType;
     static const PropertyList DBPropertyList;
+    static const PropertyList DBHeaderPropertyList;
 
     static const std::string FieldID;
     static const std::string FieldName;
@@ -268,4 +274,7 @@ protected:
     std::vector<ContentID> update_contents_;
 
     bool init_ = false;
+
+    /// false while the content is only stored in the database, see ensureContentLoaded()
+    mutable bool content_loaded_ = true;
 };

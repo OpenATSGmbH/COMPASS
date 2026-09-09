@@ -30,6 +30,7 @@
 #include "latexsection.h"
 #include "lateximage.h"
 #include "latextable.h"
+#include "latexrun.h"
 
 #include "compass.h"
 #include "files.h"
@@ -405,8 +406,7 @@ Result ReportExporterLatex::writePDF() const
     traced_assert(latex_doc_);
 
     std::string command_out;
-    std::string command = "cd \"" + latex_doc_->path() + "\" && pdflatex --interaction=nonstopmode \"" + latex_doc_->filename()
-            + "\" | awk 'BEGIN{IGNORECASE = 1}/warning|!/,/^$/;'";
+    std::string command = latex::pdfLatexCommand(latex_doc_->path(), latex_doc_->filename());
 
     loginf << "running pdflatex";
 
@@ -437,17 +437,8 @@ Result ReportExporterLatex::writePDF() const
     unsigned int max_runs = s.latex_pdf_max_reruns;
     unsigned int run_cnt  = 0;
 
-    auto hasFatalError = [&command_out]()
-    {
-        return command_out.find("! LaTeX Error")   != std::string::npos
-            || command_out.find("! Emergency stop") != std::string::npos
-            || command_out.find("Fatal error")      != std::string::npos;
-    };
-
-    while (!hasFatalError() &&
-           (run_cnt < max_runs ||
-            (command_out.find("Rerun to get outlines right"        ) != std::string::npos) ||
-            (command_out.find("Rerun to get cross-references right") != std::string::npos)))
+    while (!latex::hasFatalError(command_out) &&
+           (run_cnt < max_runs || latex::needsRerun(command_out)))
     {
         loginf << "re-running pdflatex";
 
@@ -463,9 +454,9 @@ Result ReportExporterLatex::writePDF() const
 
     // Only a genuine LaTeX error fails the export. pdflatex emits plenty of
     // benign warnings (Underfull/Overfull hbox, package "First Aid" notes,
-    // "Rerun to get cross-references right") that the awk filter above also
+    // "Rerun to get cross-references right") that the output filter also
     // captures; those must not abort a successfully generated PDF.
-    if (hasFatalError())
+    if (latex::hasFatalError(command_out))
         return Result::failed("PDF Latex failed:\n\n" + std::string(command_out.c_str()));
 
     if (command_out.size())

@@ -50,6 +50,14 @@ public:
     double altitude() const;
     void altitude(double value);
 
+    // maximum distance for position-based matching of target reports to this
+    // FFT: per-FFT "max_plot_distance_m" info value, or the default. Small
+    // values (e.g. 50 m) suit FFTs on an airport surface, the wide default
+    // suits remote FFTs measured by long-range radar
+    double maxPlotDistanceM() const;
+
+    static constexpr double DefaultMaxPlotDistanceM = 5000.0;
+
     nlohmann::json toJSON() const;
     static FFT fromJSON(const nlohmann::json& j);
 

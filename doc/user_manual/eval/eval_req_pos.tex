@@ -199,8 +199,26 @@ The 'Failed Values are of Interest' checkbox define if the target reports passin
 \item Threshold Value [m]: Maximum allowed distance from test target report to reference
 \item Threshold Value Check Type: $\leq$, distance must be less or equal the given threshold
 \item Failed Values are of Interest: Checked, the distances of interest are the ones not passing the check
+\item Use Averaging: Checkbox if one averaged position error per time window should be checked, instead of one error per test target report
+\item Averaging Window [s]: Length of the averaging window
 \end{itemize}
 \ \\
+
+\textcolor{red}{\textbf{[TODO: update screenshot figures/eval\_req\_pos\_distance\_correct.png: new elements 'Use Averaging' and 'Averaging Window [s]']}} \\
+
+\paragraph{Averaged Position}
+
+Some standards state a position accuracy on an averaged position rather than on a single target report, e.g. EUROCAE ED-117 Section 3.3.3 for stands. With 'Use Averaging' active, the requirement checks one value per time window instead of one value per target report:
+
+\begin{itemize}
+\item The usable test target reports of a target are cut into consecutive, non-overlapping windows of 'Averaging Window [s]', starting at the first usable target report.
+\item A target report outside the sector layer, or a gap longer than the window, ends the current window.
+\item Per window, the mean of the test positions and the mean of the mapped reference positions are calculated. The distance between the 2 means gives the mean position error of the window, which is checked against the threshold.
+\item Windows holding a single target report are skipped, and are listed with the comment 'Single report'.
+\end{itemize}
+\ \\
+
+Since both sides are averaged, the resulting value is the length of the mean error vector, which is also meaningful for a moving target. The counted units are windows, not target reports. Where the source document states no confidence level for such a requirement, a probability of 100\% is a reasonable choice, meaning that every window has to pass. \\
 
 \paragraph{Position False Variation}
 

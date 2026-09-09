@@ -94,9 +94,16 @@ struct ContributingSourcesInfo
     boost::optional<float> tracker_age_;
     boost::optional<float> other_age_;
 
-    boost::optional<float> primary_age_;
-    boost::optional<float> mode_ac_age_;
-    boost::optional<float> modes_age_;
+    // CAT062 I062/290 update ages per surveillance technology
+    boost::optional<float> psr_age_;
+    boost::optional<float> ssr_age_;
+    boost::optional<float> mds_age_;
+
+    // data item ages (CAT062 I062/295 style)
+    boost::optional<float> m3a_age_;
+    boost::optional<float> fl_measured_age_;
+    boost::optional<float> acid_age_;
+    boost::optional<float> acad_age_;
 
     void add(const dbContent::targetReport::ReconstructorInfo& tr, bool add_to_rec_nums);
     void increaseTimeTo(boost::posix_time::ptime new_timestamp);
@@ -369,6 +376,11 @@ public:
     bool created_from_tentative_ = false;
     bool contains_tentative_     = false;
 
+    // dubious reference detection results (check type key -> count), filled at
+    // run end by the reconstructor's finalizeAnalysis(), copied into the
+    // dbContent::Target info JSON by TargetModel::createNewTargets()
+    std::map<std::string, unsigned int> dubious_ref_counts_;
+
     void addTargetReport (unsigned long rec_num);
     void addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums);
     void addTargetReports (const ReconstructorTarget& other);
@@ -454,6 +466,8 @@ public:
                      boost::posix_time::time_duration max_time_diff, const InterpOptions& interp_options) const;
     bool isOnGroundAt(const boost::posix_time::ptime& timestamp,
                       const boost::posix_time::time_duration& max_time_diff) const;
+    bool isADSBStoppedAt(const boost::posix_time::ptime& timestamp,
+                         const boost::posix_time::time_duration& max_time_diff) const;
 
     boost::optional<float> modeCCodeAt (boost::posix_time::ptime timestamp,
                                        boost::posix_time::time_duration max_time_diff,

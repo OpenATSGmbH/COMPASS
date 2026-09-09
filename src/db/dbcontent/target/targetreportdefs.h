@@ -163,6 +163,16 @@ struct VelocityAccuracy
     double vy_stddev_ {0}; // m/s
 };
 
+// reported acceleration in Cartesian components (CAT062 I062/210: x east, y north)
+struct Acceleration
+{
+    Acceleration() = default;
+    Acceleration(double ax, double ay) : ax_(ax), ay_(ay) {}
+
+    double ax_ {0}; // m/s^2
+    double ay_ {0}; // m/s^2
+};
+
 struct AccelerationAccuracy
 {
     AccelerationAccuracy() = default;
@@ -209,6 +219,20 @@ class ModeACode
     virtual std::string asStr() const;
 };
 
+// why a position was invalidated by a validate function (set together with
+// ReconstructorInfo::invalidated_pos_); feeds the dubious references D5
+// exclusion breakdown
+enum class PosInvalidationReason : unsigned char
+{
+    None = 0,
+    InputPosCheck,       // import-time position check failed (posCheckFailed meta info)
+    RiskyEquipage,       // risky ADS-B equipage (no MOPS version / no or zero quality indicators)
+    ValidationFlagRisky, // GS position validation flag (RCF/CPR/LDPJ) combined with risky equipage
+    QIInconsistent       // NACp/NIC cross-check failed (EPU contradicts containment radius)
+};
+
+std::string posInvalidationReasonName(PosInvalidationReason reason);
+
 struct BaseInfo
 {
     unsigned int buffer_index_ {0};
@@ -243,12 +267,29 @@ struct ReconstructorInfo : public BaseInfo
 
     bool unsused_ds_pos_ {false}; // set if data source should not be used for pos
     bool invalidated_pos_ {false}; // if invalidated by validate function
+    // cause of the invalidation, set together with invalidated_pos_
+    targetReport::PosInvalidationReason pos_invalidation_reason_ {targetReport::PosInvalidationReason::None};
+    // invalidated by the import-time position check (posCheckFailed meta info),
+    // input data quality rather than a reconstruction decision; always set
+    // together with invalidated_pos_
+    bool pos_check_failed_input_ {false};
     bool is_pos_outlier_ {false}; // if set by outlier detection
 
     boost::optional<targetReport::BarometricAltitude> barometric_altitude_;
+    // CAT062 only: the tracker's own calculated barometric altitude (I062/135).
+    // barometric_altitude_ carries the per-sensor MEASURED FL for trackers,
+    // which alternates by 100s of ft between contributing sensors on high-rate
+    // outputs - dubious detection (D3) prefers this tracked value
+    boost::optional<float> tracked_baro_altitude_;
+
+    // radar detection type ("Type" meta variable, CAT048 I048/020 TYP coding)
+    boost::optional<unsigned char> detection_type_;
 
     boost::optional<targetReport::Velocity> velocity_;
     boost::optional<targetReport::VelocityAccuracy> velocity_accuracy_;
+
+    // CAT062 only (I062/210): the tracker's calculated Cartesian acceleration
+    boost::optional<targetReport::Acceleration> acceleration_;
 
     boost::optional<double> track_angle_;
     boost::optional<bool> ground_bit_;
@@ -260,7 +301,25 @@ struct ReconstructorInfo : public BaseInfo
     boost::optional<unsigned char> nucp_nic_;
     boost::optional<unsigned char> sil_;
 
+    // ADS-B GS position validation flags (CAT021 I021/040). NEVER invalidate on
+    // these alone: GSs flag correct surface traffic systematically (range check
+    // false alarms on whole taxiing streams, validated Malta 2026-08-14 and
+    // LOWW 2026-06-09); decisive only combined with risky quality indicators
+    bool adsb_rcf_ {false};         // Range Check Failed
+    bool adsb_cpr_invalid_ {false}; // CPR Validation failed
+    bool adsb_ldpj_ {false};        // Local Decoding Position Jump
+
+    bool hasADSBPositionValidationFlag() const
+    { return adsb_rcf_ || adsb_cpr_invalid_ || adsb_ldpj_; }
+
     boost::optional<unsigned int> ecat_;
+
+    // ADS-B SGV STP bit (CAT021 surface ground vector "stopped"), only
+    // transmitted for surface targets - reliable standstill indication
+    boost::optional<bool> sgv_stp_;
+    // CAT021: true if the timestamp stems from the time of applicability (I021/071),
+    // false if from the time of message reception (I021/073), unset for other content
+    boost::optional<bool> adsb_toa_time_source_;
 
     static const double GroundSpeedMin;
 
@@ -272,6 +331,11 @@ struct ReconstructorInfo : public BaseInfo
     bool isModeSDetection() const;
     bool isModeACDetection() const;
     bool isPrimaryOnlyDetection() const;
+
+    // detection-type based (any component counts, unlike the exclusive classes above):
+    // a combined PSR+SSR/Mode S plot has BOTH a primary and an SSR detection
+    bool hasPrimaryDetection() const;
+    bool hasSSRDetection() const;
     bool isUnreliablePrimaryOnlyDetection() const;
 
     bool hasOnGroundInfo() const;

@@ -22,6 +22,7 @@
 #include "mlatcoverageinspector.h"
 #include "adsbdataiteminspector.h"
 #include "adsbcoverageinspector.h"
+#include "smrcoverageinspector.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "mlataccuracyinspector.h"
@@ -221,7 +222,6 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
     auto* outer = new QVBoxLayout(w);
 
     auto& ctx = task_.compass().dbContextManager();
-    auto types = ctx.dsTypes();
 
     // -- Reference Data ----------------------------------------------------
     auto* ref_box    = new QGroupBox("Reference Data");
@@ -295,13 +295,9 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
     auto* tst_box    = new QGroupBox("Test Data");
     auto* tst_layout = new QVBoxLayout(tst_box);
 
-    std::set<unsigned int> tst_cands;
-    for (auto ds_id : ctx.allDataSourceIds())
-    {
-        auto it = types.find(ds_id);
-        if (it != types.end() && it->second == task_.dsType())
-            tst_cands.insert(ds_id);
-    }
+    // Candidates follow the task's DSType rule (context DSType, or for SMR:
+    // Radar sources with CAT010 data).
+    std::set<unsigned int> tst_cands = task_.testDataSourceCandidateIDs();
 
     auto* tst_list = new QListWidget();
     populateDSList(
@@ -309,7 +305,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
         tst_cands,
         ctx,
         [this](unsigned int ds_id) { return task_.useDataSource(ds_id); },
-        QString("No data sources of type ") + QString::fromStdString(task_.dsType())
+        QString("No ") + QString::fromStdString(task_.testDataSourceRequirementText())
             + " present.");
     connect(tst_list, &QListWidget::itemChanged, this, [this](QListWidgetItem* it) {
         if (updating_ui_)
@@ -879,6 +875,94 @@ void buildADSBCoverageSettings(QFormLayout* form,
     form->addRow("Histogram Max Interval (0 = auto)", hmax_spin);
 }
 
+void buildSMRCoverageSettings(QFormLayout* form,
+                              SMRCoverageInspectorSettings& s)
+{
+    auto* range_spin = makeFloatSpin(0.0, 100000.0, 100.0, 0, " m", s.max_range_m_);
+    QObject::connect(range_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.max_range_m_ = static_cast<float>(v); });
+    form->addRow("Maximum Range (0 = no limit)", range_spin);
+
+    auto* bin_spin = makeFloatSpin(0.0, 45.0, 0.1, 2, " deg", s.coverage_azimuth_bin_deg_);
+    QObject::connect(bin_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.coverage_azimuth_bin_deg_ = static_cast<float>(v); });
+    form->addRow("Coverage Azimuth Bin (0 = no estimate)", bin_spin);
+
+    auto* min_rep_spin = new QSpinBox();
+    min_rep_spin->setRange(1, 100000);
+    min_rep_spin->setValue(s.coverage_min_reports_);
+    QObject::connect(min_rep_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.coverage_min_reports_ = static_cast<unsigned int>(v); });
+    form->addRow("Coverage Minimum Reports per Bin", min_rep_spin);
+
+    auto* gap_spin = makeFloatSpin(0.0, 10000.0, 10.0, 0, " m", s.coverage_gap_m_);
+    QObject::connect(gap_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.coverage_gap_m_ = static_cast<float>(v); });
+    form->addRow("Coverage Range Gap (0 = one segment per bin)", gap_spin);
+
+    auto* seg_rep_spin = new QSpinBox();
+    seg_rep_spin->setRange(1, 100000);
+    seg_rep_spin->setValue(s.coverage_min_segment_reports_);
+    QObject::connect(seg_rep_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.coverage_min_segment_reports_ = static_cast<unsigned int>(v); });
+    form->addRow("Coverage Minimum Reports per Segment", seg_rep_spin);
+
+    auto* smooth_spin = new QSpinBox();
+    smooth_spin->setRange(0, 10);
+    smooth_spin->setValue(s.coverage_smooth_bins_);
+    QObject::connect(smooth_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.coverage_smooth_bins_ = static_cast<unsigned int>(v); });
+    form->addRow("Coverage Smoothing Passes", smooth_spin);
+
+    auto* density_spin = makeFloatSpin(0.0, 10000.0, 1.0, 1, "",
+                                       s.coverage_min_run_reports_per_100m_);
+    QObject::connect(density_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.coverage_min_run_reports_per_100m_ = static_cast<float>(v); });
+    form->addRow("Coverage Minimum Reports per 100 m of Run (0 = off)", density_spin);
+
+    auto* link_spin = makeFloatSpin(0.0, 10000.0, 10.0, 0, " m", s.coverage_sector_link_m_);
+    QObject::connect(link_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.coverage_sector_link_m_ = static_cast<float>(v); });
+    form->addRow("Sector Link Distance", link_spin);
+
+    auto* bridge_spin = new QSpinBox();
+    bridge_spin->setRange(0, 100);
+    bridge_spin->setValue(s.coverage_sector_bridge_bins_);
+    QObject::connect(bridge_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.coverage_sector_bridge_bins_ = static_cast<unsigned int>(v); });
+    form->addRow("Sector Bridged Bins", bridge_spin);
+
+    auto* sec_smooth_spin = new QSpinBox();
+    sec_smooth_spin->setRange(0, 50);
+    sec_smooth_spin->setValue(s.coverage_sector_smooth_bins_);
+    QObject::connect(sec_smooth_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.coverage_sector_smooth_bins_ = static_cast<unsigned int>(v); });
+    form->addRow("Sector Edge Smoothing Bins", sec_smooth_spin);
+
+    auto* simplify_spin = makeFloatSpin(0.0, 10000.0, 5.0, 0, " m", s.coverage_sector_simplify_m_);
+    QObject::connect(simplify_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.coverage_sector_simplify_m_ = static_cast<float>(v); });
+    form->addRow("Sector Simplification", simplify_spin);
+
+    auto* layer_edit = new QLineEdit(QString::fromStdString(s.coverage_sector_layer_suffix_));
+    layer_edit->setEnabled(s.create_coverage_sectors_);
+    layer_edit->setToolTip("The layer of a source is its name plus this suffix,"
+                           " e.g. 'RETS SMR Nord Coverage'");
+    QObject::connect(layer_edit, &QLineEdit::textEdited,
+                     [&s](const QString& v) { s.coverage_sector_layer_suffix_ = v.toStdString(); });
+
+    auto* sectors_cb = new QCheckBox();
+    sectors_cb->setChecked(s.create_coverage_sectors_);
+    sectors_cb->setToolTip("Writes the estimated coverage into the active Data Context,"
+                           " one sector per contiguous covered azimuth run");
+    QObject::connect(sectors_cb, &QCheckBox::toggled, [&s, layer_edit](bool on) {
+        s.create_coverage_sectors_ = on;
+        layer_edit->setEnabled(on);
+    });
+    form->addRow("Create Coverage Sectors", sectors_cb);
+    form->addRow("Coverage Sector Layer Suffix", layer_edit);
+}
+
 }
 
 QWidget* AnalyzeDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* inspector)
@@ -905,6 +989,8 @@ QWidget* AnalyzeDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* 
         buildADSBDataItemSettings(form, task_, task_.adsbDataItemSettings());
     else if (cn == "ADSBCoverageInspector")
         buildADSBCoverageSettings(form, task_.adsbCoverageSettings());
+    else if (cn == "SMRCoverageInspector")
+        buildSMRCoverageSettings(form, task_.smrCoverageSettings());
 #if USE_EXPERIMENTAL_SOURCE == true
     else if (cn == "MLATAccuracyInspector")
         buildAccuracySettings(form, task_.accuracySettings());

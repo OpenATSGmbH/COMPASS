@@ -224,6 +224,10 @@ public:
     boost::optional<unsigned int> nacp(const DataID& id) const;        // I021/090 NACp
     boost::optional<unsigned int> nucpNic(const DataID& id) const;     // I021/090 NUCp (v0) / NIC (v1/v2)
 
+    // CAT021 time stamps in seconds of day (only set for the CAT021 chain).
+    boost::optional<float> tomrPosition(const DataID& id) const; // I021/073 Time of Message Reception for Position
+    boost::optional<float> tort(const DataID& id) const;         // I021/077 Time of Report Transmission
+
     boost::optional<bool> groundBit(const DataID& id) const; // gbs
 
     boost::optional<unsigned int> tstTrackNum(const DataID& id) const;
@@ -239,6 +243,17 @@ public:
     boost::optional<unsigned char> momVertRate(const DataID& id) const;
 
     boost::optional<unsigned char> trackCoasting(const DataID& id) const;
+
+    // Radar polar position (I0xx/040) and CAT010 SMR items. Empty optional when
+    // the dbcontent does not carry the variable or the record is null.
+    boost::optional<double> radarRange(const DataID& id) const;    // NM
+    boost::optional<double> radarAzimuth(const DataID& id) const;  // deg
+    boost::optional<unsigned char> detectionType(const DataID& id) const; // CAT010 I010/020 TYP
+    boost::optional<bool> slantRangeCorrected(const DataID& id) const;    // CAT010 I010/020 TCC
+    boost::optional<float> targetLength(const DataID& id) const;          // m, I010/270
+    boost::optional<float> targetWidth(const DataID& id) const;           // m, I010/270
+    boost::optional<double> targetOrientation(const DataID& id) const;    // deg, I010/270
+    boost::optional<unsigned char> psrAmplitude(const DataID& id) const;  // I010/131
 
     Index indexFromDataID(const DataID& id) const;
     boost::posix_time::ptime timestampFromDataID(const DataID& id) const;

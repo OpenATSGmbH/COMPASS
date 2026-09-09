@@ -119,6 +119,20 @@ double KalmanFilterUM2D::xyCov(const kalman::Matrix& P) const
 
 /**
 */
+boost::optional<double> KalmanFilterUM2D::vxVar(const kalman::Matrix& P) const
+{
+    return P(1, 1);
+}
+
+/**
+*/
+boost::optional<double> KalmanFilterUM2D::vyVar(const kalman::Matrix& P) const
+{
+    return P(3, 3);
+}
+
+/**
+*/
 boost::optional<double> KalmanFilterUM2D::xVel(const kalman::Vector& x_vec) const
 {
     return x_vec[ 1 ];

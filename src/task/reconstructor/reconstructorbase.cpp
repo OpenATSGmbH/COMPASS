@@ -417,6 +417,9 @@ bool ReconstructorBase::TargetsContainer::canAssocByTrackNumber(
 
         eraseTrackNumberLookup(tr);
 
+        reconstructor_->associator().onTrackNumberDisassociated(
+            tr, utn, ReconstructorAssociatorBase::TrackDisassocReason::ACADReuse);
+
         if (tr.acid_ && acid_2_utn_.count(*tr.acid_))
         {
             if (do_debug || reconstructor_->task().debugSettings().debugUTN(utn))
@@ -580,6 +583,8 @@ ReconstructorBase::ReconstructorBase(nlohmann::json& config,
                           ReferenceCalculatorSettings().Q_std.Q_std_air);
         registerParameter("ref_Q_std_unknown", &ref_calc_settings_.Q_std.Q_std_unknown,
                           ReferenceCalculatorSettings().Q_std.Q_std_unknown);
+        registerParameter("ref_Q_std_stopped", &ref_calc_settings_.Q_std_stopped,
+                          ReferenceCalculatorSettings().Q_std_stopped);
 
         registerParameter("dynamic_process_noise", &ref_calc_settings_.dynamic_process_noise,
                           ReferenceCalculatorSettings().dynamic_process_noise);
@@ -1134,7 +1139,7 @@ void ReconstructorBase::createTargetReports()
                 continue;
 
             for (const auto& s : ctx.sectorLayer(sect_it.first)->sectors())
-                s->createFastInsideTest();
+                s->createFastInsideTest(task_.sectorDeltaDeg());
 
             used_sector_layers.push_back(ctx.sectorLayer(sect_it.first));
         }
@@ -1157,6 +1162,9 @@ void ReconstructorBase::createTargetReports()
 
         dbContent::TargetReportAccessor& tgt_acc = accessors_.at(dbcont_id);
         unsigned int buffer_size = tgt_acc.size();
+
+        //grow once for this buffer instead of rehashing repeatedly while inserting
+        target_reports_.reserve(target_reports_.size() + buffer_size);
 
         std::vector<bool> position_usable;
         position_usable.resize(buffer_size);
@@ -1265,12 +1273,15 @@ void ReconstructorBase::createTargetReports()
                         || (unused_lines.count(info.ds_id_) && unused_lines.at(info.ds_id_).count(info.line_id_)));
 
                 info.barometric_altitude_ = tgt_acc.barometricAltitude(cnt);
+                info.tracked_baro_altitude_ = tgt_acc.trackedBarometricAltitude(cnt);
 
                 info.velocity_ = tgt_acc.velocity(cnt);
                 info.velocity_accuracy_ = tgt_acc.velocityAccuracy(cnt);
+                info.acceleration_ = tgt_acc.acceleration(cnt);
 
                 info.track_angle_ = tgt_acc.trackAngle(cnt);
                 info.ground_bit_ = tgt_acc.groundBit(cnt);
+                info.detection_type_ = tgt_acc.detectionType(cnt);
                 info.data_source_is_ground_only_ = ground_only_ds_ids.count(info.ds_id_);
 
                 // adsb stuff
@@ -1279,11 +1290,29 @@ void ReconstructorBase::createTargetReports()
                 info.nucp_nic_ = tgt_acc.nucp(cnt);
                 info.sil_ = tgt_acc.sil(cnt);
                 info.ecat_ = tgt_acc.ecat(cnt);
+                info.sgv_stp_ = tgt_acc.sgvStopped(cnt);
+                info.adsb_toa_time_source_ = tgt_acc.adsbToATimeSource(cnt);
 
                 boost::optional<bool> pos_check_failed = tgt_acc.posCheckFailed(cnt);
 
                 if (pos_check_failed && *pos_check_failed)
+                {
                     info.invalidated_pos_ = true;
+                    info.pos_invalidation_reason_ = dbContent::targetReport::PosInvalidationReason::InputPosCheck;
+                    info.pos_check_failed_input_ = true;
+                }
+
+                // GS position validation flags: carried for calibration exclusion
+                // and re-validation, no invalidation on their own (see
+                // ReconstructorInfo comment)
+                boost::optional<bool> range_check_failed = tgt_acc.rangeCheckFailed(cnt);
+                info.adsb_rcf_ = range_check_failed && *range_check_failed;
+
+                boost::optional<bool> cpr_valid = tgt_acc.cprValid(cnt);
+                info.adsb_cpr_invalid_ = cpr_valid && !*cpr_valid;
+
+                boost::optional<bool> ldpj = tgt_acc.localDecodingPositionJump(cnt);
+                info.adsb_ldpj_ = ldpj && *ldpj;
 
                 // insert info
                 target_reports_[record_num] = info;
@@ -2164,8 +2193,19 @@ void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,
         mm.pos_acc_corrected = true;
     }
 
-    //other flags
-    mm.stopped = !ri.isMoving();
+    //other flags: stopped state ONLY from ADS-B evidence (SGV STP bit or
+    //ADS-B ground speed close to zero, nearest report in a 6 s search
+    //window), plus per-definition static target categories; other sources
+    //(MLAT plots, trackers) carry no evidence either way
+    bool static_category = target && (target->targetCategory() == TargetBase::Category::Obstacle
+                                      || target->targetCategory() == TargetBase::Category::FFT);
+
+    if (static_category)
+        mm.stopped = true;
+    else if (target)
+        mm.stopped = target->isADSBStoppedAt(ri.timestamp_, boost::posix_time::seconds(6));
+    else
+        mm.stopped = ri.dbcont_id_ == 21 && !ri.isMoving();
 }
 
 void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,

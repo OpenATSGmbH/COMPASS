@@ -20,6 +20,11 @@
 #include "eval/requirement/base/probabilitybase.h"
 #include "eval/requirement/detection/detection_pd_helpers.h"
 
+#include <string>
+#include <vector>
+
+class TimePeriodCollection;
+
 namespace EvaluationRequirement
 {
 
@@ -32,8 +37,11 @@ public:
             double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator,
             float update_interval_s, bool use_min_gap_length, float min_gap_length_s,
             bool use_max_gap_length, float max_gap_length_s, bool invert_prob,
-            bool use_miss_tolerance, float miss_tolerance_s, bool hold_for_any_target,
-            bool ignore_primary_only);
+            bool use_miss_tolerance, float miss_tolerance_s, bool use_time_ratio,
+            bool use_gap_count,
+            bool use_stationary_ui, float stationary_ui_s, float stationary_speed_threshold_ms,
+            bool hold_for_any_target,
+            const std::string& pd_calculation_method);
 
   float updateInterval() const;
   bool useMinGapLength() const;
@@ -43,8 +51,13 @@ public:
   bool useMissTolerance() const;
   float missTolerance() const;
   float missThreshold() const;
+  bool useTimeRatio() const;
+  bool useGapCount() const;
+  bool useStationaryUI() const;
+  float stationaryUI() const;
+  float stationarySpeedThreshold() const;
 
-  bool ignorePrimaryOnly() const;
+  const std::string& pdCalculationMethod() const;
 
   virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate(
       const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
@@ -57,10 +70,25 @@ public:
   }
 
 protected:
-    PDHelpers::MissTestParams missTestParams() const;
+    // status-message method: one expected period per group of reported update
+    // cycles, missed when the target has no test report inside it
+    std::shared_ptr<EvaluationRequirementResult::Single> evaluateStatusCycles(
+        const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
+        const SectorLayer& sector_layer, TimePeriodCollection& ref_periods,
+        const std::vector<boost::posix_time::ptime>& cycles);
 
-    bool isMiss (float d_tod) const;
-    unsigned int getNumMisses(float d_tod) const;
+    PDHelpers::MissTestParams missTestParams(float update_interval_s) const;
+
+    bool isMiss (float d_tod, float update_interval_s) const;
+    unsigned int getNumMisses(float d_tod, float update_interval_s) const;
+    float getMissedTime(float d_tod, float update_interval_s) const;
+    double getMissed(float d_tod, float update_interval_s) const;
+
+    // gap-specific update interval: the stationary UI when the reference
+    // ground speed near the gap midpoint is below the speed threshold
+    float updateIntervalFor(const EvaluationTargetData& target_data,
+                            const boost::posix_time::ptime& gap_begin,
+                            const boost::posix_time::ptime& gap_end) const;
 
     float update_interval_s_{0};
 
@@ -73,7 +101,21 @@ protected:
     bool  use_miss_tolerance_{false};
     float miss_tolerance_s_  {0};
 
-    bool ignore_primary_only_ {true};
+    // time-ratio calculation mode (ED-129C Appendix C "Interarrivaltime" method)
+    bool use_time_ratio_ {false};
+
+    // gap count mode (ED-117A Section 6.4.8, ED-87E Section 5.3.14): each gap counts
+    // once, the expected total is the number of accepted test reports
+    bool use_gap_count_ {false};
+
+    // speed-dependent update interval for surface targets (ED-129C ORQ 627)
+    bool  use_stationary_ui_ {false};
+    float stationary_ui_s_   {10.0f};
+    float stationary_speed_threshold_ms_ {0.5f};
+
+
+    // "status_message" or "time_difference", see DetectionConfig
+    std::string pd_calculation_method_ {"time_difference"};
 };
 
 }

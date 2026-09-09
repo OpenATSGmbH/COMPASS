@@ -509,7 +509,7 @@ double mean(const std::vector<double>& data) {
 double calculateIQR(std::vector<double> data) {
     size_t size = data.size();
     if (size < 4) {
-        logerr << "too few data opints to compute IQR";
+        logerr << "too few data points to compute IQR";
         return std::numeric_limits<double>::signaling_NaN();
     }
     std::sort(data.begin(), data.end());

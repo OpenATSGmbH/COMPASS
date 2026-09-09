@@ -28,6 +28,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "evaluationmanager.h"
 #include "evaluationcalculator.h"
+#include "eval/standard/evaluationstandard.h"
 #include "util/timeconv.h"
 #include "sector/airspace.h"
 #include "sectorlayer.h"
@@ -156,6 +157,16 @@ void EvaluationTargetData::finalize () const
         has_mops_versions_ = true;
         mops_versions_ = dbcont_man.target(utn_).adsbMopsList();
     }
+
+    logdbg << "update adsb data";
+    if (dbcont_man.hasTargetsInfo() && dbcont_man.existsTarget(utn_))
+        has_adsb_data_ = dbcont_man.target(utn_).dbContentCount("CAT021") > 0;
+
+    logdbg << "update standard ignore state";
+    if (calculator_.hasCurrentStandard())
+        setIgnoredByStandard(calculator_.currentStandard().targetIgnoreReason(*this));
+    else
+        setIgnoredByStandard({});
 
     //    std::set<unsigned int> mops_version;
     //    std::tuple<bool, unsigned int, unsigned int> nucp_info;
@@ -1020,6 +1031,36 @@ bool EvaluationTargetData::hasPos() const
 bool EvaluationTargetData::hasADSBInfo() const
 {
     return has_adsb_info_;
+}
+
+/**
+ */
+bool EvaluationTargetData::hasADSBData() const
+{
+    return has_adsb_data_;
+}
+
+/**
+ */
+bool EvaluationTargetData::ignoredByStandard() const
+{
+    return ignored_by_std_;
+}
+
+/**
+ */
+const std::string& EvaluationTargetData::ignoredByStandardReason() const
+{
+    return ignored_by_std_reason_;
+}
+
+/**
+ * Sets the ignore state from the current standard. An empty reason clears it.
+ */
+void EvaluationTargetData::setIgnoredByStandard(const std::string& reason) const
+{
+    ignored_by_std_        = reason.size();
+    ignored_by_std_reason_ = reason;
 }
 
 /**

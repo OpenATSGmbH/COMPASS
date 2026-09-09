@@ -3,7 +3,7 @@
 
 This section defines how the view point files have to be structured and written by view point generators (applications which generate such files). \\
 
-View point files are written in the JSON format, and include a version number. The current version number is 0.3, the previous versions 0.2, 0.1 are \textbf{not} supported. \\
+View point files are written in the JSON format, and include a version number. The current version number is 0.4, the previous versions 0.3, 0.2, 0.1 are \textbf{not} supported. \\
 
 Please \textbf{note} that basic JSON format knowledge is required to understand the topics in this section. \\
 
@@ -58,7 +58,7 @@ The most simple example of a view points file is as follows:
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
     "content_type": "view_points",
-    "content_version": "0.3",
+    "content_version": "0.4",
     "view_points": [
         {
             "id": 1,
@@ -75,14 +75,14 @@ There is an encompassing JSON object, which contains the view point context (obj
 
 \subsection{View Point Context}
 
-The 'version' attribute is mandatory, and only version 0.3 is currently supported. \\
+The 'version' attribute is mandatory, and only version 0.4 is currently supported. \\
 
 In the context, optionally datasets can be added, which define related data to be imported.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
     "content_type": "view_points",
-    "content_version": "0.3",
+    "content_version": "0.4",
     "view_point_context": {
         "datasets": [
             {
@@ -101,7 +101,7 @@ Several datasets are also possible:
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
     "content_type": "view_points",
-    "content_version": "0.3",
+    "content_version": "0.4",
     "view_point_context": {
         "datasets": [
             {
@@ -132,7 +132,7 @@ Such an import without overrides can look as follows:
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
     "content_type": "view_points",
-    "content_version": "0.3",
+    "content_version": "0.4",
     "view_point_context": {
         "datasets": [
             {
@@ -249,6 +249,7 @@ In each View Point object, the following values can be defined:
     data\_source\_types & List of DSTypes to load, as strings &    \\ \hline
     filters & List of filters defining which data to load, as JSON objects &   \\ \hline
     context\_variables & List of extra content data variables to load and display &    \\ \hline
+    labels & List of [record number, level of detail] pairs defining target report labels shown in Geographic Views &    \\ \hline
 \end{tabularx}
 \end{table}
 \end{center}
@@ -359,7 +360,28 @@ For the 'Tracker Track Number' filter, the data source condition is identified b
 
 Please \textbf{note} that setting custom filters (created by the user) is also possible using view points. Please contact the author for further information.
 
-\subsection{View Point Annotations}
+\subsection{View Point Labels}
+\label{sec:appendix_view_points_labels}
+
+The optional 'labels' attribute defines labels for specific target reports, shown in all Geographic Views when the view point is set. Each entry is a pair of a record number and a level of detail (see \nameref{sec:geoview_labels_tab}), given as a number from 1 to 3. \\
+
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+{
+        ...
+        {
+            ...
+            "labels": [
+                [ 145686581, 1 ],
+                [ 145686832, 3 ]
+            ]
+        }
+        ...
+}
+\end{lstlisting}
+
+For each listed record number, the label of the respective target report is shown with the generated label content at the given level of detail, using the label styling defined in the Geographic View. The labels are shown independently of the automatic labeling settings and label filters, and are removed when the view point is unset. \\
+
+Please \textbf{note} that a label is only shown if the respective target report is part of the loaded data, i.e. its data source and line are loaded and it is not removed by the active filters.
 
 The 'annotations' attribute stores custom geometry information, which can be displayed in a Geographic View. \\
 
@@ -936,7 +958,7 @@ individually.
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
     "content_type": "view_points",
-    "content_version": "0.3",
+    "content_version": "0.4",
     "view_point_context": {
         "datasets": [
             {

@@ -214,6 +214,10 @@ class ViewManager : public QObject, public Configurable
     // database, applying a view point and rendering a report figure.
     bool hasPendingViewProcessing() const;
 
+    // suppress the load/view-processing progress dialogs (wait cursor stays),
+    // used for the duration of a report export - see LoadController
+    void setLoadDialogsSuppressed(bool suppressed);
+
     void resetToStartupConfiguration();
 
     bool isInitialized() const;

@@ -28,7 +28,7 @@ The two layers meet on a *string*: the `db_content_variable_name` field of a JSO
 
 Identity and role:
 - `name()`, `id()`, `dbTableName()` - string name (`"CAT048"`), numeric id (48), DuckDB table (`data_cat048`).
-- `containsTargetReports()` - true for the categories that carry per-target plots (010, 020, 021, 048, 062, RefTraj). False for status / service categories (019, 023, 034, 063, 065).
+- `containsTargetReports()` - true for the categories that carry per-target plots (010, 020, 021, 048, 062, RefTraj). False for status / service categories (019, 023, 025, 034, 063, 065).
 - `containsStatusContent()` - the inverse role for service messages.
 - `isReferenceContent()` - true only for `RefTraj`.
 
@@ -78,6 +78,7 @@ The read path is in [readme_loading.md](readme_loading.md). The insert path is t
     - **Empty** for variables with no canonical source (e.g. `Unique Target Number`, `Ascending record number`).
   - `db_expression` - optional SQL expression for *computed* columns (the column doesn't physically exist; SQL evaluates it on read).
   - `is_key` - primary-key flag.
+  - `group` - semantic group used by the variable selection dialog's "Group" mode. One of: `Origin`, `Type`, `Time`, `Position`, `Accuracy`, `Movement`, `Secondary Identification`, `Altitude`, `Track`, `Ages`, `Warning/Alert`; empty falls into the `Other` bucket. Initially assigned by [`scripts/assign_variable_groups.py`](../../../scripts/assign_variable_groups.py) (name heuristics + per-item defaults + explicit overrides); hand-editable per variable. `MetaVariable` carries the same parameter.
 - **MetaVariable** (`variable/metavariable.h`) - the unified concept across DBContents. Maps a single conceptual name (`"Time of Day"`, `"Aircraft Address"`, `"Position Latitude"`) to per-DBContent Variable names. Example from [`db_content.json`](../../../conf/default/db_content.json):
   ```json
   {
@@ -121,7 +122,7 @@ All schema is JSON; nothing is hard-coded. There are two parallel families of fi
     }
   }
   ```
-- [`db_content_reftraj.json`](../../../conf/default/db_content_reftraj.json) - the synthetic reference trajectory DBContent used by evaluation. Schema-wise it looks like CAT062 (positions, velocities, accelerations) but is filled by the reconstructor, not by an importer.
+- [`db_content_reftraj.json`](../../../conf/default/db_content_reftraj.json) - the synthetic reference trajectory DBContent used by evaluation. Schema-wise it looks like CAT062 (positions, velocities, accelerations) but is filled by the reconstructor, not by an importer. Besides the contributing-source ages (`Contributing Radar/Tracker/RefTraj/Other Age`, `Contributing Sources`/`Number`, the content-based `Primary`/`Mode A/C Update Age`), it carries CAT062-tracker-style analysis columns filled per reference update: I062/290-style technology update ages (`Track Age`, `PSR Update Age`, `SSR Update Age`, `Mode S Update Age` - zeroed by radar reports whose detection contains the respective component: the "Type" detection type when transmitted, content-based otherwise; a combined plot refreshes PSR and SSR alike - plus `ADS-B ES Update Age` and `MLAT Update Age` zeroed by their source types), I062/295-style data item ages (`Mode 3/A Age`, `Flight Level Measured Age`, `Aircraft Identification Age`, `Aircraft Address Age`), and `Associated Record Numbers` (flat JSON list of associated target report record numbers, the RefTraj counterpart of CAT062's `TRI Record Numbers`). The reconstructor also fills `Vx StdDev`/`Vy StdDev` from the Kalman smoother covariance, `Coasting` (set when a reference update had no associated target reports), and `Num Contributing Sensors` (distinct data sources among the associated reports, bridged to CAT062's `Sum Number Contributing Sensors` via the `Num Contributing Sensors` MetaVariable). The CAT062-analog variables deliberately use the CAT062 names and columns, and the shared MetaVariables (`Track Age`, `PSR/SSR/Mode S/MLAT/ADS-B ES Update Age`, `Mode 3/A Age`, `Flight Level Measured Age`, `Associated Record Numbers`) line them up so Views show operational tracker and reconstruction in the same column.
 
 The DuckDB table for each DBContent is created on demand from its Variable list: column name = `db_column_name`, column type = the DuckDB type for `data_type_str`. Adding/removing a Variable in the JSON changes the table schema on the next DB open.
 
@@ -196,6 +197,19 @@ Most DBContent Variables are filled by direct `JSONDataMapping` from a single jA
 | `category` | The ASTERIX category number, constant per buffer. |
 | `line_id` | The import line/source identifier passed to the decoder, constant per buffer. |
 | `ds_id` | Bit-packed `(SAC, SIC)` from `010.SAC` / `010.SIC` (`Number::dsIdFrom`). Falls back to `(0, 255)` with a warning when SAC or SIC is absent. |
+
+### Decoder-provided columns
+
+jASTERIX can add further flat top-level keys next to the decoded item keys. They are mapped like any other key, through a `JSONDataMapping` with the bare key name as `json_key`.
+
+| Column | Variable | DBContents | Source |
+|---|---|---|---|
+| `artas_md5` | `ARTAS Hash` (STRING, group Origin) | CAT001, CAT010, CAT020, CAT021, CAT048 | jASTERIX `add_artas_md5_hash`, set in `ASTERIXImportTask`. MD5 over the record bytes, used for ARTAS association. |
+| `record_data` | `Record Data` (STRING, group Origin), MetaVariable `Record Data` | CAT001, CAT010, CAT020, CAT021, CAT048, CAT062 | jASTERIX `add_record_data`, set in `ASTERIXImportTask`. The original ASTERIX record bytes as lowercase hex. |
+
+`Record Data` costs about 45 bytes per record on disk. DuckDB compresses the hex text well, so it is only about a fifth larger than a raw binary column would be. RefTraj has no source record and does not carry the variable.
+
+Both keys are listed in `SYNTHESIZED_KEYS` of [`check_asterix_mapping_coverage.py`](../../../scripts/check_asterix_mapping_coverage.py), so the coverage checker does not treat them as fields outside the definition key space.
 
 ### In-place wire-value rewrites
 

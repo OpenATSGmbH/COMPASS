@@ -107,6 +107,15 @@ public:
 
     void updateConstraints() const;
     bool use() const;
+
+    /// true if the target was ever detected in ADS-B data (CAT021), from any data source
+    bool hasADSBData() const;
+
+    /// ignore state set by the current standard after loading, not persisted in the target
+    bool ignoredByStandard() const;
+    const std::string& ignoredByStandardReason() const;
+    void setIgnoredByStandard(const std::string& reason) const;
+
     const Utils::TimeWindowCollection& excludedTimeWindows() const;
     bool isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const;
 
@@ -258,6 +267,12 @@ protected:
     mutable bool has_adsb_info_ {false};
     mutable bool has_mops_versions_ {false};
     mutable std::set<unsigned int> mops_versions_;
+
+    mutable bool has_adsb_data_ {false};
+
+    // set by the current standard after loading, never persisted in the target
+    mutable bool ignored_by_std_ {false};
+    mutable std::string ignored_by_std_reason_;
 
     mutable dbContent::TargetEvalConstraints constraints_;
 

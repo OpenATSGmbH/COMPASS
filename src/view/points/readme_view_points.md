@@ -157,6 +157,20 @@ View points can restrict which data sources are loaded via the `"data_sources"` 
 - Read: `FilterManager::showViewPointSlot()` in `filtermanager.cpp` - deserializes and calls `setLoadOnlyDataSources`
 - Constant: `ViewPoint::VP_DS_KEY` = `"data_sources"` in `viewpoint.h`
 
+## Annotation-Only View Points (e.g. Grids)
+
+When a view point exists only to display annotations - e.g. 'grid' features shown in a Grid View, or geometry overlays - the loading of all DBContents should be disabled. Otherwise setting the view point triggers a full data load, and the loaded target reports are displayed on top of (or instead of) the annotation content.
+
+Disable all DBContent loading by adding an empty data source list to the view point:
+
+```json
+{
+    "data_sources": []
+}
+```
+
+An empty `data_sources` list makes `FilterManager::showViewPointSlot()` call `DBContextManager::setLoadOnlyDataSources()` with an empty map: all sources are set to not-wanted and none is re-enabled, so no DBContent data is loaded when the view point is set.
+
 ## Files
 
 | File | Role |

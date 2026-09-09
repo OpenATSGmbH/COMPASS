@@ -46,7 +46,9 @@ class AllBufferTableWidget : public BaseBufferTableWidget
 
     int rowCount() const;
 
-    std::vector<std::vector<std::string>> getSelectedText(); // first is header
+    // first is header. max_rows 0 means no limit (interactive copy);
+    // report scraping passes a limit to keep the generated table bounded
+    std::vector<std::vector<std::string>> getSelectedText(unsigned int max_rows = 0);
     std::vector<std::vector<std::string>> getText(unsigned int max_rows=30); // first is header
 
     AllBufferTableModel* allBufferTableModel() const { return all_buffer_model_; }

@@ -17,10 +17,12 @@
 
 #include "gpstrailimporttask.h"
 #include "gpstrailimporttaskdialog.h"
+#include "dialogs.h"
 #include "compass.h"
 #include "dbinterface.h"
 #include "stringconv.h"
 #include "taskmanager.h"
+#include "asynctask.h"
 #include "files.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
@@ -37,7 +39,6 @@
 #include <iomanip>
 #include <nmeaparse/nmea.h>
 
-#include <QApplication>
 #include <QMessageBox>
 
 const float tod_24h = 24 * 60 * 60;
@@ -442,10 +443,22 @@ void GPSTrailImportTask::parseCurrentFile ()
     gps_fixes_cnt_ = 0;
     gps_fixes_skipped_quality_cnt_ = 0;
     gps_fixes_skipped_time_cnt_ = 0;
+    gps_fixes_without_speedvec_ = 0;
     gps_fixes_zero_datetime_ = 0;
 
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    // parse in a background thread, the modal progress dialog keeps the GUI responsive
+    // and returns once parsing is done
+    AsyncFuncTask task([this](const AsyncTaskState& state, AsyncTaskProgressWrapper& progress)
+                       { return parseCurrentFileImpl(state, progress); },
+                       "Import GPS Trail NMEA", "Parsing NMEA file", false);
+    task.runAsyncDialog(true, nullptr);
+}
 
+/**
+*/
+Result GPSTrailImportTask::parseCurrentFileImpl (const AsyncTaskState& state,
+                                                 AsyncTaskProgressWrapper& progress)
+{
     NMEAParser parser;
     GPSService gps(parser);
     //parser.log = true;
@@ -498,10 +511,11 @@ void GPSTrailImportTask::parseCurrentFile ()
             if (gps_fixes_.back().latitude == gps.fix.latitude
                     && gps_fixes_.back().longitude == gps.fix.longitude)
                 ++gps_fixes_skipped_time_cnt_;
-            else // different position
-            {
-                gps_fixes_.back() = gps.fix;
-            }
+
+            // refresh with latest fix state, later sentences of the same epoch
+            // add information (e.g. GST error estimates)
+            gps_fixes_.back() = gps.fix;
+
             return;
         }
         else // new
@@ -518,6 +532,8 @@ void GPSTrailImportTask::parseCurrentFile ()
     string line;
     ifstream file(current_filename_);
     unsigned int line_cnt = 0;
+
+    size_t file_size = Files::fileSize(current_filename_);
 
     while (getline(file, line))
     {
@@ -539,6 +555,9 @@ void GPSTrailImportTask::parseCurrentFile ()
             // The previous data is ignored and the parser is reset.
         }
         ++line_cnt;
+
+        if (file_size > 0 && line_cnt % 10000 == 0)
+            progress.setPercent((float)file.tellg() / (float)file_size, false, true);
     }
 
     // Show the final fix information
@@ -599,7 +618,9 @@ void GPSTrailImportTask::parseCurrentFile ()
     loginf << "parsed " << gps_fixes_.size() << " fixes in "
            << line_cnt << " lines";
 
-    QApplication::restoreOverrideCursor();
+    progress.setFinished(true);
+
+    return Result::succeeded();
 }
 
 /**
@@ -895,11 +916,20 @@ void GPSTrailImportTask::run()
         }
 
         // accuracy
-        // Convert GPS horizontal accuracy (95% confidence radius) to 1-sigma standard deviation
-        double accuracy_1sigma = fix_it->horizontalAccuracy() / 2.45; // approximate conversion
+        if (fix_it->latitudeError > 0 && fix_it->longitudeError > 0)
+        {
+            // receiver-reported 1-sigma errors from the GST sentence, in meters
+            xstddev_vec.set(cnt, fix_it->longitudeError);
+            ystddev_vec.set(cnt, fix_it->latitudeError);
+        }
+        else
+        {
+            // Convert GPS horizontal accuracy (95% confidence radius) to 1-sigma standard deviation
+            double accuracy_1sigma = fix_it->horizontalAccuracy() / 2.45; // approximate conversion
 
-        xstddev_vec.set(cnt, accuracy_1sigma);
-        ystddev_vec.set(cnt, accuracy_1sigma);
+            xstddev_vec.set(cnt, accuracy_1sigma);
+            ystddev_vec.set(cnt, accuracy_1sigma);
+        }
 
         last_tod = tod;
 
@@ -945,7 +975,7 @@ void GPSTrailImportTask::insertDoneSlot()
     //    COMPASS::instance().interface().databaseContentChanged();
     //    object.updateToDatabaseContent();
 
-    QMessageBox msg_box;
+    QMessageBox msg_box(Dialogs::statusDialogParent()); // centered over the main window
 
     msg_box.setWindowTitle("Import GPS Trail");
     msg_box.setText("Import of "+QString::number(gps_fixes_.size())+" GPS fixes done.");

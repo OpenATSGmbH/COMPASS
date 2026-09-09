@@ -132,6 +132,19 @@ const std::map<int, float> AccuracyTables::adsb_v12_nic_accuracies =
     {0, 37000.0f}     // NIC = 0:  Rc > 20 NM (worst-case)
 };
 
+std::string posInvalidationReasonName(PosInvalidationReason reason)
+{
+    switch (reason)
+    {
+    case PosInvalidationReason::None:                return "none";
+    case PosInvalidationReason::InputPosCheck:       return "input_pos_check";
+    case PosInvalidationReason::RiskyEquipage:       return "risky_equipage";
+    case PosInvalidationReason::ValidationFlagRisky: return "validation_flag_risky";
+    case PosInvalidationReason::QIInconsistent:      return "qi_inconsistent";
+    }
+    return "unknown";
+}
+
 std::string BaseInfo::asStr() const
 {
     stringstream ss;
@@ -282,6 +295,27 @@ bool ReconstructorInfo::isPrimaryOnlyDetection() const
     return !(acad_ || acid_ || mode_a_code_ || barometric_altitude_);
 }
 
+bool ReconstructorInfo::hasPrimaryDetection() const
+{
+    // I048/020 TYP: 1 single PSR, 3 SSR+PSR, 6 Mode S all-call + PSR, 7 Mode S roll-call + PSR
+    if (detection_type_)
+        return *detection_type_ == 1 || *detection_type_ == 3
+            || *detection_type_ == 6 || *detection_type_ == 7;
+
+    // no detection type transmitted: only a report without any secondary content
+    // can be recognized as primary
+    return isPrimaryOnlyDetection();
+}
+
+bool ReconstructorInfo::hasSSRDetection() const
+{
+    // I048/020 TYP: 2 single SSR, 3 SSR+PSR, 4-7 Mode S (Mode S is secondary surveillance)
+    if (detection_type_)
+        return *detection_type_ >= 2 && *detection_type_ <= 7;
+
+    return acad_ || acid_ || mode_a_code_ || barometric_altitude_;
+}
+
 bool ReconstructorInfo::isUnreliablePrimaryOnlyDetection() const
 {
     return dbcont_id_ != 62 && dbcont_id_ != 255 && isPrimaryOnlyDetection();
@@ -308,6 +342,11 @@ bool ReconstructorInfo::isOnGround() const
 
 bool ReconstructorInfo::isMoving() const
 {
+    // SGV STP bit: transmitted surface "stopped" state, never sent for
+    // airborne targets - reliable standstill indication
+    if (sgv_stp_ && *sgv_stp_)
+        return false;
+
     if (!velocity_)
         return true;
 

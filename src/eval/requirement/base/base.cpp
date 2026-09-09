@@ -264,6 +264,36 @@ const boost::optional<bool>& Base::mustHoldForAnyTarget() const
 
 /**
 */
+TargetSelection Base::targetSelection() const
+{
+    return target_selection_;
+}
+
+/**
+*/
+void Base::targetSelection(TargetSelection selection)
+{
+    target_selection_ = selection;
+}
+
+/**
+ * Standards state some requirements for cooperative targets only, others for every
+ * target, see EUROCAE ED-87E Table 3-1 NOTE 19 and NOTE 22. A target outside the
+ * selection is reported as ignored with this reason and does not enter the sector sum.
+ */
+std::string Base::targetSelectionIgnoreReason(const EvaluationTargetData& target) const
+{
+    if (target_selection_ == TargetSelection::Cooperative && target.isPrimaryOnly())
+        return "Not selected: non-cooperative";
+
+    if (target_selection_ == TargetSelection::NonCooperative && !target.isPrimaryOnly())
+        return "Not selected: cooperative";
+
+    return {};
+}
+
+/**
+*/
 Qt::SortOrder Base::resultSortOrder() const
 {
     bool lt = check_type_ == COMPARISON_TYPE::LESS_THAN ||

@@ -50,6 +50,11 @@ const PropertyList TaskResult::DBPropertyList       = PropertyList({ TaskResult:
                                                                      TaskResult::DBColumnJSONHeader,
                                                                      TaskResult::DBColumnJSONContent,
                                                                      TaskResult::DBColumnResultType });
+// used when the database is opened, the content column follows on demand
+const PropertyList TaskResult::DBHeaderPropertyList = PropertyList({ TaskResult::DBColumnID,
+                                                                     TaskResult::DBColumnName,
+                                                                     TaskResult::DBColumnJSONHeader,
+                                                                     TaskResult::DBColumnResultType });
 const std::string TaskResult::FieldID                   = "id";
 const std::string TaskResult::FieldName                 = "name";
 const std::string TaskResult::FieldType                 = "type";
@@ -294,6 +299,8 @@ TaskResultHeader TaskResult::header() const
  */
 const std::shared_ptr<ResultReport::Report>& TaskResult::report() const
 {
+    ensureContentLoaded();
+
     traced_assert(report_);
     return report_;
 }
@@ -302,14 +309,50 @@ const std::shared_ptr<ResultReport::Report>& TaskResult::report() const
  */
 std::shared_ptr<ResultReport::Report>& TaskResult::report()
 {
+    ensureContentLoaded();
+
     traced_assert(report_);
     return report_;
+}
+
+/**
+ * Reads the stored content on first use. When the database is opened only the header of each
+ * result is read, the content JSON follows once the result is shown, exported or updated.
+ */
+bool TaskResult::ensureContentLoaded() const
+{
+    if (content_loaded_)
+        return true;
+
+    //set before reading: breaks recursion and keeps a failed read from being retried forever
+    content_loaded_ = true;
+
+    loginf << "loading content of result '" << name_ << "'";
+
+    auto res = task_manager_.loadResultContent(id_);
+
+    if (!res.ok())
+    {
+        logerr << "could not load content of result '" << name_ << "': " << res.error();
+        return false;
+    }
+
+    if (!const_cast<TaskResult*>(this)->fromJSON(res.result()))
+    {
+        logerr << "could not read content of result '" << name_ << "'";
+        return false;
+    }
+
+    return true;
 }
 
 /**
  */
 void TaskResult::configure(const TaskResultHeader& header)
 {
+    //the header carries the metadata, so it is available without the content
+    metadata_ = header.metadata;
+
     //apply update state stored in header
     if (header.update_state == UpdateState::ContentUpdateNeeded)
     {
@@ -333,6 +376,8 @@ void TaskResult::setJSONConfiguration(const nlohmann::json& config)
  */
 bool TaskResult::hasJSONConfiguration() const
 {
+    ensureContentLoaded();
+
     return config_.is_null();
 }
 
@@ -340,6 +385,8 @@ bool TaskResult::hasJSONConfiguration() const
  */
 const nlohmann::json& TaskResult::jsonConfiguration() const
 {
+    ensureContentLoaded();
+
     return config_;
 }
 
@@ -409,6 +456,9 @@ TaskResult::UpdateState TaskResult::updateState() const
  */
 Result TaskResult::canUpdate() const
 {
+    //the configuration is part of the content
+    ensureContentLoaded();
+
     //we generally assume a config is needed to recompute the result
     if (!config_.is_object())
         return Result::failed("No configuration available");
@@ -755,6 +805,9 @@ std::string TaskResult::customTooltip(const ResultReport::SectionContentTable* t
  */
 nlohmann::json TaskResult::toJSON() const
 {
+    //writing back needs the full content
+    ensureContentLoaded();
+
     nlohmann::json j = nlohmann::json::object();
 
     j[ FieldType           ] = type();

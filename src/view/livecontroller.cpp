@@ -16,6 +16,7 @@
  */
 
 #include "livecontroller.h"
+#include "dialogs.h"
 #include "viewmanager.h"
 #include "compass.h"
 #include "dbcontent/dbcontent.h"
@@ -177,11 +178,13 @@ void LiveController::reloadWindow(const QString& title)
     // and unlike an offline load it shows no progress dialog - without a modal the user could
     // click Pause/Resume mid-load and re-enter the app-mode transition. The modal blocks that
     // and tells them a load is running.
-    QMessageBox msg_box(QApplication::activeWindow());
+    QMessageBox msg_box(Dialogs::statusDialogParent());
     msg_box.setWindowTitle(title);
     msg_box.setText("Loading data ...");
     msg_box.setStandardButtons(QMessageBox::NoButton);
     msg_box.setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    msg_box.setAttribute(Qt::WA_ShowWithoutActivating, true);
     msg_box.show();
     QCoreApplication::processEvents(); // paint before the load busies the main thread
 

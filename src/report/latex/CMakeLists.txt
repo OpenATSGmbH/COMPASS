@@ -12,6 +12,7 @@ target_sources(compass_report
         "${CMAKE_CURRENT_LIST_DIR}/latextable.h"
         "${CMAKE_CURRENT_LIST_DIR}/lateximage.h"
         "${CMAKE_CURRENT_LIST_DIR}/latextext.h"
+        "${CMAKE_CURRENT_LIST_DIR}/latexrun.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/latexcontent.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/latexdocument.cpp"
@@ -19,4 +20,5 @@ target_sources(compass_report
         "${CMAKE_CURRENT_LIST_DIR}/latextable.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/lateximage.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/latextext.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/latexrun.cpp"
 )

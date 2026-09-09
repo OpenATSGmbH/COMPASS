@@ -16,6 +16,7 @@
  */
 
 #include "reconstructortask.h"
+#include "dialogs.h"
 
 #include "compass.h"
 #include "reconstructortaskdialog.h"
@@ -480,14 +481,18 @@ void ReconstructorTask::run()
     tmp_label->setTextFormat(Qt::RichText);
 
     progress_dialog_.reset(new QProgressDialog("Reconstructing...", "Cancel", 0, 100,
-                                               QApplication::activeWindow()));
+                                               Dialogs::statusDialogParent()));
     progress_dialog_->setWindowTitle("Reconstructing References");
     progress_dialog_->setMinimumWidth(600);
     progress_dialog_->setLabel(tmp_label);
     progress_dialog_->setAutoClose(false);
     progress_dialog_->setAutoReset(false);
     progress_dialog_->setCancelButton(nullptr);
-    progress_dialog_->setModal(true);
+    // modal only for interactive runs: modality makes the window manager re-assert
+    // focus on the dialog whenever its geometry changes, and the label (elapsed/
+    // remaining times, association table) resizes it on every progress update -
+    // in batch runs that steals os focus from other applications all the time
+    progress_dialog_->setModal(allow_user_interactions_);
     // do not steal os focus from other applications when popping up
     progress_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
 
@@ -589,13 +594,18 @@ void ReconstructorTask::deleteAssociationsDoneSlot()
 {
     loginf;
 
-    // enable canceling
-
+    // enable canceling - interactive runs only: in batch runs a stray keystroke
+    // landing in the (focus-stealing) dialog hit the cancel button / Escape-reject
+    // and silently cancelled the whole run (observed 2026-08-19)
     traced_assert(progress_dialog_);
-    progress_dialog_->setCancelButton(new QPushButton("Cancel"));
 
-    connect(progress_dialog_.get(), &QProgressDialog::canceled,
-            this, &ReconstructorTask::runCancelledSlot);
+    if (allow_user_interactions_)
+    {
+        progress_dialog_->setCancelButton(new QPushButton("Cancel"));
+
+        connect(progress_dialog_.get(), &QProgressDialog::canceled,
+                this, &ReconstructorTask::runCancelledSlot);
+    }
 
     updateProgressSlot("Initializing", false);
 
@@ -1105,6 +1115,10 @@ void ReconstructorTask::endReconstruction()
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                this, &ReconstructorTask::writeDoneSlot);
 
+    // run-end analysis (e.g. dubious reference detection) - must happen before
+    // saveTargets() (feeds target info) and before reset() below (wipes state)
+    currentReconstructor()->finalizeAnalysis();
+
     currentReconstructor()->saveTargets();
 
     currentReconstructor()->finalizePersistence();
@@ -1262,7 +1276,7 @@ void ReconstructorTask::runCancelledSlot()
 
     cancelled_ = true;
 
-    QMessageBox* msg_box = new QMessageBox(QApplication::activeWindow());
+    QMessageBox* msg_box = new QMessageBox(Dialogs::statusDialogParent());
 
     msg_box->setWindowTitle("Cancelling Reconstruction");
     msg_box->setText("Please wait ...");

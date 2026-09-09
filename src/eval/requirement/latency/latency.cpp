@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/latency.h"
-#include "eval/results/position/latency.h"
+#include "eval/requirement/latency/latency.h"
+#include "eval/results/latency/latency.h"
 #include "eval/standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"

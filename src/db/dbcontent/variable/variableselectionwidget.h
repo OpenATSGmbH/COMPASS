@@ -21,7 +21,6 @@
 #include "test/ui_test_testable.h"
 
 #include <QFrame>
-#include <QMenu>
 
 class QPushButton;
 class QLabel;
@@ -39,8 +38,7 @@ class VariableSelectionWidget : public QFrame, public ui_test::UITestable
     Q_OBJECT
 
   protected slots:
-    void triggerSlot(QAction* action);
-    void showMenuSlot();
+    void showDialogSlot();
 
   signals:
     void selectionChanged();
@@ -83,6 +81,7 @@ class VariableSelectionWidget : public QFrame, public ui_test::UITestable
     void setReadOnly(bool read_only);
 
     virtual boost::optional<QString> uiGet(const QString& what = QString()) const override;
+    virtual bool uiSet(const QString& str) override;
     virtual QWidget* uiRerouteToNative() const override;
 
   private:
@@ -108,7 +107,7 @@ class VariableSelectionWidget : public QFrame, public ui_test::UITestable
 
     bool show_existing_in_db_only_{false};
 
-    bool showDataType(PropertyDataType type);
+    void applySelection(const std::string& obj_name, const std::string& var_name);
     void updateToolTip();
 };
 

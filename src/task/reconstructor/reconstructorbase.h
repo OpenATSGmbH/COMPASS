@@ -28,6 +28,7 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <memory>
 
@@ -321,7 +322,10 @@ public:
     void saveTargets();
 
     // our data structures
-    std::map<unsigned long, dbContent::targetReport::ReconstructorInfo> target_reports_;
+    // unordered: only looked up by record number, never iterated in key order. holds a few
+    // hundred thousand entries, where a tree lookup costs a chain of cache misses.
+    // references stay valid across insertion and rehashing, which callers rely on
+    std::unordered_map<unsigned long, dbContent::targetReport::ReconstructorInfo> target_reports_;
     unsigned int num_new_target_reports_in_slice_{0};
     unsigned int num_new_target_reports_total_{0};
     unsigned int num_unassociated_target_reports_total_{0};
@@ -344,6 +348,12 @@ public:
     // ds_id -> dbcont id -> (assoc, not assoc cnt)
 
     virtual void createAdditionalAnnotations() {}
+
+    /// Main-thread hook called once at the end of a reconstruction run,
+    /// BEFORE saveTargets() and the report finalization. Used for run-end
+    /// analysis (e.g. dubious reference detection) whose results feed the
+    /// targets table and the task report. Must run before reset().
+    virtual void finalizeAnalysis() {}
 
     /// Main-thread hook called once at the end of a reconstruction run,
     /// after all slices have been processed and written. Used for

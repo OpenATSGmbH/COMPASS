@@ -35,6 +35,7 @@ namespace targetReport
     class BarometricAltitude;
     class Velocity;
     class VelocityAccuracy;
+    class Acceleration;
     class ModeACode;
 }
 
@@ -63,6 +64,13 @@ public:
     boost::optional<unsigned char> nacp(unsigned int index) const;
     boost::optional<unsigned char> sil(unsigned int index) const;
     boost::optional<bool> posCheckFailed(unsigned int index) const;
+    boost::optional<bool> rangeCheckFailed(unsigned int index) const;
+    boost::optional<bool> cprValid(unsigned int index) const;
+    boost::optional<bool> localDecodingPositionJump(unsigned int index) const;
+    boost::optional<bool> sgvStopped(unsigned int index) const; // CAT021 SGV STP bit
+    // CAT021: true if the report timestamp stems from the time of applicability
+    // (I021/071), false if from the time of message reception (I021/073)
+    boost::optional<bool> adsbToATimeSource(unsigned int index) const;
 
     boost::optional<unsigned int> ecat(unsigned int index) const;
     boost::optional<unsigned char> getGeoAltAcc(unsigned int index) const;
@@ -73,13 +81,16 @@ public:
     boost::optional<targetReport::Position> position(unsigned int index) const;
     boost::optional<targetReport::PositionAccuracy> positionAccuracy(unsigned int index) const;
     boost::optional<targetReport::BarometricAltitude> barometricAltitude(unsigned int index) const;
+    boost::optional<float> trackedBarometricAltitude(unsigned int index) const;
     boost::optional<float> geometricAltitude(unsigned int index) const;
     boost::optional<double> radarRange(unsigned int index) const;
     boost::optional<double> radarAzimuth(unsigned int index) const;
     boost::optional<targetReport::Velocity> velocity(unsigned int index) const;
     boost::optional<targetReport::VelocityAccuracy> velocityAccuracy(unsigned int index) const;
+    boost::optional<targetReport::Acceleration> acceleration(unsigned int index) const; // CAT062 only (I062/210)
     boost::optional<double> trackAngle(unsigned int index) const;
     boost::optional<bool> groundBit(unsigned int index) const;
+    boost::optional<unsigned char> detectionType(unsigned int index) const; // CAT048 I048/020 TYP coding
     
     boost::optional<targetReport::ModeACode> modeACode(unsigned int index) const;
     boost::optional<unsigned int> modeA(unsigned int index) const;
@@ -149,6 +160,7 @@ private:
     const NullableVector<float>*  cat062_alt_sec_vec_     = nullptr;
     const NullableVector<float>*  cat021_alt_geo_vec_     = nullptr;
     const NullableVector<bool>*   meta_ground_bit_vec_    = nullptr;
+    const NullableVector<unsigned char>* meta_detection_type_vec_ = nullptr;
 
     const NullableVector<double>* meta_radar_range_vec_    = nullptr;
     const NullableVector<double>* meta_radar_azimuth_vec_  = nullptr;
@@ -159,6 +171,9 @@ private:
     const NullableVector<unsigned char>* cat021_nucp_nic_vec_                = nullptr;
     const NullableVector<unsigned char>* cat021_sil_vec_                     = nullptr;
     const NullableVector<bool>* cat021_pos_check_failed_vec_                 = nullptr;
+    const NullableVector<bool>* cat021_range_check_failed_vec_               = nullptr;
+    const NullableVector<bool>* cat021_cpr_valid_vec_                        = nullptr;
+    const NullableVector<bool>* cat021_ldpj_vec_                             = nullptr;
 
     const NullableVector<double>*        meta_pos_std_dev_x_m_vec_           = nullptr;
     const NullableVector<double>*        meta_pos_std_dev_y_m_vec_           = nullptr;
@@ -167,11 +182,17 @@ private:
     //velocity / angle
     const NullableVector<double>* meta_speed_vec_       = nullptr;
     const NullableVector<double>* meta_track_angle_vec_ = nullptr;
+    const NullableVector<bool>*   cat021_sgv_stp_vec_   = nullptr;
+    const NullableVector<float>*  cat021_toa_pos_vec_   = nullptr;
 
     //velocity accuracy
     const NullableVector<unsigned char>* cat021_nucv_nacv_vec_ = nullptr;
     const NullableVector<double>*        cat062_vx_stddev_vec_ = nullptr;
     const NullableVector<double>*        cat062_vy_stddev_vec_ = nullptr;
+
+    //acceleration
+    const NullableVector<double>* cat062_ax_vec_ = nullptr;
+    const NullableVector<double>* cat062_ay_vec_ = nullptr;
 
     //mode a
     const NullableVector<unsigned int>* meta_mode_a_vec_          = nullptr;

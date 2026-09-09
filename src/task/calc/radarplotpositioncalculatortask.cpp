@@ -16,6 +16,7 @@
  */
 
 #include "radarplotpositioncalculatortask.h"
+#include "dialogs.h"
 #include "compass.h"
 #include "buffer.h"
 #include "dbinterface.h"
@@ -133,7 +134,7 @@ void RadarPlotPositionCalculatorTask::run()
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
     std::string msg = "Loading object data";
-    msg_box_ = new QMessageBox(QApplication::activeWindow());
+    msg_box_ = new QMessageBox(Dialogs::statusDialogParent());
     traced_assert(msg_box_);
     msg_box_->setWindowTitle("Calculating Radar Plot Positions");
     msg_box_->setText(msg.c_str());
@@ -223,7 +224,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     if (buffers_size)
     {
         std::string msg;
-        msg_box_ = new QMessageBox(QApplication::activeWindow());
+        msg_box_ = new QMessageBox(Dialogs::statusDialogParent());
         traced_assert(msg_box_);
         msg_box_->setWindowTitle("Calculating Radar Plot Positions");
         msg = "Writing object data";
@@ -281,7 +282,7 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
 
         QApplication::restoreOverrideCursor();
 
-        msg_box_ = new QMessageBox(QApplication::activeWindow());
+        msg_box_ = new QMessageBox(Dialogs::statusDialogParent());
         traced_assert(msg_box_);
         msg_box_->setWindowTitle("Calculating Radar Plot Positions");
         msg_box_->setText("Writing of object data done.");

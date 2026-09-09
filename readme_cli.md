@@ -84,19 +84,27 @@ Per category the keys `"edition"`, `"ref_edition"`, `"spf_edition"`, and `"mappi
 (e.g. `"CAT010 to Radar"`) can be set. Naming must be exactly as in the GUI, otherwise
 the application quits with an error message. Note the category key `"10"` for CAT010.
 
-`--import_gps_parameters` example (note: `mode_3a_code` and `target_address` are decimal):
+`--import_gps_parameters` example. The keys are the GPS trail import task's
+configuration parameters (unlike the runtime command `import_gps_trail`, which
+also offers convenience arguments `mode3a` octal / `address` hex): here
+`mode_3a_code` and `target_address` are decimal, and the `set_*` / `use_*`
+flags must be enabled for the corresponding value to apply. NMEA files without
+date information need the override date:
 
 ```json
 {
-  "callsign": "ENTRPRSE",
   "ds_name": "GPS Trail",
-  "ds_sac": 0,
+  "ds_sac": 255,
   "ds_sic": 0,
-  "mode_3a_code": 961,
+  "use_override_date": true,
+  "override_date_str": "2026-06-09",
   "set_callsign": true,
+  "callsign": "ENTRPRSE",
   "set_mode_3a_code": true,
+  "mode_3a_code": 961,
   "set_target_address": true,
   "target_address": 16702992,
+  "use_tod_offset": false,
   "tod_offset": 0.0
 }
 ```
@@ -113,7 +121,7 @@ the application quits with an error message. Note the category key `"10"` for CA
 | `--evaluate` | Run pre-configured evaluation |
 | `--evaluation_parameters arg` | Evaluation parameters JSON string (see below) |
 | `--evaluate_run_filter` | Run evaluation filter ('Filter UTNs') before evaluation |
-| `--analyze_data_source arg` | Run Analyze Data Source task for the given DSType (currently only `MLAT`) |
+| `--analyze_data_source arg` | Run Analyze Data Source task for the given DSType: `MLAT` or `ADSB` |
 | `--analyze_parameters arg` | Analyze task parameters JSON string, analogous to `--evaluation_parameters` |
 | `--export_view_points_report arg` | Export View Points as PDF, argument is the report filename |
 | `--export_report arg` | Export existing report by name, e.g. `EUROCAE ED-87E Evaluation`, PDF by default |
@@ -142,3 +150,73 @@ configuration):
 Note: `dbcontent_name_ref` cannot be `CAT001` or `CAT048`; these categories do not
 provide the maximum X/Y standard deviation required for reference accuracy filtering
 and are rejected as reference data.
+
+## Examples
+
+Each invocation runs its options in order; multi-step workflows with different
+per-import options (e.g. different line identifiers) are split into one
+invocation per step, re-opening the database.
+
+Create a database and import IOSS recordings into line L1, restricted to a
+10 NM circle around an airport (`filter_circ_range` in NM; the parameter keys
+follow the ASTERIX import configuration, see `readme_rtcmd.md`):
+
+```bash
+./COMPASS-release_x86_64.AppImage --set_context LOWW_26 \
+  --create_db /data/loww/20260609.db \
+  --import_asterix_files '/data/loww/rec-astos.ff;/data/loww/rec-mlw.ff' \
+  --asterix_framing ioss --import_asterix_file_line L1 \
+  --import_asterix_parameters '{"date_str": "2026-06-09",
+    "filter_position_circ_active": true, "filter_circ_latitude": 48.110278,
+    "filter_circ_longitude": 16.569722, "filter_circ_range": 10.0}' \
+  --quit
+```
+
+Import a further recording into line L2 of the same database:
+
+```bash
+./COMPASS-release_x86_64.AppImage --open_db /data/loww/20260609.db \
+  --import_asterix_file /data/loww/rec-ets.ff \
+  --asterix_framing ioss --import_asterix_file_line L2 \
+  --import_asterix_parameters '{"date_str": "2026-06-09"}' \
+  --quit
+```
+
+Import a GPS trail NMEA file with secondary attributes (see the
+`--import_gps_parameters` description above):
+
+```bash
+./COMPASS-release_x86_64.AppImage --open_db /data/loww/20260609.db \
+  --import_gps_trail /data/loww/solution.NMEA.txt \
+  --import_gps_parameters '{"ds_name": "GPS Trail", "ds_sac": 255, "ds_sic": 0,
+    "use_override_date": true, "override_date_str": "2026-06-09",
+    "set_callsign": true, "callsign": "FLUSI60",
+    "set_mode_3a_code": true, "mode_3a_code": 1,
+    "set_target_address": true, "target_address": 4487920}' \
+  --quit
+```
+
+Reconstruct references and export the resulting task report as JSON:
+
+```bash
+./COMPASS-release_x86_64.AppImage --open_db /data/loww/20260609.db \
+  --reconstruct_references \
+  --export_report 'Reconstruct References L1' \
+  --export_report_directory /data/loww/reconstruction_report/ \
+  --export_report_mode JSON --quit
+```
+
+Run an ADS-B data source analysis (ground traffic only) and export its report:
+
+```bash
+./COMPASS-release_x86_64.AppImage --open_db /data/loww/20260609.db \
+  --analyze_data_source ADSB \
+  --analyze_parameters '{"use_ground_only": true}' \
+  --export_report 'Analyze ADSB Data Source' \
+  --export_report_directory /data/loww/adsb_analysis_report/ \
+  --export_report_mode JSON --quit
+```
+
+Report names follow the generating task (shown in the result view); existing
+names can be queried via the `get_existing_reports` runtime command or the
+`task_results` database table.

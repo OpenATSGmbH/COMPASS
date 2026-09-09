@@ -11,7 +11,7 @@
 
 The 'Speed' requirement is used to calculate the probability of a target report having a speed error smaller than a defined threshold. The difference of the speed (test speed vs. speed based on reference positions) is calculated, and if its absolute value is smaller or equal than the defined threshold, the target report is counted for the calculated probability PCP (probability of check passed). The PCP must be greater or equal than the defined 'Probability' for the requirement to pass. \\
 
-In another variation, if the 'Use Percent Threshold if Higher' checkbox is set, the check is changed for faster speeds. If the 'Threshold Percent' value times the calculated speed is larger or equal the defined threshold value, then the threshold value is changed to the value of the 'Threshold Percent' value times the calculated speed. This means that for higher speeds, an accuracy with the given percentage is required. \\
+In another variation, if the 'Use Percent Threshold if Higher' checkbox is set, the check is changed for faster speeds. If the 'Threshold Percent' percentage of the reference speed is larger than the defined threshold value, the threshold value is replaced by that percentage of the reference speed. This means that for higher speeds, an accuracy with the given percentage is required. \\
 
 \begin{itemize}  
 \item Probability [1]: Probability of correct speed

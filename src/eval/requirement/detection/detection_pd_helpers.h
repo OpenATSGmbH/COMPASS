@@ -55,18 +55,19 @@ inline float adjustedGap(float gap_s, const MissTestParams& p)
     return adj;
 }
 
-// True iff `gap_s` counts as a miss under `p`. Matches the four-filter rule
-// from readme_detection.md section 3.4 (tolerance, min, max, > UI).
+// True iff `gap_s` counts as a miss under `p`. Matches the filter rule from
+// readme_detection.md section 3.4: the minimum and maximum gap length select
+// on the raw gap, the tolerance applies only to the update interval test.
+// The standards state the gap length thresholds on the measured gap, so the
+// tolerance must not shift them.
 inline bool isMiss(float gap_s, const MissTestParams& p)
 {
-    const float adj = adjustedGap(gap_s, p);
-
-    if (p.use_min_gap_length && adj < p.min_gap_length_s)
+    if (p.use_min_gap_length && gap_s < p.min_gap_length_s)
         return false;
-    if (p.use_max_gap_length && adj > p.max_gap_length_s)
+    if (p.use_max_gap_length && gap_s > p.max_gap_length_s)
         return false;
 
-    return adj > p.update_interval_s;
+    return adjustedGap(gap_s, p) > p.update_interval_s;
 }
 
 // Number of missed update intervals attributed to `gap_s`. Caller must have
@@ -82,6 +83,18 @@ inline unsigned int numMisses(float gap_s, const MissTestParams& p)
     if (adj <= 0.0f)
         return 0;
     return static_cast<unsigned int>(std::floor(adj / p.update_interval_s));
+}
+
+// Missed time in seconds attributed to `gap_s` in the time-ratio calculation
+// mode (EUROCAE ED-129C Appendix C "Interarrivaltime" method, Equation 2-2):
+// max(adjusted_gap - UI, 0) for gaps that pass the miss test, 0 otherwise.
+inline float missDuration(float gap_s, const MissTestParams& p)
+{
+    if (!isMiss(gap_s, p))
+        return 0.0f;
+
+    const float adj = adjustedGap(gap_s, p);
+    return std::max(adj - p.update_interval_s, 0.0f);
 }
 
 // Contiguous reference-coverage window, as built by `buildReferencePeriods()`.

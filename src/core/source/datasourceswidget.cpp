@@ -473,7 +473,8 @@ QWidget* DataSourceItem::createLinesWidget()
     widget->setContentsMargins(0, 0, 0, 0);
 
     QHBoxLayout* button_layout = new QHBoxLayout();
-    button_layout->setContentsMargins(0, 0, 0, 0);
+    // 1px top/bottom margin so the line buttons of adjacent rows do not touch
+    button_layout->setContentsMargins(0, 1, 0, 1);
 
     std::string line_str;
 
@@ -1926,6 +1927,8 @@ void DataSourcesWidget::runDeleteDialog(std::function<void(DeleteDataDialog&)> p
     delete_wait_dialog_->setText("Please wait ...");
     delete_wait_dialog_->setStandardButtons(QMessageBox::NoButton);
     delete_wait_dialog_->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    delete_wait_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
     delete_wait_dialog_->show();
 
     // create and run delete job
