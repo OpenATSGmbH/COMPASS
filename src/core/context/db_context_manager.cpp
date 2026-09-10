@@ -756,6 +756,16 @@ void DBContextManager::selectAllDataSources()
     line_loading_wanted_.clear();
 }
 
+void DBContextManager::resetLoadingSelection()
+{
+    loginf;
+
+    setLoadDSTypes(true);
+    selectAllDataSources();
+
+    emit loadingSelectionChangedSignal();
+}
+
 void DBContextManager::deselectAllDataSources()
 {
     setLoadDataSources(false);

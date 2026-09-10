@@ -15,6 +15,7 @@ include("${CMAKE_SOURCE_DIR}/src/eval/requirement/detection/unit_tests/CMakeList
 include("${CMAKE_SOURCE_DIR}/src/task/analyze/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/analyze/mlat/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/reconstructor/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/task/result/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/filter/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/reconstruction/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/gui/unit_tests/CMakeLists.txt")

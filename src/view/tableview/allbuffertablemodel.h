@@ -107,6 +107,10 @@ class AllBufferTableModel : public BaseBufferTableModel
 
     std::vector<std::pair<int,int>> getSelectedRows(); // contiguous [first,last] runs of selected rows
 
+    /// Number of non-null cells per data column over the shown rows, one typed pass per
+    /// column and data content. Feeds the view info of the runtime commands.
+    std::vector<unsigned int> validCounts() const;
+
     /// Installs a layer-level filter keyed by "<ds_type>:<ds_name>:L<n>:<dbcont>".
     /// nullopt = no filter (all rows shown). An empty set filters everything out.
     /// The filter is consulted inside buildRowIndexes(); callers must trigger a

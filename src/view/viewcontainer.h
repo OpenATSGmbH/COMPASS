@@ -67,7 +67,8 @@ class ViewContainer : public QObject, public Configurable
 
     void resetToStartupConfiguration();
 
-    time_t created() const { return creation_time_; }
+    /// creation sequence number, a higher number means created later
+    unsigned long created() const { return creation_index_; }
 
   protected:
     ViewManager& view_manager_;
@@ -79,7 +80,7 @@ class ViewContainer : public QObject, public Configurable
 
     std::vector<std::unique_ptr<View>> views_;
 
-    time_t creation_time_;
+    unsigned long creation_index_ = 0;
 
     //static unsigned int view_count_;
 

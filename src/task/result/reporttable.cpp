@@ -66,6 +66,21 @@ namespace
 
 /**
  */
+std::string ReportTableColumn::viewRepresentation() const
+{
+    if (!representation.empty())
+        return representation;
+
+    // lengths, speeds, times and ratios read well with two decimals, an angle column keeps
+    // the full value since the coordinate columns need it
+    bool floating = data_type == PropertyDataType::DOUBLE || data_type == PropertyDataType::FLOAT;
+
+    if (floating && dimension != "Angle")
+        return "FLOAT_PREC2";
+
+    return "";
+}
+
 ReportTableColumn::ReportTableColumn(const std::string& name,
                                      PropertyDataType data_type,
                                      const std::string& display_name,

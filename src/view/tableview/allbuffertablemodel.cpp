@@ -30,6 +30,7 @@
 #include "jobmanager.h"
 #include "logger.h"
 #include "number.h"
+#include "property_templates.h"
 #include "stringconv.h"
 #include "tableview.h"
 #include "tableviewdatasource.h"
@@ -309,6 +310,60 @@ bool AllBufferTableModel::resolveVariable(unsigned int data_col,
     variable_cache_[cache_key] = var;
     out_var = var;
     return var != nullptr;
+}
+
+std::vector<unsigned int> AllBufferTableModel::validCounts() const
+{
+    unsigned int num_cols = dataColumnCount();
+
+    std::vector<unsigned int> counts(num_cols, 0);
+
+    // the shown buffer indexes per data content, the rows interleave the contents
+    std::map<unsigned int, std::vector<unsigned int>> indexes_per_dbcont;
+
+    for (const auto& row_index : row_indexes_)
+        indexes_per_dbcont[ row_index.first ].push_back(row_index.second);
+
+    for (const auto& dbcont_indexes : indexes_per_dbcont)
+    {
+        const std::string& dbcontent_name = number_to_dbcont_.at(dbcont_indexes.first);
+        const auto&        indexes        = dbcont_indexes.second;
+
+        auto buffer_it = buffers_.find(dbcontent_name);
+        if (buffer_it == buffers_.end())
+            continue;
+
+        Buffer& buffer = *buffer_it->second;
+
+        for (unsigned int col = 0; col < num_cols; ++col)
+        {
+            dbContent::Variable* variable = nullptr;
+
+            if (!resolveVariable(col, dbcontent_name, variable) ||
+                !buffer.properties().hasProperty(variable->name()))
+                continue;
+
+            unsigned int num_valid = 0;
+
+            #define CountValidFunc(PDType, DType, Suffix)                    \
+            {                                                                \
+                const auto& values = buffer.get<DType>(variable->name());    \
+                for (auto index : indexes)                                   \
+                    if (!values.isNull(index))                               \
+                        ++num_valid;                                         \
+            }
+            #define CountValidNotFoundFunc continue;
+
+            SwitchPropertyDataType(variable->dataType(), CountValidFunc, CountValidNotFoundFunc)
+
+            #undef CountValidFunc
+            #undef CountValidNotFoundFunc
+
+            counts[ col ] += num_valid;
+        }
+    }
+
+    return counts;
 }
 
 QVariant AllBufferTableModel::dataColumnHeader(unsigned int data_col) const

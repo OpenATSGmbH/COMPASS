@@ -58,7 +58,8 @@ View::View(nlohmann::json& config, ViewContainer* parent)
     loginf << "name '" << name_ << "'";
     traced_assert(name_.size());
 
-    creation_time_ = boost::posix_time::to_time_t(boost::posix_time::microsec_clock::local_time());
+    static unsigned long creation_counter = 0;
+    creation_index_ = ++creation_counter;
 
     central_widget_ = new QWidget();
     //central_widget_->setAutoFillBackground(true);

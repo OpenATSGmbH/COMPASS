@@ -69,6 +69,8 @@ signals:
     void sectorsChangedSignal();
     void countsChangedSignal();
     void asterixInfoChangedSignal();
+    /// the loading selection of data source types, data sources or lines was reset
+    void loadingSelectionChangedSignal();
 
 public:
     explicit DBContextManager(COMPASS& compass);
@@ -158,6 +160,8 @@ public:
     void deselectAllDSTypes();
     void selectAllDataSources();
     void deselectAllDataSources();
+    /// enables all data source types, data sources and lines for loading and notifies the widgets
+    void resetLoadingSelection();
     void deselectAllLines();
     void selectSpecificLine(unsigned int line_id);
     void selectDSTypeSpecificDataSources(const std::string& ds_type);

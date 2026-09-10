@@ -979,6 +979,19 @@ void GridViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
     info[ "data_bounds_ymax"  ] = bounds_valid ? xy_bounds->bottom()      : 0.0;
     info[ "data_bounds_zmax"  ] = bounds_valid ?  z_bounds.value().second : 0.0;
 
+    // the grid built from the stash, the value type of the view applied per cell
+    bool grid_range_valid = grid_ && grid_value_min_.has_value() && grid_value_max_.has_value();
+
+    info[ "grid_valid"       ] = grid_ != nullptr;
+    info[ "grid_num_added"   ] = grid_ ? grid_->numAdded()      : (size_t)0;
+    info[ "grid_num_oor"     ] = grid_ ? grid_->numOutOfRange() : (size_t)0;
+    info[ "grid_num_inf"     ] = grid_ ? grid_->numInf()        : (size_t)0;
+    info[ "grid_num_layers"  ] = grid_layers_.numLayers();
+    info[ "grid_value_type"  ] = grid2d::valueTypeToString((grid2d::ValueType)view_->settings().value_type);
+    info[ "grid_range_valid" ] = grid_range_valid;
+    info[ "grid_value_min"   ] = grid_range_valid ? grid_value_min_.value() : 0.0;
+    info[ "grid_value_max"   ] = grid_range_valid ? grid_value_max_.value() : 0.0;
+
     // auto zoomActive = [ & ] (const QRectF& bounds_data, const QRectF& bounds_axis)
     // {
     //     if (!bounds_data.isValid() || !bounds_axis.isValid())

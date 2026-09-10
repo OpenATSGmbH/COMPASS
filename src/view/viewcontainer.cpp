@@ -75,7 +75,8 @@ ViewContainer::ViewContainer(nlohmann::json& config,
     logdbg << "window " << window_cnt_;
     traced_assert(tab_widget_);
 
-    creation_time_ = boost::posix_time::to_time_t(boost::posix_time::microsec_clock::local_time());
+    static unsigned long creation_counter = 0;
+    creation_index_ = ++creation_counter;
 
     disable_add_remove_views_ = view_manager_.compass().disableAddRemoveViews();
 

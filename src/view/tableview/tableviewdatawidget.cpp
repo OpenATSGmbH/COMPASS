@@ -388,6 +388,16 @@ void TableViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
         table_info[ "line0" ] = line0;
 
+        // non-null cells per column, parallel to properties, a prefix column counts every row
+        std::vector<unsigned int> data_counts = all_buffer_table_widget_->allBufferTableModel()->validCounts();
+        int num_prefix = table->model()->columnCount() - (int)data_counts.size();
+
+        std::vector<unsigned int> column_valid_counts(num_prefix > 0 ? num_prefix : 0,
+                                                      (unsigned int)table->model()->rowCount());
+        column_valid_counts.insert(column_valid_counts.end(), data_counts.begin(), data_counts.end());
+
+        table_info[ "column_valid_counts" ] = column_valid_counts;
+
         table_infos.push_back(table_info);
     };
 

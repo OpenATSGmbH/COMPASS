@@ -68,6 +68,8 @@ void DataSourcesToolWidget::createUI()
 
     connect(&ctx_man_, &context::DBContextManager::countsChangedSignal,
             this, [this] { logdbg << "countsChangedSignal received"; updateContent(false); });
+    connect(&ctx_man_, &context::DBContextManager::loadingSelectionChangedSignal,
+            this, [this] { logdbg << "loadingSelectionChangedSignal received"; updateContent(false); });
 
     auto& dbcont_man = ctx_man_.compass().dbContentManager();
 

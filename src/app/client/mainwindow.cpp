@@ -1217,7 +1217,8 @@ void MainWindow::resetViewsMenuSlot()
         // reset stuff
         compass_.dbContentManager().resetToStartupConfiguration();
 
-        // context reset handled by DBContextManager - loading state is per-session
+        // enable all data source types, data sources and lines, as the confirmation promises
+        compass_.dbContextManager().resetLoadingSelection();
 
         compass_.filterManager().resetToStartupConfiguration();
 

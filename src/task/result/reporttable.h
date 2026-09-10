@@ -61,6 +61,10 @@ struct ReportTableColumn
     nlohmann::json toJSON() const;
     bool fromJSON(const nlohmann::json& j);
 
+    /// representation of the Report Variable in the views: the stored one, or two decimals
+    /// for a floating point column that is not an angle (coordinates keep the full value)
+    std::string viewRepresentation() const;
+
     std::string      name;                                   // db column name
     PropertyDataType data_type = PropertyDataType::DOUBLE;
     std::string      display_name;                           // shown in the variable selection

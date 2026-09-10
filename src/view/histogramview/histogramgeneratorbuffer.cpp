@@ -18,6 +18,7 @@
 #include "logger.h"
 #include "variable.h"
 #include "metavariable.h"
+#include "reportvariable.h"
 
 #include <QApplication>
 
@@ -25,10 +26,12 @@
  */
 HistogramGeneratorBuffer::HistogramGeneratorBuffer(Data* buffer_data, 
                                                    dbContent::Variable* variable,
-                                                   dbContent::MetaVariable* meta_variable)
-:   buffer_data_  (buffer_data)
-,   variable_     (variable)
-,   meta_variable_(meta_variable)
+                                                   dbContent::MetaVariable* meta_variable,
+                                                   dbContent::ReportVariable* report_variable)
+:   buffer_data_    (buffer_data)
+,   variable_       (variable)
+,   meta_variable_  (meta_variable)
+,   report_variable_(report_variable)
 {
 }
 
@@ -36,7 +39,7 @@ HistogramGeneratorBuffer::HistogramGeneratorBuffer(Data* buffer_data,
  */
 bool HistogramGeneratorBuffer::hasData() const
 {
-    return (buffer_data_ && (variable_ || meta_variable_));
+    return (buffer_data_ && (variable_ || meta_variable_ || report_variable_));
 }
 
 /**
@@ -53,6 +56,14 @@ dbContent::Variable* HistogramGeneratorBuffer::currentVariable(const std::string
             return nullptr;
         }
         data_var = &meta_variable_->getFor(db_content);
+    }
+    else if (report_variable_)
+    {
+        //a Report Table references one or two host data contents, the others get nothing
+        if (!report_variable_->existsIn(db_content))
+            return nullptr;
+
+        data_var = &report_variable_->getFor(db_content);
     }
     else
     {

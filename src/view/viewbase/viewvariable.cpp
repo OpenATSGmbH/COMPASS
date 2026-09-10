@@ -124,6 +124,16 @@ dbContent::ReportVariable& ViewVariable::reportVariable() const
 
 /**
  */
+dbContent::ReportVariable* ViewVariable::reportVariablePtr() const
+{
+    if (!hasVariable() || !isReportVariable())
+        return nullptr;
+
+    return &reportVariable();
+}
+
+/**
+ */
 bool ViewVariable::isMetaVariable () const
 {
     return (settings_.data_var_dbcont == META_OBJECT_NAME);
@@ -193,6 +203,7 @@ dbContent::Variable& ViewVariable::variable()
 {
     traced_assert(hasVariable());
     traced_assert(!isMetaVariable());
+    traced_assert(!isReportVariable());
     traced_assert(view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
 
     return view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
@@ -204,6 +215,7 @@ const dbContent::Variable& ViewVariable::variable() const
 {
     traced_assert(hasVariable());
     traced_assert(!isMetaVariable());
+    traced_assert(!isReportVariable());
     traced_assert(view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
 
     return view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
@@ -213,7 +225,7 @@ const dbContent::Variable& ViewVariable::variable() const
 */
 dbContent::Variable* ViewVariable::variablePtr()
 {
-    if (!hasVariable() || isMetaVariable())
+    if (!hasVariable() || isMetaVariable() || isReportVariable())
         return nullptr;
 
     return &variable();

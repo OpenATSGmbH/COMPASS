@@ -29,6 +29,7 @@ namespace dbContent
 {
     class Variable;
     class MetaVariable;
+    class ReportVariable;
 }
 
 /**
@@ -61,7 +62,8 @@ public:
 
     HistogramGeneratorBuffer(Data* buffer_data,
                              dbContent::Variable* variable,
-                             dbContent::MetaVariable* meta_variable);
+                             dbContent::MetaVariable* meta_variable,
+                             dbContent::ReportVariable* report_variable = nullptr);
     virtual ~HistogramGeneratorBuffer() = default;
 
     virtual bool hasData() const override;
@@ -124,8 +126,9 @@ protected:
 
 private:
     Data*                    buffer_data_        = nullptr; //governed buffer data
-    dbContent::Variable*     variable_           = nullptr; //governed variable
-    dbContent::MetaVariable* meta_variable_      = nullptr; //governed meta-variable
+    dbContent::Variable*       variable_           = nullptr; //governed variable
+    dbContent::MetaVariable*   meta_variable_      = nullptr; //governed meta-variable
+    dbContent::ReportVariable* report_variable_    = nullptr; //governed Report Variable, exists in its host contents only
     bool                     data_not_in_buffer_ = false;
 
     RowFilter                row_filter_;
@@ -145,8 +148,9 @@ public:
 
     HistogramGeneratorBufferT(Data* buffer_data, 
                               dbContent::Variable* variable,
-                              dbContent::MetaVariable* meta_variable)
-    :   HistogramGeneratorBuffer(buffer_data, variable, meta_variable) {}
+                              dbContent::MetaVariable* meta_variable,
+                              dbContent::ReportVariable* report_variable = nullptr)
+    :   HistogramGeneratorBuffer(buffer_data, variable, meta_variable, report_variable) {}
 
     virtual ~HistogramGeneratorBufferT() = default;
 

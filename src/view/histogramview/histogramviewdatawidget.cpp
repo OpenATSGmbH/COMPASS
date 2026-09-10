@@ -27,6 +27,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "dbcontentlayer.h"
 #include "histogramleafpayload.h"
 #include "histogramviewdatasource.h"
@@ -430,15 +431,18 @@ void HistogramViewDataWidget::updateFromVariables()
     if (viewData().empty())
         return;
 
-    dbContent::Variable*     data_var = variable.variablePtr();
-    dbContent::MetaVariable* meta_var = variable.metaVariablePtr();
+    // a Report Variable is a column of a Report Table, joined onto its host data contents only
+    dbContent::Variable*       data_var   = variable.variablePtr();
+    dbContent::MetaVariable*   meta_var   = variable.metaVariablePtr();
+    dbContent::ReportVariable* report_var = variable.reportVariablePtr();
 
-    traced_assert(meta_var || data_var);
+    traced_assert(meta_var || data_var || report_var);
 
-    auto data_type = meta_var ? meta_var->dataType() : data_var->dataType();
+    auto data_type = meta_var   ? meta_var->dataType()   :
+                     report_var ? report_var->dataType() : data_var->dataType();
 
     #define UpdateFunc(PDType, DType, Suffix) \
-        histogram_generator_.reset(new HistogramGeneratorBufferT<DType>(&viewData(), data_var, meta_var));
+        histogram_generator_.reset(new HistogramGeneratorBufferT<DType>(&viewData(), data_var, meta_var, report_var));
 
     #define NotFoundFunc                                                                                                                      \
         const std::string msg = "HistogramViewDataWidget: updateVariableData: impossible for property type " + Property::asString(data_type); \

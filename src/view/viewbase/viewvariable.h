@@ -81,6 +81,7 @@ public:
     void setMetaVariable(dbContent::MetaVariable& var, bool notify_changes);
 
     dbContent::ReportVariable& reportVariable() const;
+    dbContent::ReportVariable* reportVariablePtr() const;
 
     void setEmpty(bool notify_changes);
 

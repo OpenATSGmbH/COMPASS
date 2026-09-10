@@ -1706,7 +1706,7 @@ void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode
 */
 View* ViewManager::latestView()
 {
-    time_t latest = std::numeric_limits<time_t>::min();
+    unsigned long latest = 0;
     View* latest_view = nullptr;
 
     for (const auto& elem : views_)
@@ -1725,7 +1725,7 @@ View* ViewManager::latestView()
 */
 ViewContainerWidget* ViewManager::latestViewContainer()
 {
-    time_t latest = std::numeric_limits<time_t>::min();
+    unsigned long latest = 0;
     ViewContainerWidget* latest_container = nullptr;
 
     for (const auto& elem : container_widgets_)

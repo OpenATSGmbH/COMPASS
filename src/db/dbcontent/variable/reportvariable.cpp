@@ -106,7 +106,7 @@ Variable& ReportVariable::getFor(const std::string& dbcontent_name)
                                                    column_.description,
                                                    column_.dimension,
                                                    column_.unit,
-                                                   column_.representation);
+                                                   column_.viewRepresentation());
 
     auto& ref = *variable;
 
