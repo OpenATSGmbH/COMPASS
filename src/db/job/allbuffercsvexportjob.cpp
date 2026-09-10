@@ -141,21 +141,15 @@ void AllBufferCSVExportJob::run_impl()
                         continue;
                     }
                 }
-                else
-                {
-                    if (dbcontent_name != variable_dbcontent_name)
-                    {
-                        ss << ";";
-                        continue;
-                    }
+                Variable* variable_ptr = manager.resolveVariableFor(variable_dbcontent_name, variable_name, dbcontent_name);
 
-                    traced_assert(manager.existsDBContent(dbcontent_name));
-                    traced_assert(manager.dbContent(dbcontent_name).hasVariable(variable_name));
+                if (!variable_ptr)
+                {
+                    ss << ";";
+                    continue;
                 }
 
-                Variable& variable = (variable_dbcontent_name == META_OBJECT_NAME)
-                                            ? manager.metaVariable(variable_name).getFor(dbcontent_name)
-                                            : manager.dbContent(dbcontent_name).variable(variable_name);
+                Variable& variable = *variable_ptr;
 
                 bool is_null = false;
                 value_str = buffer_utils::getValueString(

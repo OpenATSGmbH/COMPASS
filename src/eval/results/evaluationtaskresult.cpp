@@ -21,6 +21,7 @@
 #include "evalsectionid.h"
 #include "eval/results/base/single.h"
 #include "eval/results/base/joined.h"
+#include "eval/results/reporttablecontent.h"
 
 #include "task/result/report/sectioncontentfigure.h"
 #include "task/result/report/sectioncontenttable.h"
@@ -30,7 +31,12 @@
 #include "radarplotpositioncalculatortask.h"
 
 #include "compass.h"
+#include "dbinterface.h"
 #include "dbcontentmanager.h"
+#include "buffer.h"
+#include "viewpoint.h"
+#include "viewpointgenerator.h"
+#include "timeconv.h"
 #include "targetmodel.h"
 #include "targetlistwidget.h"
 
@@ -195,8 +201,8 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
     else if (state == UpdateState::PartialUpdateNeeded)
     {
         // partial update: decide if full update is needed anyways
-        bool needs_recompute = !calc->evaluated() ||
-                                calc->hasPartialResult(); // if partial results are currently stored: drop them and run a full update anyway
+        bool needs_recompute = !calc->evaluated();
+
         if (needs_recompute)
         {
             // full update needed, because result is yet uninitialized
@@ -253,18 +259,6 @@ namespace helpers
 {
     /**
      */
-    std::pair<unsigned int, Evaluation::RequirementResultID> singleResultContentProperties(const ResultReport::SectionContent* content)
-    {
-        traced_assert(content);
-
-        auto info = EvaluationRequirementResult::Single::singleContentProperties(*content);
-        traced_assert(info.has_value());
-
-        return std::make_pair(info->first, info->second);
-    }
-
-    /**
-     */
     Evaluation::RequirementResultID joinedResultContentProperties(const ResultReport::SectionContent* content)
     {
         traced_assert(content);
@@ -273,32 +267,6 @@ namespace helpers
         traced_assert(info.has_value());
 
         return info.value();
-    }
-
-    /**
-     */
-    EvaluationRequirementResult::Single* obtainSingleResult(const ResultReport::SectionContent* content,
-                                                            EvaluationCalculator* calculator)
-    {
-        auto info = singleResultContentProperties(content);
-
-        loginf << "obtaining result for" 
-               << " utn " << info.first 
-               << " layer " << info.second.sec_layer_name
-               << " group " << info.second.req_group_name
-               << " req " << info.second.req_name;
-
-        //result already present?
-        auto r = calculator->singleResult(info.second, info.first);
-        if (r)
-            return r;
-
-        //otherwise evaluate for specified utn and requirement
-        //note: if eval fails a nullptr is returned in the next step
-        calculator->reloadNeededData({ info.first }, { info.second });
-        
-        //then return result
-        return calculator->singleResult(info.second, info.first);
     }
 
     /**
@@ -313,16 +281,7 @@ namespace helpers
                << " group " << info.req_group_name
                << " req " << info.req_name;
 
-        //result already present?
-        auto r = calculator->joinedResult(info);
-        if (r)
-            return r;
-
-        //otherwise evaluate for specified requirement
-        //note: if eval fails a nullptr is returned in the next step
-        calculator->reloadNeededData({}, { info });
-
-        //then return result
+        //the result exists in the session, a stored report has no joined results
         return calculator->joinedResult(info);
     }
 
@@ -342,35 +301,161 @@ namespace helpers
 }
 
 /**
+ * Locates the Report Table of an on-demand content of a single result. The content carries the
+ * table key, a report written before the key existed falls back to the key the definition builds
+ * from layer, group and requirement.
+ */
+const ReportTableInfo* EvaluationTaskResult::reportTableFor(const ResultReport::SectionContent& content,
+                                                            EvaluationRequirementResult::Single::ContentInfo& info) const
+{
+    auto content_info = EvaluationRequirementResult::Single::singleContentProperties(content);
+    if (!content_info.has_value())
+        return nullptr;
+
+    info = content_info.value();
+
+    if (!info.report_table_key.empty() && hasReportTable(info.report_table_key))
+        return &reportTable(info.report_table_key);
+
+    auto key = ReportTableDefinition::identifierFrom(info.id.sec_layer_name + "_"
+                                                     + info.id.req_group_name + "_"
+                                                     + info.id.req_name);
+
+    if (hasReportTable(key))
+        return &reportTable(key);
+
+    logerr << "no report table for"
+           << " utn " << info.utn
+           << " layer " << info.id.sec_layer_name
+           << " group " << info.id.req_group_name
+           << " req " << info.id.req_name;
+
+    return nullptr;
+}
+
+/**
+ * Reads the rows of one target from a Report Table, ordered by time.
+ */
+std::shared_ptr<Buffer> EvaluationTaskResult::loadReportTableRows(const ReportTableInfo& table,
+                                                                   unsigned int utn) const
+{
+    const std::string table_name = table.tableName(id());
+
+    const std::string filter = "\"" + ReportTableDefinition::UTNColumnName + "\" = " + std::to_string(utn)
+                             + " ORDER BY \"" + ReportTableDefinition::TimestampColumnName + "\"";
+
+    auto res = compass_.dbInterface().select(table_name, table.propertyList(), filter);
+
+    if (!res.ok())
+    {
+        logerr << "could not read table '" << table_name << "': " << res.error();
+        return nullptr;
+    }
+
+    return res.result();
+}
+
+/**
+ * Viewable of one target, built from the rows of its Report Table. The base viewable loads the
+ * target, the annotations show the rows, and one row is highlighted on demand.
+ */
+std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetViewable(
+    const ReportTableInfo& table,
+    const Buffer& buffer,
+    const EvaluationRequirementResult::Single::ContentInfo& info,
+    boost::optional<unsigned int> highlight_row) const
+{
+    auto calc = calculator();
+    if (!calc)
+        return nullptr;
+
+    auto viewable = calc->getViewableForUTN(info.utn);
+    if (!viewable)
+        return nullptr;
+
+    const double zoom = calc->settings().result_detail_zoom_;
+
+    if (highlight_row.has_value())
+    {
+        auto positions = ReportTableContent::rowPositions(table, buffer, highlight_row.value());
+
+        if (positions.valid())
+        {
+            (*viewable)[ ViewPoint::VP_POS_LAT_KEY     ] = positions.event->first;
+            (*viewable)[ ViewPoint::VP_POS_LON_KEY     ] = positions.event->second;
+            (*viewable)[ ViewPoint::VP_POS_WIN_LAT_KEY ] = zoom;
+            (*viewable)[ ViewPoint::VP_POS_WIN_LON_KEY ] = zoom;
+        }
+
+        auto timestamp = ReportTableContent::rowTimestamp(buffer, highlight_row.value());
+        if (timestamp.has_value())
+            (*viewable)[ ViewPoint::VP_TIMESTAMP_KEY ] = Utils::Time::toString(timestamp.value());
+    }
+    else
+    {
+        auto bounds = ReportTableContent::failedRowBounds(table, buffer);
+
+        if (!bounds.isEmpty() && !bounds.isNull())
+        {
+            (*viewable)[ ViewPoint::VP_POS_LAT_KEY ] = bounds.center().x();
+            (*viewable)[ ViewPoint::VP_POS_LON_KEY ] = bounds.center().y();
+
+            (*viewable)[ ViewPoint::VP_POS_WIN_LAT_KEY ] = std::max(bounds.width() , zoom);
+            (*viewable)[ ViewPoint::VP_POS_WIN_LON_KEY ] = std::max(bounds.height(), zoom);
+        }
+    }
+
+    //root annotation of the requirement, the same id the result objects use
+    (*viewable)[ ViewPoint::VP_ANNOTATION_KEY ] = nlohmann::json::array();
+    auto& annotations = (*viewable)[ ViewPoint::VP_ANNOTATION_KEY ];
+
+    ViewPointGenAnnotation root_annotation("Evaluation:" + info.id.req_name + ":UTN" + std::to_string(info.utn));
+
+    nlohmann::json root_annotation_json;
+    root_annotation.toJSON(root_annotation_json);
+
+    annotations.push_back(root_annotation_json);
+
+    auto& result_annotations = ViewPointGenAnnotation::getChildrenJSON(annotations.at(0));
+
+    ReportTableContent::createOverviewAnnotations(result_annotations, table, buffer);
+
+    if (highlight_row.has_value())
+        ReportTableContent::createHighlightAnnotations(result_annotations, table, buffer, highlight_row.value());
+
+    return std::make_shared<nlohmann::json::object_t>(*viewable);
+}
+
+/**
  */
 bool EvaluationTaskResult::loadOnDemandFigure_impl(ResultReport::SectionContentFigure* figure) const
 {
-    auto calc = calculator();
-
-    if (!calc)
-        return false;
-
     try
     {
         if (figure->name() == EvaluationRequirementResult::Single::TargetOverviewID)
         {
-            //get result for section
-            auto result = helpers::obtainSingleResult(figure, calc);
-            if (!result)
-            {
-                logerr << "result could not be obtained";
-                return false;
-            }
+            EvaluationRequirementResult::Single::ContentInfo info;
 
-            //add overview to figure
-            if (!result->addOverviewToFigure(*figure))
-            {
-                logerr << "error configuring content";
+            auto table = reportTableFor(*figure, info);
+            if (!table)
                 return false;
-            }
+
+            auto buffer = loadReportTableRows(*table, info.utn);
+            if (!buffer)
+                return false;
+
+            auto viewable = createTargetViewable(*table, *buffer, info, boost::optional<unsigned int>());
+            if (!viewable)
+                return false;
+
+            figure->setViewableFunc([ viewable ] () { return viewable; });
 
             return true;
         }
+    }
+    catch(const std::exception& ex)
+    {
+        logerr << "critical error during load: " << ex.what();
     }
     catch(...)
     {
@@ -384,30 +469,35 @@ bool EvaluationTaskResult::loadOnDemandFigure_impl(ResultReport::SectionContentF
  */
 bool EvaluationTaskResult::loadOnDemandTable_impl(ResultReport::SectionContentTable* table) const
 {
-    auto calc = calculator();
-
-    if (!calc)
-        return false;
-
     try
     {
         if (table->name() == EvaluationRequirementResult::Single::TRDetailsTableName)
         {
-            //target reports details table in single result section
+            //target report details table in single result section, read from the report table
 
-            //get result for section
-            auto result = helpers::obtainSingleResult(table, calc);
-            if (!result)
-            {
-                logerr << "result could not be obtained";
-                return false;
-            }
+            EvaluationRequirementResult::Single::ContentInfo info;
 
-            //add table details
-            if (!result->addDetailsToTable(*table))
-            {
-                logerr << "error configuring content";
+            auto report_table = reportTableFor(*table, info);
+            if (!report_table)
                 return false;
+
+            auto buffer = loadReportTableRows(*report_table, info.utn);
+            if (!buffer)
+                return false;
+
+            for (unsigned int row = 0; row < buffer->size(); ++row)
+            {
+                auto values = ReportTableContent::detailsTableValues(*report_table, *buffer, row);
+
+                if (values.size() != table->numColumns())
+                {
+                    logerr << "table '" << report_table->key << "' columns " << values.size()
+                           << " expected " << table->numColumns();
+                    return false;
+                }
+
+                table->addRow(values, ResultReport::SectionContentViewable().setOnDemand(), "", "",
+                              QPoint((int)row, -1));
             }
 
             return true;
@@ -415,6 +505,10 @@ bool EvaluationTaskResult::loadOnDemandTable_impl(ResultReport::SectionContentTa
         else if (table->name() == EvaluationData::TargetsTableName)
         {
             //evaluation targets table
+            auto calc = calculator();
+
+            if (!calc)
+                return false;
 
             //fill table with target info
             calc->data().fillTargetsTable(targets_, *table,
@@ -422,6 +516,10 @@ bool EvaluationTaskResult::loadOnDemandTable_impl(ResultReport::SectionContentTa
 
             return true;
         }
+    }
+    catch(const std::exception& ex)
+    {
+        logerr << "critical error during load: " << ex.what();
     }
     catch(...)
     {
@@ -438,34 +536,44 @@ bool EvaluationTaskResult::loadOnDemandViewable_impl(const ResultReport::Section
                                                      const QVariant& index,
                                                      unsigned int row) const
 {
-    auto calc = calculator();
-
-    if (!calc)
-        return false;
-
     if (content.contentType() == ResultReport::SectionContent::ContentType::Table)
     {
         if (content.name() == EvaluationRequirementResult::Single::TRDetailsTableName)
         {
-            //get result for section
-            auto result = helpers::obtainSingleResult(&content, calc);
-            if (!result)
-            {
-                logerr << "result could not be obtained";
-                return false;
-            }
+            //highlight of one row, read from the report table
 
-            //configure detail highlight viewable 
-            if (!result->addHighlightToViewable(viewable, index))
-            {
-                logerr << "error configuring content";
+            if (!index.isValid())
                 return false;
-            }
+
+            const QPoint row_index = index.toPoint();
+            if (row_index.x() < 0)
+                return false;
+
+            EvaluationRequirementResult::Single::ContentInfo info;
+
+            auto report_table = reportTableFor(content, info);
+            if (!report_table)
+                return false;
+
+            auto buffer = loadReportTableRows(*report_table, info.utn);
+            if (!buffer || (unsigned int)row_index.x() >= buffer->size())
+                return false;
+
+            auto v = createTargetViewable(*report_table, *buffer, info, (unsigned int)row_index.x());
+            if (!v)
+                return false;
+
+            viewable.setCallback(*v);
 
             return true;
         }
         else if (content.name() == EvaluationData::TargetsTableName)
         {
+            auto calc = calculator();
+
+            if (!calc)
+                return false;
+
             const ResultReport::SectionContentTable* table = dynamic_cast<const ResultReport::SectionContentTable*>(&content);
             traced_assert(table);
 

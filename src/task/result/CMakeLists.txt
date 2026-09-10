@@ -9,7 +9,9 @@ target_sources(compass_task
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/taskresult.h"
         "${CMAKE_CURRENT_LIST_DIR}/taskresultswidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/reporttable.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/taskresult.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/taskresultswidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/reporttable.cpp"
     )

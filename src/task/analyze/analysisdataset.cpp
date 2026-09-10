@@ -805,6 +805,82 @@ AnalysisDataset::mappedRefPos(unsigned int utn, ptime timestamp, time_duration d
     return mapping->pos_ref_;
 }
 
+std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>>
+AnalysisDataset::mappedRefRecordNumbers(unsigned int utn, ptime timestamp, time_duration d_max) const
+{
+    std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>> rec_nums;
+
+    auto mapping = refMappingWithin(utn, timestamp, d_max);
+    if (!mapping)
+        return rec_nums;
+
+    const auto& chain = *ref_chains_.at(utn);
+
+    if (mapping->has_ref1_)
+        rec_nums.first = chain.recordNumber(mapping->dataid_ref1_);
+    if (mapping->has_ref2_)
+        rec_nums.second = chain.recordNumber(mapping->dataid_ref2_);
+
+    return rec_nums;
+}
+
+boost::optional<dbContent::TargetReport::DataID>
+AnalysisDataset::firstReferenceSampleInRange(unsigned int utn, ptime begin, ptime end) const
+{
+    auto it = ref_chains_.find(utn);
+    if (it == ref_chains_.end())
+        return boost::none;
+
+    const auto& indexes = it->second->timestampIndexes();
+
+    auto lb = indexes.lower_bound(begin);
+    if (lb == indexes.end() || lb->first >= end)
+        return boost::none;
+
+    return dbContent::TargetReport::DataID(*lb);
+}
+
+boost::optional<dbContent::TargetReport::DataID>
+AnalysisDataset::lastReferenceSampleInRange(unsigned int utn, ptime begin, ptime end) const
+{
+    auto it = ref_chains_.find(utn);
+    if (it == ref_chains_.end())
+        return boost::none;
+
+    const auto& indexes = it->second->timestampIndexes();
+
+    auto ub = indexes.upper_bound(end);
+    if (ub == indexes.begin())
+        return boost::none;
+
+    --ub;
+    if (ub->first <= begin)
+        return boost::none;
+
+    return dbContent::TargetReport::DataID(*ub);
+}
+
+boost::optional<unsigned long>
+AnalysisDataset::testRecordNumberAt(unsigned int utn, ptime timestamp) const
+{
+    for (const auto& dbc : tst_dbcontents_present_)
+    {
+        auto it = tst_chains_.find(std::make_pair(utn, dbc));
+        if (it == tst_chains_.end())
+            continue;
+
+        const auto& indexes = it->second->timestampIndexes();
+
+        auto ts_it = indexes.find(timestamp);
+        if (ts_it == indexes.end())
+            continue;
+
+        return it->second->recordNumber(dbContent::TargetReport::DataID(*ts_it));
+    }
+
+    return boost::none;
+}
+
 boost::optional<float>
 AnalysisDataset::mappedRefTrackAngle(unsigned int utn, ptime timestamp, time_duration d_max) const
 {

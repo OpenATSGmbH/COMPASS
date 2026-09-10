@@ -20,6 +20,7 @@
 #include "configuration.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableselectionwidget.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "dbcontent/variable/metavariable.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
@@ -102,6 +103,7 @@ void FilterGeneratorDialog::createGUIElements()
     QLabel* name_label = new QLabel(tr("Filter name"));
     name_layout->addWidget(name_label);
     filter_name_ = new QLineEdit(tr("Filter0"));
+    filter_name_->setObjectName("filter_name");
     connect(filter_name_, &QLineEdit::textChanged, this, &FilterGeneratorDialog::updateAddButton);
     name_layout->addWidget(filter_name_);
     layout->addLayout(name_layout);
@@ -119,6 +121,7 @@ void FilterGeneratorDialog::createGUIElements()
     condition_layout->addWidget(label_var, 0, 0);
 
     condition_variable_widget_ = new dbContent::VariableSelectionWidget(filter_man_.dbContentManager());
+    condition_variable_widget_->setObjectName("condition_variable");
     condition_variable_widget_->setMinimumWidth(200);
     condition_variable_widget_->showMetaVariables(true);
     condition_variable_widget_->showEmptyVariable(true);
@@ -143,6 +146,7 @@ void FilterGeneratorDialog::createGUIElements()
 
     condition_combo_layout_ = new QHBoxLayout();
     condition_combo_ = new FilterConditionOperatorComboBox();
+    condition_combo_->setObjectName("condition_operator");
     connect(condition_combo_, &QComboBox::currentTextChanged,
             this, &FilterGeneratorDialog::updateValueField);
     connect(condition_combo_, &QComboBox::currentTextChanged,
@@ -158,6 +162,7 @@ void FilterGeneratorDialog::createGUIElements()
     condition_value_layout_ = new QHBoxLayout();
 
     condition_value_ = new QLineEdit();
+    condition_value_->setObjectName("condition_value");
     connect(condition_value_, &QLineEdit::textChanged,
             this, &FilterGeneratorDialog::updateAddConditionButton);
     condition_value_layout_->addWidget(condition_value_);
@@ -201,6 +206,7 @@ void FilterGeneratorDialog::createGUIElements()
     QHBoxLayout* condition_button_layout = new QHBoxLayout();
 
     add_condition_button_ = new QPushButton(tr("Add condition"));
+    add_condition_button_->setObjectName("add_condition_button");
     add_condition_button_->setEnabled(false);
     connect(add_condition_button_, &QPushButton::clicked,
             this, &FilterGeneratorDialog::addOrUpdateCondition);
@@ -249,12 +255,14 @@ void FilterGeneratorDialog::createGUIElements()
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     QPushButton* cancel_btn = new QPushButton(tr("Cancel"));
+    cancel_btn->setObjectName("cancel_button");
     connect(cancel_btn, &QPushButton::clicked, this, &FilterGeneratorDialog::cancel);
     button_layout->addWidget(cancel_btn);
 
     button_layout->addStretch();
 
     add_button_ = new QPushButton(tr("Add"));
+    add_button_->setObjectName("add_button");
     add_button_->setEnabled(false);
     connect(add_button_, &QPushButton::clicked, this, &FilterGeneratorDialog::accept);
     button_layout->addWidget(add_button_);
@@ -293,6 +301,8 @@ void FilterGeneratorDialog::updateOperatorCombo()
         dt = condition_variable_widget_->selectedVariable().dataType();
     else if (condition_variable_widget_->hasMetaVariable())
         dt = condition_variable_widget_->selectedMetaVariable().dataType();
+    else if (condition_variable_widget_->hasReportVariable())
+        dt = condition_variable_widget_->selectedReportVariable().dataType();
 
     bool numeric_only = false;
     bool string_only = false;
@@ -321,6 +331,7 @@ void FilterGeneratorDialog::updateOperatorCombo()
     // replace combo box
     delete condition_combo_;
     condition_combo_ = new FilterConditionOperatorComboBox(numeric_only, string_only);
+    condition_combo_->setObjectName("condition_operator");
     connect(condition_combo_, &QComboBox::currentTextChanged,
             this, &FilterGeneratorDialog::updateValueField);
     connect(condition_combo_, &QComboBox::currentTextChanged,
@@ -365,7 +376,8 @@ void FilterGeneratorDialog::updateAddConditionButton()
     traced_assert(add_condition_button_);
 
     bool has_variable = condition_variable_widget_ &&
-        (condition_variable_widget_->hasVariable() || condition_variable_widget_->hasMetaVariable());
+        (condition_variable_widget_->hasVariable() || condition_variable_widget_->hasMetaVariable() ||
+         condition_variable_widget_->hasReportVariable());
 
     bool has_value = validateValue();
 
@@ -457,6 +469,13 @@ ConditionTemplate FilterGeneratorDialog::collectConditionFromUI()
         ct.variable_name_ = var.name();
         ct.variable_dbcont_name_ = var.dbContentName();
     }
+    else if (condition_variable_widget_->hasReportVariable())
+    {
+        // a Report Variable, the content name is the report name, see DBFilterCondition::variableResolvable()
+        auto selection = condition_variable_widget_->selectionAsString();
+        ct.variable_dbcont_name_ = selection.first;
+        ct.variable_name_ = selection.second;
+    }
     else
     {
         traced_assert(condition_variable_widget_->hasMetaVariable());
@@ -534,6 +553,13 @@ void FilterGeneratorDialog::populateUIFromCondition(const ConditionTemplate& con
             auto& mv = filter_man_.dbContentManager().metaVariable(cond.variable_name_);
             condition_variable_widget_->selectedMetaVariable(mv);
         }
+    }
+    else if (filter_man_.dbContentManager().existsReportContent(cond.variable_dbcont_name_))
+    {
+        // a Report Variable of a stored report
+        auto& content = filter_man_.dbContentManager().reportContent(cond.variable_dbcont_name_);
+        if (content.hasVariable(cond.variable_name_))
+            condition_variable_widget_->selectedReportVariable(content.variable(cond.variable_name_));
     }
     else
     {

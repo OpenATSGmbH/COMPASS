@@ -99,31 +99,6 @@ std::vector<Single::TargetInfo> SinglePositionRadarAzimuth::targetInfos() const
 
 /**
 */
-std::vector<std::string> SinglePositionRadarAzimuth::detailHeaders() const
-{
-    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "Azimuth", "CP", "#CF", "#CP", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SinglePositionRadarAzimuth::detailValues(const EvaluationDetail& detail,
-                                                                 const EvaluationDetail* parent_detail) const
-{
-    bool has_ref_pos = detail.numPositions() >= 2;
-
-    return { Utils::Time::toString(detail.timestamp()),
-            !has_ref_pos,
-             detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckPassed).toUInt(), 
-             detail.comments().generalComment() }; 
-}
-
-/**
-*/
 boost::optional<double> SinglePositionRadarAzimuth::computeFinalResultValue() const
 {
     if (accumulator_.numValues() == 0)

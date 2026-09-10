@@ -518,6 +518,32 @@ std::pair<ptime, ptime> EvaluationTargetData::mappedRefTimes(const DataID& tst_i
 
 /**
  */
+const dbContent::TargetReport::DataMapping& EvaluationTargetData::mappedRefMapping(const DataID& tst_id) const
+{
+    auto index = tst_chain_.indexFromDataID(tst_id);
+
+    return tst_data_mappings_.at(index.idx_internal);
+}
+
+/**
+ */
+std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>>
+EvaluationTargetData::mappedRefRecordNumbers(const DataID& tst_id) const
+{
+    const auto& mapping = mappedRefMapping(tst_id);
+
+    std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>> rec_nums;
+
+    if (mapping.has_ref1_)
+        rec_nums.first = ref_chain_.recordNumber(mapping.dataid_ref1_);
+    if (mapping.has_ref2_)
+        rec_nums.second = ref_chain_.recordNumber(mapping.dataid_ref2_);
+
+    return rec_nums;
+}
+
+/**
+ */
 boost::optional<dbContent::TargetPosition> EvaluationTargetData::mappedRefPos(const DataID& tst_id) const
 {
     auto index = tst_chain_.indexFromDataID(tst_id);

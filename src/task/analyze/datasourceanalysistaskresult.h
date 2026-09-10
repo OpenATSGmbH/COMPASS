@@ -19,16 +19,23 @@
 
 #include "taskresult.h"
 
+#include <QObject>
+
+class AnalyzeDataSourceTask;
+
 /**
- * TaskResult subclass produced by AnalyzeDataSourceTask. The only override
- * is `type()` so this result is tagged DataSourceAnalysis (=2) in the
- * persisted `task_results.type` column, distinct from Generic (=0) which
- * is what ad-hoc / reconstruction / import results carry. Lets downstream
- * consumers (web KPI extraction, report listings, future per-type
- * filtering) discriminate analysis reports without name-pattern matching.
+ * TaskResult subclass produced by AnalyzeDataSourceTask, tagged DataSourceAnalysis (=2) in the
+ * persisted `task_results.type` column, distinct from Generic (=0) which is what ad-hoc /
+ * reconstruction / import results carry.
+ *
+ * The result stores the task configuration of the run, so it follows the update and lock state of
+ * the data like an evaluation report does, and an update re-runs the analysis with the stored
+ * configuration.
  */
-class DataSourceAnalysisTaskResult : public TaskResult
+class DataSourceAnalysisTaskResult : public QObject, public TaskResult
 {
+    Q_OBJECT
+
 public:
     DataSourceAnalysisTaskResult(unsigned int id, TaskManager& task_man);
     ~DataSourceAnalysisTaskResult() override = default;
@@ -37,4 +44,14 @@ public:
     {
         return task::TaskResultType::DataSourceAnalysis;
     }
+
+    /// task of the stored configuration's DSType, null if there is none
+    AnalyzeDataSourceTask* analysisTask() const;
+
+protected:
+    Result update_impl(UpdateState state) override final;
+    Result canUpdate_impl(UpdateState state) const override final;
+
+protected slots:
+    void informUpdateAnalysisResult(int state);
 };

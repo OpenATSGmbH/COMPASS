@@ -187,6 +187,66 @@ bool SinglePositionBaseCommon::common_detailIsOk(const EvaluationDetail& detail,
 }
 
 /**
+ * The value column of the position family, named by the result type.
+ */
+ReportTableColumn SinglePositionBaseCommon::common_reportTableValueColumn(const std::string& result_type) const
+{
+    if (result_type.find("Along") != std::string::npos)
+        return ReportTableColumn("along_m", PropertyDataType::DOUBLE, "Along Track Offset",
+                                 "Position offset along the reference track", "Length", "Meter");
+    if (result_type.find("Across") != std::string::npos)
+        return ReportTableColumn("across_m", PropertyDataType::DOUBLE, "Across Track Offset",
+                                 "Position offset across the reference track", "Length", "Meter");
+    if (result_type.find("RadarRange") != std::string::npos)
+        return ReportTableColumn("range_offset_m", PropertyDataType::DOUBLE, "Range Offset",
+                                 "Radar range offset to the reference", "Length", "Meter");
+    if (result_type.find("RadarAzimuth") != std::string::npos)
+        return ReportTableColumn("azimuth_offset_deg", PropertyDataType::DOUBLE, "Azimuth Offset",
+                                 "Radar azimuth offset to the reference", "Angle", "Degree");
+    if (result_type.find("Latency") != std::string::npos)
+        return ReportTableColumn("latency_s", PropertyDataType::DOUBLE, "Position Latency",
+                                 "Position latency against the reference", "Time", "Second");
+
+    return ReportTableColumn("distance_m", PropertyDataType::DOUBLE, "Distance",
+                             "Horizontal distance between the test report and the reference", "Length", "Meter");
+}
+
+/**
+ */
+void SinglePositionBaseCommon::common_addReportTableColumns(ReportTableDefinition& def,
+                                                            const std::string& result_type) const
+{
+    def.addColumn(common_reportTableValueColumn(result_type));
+    def.addColumn("check_passed", PropertyDataType::BOOL, "Check Passed",
+                  "Value within the requirement threshold");
+    def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
+                  "Test position inside the sector layer");
+}
+
+/**
+ */
+void SinglePositionBaseCommon::common_fillReportTableRow(ReportTableRows& rows,
+                                                         const EvaluationDetail& detail,
+                                                         const std::string& result_type) const
+{
+    Single::setReportTableValue<double>(rows, common_reportTableValueColumn(result_type).name, detail, DetailKey::Value);
+    Single::setReportTableValue<bool>(rows, "check_passed", detail, DetailKey::CheckPassed);
+    Single::setReportTableValue<bool>(rows, "pos_inside", detail, DetailKey::PosInside);
+}
+
+/**
+ */
+void SinglePositionBaseCommon::common_fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                                                   const Buffer& buffer,
+                                                                   unsigned int row,
+                                                                   const std::string& result_type) const
+{
+    Single::setDetailValue<double>(detail, DetailKey::Value, buffer, common_reportTableValueColumn(result_type).name, row);
+    Single::setDetailValue<bool>(detail, DetailKey::CheckPassed, buffer, "check_passed", row);
+    Single::setDetailValue<bool>(detail, DetailKey::PosInside, buffer, "pos_inside", row);
+}
+
+/**
 */
 FeatureDefinitions SinglePositionBaseCommon::common_getCustomAnnotationDefinitions(const Single& single,
                                                                                    const EvaluationCalculator& calculator) const
@@ -700,6 +760,60 @@ bool JoinedPositionValueBase::exportAsCSV(std::ofstream& strm) const
 FeatureDefinitions JoinedPositionValueBase::getCustomAnnotationDefinitions() const
 {
     return common_getCustomAnnotationDefinitions(*this, calculator_);
+}
+
+/**
+ */
+void SinglePositionProbabilityBase::addReportTableColumns(ReportTableDefinition& def) const
+{
+    common_addReportTableColumns(def, type());
+}
+
+/**
+ */
+void SinglePositionProbabilityBase::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    common_fillReportTableRow(rows, detail, type());
+}
+
+/**
+ */
+void SinglePositionProbabilityBase::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    common_fillDetailFromReportTableRow(detail, buffer, row, type());
+}
+
+/**
+ */
+void SinglePositionValueBase::addReportTableColumns(ReportTableDefinition& def) const
+{
+    common_addReportTableColumns(def, type());
+}
+
+/**
+ */
+void SinglePositionValueBase::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    common_fillReportTableRow(rows, detail, type());
+}
+
+/**
+ */
+void SinglePositionValueBase::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    common_fillDetailFromReportTableRow(detail, buffer, row, type());
 }
 
 }

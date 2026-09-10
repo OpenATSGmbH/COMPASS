@@ -223,6 +223,47 @@ After export the folder structure created will e.g. look like this.
 Please \textbf{note} that the generated report can of course be edited by the user and re-generated using pdflatex, 
 which allows for better customization options (adding e.g. details, corporate identity etc.).
 
+\subsection{Report Tables}
+\label{sec:report_tables}
+
+Evaluation reports and Analysis reports store the values computed per target report in the database, in so-called \textbf{Report Tables}. 
+A Report Table holds one row per test target report (or per detection gap) and one column per computed value, 
+e.g. the range offset of a radar target report against the reference. \\
+
+\begin{itemize}
+\item Written by every Evaluation and Analyze Data Source run, no setting is required
+\item Stored in the database next to the report, and removed together with the report (see \nameref{sec:report_delete})
+\item Kept when the report is 'Locked', replaced when the report is refreshed
+\item Not part of the report export (see \nameref{sec:report_export}), the database file can be read with the DuckDB tools directly
+\item The tooltip of a report in the report selection shows the number of Report Tables, their rows and their storage size
+\end{itemize}
+\ \\
+
+The per-target-report tables of a report (e.g. the 'Target Report Details' table of an Evaluation report, see \nameref{sec:eval_inspect}) 
+are read from the Report Tables when the respective section is opened. \\
+
+\subsubsection{Report Variables}
+\label{sec:report_variables}
+
+The columns of the Report Tables are offered as \textbf{Report Variables} in the variable selection (see \nameref{sec:variable_selection}), 
+in the same way as DBContent variables and Meta Variables. Report Variables can be used in all Views, in the Geographic View labels and in filter conditions. \\
+
+\begin{itemize}
+\item Each report with Report Tables is listed as an entry in the 'Reports' group of the variable selection
+\item The variables of a report are grouped per Report Table, named 'Sector Layer - Requirement' for an Evaluation report and after the inspector for an Analysis report
+\item In the Views, a Report Variable is displayed as 'Report Name: Variable Name', e.g. 'Radar Evaluation: Range Offset'
+\item The values are attached to the target reports of the evaluated DBContent by record number, target reports without a row in the Report Table (e.g. outside the sector layer) have no value
+\item Rows exist for all evaluated targets, also for targets excluded from the evaluation results
+\item A Report Variable of a report not contained in the opened database has no data, the selection is kept in the View configuration
+\end{itemize}
+\ \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Scatter Plot View with the Report Variable 'Radar Evaluation: Range Offset' on the y-axis over 'Timestamp']}}\vspace{1.5cm}}}
+  \caption{Report Variable in a Scatter Plot View}
+\end{figure}
+
 \subsection{Report Structure}
 
 A report consists of a hierarchy of nested sections. 

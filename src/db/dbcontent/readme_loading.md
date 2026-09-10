@@ -147,6 +147,38 @@ is gone, the user's filters are untouched), reconstructor (per-slice half-open t
 bbox), ARTAS (CAT062 ds/line `IN`), live prime (`timestamp >=`). `LoadRequest::perContentClause`
 wraps a per-content generator into the clause function.
 
+## Report Table join
+
+A View, a Table View column, a Geographic View label or a filter condition can name a
+Report Variable, a column of a Report Table written by the Evaluation or the Analyze Data
+Source task (see `experimental_src/readme_dynamic_dbcontent.md`). The resolvers
+(`ViewVariable::getFor()`, `VariableOrderedSet::getFor()`, `LabelGenerator::labelVariable()`,
+`DBContentManagerVariableResolver::resolveVariable()`) hand a runtime `dbContent::Variable`
+to the read set for the host data contents of the table, with `isReportVariable()` set.
+`SQLGenerator::getSelectCommand()` then appends one LEFT JOIN subquery per Report Table:
+
+```sql
+SELECT record_number, timestamp, ..., rt5_fir_cut_sim_mandatory_range_error__range_offset_m
+FROM data_cat048
+LEFT JOIN (SELECT "rec_num" AS rt5_fir_cut_sim_mandatory_range_error__rec_num,
+                  "range_offset_m" AS rt5_fir_cut_sim_mandatory_range_error__range_offset_m
+           FROM "result_5_fir_cut_sim_mandatory_range_error") AS rt5_fir_cut_sim_mandatory_range_error
+       ON rt5_fir_cut_sim_mandatory_range_error.rt5_fir_cut_sim_mandatory_range_error__rec_num = record_number
+WHERE ...
+ORDER BY timestamp
+```
+
+Every subquery column carries a unique alias (`rt<result id>_<table key>__<column>`), so the
+main table columns stay unqualified everywhere else and the WHERE composition is untouched.
+`transformVariables()` renames the alias to the variable name, `"<report name>: <display
+name>"`, which is the Buffer column the Views show. A record without a row in the table gets
+null. The join runs only for loads whose read set holds a Report Variable. A filter condition
+on a Report Variable renders `<join alias>.<column alias>`, which `Variable::dbTableName()`
+returns for a report variable, and `DBFilterCondition::sqlFor()` adds the variable to the
+clause's `required_vars`, so the read set holds it and the join is generated even when no
+View reads the column. Live buffers come from the decoder and never carry Report
+Variables.
+
 ## Bookends (ViewManager)
 
 `loadingStartedSignal()` / `loadingDoneSignal()` live on **ViewManager**, not the manager —

@@ -32,6 +32,7 @@ namespace dbContent
 
 class Variable;
 class MetaVariable;
+class ReportVariable;
 
 class VariableSelectionWidget : public QFrame, public ui_test::UITestable
 {
@@ -55,6 +56,11 @@ class VariableSelectionWidget : public QFrame, public ui_test::UITestable
     bool hasMetaVariable() const { return meta_variable_selected_; }
     MetaVariable& selectedMetaVariable() const;
     void selectedMetaVariable(MetaVariable& variable);
+
+    /// a Report Variable, the content name is the report name, see readme_dynamic_dbcontent.md 4.3
+    bool hasReportVariable() const { return report_variable_selected_; }
+    ReportVariable& selectedReportVariable() const;
+    void selectedReportVariable(ReportVariable& variable);
 
     std::pair<std::string, std::string> selectionAsString() const;
 
@@ -93,6 +99,7 @@ class VariableSelectionWidget : public QFrame, public ui_test::UITestable
 
     bool variable_selected_{false};
     bool meta_variable_selected_{false};
+    bool report_variable_selected_{false};
 
     bool show_empty_variable_{true};
 

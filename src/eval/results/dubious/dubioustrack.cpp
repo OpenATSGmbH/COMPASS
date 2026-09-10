@@ -254,25 +254,6 @@ std::vector<Single::TargetInfo> SingleDubiousTrack::targetInfos() const
 
 /**
 */
-std::vector<std::string> SingleDubiousTrack::detailHeaders() const
-{
-    return {"ToD", "TN", "Dubious Comment"};
-}
-
-/**
-*/
-nlohmann::json::array_t SingleDubiousTrack::detailValues(const EvaluationDetail& detail,
-                                                         const EvaluationDetail* parent_detail) const
-{
-    traced_assert(parent_detail);
-
-    return { Utils::Time::toString(detail.timestamp()),
-             parent_detail->getValue(DetailKey::UTNOrTrackNum).toUInt(),
-             dubiousReasonsString(detail.comments()) }; // "Comment"
-}
-
-/**
-*/
 bool SingleDubiousTrack::detailIsOkStatic(const EvaluationDetail& detail)
 {
     auto comments = detail.comments().group(DetailCommentGroupDubious);

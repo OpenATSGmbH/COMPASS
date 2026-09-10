@@ -46,6 +46,13 @@ struct PDWalkParams
 
 typedef std::function<void(const boost::posix_time::ptime&)> PDWalkSlotFunc;
 
+/// Gap callback: begin and end of a gap with at least one missed slot, and the
+/// number of missed slots inside it. Begin and end are the bounding test
+/// timestamps, or the period bounds where the gap touches the period.
+typedef std::function<void(const boost::posix_time::ptime&,
+                           const boost::posix_time::ptime&,
+                           unsigned int)> PDWalkGapFunc;
+
 /**
  * Time-difference coverage walk over one reference period, shared by the
  * coverage inspectors (see `src/task/analyze/`):
@@ -67,14 +74,16 @@ typedef std::function<void(const boost::posix_time::ptime&)> PDWalkSlotFunc;
  * probability of detection.
  *
  * `tst_ts_sorted` must be sorted ascending. The callbacks receive the slot
- * timestamp; the caller resolves positions, cells and counters.
+ * timestamp; the caller resolves positions, cells and counters. `on_gap` is
+ * called once per gap with at least one missed slot, after its misses.
  */
 void walkReferencePeriodTimeDifference(
     const EvaluationRequirement::PDHelpers::RefPeriod& period,
     const std::vector<boost::posix_time::ptime>&       tst_ts_sorted,
     const PDWalkParams&                                params,
     const PDWalkSlotFunc&                              on_expected,
-    const PDWalkSlotFunc&                              on_miss);
+    const PDWalkSlotFunc&                              on_miss,
+    const PDWalkGapFunc&                               on_gap = PDWalkGapFunc());
 
 /// Runs `walkReferencePeriodTimeDifference()` for each period.
 void walkReferencePeriodsTimeDifference(
@@ -82,6 +91,7 @@ void walkReferencePeriodsTimeDifference(
     const std::vector<boost::posix_time::ptime>&                    tst_ts_sorted,
     const PDWalkParams&                                             params,
     const PDWalkSlotFunc&                                           on_expected,
-    const PDWalkSlotFunc&                                           on_miss);
+    const PDWalkSlotFunc&                                           on_miss,
+    const PDWalkGapFunc&                                            on_gap = PDWalkGapFunc());
 
 } // namespace analysis

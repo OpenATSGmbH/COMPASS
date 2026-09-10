@@ -23,6 +23,7 @@
 #include "files.h"
 #include "global.h"
 #include "dbcontent/variable/metavariable.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "logger.h"
 #include "test/ui_test_conversions.h"
 
@@ -51,6 +52,7 @@ VariableSelectionWidget::VariableSelectionWidget(DBContentManager& dbcont_man, b
     variable_label_->setAlignment(Qt::AlignRight);
 
     sel_button_ = new QPushButton(this);
+    sel_button_->setObjectName("select_button");
     sel_button_->setIcon(Files::IconProvider::getIcon("expand.png"));
     sel_button_->setFixedSize(UI_ICON_SIZE);
     sel_button_->setFlat(UI_ICON_BUTTON_FLAT);
@@ -146,25 +148,28 @@ void VariableSelectionWidget::applySelection(const std::string& obj_name,
     traced_assert(object_label_);
     traced_assert(variable_label_);
 
-    if (var_name.size() == 0 && obj_name.size() == 0)
-    {
-        meta_variable_selected_ = false;
-        variable_selected_ = false;
-    }
-    else
+    meta_variable_selected_   = false;
+    variable_selected_        = false;
+    report_variable_selected_ = false;
+
+    if (var_name.size() || obj_name.size())
     {
         if (obj_name == META_OBJECT_NAME)
         {
             traced_assert(dbcont_man_.existsMetaVariable(var_name));
 
             meta_variable_selected_ = true;
-            variable_selected_ = false;
+        }
+        else if (dbcont_man_.existsReportContent(obj_name))
+        {
+            traced_assert(dbcont_man_.existsReportVariable(obj_name, var_name));
+
+            report_variable_selected_ = true;
         }
         else
         {
             traced_assert(dbcont_man_.dbContent(obj_name).hasVariable(var_name));
 
-            meta_variable_selected_ = false;
             variable_selected_ = true;
         }
     }
@@ -185,11 +190,12 @@ void VariableSelectionWidget::selectedVariable(Variable& variable)
     traced_assert(object_label_);
     traced_assert(variable_label_);
 
-    object_label_->setText(QString::fromStdString(variable.dbContent().name()));
+    object_label_->setText(QString::fromStdString(variable.dbContentName()));
     variable_label_->setText(variable.name().c_str());
 
-    variable_selected_ = true;
-    meta_variable_selected_ = false;
+    variable_selected_        = true;
+    meta_variable_selected_   = false;
+    report_variable_selected_ = false;
 
     updateToolTip();
 }
@@ -204,8 +210,47 @@ void VariableSelectionWidget::selectEmptyVariable()
     object_label_->setText("");
     variable_label_->setText("");
 
-    variable_selected_ = false;
-    meta_variable_selected_ = false;
+    variable_selected_        = false;
+    meta_variable_selected_   = false;
+    report_variable_selected_ = false;
+
+    updateToolTip();
+}
+
+ReportVariable& VariableSelectionWidget::selectedReportVariable() const
+{
+    traced_assert(object_label_);
+    traced_assert(variable_label_);
+    traced_assert(report_variable_selected_);
+
+    std::string obj_name = object_label_->text().toStdString();
+    std::string var_name = variable_label_->text().toStdString();
+
+    traced_assert(dbcont_man_.existsReportVariable(obj_name, var_name));
+
+    return dbcont_man_.reportContent(obj_name).variable(var_name);
+}
+
+void VariableSelectionWidget::selectedReportVariable(ReportVariable& variable)
+{
+    traced_assert(object_label_);
+    traced_assert(variable_label_);
+
+    // the report name is not stored in the variable, find its content
+    std::string report_name;
+
+    for (const auto& content : dbcont_man_.reportContents())
+        if (content->hasVariable(variable.name()) && &content->variable(variable.name()) == &variable)
+            report_name = content->name();
+
+    traced_assert(!report_name.empty());
+
+    object_label_->setText(QString::fromStdString(report_name));
+    variable_label_->setText(QString::fromStdString(variable.name()));
+
+    variable_selected_        = false;
+    meta_variable_selected_   = false;
+    report_variable_selected_ = true;
 
     updateToolTip();
 }
@@ -232,8 +277,9 @@ void VariableSelectionWidget::selectedMetaVariable(MetaVariable& variable)
     object_label_->setText(QString::fromStdString(META_OBJECT_NAME));
     variable_label_->setText(variable.name().c_str());
 
-    variable_selected_ = false;
-    meta_variable_selected_ = true;
+    variable_selected_        = false;
+    meta_variable_selected_   = true;
+    report_variable_selected_ = false;
 
     updateToolTip();
 }
@@ -379,6 +425,12 @@ bool VariableSelectionWidget::uiSet(const QString& str)
     if (obj_name == META_OBJECT_NAME)
     {
         if (!dbcont_man_.existsMetaVariable(var_name))
+            return false;
+    }
+    else if (dbcont_man_.existsReportContent(obj_name))
+    {
+        // a Report Variable, "<report name>|<report name>: <display name>"
+        if (!dbcont_man_.existsReportVariable(obj_name, var_name))
             return false;
     }
     else

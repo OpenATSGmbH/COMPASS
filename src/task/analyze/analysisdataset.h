@@ -179,6 +179,9 @@ public:
     /// (unassociated reports) by buffer index.
     std::shared_ptr<dbContent::DBContentAccessor> accessor() const { return accessor_; }
 
+    /// Name of the reference data content ("RefTraj").
+    static std::string referenceDBContentName() { return kReferenceDBContent; }
+
     /// Interpolate the reference position on `utn`'s RefTraj at `timestamp`.
     /// Returns boost::none if no RefTraj data exists for `utn` or the timestamp
     /// is outside the chain's bracket. `d_max` bounds the interpolation gap.
@@ -199,6 +202,33 @@ public:
     boost::optional<float> mappedRefTrackAngle(unsigned int utn,
                                                boost::posix_time::ptime timestamp,
                                                boost::posix_time::time_duration d_max) const;
+
+    /// Record numbers of the reference updates bracketing `timestamp` on
+    /// `utn`'s RefTraj, under the same `d_max` rule as `mappedRefPos`. Either
+    /// entry is boost::none when that side does not exist.
+    std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>>
+        mappedRefRecordNumbers(unsigned int utn,
+                               boost::posix_time::ptime timestamp,
+                               boost::posix_time::time_duration d_max) const;
+
+    /// First reference sample of `utn` with `begin <= timestamp < end`,
+    /// boost::none if there is none.
+    boost::optional<dbContent::TargetReport::DataID>
+        firstReferenceSampleInRange(unsigned int utn,
+                                    boost::posix_time::ptime begin,
+                                    boost::posix_time::ptime end) const;
+
+    /// Last reference sample of `utn` with `begin < timestamp <= end`,
+    /// boost::none if there is none.
+    boost::optional<dbContent::TargetReport::DataID>
+        lastReferenceSampleInRange(unsigned int utn,
+                                   boost::posix_time::ptime begin,
+                                   boost::posix_time::ptime end) const;
+
+    /// Record number of a test report of `utn` with exactly this timestamp,
+    /// in any test data content of the dataset, boost::none if there is none.
+    boost::optional<unsigned long> testRecordNumberAt(unsigned int utn,
+                                                      boost::posix_time::ptime timestamp) const;
 
     /// Approximate center latitude of the loaded reference data (used for
     /// degree/meter conversion in the 3D grid). 0.0 if unknown.

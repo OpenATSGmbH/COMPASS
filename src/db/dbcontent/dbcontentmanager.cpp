@@ -27,7 +27,9 @@
 #include "dbcontent/target/target.h"
 #include "dbcontent/target/targetlistwidget.h"
 #include "logger.h"
+#include "global.h"
 #include "dbcontent/variable/metavariable.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "db_context_manager.h"
 #include "stringconv.h"
 #include "viewmanager.h"
@@ -357,6 +359,116 @@ bool DBContentManager::usedInMetaVariable(const Variable& variable)
             return true;
 
     return false;
+}
+
+/**
+ * Registry of the stored Reports offering Report Variables. The TaskManager fills it at
+ * database open and after a report was saved or deleted.
+ */
+void DBContentManager::setReportContents(std::vector<std::unique_ptr<ReportContent>> contents)
+{
+    report_contents_ = std::move(contents);
+
+    loginf << "report contents " << report_contents_.size();
+
+    emit reportContentsChangedSignal();
+}
+
+/**
+ */
+bool DBContentManager::existsReportContent(const std::string& report_name) const
+{
+    for (const auto& content : report_contents_)
+        if (content->name() == report_name)
+            return true;
+
+    return false;
+}
+
+/**
+ */
+ReportContent& DBContentManager::reportContent(const std::string& report_name) const
+{
+    for (const auto& content : report_contents_)
+        if (content->name() == report_name)
+            return *content;
+
+    throw std::runtime_error("DBContentManager: reportContent: unknown report '" + report_name + "'");
+}
+
+/**
+ */
+bool DBContentManager::existsReportVariable(const std::string& report_name,
+                                            const std::string& var_name) const
+{
+    for (const auto& content : report_contents_)
+        if (content->name() == report_name)
+            return content->hasVariable(var_name);
+
+    return false;
+}
+
+/**
+ */
+dbContent::Variable* DBContentManager::resolveVariableFor(const std::string& var_dbcontent_name,
+                                                          const std::string& var_name,
+                                                          const std::string& dbcontent_name)
+{
+    if (var_dbcontent_name == META_OBJECT_NAME)
+    {
+        if (!existsMetaVariable(var_name) || !metaVariable(var_name).existsIn(dbcontent_name))
+            return nullptr;
+
+        return &metaVariable(var_name).getFor(dbcontent_name);
+    }
+
+    if (existsReportContent(var_dbcontent_name))
+    {
+        auto& content = reportContent(var_dbcontent_name);
+
+        if (!content.hasVariable(var_name) || !content.variable(var_name).existsIn(dbcontent_name))
+            return nullptr;
+
+        return &content.variable(var_name).getFor(dbcontent_name);
+    }
+
+    if (var_dbcontent_name != dbcontent_name || !existsDBContent(dbcontent_name) ||
+        !dbContent(dbcontent_name).hasVariable(var_name))
+        return nullptr;
+
+    return &dbContent(dbcontent_name).variable(var_name);
+}
+
+/**
+ */
+bool DBContentManager::existsVariableDefinition(const std::string& var_dbcontent_name,
+                                                const std::string& var_name) const
+{
+    if (var_dbcontent_name == META_OBJECT_NAME)
+        return const_cast<DBContentManager*>(this)->existsMetaVariable(var_name);
+
+    if (existsReportContent(var_dbcontent_name))
+        return existsReportVariable(var_dbcontent_name, var_name);
+
+    return existsDBContent(var_dbcontent_name) && dbContent(var_dbcontent_name).hasVariable(var_name);
+}
+
+/**
+ */
+std::string DBContentManager::variableDefinitionInfo(const std::string& var_dbcontent_name,
+                                                     const std::string& var_name)
+{
+    if (var_dbcontent_name == META_OBJECT_NAME)
+        return existsMetaVariable(var_name) ? metaVariable(var_name).info() : "";
+
+    if (existsReportContent(var_dbcontent_name))
+        return existsReportVariable(var_dbcontent_name, var_name)
+                   ? reportContent(var_dbcontent_name).variable(var_name).info() : "";
+
+    if (existsDBContent(var_dbcontent_name) && dbContent(var_dbcontent_name).hasVariable(var_name))
+        return dbContent(var_dbcontent_name).variable(var_name).info();
+
+    return "";
 }
 
 /**

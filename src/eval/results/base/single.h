@@ -19,6 +19,8 @@
 
 #include "eval/results/base/base.h"
 
+#include "task/result/reporttable.h"
+
 #include "view/gridview/grid2d.h"
 #include "view/gridview/grid2dlayer.h"
 #include "view/gridview/grid2drendersettings.h"
@@ -77,10 +79,10 @@ public:
         { 
             traced_assert(single_); 
 
-            //recompute details if not available
+            //load details from the report table if not available
             if (!single_->details_.has_value())
             {
-                single_->details_ = single_->recomputeDetails();
+                single_->details_ = single_->loadDetailsFromReportTable();
                 created_ = true;
             }
         }
@@ -182,9 +184,45 @@ public:
     void iterateDetails(const DetailFunc& func,
                         const DetailSkipFunc& skip_func = DetailSkipFunc()) const override final;
 
-    bool addDetailsToTable(ResultReport::SectionContentTable& table);
-    bool addOverviewToFigure(ResultReport::SectionContentFigure& figure);
-    bool addHighlightToViewable(ResultReport::SectionContentViewable& viewable, const QVariant& annotation);
+    /*report table related*/
+    enum class ReportTableKeyKind
+    {
+        TestReport = 0, // one row per test report, keyed by its record number
+        ReferenceGap    // one row per gap, keyed by the first reference sample inside it
+    };
+
+    /// definition of the report table of this result's requirement and sector layer
+    ReportTableDefinition reportTableDefinition() const;
+    /// writes the rows of the stored details into the report table
+    void addReportTableRows(ReportTableRows& rows) const;
+    /// key of the report table the rows of this result went into, empty before they were written
+    const std::string& reportTableKey() const { return report_table_key_; }
+
+    /// sets a column from a detail value, leaves it null if the value is not set
+    template <typename T>
+    static void setReportTableValue(ReportTableRows& rows,
+                                    const std::string& column,
+                                    const EvaluationDetail& detail,
+                                    EvaluationDetail::Key key)
+    {
+        auto value = detail.getValueAs<T>(key);
+        if (value.has_value())
+            rows.set<T>(column, value.value());
+    }
+
+    /// sets a detail value from a report table column, leaves it unset if the column is null
+    template <typename T>
+    static void setDetailValue(EvaluationDetail& detail,
+                               EvaluationDetail::Key key,
+                               const Buffer& buffer,
+                               const std::string& column,
+                               unsigned int row)
+    {
+        if (!buffer.has<T>(column) || buffer.get<T>(column).isNull(row))
+            return;
+
+        detail.setValue(key, QVariant(buffer.get<T>(column).get(row)));
+    }
 
     std::vector<double> getValues(const ValueSource<double>& source) const;
     std::vector<double> getValues(int value_id) const;
@@ -192,10 +230,21 @@ public:
     /// create empty joined result
     virtual std::shared_ptr<Joined> createEmptyJoined(const std::string& result_id) = 0;
 
+    /**
+     * Result information stored on an on-demand content of a single result.
+     */
+    struct ContentInfo
+    {
+        unsigned int                    utn = 0;
+        Evaluation::RequirementResultID id;
+        std::string                     report_table_key; // empty for a report written before the tables
+    };
+
     static void setSingleContentProperties(ResultReport::SectionContent& content,
                                            const Evaluation::RequirementResultID& id,
-                                           unsigned int utn);
-    static boost::optional<std::pair<unsigned int, Evaluation::RequirementResultID>> 
+                                           unsigned int utn,
+                                           const std::string& report_table_key);
+    static boost::optional<ContentInfo>
     singleContentProperties(const ResultReport::SectionContent& content);
 
     std::string sumSectionName() const override final;
@@ -218,6 +267,7 @@ public:
     static const QColor AnnotationColorOk;
 
     static const std::string ContentPropertyUTN;
+    static const std::string ContentPropertyReportTable;
 
 protected:
     friend class EvaluationTaskResult; // for loading on-demand content
@@ -255,12 +305,6 @@ protected:
     virtual Qt::SortOrder targetTableSortOrder() const;
     /// derive to obtain items for the target details overview table
     virtual std::vector<TargetInfo> targetInfos() const = 0;
-    /// derive to obtain header strings for the target details table
-    virtual std::vector<std::string> detailHeaders() const = 0;
-    /// derive to obtain values for the target details table (size must match detailHeaders())
-    virtual nlohmann::json::array_t detailValues(const EvaluationDetail& detail, 
-                                                 const EvaluationDetail* parent_detail) const = 0;
-
     virtual void addTargetToOverviewTable(std::shared_ptr<ResultReport::Report> report);
     virtual void addTargetToOverviewTable(ResultReport::Section& section, 
                                           const std::string& table_name);
@@ -273,9 +317,37 @@ protected:
     bool detailIndexValid(const DetailIndex& index) const; 
 
     /// detail nesting mode
-    virtual DetailNestingMode detailNestingMode() const { return DetailNestingMode::Vector; } 
+    virtual DetailNestingMode detailNestingMode() const { return DetailNestingMode::Vector; }
 
     boost::optional<DetailIndex> detailIndex(const QVariant& annotation) const;
+
+    /*report table related*/
+    /// kind of record number the rows of this result family reference
+    virtual ReportTableKeyKind reportTableKeyKind() const { return ReportTableKeyKind::TestReport; }
+    /// derive to add the family columns to the table definition
+    virtual void addReportTableColumns(ReportTableDefinition& def) const {}
+    /// derive to fill the family columns of a row, the base fills the common columns
+    virtual void fillReportTableRow(ReportTableRows& rows,
+                                    const EvaluationDetail& detail,
+                                    const EvaluationDetail* parent_detail,
+                                    const EvaluationDetail* prev_detail) const {}
+    /// derive to skip details which give no row
+    virtual bool reportTableRowWanted(const EvaluationDetail& detail,
+                                      const EvaluationDetail* parent_detail) const { return true; }
+    /// derive for reference gap tables: begin and end of the gap of a detail, none to skip it
+    virtual boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
+        reportTableGapBounds(const EvaluationDetail& detail) const { return boost::none; }
+    /// derive to fill the family values of a detail from a row, inverse of fillReportTableRow()
+    virtual void fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                              const Buffer& buffer,
+                                              unsigned int row,
+                                              const EvaluationDetail* prev_detail) const {}
+    /// derive for families with nested details to fill the period detail from a row of its period
+    virtual void fillPeriodDetailFromReportTableRow(EvaluationDetail& period,
+                                                    const Buffer& buffer,
+                                                    unsigned int row) const {}
+    /// column grouping the rows into periods, empty for families without nested details
+    virtual std::string reportTablePeriodColumn() const { return ""; }
 
     /*viewable + annotation related*/
     std::shared_ptr<nlohmann::json::object_t> viewableOverviewData() const override final;
@@ -324,8 +396,6 @@ protected:
     nlohmann::json& annotationLineCoords(nlohmann::json& annotations_json, AnnotationArrayType type, bool overview = false) const;
     nlohmann::json& getOrCreateAnnotation(nlohmann::json& annotations_json, AnnotationArrayType type, bool overview) const;
 
-    std::map<AnnotationArrayType, std::string> annotation_type_names_;
-
     unsigned int                utn_;    // used to generate result
     const EvaluationTargetData* target_; // used to generate result
 
@@ -340,9 +410,12 @@ private:
                                       const DetailIndex& index) const;
     void clearDetails();
 
-    EvaluationDetails recomputeDetails() const;
+    EvaluationDetails loadDetailsFromReportTable() const;
+    EvaluationDetails detailsFromReportTableRows(const ReportTableDefinition& definition,
+                                                 const Buffer& buffer) const;
 
     mutable boost::optional<EvaluationDetails> details_;
+    mutable std::string                        report_table_key_;
 
     bool show_overview_always_ = true;
 };

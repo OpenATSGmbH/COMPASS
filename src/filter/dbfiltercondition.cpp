@@ -193,8 +193,11 @@ FilterClause DBFilterCondition::sqlFor(
     clause.sql = ss.str();
 
     // a DB-expression (computed column) needs its source variable read; a plain column is
-    // read directly, so only expressions contribute a required var (matches the old path)
-    if (db_expression.size())
+    // read directly, so only expressions contribute a required var (matches the old path).
+    // A Report Variable lives in a joined Report Table and the join is generated from the
+    // read set (SQLGenerator::getReportTableJoinClause), so it is required as well
+    if (db_expression.size() ||
+        resolver.reportVariableExistsIn(variable_name, variable_dbcontent_name, dbcontent_name))
         resolver.addVariableToReadSet(dbcontent_name, variable_name, variable_dbcontent_name,
                                       clause.required_vars);
 
@@ -359,6 +362,11 @@ bool DBFilterCondition::variableResolvable(
             return false;
 
         return resolver.metaVariableExistsIn(variable_name, dbcontent_name);
+    }
+    else if (resolver.reportVariableExistsIn(variable_name, variable_dbcontent_name, dbcontent_name))
+    {
+        //a Report Variable is joined onto the host data content, so the names differ
+        return true;
     }
     else
     {

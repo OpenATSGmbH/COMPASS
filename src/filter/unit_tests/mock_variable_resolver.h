@@ -151,6 +151,14 @@ public:
         return false;
     }
 
+    /// the mock offers no Report Variables
+    bool reportVariableExistsIn(const std::string& var_name,
+                                const std::string& var_dbcontent_name,
+                                const std::string& dbcontent_name) const override
+    {
+        return false;
+    }
+
     std::vector<std::string> metaVariableDBContentNames(
         const std::string& var_name) const override
     {

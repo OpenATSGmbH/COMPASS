@@ -290,7 +290,7 @@ A new custom filter can be added by clicking the \includegraphics[width=0.5cm,fr
 
 First, one has to give the filter a new (unique) name. Then, conditions have to be defined and added. A condition consists of a DBContent variable, an operator, a value, and a reset value. \\
 
-When the triangular button is clicked, a sub-menu is opened, where one can choose a DBContent variable. The selected variable restricts data of all DBContents if it is of type 'Meta', or just data from one DBContent if it is not. Additionally, the mathematical operator 'ABS' can be selected. If so, not the value of the variable but the absolute value of the variable is used: 'ABS(var)>value' is equivalent to 'var>value OR var<-value'. \\
+When the variable button is clicked, the variable selection is opened (see \nameref{sec:variable_selection}), where one can choose a DBContent variable, a Meta Variable or a Report Variable (see \nameref{sec:report_variables}). The selected variable restricts data of all DBContents if it is of type 'Meta', or just data from one DBContent if it is not. A Report Variable restricts the data of the DBContent its report evaluated, target reports without a value in the Report Table are excluded. Additionally, the mathematical operator 'ABS' can be selected. If so, not the value of the variable but the absolute value of the variable is used: 'ABS(var)>value' is equivalent to 'var>value OR var<-value'. \\
 
 \paragraph{Operator and value restrictions}
 

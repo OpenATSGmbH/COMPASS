@@ -16,6 +16,8 @@
  */
 
 #include "mainwindow_commands.h"
+#include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "mainwindow.h"
 #include "compass.h"
 #include "db_context_manager.h"
@@ -750,12 +752,51 @@ bool RTCommandGetExistingReports::run_impl()
     auto& task_manager = compass_->taskManager();
 
     std::vector<std::string> results;
+    nlohmann::json           details = nlohmann::json::array();
+
+    auto& dbcont_man = compass_->dbContentManager();
 
     for (const auto& r : task_manager.results())
-        results.push_back(r.second->name());
+    {
+        const auto& result = *r.second;
+
+        results.push_back(result.name());
+
+        // the Report Table catalog with the Report Variables offered in the Views
+        nlohmann::json detail;
+        detail[ "name"   ] = result.name();
+        detail[ "id"     ] = result.id();
+        detail[ "tables" ] = nlohmann::json::array();
+
+        for (const auto& table : result.reportTables())
+        {
+            nlohmann::json t;
+            t[ "key"             ] = table.key;
+            t[ "display_name"    ] = table.display_name;
+            t[ "kind"            ] = table.kind == ReportTableKind::Record ? "record" : "cell";
+            t[ "num_rows"        ] = table.num_rows;
+            t[ "host_dbcontents" ] = table.host_dbcontents;
+            t[ "columns"         ] = nlohmann::json::array();
+
+            for (const auto& column : table.columns)
+                t[ "columns" ].push_back(column.name);
+
+            t[ "variables" ] = nlohmann::json::array();
+
+            if (dbcont_man.existsReportContent(result.name()))
+                for (const auto& var_it : dbcont_man.reportContent(result.name()).variables())
+                    if (var_it.second->tableKey() == table.key)
+                        t[ "variables" ].push_back(var_it.first);
+
+            detail[ "tables" ].push_back(t);
+        }
+
+        details.push_back(detail);
+    }
 
     nlohmann::json j;
     j["reports"] = results;
+    j["details"] = details;
 
     setJSONReply(j);
 

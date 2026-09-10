@@ -281,6 +281,20 @@ unsigned int Chain::dsID(const DataID& id) const
     return dsid_vec.get(index_ext);
 }
 
+unsigned long Chain::recordNumber(const DataID& id) const
+{
+    auto index     = indexFromDataID(id);
+
+    unsigned int index_ext = index.idx_external;
+
+    NullableVector<unsigned long>& rec_num_vec =
+            accessor_->getMetaVar<unsigned long>(dbcontent_name_, dbcontent_vars::meta_var_rec_num_);
+
+    traced_assert(!rec_num_vec.isNull(index_ext));
+
+    return rec_num_vec.get(index_ext);
+}
+
 dbContent::TargetPosition Chain::pos(const DataID& id) const
 {
     auto timestamp = timestampFromDataID(id);

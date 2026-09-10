@@ -48,7 +48,8 @@ void walkReferencePeriodTimeDifference(
     const std::vector<ptime>&                          tst_ts_sorted,
     const PDWalkParams&                                params,
     const PDWalkSlotFunc&                              on_expected,
-    const PDWalkSlotFunc&                              on_miss)
+    const PDWalkSlotFunc&                              on_miss,
+    const PDWalkGapFunc&                               on_gap)
 {
     if (!params.mv)
         return;
@@ -98,6 +99,7 @@ void walkReferencePeriodTimeDifference(
             continue;
 
         std::size_t guard = 0;
+        unsigned int num_missed = 0;
 
         for (ptime t_miss = gap_start;;)
         {
@@ -112,7 +114,12 @@ void walkReferencePeriodTimeDifference(
 
             if (on_miss)
                 on_miss(t_miss);
+
+            ++num_missed;
         }
+
+        if (on_gap && num_missed > 0)
+            on_gap(gap_start, gap_end, num_missed);
     }
 }
 
@@ -123,10 +130,11 @@ void walkReferencePeriodsTimeDifference(
     const std::vector<ptime>&                                       tst_ts_sorted,
     const PDWalkParams&                                             params,
     const PDWalkSlotFunc&                                           on_expected,
-    const PDWalkSlotFunc&                                           on_miss)
+    const PDWalkSlotFunc&                                           on_miss,
+    const PDWalkGapFunc&                                            on_gap)
 {
     for (const auto& period : periods)
-        walkReferencePeriodTimeDifference(period, tst_ts_sorted, params, on_expected, on_miss);
+        walkReferencePeriodTimeDifference(period, tst_ts_sorted, params, on_expected, on_miss, on_gap);
 }
 
 } // namespace analysis

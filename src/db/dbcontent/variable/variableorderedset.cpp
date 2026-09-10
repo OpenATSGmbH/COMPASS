@@ -22,6 +22,7 @@
 #include "dbcontent/variable/variableorderedsetwidget.h"
 #include "dbcontent/variable/variableset.h"
 #include "dbcontent/variable/metavariable.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "global.h"
 
 #include <algorithm>
@@ -59,8 +60,15 @@ VariableOrderedSet::VariableOrderedSet(nlohmann::json& config, DBContentManager&
                 removeVariableAt(getIndexFor(def_it.first, def_it.second), false);
             }
         }
-        else if (!dbcont_man.existsDBContent(def_it.first) ||
-                 !dbcont_man.dbContent(def_it.first).hasVariable(def_it.second))
+        else if (!dbcont_man.existsDBContent(def_it.first))
+        {
+            //a content this database does not hold, for example a Report of another database.
+            //The name stays in the configuration and comes back with the data, decision 19 of
+            //readme_dynamic_dbcontent.md
+            logdbg << "content '" << def_it.first << "' not available, variable "
+                   << def_it.second << " kept";
+        }
+        else if (!dbcont_man.dbContent(def_it.first).hasVariable(def_it.second))
         {
             logwrn << "outdated dbcont name "
                    << def_it.first << " variable " << def_it.second;
@@ -242,10 +250,26 @@ VariableSet VariableOrderedSet::getFor(const std::string& dbcontent_name)
             if (dbcont_man_.metaVariable(def_it.second).existsIn(dbcontent_name))
                 per_dbcont_set.add(dbcont_man_.metaVariable(def_it.second).getFor(dbcontent_name));
         }
+        else if (dbcont_man_.existsReportContent(def_it.first))
+        {
+            //a Report Variable resolves for the host data contents of its Report Table only
+            auto& content = dbcont_man_.reportContent(def_it.first);
+
+            if (!content.hasVariable(def_it.second))
+                continue;
+
+            auto& report_var = content.variable(def_it.second);
+
+            if (report_var.existsIn(dbcontent_name))
+                per_dbcont_set.add(report_var.getFor(dbcontent_name));
+        }
         else if (def_it.first == dbcontent_name)
         {
-            traced_assert(dbcont_man_.existsDBContent(dbcontent_name));
-            traced_assert(dbcont_man_.dbContent(dbcontent_name).hasVariable(def_it.second));
+            //a content the current database does not hold gives no variable, decision 19
+            if (!dbcont_man_.existsDBContent(dbcontent_name) ||
+                !dbcont_man_.dbContent(dbcontent_name).hasVariable(def_it.second))
+                continue;
+
             per_dbcont_set.add(dbcont_man_.dbContent(dbcontent_name).variable(def_it.second));
         }
     }

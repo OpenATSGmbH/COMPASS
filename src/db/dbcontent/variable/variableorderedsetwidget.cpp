@@ -137,17 +137,9 @@ void VariableOrderedSetWidget::showDialogSlot()
         const std::string& obj_name = sel_it.first;
         const std::string& var_name = sel_it.second;
 
-        if (obj_name == META_OBJECT_NAME)
-        {
-            traced_assert(manager.existsMetaVariable(var_name));
-            set_.add(manager.metaVariable(var_name));
-        }
-        else
-        {
-            traced_assert(manager.existsDBContent(obj_name));
-            traced_assert(manager.dbContent(obj_name).hasVariable(var_name));
-            set_.add(manager.dbContent(obj_name).variable(var_name));
-        }
+        // a data content variable, a Meta variable or a Report Variable, the set stores the pair
+        traced_assert(manager.existsVariableDefinition(obj_name, var_name));
+        set_.add(obj_name, var_name);
     }
 }
 
@@ -211,17 +203,11 @@ void VariableOrderedSetWidget::updateVariableListSlot()
 
     for (const auto& def_it: set_.definitions())
     {
-        if (def_it.first == META_OBJECT_NAME)
-        {
-            traced_assert(manager.existsMetaVariable(def_it.second));
-            tooltip = manager.metaVariable(def_it.second).info();
-        }
-        else
-        {
-            traced_assert(manager.existsDBContent(def_it.first));
-            traced_assert(manager.dbContent(def_it.first).hasVariable(def_it.second));
-            tooltip = manager.dbContent(def_it.first).variable(def_it.second).info();
-        }
+        // empty for a variable this database does not hold, the entry stays, decision 19
+        tooltip = manager.variableDefinitionInfo(def_it.first, def_it.second);
+
+        if (tooltip.empty())
+            tooltip = "Not available in this database";
 
         QListWidgetItem* item = new QListWidgetItem((def_it.first + VariableSeparator + def_it.second).c_str());
         item->setToolTip(tooltip.c_str());

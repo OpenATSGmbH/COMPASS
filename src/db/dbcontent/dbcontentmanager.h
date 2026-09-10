@@ -49,6 +49,7 @@ namespace dbContent
     class DBContentEditDialog;
     class Variable;
     class MetaVariable;
+    class ReportContent;
     class VariableSet;
     class Target;
     class TargetListWidget;
@@ -73,6 +74,7 @@ public slots:
 signals:
     void dbContentStatusChanged();
     void dbObjectsChangedSignal();
+    void reportContentsChangedSignal(); // the offered Report Variables changed
     void associationStatusChangedSignal();
 
     // loading bookends moved to ViewManager (loadingStarted/DoneSignal) - the manager's
@@ -112,6 +114,29 @@ public:
     const std::map<std::string, std::unique_ptr<dbContent::MetaVariable>>& metaVariables() const { return meta_variables_; }
 
     bool usedInMetaVariable(const dbContent::Variable& variable);
+
+    /*report contents, see readme_dynamic_dbcontent.md Section 4.3*/
+
+    /// registry of the stored Reports with joinable Report Tables, filled by the TaskManager
+    void setReportContents(std::vector<std::unique_ptr<dbContent::ReportContent>> contents);
+    bool existsReportContent(const std::string& report_name) const;
+    dbContent::ReportContent& reportContent(const std::string& report_name) const;
+    const std::vector<std::unique_ptr<dbContent::ReportContent>>& reportContents() const
+        { return report_contents_; }
+    /// true if the given Report has the given Report Variable in the current database
+    bool existsReportVariable(const std::string& report_name, const std::string& var_name) const;
+
+    /// resolves a stored (content name, variable name) pair for one loaded data content:
+    /// the Meta content, a Report, or the data content itself. Null if not available, decision 19
+    dbContent::Variable* resolveVariableFor(const std::string& var_dbcontent_name,
+                                            const std::string& var_name,
+                                            const std::string& dbcontent_name);
+    /// true if the stored pair names an existing variable of any kind
+    bool existsVariableDefinition(const std::string& var_dbcontent_name,
+                                  const std::string& var_name) const;
+    /// tool tip text of a stored pair, empty if not available
+    std::string variableDefinitionInfo(const std::string& var_dbcontent_name,
+                                       const std::string& var_name);
     dbContent::DBContentEditDialog* dbContentEditDialog();
 
     void insertData(std::map<std::string, std::shared_ptr<Buffer>> data);
@@ -227,6 +252,7 @@ protected:
     std::map<std::string, DBContent*> dbcontent_;
     std::map<unsigned int, DBContent*> dbcontent_ids_;
     std::map<std::string, std::unique_ptr<dbContent::MetaVariable>> meta_variables_;
+    std::vector<std::unique_ptr<dbContent::ReportContent>> report_contents_; // in report order
 
     std::unique_ptr<DBContentDataEngine> data_engine_;
     std::unique_ptr<DBContentManagerWidget> widget_;

@@ -148,29 +148,6 @@ std::vector<Single::TargetInfo> SingleADSBLatency::targetInfos() const
 
 /**
 */
-std::vector<std::string> SingleADSBLatency::detailHeaders() const
-{
-    return { "ToD", "PosInside", "Latency", "LatencyOK", "#LTOK", "#LTNOK", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SingleADSBLatency::detailValues(const EvaluationDetail& detail,
-                                                        const EvaluationDetail* parent_detail) const
-{
-    auto value = detail.getValue(DetailKey::Value);
-
-    return { Utils::Time::toString(detail.timestamp()),
-             detail.getValue(DetailKey::PosInside).toBool(),
-             value.isValid() ? nlohmann::json(value.toFloat()) : nlohmann::json(),
-             detail.getValue(DetailKey::CheckPassed).toBool(),
-             detail.getValue(DetailKey::NumCheckPassed).toUInt(),
-             detail.getValue(DetailKey::NumCheckFailed).toUInt(),
-             detail.comments().generalComment() };
-}
-
-/**
-*/
 bool SingleADSBLatency::detailIsOk(const EvaluationDetail& detail) const
 {
     auto check_passed = detail.getValue(DetailKey::CheckPassed);
@@ -289,6 +266,42 @@ std::vector<Joined::SectorInfo> JoinedADSBLatency::sectorInfos() const
              { "LTSDev [s]"     , "Standard Deviation of latency"              , formatValue(accumulator_.stddev()) },
              { "#LTOK [1]"      , "Number of updates with acceptable latency"  , num_value_ok_    },
              { "#LTNOK [1]"     , "Number of updates with unacceptable latency", num_value_nok_   } };
+}
+
+/**
+ */
+void SingleADSBLatency::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("latency_s", PropertyDataType::DOUBLE, "Latency",
+                  "ADS-B latency of the test report", "Time", "Second");
+    def.addColumn("check_passed", PropertyDataType::BOOL, "Check Passed",
+                  "Value within the requirement threshold");
+    def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
+                  "Test position inside the sector layer");
+}
+
+/**
+ */
+void SingleADSBLatency::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setReportTableValue<double>(rows, "latency_s", detail, DetailKey::Value);
+    setReportTableValue<bool>(rows, "check_passed", detail, DetailKey::CheckPassed);
+    setReportTableValue<bool>(rows, "pos_inside", detail, DetailKey::PosInside);
+}
+
+/**
+ */
+void SingleADSBLatency::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setDetailValue<double>(detail, DetailKey::Value, buffer, "latency_s", row);
+    setDetailValue<bool>(detail, DetailKey::CheckPassed, buffer, "check_passed", row);
+    setDetailValue<bool>(detail, DetailKey::PosInside, buffer, "pos_inside", row);
 }
 
 }

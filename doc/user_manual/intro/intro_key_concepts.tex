@@ -253,6 +253,21 @@ The task is independent of the requirement-based evaluation: it does not assess 
 
 Based on reference and test data source(s), evaluation of configurable standards within defined airspace sectors can be performed. The results are given as sector averages as well as per-target statistics and can be inspected down to the per-target-report level if wanted. Certain targets can be removed from the evaluation (i.e. target not of interest, transponder issues), and evaluation report documents can be automatically generated as PDFs.
 
+\subsection*{Report Tables \& Report Variables}
+
+Evaluation reports and Analysis reports store the values computed per target report in the database, as so-called \textbf{Report Tables}. 
+Their columns are offered as \textbf{Report Variables} in the variable selection, next to the DBContent variables and Meta Variables (see \nameref{sec:report_tables}). \\
+
+\begin{itemize}
+\item One row per test target report or detection gap, one column per computed value
+\item Written by every Evaluation and Analyze Data Source run
+\item Report Variables
+\begin{itemize}
+\item Usable in all Views, labels and filters
+\item Displayed as 'Report Name: Variable Name'
+\end{itemize}
+\end{itemize}
+
 \subsection*{View Presets}
 
 Each view can be configured to the user's needs, to suit various use-cases. For each type of view, a number of predefined (default) presets are delivered, which can be used to conveniently set a number of configuration options for specific display purposes. Existing presets can be changed and overridden, also new ones can be created.

@@ -267,8 +267,55 @@ void Variable::dbColumnName(const std::string& value)
 
 std::string Variable::dbTableName() const
 {
+    //a Report Variable is read through a join subquery, its alias is what qualifies the column
+    //in a SELECT list or a WHERE clause
+    if (isReportVariable())
+        return report_join_alias_;
+
     traced_assert(dbcontent_);
     return dbcontent_->dbTableName();
+}
+
+/**
+ * Runtime variable for one column of a Report Table. It is not a child of a Configurable, so it
+ * is never written to db_content_*.json, and it carries the join information.
+ */
+std::unique_ptr<Variable> Variable::createReportVariable(const std::string& name,
+                                                         const std::string& dbcontent_name,
+                                                         const std::string& column_alias,
+                                                         const std::string& join_alias,
+                                                         const std::string& report_table_name,
+                                                         const std::string& report_column_name,
+                                                         PropertyDataType data_type,
+                                                         const std::string& description,
+                                                         const std::string& dimension,
+                                                         const std::string& unit,
+                                                         const std::string& representation_str)
+{
+    nlohmann::json config = nlohmann::json::object();
+
+    Configuration::setClassName(config, "Variable");
+    Configuration::setInstanceName(config, "ReportVariable_" + report_table_name + "_" + report_column_name);
+
+    auto& params = config[ Configuration::ParameterSection ];
+
+    params[ "name"           ] = name;
+    params[ "db_column_name" ] = column_alias;
+    params[ "data_type_str"  ] = Property::asString(data_type);
+    params[ "description"    ] = description;
+    params[ "dimension"      ] = dimension;
+    params[ "unit"           ] = unit;
+
+    if (!representation_str.empty())
+        params[ "representation_str" ] = representation_str;
+
+    std::unique_ptr<Variable> variable(new Variable(config, nullptr, dbcontent_name));
+
+    variable->report_table_name_  = report_table_name;
+    variable->report_column_name_ = report_column_name;
+    variable->report_join_alias_  = join_alias;
+
+    return variable;
 }
 
 // std::string Variable::dbColumnIdentifier() const
@@ -813,6 +860,11 @@ void Variable::shortName(const std::string& short_name)
 
 bool Variable::hasDBContent() const
 {
+    //a Report Variable exists exactly as long as its Report Table does, and the registry only
+    //offers the tables of the current database
+    if (isReportVariable())
+        return true;
+
     traced_assert(dbcontent_);
 
     if (db_expression_.size())

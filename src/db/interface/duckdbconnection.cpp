@@ -365,7 +365,17 @@ Result DuckDBConnection::insertBuffer_impl(const std::string& table_name,
         //    appender->flush();
     }
 
-    appender->flush();
+    //a failed flush discards every appended row, e.g. on a constraint violation
+    if (!appender->flush())
+    {
+        auto error = appender->lastAppenderError();
+
+        appender.reset();
+
+        logerr << "flushing " << (r1 - r0) << " row(s) into table '" << table_name << "' failed: " << error;
+
+        return Result::failed("Appending to table '" + table_name + "' failed: " + error);
+    }
 
     //cleanup appender
     appender.reset();

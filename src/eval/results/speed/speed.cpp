@@ -237,30 +237,6 @@ std::vector<Single::TargetInfo> SingleSpeed::targetInfos() const
 
 /**
 */
-std::vector<std::string> SingleSpeed::detailHeaders() const
-{
-    return { "ToD", "NoRef", "PosInside", "Distance", "CP", "#CF", "#CP", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SingleSpeed::detailValues(const EvaluationDetail& detail,
-                                                  const EvaluationDetail* parent_detail) const
-{
-    bool has_ref_pos = detail.numPositions() >= 2;
-
-    return { Utils::Time::toString(detail.timestamp()),
-            !has_ref_pos,
-             detail.getValue(DetailKey::PosInside).toBool(),
-             detail.getValue(DetailKey::Offset).toFloat(),         // "Distance"
-             detail.getValue(DetailKey::CheckPassed).toBool(),     // "CP"
-             detail.getValue(DetailKey::NumCheckFailed).toUInt(),  // "#CF",
-             detail.getValue(DetailKey::NumCheckPassed).toUInt(),  // "#CP"
-             detail.comments().generalComment() };                 // "Comment"
-}
-
-/**
-*/
 bool SingleSpeed::detailIsOk(const EvaluationDetail& detail) const
 {
     EvaluationRequirement::Speed* req = dynamic_cast<EvaluationRequirement::Speed*>(requirement_.get());
@@ -427,6 +403,42 @@ FeatureDefinitions JoinedSpeed::getCustomAnnotationDefinitions() const
                        false);
 
     return defs;
+}
+
+/**
+ */
+void SingleSpeed::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("speed_offset_mps", PropertyDataType::DOUBLE, "Speed Offset",
+                  "Speed difference between the test report and the reference", "Speed", "Meter/Second");
+    def.addColumn("check_passed", PropertyDataType::BOOL, "Check Passed",
+                  "Value within the requirement threshold");
+    def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
+                  "Test position inside the sector layer");
+}
+
+/**
+ */
+void SingleSpeed::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setReportTableValue<double>(rows, "speed_offset_mps", detail, DetailKey::Offset);
+    setReportTableValue<bool>(rows, "check_passed", detail, DetailKey::CheckPassed);
+    setReportTableValue<bool>(rows, "pos_inside", detail, DetailKey::PosInside);
+}
+
+/**
+ */
+void SingleSpeed::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setDetailValue<double>(detail, DetailKey::Offset, buffer, "speed_offset_mps", row);
+    setDetailValue<bool>(detail, DetailKey::CheckPassed, buffer, "check_passed", row);
+    setDetailValue<bool>(detail, DetailKey::PosInside, buffer, "pos_inside", row);
 }
 
 }

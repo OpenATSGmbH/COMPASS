@@ -2091,6 +2091,185 @@ void DBInterface::createReportContentsTable()
 }
 
 /**
+ * Creates a report table, replacing an existing table of the same name.
+ */
+void DBInterface::createReportTable(const std::string& table_name,
+                                    const PropertyList& properties,
+                                    const std::string& key_column)
+{
+    traced_assert(ready());
+    traced_assert(ReportTableDefinition::isReportTableName(table_name));
+    traced_assert(properties.size());
+
+    if (existsTable(table_name))
+        removeReportTable(table_name);
+
+    std::vector<DBTableColumnInfo> column_infos;
+    for (const auto& p : properties.properties())
+        column_infos.emplace_back(p.name(), p.dataType(), p.name() == key_column);
+
+    {
+        #ifdef PROTECT_INSTANCE
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        #endif
+
+        execute(sqlGenerator().getCreateTableStatement(table_name, column_infos));
+        updateTableInfo();
+    }
+
+    traced_assert(existsTable(table_name));
+}
+
+/**
+ */
+void DBInterface::removeReportTable(const std::string& table_name)
+{
+    traced_assert(ready());
+    traced_assert(ReportTableDefinition::isReportTableName(table_name));
+
+    if (!existsTable(table_name))
+    {
+        logwrn << "table '" << table_name << "' does not exist";
+        return;
+    }
+
+    loginf << "dropping report table '" << table_name << "'";
+
+    Result res;
+
+    {
+        #ifdef PROTECT_INSTANCE
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        #endif
+
+        res = db_instance_->defaultConnection().deleteTable(table_name);
+        updateTableInfo();
+    }
+
+    if (!res.ok())
+    {
+        logerr << "dropping report table '" << table_name << "' failed: " << res.error();
+        throw runtime_error("DBInterface: removeReportTable: dropping table '" + table_name + "' failed: " + res.error());
+    }
+}
+
+/**
+ * Names of all report tables in the database.
+ */
+std::set<std::string> DBInterface::reportTableNames() const
+{
+    std::set<std::string> names;
+
+    for (const auto& t : tableInfo())
+        if (ReportTableDefinition::isReportTableName(t.first))
+            names.insert(t.first);
+
+    return names;
+}
+
+/**
+ * Names of the report tables of the given result.
+ */
+std::set<std::string> DBInterface::reportTableNames(unsigned int result_id) const
+{
+    auto prefix = ReportTableDefinition::tableNamePrefix(result_id);
+
+    std::set<std::string> names;
+
+    for (const auto& name : reportTableNames())
+        if (name.compare(0, prefix.size(), prefix) == 0)
+            names.insert(name);
+
+    return names;
+}
+
+/**
+ * Drops the report tables of the given result, except the ones to keep. Returns the number of dropped tables.
+ */
+size_t DBInterface::removeReportTables(unsigned int result_id, const std::set<std::string>& keep)
+{
+    size_t n = 0;
+
+    for (const auto& name : reportTableNames(result_id))
+    {
+        if (keep.count(name))
+            continue;
+
+        removeReportTable(name);
+        ++n;
+    }
+
+    return n;
+}
+
+/**
+ * Drops all report tables not in the given set, left behind by aborted runs. Returns the number of dropped tables.
+ */
+size_t DBInterface::removeOrphanReportTables(const std::set<std::string>& referenced_tables)
+{
+    size_t n = 0;
+
+    for (const auto& name : reportTableNames())
+    {
+        if (referenced_tables.count(name))
+            continue;
+
+        logwrn << "dropping orphan report table '" << name << "'";
+
+        removeReportTable(name);
+        ++n;
+    }
+
+    if (n)
+        cleanupDB(false);
+
+    return n;
+}
+
+/**
+ * Persistent storage size of a table in bytes, from the DuckDB block usage.
+ */
+ResultT<size_t> DBInterface::tableStorageSize(const std::string& table_name)
+{
+    traced_assert(ready());
+
+    if (!existsTable(table_name))
+        return ResultT<size_t>::failed("Table '" + table_name + "' does not exist");
+
+    try
+    {
+        #ifdef PROTECT_INSTANCE
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        #endif
+
+        DBCommand command;
+        command.set("SELECT CAST(count(DISTINCT block_id) AS BIGINT) AS num_blocks, "
+                    "CAST((SELECT block_size FROM pragma_database_size()) AS BIGINT) AS block_size "
+                    "FROM pragma_storage_info('" + table_name + "') WHERE block_id >= 0");
+
+        PropertyList list;
+        list.addProperty("num_blocks", PropertyDataType::LONGINT);
+        list.addProperty("block_size", PropertyDataType::LONGINT);
+        command.list(list);
+
+        auto result = execute(command);
+        if (!result->containsData() || result->buffer()->size() != 1)
+            return ResultT<size_t>::failed("No storage info for table '" + table_name + "'");
+
+        const auto& buffer = *result->buffer();
+
+        long num_blocks = buffer.get<long>("num_blocks").isNull(0) ? 0 : buffer.get<long>("num_blocks").get(0);
+        long block_size = buffer.get<long>("block_size").isNull(0) ? 0 : buffer.get<long>("block_size").get(0);
+
+        return ResultT<size_t>::succeeded((size_t)(num_blocks * block_size));
+    }
+    catch (const std::exception& ex)
+    {
+        return ResultT<size_t>::failed(ex.what());
+    }
+}
+
+/**
  */
 Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_needed)
 {
@@ -2114,11 +2293,15 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
         // would fail the assert in Section::loadOrGetContent.
         auto report_contents = result.report()->reportContents(true);
 
-        //remove any old result with the same id/name
+        //remove any old result with the same id/name, the report tables of this result stay
         bool result_deleted = false;
-        auto del_result = deleteResult(result, false, &result_deleted);
+        auto del_result = deleteResult(result, false, &result_deleted, true);
         if (!del_result.ok())
             throw std::runtime_error(del_result.error());
+
+        //drop report tables under this result id which the run did not write, left behind by an earlier run
+        if (removeReportTables(result.id(), result.reportTableNames()))
+            result_deleted = true;
 
         auto result_id   = result.id();
         auto result_name = result.name();
@@ -2230,9 +2413,10 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
 
 /**
  */
-Result DBInterface::deleteResult(const TaskResult& result, 
+Result DBInterface::deleteResult(const TaskResult& result,
                                  bool cleanup_db_if_needed,
-                                 bool* deleted)
+                                 bool* deleted,
+                                 bool keep_own_tables)
 {
     if (deleted)
         *deleted = false;
@@ -2288,6 +2472,13 @@ Result DBInterface::deleteResult(const TaskResult& result,
                 throw std::runtime_error(result_del_content->error());
             if (result_del_result->hasError())
                 throw std::runtime_error(result_del_result->error());
+
+            //drop the report tables of the old result, the tables of the result being saved stay
+            std::set<std::string> keep;
+            if (keep_own_tables && old_id == result.id())
+                keep = result.reportTableNames();
+
+            removeReportTables(old_id, keep);
 
             results_deleted = true;
         }

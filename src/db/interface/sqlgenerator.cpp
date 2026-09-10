@@ -16,6 +16,8 @@
  */
 
 #include "sqlgenerator.h"
+#include "task/result/reporttable.h"
+#include "idbvariableresolver.h"
 #include "buffer.h"
 #include "dbcommand.h"
 #include "dbcontent/dbcontent.h"
@@ -886,7 +888,76 @@ shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const DBContent& object,
                             property_list, 
                             filter, 
                             use_order, 
-                            order_variable ? order_variable->dbColumnName() : "");
+                            order_variable ? order_variable->dbColumnName() : "",
+                            getReportTableJoinClause(object, read_list));
+}
+
+/**
+ * The Report Variables of the read set are read through one LEFT JOIN subquery per Report Table,
+ * keyed on the record number. Every subquery column is aliased, so the main table columns stay
+ * unqualified in the SELECT list, the WHERE clause and the ORDER BY. A record without a row in
+ * the table gets null, which the Views treat like a missing value.
+ */
+std::string SQLGenerator::getReportTableJoinClause(const DBContent& object,
+                                                   const VariableSet& read_list) const
+{
+    // join alias -> (table name, key alias, column aliases in read set order)
+    struct Join
+    {
+        std::string                                      table_name;
+        std::vector<std::pair<std::string, std::string>> columns; // column name, alias
+    };
+
+    std::map<std::string, Join> joins;
+    std::vector<std::string>    join_order;
+
+    for (const Variable* var : read_list.getSet())
+    {
+        if (!var || !var->isReportVariable())
+            continue;
+
+        const std::string& alias = var->reportJoinAlias();
+
+        if (!joins.count(alias))
+        {
+            joins[ alias ].table_name = var->reportTableName();
+            join_order.push_back(alias);
+        }
+
+        joins[ alias ].columns.emplace_back(var->reportColumnName(), var->dbColumnName());
+    }
+
+    if (joins.empty())
+        return "";
+
+    //the record number column of the host data content
+    if (!dbcont_man_.metaCanGetVariable(object.name(), dbcontent_vars::meta_var_rec_num_))
+    {
+        logerr << "dbcontent '" << object.name() << "' has no record number, report tables skipped";
+        return "";
+    }
+
+    const std::string rec_num_column =
+        dbcont_man_.metaGetVariable(object.name(), dbcontent_vars::meta_var_rec_num_).dbColumnName();
+
+    std::stringstream ss;
+
+    for (const auto& alias : join_order)
+    {
+        const auto& join = joins.at(alias);
+
+        const std::string key_alias = alias + "__" + ReportTableDefinition::KeyColumnName;
+
+        ss << " LEFT JOIN (SELECT \"" << ReportTableDefinition::KeyColumnName << "\" AS " << key_alias;
+
+        for (const auto& column : join.columns)
+            ss << ", \"" << column.first << "\" AS " << column.second;
+
+        ss << " FROM \"" << join.table_name << "\") AS " << alias
+           << " ON " << alias << "." << key_alias << " = " << rec_num_column;
+    }
+
+    return ss.str();
 }
 
 /**
@@ -895,7 +966,8 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
                                                           const PropertyList& properties, 
                                                           const std::string& filter,
                                                           bool use_order, 
-                                                          const std::string& order_variable)
+                                                          const std::string& order_variable,
+                                                          const std::string& join_clause)
 {
     logdbg << "table " << table_name << " num properties " << properties.size();
 
@@ -919,11 +991,11 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
         first = false;
     }
     
-    ss << " FROM " << table_name;  // << table->getAllTableNames();
+    ss << " FROM " << table_name;
 
-    // add extra from parts
-//    for (auto& from_part : extra_from_parts)
-//        ss << ", " << from_part;
+    // the Report Table joins, see getReportTableJoinClause()
+    if (!join_clause.empty())
+        ss << join_clause;
 
     logdbg << "filtering statement";
 

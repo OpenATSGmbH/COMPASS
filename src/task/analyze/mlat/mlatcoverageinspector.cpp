@@ -19,6 +19,7 @@
 #include "mlatcoveragehelpers.h"
 #include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
+#include "reporttable.h"
 #include "targetreport3dgrid.h"
 #include "movementui.h"
 
@@ -247,7 +248,8 @@ void walkTargetTimeDifference(unsigned int utn,
                               TargetReport3DGrid& grid,
                               const Settings& settings,
                               const analysis::MovementUI& mv,
-                              SectorWalkAccum* sec)
+                              SectorWalkAccum* sec,
+                              const analysis::PDWalkGapFunc& on_gap)
 {
     const time_duration d_max = boost::posix_time::seconds(60);
 
@@ -270,7 +272,8 @@ void walkTargetTimeDifference(unsigned int utn,
     walkReferencePeriodsTimeDifference(
         periods, tst_ts_sorted, walk_params,
         [ & ] (const ptime& t) { slotFunc(t, false); },
-        [ & ] (const ptime& t) { slotFunc(t, true ); });
+        [ & ] (const ptime& t) { slotFunc(t, true ); },
+        on_gap);
 }
 }  // anonymous namespace
 
@@ -294,7 +297,8 @@ void walkTargetStatusMessage(unsigned int utn,
                              TargetReport3DGrid& grid,
                              const Settings& /*settings*/,
                              const analysis::MovementUI& mv,
-                             SectorWalkAccum* sec)
+                             SectorWalkAccum* sec,
+                             const analysis::PDWalkGapFunc& on_gap)
 {
     const time_duration d_max = boost::posix_time::seconds(60);
 
@@ -303,8 +307,27 @@ void walkTargetStatusMessage(unsigned int utn,
         auto events = mlatcoverage_internal::evaluateCyclesInPeriod(
             period, cycles_sorted, tst_ts_sorted, &mv);
 
+        // consecutive missed cycles form one gap, from the last detected cycle
+        // (or the period begin) to the next detected cycle (or the period end)
+        ptime        gap_begin  = period.begin;
+        unsigned int gap_missed = 0;
+
+        auto closeGap = [ & ] (const ptime& end)
+        {
+            if (gap_missed > 0 && on_gap)
+                on_gap(gap_begin, end, gap_missed);
+
+            gap_begin  = end;
+            gap_missed = 0;
+        };
+
         for (const auto& ev : events)
         {
+            if (ev.is_miss)
+                ++gap_missed;
+            else
+                closeGap(ev.t_cycle);
+
             auto ca = refCellAt(dataset, utn, ev.t_cycle, d_max);
             if (!ca.valid)
                 continue;
@@ -316,6 +339,8 @@ void walkTargetStatusMessage(unsigned int utn,
                 if (sec) sec->accum(ca, true);
             }
         }
+
+        closeGap(period.end);
     }
 }
 }  // anonymous namespace
@@ -391,6 +416,9 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
 
     const auto utns = dataset->utns();
 
+    // Report table: one row per gap, keyed by the first reference sample inside it.
+    ReportTableRows gap_rows(tableWriter(), tableWriter().define(gapTableDefinition()));
+
     for (auto utn : utns)
     {
         if (!dataset->hasReferenceChain(utn))
@@ -444,17 +472,24 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         mv.ui_standing  = settings.update_interval_standing_s_;
         mv.window_s     = std::max(6.0, 2.0 * settings.update_interval_standing_s_);
 
+        auto on_gap = [ & ] (const ptime& begin, const ptime& end, unsigned int num_missed)
+        {
+            writeGapRow(gap_rows, *dataset, GapRow{ utn, begin, end, num_missed });
+        };
+
         if (use_status_method)
             walkTargetStatusMessage(utn, periods, tst_ts_sorted,
-                                    status_cycles, *dataset, grid, settings, mv, &sec);
+                                    status_cycles, *dataset, grid, settings, mv, &sec, on_gap);
         else
             walkTargetTimeDifference(utn, periods, tst_ts_sorted,
-                                     *dataset, grid, settings, mv, &sec);
+                                     *dataset, grid, settings, mv, &sec, on_gap);
 
         for (std::size_t si = 0; si < sector_layers.size(); ++si)
             if (sec.touched[si])
                 ++sector_target_count[si];
     }
+
+    gap_rows.flush();
 
     auto horizontal = grid.projectHorizontal();
     std::uint64_t total_eui = 0, total_mui = 0;

@@ -96,7 +96,9 @@ The read path is in [readme_loading.md](readme_loading.md). The insert path is t
   ```
   Views, filters, evaluation requirements and the reconstructor work on MetaVariables - they never name a per-category variable directly. This is what the closing paragraph of `readme_asterix.md`'s "Information hierarchy" section is referring to: the layered ASTERIX item numbers vanish here; consumers see one unified surveillance variable regardless of which category supplied the report.
 
-`VariableSet` is the container used for read-set construction and for filter intersection; see [readme_loading.md](readme_loading.md).
+- **ReportVariable / ReportContent** (`variable/reportvariable.h`) - one column of a Report Table written by the Evaluation or the Analyze Data Source task, offered in the variable selection under the report's own entry. Like the Meta content it has no rows of its own: `ReportVariable::getFor(dbcontent_name)` returns a runtime `Variable` for a host data content of the table, built outside the configuration tree (`Variable::createReportVariable()`, never written to `db_content_*.json`). The runtime Variable carries the join information (`reportTableName()`, `reportColumnName()`, `reportJoinAlias()`, `isReportVariable()`), its `name()` is `"<report name>: <column display name>"` and its `db_column_name` the SELECT alias. `DBContentManager::reportContents()` is the registry, filled by `TaskManager::updateReportContents()` at database open and after a report is saved or deleted. A Report Variable of a report the current database does not hold resolves to null, the name stays in the View configuration. Design and decisions: `experimental_src/readme_dynamic_dbcontent.md`.
+
+`VariableSet` is the container used for read-set construction and for filter intersection; see [readme_loading.md](readme_loading.md). The Report Table join of the load path is described there as well.
 
 ## Configuration in `conf/default/`
 

@@ -82,6 +82,11 @@ public:
     /// applied to the task's own registered parameters.
     Result applyJSONParameters(const nlohmann::json& params_json) override;
 
+    /// Apply a configuration stored in an analysis report (the Configurable
+    /// JSON written by `generateJSON()`): the task parameters and the
+    /// parameters of every inspector settings sub-configuration.
+    Result applyStoredConfiguration(const nlohmann::json& config);
+
     void initTask() override final;
     bool canRun() override;
     void run() override;

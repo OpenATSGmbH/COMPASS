@@ -27,6 +27,7 @@
 
 #include <json_fwd.hpp>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -241,6 +242,30 @@ class Variable : public QObject, public Property, public Configurable
     bool hasDBContent() const;
     void setHasDBContent();
 
+    /*report variable related, see readme_dynamic_dbcontent.md Section 4.3*/
+
+    /// a Report Variable is a column of a Report Table joined onto the host data content
+    bool isReportVariable() const { return !report_table_name_.empty(); }
+    /// the DuckDB table holding the column
+    const std::string& reportTableName() const { return report_table_name_; }
+    /// the column inside that table
+    const std::string& reportColumnName() const { return report_column_name_; }
+    /// the alias of the join subquery, dbTableName() returns it so a WHERE clause qualifies right
+    const std::string& reportJoinAlias() const { return report_join_alias_; }
+
+    /// creates a runtime variable for a Report Table column, outside the configuration tree
+    static std::unique_ptr<Variable> createReportVariable(const std::string& name,
+                                                          const std::string& dbcontent_name,
+                                                          const std::string& column_alias,
+                                                          const std::string& join_alias,
+                                                          const std::string& report_table_name,
+                                                          const std::string& report_column_name,
+                                                          PropertyDataType data_type,
+                                                          const std::string& description,
+                                                          const std::string& dimension,
+                                                          const std::string& unit,
+                                                          const std::string& representation_str);
+
 private:
     static std::map<Representation, std::string> representation_2_string_;
     static std::map<std::string, Representation> string_2_representation_;
@@ -262,6 +287,11 @@ private:
 
     std::string db_expression_;
     nlohmann::json db_expression_variables_;
+
+    //set on a runtime Report Variable only, empty on a configured variable
+    std::string report_table_name_;
+    std::string report_column_name_;
+    std::string report_join_alias_;
 
     std::string dimension_;
     std::string unit_;

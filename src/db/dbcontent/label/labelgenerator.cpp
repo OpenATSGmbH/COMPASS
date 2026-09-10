@@ -21,6 +21,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 //#include "dbcontent/variable/metavariable.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "dbcontent/variable/variableset.h"
 //#include "dbcontent/label/labelgeneratorwidget.h"
 #include "dbcontent/label/labelcontentdialog.h"
@@ -1412,29 +1413,61 @@ nlohmann::json LabelGenerator::labelConfig() const
     return config_.label_config_;
 }
 
+dbContent::Variable* LabelGenerator::labelVariable(const std::string& dbcontent_name,
+                                                   const std::string& var_name)
+{
+    if (!dbcont_manager_.existsDBContent(dbcontent_name))
+        return nullptr;
+
+    DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
+
+    if (db_content.hasVariable(var_name))
+        return &db_content.variable(var_name);
+
+    //a Report Variable is named "<report>: <display name>", unique across the reports, and
+    //resolves for the host data contents of its Report Table only
+    for (const auto& content : dbcont_manager_.reportContents())
+    {
+        if (!content->hasVariable(var_name))
+            continue;
+
+        auto& report_var = content->variable(var_name);
+
+        if (report_var.existsIn(dbcontent_name))
+            return &report_var.getFor(dbcontent_name);
+
+        return nullptr;
+    }
+
+    return nullptr;
+}
+
 void LabelGenerator::addVariables (const std::string& dbcontent_name, dbContent::VariableSet& read_set)
 {
     traced_assert(config_.label_config_.contains(dbcontent_name));
 
     json& dbcont_def = config_.label_config_.at(dbcontent_name);
 
-    DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
-
     for (auto& var_it : dbcont_def.get<std::map<std::string, std::string>>())
     {
         if (var_it.second == "Best available Identification" || var_it.second == "")
             continue;
 
-        if (!db_content.hasVariable(var_it.second))
+        Variable* var = labelVariable(dbcontent_name, var_it.second);
+
+        if (!var)
         {
+            //a Report Variable of another database is not available, the name stays
             logwrn << "unknown var '" << var_it.second << "' in " << dbcontent_name;
             continue;
         }
 
-        Variable& var = db_content.variable(var_it.second);
-        if (!read_set.hasVariable(var))
-            read_set.add(var);
+        if (!read_set.hasVariable(*var))
+            read_set.add(*var);
     }
+
+    DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
+    (void) db_content;
 
     // "Mode C Garbled"
     if (dbcont_manager_.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_g_))
@@ -1721,9 +1754,12 @@ std::string LabelGenerator::getVariableValue(const std::string& dbcontent_name, 
 
     string varname = dbcont_def.at(to_string(key));
 
-    DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
-    traced_assert(db_content.hasVariable(varname));
-    Variable& var = db_content.variable(varname);
+    Variable* var_ptr = labelVariable(dbcontent_name, varname);
+
+    if (!var_ptr)
+        return ""; // not available in this database
+
+    Variable& var = *var_ptr;
 
     PropertyDataType data_type = var.dataType();
     string value;
@@ -2022,11 +2058,12 @@ std::string LabelGenerator::getVariableUnit(const std::string& dbcontent_name, u
 
     string varname = dbcont_def.at(to_string(key));
 
-    DBContent& db_content = dbcont_manager_.dbContent(dbcontent_name);
+    Variable* var = labelVariable(dbcontent_name, varname);
 
-    traced_assert(db_content.hasVariable(varname));
+    if (!var)
+        return ""; // not available in this database
 
-    return db_content.variable(varname).dimensionUnitStr();
+    return var->dimensionUnitStr();
 }
 
 std::string LabelGenerator::getMode3AText (const std::string& dbcontent_name,

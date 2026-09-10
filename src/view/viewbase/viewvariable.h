@@ -28,6 +28,7 @@ namespace dbContent
 {
     class Variable;
     class MetaVariable;
+    class ReportVariable;
     class VariableSet;
     class VariableSelectionWidget;
 }
@@ -61,6 +62,8 @@ public:
 
     bool hasVariable() const;
     bool isMetaVariable() const;
+    /// the selected variable is a column of a Report Table, the content name is a report name
+    bool isReportVariable() const;
     bool isEmpty() const;
 
     boost::optional<PropertyDataType> dataType() const;
@@ -76,6 +79,8 @@ public:
     const dbContent::MetaVariable& metaVariable() const;
     dbContent::MetaVariable* metaVariablePtr();
     void setMetaVariable(dbContent::MetaVariable& var, bool notify_changes);
+
+    dbContent::ReportVariable& reportVariable() const;
 
     void setEmpty(bool notify_changes);
 

@@ -46,6 +46,8 @@ public:
     boost::optional<unsigned int> utn_;
     boost::optional<unsigned int> max_size_;
 
+    dbContent::Variable* resolveVariable(const std::string& name) const;
+
     RTCommandGetData();
 
 protected:

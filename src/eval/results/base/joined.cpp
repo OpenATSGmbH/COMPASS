@@ -562,17 +562,17 @@ std::shared_ptr<nlohmann::json::object_t> Joined::getOrCreateCachedViewable() co
                << "requirement '" << requirement_->name() << "' " 
                << "sector '" << sector_layer_.name() << "'..."; 
 
-        //cache all needed single details in parallel
+        //cache all needed single details
+        //serial by design: the details are read from the report table through the single
+        //database connection, see readme_dynamic_dbcontent.md decision 12
         auto used_results = usedSingleResults();
 
         unsigned int n = used_results.size();
 
         std::vector<Single::TemporaryDetails> temp_details(n);
 
-        tbb::parallel_for(uint(0), n, [ & ] (unsigned int idx)
-        {
+        for (unsigned int idx = 0; idx < n; ++idx)
             temp_details[ idx ] = used_results[ idx ]->temporaryDetails();
-        });
 
         //create new viewable
         viewable_ = createViewable(AnnotationOptions().overview());

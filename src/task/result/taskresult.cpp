@@ -24,6 +24,7 @@
 #include "task/result/report/sectioncontenttable.h"
 
 #include "compass.h"
+#include "dbinterface.h"
 #include "dbcontentmanager.h"
 #include "dbcontentdataengine.h"
 #include "viewmanager.h"
@@ -65,6 +66,7 @@ const std::string TaskResult::FieldMetaDataComments     = "comments";
 const std::string TaskResult::FieldMetaData             = "metadata";
 const std::string TaskResult::FieldHeaderUpdateState    = "update_state";
 const std::string TaskResult::FieldHeaderUpdateContents = "update_contents";
+const std::string TaskResult::FieldHeaderTables         = "tables";
 const std::string TaskResult::FieldReport               = "report";
 const std::string TaskResult::FieldConfig               = "config";
 
@@ -194,6 +196,12 @@ nlohmann::json TaskResultHeader::toJSON() const
 
     j[ TaskResult::FieldHeaderUpdateContents ] = j_update_contents;
 
+    nlohmann::json j_tables = nlohmann::json::array();
+    for (const auto& t : tables)
+        j_tables.push_back(t.toJSON());
+
+    j[ TaskResult::FieldHeaderTables ] = j_tables;
+
     return j;
 }
 
@@ -226,6 +234,24 @@ bool TaskResultHeader::fromJSON(const nlohmann::json& j)
             return false;
         
         update_contents.push_back(c);
+    }
+
+    //the catalog is optional, headers written before the report tables existed do not carry it
+    tables.clear();
+
+    if (j.contains(TaskResult::FieldHeaderTables))
+    {
+        if (!j[ TaskResult::FieldHeaderTables ].is_array())
+            return false;
+
+        for (const auto& j_table : j[ TaskResult::FieldHeaderTables ])
+        {
+            ReportTableInfo info;
+            if (!info.fromJSON(j_table))
+                return false;
+
+            tables.push_back(info);
+        }
     }
 
     return true;
@@ -291,8 +317,89 @@ TaskResultHeader TaskResult::header() const
     header.metadata        = metadata_;
     header.update_state    = update_state_;
     header.update_contents = update_contents_;
+    header.tables          = tables_;
 
     return header;
+}
+
+/**
+ * Writer for the report tables of this result, created on first use during the run.
+ */
+ReportTableWriter& TaskResult::tableWriter()
+{
+    if (!table_writer_)
+        table_writer_.reset(new ReportTableWriter(id_, task_manager_.compass().dbInterface()));
+
+    return *table_writer_;
+}
+
+/**
+ * Takes the catalog over from the writer at the end of the run.
+ */
+void TaskResult::finalizeReportTables()
+{
+    if (!table_writer_)
+        return;
+
+    tables_ = table_writer_->tables();
+    table_writer_.reset();
+
+    loginf << "result " << id_ << " '" << name_ << "' report tables " << tables_.size()
+           << " rows " << numReportTableRows();
+}
+
+/**
+ * Drops the tables written during an aborted run.
+ */
+void TaskResult::discardReportTables()
+{
+    if (!table_writer_)
+        return;
+
+    table_writer_->discard();
+    table_writer_.reset();
+}
+
+/**
+ */
+bool TaskResult::hasReportTable(const std::string& key) const
+{
+    for (const auto& t : tables_)
+        if (t.key == key)
+            return true;
+    return false;
+}
+
+/**
+ */
+const ReportTableInfo& TaskResult::reportTable(const std::string& key) const
+{
+    for (const auto& t : tables_)
+        if (t.key == key)
+            return t;
+
+    throw std::runtime_error("TaskResult: reportTable: unknown table '" + key + "'");
+}
+
+/**
+ * Database table names of the report tables.
+ */
+std::set<std::string> TaskResult::reportTableNames() const
+{
+    std::set<std::string> names;
+    for (const auto& t : tables_)
+        names.insert(t.tableName(id_));
+    return names;
+}
+
+/**
+ */
+size_t TaskResult::numReportTableRows() const
+{
+    size_t n = 0;
+    for (const auto& t : tables_)
+        n += t.num_rows;
+    return n;
 }
 
 /**
@@ -350,8 +457,9 @@ bool TaskResult::ensureContentLoaded() const
  */
 void TaskResult::configure(const TaskResultHeader& header)
 {
-    //the header carries the metadata, so it is available without the content
+    //the header carries the metadata and the report table catalog, so both are available without the content
     metadata_ = header.metadata;
+    tables_   = header.tables;
 
     //apply update state stored in header
     if (header.update_state == UpdateState::ContentUpdateNeeded)

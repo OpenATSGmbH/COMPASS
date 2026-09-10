@@ -222,34 +222,6 @@ std::vector<Single::TargetInfo> SingleDetection::targetInfos() const
 
 /**
 */
-std::vector<std::string> SingleDetection::detailHeaders() const
-{
-    if (isTimeRatio(requirement_))
-        return { "ToD", "DToD", "MT [s]", "Comment" };
-
-    return { "ToD", "DToD", "MUI", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SingleDetection::detailValues(const EvaluationDetail& detail,
-                                                      const EvaluationDetail* parent_detail) const
-{
-    auto d_tod = detail.getValue(DetailKey::DiffTOD);
-
-    bool time_ratio = isTimeRatio(requirement_);
-
-    // cumulative missed amount: update interval count or seconds, see evaluate()
-    auto missed = detail.getValue(DetailKey::MissedUIs);
-
-    return { Utils::Time::toString(detail.timestamp()),
-             d_tod.isValid() ? nlohmann::json(Utils::String::timeStringFromDouble(d_tod.toFloat())) : nlohmann::json(),
-             time_ratio ? expectedMissedValue(missed.toDouble(), true) : nlohmann::json(missed.toUInt()),
-             detail.comments().generalComment() };
-}
-
-/**
-*/
 bool SingleDetection::detailIsOk(const EvaluationDetail& detail) const
 {
     return !detail.getValue(DetailKey::MissOccurred).toBool();
@@ -399,6 +371,74 @@ FeatureDefinitions JoinedDetection::getCustomAnnotationDefinitions() const
             addDataSeries(SingleDetection::DetailKey::MissOccurred, GridAddDetailMode::AddPositionsAsPolyLine, true);
 
     return defs;
+}
+
+/**
+ */
+void SingleDetection::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("missed_updates", PropertyDataType::DOUBLE, "Missed Updates",
+                  "Missed update intervals inside the gap, missed seconds in time ratio mode");
+}
+
+/**
+ */
+void SingleDetection::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    // the detail carries the cumulative missed amount, the row the amount of its gap
+    auto missed = detail.getValueAs<double>(DetailKey::MissedUIs);
+    if (missed.has_value())
+    {
+        double prev = prev_detail ? prev_detail->getValueAs<double>(DetailKey::MissedUIs).value_or(0.0) : 0.0;
+        rows.set<double>("missed_updates", missed.value() - prev);
+    }
+}
+
+/**
+ */
+void SingleDetection::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    // every stored row is a gap, the detail carries the cumulative missed amount
+    detail.setValue(DetailKey::MissOccurred, QVariant(true));
+
+    setDetailValue<double>(detail, DetailKey::DiffTOD, buffer, "duration_s", row);
+
+    double prev = prev_detail ? prev_detail->getValueAs<double>(DetailKey::MissedUIs).value_or(0.0) : 0.0;
+
+    if (buffer.has<double>("missed_updates") && !buffer.get<double>("missed_updates").isNull(row))
+        detail.setValue(DetailKey::MissedUIs, QVariant(prev + buffer.get<double>("missed_updates").get(row)));
+    else
+        detail.setValue(DetailKey::MissedUIs, QVariant(prev));
+}
+
+/**
+ */
+bool SingleDetection::reportTableRowWanted(const EvaluationDetail& detail,
+                                 const EvaluationDetail* parent_detail) const
+{
+    return detail.getValueAs<bool>(DetailKey::MissOccurred).value_or(false);
+}
+
+/**
+ * The gap ends at the detail timestamp and lasts the time difference of the detail.
+ */
+boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
+SingleDetection::reportTableGapBounds(const EvaluationDetail& detail) const
+{
+    auto d_tod = detail.getValueAs<double>(DetailKey::DiffTOD);
+    if (!d_tod.has_value() || d_tod.value() <= 0.0)
+        return boost::none;
+
+    auto end   = detail.timestamp();
+    auto begin = end - boost::posix_time::microseconds(static_cast<long long>(d_tod.value() * 1e6));
+
+    return std::make_pair(begin, end);
 }
 
 }

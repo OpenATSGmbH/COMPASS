@@ -37,7 +37,9 @@ class QRadioButton;
 class QSortFilterProxyModel;
 class QStandardItem;
 class QStandardItemModel;
+class QToolButton;
 class QTreeView;
+class QWidget;
 
 class DBContentManager;
 class PopupMenu;
@@ -47,6 +49,7 @@ namespace dbContent
 
 class Variable;
 class MetaVariable;
+class ReportVariable;
 
 /**
  * Modal variable picker replacing the former QMenu-based selection.
@@ -73,6 +76,8 @@ class VariableSelectionDialog : public QDialog
 
         bool show_empty_variable{false}; // offer a Select None button
         bool multi_select{false};        // allow selection of multiple variables
+
+        bool show_reports{true};         // offer the Report Variables of the stored reports
     };
 
     VariableSelectionDialog(DBContentManager& dbcont_man, const Settings& settings,
@@ -106,11 +111,18 @@ class VariableSelectionDialog : public QDialog
 
     bool showDataType(PropertyDataType type) const;
     std::vector<std::string> selectableContents() const;
+    /// names of the stored Reports offering Report Variables, decision 18
+    std::vector<std::string> selectableReports() const;
     bool contentShown(const std::string& content_name) const;
+    bool isReport(const std::string& content_name) const;
 
     QStandardItem* makeVariableRow(const std::string& content_name, const std::string& var_name,
                                    const Variable* variable, const MetaVariable* meta_variable,
+                                   const ReportVariable* report_variable,
                                    QList<QStandardItem*>& row) const;
+    /// rows of a Report entry, restricted to one host data content if given
+    void addReportVariableRows(QStandardItem* content_item, const std::string& report_name,
+                               const std::string& host_dbcontent_name);
     void addVariableRows(QStandardItem* content_item, const std::string& content_name,
                          bool group_content_by_group);
     std::string dataItemOf(const std::string& source) const;
@@ -124,6 +136,12 @@ class VariableSelectionDialog : public QDialog
     QGridLayout* content_strip_layout_{nullptr};
     QButtonGroup* content_group_{nullptr};
     std::map<std::string, QRadioButton*> content_buttons_; // content name -> radio button
+
+    // the Reports form a second, collapsible row group under the data contents
+    QWidget*     report_strip_widget_{nullptr};
+    QGridLayout* report_strip_layout_{nullptr};
+    QToolButton* report_expand_button_{nullptr};
+
     QPushButton* content_menu_button_{nullptr};
     PopupMenu* content_menu_{nullptr};
     QAction* hide_status_action_{nullptr};

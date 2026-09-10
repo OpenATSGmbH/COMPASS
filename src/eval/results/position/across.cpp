@@ -99,31 +99,6 @@ std::vector<Single::TargetInfo> SinglePositionAcross::targetInfos() const
              { "#ACNOK [1]"     , "Number of updates with unacceptable across-track error", num_failed_                        } };
 }
 
-/**
-*/
-std::vector<std::string> SinglePositionAcross::detailHeaders() const
-{
-    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "DAcross", "DAcrossOK", "#ACOK", "#ACNOK", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SinglePositionAcross::detailValues(const EvaluationDetail& detail,
-                                                           const EvaluationDetail* parent_detail) const
-{
-    bool has_ref_pos = detail.numPositions() >= 2;
-
-    return { Utils::Time::toString(detail.timestamp()),
-            !has_ref_pos,
-             detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckPassed).toUInt(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
-             detail.comments().generalComment() }; 
-}
-
 /**********************************************************************************************
  * SinglePositionAcross
  **********************************************************************************************/

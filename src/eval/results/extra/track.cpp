@@ -158,25 +158,6 @@ std::vector<Single::TargetInfo> SingleExtraTrack::targetInfos() const
 
 /**
 */
-std::vector<std::string> SingleExtraTrack::detailHeaders() const
-{
-    return {"ToD", "Inside", "TN", "Extra", "Comment"};
-}
-
-/**
-*/
-nlohmann::json::array_t SingleExtraTrack::detailValues(const EvaluationDetail& detail,
-                                                       const EvaluationDetail* parent_detail) const
-{
-    return { Utils::Time::toString(detail.timestamp()),
-             detail.getValue(DetailKey::Inside).toBool(),
-             detail.getValue(DetailKey::TrackNum).toUInt(),
-             detail.getValue(DetailKey::Extra).toBool(),
-             detail.comments().generalComment() };
-}
-
-/**
-*/
 bool SingleExtraTrack::detailIsOk(const EvaluationDetail& detail) const
 {
     auto is_extra = detail.getValueAs<bool>(DetailKey::Extra);
@@ -293,6 +274,42 @@ FeatureDefinitions JoinedExtraTrack::getCustomAnnotationDefinitions() const
                        true);
 
     return defs;
+}
+
+/**
+ */
+void SingleExtraTrack::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("inside", PropertyDataType::BOOL, "Inside",
+                  "Test report inside the sector layer");
+    def.addColumn("extra", PropertyDataType::BOOL, "Extra",
+                  "Track counted as extra");
+    def.addColumn("track_num", PropertyDataType::UINT, "Track Number",
+                  "Track number of the test report");
+}
+
+/**
+ */
+void SingleExtraTrack::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setReportTableValue<bool>(rows, "inside", detail, DetailKey::Inside);
+    setReportTableValue<bool>(rows, "extra", detail, DetailKey::Extra);
+    setReportTableValue<unsigned int>(rows, "track_num", detail, DetailKey::TrackNum);
+}
+
+/**
+ */
+void SingleExtraTrack::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setDetailValue<bool>(detail, DetailKey::Inside, buffer, "inside", row);
+    setDetailValue<bool>(detail, DetailKey::Extra, buffer, "extra", row);
+    setDetailValue<unsigned int>(detail, DetailKey::TrackNum, buffer, "track_num", row);
 }
 
 }

@@ -17,6 +17,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/variablecreatedialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/variabledetailwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/metavariable.h"
+        "${CMAKE_CURRENT_LIST_DIR}/reportvariable.h"
         "${CMAKE_CURRENT_LIST_DIR}/metavariablewidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/metavariabledetailwidget.h"
     PRIVATE
@@ -31,6 +32,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/variablecreatedialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/variabledetailwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/metavariable.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/reportvariable.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/metavariablewidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/metavariabledetailwidget.cpp"
 )

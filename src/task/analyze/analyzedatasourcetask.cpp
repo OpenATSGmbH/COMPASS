@@ -328,6 +328,53 @@ Result AnalyzeDataSourceTask::applyJSONParameters(const nlohmann::json& params_j
     return Configurable::applyJSONParameters(rest);
 }
 
+Result AnalyzeDataSourceTask::applyStoredConfiguration(const nlohmann::json& config)
+{
+    if (!config.is_object()
+        || !config.contains(Configuration::ParameterSection)
+        || !config.at(Configuration::ParameterSection).is_object())
+        return Result::failed("Stored configuration has no parameters");
+
+    auto res = applyJSONParameters(config.at(Configuration::ParameterSection));
+    if (!res.ok())
+        return res;
+
+    if (!config.contains("sub_configs") || !config.at("sub_configs").is_array())
+        return Result::succeeded();
+
+    // inspector settings are the sub-configurations named "<InspectorClassName>Settings"
+    static const std::string kSettingsSuffix = "Settings";
+
+    for (const auto& sub : config.at("sub_configs"))
+    {
+        if (!sub.is_object()
+            || !sub.contains("class_name")
+            || !sub.contains(Configuration::ParameterSection)
+            || !sub.at(Configuration::ParameterSection).is_object())
+            continue;
+
+        const std::string class_name = sub.at("class_name");
+        if (class_name.size() <= kSettingsSuffix.size()
+            || class_name.compare(class_name.size() - kSettingsSuffix.size(), kSettingsSuffix.size(), kSettingsSuffix) != 0)
+            continue;
+
+        const std::string inspector_class = class_name.substr(0, class_name.size() - kSettingsSuffix.size());
+
+        DataSourceInspectorBase* ins = inspector(inspector_class);
+        if (!ins)
+        {
+            logwrn << "stored configuration names unknown inspector '" << inspector_class << "'";
+            continue;
+        }
+
+        res = ins->settings().applyJSONParameters(sub.at(Configuration::ParameterSection));
+        if (!res.ok())
+            return Result::failed("inspector '" + inspector_class + "': " + res.error());
+    }
+
+    return Result::succeeded();
+}
+
 void AnalyzeDataSourceTask::registerInspectors()
 {
     inspectors_.clear();
@@ -933,6 +980,15 @@ void AnalyzeDataSourceTask::run()
     setStatus("Preparing result...");
 
     tm.beginTaskResultWriting(result_name, task::TaskResultType::DataSourceAnalysis);
+
+    //store the task configuration in the result, so the report can be recomputed
+    {
+        writeBackConfigRecursive();
+
+        nlohmann::json config;
+        generateJSON(config, Configurable::JSONExportType::General);
+        tm.currentResult()->setJSONConfiguration(config);
+    }
 
     auto& report = tm.currentReport();
     auto& root   = *report->rootSection();

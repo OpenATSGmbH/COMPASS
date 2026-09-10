@@ -18,6 +18,7 @@
 #include "eval/results/base/single.h"
 #include "eval/results/base/result_t.h"
 #include "eval/results/base/joined.h"
+#include "eval/results/reporttablecontent.h"
 
 #include "task/result/report/report.h"
 #include "task/result/report/section.h"
@@ -31,6 +32,15 @@
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
+#include "evaluationcalculator.h"
+#include "evaluationsettings.h"
+
+#include "dbcontent/target/targetreportchain.h"
+
+#include "compass.h"
+#include "dbinterface.h"
+#include "taskmanager.h"
+#include "taskresult.h"
 
 #include "sectorlayer.h"
 
@@ -60,7 +70,8 @@ const QColor Single::AnnotationColorHighlight = Qt::yellow;
 const QColor Single::AnnotationColorError     = QColor("#FF6666");
 const QColor Single::AnnotationColorOk        = QColor("#66FF66");
 
-const std::string Single::ContentPropertyUTN  = "utn";
+const std::string Single::ContentPropertyUTN         = "utn";
+const std::string Single::ContentPropertyReportTable = "report_table";
 
 /**
 */
@@ -77,9 +88,6 @@ Single::Single(const std::string& type,
 ,   target_ (target)
 ,   details_(details)
 {
-    annotation_type_names_[AnnotationArrayType::TypeHighlight] = "Selected";
-    annotation_type_names_[AnnotationArrayType::TypeError    ] = "Errors";
-    annotation_type_names_[AnnotationArrayType::TypeOk       ] = "OK";
 }
 
 /**
@@ -246,22 +254,135 @@ Single::TemporaryDetails Single::temporaryDetails() const
 }
 
 /**
-*/
-Single::EvaluationDetails Single::recomputeDetails() const
+ * Reads the details of this target back from the Report Table of its requirement and sector
+ * layer. The rows are the output of addReportTableRows(), the family fills invert
+ * fillReportTableRow(). Used for the sector overview rebuild after a usage change, see
+ * readme_dynamic_dbcontent.md Section 4.5.
+ */
+Single::EvaluationDetails Single::loadDetailsFromReportTable() const
 {
     traced_assert(requirement_);
-    traced_assert(calculator_.data().hasTargetData(utn_));
 
-    logdbg << "recomputing target details for requirement '" << requirement_->name() << "' UTN " << utn_ << "...";
+    EvaluationDetails details;
 
-    const auto& data = calculator_.data().targetData(utn_);
+    auto& compass      = calculator_.manager().compass();
+    auto& task_manager = compass.taskManager();
 
-    auto result = requirement_->evaluate(data, requirement_, sector_layer_);
-    traced_assert(result);
+    const std::string& result_name = calculator_.resultName();
 
-    logdbg << "target details recomputed!";
+    if (result_name.empty() || !task_manager.hasResult(result_name))
+    {
+        logwrn << "no report '" << result_name << "', details of utn " << utn_ << " not loaded";
+        return details;
+    }
 
-    return result->getDetails();
+    auto result = task_manager.result(result_name);
+    if (!result)
+        return details;
+
+    std::string key = report_table_key_;
+
+    if (key.empty() || !result->hasReportTable(key))
+        key = ReportTableDefinition::identifierFrom(sector_layer_.name() + "_"
+                                                    + requirement_->groupName() + "_"
+                                                    + requirement_->name());
+
+    if (!result->hasReportTable(key))
+    {
+        logwrn << "no report table '" << key << "', details of utn " << utn_ << " not loaded";
+        return details;
+    }
+
+    const auto& table = result->reportTable(key);
+
+    const std::string filter = "\"" + ReportTableDefinition::UTNColumnName + "\" = " + std::to_string(utn_)
+                             + " ORDER BY \"" + ReportTableDefinition::TimestampColumnName + "\"";
+
+    auto res = compass.dbInterface().select(table.tableName(result->id()), table.propertyList(), filter);
+
+    if (!res.ok() || !res.result())
+    {
+        logerr << "could not read table '" << table.tableName(result->id()) << "'";
+        return details;
+    }
+
+    return detailsFromReportTableRows(table, *res.result());
+}
+
+/**
+ * Builds the details of one target from the rows of its Report Table. A family with nested
+ * details groups the rows by its period column.
+ */
+Single::EvaluationDetails Single::detailsFromReportTableRows(const ReportTableDefinition& definition,
+                                                             const Buffer& buffer) const
+{
+    EvaluationDetails details;
+
+    const std::string period_column = reportTablePeriodColumn();
+    const bool        nested        = !period_column.empty();
+
+    const bool has_periods = nested &&
+                             buffer.has<boost::posix_time::ptime>(period_column);
+
+    boost::posix_time::ptime current_period;
+    bool                     period_open = false;
+
+    boost::optional<EvaluationDetail> prev_detail;
+
+    for (unsigned int row = 0; row < buffer.size(); ++row)
+    {
+        auto timestamp = ReportTableContent::rowTimestamp(buffer, row);
+        if (!timestamp.has_value())
+            continue;
+
+        auto positions = ReportTableContent::rowPositions(definition, buffer, row);
+        if (!positions.valid())
+            continue;
+
+        std::vector<EvaluationDetail::Position> row_positions;
+        row_positions.emplace_back(positions.event->first, positions.event->second, false, false, 0.0f);
+
+        if (positions.reference.has_value())
+            row_positions.emplace_back(positions.reference->first, positions.reference->second, false, false, 0.0f);
+
+        EvaluationDetail detail(timestamp.value(), row_positions);
+
+        fillDetailFromReportTableRow(detail, buffer, row, prev_detail.get_ptr());
+
+        if (!nested)
+        {
+            details.push_back(detail);
+            prev_detail = detail;
+            continue;
+        }
+
+        //start a new period when the period column changes, a row without one stays in the
+        //open period
+        boost::posix_time::ptime period_begin = period_open ? current_period : timestamp.value();
+
+        if (has_periods && !buffer.get<boost::posix_time::ptime>(period_column).isNull(row))
+            period_begin = buffer.get<boost::posix_time::ptime>(period_column).get(row);
+
+        if (!period_open || period_begin != current_period)
+        {
+            EvaluationDetail period(period_begin, row_positions);
+
+            fillPeriodDetailFromReportTableRow(period, buffer, row);
+
+            details.push_back(period);
+
+            current_period = period_begin;
+            period_open    = true;
+        }
+
+        details.back().addDetail(detail);
+
+        prev_detail = detail;
+    }
+
+    logdbg << "utn " << utn_ << " details " << details.size() << " rows " << buffer.size();
+
+    return details;
 }
 
 /**
@@ -421,7 +542,8 @@ void Single::addTargetDetailsToReport(std::shared_ptr<ResultReport::Report> repo
 
         Single::setSingleContentProperties(fig, Evaluation::RequirementResultID(sector_layer_.name(),
                                                                                 requirement_->groupName(),
-                                                                                requirement_->name()), utn_);
+                                                                                requirement_->name()), utn_,
+                                            report_table_key_);
     }
     else
     {
@@ -441,7 +563,8 @@ void Single::generateDetailsTable(ResultReport::Section& utn_req_section)
     //init table if needed
     if (!utn_req_section.hasTable(TRDetailsTableName))
     {
-        auto headers = detailHeaders();
+        //the columns of the report table carry the details, plus the comment built from them
+        auto headers = ReportTableContent::detailsTableHeaders(reportTableDefinition());
 
         auto& table = utn_req_section.addTable(TRDetailsTableName, headers.size(), headers);
 
@@ -450,73 +573,9 @@ void Single::generateDetailsTable(ResultReport::Section& utn_req_section)
 
         Single::setSingleContentProperties(table, Evaluation::RequirementResultID(sector_layer_.name(),
                                                                                   requirement_->groupName(),
-                                                                                  requirement_->name()), utn_);
+                                                                                  requirement_->name()), utn_,
+                                            report_table_key_);
     }
-}
-
-/**
-*/
-bool Single::addDetailsToTable(ResultReport::SectionContentTable& table)
-{
-    //create details on demand
-    auto temp_details = temporaryDetails();
-    
-    //detail => table row functor
-    auto func = [ & ] (const EvaluationDetail& detail, 
-                       const EvaluationDetail* parent_detail, 
-                       int didx0, 
-                       int didx1,
-                       int evt_pos_idx, 
-                       int evt_ref_pos_idx)
-    {
-        auto values = detailValues(detail, parent_detail);
-
-        traced_assert(values.size() == table.numColumns());
-
-        table.addRow(values, ResultReport::SectionContentViewable().setOnDemand(), "", "", QPoint(didx0, didx1));
-    };
-
-    //iterate over temporary details
-    iterateDetails(func);
-
-    return true;
-}
-
-/**
-*/
-bool Single::addOverviewToFigure(ResultReport::SectionContentFigure& figure)
-{
-    auto viewable = viewableOverviewData();
-
-    auto viewable_func = [viewable]() { return viewable; };
-    figure.setViewableFunc(viewable_func);
-
-    return true;
-}
-
-/**
-*/
-bool Single::addHighlightToViewable(ResultReport::SectionContentViewable& viewable, const QVariant& annotation)
-{
-    //obtain detail key from annotation
-    auto detail_key = detailIndex(annotation);
-    if (!detail_key.has_value())
-        return false;
-
-    //generate temporary details
-    auto temp_details = temporaryDetails();
-
-    //create highlight viewable for detail
-    auto v = createViewable(AnnotationOptions().highlight(detail_key.value()));
-    if (!v)
-        return false;
-
-    //set callback
-    nlohmann::json::object_t j = *v;
-    v.reset();
-    viewable.setCallback(j);
-
-    return true;
 }
 
 /**
@@ -779,11 +838,7 @@ std::shared_ptr<nlohmann::json::object_t> Single::viewableOverviewData() const
 */
 nlohmann::json& Single::annotationPointCoords(nlohmann::json& annotations_json, AnnotationArrayType type, bool overview) const
 {
-    nlohmann::json& annotation = getOrCreateAnnotation(annotations_json, type, overview);
-
-    auto& feat_json = ViewPointGenAnnotation::getFeatureJSON(annotation, 1);
-
-    return ViewPointGenFeaturePointGeometry::getCoordinatesJSON(feat_json);
+    return EvaluationAnnotations::pointCoordinates(annotations_json, type, overview);
 }
 
 /**
@@ -791,11 +846,7 @@ nlohmann::json& Single::annotationPointCoords(nlohmann::json& annotations_json, 
 */
 nlohmann::json& Single::annotationLineCoords(nlohmann::json& annotations_json, AnnotationArrayType type, bool overview) const
 {
-    nlohmann::json& annotation = getOrCreateAnnotation(annotations_json, type, overview);
-    
-    auto& feat_json = ViewPointGenAnnotation::getFeatureJSON(annotation, 0);
-
-    return ViewPointGenFeaturePointGeometry::getCoordinatesJSON(feat_json);
+    return EvaluationAnnotations::lineCoordinates(annotations_json, type, overview);
 }
 
 /**
@@ -805,156 +856,7 @@ nlohmann::json& Single::getOrCreateAnnotation(nlohmann::json& annotations_json,
                                               AnnotationArrayType type, 
                                               bool overview) const
 {
-    traced_assert(annotations_json.is_array());
-
-    string anno_name = annotation_type_names_.at(type);
-
-    logdbg << "anno_name '" << anno_name << "' overview " << overview;
-
-    const std::string AnnotationArrayTypeField = "eval_annotation_array_type";
-    const std::string FieldName                = ViewPointGenAnnotation::AnnotationFieldName;
-    
-    //creates a new annotation at the given array position
-    auto insertAnnotation = [ & ] (const std::string& name,
-                                   unsigned int position,
-                                   const QColor& symbol_color,
-                                   const ViewPointGenFeaturePoints::Symbol& point_symbol,
-                                   const QColor& point_color,
-                                   int point_size,
-                                   const QColor& line_color,
-                                   int line_width)
-    {
-        logdbg << "size " << annotations_json.size()
-               << " creating '" << name << "' at pos " << position;
-
-        for (unsigned int cnt=0; cnt < annotations_json.size(); ++cnt)
-            logdbg << "start: index " << cnt <<" '" << annotations_json.at(cnt).at("name") << "'";
-
-        annotations_json.insert(annotations_json.begin() + position, json::object()); // errors
-        traced_assert(position < annotations_json.size());
-
-        nlohmann::json& annotation_json = annotations_json.at(position);
-
-        ViewPointGenAnnotation annotation(name);
-        annotation.setSymbolColor(symbol_color);
-
-        //ATTENTION: !ORDER IMPORTANT!
-
-        // lines
-        std::unique_ptr<ViewPointGenFeatureLines> feature_lines;
-        feature_lines.reset(new ViewPointGenFeatureLines(line_width, ViewPointGenFeatureLineString::LineStyle::Solid, {}, {}, false));
-        feature_lines->setColor(line_color);
-
-        annotation.addFeature(std::move(feature_lines));
-
-        // symbols
-        std::unique_ptr<ViewPointGenFeaturePoints> feature_points;
-        feature_points.reset(new ViewPointGenFeaturePoints(point_symbol, point_size, {}, {}, false));
-        feature_points->setColor(point_color);
-
-        annotation.addFeature(std::move(feature_points));
-
-        //convert to json
-        annotation.toJSON(annotation_json);
-
-        //add annotation type for finding the annotation again later on
-        annotation_json[ AnnotationArrayTypeField ] = (int)type;
-
-        for (unsigned int cnt=0; cnt < annotations_json.size(); ++cnt)
-            logdbg << "end: index " << cnt <<" '" << annotations_json.at(cnt).at("name") << "'";
-    };
-
-    struct Style
-    {
-        QColor                            color;
-        ViewPointGenFeaturePoints::Symbol point_symbol;
-        int                               point_size;
-        int                               line_width;
-    };
-
-    //creates a style for the given annotation type
-    auto getStyle = [ & ] (AnnotationArrayType type)
-    {
-        Style s;
-        if (type == AnnotationArrayType::TypeHighlight)
-        {
-            s.color        = AnnotationColorHighlight;
-            s.point_symbol = ViewPointGenFeaturePoints::Symbol::Border;
-            s.point_size   = AnnotationPointSizeHighlight;
-            s.line_width   = AnnotationLineWidthHighlight;
-        }
-        else if (type == AnnotationArrayType::TypeError)
-        {
-            s.color        = AnnotationColorError;
-            s.point_symbol = ViewPointGenFeaturePoints::Symbol::BorderThick;
-            s.point_size   = AnnotationPointSizeError;
-            s.line_width   = AnnotationLineWidthError;
-        }
-        else if (type == AnnotationArrayType::TypeOk)
-        {
-            s.color        = AnnotationColorOk;
-            s.point_symbol = ViewPointGenFeaturePoints::Symbol::Border;
-            s.point_size   = AnnotationPointSizeOk;
-            s.line_width   = AnnotationLineWidthOk;
-        }
-
-        if (overview)
-        {
-            s.point_symbol = ViewPointGenFeaturePoints::Symbol::Circle;
-            s.point_size   = AnnotationPointSizeOverview;
-        }
-
-        return s;
-    };
-
-    //find insertion index
-    unsigned int insert_idx;
-
-    auto comp = [ & ] (const nlohmann::json& j, AnnotationArrayType type) 
-    { 
-        int anno_type = j[ AnnotationArrayTypeField ];
-        return anno_type < (int)type;
-    };
-
-    auto it = std::lower_bound(annotations_json.begin(), annotations_json.end(), type, comp);
-
-    if (it == annotations_json.end()) 
-    {
-        // no element >= type -> insert at end
-        insert_idx = annotations_json.size();
-    }
-    else // element >= type found
-    {
-        insert_idx = it - annotations_json.begin();
-
-        // type already present? -> return annotation
-        int anno_type = (*it)[ AnnotationArrayTypeField ];
-        if (anno_type == (int)type)
-        {
-            auto& j = annotations_json.at(insert_idx);
-            traced_assert(j.at(FieldName) == anno_name);
-            return j;
-        }
-
-        // element > type found -> insert there
-    }
-
-    //insert new annotation of given type
-    auto style = getStyle(type);
-
-    insertAnnotation(anno_name, 
-                     insert_idx,
-                     style.color,
-                     style.point_symbol,
-                     style.color,
-                     style.point_size,
-                     style.color,
-                     style.line_width);
-    
-    auto& j = annotations_json.at(insert_idx);
-    traced_assert(j.at(FieldName) == anno_name);
-    
-    return j;
+    return EvaluationAnnotations::getOrCreate(annotations_json, type, overview);
 }
 
 /**
@@ -1015,6 +917,242 @@ boost::optional<Base::DetailIndex> Single::detailIndex(const QVariant& annotatio
         return {};
 
     return dindex;
+}
+
+/**
+ * Definition of the report table of the requirement and sector layer of this result. One table
+ * per requirement and sector layer, so the rows are one to one on the record number.
+ */
+ReportTableDefinition Single::reportTableDefinition() const
+{
+    const auto kind = reportTableKeyKind();
+
+    const std::string host = kind == ReportTableKeyKind::ReferenceGap ? calculator_.dbContentNameRef()
+                                                                      : calculator_.dbContentNameTst();
+
+    std::string key = ReportTableDefinition::identifierFrom(sector_layer_.name() + "_"
+                                                            + requirement_->groupName() + "_"
+                                                            + requirement_->name());
+    std::string display_name = sector_layer_.name() + " - " + requirement_->shortname();
+
+    auto def = ReportTableDefinition::record(key, display_name, { host });
+
+    if (kind == ReportTableKeyKind::TestReport)
+    {
+        def.addColumn("dt_prev_s", PropertyDataType::DOUBLE, "Time Since Previous",
+                      "Time since the previous test report of the target", "Time", "Second");
+        def.addColumn("tst_lat", PropertyDataType::DOUBLE, "Latitude",
+                      "Latitude of the test report", "Angle", "Degree");
+        def.addColumn("tst_lon", PropertyDataType::DOUBLE, "Longitude",
+                      "Longitude of the test report", "Angle", "Degree");
+        def.addColumn("ref_lat", PropertyDataType::DOUBLE, "Reference Latitude",
+                      "Latitude of the reference at the time of the test report", "Angle", "Degree");
+        def.addColumn("ref_lon", PropertyDataType::DOUBLE, "Reference Longitude",
+                      "Longitude of the reference at the time of the test report", "Angle", "Degree");
+        def.addColumn("ref_rec_num_1", PropertyDataType::ULONGINT, "Reference Record Number 1",
+                      "Record number of the reference update before the test report");
+        def.addColumn("ref_rec_num_2", PropertyDataType::ULONGINT, "Reference Record Number 2",
+                      "Record number of the reference update after the test report");
+    }
+    else
+    {
+        def.addColumn("gap_begin", PropertyDataType::TIMESTAMP, "Begin",
+                      "Begin of the gap, the last test report before it");
+        def.addColumn("gap_end", PropertyDataType::TIMESTAMP, "End",
+                      "End of the gap, the first test report after it");
+        def.addColumn("duration_s", PropertyDataType::DOUBLE, "Duration",
+                      "Duration of the gap", "Time", "Second");
+        def.addColumn("ref_lat", PropertyDataType::DOUBLE, "Reference Latitude",
+                      "Latitude of the first reference sample inside the gap", "Angle", "Degree");
+        def.addColumn("ref_lon", PropertyDataType::DOUBLE, "Reference Longitude",
+                      "Longitude of the first reference sample inside the gap", "Angle", "Degree");
+        def.addColumn("ref_lat_end", PropertyDataType::DOUBLE, "Reference Latitude End",
+                      "Latitude of the last reference sample inside the gap", "Angle", "Degree");
+        def.addColumn("ref_lon_end", PropertyDataType::DOUBLE, "Reference Longitude End",
+                      "Longitude of the last reference sample inside the gap", "Angle", "Degree");
+        def.addColumn("ref_rec_num_last", PropertyDataType::ULONGINT, "Last Reference Record Number",
+                      "Record number of the last reference sample inside the gap");
+        def.addColumn("tst_rec_num_before", PropertyDataType::ULONGINT, "Test Record Number Before",
+                      "Record number of the test report at the begin of the gap");
+        def.addColumn("tst_rec_num_after", PropertyDataType::ULONGINT, "Test Record Number After",
+                      "Record number of the test report at the end of the gap");
+    }
+
+    addReportTableColumns(def);
+
+    return def;
+}
+
+/**
+ * Writes one row per detail (per child detail for nested details) into the report table.
+ * Test report rows are keyed by the record number of the test report at the detail timestamp,
+ * gap rows by the first reference sample inside the gap.
+ */
+void Single::addReportTableRows(ReportTableRows& rows) const
+{
+    //remembered for the on-demand content, which finds its table by this key
+    report_table_key_ = rows.table().key;
+
+    if (!target_ || !details_.has_value())
+        return;
+
+    const auto kind = reportTableKeyKind();
+
+    const auto& tst_chain   = target_->tstChain();
+    const auto& tst_indexes = tst_chain.timestampIndexes();
+    const auto& ref_chain   = target_->refChain();
+    const auto& ref_indexes = ref_chain.timestampIndexes();
+
+    typedef dbContent::TargetReport::DataID DataID;
+
+    std::map<boost::posix_time::ptime, unsigned int> seen; // details sharing a timestamp take the reports in order
+    const EvaluationDetail* prev_detail = nullptr;
+
+    auto secondsBetween = [] (const boost::posix_time::ptime& t0, const boost::posix_time::ptime& t1)
+    {
+        return (t1 - t0).total_microseconds() / 1e6;
+    };
+
+    auto testRecordNumberAt = [ & ] (const boost::posix_time::ptime& ts) -> boost::optional<unsigned long>
+    {
+        auto it = tst_indexes.find(ts);
+        if (it == tst_indexes.end())
+            return boost::none;
+        return tst_chain.recordNumber(DataID(*it));
+    };
+
+    auto writeRow = [ & ] (const EvaluationDetail& detail, const EvaluationDetail* parent_detail)
+    {
+        if (!reportTableRowWanted(detail, parent_detail))
+            return;
+
+        if (kind == ReportTableKeyKind::TestReport)
+        {
+            auto range = tst_indexes.equal_range(detail.timestamp());
+            if (range.first == range.second)
+                return; // no test report at the detail time
+
+            unsigned int n  = seen[ detail.timestamp() ]++;
+            auto         it = range.first;
+            for (unsigned int i = 0; i < n && std::next(it) != range.second; ++i)
+                ++it;
+
+            DataID id(*it);
+
+            rows.setRecordNumber(tst_chain.recordNumber(id));
+            rows.setUTN(utn_);
+            rows.setTimestamp(detail.timestamp());
+
+            if (it != tst_indexes.begin())
+                rows.set<double>("dt_prev_s", secondsBetween(std::prev(it)->first, it->first));
+
+            if (detail.numPositions() >= 1)
+            {
+                rows.set<double>("tst_lat", detail.position(0).latitude_);
+                rows.set<double>("tst_lon", detail.position(0).longitude_);
+            }
+            if (detail.numPositions() >= 2)
+            {
+                rows.set<double>("ref_lat", detail.lastPos().latitude_);
+                rows.set<double>("ref_lon", detail.lastPos().longitude_);
+            }
+
+            auto ref_rec_nums = target_->mappedRefRecordNumbers(id);
+            if (ref_rec_nums.first)
+                rows.set<unsigned long>("ref_rec_num_1", *ref_rec_nums.first);
+            if (ref_rec_nums.second)
+                rows.set<unsigned long>("ref_rec_num_2", *ref_rec_nums.second);
+        }
+        else
+        {
+            auto bounds = reportTableGapBounds(detail);
+            if (!bounds.has_value())
+                return;
+
+            const auto& begin = bounds->first;
+            const auto& end   = bounds->second;
+
+            //the first free reference sample inside the gap is the key, gaps of one target can
+            //overlap, and the record number is the primary key of the table
+            auto lb = ref_indexes.lower_bound(begin);
+
+            while (lb != ref_indexes.end() && lb->first < end &&
+                   rows.hasRecordNumber(ref_chain.recordNumber(DataID(*lb))))
+                ++lb;
+
+            if (lb == ref_indexes.end() || lb->first >= end)
+                return; // no free reference sample inside the gap
+
+            DataID first(*lb);
+
+            rows.setRecordNumber(ref_chain.recordNumber(first));
+            rows.setUTN(utn_);
+            rows.setTimestamp(lb->first);
+
+            rows.set<boost::posix_time::ptime>("gap_begin", begin);
+            rows.set<boost::posix_time::ptime>("gap_end", end);
+            rows.set<double>("duration_s", secondsBetween(begin, end));
+
+            auto pos = ref_chain.posOpt(first);
+            if (pos.has_value())
+            {
+                rows.set<double>("ref_lat", pos->latitude_);
+                rows.set<double>("ref_lon", pos->longitude_);
+            }
+
+            auto ub = ref_indexes.upper_bound(end);
+            if (ub != ref_indexes.begin())
+            {
+                --ub;
+                if (ub->first > begin)
+                {
+                    DataID last(*ub);
+
+                    rows.set<unsigned long>("ref_rec_num_last", ref_chain.recordNumber(last));
+
+                    auto pos_last = ref_chain.posOpt(last);
+                    if (pos_last.has_value())
+                    {
+                        rows.set<double>("ref_lat_end", pos_last->latitude_);
+                        rows.set<double>("ref_lon_end", pos_last->longitude_);
+                    }
+                }
+            }
+
+            auto before = testRecordNumberAt(begin);
+            if (before)
+                rows.set<unsigned long>("tst_rec_num_before", *before);
+
+            auto after = testRecordNumberAt(end);
+            if (after)
+                rows.set<unsigned long>("tst_rec_num_after", *after);
+        }
+
+        fillReportTableRow(rows, detail, parent_detail, prev_detail);
+
+        rows.nextRow();
+
+        prev_detail = &detail;
+    };
+
+    const auto& details = details_.value();
+
+    if (detailNestingMode() == DetailNestingMode::Vector)
+    {
+        for (const auto& detail : details)
+            writeRow(detail, nullptr);
+    }
+    else
+    {
+        for (const auto& parent : details)
+        {
+            if (!parent.hasDetails())
+                continue;
+
+            for (const auto& child : parent.details())
+                writeRow(child, &parent);
+        }
+    }
 }
 
 /**
@@ -1254,36 +1392,44 @@ void Single::createAnnotations(nlohmann::json& annotations_json,
 */
 void Single::setSingleContentProperties(ResultReport::SectionContent& content,
                                         const Evaluation::RequirementResultID& id,
-                                        unsigned int utn)
+                                        unsigned int utn,
+                                        const std::string& report_table_key)
 {
     Base::setContentProperties(content, id);
 
     content.setJSONProperty(ContentPropertyUTN, utn);
+
+    if (!report_table_key.empty())
+        content.setJSONProperty(ContentPropertyReportTable, report_table_key);
 }
 
 /**
 */
-boost::optional<std::pair<unsigned int, Evaluation::RequirementResultID>> Single::singleContentProperties(const ResultReport::SectionContent& content)
+boost::optional<Single::ContentInfo> Single::singleContentProperties(const ResultReport::SectionContent& content)
 {
     if (!content.hasJSONProperty(ContentPropertyUTN))
-        return boost::optional<std::pair<unsigned int, Evaluation::RequirementResultID>>();
+        return boost::optional<ContentInfo>();
 
     auto id = Base::contentProperties(content);
     if (!id.has_value())
-        return boost::optional<std::pair<unsigned int, Evaluation::RequirementResultID>>();
+        return boost::optional<ContentInfo>();
 
-    unsigned int utn;
-    
+    ContentInfo info;
+    info.id = id.value();
+
     try
     {
-        utn = content.jsonProperty(ContentPropertyUTN);
+        info.utn = content.jsonProperty(ContentPropertyUTN);
+
+        if (content.hasJSONProperty(ContentPropertyReportTable))
+            info.report_table_key = content.jsonProperty(ContentPropertyReportTable);
     }
     catch(...)
     {
-        return boost::optional<std::pair<unsigned int, Evaluation::RequirementResultID>>();
+        return boost::optional<ContentInfo>();
     }
 
-    return std::make_pair(utn, id.value());
+    return info;
 }
 
 }

@@ -18,6 +18,9 @@
 #include "smrcoverageinspector.h"
 #include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
+#include "reporttable.h"
+
+#include <memory>
 #include "targetreport3dgrid.h"
 #include "movementui.h"
 #include "scancyclewalk.h"
@@ -1257,6 +1260,17 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
 
     const auto utns = dataset->utns();
 
+    // Report tables: one gap table per source, one row per gap keyed by the first
+    // reference sample inside it. Gaps of two sources overlap in time, so they
+    // cannot share a table.
+    std::vector<std::unique_ptr<ReportTableRows>> gap_rows;
+    for (std::size_t src_idx = 0; src_idx < sources.size(); ++src_idx)
+    {
+        auto def = gapTableDefinition("_gaps_" + std::to_string(sources[src_idx].ds_id),
+                                      " Gaps " + result_.sources[src_idx].label);
+        gap_rows.emplace_back(new ReportTableRows(tableWriter(), tableWriter().define(def)));
+    }
+
     for (auto utn : utns)
     {
         if (!dataset->hasReferenceChain(utn))
@@ -1348,11 +1362,29 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
                         ? analysis::evaluateCyclesInPeriod(period, *src.cycles, tst, nullptr)
                         : analysis::evaluateNominalSlotsInPeriod(period, nominal_period_s, tst);
 
+                // consecutive missed cycles form one gap, from the last detected
+                // cycle (or the period begin) to the next detected cycle (or the
+                // period end), a slot that is not expected closes a gap as well
+                ptime        gap_begin  = period.begin;
+                unsigned int gap_missed = 0;
+
+                auto closeGap = [ & ] (const ptime& end)
+                {
+                    if (gap_missed > 0)
+                        writeGapRow(*gap_rows[src_idx], *dataset, GapRow{ utn, gap_begin, end, gap_missed });
+
+                    gap_begin  = end;
+                    gap_missed = 0;
+                };
+
                 for (const auto& ev : events)
                 {
                     auto ca = refCellAt(*dataset, utn, ev.t_cycle, d_max);
                     if (!ca.valid)
+                    {
+                        closeGap(ev.t_cycle);
                         continue;
+                    }
 
                     if (src.has_pos && max_range_m > 0.0)
                     {
@@ -1362,6 +1394,7 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
                         if (ok && dist > max_range_m)
                         {
                             ++result_.slots_out_of_range;
+                            closeGap(ev.t_cycle);
                             continue;
                         }
                     }
@@ -1402,6 +1435,7 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
                         if (!inside)
                         {
                             ++result_.slots_out_of_coverage;
+                            closeGap(ev.t_cycle);
                             continue;
                         }
                     }
@@ -1423,8 +1457,11 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
                         ++mrow.mui;
                         ++cls.scans_0;
                         sec.accum(ca, true);
+                        ++gap_missed;
                         continue;
                     }
+
+                    closeGap(ev.t_cycle);
 
                     if (n == 1)      ++cls.scans_1;
                     else if (n == 2) ++cls.scans_2;
@@ -1443,6 +1480,8 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
                         result_.total_extra += extra;
                     }
                 }
+
+                closeGap(period.end);
             }
         }
 
@@ -1450,6 +1489,9 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
             if (sec.touched[si])
                 ++sector_target_count[si];
     }
+
+    for (auto& rows : gap_rows)
+        rows->flush();
 
     // Coverage figure values: share of the cell's slots that were inside a
     // source's band. Accumulated as a count during the walk.

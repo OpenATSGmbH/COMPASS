@@ -101,13 +101,17 @@ unless `time_offset` is given), `replay_speed`, `replay_line`,
 `get_eval_standards` (standards with requirement groups/requirements, no DB needed)
 
 **Data retrieval**: `get_utns` (with `nodesc`), `get_target`, `get_target_stats`,
-`get_dbcontent_data` (with `dbcontent`, `variables` `|`-separated, `utn`, `max_size`),
+`get_dbcontent_data` (with `dbcontent`, `variables` `|`-separated, `utn`, `max_size`; a
+variable is a variable of the DBContent or a Report Variable joined onto it, given by its full
+name `<report name>: <display name>`, records without a Report Table row are null),
 `get_data_sources`, `get_data_source_counts` (per data source / dbcontent / line
 inserted record counts), `get_sensor_status` (CAT063 based per data source status
 as shown in the Sensor Status tool: active tracker plus per source
 Operational/Degraded/Initializing/Not Connected/Fresh/Unknown and status time)
 
-**Reports**: `get_existing_reports`, `get_report` (with `section` for hierarchical
+**Reports**: `get_existing_reports` (`reports` names, `details` per report with `id` and the
+Report Table catalog `tables`: `key`, `display_name`, `kind`, `num_rows`, `host_dbcontents`,
+`columns`, `variables` as offered in the Views), `get_report` (with `section` for hierarchical
 drill-down, see below), `export_report` (with `report`, `dir`, `mode`),
 `export_view_points_report`
 

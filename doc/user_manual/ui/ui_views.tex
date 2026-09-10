@@ -22,6 +22,30 @@ Currently, the following Views exist:
  \item \nameref{sec:grid_view}
 \end{itemize}
 
+\subsection{Variable Selection}
+\label{sec:variable_selection}
+
+Wherever a variable has to be chosen, e.g. for the axes of a Scatter Plot View, the columns of a Table View, a label or a filter condition, 
+the 'Select Variable' dialog is opened by clicking the respective variable button. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: 'Select Variable' dialog with the 'Reports' group expanded and an Evaluation report selected]}}\vspace{1.5cm}}}
+  \caption{Variable Selection}
+\end{figure}
+
+\begin{itemize}
+\item 'Search': Filters the shown variables by name, ASTERIX data item or description
+\item 'Grouping': The variables are grouped either by ASTERIX 'Data Item' or by variable 'Group' (e.g. 'Position', 'Time', 'Accuracy')
+\item Content selection: One radio button per DBContent, and 'Meta' for the Meta Variables. In the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} menu, 'Hide Status Categories' hides the DBContents which do not contain target reports (e.g. CAT034)
+\item 'Reports': A collapsible second row of radio buttons below the DBContents, one per report offering Report Variables (see \nameref{sec:report_variables})
+\item Variable tree: The variables of the selected content, with their data item, data type and description. A variable is selected by clicking 'Select' or by double-clicking it
+\item 'Select None': Clears the selection, only shown where an empty selection is allowed
+\end{itemize}
+\ \\
+
+Please \textbf{note} that some dialogs allow selecting multiple variables at once, e.g. the columns of a Table View. \\
+
 \subsection{View Presets}
 
 A view can typically be configured via the Configuration Panel on its right side.

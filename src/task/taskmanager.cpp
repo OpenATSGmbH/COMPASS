@@ -32,6 +32,8 @@
 #include "viewabledataconfig.h"
 #include "viewmanager.h"
 #include "dbinterface.h"
+#include "dbcontentmanager.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "asynctask.h"
 
 #include "asteriximporttask.h"
@@ -530,6 +532,12 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 
     traced_assert(res.ok());
 
+    //the report tables were written during the run, keep their catalog or drop them with the run
+    if (store_result)
+        current_result_->finalizeReportTables();
+    else
+        current_result_->discardReportTables();
+
     //store result?
     if (store_result)
     {
@@ -559,6 +567,8 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
            << " name " << current_result_->name();
 
     current_result_ = nullptr;
+
+    updateReportContents();
 
     emit taskResultsChangedSignal();
 }
@@ -697,6 +707,8 @@ bool TaskManager::removeResult(const std::string& name,
         return false;
 
     results_.erase(id.value());
+
+    updateReportContents();
 
     if (inform_changes)
         emit taskResultsChangedSignal();
@@ -853,6 +865,20 @@ void TaskManager::loadResults()
 
     loginf << "Loaded " << results_.size() << " result(s)";
 
+    //drop report tables no stored result refers to, left behind by an aborted run
+    std::set<std::string> referenced_tables;
+    for (const auto& r : results_)
+    {
+        auto names = r.second->reportTableNames();
+        referenced_tables.insert(names.begin(), names.end());
+    }
+
+    auto num_orphans = compass_.dbInterface().removeOrphanReportTables(referenced_tables);
+    if (num_orphans)
+        loginf << "Dropped " << num_orphans << " orphan report table(s)";
+
+    updateReportContents();
+
     emit taskResultsChangedSignal();
 }
 
@@ -863,8 +889,37 @@ void TaskManager::clearResults()
     traced_assert(!current_result_);
 
     results_.clear();
-    
+
+    updateReportContents();
+
     emit taskResultsChangedSignal();
+}
+
+/**
+ * Offers the Report Tables of the stored results as Report Variables, see
+ * readme_dynamic_dbcontent.md Section 4.3. A report without a record table adds no entry.
+ */
+void TaskManager::updateReportContents()
+{
+    std::vector<std::unique_ptr<dbContent::ReportContent>> contents;
+
+    for (const auto& result_it : results_)
+    {
+        const auto& result = result_it.second;
+
+        if (!result || !result->hasReportTables())
+            continue;
+
+        std::unique_ptr<dbContent::ReportContent> content(
+            new dbContent::ReportContent(result->name(), result->id(), result->reportTables()));
+
+        if (!content->hasVariables())
+            continue;
+
+        contents.push_back(std::move(content));
+    }
+
+    compass_.dbContentManager().setReportContents(std::move(contents));
 }
 
 /**

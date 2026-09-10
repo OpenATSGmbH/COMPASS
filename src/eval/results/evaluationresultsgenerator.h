@@ -48,8 +48,6 @@ public:
     virtual ~EvaluationResultsGenerator();
 
     void evaluate(EvaluationStandard& standard,
-                  const std::vector<unsigned int>& utns = std::vector<unsigned int>(),
-                  const std::vector<Evaluation::RequirementResultID>& requirements = std::vector<Evaluation::RequirementResultID>(),
                   bool update_report = true);
 
     typedef std::map<std::string, std::map<std::string, std::shared_ptr<EvaluationRequirementResult::Base>>> ResultMap;
@@ -73,6 +71,8 @@ protected:
 
     void updateToChanges(bool reset_viewable,
                          bool update_report = true);
+
+    void writeReportTable(const std::vector<std::shared_ptr<EvaluationRequirementResult::Single>>& results);
 
     EvaluationCalculator& calculator_;
 

@@ -188,6 +188,7 @@ public:
                                        bool include_t1) const;
 
     unsigned int dsID(const DataID& id) const;
+    unsigned long recordNumber(const DataID& id) const;
 
     TargetPosition pos(const DataID& id) const;
     boost::optional<TargetPosition> posOpt(const DataID& id) const;

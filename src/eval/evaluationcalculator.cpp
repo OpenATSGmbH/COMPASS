@@ -460,7 +460,7 @@ void EvaluationCalculator::clearConstraints()
  */
 Result EvaluationCalculator::evaluate()
 {
-    return evaluateInternal(true, true, {}, {});
+    return evaluateInternal(true, true);
 }
 
 /**
@@ -470,26 +470,13 @@ Result EvaluationCalculator::evaluate()
  */
 Result EvaluationCalculator::update()
 {
-    return evaluateInternal(false, true, {}, {});
-}
-
-/**
- * Reloads all needed data for specified utns and requirements.
- * - Uses the internally stored constraints
- * - Will NOT regenerate the report
- */
-Result EvaluationCalculator::reloadNeededData(const std::vector<unsigned int>& utns,
-                                              const std::vector<Evaluation::RequirementResultID>& requirements)
-{
-    return evaluateInternal(false, false, utns, requirements);
+    return evaluateInternal(false, true);
 }
 
 /**
  */
 Result EvaluationCalculator::evaluateInternal(bool update_constraints,
-                                              bool update_report,
-                                              const std::vector<unsigned int>& utns,
-                                              const std::vector<Evaluation::RequirementResultID>& requirements)
+                                              bool update_report)
 {
     loginf;
 
@@ -502,9 +489,7 @@ Result EvaluationCalculator::evaluateInternal(bool update_constraints,
 
     try
     {
-        eval_utns_         = utns;
-        eval_requirements_ = requirements;
-        update_report_     = update_report;
+        update_report_ = update_report;
 
         // remove previous stuff
         eval_man_.resetViewableDataConfig(true);
@@ -552,13 +537,13 @@ Result EvaluationCalculator::loadingDone()
     bool has_ref_data = data.count(settings_.dbcontent_name_ref_);
     bool has_tst_data = data.count(settings_.dbcontent_name_tst_);
 
-    if (eval_utns_.empty() && !has_ref_data)
+    if (!has_ref_data)
         return Result::failed("Loading data failed, no reference data was loaded");
 
     data_->addReferenceData(settings_.dbcontent_name_ref_, settings_.line_id_ref_);
     reference_data_loaded_ = has_ref_data;
 
-    if (eval_utns_.empty() && !has_tst_data)
+    if (!has_tst_data)
         return Result::failed("Loading data failed, no test data was loaded");
 
     data_->addTestData(settings_.dbcontent_name_tst_, settings_.line_id_tst_);
@@ -611,7 +596,7 @@ Result EvaluationCalculator::evaluateData()
     emit resultsChanged();
     
     // eval
-    results_gen_->evaluate(currentStandard(), eval_utns_, eval_requirements_, update_report_);
+    results_gen_->evaluate(currentStandard(), update_report_);
 
     evaluated_ = true;
 
@@ -958,13 +943,6 @@ void EvaluationCalculator::selectDataSourceTst(const std::string& name,
 
     if (update_settings)
         settings_.active_sources_tst_ = data_sources_tst_;
-}
-
-/**
- */
-bool EvaluationCalculator::hasPartialResult() const
-{
-    return !eval_utns_.empty() || !eval_requirements_.empty();
 }
 
 /**

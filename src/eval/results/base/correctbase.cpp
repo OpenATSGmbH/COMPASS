@@ -218,30 +218,6 @@ std::vector<Single::TargetInfo> SingleCorrectBase::targetInfos() const
 
 /**
 */
-std::vector<std::string> SingleCorrectBase::detailHeaders() const
-{
-    return { "ToD", "Ref", "Ok", "#Up", "#NoRef", "#PosInside", "#PosOutside", correct_short_name_, not_correct_short_name_, "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SingleCorrectBase::detailValues(const EvaluationDetail& detail,
-                                                        const EvaluationDetail* parent_detail) const
-{
-    return { Utils::Time::toString(detail.timestamp()),
-             detail.getValue(DetailKey::RefExists).toBool(),
-            !detail.getValue(DetailKey::IsNotCorrect).toBool(),
-             detail.getValue(DetailKey::NumUpdates).toUInt(),
-             detail.getValue(DetailKey::NumNoRef).toUInt(),
-             detail.getValue(DetailKey::NumInside).toUInt(),
-             detail.getValue(DetailKey::NumOutside).toUInt(),
-             detail.getValue(DetailKey::NumCorrect).toUInt(),
-             detail.getValue(DetailKey::NumNotCorrect).toUInt(),
-             detail.comments().generalComment() };
-}
-
-/**
-*/
 bool SingleCorrectBase::detailIsOk(const EvaluationDetail& detail) const
 {
     auto is_not_correct = detail.getValueAs<bool>(DetailKey::IsNotCorrect);
@@ -381,6 +357,49 @@ FeatureDefinitions JoinedCorrectBase::getCustomAnnotationDefinitions() const
                        GridAddDetailMode::AddEvtRefPosition, 
                        true);
     return defs;
+}
+
+/**
+ */
+void SingleCorrectBase::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("ref_exists", PropertyDataType::BOOL, "Reference Exists",
+                  "Reference data exists at the time of the test report");
+    def.addColumn("correct", PropertyDataType::BOOL, "Correct",
+                  "Test report value equals the reference value");
+    def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
+                  "Test position inside the sector layer");
+}
+
+/**
+ */
+void SingleCorrectBase::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setReportTableValue<bool>(rows, "ref_exists", detail, DetailKey::RefExists);
+    {
+        auto not_ok = detail.getValueAs<bool>(DetailKey::IsNotCorrect);
+        if (not_ok.has_value())
+            rows.set<bool>("correct", !not_ok.value());
+    }
+    setReportTableValue<bool>(rows, "pos_inside", detail, DetailKey::PosInside);
+}
+
+/**
+ */
+void SingleCorrectBase::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setDetailValue<bool>(detail, DetailKey::RefExists, buffer, "ref_exists", row);
+
+    if (buffer.has<bool>("correct") && !buffer.get<bool>("correct").isNull(row))
+        detail.setValue(DetailKey::IsNotCorrect, QVariant(!buffer.get<bool>("correct").get(row)));
+
+    setDetailValue<bool>(detail, DetailKey::PosInside, buffer, "pos_inside", row);
 }
 
 }

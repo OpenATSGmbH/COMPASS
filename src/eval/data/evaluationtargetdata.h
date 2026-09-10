@@ -144,6 +144,13 @@ public:
             boost::posix_time::time_duration d_max) const;
     // lower/upper times, {} if not existing
 
+    // precomputed reference mapping of the test id (bracketing reference ids, interpolated position)
+    const dbContent::TargetReport::DataMapping& mappedRefMapping(
+            const dbContent::TargetReport::Chain::DataID& tst_id) const;
+    // record numbers of the reference updates bracketing the test id, none if not existing
+    std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>> mappedRefRecordNumbers(
+            const dbContent::TargetReport::Chain::DataID& tst_id) const;
+
     boost::optional<dbContent::TargetPosition> mappedRefPos(
             const dbContent::TargetReport::Chain::DataID& tst_id) const;
     boost::optional<dbContent::TargetPosition> mappedRefPos(

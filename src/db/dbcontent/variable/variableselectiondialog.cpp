@@ -20,6 +20,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "files.h"
 #include "global.h"
 #include "logger.h"
@@ -38,6 +39,7 @@
 #include <QRegularExpression>
 #include <QSortFilterProxyModel>
 #include <QStandardItemModel>
+#include <QToolButton>
 #include <QTreeView>
 #include <QVBoxLayout>
 
@@ -91,6 +93,10 @@ VariableSelectionDialog::VariableSelectionDialog(DBContentManager& dbcont_man,
     createUI();
     updateModel();
     updateSelectButton();
+
+    // a report saved or deleted while the dialog is open changes the offered Reports
+    connect(&dbcont_man_, &DBContentManager::reportContentsChangedSignal,
+            this, [ this ] () { updateContentStrip(); updateModel(); updateSelectButton(); });
 }
 
 VariableSelectionDialog::~VariableSelectionDialog() = default;
@@ -239,7 +245,66 @@ void VariableSelectionDialog::createContentStrip()
 
     main_layout->addLayout(strip_layout);
 
+    // the Reports form a second, collapsible row group under the data contents, decision 18 of
+    // readme_dynamic_dbcontent.md
+    QHBoxLayout* report_header_layout = new QHBoxLayout();
+    report_header_layout->setContentsMargins(0, 0, 0, 0);
+
+    report_expand_button_ = new QToolButton();
+    report_expand_button_->setObjectName("report_expand_button");
+    report_expand_button_->setText("Reports");
+    report_expand_button_->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    report_expand_button_->setArrowType(Qt::RightArrow);
+    report_expand_button_->setCheckable(true);
+    report_expand_button_->setChecked(false);
+    report_expand_button_->setAutoRaise(true);
+    report_expand_button_->setToolTip("Variables of the stored reports");
+
+    connect(report_expand_button_, &QToolButton::toggled,
+            this, [ this ] (bool checked)
+            {
+                report_expand_button_->setArrowType(checked ? Qt::DownArrow : Qt::RightArrow);
+                if (report_strip_widget_)
+                    report_strip_widget_->setVisible(checked);
+            });
+
+    report_header_layout->addWidget(report_expand_button_);
+    report_header_layout->addStretch(1);
+
+    main_layout->addLayout(report_header_layout);
+
+    report_strip_widget_ = new QWidget();
+    report_strip_layout_ = new QGridLayout(report_strip_widget_);
+    report_strip_layout_->setContentsMargins(0, 0, 0, 0);
+    report_strip_widget_->setVisible(false);
+
+    main_layout->addWidget(report_strip_widget_);
+
     updateContentStrip();
+}
+
+/**
+ * The stored Reports with joinable Report Tables. The status filter does not touch them.
+ */
+std::vector<std::string> VariableSelectionDialog::selectableReports() const
+{
+    std::vector<std::string> reports;
+
+    if (!settings_.show_reports || settings_.show_meta_variables_only || settings_.show_dbcont_only)
+        return reports;
+
+    for (const auto& content : dbcont_man_.reportContents())
+        if (content->hasVariables())
+            reports.push_back(content->name());
+
+    return reports;
+}
+
+/**
+ */
+bool VariableSelectionDialog::isReport(const std::string& content_name) const
+{
+    return dbcont_man_.existsReportContent(content_name);
 }
 
 /**
@@ -288,19 +353,20 @@ void VariableSelectionDialog::updateContentStrip()
     content_buttons_.clear();
 
     std::vector<std::string> contents = selectableContents();
+    std::vector<std::string> reports  = selectableReports();
 
     // keep the current content if it is still offered, else use the stored one or the first
     std::string wanted = selected_content_.empty() ? dbcont_man_.variableSelectionContent()
                                                    : selected_content_;
 
-    if (std::find(contents.begin(), contents.end(), wanted) == contents.end())
-        wanted = contents.empty() ? "" : contents.front();
+    bool wanted_is_report = std::find(reports.begin(), reports.end(), wanted) != reports.end();
+
+    if (!wanted_is_report && std::find(contents.begin(), contents.end(), wanted) == contents.end())
+        wanted = contents.empty() ? (reports.empty() ? "" : reports.front()) : contents.front();
 
     selected_content_ = wanted;
 
-    unsigned int cnt = 0;
-
-    for (const auto& content_name : contents)
+    auto make_button = [ & ] (const std::string& content_name, QGridLayout* layout, unsigned int cnt)
     {
         QRadioButton* button = new QRadioButton(QString::fromStdString(content_name));
         button->setObjectName(QString::fromStdString("content_" + content_name));
@@ -312,9 +378,38 @@ void VariableSelectionDialog::updateContentStrip()
         content_group_->addButton(button);
         content_buttons_[content_name] = button;
 
-        content_strip_layout_->addWidget(button, cnt / ContentStripColumns,
-                                         cnt % ContentStripColumns);
-        ++cnt;
+        layout->addWidget(button, cnt / ContentStripColumns, cnt % ContentStripColumns);
+    };
+
+    unsigned int cnt = 0;
+
+    for (const auto& content_name : contents)
+        make_button(content_name, content_strip_layout_, cnt++);
+
+    // the Reports, in their own row group below
+    if (report_strip_layout_)
+    {
+        cnt = 0;
+
+        for (const auto& report_name : reports)
+            make_button(report_name, report_strip_layout_, cnt++);
+
+        bool has_reports = !reports.empty();
+
+        if (report_expand_button_)
+        {
+            report_expand_button_->setVisible(has_reports);
+            report_expand_button_->setToolTip(has_reports ? "Variables of the stored reports"
+                                                          : "No stored report offers variables");
+
+            // open the group when a Report is the selected content
+            if (wanted_is_report && !report_expand_button_->isChecked())
+                report_expand_button_->setChecked(true);
+        }
+
+        if (report_strip_widget_)
+            report_strip_widget_->setVisible(has_reports && report_expand_button_ &&
+                                             report_expand_button_->isChecked());
     }
 }
 
@@ -360,19 +455,41 @@ QStandardItem* VariableSelectionDialog::makeVariableRow(const std::string& conte
                                                         const std::string& var_name,
                                                         const Variable* variable,
                                                         const MetaVariable* meta_variable,
+                                                        const ReportVariable* report_variable,
                                                         QList<QStandardItem*>& row) const
 {
-    traced_assert(variable || meta_variable);
+    traced_assert(variable || meta_variable || report_variable);
 
-    QStandardItem* name_item = new QStandardItem(QString::fromStdString(var_name));
+    // the tree shows the display name of a Report Variable, the View its full name, decision 6
+    std::string shown_name = report_variable ? report_variable->displayName() : var_name;
+
+    QStandardItem* name_item = new QStandardItem(QString::fromStdString(shown_name));
     name_item->setData(QString::fromStdString(content_name), ContentNameRole);
     name_item->setData(QString::fromStdString(var_name), VariableNameRole);
 
     std::string source = variable ? variable->source() : "";
-    std::string type_str = variable ? variable->dataTypeString()
-                                    : (meta_variable->hasVariables() ? meta_variable->dataTypeString() : "");
-    std::string description = variable ? variable->description() : meta_variable->description();
-    std::string info = variable ? variable->info() : meta_variable->info();
+    std::string type_str;
+    std::string description;
+    std::string info;
+
+    if (variable)
+    {
+        type_str    = variable->dataTypeString();
+        description = variable->description();
+        info        = variable->info();
+    }
+    else if (meta_variable)
+    {
+        type_str    = meta_variable->hasVariables() ? meta_variable->dataTypeString() : "";
+        description = meta_variable->description();
+        info        = meta_variable->info();
+    }
+    else
+    {
+        type_str    = report_variable->dataTypeString();
+        description = report_variable->description();
+        info        = report_variable->info();
+    }
 
     QStandardItem* item_item = new QStandardItem(
         QString::fromStdString(source).section('\n', 0, 0).simplified());
@@ -381,7 +498,9 @@ QStandardItem* VariableSelectionDialog::makeVariableRow(const std::string& conte
 
     row << name_item << item_item << type_item << descr_item;
 
-    bool has_dbc = variable ? variable->hasDBContent() : meta_variable->hasDBContent();
+    // a Report Variable exists exactly as long as its Report Table does
+    bool has_dbc = variable ? variable->hasDBContent()
+                            : (meta_variable ? meta_variable->hasDBContent() : true);
 
     QFont font_italic;
     font_italic.setItalic(true);
@@ -430,7 +549,7 @@ void VariableSelectionDialog::addVariableRows(QStandardItem* content_item,
         }
 
         QList<QStandardItem*> row;
-        makeVariableRow(content_name, var_name, variable, meta_variable, row);
+        makeVariableRow(content_name, var_name, variable, meta_variable, nullptr, row);
         groups[group_name].push_back(row);
     };
 
@@ -527,6 +646,68 @@ void VariableSelectionDialog::addVariableRows(QStandardItem* content_item,
 }
 
 /**
+ * The tree under a Report entry: one group per Report Table, named by its display name, the
+ * columns as rows. The grouping switch does not apply, a Report Table is the only grouping.
+ */
+void VariableSelectionDialog::addReportVariableRows(QStandardItem* content_item,
+                                                    const std::string& report_name,
+                                                    const std::string& host_dbcontent_name)
+{
+    traced_assert(content_item);
+    traced_assert(dbcont_man_.existsReportContent(report_name));
+
+    auto& content = dbcont_man_.reportContent(report_name);
+
+    // group -> variable rows, in catalog order of the groups
+    std::map<std::string, std::vector<QList<QStandardItem*>>> groups;
+
+    for (const auto& var_it : content.variables())
+    {
+        const auto& report_var = *var_it.second;
+
+        if (!showDataType(report_var.dataType()))
+            continue;
+
+        // in single content mode only the variables joined onto that content
+        if (!host_dbcontent_name.empty() && !report_var.existsIn(host_dbcontent_name))
+            continue;
+
+        QList<QStandardItem*> row;
+        makeVariableRow(report_name, var_it.first, nullptr, nullptr, &report_var, row);
+        groups[ report_var.group() ].push_back(row);
+    }
+
+    QFont font_bold;
+    font_bold.setBold(true);
+
+    for (const auto& group_name : content.groups())
+    {
+        if (!groups.count(group_name))
+            continue;
+
+        QStandardItem* group_item = new QStandardItem(QString::fromStdString(group_name));
+        group_item->setFont(font_bold);
+        group_item->setEditable(false);
+        group_item->setSelectable(false);
+
+        QList<QStandardItem*> group_row;
+        group_row << group_item << new QStandardItem() << new QStandardItem()
+                  << new QStandardItem();
+
+        for (int i = 1; i < group_row.size(); ++i)
+        {
+            group_row[i]->setEditable(false);
+            group_row[i]->setSelectable(false);
+        }
+
+        for (auto& row : groups.at(group_name))
+            group_item->appendRow(row);
+
+        content_item->appendRow(group_row);
+    }
+}
+
+/**
  */
 void VariableSelectionDialog::updateModel()
 {
@@ -538,6 +719,47 @@ void VariableSelectionDialog::updateModel()
     if (settings_.show_dbcont_only)
     {
         addVariableRows(nullptr, settings_.only_dbcontent_name, by_group);
+
+        // the Report Variables joined onto this content, one top level group per report
+        if (settings_.show_reports)
+        {
+            QFont font_bold;
+            font_bold.setBold(true);
+
+            for (const auto& content : dbcont_man_.reportContents())
+            {
+                bool hosts_content = false;
+
+                for (const auto& var_it : content->variables())
+                    if (var_it.second->existsIn(settings_.only_dbcontent_name))
+                    {
+                        hosts_content = true;
+                        break;
+                    }
+
+                if (!hosts_content)
+                    continue;
+
+                QStandardItem* report_item = new QStandardItem(QString::fromStdString(content->name()));
+                report_item->setFont(font_bold);
+                report_item->setEditable(false);
+                report_item->setSelectable(false);
+
+                QList<QStandardItem*> report_row;
+                report_row << report_item << new QStandardItem() << new QStandardItem()
+                           << new QStandardItem();
+
+                for (int i = 1; i < report_row.size(); ++i)
+                {
+                    report_row[i]->setEditable(false);
+                    report_row[i]->setSelectable(false);
+                }
+
+                addReportVariableRows(report_item, content->name(), settings_.only_dbcontent_name);
+
+                model_->appendRow(report_row);
+            }
+        }
     }
     else
     {
@@ -604,6 +826,33 @@ void VariableSelectionDialog::updateModel()
 
                 add_content(object_it.first, object_it.second->hasData(), by_group);
             }
+        }
+
+        // the selected Report, its tables as groups
+        if (!selected_content_.empty() && isReport(selected_content_) && contentShown(selected_content_))
+        {
+            QStandardItem* content_item =
+                new QStandardItem(QString::fromStdString(selected_content_));
+            content_item->setEditable(false);
+            content_item->setSelectable(false);
+
+            QFont font_content = content_item->font();
+            font_content.setBold(true);
+            content_item->setFont(font_content);
+
+            QList<QStandardItem*> content_row;
+            content_row << content_item << new QStandardItem() << new QStandardItem()
+                        << new QStandardItem();
+
+            for (int i = 1; i < content_row.size(); ++i)
+            {
+                content_row[i]->setEditable(false);
+                content_row[i]->setSelectable(false);
+            }
+
+            addReportVariableRows(content_item, selected_content_, "");
+
+            model_->appendRow(content_row);
         }
     }
 

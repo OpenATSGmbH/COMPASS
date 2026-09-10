@@ -97,31 +97,6 @@ std::vector<Single::TargetInfo> SinglePositionLatency::targetInfos() const
              { "#LTNOK [1]"     , "Number of updates with unacceptable latency", num_failed_                        } };
 }
 
-/**
-*/
-std::vector<std::string> SinglePositionLatency::detailHeaders() const
-{
-    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "DLatency", "DLatencyOK", "#LTOK", "#LTNOK", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SinglePositionLatency::detailValues(const EvaluationDetail& detail,
-                                                            const EvaluationDetail* parent_detail) const
-{
-    bool has_ref_pos = detail.numPositions() >= 2;
-
-    return { Utils::Time::toString(detail.timestamp()),
-            !has_ref_pos,
-             detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckPassed).toUInt(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
-             detail.comments().generalComment() }; 
-}
-
 /**********************************************************************************************
  * JoinedPositionLatency
  **********************************************************************************************/

@@ -18,6 +18,7 @@
 #include "adsbcoverageinspector.h"
 #include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
+#include "reporttable.h"
 #include "targetreport3dgrid.h"
 #include "movementui.h"
 
@@ -289,7 +290,8 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
                                 const std::vector<TargetReport3DGrid*>& grids,
                                 const Settings& settings,
                                 const MovementUI& mv,
-                                SectorWalkAccum* sec)
+                                SectorWalkAccum* sec,
+                                const analysis::PDWalkGapFunc& on_gap)
 {
     const time_duration d_max = boost::posix_time::seconds(60);
 
@@ -337,7 +339,8 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
     walkReferencePeriodsTimeDifference(
         periods, tst_ts_sorted, walk_params,
         [ & ] (const ptime& t) { slotFunc(t, false); },
-        [ & ] (const ptime& t) { slotFunc(t, true ); });
+        [ & ] (const ptime& t) { slotFunc(t, true ); },
+        on_gap);
 
     return {eui, mui};
 }
@@ -413,6 +416,9 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
     std::vector<double> intervals;
 
     const auto utns = dataset->utns();
+
+    // Report table: one row per gap, keyed by the first reference sample inside it.
+    ReportTableRows gap_rows(tableWriter(), tableWriter().define(gapTableDefinition()));
 
     for (auto utn : utns)
     {
@@ -492,8 +498,13 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
         mv.ui_standing  = settings.update_interval_standing_s_;
         mv.window_s     = std::max(6.0, 2.0 * settings.update_interval_standing_s_);
 
+        auto on_gap = [ & ] (const ptime& begin, const ptime& end, unsigned int num_missed)
+        {
+            writeGapRow(gap_rows, *dataset, GapRow{ utn, begin, end, num_missed });
+        };
+
         auto counts = walkTargetTimeDifferenceCounted(
-            utn, periods, tst_ts_sorted, *dataset, grids, settings, mv, &sec);
+            utn, periods, tst_ts_sorted, *dataset, grids, settings, mv, &sec, on_gap);
 
         if (tid.has_mops)
         {
@@ -524,6 +535,8 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
         row->eui += counts.first;
         row->mui += counts.second;
     }
+
+    gap_rows.flush();
 
     auto horizontal = grid.projectHorizontal();
     std::uint64_t total_eui = 0, total_mui = 0;

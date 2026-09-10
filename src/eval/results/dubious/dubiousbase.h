@@ -134,6 +134,19 @@ public:
 
 protected:
     static std::string dubiousReasonsString(const EvaluationDetailComments& comments);
+    void addReportTableColumns(ReportTableDefinition& def) const override;
+    void fillReportTableRow(ReportTableRows& rows,
+                            const EvaluationDetail& detail,
+                            const EvaluationDetail* parent_detail,
+                            const EvaluationDetail* prev_detail) const override;
+    void fillDetailFromReportTableRow(EvaluationDetail& detail,
+                            const Buffer& buffer,
+                            unsigned int row,
+                            const EvaluationDetail* prev_detail) const override;
+    void fillPeriodDetailFromReportTableRow(EvaluationDetail& period,
+                            const Buffer& buffer,
+                            unsigned int row) const override;
+    std::string reportTablePeriodColumn() const override { return "period_begin"; }
 };
 
 /**

@@ -781,10 +781,6 @@ std::string EvaluationManager::loadFilterClause(const std::string& dbcontent_nam
             META_OBJECT_NAME, filter_op::greater_equal, std::to_string(roi->longitude_min)));
     }
 
-    const auto& utns = calculator.evaluationUTNs();
-    if (!utns.empty())
-        parts.push_back(UTNFilter::sqlFor(resolver, utns, false, dbcontent_name));
-
     if (use_timestamp_filter_)
         parts.push_back(TimestampFilter::sqlFor(
             resolver, load_timestamp_begin_, load_timestamp_end_, dbcontent_name));

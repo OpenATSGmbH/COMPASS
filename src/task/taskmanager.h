@@ -160,6 +160,8 @@ protected:
                                                   task::TaskResultType type);
     void loadResults();
     void clearResults();
+    /// rebuilds the Report Variable registry of the DBContentManager from the stored results
+    void updateReportContents();
     boost::optional<unsigned int> findResult(const std::string& name) const;
 
     COMPASS& compass_;

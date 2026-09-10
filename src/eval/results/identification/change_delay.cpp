@@ -141,28 +141,6 @@ std::vector<Single::TargetInfo> SingleIdentificationChangeDelay::targetInfos() c
 
 /**
 */
-std::vector<std::string> SingleIdentificationChangeDelay::detailHeaders() const
-{
-    return { "ToD", "Delay", "DelayOK", "#CDOK", "#CDNOK", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SingleIdentificationChangeDelay::detailValues(const EvaluationDetail& detail,
-                                                                      const EvaluationDetail* parent_detail) const
-{
-    auto value = detail.getValue(DetailKey::Value);
-
-    return { Utils::Time::toString(detail.timestamp()),
-             value.isValid() ? nlohmann::json(value.toFloat()) : nlohmann::json(),
-             detail.getValue(DetailKey::CheckPassed).toBool(),
-             detail.getValue(DetailKey::NumCheckPassed).toUInt(),
-             detail.getValue(DetailKey::NumCheckFailed).toUInt(),
-             detail.comments().generalComment() };
-}
-
-/**
-*/
 bool SingleIdentificationChangeDelay::detailIsOk(const EvaluationDetail& detail) const
 {
     auto check_passed = detail.getValue(DetailKey::CheckPassed);
@@ -277,6 +255,38 @@ std::vector<Joined::SectorInfo> JoinedIdentificationChangeDelay::sectorInfos() c
              { "CDSDev [s]"   , "Standard Deviation of change delay"         , formatValue(accumulator_.stddev()) },
              { "#CDOK [1]"    , "Number of events with acceptable delay"     , num_passed_         },
              { "#CDNOK [1]"   , "Number of events with unacceptable delay"   , num_failed_         } };
+}
+
+/**
+ */
+void SingleIdentificationChangeDelay::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("delay_s", PropertyDataType::DOUBLE, "Change Delay",
+                  "Delay of the identification change against the reference", "Time", "Second");
+    def.addColumn("check_passed", PropertyDataType::BOOL, "Check Passed",
+                  "Value within the requirement threshold");
+}
+
+/**
+ */
+void SingleIdentificationChangeDelay::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setReportTableValue<double>(rows, "delay_s", detail, DetailKey::Value);
+    setReportTableValue<bool>(rows, "check_passed", detail, DetailKey::CheckPassed);
+}
+
+/**
+ */
+void SingleIdentificationChangeDelay::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setDetailValue<double>(detail, DetailKey::Value, buffer, "delay_s", row);
+    setDetailValue<bool>(detail, DetailKey::CheckPassed, buffer, "check_passed", row);
 }
 
 }

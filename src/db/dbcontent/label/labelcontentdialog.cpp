@@ -18,6 +18,8 @@
 #include "labelcontentdialog.h"
 #include "dbcontent/label/labelgenerator.h"
 #include "dbcontent/variable/variableselectionwidget.h"
+#include "dbcontent/variable/reportvariable.h"
+#include "logger.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 
@@ -41,6 +43,7 @@ LabelContentDialog::LabelContentDialog(const std::string& dbcontent_name, LabelG
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
 
     setModal(true);
+    setObjectName("label_content_dialog");
 
     setMinimumSize(QSize(700, 200));
 
@@ -54,6 +57,7 @@ LabelContentDialog::LabelContentDialog(const std::string& dbcontent_name, LabelG
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     done_button_ = new QPushButton("Done");
+    done_button_->setObjectName("done_button");
     connect(done_button_, &QPushButton::clicked, this, &LabelContentDialog::doneClickedSlot);
     button_layout->addWidget(done_button_);
 
@@ -84,6 +88,11 @@ void LabelContentDialog::selectedVarChangedSlot()
         Variable& var = var_widget->selectedVariable();
 
         dbcont_def[to_string(key)] = var.name();
+    }
+    else if (var_widget->hasReportVariable())
+    {
+        // the name of a Report Variable carries its report, "<report>: <display name>"
+        dbcont_def[to_string(key)] = var_widget->selectedReportVariable().name();
     }
     else // unselect
     {
@@ -131,15 +140,35 @@ void LabelContentDialog::createVariableGrid()
             {
                 VariableSelectionWidget* var_widget = new VariableSelectionWidget(label_generator_.dbContentManager());
                 var_widget->setProperty("key", row*3 + col);
+                var_widget->setObjectName(QString("label_var_%1").arg(row*3 + col));
                 var_widget->showDBContentOnly(dbcontent_name_);
 
                 if (dbcont_def.contains(key))
                 {
                     string var_name = dbcont_def.at(key);
-                    traced_assert(db_content.hasVariable(var_name));
-                    dbContent::Variable& var = db_content.variable(var_name);
 
-                    var_widget->selectedVariable(var);
+                    if (db_content.hasVariable(var_name))
+                        var_widget->selectedVariable(db_content.variable(var_name));
+                    else
+                    {
+                        // a Report Variable, shown if its report is in this database
+                        bool found = false;
+
+                        for (const auto& content : dbcont_man.reportContents())
+                        {
+                            if (content->hasVariable(var_name) &&
+                                content->variable(var_name).existsIn(dbcontent_name_))
+                            {
+                                var_widget->selectedReportVariable(content->variable(var_name));
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (!found)
+                            logwrn << "label variable '" << var_name << "' not available in "
+                                   << dbcontent_name_;
+                    }
                 }
 
                 if (row <= 1 && col <= 1)

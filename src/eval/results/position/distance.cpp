@@ -105,31 +105,6 @@ std::vector<Single::TargetInfo> SinglePositionDistance::targetInfos() const
              { "#CP [1]"        , "Number of updates with passed comparison" , num_passed_                        } };
 }
 
-/**
-*/
-std::vector<std::string> SinglePositionDistance::detailHeaders() const
-{
-    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "Distance", "CP", "#CF", "#CP", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SinglePositionDistance::detailValues(const EvaluationDetail& detail,
-                                                             const EvaluationDetail* parent_detail) const
-{
-    bool has_ref_pos = detail.numPositions() >= 2;
-
-    return { Utils::Time::toString(detail.timestamp()),
-            !has_ref_pos,
-             detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckPassed).toUInt(), 
-             detail.comments().generalComment() }; 
-}
-
 /**********************************************************************************************
  * JoinedPositionDistance
  **********************************************************************************************/

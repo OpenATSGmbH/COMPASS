@@ -25,3 +25,8 @@ The result tree is structured as:
   \caption{Analyze result report tree}
 \end{figure}
 
+In addition to the report, the inspectors write Report Tables into the database (see \nameref{sec:report_tables}): 
+the position accuracy inspectors one row per test target report with its offsets against the Reference Trajectory, 
+the coverage inspectors one row per detection gap, the RU Effect inspector one row per target report with its contributing receivers, 
+and the SMR unassociated inspector one row per unassociated target report. 
+Their columns are available as Report Variables in all Views. \\

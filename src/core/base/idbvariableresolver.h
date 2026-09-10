@@ -61,6 +61,12 @@ public:
     virtual bool dbContentHasVariable(const std::string& dbcontent_name,
                                       const std::string& var_name) const = 0;
 
+    // Report Variables, see readme_dynamic_dbcontent.md Section 4.3. var_dbcontent_name is the
+    // report name, the variable resolves for the host data contents of its Report Table only
+    virtual bool reportVariableExistsIn(const std::string& var_name,
+                                        const std::string& var_dbcontent_name,
+                                        const std::string& dbcontent_name) const = 0;
+
     // returns dbcontent names that a meta variable has concrete variables for
     virtual std::vector<std::string> metaVariableDBContentNames(
         const std::string& var_name) const = 0;

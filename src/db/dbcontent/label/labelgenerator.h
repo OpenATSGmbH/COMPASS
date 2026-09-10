@@ -36,6 +36,7 @@ namespace dbContent
 {
 
 class LabelContentDialog;
+class Variable;
 class VariableSet;
 
 /**
@@ -140,6 +141,10 @@ public:
     nlohmann::json labelConfig() const;
 
     void addVariables (const std::string& dbcontent_name, dbContent::VariableSet& read_set);
+
+    /// the variable a label definition names: of the data content, or a Report Variable joined
+    /// onto it, see readme_dynamic_dbcontent.md Section 4.4. Null if not available
+    dbContent::Variable* labelVariable(const std::string& dbcontent_name, const std::string& var_name);
 
     bool declutterLabels() const;
     void declutterLabels(bool declutter_labels);

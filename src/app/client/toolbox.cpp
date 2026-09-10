@@ -124,6 +124,7 @@ void ToolBox::createUI()
     tool_bar_->setIconSize(UI_ICON_SIZE);
 
     config_button_ = new QPushButton;
+    config_button_->setObjectName("toolbox_config_button");
     config_button_->setStyleSheet("QPushButton::menu-indicator { image: none; }");
     config_button_->setIcon(Utils::Files::IconProvider::getIcon("edit.png"));
     config_button_->setFixedSize(UI_ICON_SIZE); 

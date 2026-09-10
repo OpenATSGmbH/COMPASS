@@ -237,33 +237,6 @@ std::vector<Single::TargetInfo> SingleTrackAngle::targetInfos() const
 
 /**
 */
-std::vector<std::string> SingleTrackAngle::detailHeaders() const
-{
-    return { "ToD", "NoRef", "PosInside", "Distance", "CP", "Value Ref", "Value Tst", "Speed Ref", "#CF", "#CP", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SingleTrackAngle::detailValues(const EvaluationDetail& detail,
-                                                       const EvaluationDetail* parent_detail) const
-{
-    bool has_ref_pos = detail.numPositions() >= 2;
-
-    return { Utils::Time::toString(detail.timestamp()),
-            !has_ref_pos,
-             detail.getValue(DetailKey::PosInside).toBool(),
-             detail.getValue(DetailKey::Offset).toFloat(),          // "Distance"
-             detail.getValue(DetailKey::CheckPassed).toBool(),      // CP"
-             detail.getValue(DetailKey::ValueRef).toDouble(),       // "Value Ref"
-             detail.getValue(DetailKey::ValueTst).toDouble(),       // "Value Tst"
-             detail.getValue(DetailKey::SpeedRef).toDouble(),       // "Speed Ref"
-             detail.getValue(DetailKey::NumCheckFailed).toUInt(),   // "#CF",
-             detail.getValue(DetailKey::NumCheckPassed).toUInt(),   // "#CP"
-             detail.comments().generalComment() };
-}
-
-/**
-*/
 bool SingleTrackAngle::detailIsOk(const EvaluationDetail& detail) const
 {
     auto req = dynamic_cast<const EvaluationRequirement::TrackAngle*>(requirement_.get());
@@ -439,6 +412,54 @@ FeatureDefinitions JoinedTrackAngle::getCustomAnnotationDefinitions() const
                        false);
 
     return defs;
+}
+
+/**
+ */
+void SingleTrackAngle::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("track_angle_offset_deg", PropertyDataType::DOUBLE, "Track Angle Offset",
+                  "Track angle difference between the test report and the reference", "Angle", "Degree");
+    def.addColumn("ref_track_angle_deg", PropertyDataType::DOUBLE, "Reference Track Angle",
+                  "Track angle of the reference", "Angle", "Degree");
+    def.addColumn("tst_track_angle_deg", PropertyDataType::DOUBLE, "Test Track Angle",
+                  "Track angle of the test report", "Angle", "Degree");
+    def.addColumn("ref_speed_mps", PropertyDataType::DOUBLE, "Reference Speed",
+                  "Ground speed of the reference", "Speed", "Meter/Second");
+    def.addColumn("check_passed", PropertyDataType::BOOL, "Check Passed",
+                  "Value within the requirement threshold");
+    def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
+                  "Test position inside the sector layer");
+}
+
+/**
+ */
+void SingleTrackAngle::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setReportTableValue<double>(rows, "track_angle_offset_deg", detail, DetailKey::Offset);
+    setReportTableValue<double>(rows, "ref_track_angle_deg", detail, DetailKey::ValueRef);
+    setReportTableValue<double>(rows, "tst_track_angle_deg", detail, DetailKey::ValueTst);
+    setReportTableValue<double>(rows, "ref_speed_mps", detail, DetailKey::SpeedRef);
+    setReportTableValue<bool>(rows, "check_passed", detail, DetailKey::CheckPassed);
+    setReportTableValue<bool>(rows, "pos_inside", detail, DetailKey::PosInside);
+}
+
+/**
+ */
+void SingleTrackAngle::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setDetailValue<double>(detail, DetailKey::Offset, buffer, "track_angle_offset_deg", row);
+    setDetailValue<double>(detail, DetailKey::ValueRef, buffer, "ref_track_angle_deg", row);
+    setDetailValue<double>(detail, DetailKey::ValueTst, buffer, "tst_track_angle_deg", row);
+    setDetailValue<double>(detail, DetailKey::SpeedRef, buffer, "ref_speed_mps", row);
+    setDetailValue<bool>(detail, DetailKey::CheckPassed, buffer, "check_passed", row);
+    setDetailValue<bool>(detail, DetailKey::PosInside, buffer, "pos_inside", row);
 }
 
 }

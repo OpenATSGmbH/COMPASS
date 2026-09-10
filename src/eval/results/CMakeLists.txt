@@ -22,9 +22,11 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/evaluationdetail.h"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationtaskresult.h"
         "${CMAKE_CURRENT_LIST_DIR}/evalsectionid.h"        
+        "${CMAKE_CURRENT_LIST_DIR}/reporttablecontent.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/evaluationresultsgenerator.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationdetail.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationtaskresult.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evalsectionid.cpp"        
+        "${CMAKE_CURRENT_LIST_DIR}/reporttablecontent.cpp"
     )

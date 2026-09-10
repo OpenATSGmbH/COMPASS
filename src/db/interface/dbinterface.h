@@ -205,9 +205,22 @@ public:
     void createReportContentsTable();
     Result saveResult(const TaskResult& result, 
                       bool cleanup_db_if_needed);
-    Result deleteResult(const TaskResult& result, 
+    Result deleteResult(const TaskResult& result,
                         bool cleanup_db_if_needed,
-                        bool* deleted = nullptr);
+                        bool* deleted = nullptr,
+                        bool keep_own_tables = false);
+
+    // report tables, see task/result/reporttable.h
+    void createReportTable(const std::string& table_name,
+                           const PropertyList& properties,
+                           const std::string& key_column);
+    void removeReportTable(const std::string& table_name);
+    std::set<std::string> reportTableNames() const;
+    std::set<std::string> reportTableNames(unsigned int result_id) const;
+    size_t removeReportTables(unsigned int result_id,
+                              const std::set<std::string>& keep = std::set<std::string>());
+    size_t removeOrphanReportTables(const std::set<std::string>& referenced_tables);
+    ResultT<size_t> tableStorageSize(const std::string& table_name);
     Result updateResultHeader(const TaskResult& result);
     Result updateResultContent(const TaskResult& result);
     ResultT<std::vector<std::shared_ptr<TaskResult>>> loadResults();

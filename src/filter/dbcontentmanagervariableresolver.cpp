@@ -19,6 +19,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/metavariable.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
 #include "global.h"
@@ -105,12 +106,29 @@ std::vector<std::string> DBContentManagerVariableResolver::metaVariableDBContent
     return names;
 }
 
+bool DBContentManagerVariableResolver::reportVariableExistsIn(
+    const std::string& var_name, const std::string& var_dbcontent_name,
+    const std::string& dbcontent_name) const
+{
+    if (!dbcontent_man_.existsReportContent(var_dbcontent_name))
+        return false;
+
+    auto& content = dbcontent_man_.reportContent(var_dbcontent_name);
+
+    if (!content.hasVariable(var_name))
+        return false;
+
+    return content.variable(var_name).existsIn(dbcontent_name);
+}
+
 dbContent::Variable& DBContentManagerVariableResolver::resolveVariable(
     const std::string& dbcontent_name, const std::string& var_name,
     const std::string& var_dbcontent_name) const
 {
     if (var_dbcontent_name == META_OBJECT_NAME)
         return dbcontent_man_.metaVariable(var_name).getFor(dbcontent_name);
+    else if (dbcontent_man_.existsReportContent(var_dbcontent_name))
+        return dbcontent_man_.reportContent(var_dbcontent_name).variable(var_name).getFor(dbcontent_name);
     else
         return dbcontent_man_.dbContent(var_dbcontent_name).variable(var_name);
 }

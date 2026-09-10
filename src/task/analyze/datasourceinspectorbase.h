@@ -19,6 +19,10 @@
 
 #include <set>
 #include <string>
+#include <vector>
+
+#include <boost/optional.hpp>
+#include <boost/date_time/posix_time/ptime.hpp>
 
 namespace ResultReport
 {
@@ -28,6 +32,44 @@ class Section;
 class AnalyzeDataSourceTask;
 class AnalysisDataset;
 class InspectorSettingsBase;
+class ReportTableWriter;
+class ReportTableRows;
+struct ReportTableDefinition;
+
+/**
+ * One row of an accuracy report table: a test report with its offset to the reference.
+ */
+struct AccuracyRow
+{
+    unsigned long            rec_num = 0;
+    unsigned int             utn     = 0;
+    boost::posix_time::ptime timestamp;
+
+    double tst_lat    = 0.0;
+    double tst_lon    = 0.0;
+    double ref_lat    = 0.0;
+    double ref_lon    = 0.0;
+    double distance_m = 0.0;
+    bool   gated      = false;   // reference not accurate enough, the distance is not assessed
+
+    boost::optional<double> reported_stddev_m;
+    boost::optional<double> consistency_ratio;
+    boost::optional<double> dt_prev_s;           // time to the previous test report of the target
+
+    std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>> ref_rec_nums;
+};
+
+/**
+ * One gap of a coverage inspector: a span of the reference period without a test report, with
+ * at least one missed update inside.
+ */
+struct GapRow
+{
+    unsigned int             utn = 0;
+    boost::posix_time::ptime begin;
+    boost::posix_time::ptime end;
+    unsigned int             num_missed = 0;
+};
 
 class DataSourceInspectorBase
 {
@@ -87,6 +129,38 @@ public:
 
     AnalyzeDataSourceTask&  task()     const { return task_; }
     InspectorSettingsBase&  settings() const { return settings_; }
+
+    /// Writer of the report tables of the current run, usable from `compute()`.
+    ReportTableWriter& tableWriter() const;
+
+    /// Table key derived from the class name, "MLATAccuracyInspector" gives
+    /// "mlat_accuracy", plus an optional suffix such as "_gaps".
+    std::string tableKey(const std::string& suffix = "") const;
+
+    /// Record table definition with the common columns, named after the
+    /// inspector, with an optional key and name suffix.
+    ReportTableDefinition recordTableDefinition(const std::vector<std::string>& host_dbcontents,
+                                                const std::string& key_suffix = "",
+                                                const std::string& name_suffix = "") const;
+
+    /// Record table definition of a position accuracy inspector, see AccuracyRow.
+    ReportTableDefinition accuracyTableDefinition(const std::vector<std::string>& host_dbcontents) const;
+
+    /// Writes one accuracy row into a table created from accuracyTableDefinition().
+    static void writeAccuracyRow(ReportTableRows& rows, const AccuracyRow& row);
+
+    /// Record table definition of the gaps of a coverage inspector, hosted on the reference
+    /// content, see GapRow.
+    ReportTableDefinition gapTableDefinition(const std::string& key_suffix = "_gaps",
+                                             const std::string& name_suffix = " Gaps") const;
+
+    /// Writes one gap row, keyed by the first reference sample inside the gap. Returns false
+    /// and writes nothing when the gap holds no reference sample.
+    static bool writeGapRow(ReportTableRows& rows, AnalysisDataset& dataset, const GapRow& gap);
+
+    /// Seconds between two timestamps as double.
+    static double secondsBetween(const boost::posix_time::ptime& t0,
+                                 const boost::posix_time::ptime& t1);
 
 protected:
     AnalyzeDataSourceTask&  task_;

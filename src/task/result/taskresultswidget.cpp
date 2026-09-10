@@ -28,6 +28,7 @@
 #include "asynctask.h"
 #include "dialogs.h"
 #include "compass.h"
+#include "dbinterface.h"
 #include "reportdefs.h"
 #include "license/licensemanager.h"
 #include "license/license.h"
@@ -61,6 +62,7 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     main_layout->addLayout(top_layout);
 
     report_combo_ = new QComboBox;
+    report_combo_->setObjectName("report_combo");
     report_combo_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     connect(report_combo_, QOverload<const QString &>::of(&QComboBox::currentTextChanged),
@@ -80,6 +82,7 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     top_layout->addWidget(report_combo_);
 
     refresh_result_button_ = new QPushButton();
+    refresh_result_button_->setObjectName("refresh_result_button");
     refresh_result_button_->setIcon(Files::IconProvider::getIcon("refresh.png"));
     refresh_result_button_->setEnabled(false);
     refresh_result_button_->setFlat(true);
@@ -90,6 +93,7 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     top_layout->addWidget(refresh_result_button_);
 
     remove_result_button_ = new QPushButton();
+    remove_result_button_->setObjectName("remove_result_button");
     remove_result_button_->setIcon(Files::IconProvider::getIcon("delete.png"));
     remove_result_button_->setEnabled(false);
     remove_result_button_->setFlat(true);
@@ -100,6 +104,7 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     top_layout->addWidget(remove_result_button_);
 
     export_result_button_ = new QPushButton();
+    export_result_button_->setObjectName("export_result_button");
     export_result_button_->setIcon(Files::IconProvider::getIcon("save.png"));
     export_result_button_->setEnabled(false);
     export_result_button_->setFlat(true);
@@ -278,6 +283,27 @@ void TaskResultsWidget::updateResults(const std::string& selected_result)
         loginf << "adding '" << res_it.second->name() << "'";
 
         report_combo_->addItem(res_it.second->name().c_str());
+
+        //the report tables of the result as tooltip
+        if (res_it.second->hasReportTables())
+        {
+            const auto& tables = res_it.second->reportTables();
+
+            size_t size_bytes = 0;
+            for (const auto& t : tables)
+            {
+                auto size = task_man_.compass().dbInterface().tableStorageSize(t.tableName(res_it.second->id()));
+                if (size.ok())
+                    size_bytes += size.result();
+            }
+
+            QString tooltip = QString("%1 Report Table(s), %2 row(s), %3 MB")
+                                  .arg(tables.size())
+                                  .arg(res_it.second->numReportTableRows())
+                                  .arg(size_bytes / 1e6, 0, 'f', 1);
+
+            report_combo_->setItemData(report_combo_->count() - 1, tooltip, Qt::ToolTipRole);
+        }
 
         if (current_report_name_ == res_it.second->name())
             current_found = true;

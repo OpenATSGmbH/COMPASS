@@ -70,7 +70,13 @@ public:
                                                 const PropertyList& properties, 
                                                 const std::string& filter,
                                                 bool use_order = false, 
-                                                const std::string& order_variable = "");
+                                                const std::string& order_variable = "",
+                                                const std::string& join_clause = "");
+
+    /// LEFT JOIN subqueries of the Report Tables the read set references, one per table,
+    /// empty if the read set holds no Report Variable. See readme_dynamic_dbcontent.md 4.4
+    std::string getReportTableJoinClause(const DBContent& object,
+                                         const dbContent::VariableSet& read_list) const;
 
     std::shared_ptr<DBCommand> getDeleteCommand(const DBContent& dbcontent, boost::posix_time::ptime before_timestamp);
     std::shared_ptr<DBCommand> getDeleteCommand(const DBContent& dbcontent);

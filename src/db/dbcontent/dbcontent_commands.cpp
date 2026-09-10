@@ -16,6 +16,7 @@
  */
 
 #include "dbcontent_commands.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "rtcommand/rtcommand_macros.h"
 #include "rtcommand_registry.h"
 #include "compass.h"
@@ -58,6 +59,29 @@ RTCommandGetData::RTCommandGetData()
 }
 
 
+/**
+ * A variable of the DBContent, or a Report Variable of a stored report joined onto it, given by
+ * its full name "<report name>: <display name>". Null if neither exists.
+ */
+dbContent::Variable* RTCommandGetData::resolveVariable(const std::string& name) const
+{
+    DBContentManager& dbcont_man = compass_->dbContentManager();
+
+    if (!dbcont_man.existsDBContent(dbcontent_name_))
+        return nullptr;
+
+    DBContent& db_content = dbcont_man.dbContent(dbcontent_name_);
+
+    if (db_content.hasVariable(name))
+        return &db_content.variable(name);
+
+    for (const auto& content : dbcont_man.reportContents())
+        if (content->hasVariable(name) && content->variable(name).existsIn(dbcontent_name_))
+            return &content->variable(name).getFor(dbcontent_name_);
+
+    return nullptr;
+}
+
 bool RTCommandGetData::run_impl()
 {
     loginf;
@@ -90,11 +114,9 @@ bool RTCommandGetData::run_impl()
         return false;
     }
 
-    DBContent& db_content = dbcontent_man.dbContent(dbcontent_name_);
-
     for (auto& var_it : variables_)
     {
-        if (!db_content.hasVariable(var_it))
+        if (!resolveVariable(var_it))
         {
             setResultMessage("Unknown dbcontent '"+dbcontent_name_+"' variable '"+var_it+"'");
             return false;
@@ -173,7 +195,6 @@ dbContent::VariableSet RTCommandGetData::getReadSetFor() const
     VariableSet read_set;
 
     DBContentManager& dbcont_man = compass_->dbContentManager();
-    DBContent& db_content = dbcont_man.dbContent(dbcontent_name_);
 
     // ds id
     traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, dbcontent_vars::meta_var_ds_id_));
@@ -189,12 +210,11 @@ dbContent::VariableSet RTCommandGetData::getReadSetFor() const
 
     for (auto& var_it : variables_)
     {
-        traced_assert(db_content.hasVariable(var_it));
+        Variable* var = resolveVariable(var_it);
+        traced_assert(var);
 
-        Variable& var = db_content.variable(var_it);
-
-        if (!read_set.hasVariable(var))
-            read_set.add(var);
+        if (!read_set.hasVariable(*var))
+            read_set.add(*var);
     }
 
     return read_set;

@@ -303,19 +303,8 @@ bool AllBufferTableModel::resolveVariable(unsigned int data_col,
 
     DBContentManager& manager = view_.compass().dbContentManager();
 
-    dbContent::Variable* var = nullptr;
-    if (variable_dbcontent_name == META_OBJECT_NAME)
-    {
-        traced_assert(manager.existsMetaVariable(variable_name));
-        if (manager.metaVariable(variable_name).existsIn(dbcontent_name))
-            var = &manager.metaVariable(variable_name).getFor(dbcontent_name);
-    }
-    else if (dbcontent_name == variable_dbcontent_name)
-    {
-        traced_assert(manager.existsDBContent(dbcontent_name));
-        traced_assert(manager.dbContent(dbcontent_name).hasVariable(variable_name));
-        var = &manager.dbContent(dbcontent_name).variable(variable_name);
-    }
+    // Meta, Report or data content variable, null if the content has none of it
+    dbContent::Variable* var = manager.resolveVariableFor(variable_dbcontent_name, variable_name, dbcontent_name);
 
     variable_cache_[cache_key] = var;
     out_var = var;

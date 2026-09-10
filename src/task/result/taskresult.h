@@ -19,6 +19,7 @@
 
 #include "task/result/report/report.h"
 #include "task/result/report/reportdefs.h"
+#include "task/result/reporttable.h"
 #include "task/taskdefs.h"
 
 #include "json_fwd.hpp"
@@ -97,9 +98,10 @@ struct TaskResultHeader
     nlohmann::json toJSON() const;
     bool fromJSON(const nlohmann::json& j);
 
-    TaskResultMetaData       metadata;
-    UpdateState              update_state = UpdateState::UpToDate;
-    std::vector<ContentID>   update_contents;
+    TaskResultMetaData           metadata;
+    UpdateState                  update_state = UpdateState::UpToDate;
+    std::vector<ContentID>       update_contents;
+    std::vector<ReportTableInfo> tables;          // catalog of the report tables
 };
 
 /**
@@ -137,6 +139,19 @@ public:
     bool contentLoaded() const { return content_loaded_; }
     void setContentStored() { content_loaded_ = false; }
     bool ensureContentLoaded() const;
+
+    /// report tables are written during the run through the writer, the catalog is kept in the header
+    ReportTableWriter& tableWriter();
+    bool hasTableWriter() const { return table_writer_ != nullptr; }
+    void finalizeReportTables();
+    void discardReportTables();
+
+    const std::vector<ReportTableInfo>& reportTables() const { return tables_; }
+    bool hasReportTables() const { return !tables_.empty(); }
+    bool hasReportTable(const std::string& key) const;
+    const ReportTableInfo& reportTable(const std::string& key) const;
+    std::set<std::string> reportTableNames() const;
+    size_t numReportTableRows() const;
 
     void setJSONConfiguration(const nlohmann::json& config);
     bool hasJSONConfiguration() const;
@@ -206,6 +221,7 @@ public:
     static const std::string FieldMetaData;
     static const std::string FieldHeaderUpdateState;
     static const std::string FieldHeaderUpdateContents;
+    static const std::string FieldHeaderTables;
     static const std::string FieldReport;
     static const std::string FieldConfig;
     
@@ -270,8 +286,11 @@ protected:
     nlohmann::json                        config_;
 
     //serialized in the task result's header json
-    UpdateState            update_state_ = UpdateState::UpToDate;
-    std::vector<ContentID> update_contents_;
+    UpdateState                  update_state_ = UpdateState::UpToDate;
+    std::vector<ContentID>       update_contents_;
+    std::vector<ReportTableInfo> tables_;
+
+    std::unique_ptr<ReportTableWriter> table_writer_; // exists during the run only
 
     bool init_ = false;
 

@@ -99,7 +99,6 @@ public:
                                                 DBContentManager& dbcontent_man,
                                                 const nlohmann::json& config);
 
-    bool hasPartialResult() const;
     bool dataLoaded() const; 
     bool evaluated() const;
     Result canEvaluate() const;
@@ -109,8 +108,6 @@ public:
 
     Result evaluate();
     Result update();
-    Result reloadNeededData(const std::vector<unsigned int>& utns,
-                            const std::vector<Evaluation::RequirementResultID>& requirements);
     void updateResultsToChanges();
 
     // check and correct missing information
@@ -237,7 +234,6 @@ public:
     const EvaluationSettings& settings() const { return settings_; }
     const dbContent::DataSourceCompoundCoverage& tstSrcsCoverage() const { return *tst_srcs_coverage_; }
     const boost::optional<ROI>& sectorROI() const { return sector_roi_; }
-    const std::vector<unsigned int>& evaluationUTNs() const { return eval_utns_; }
 
     bool globalTimeFilterEnabled() const;
     const Utils::TimeWindow& globalTimeWindow() const { return global_time_window_; }
@@ -261,9 +257,7 @@ protected:
     virtual void checkSubConfigurables() override;
 
     Result evaluateInternal(bool update_constraints,
-                            bool update_report,
-                            const std::vector<unsigned int>& utns,
-                            const std::vector<Evaluation::RequirementResultID>& requirements);
+                            bool update_report);
 
     void readSettings();
 
@@ -306,9 +300,6 @@ protected:
     void setCurrentStandardName(const std::string& name);
 
     EvaluationManager& eval_man_;
-
-    std::vector<unsigned int>                    eval_utns_;
-    std::vector<Evaluation::RequirementResultID> eval_requirements_;
 
     EvaluationSettings settings_;
 
