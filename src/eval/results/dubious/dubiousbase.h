@@ -120,8 +120,6 @@ public:
         TODBegin,        //ptime
         TODEnd,          //ptime
         Duration,        //time_duration
-        NumPosInside,    //unsigned int
-        NumPosInsideDub, //unsigned int
         HasModeAC,       //bool
         HasModeS,        //bool
         LeftSector,      //bool

@@ -114,12 +114,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrect::evaluate (
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
                                              .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::IsNotCorrect, is_not_correct)
-                                             .setValue(Result::DetailKey::NumUpdates, num_updates)
-                                             .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                                             .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                                             .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                                             .setValue(Result::DetailKey::NumCorrect, num_correct)
-                                             .setValue(Result::DetailKey::NumNotCorrect, num_not_correct)
                                              .addPosition(ref_pos)
                                              .generalComment(comment));
     };

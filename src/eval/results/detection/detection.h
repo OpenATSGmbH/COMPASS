@@ -68,10 +68,7 @@ public:
     {
         MissOccurred,        //bool
         DiffTOD,             //float
-        RefExists,           //bool
         MissedUIs,           //unsigned int (counting mode) or double seconds (time-ratio mode), cumulative
-        MaxGapUIs,           //unsigned int
-        NoRefUIs,            //unsigned int
     };
 
 protected:

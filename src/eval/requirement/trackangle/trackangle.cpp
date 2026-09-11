@@ -145,12 +145,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                                              .setValue(Result::DetailKey::ValueRef, value_ref)
                                              .setValue(Result::DetailKey::ValueTst, value_tst)
                                              .setValue(Result::DetailKey::SpeedRef, speed_ref)
-                                             .setValue(Result::DetailKey::NumPos, num_pos)
-                                             .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                                             .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                                             .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                                             .setValue(Result::DetailKey::NumCheckFailed, num_comp_failed)
-                                             .setValue(Result::DetailKey::NumCheckPassed, num_comp_passed)
                                              .addPosition(ref_pos)
                                              //.addLines(lines)
                                              .generalComment(comment));

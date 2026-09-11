@@ -70,10 +70,7 @@ public:
     {
         MissOccurred,        //bool
         DiffTOD,             //float
-        RefExists,           //bool
         MissedUIs,           //unsigned int
-        RefUpdateStartIndex, //unsigned int
-        RefUpdateEndIndex    //unsigned int
     };
 
 protected:

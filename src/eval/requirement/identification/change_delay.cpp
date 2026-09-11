@@ -127,10 +127,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationChangeDelay::
     {
         details.push_back(Detail(ts, pos).setValue(Result::DetailKey::Value, value)
                                          .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                         .setValue(Result::DetailKey::NumEvents, num_events)
-                                         .setValue(Result::DetailKey::NumNotAssessable, num_not_assessable)
-                                         .setValue(Result::DetailKey::NumCheckPassed, num_passed)
-                                         .setValue(Result::DetailKey::NumCheckFailed, num_failed)
                                          .generalComment(comment));
     };
 

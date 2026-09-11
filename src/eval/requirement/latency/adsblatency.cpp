@@ -91,12 +91,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Value, value)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .setValue(Result::DetailKey::NumPos, num_pos)
-                                             .setValue(Result::DetailKey::NumNoData, num_no_data)
-                                             .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                                             .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                                             .setValue(Result::DetailKey::NumCheckPassed, num_value_ok)
-                                             .setValue(Result::DetailKey::NumCheckFailed, num_value_nok)
                                              .generalComment(comment));
     };
 

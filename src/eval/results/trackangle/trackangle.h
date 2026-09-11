@@ -98,12 +98,6 @@ public:
         ValueTst,       // double
         SpeedRef,       // double
         PosInside,      //bool
-        NumPos,         //unsigned int
-        NumNoRef,       //unsigned int
-        NumInside,      //unsigned int
-        NumOutside,     //unsigned int
-        NumCheckFailed, //unsigned int
-        NumCheckPassed //unsigned int
     };
 
 protected:

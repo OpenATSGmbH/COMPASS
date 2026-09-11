@@ -100,13 +100,6 @@ public:
         RefExists,    //bool
         PosInside,    //bool
         IsNotOk,      //bool
-        NumUpdates,   //unsigned int
-        NumNoRef,     //unsigned int
-        NumInside,    //unsigned ints
-        NumOutside,   //unsigned int
-        NumUnknownID, //unsigned int
-        NumCorrectID, //unsigned int
-        NumFalseID   //unsigned int
     };
 
 protected:

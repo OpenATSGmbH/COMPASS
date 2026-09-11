@@ -105,13 +105,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCPresent::evaluate (
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
                           .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                           .setValue(Result::DetailKey::IsNotOk, is_not_ok)
-                          .setValue(Result::DetailKey::NumUpdates, num_updates)
-                          .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                          .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                          .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                          .setValue(Result::DetailKey::NumNoRefVal, num_no_ref_id)
-                          .setValue(Result::DetailKey::NumPresent, num_present_id)
-                          .setValue(Result::DetailKey::NumMissing, num_missing_id)
                           .addPosition(ref_pos)
                           .generalComment(comment));
     };

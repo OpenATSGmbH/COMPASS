@@ -99,12 +99,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistanceRMS::evalua
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .setValue(Result::DetailKey::NumPos, num_pos)
-                                             .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                                             .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                                             .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                                             .setValue(Result::DetailKey::NumCheckPassed, num_comp_passed)
-                                             .setValue(Result::DetailKey::NumCheckFailed, num_comp_failed)
                                              .addPosition(ref_pos)
                                              .generalComment(comment));
     };

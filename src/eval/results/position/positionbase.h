@@ -86,13 +86,6 @@ public:
         Value,          //float
         CheckPassed,    //bool
         PosInside,      //bool
-        NumPos,         //unsigned int
-        NumNoRef,       //unsigned int
-        NumInside,      //unsigned int
-        NumOutside,     //unsigned int
-        NumRefInaccurate,     //unsigned int
-        NumCheckPassed, //unsigned int
-        NumCheckFailed, //unsigned int
         PositionBaseMax
     };
 

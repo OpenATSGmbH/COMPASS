@@ -93,8 +93,6 @@ void SingleDubiousBase::DetailData::assignTo(EvaluationDetail& d) const
      .setValue(DetailKey::TODBegin, tod_begin)
      .setValue(DetailKey::TODEnd, tod_end)
      .setValue(DetailKey::Duration, duration)
-     .setValue(DetailKey::NumPosInside, num_pos_inside)
-     .setValue(DetailKey::NumPosInsideDub, num_pos_inside_dubious)
      .setValue(DetailKey::HasModeAC, has_mode_ac)
      .setValue(DetailKey::HasModeS, has_mode_s)
      .setValue(DetailKey::LeftSector, left_sector)

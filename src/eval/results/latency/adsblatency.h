@@ -83,12 +83,6 @@ public:
         PosInside,       //bool
         Value,           //float, latency in seconds
         CheckPassed,     //bool
-        NumPos,          //unsigned int
-        NumNoData,       //unsigned int
-        NumInside,       //unsigned int
-        NumOutside,      //unsigned int
-        NumCheckPassed,  //unsigned int
-        NumCheckFailed,  //unsigned int
     };
 
 protected:

@@ -132,13 +132,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                             const std::vector<dbContent::TargetPosition>& positions,
                             const QVariant& d_tod,
                             const QVariant& miss_occurred,
-                            const QVariant& ref_exists,
                             const QVariant& missed_uis,
                             const std::string& comment)
     {
         details.push_back(Detail(timestamp, positions).setValue(Result::DetailKey::DiffTOD     , d_tod        )
                                                       .setValue(Result::DetailKey::MissOccurred, miss_occurred)
-                                                      .setValue(Result::DetailKey::RefExists   , ref_exists   )
                                                       .setValue(Result::DetailKey::MissedUIs   , missed_uis   )
                                                       .generalComment(comment));
     };
@@ -187,7 +185,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                   positions, 
                   detail_info.evt_has_dt ? detail_info.evt_dt : QVariant(), 
                   detail_info.evt_has_misses, 
-                  detail_info.evt_has_ref,
                   misses_total, 
                   detail_info.evt_comment);
     }

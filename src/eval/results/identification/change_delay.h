@@ -74,10 +74,6 @@ public:
     {
         Value,           //float, change delay in seconds
         CheckPassed,     //bool
-        NumEvents,       //unsigned int
-        NumNotAssessable,//unsigned int
-        NumCheckPassed,  //unsigned int
-        NumCheckFailed,  //unsigned int
     };
 
 protected:
