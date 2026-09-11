@@ -16,6 +16,8 @@ pipeline {
         booleanParam(name: 'TAG_SYSTEM',          defaultValue: true, description: 'Tag: system')
         booleanParam(name: 'TAG_IMPORT',          defaultValue: true, description: 'Tag: import')
         booleanParam(name: 'TAG_CALCULATE',       defaultValue: true, description: 'Tag: calculate')
+        booleanParam(name: 'TAG_CONTEXT',         defaultValue: true, description: 'Tag: context (Data Context imports and deletes, at_20230422)')
+        booleanParam(name: 'TAG_CTX_GUI',         defaultValue: true, description: 'Tags: ctx_gui, ctx_gui_loww (Data Context dialogs, at_20230422 + loww_20260609)')
         booleanParam(name: 'TAG_EVAL',            defaultValue: true, description: 'Tag: eval')
         booleanParam(name: 'TAG_UI',              defaultValue: true, description: 'Tag: ui (all UI tests)')
         booleanParam(name: 'TAG_VIEWS',           defaultValue: true, description: 'Tag: views')
@@ -23,7 +25,7 @@ pipeline {
         booleanParam(name: 'TAG_HISTOGRAMVIEW',   defaultValue: true, description: 'Tag: histogramview')
         booleanParam(name: 'TAG_SCATTERPLOTVIEW', defaultValue: true, description: 'Tag: scatterplotview')
         booleanParam(name: 'TAG_GEOGRAPHICVIEW',  defaultValue: true, description: 'Tag: geographicview')
-        booleanParam(name: 'TAG_ANALYZE',         defaultValue: true, description: 'Tag: analyze (Analyze Data Source, MLAT + ADS-B)')
+        booleanParam(name: 'TAG_ANALYZE',         defaultValue: true, description: 'Tags: analyze, analyze_smr (Analyze Data Source, MLAT + ADS-B, SMR on datasets with CAT010 data)')
         booleanParam(name: 'TAG_ARTAS_SPF',       defaultValue: true, description: 'Tag: artas_spf (ARTAS TRI import/association/display, at_20230422)')
         booleanParam(name: 'TAG_MLAT_RU',         defaultValue: true, description: 'Tag: mlat_ru (MLAT contributing receivers, loww_20260609)')
         booleanParam(name: 'TAG_SENSOR_STATUS',   defaultValue: true, description: 'Tag: sensor_status (CAT063 sensor status, skeyes_20251203)')
@@ -157,6 +159,7 @@ pipeline {
             when {
                 expression {
                     def anyTag = params.TAG_SYSTEM || params.TAG_IMPORT || params.TAG_CALCULATE || params.TAG_EVAL ||
+                                 params.TAG_CONTEXT || params.TAG_CTX_GUI ||
                                  params.TAG_UI || params.TAG_VIEWS || params.TAG_TABLEVIEW ||
                                  params.TAG_HISTOGRAMVIEW || params.TAG_SCATTERPLOTVIEW || params.TAG_GEOGRAPHICVIEW ||
                                  params.TAG_ANALYZE || params.TAG_ARTAS_SPF || params.TAG_MLAT_RU ||
@@ -173,6 +176,8 @@ pipeline {
                     if (params.TAG_SYSTEM)          tags << 'system'
                     if (params.TAG_IMPORT)          tags << 'import'
                     if (params.TAG_CALCULATE)       tags << 'calculate'
+                    if (params.TAG_CONTEXT)         tags << 'context'
+                    if (params.TAG_CTX_GUI)         { tags << 'ctx_gui'; tags << 'ctx_gui_loww' }
                     if (params.TAG_EVAL)            { tags << 'eval'; tags << 'eval_loww' }
                     if (params.TAG_UI)              tags << 'ui'
                     if (params.TAG_VIEWS)           tags << 'views'
@@ -180,7 +185,7 @@ pipeline {
                     if (params.TAG_HISTOGRAMVIEW)   tags << 'histogramview'
                     if (params.TAG_SCATTERPLOTVIEW) tags << 'scatterplotview'
                     if (params.TAG_GEOGRAPHICVIEW)  tags << 'geographicview'
-                    if (params.TAG_ANALYZE)         tags << 'analyze'
+                    if (params.TAG_ANALYZE)         { tags << 'analyze'; tags << 'analyze_smr' }
                     if (params.TAG_ARTAS_SPF)       tags << 'artas_spf'
                     if (params.TAG_MLAT_RU)         tags << 'mlat_ru'
                     if (params.TAG_SENSOR_STATUS)   tags << 'sensor_status'
