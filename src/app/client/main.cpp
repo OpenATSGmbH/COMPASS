@@ -29,6 +29,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstdio>
 #include <cstring>
 #include <dlfcn.h>
 #include <pthread.h>
@@ -442,6 +443,10 @@ void signalHandler(int signum)
 
 int main(int argc, char** argv)
 {
+    // line buffer stdout before the first output: the logger writes through std::cout, which
+    // is fully buffered on a pipe or file, so the last log lines before a crash were lost
+    setvbuf(stdout, nullptr, _IOLBF, 0);
+
     try
     {
         std::set_terminate(terminateHandler);

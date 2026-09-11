@@ -502,8 +502,8 @@ void ASTERIXNetworkDecoder::start_impl()
 
     loginf << "running iocontext";
 
+    // joined after the stop below, the io_context and the receivers must outlive run()
     boost::thread t(boost::bind(&boost::asio::io_context::run, &io_context));
-    t.detach();
 
     last_receive_decode_time_ = boost::posix_time::microsec_clock::local_time();
 
@@ -582,7 +582,10 @@ void ASTERIXNetworkDecoder::start_impl()
     io_context.stop();
     traced_assert(io_context.stopped());
 
-    t.timed_join(100);
+    // run() returns once it observes the stop, bounded by the receive handler in progress.
+    // Without the join the local io_context and the receivers were destroyed while the io
+    // thread was still inside run(), a race that crashed in the io_context destructor.
+    t.join();
 
     //done_ = true; // done set in outer run function
 
