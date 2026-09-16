@@ -489,6 +489,37 @@ Inline UI-button icons use `frame`, `width=0.5cm`. The hint icon (notes/warnings
 | Inline button icon | `0.5cm` | none | `frame` |
 | Inline hint icon | `0.5cm` | none | (no frame) |
 
+### Diagrams
+
+Screenshots show the UI, diagrams show a concept (time lines, data flow). Diagrams are **generated**, not drawn by hand, so they stay consistent and can be corrected later.
+
+Generator: `diagrams/make_diagrams.py`
+
+```bash
+cd doc/user_manual/diagrams
+python3 make_diagrams.py              # writes svg/*.svg and renders the PNGs
+python3 make_diagrams.py --svg-only   # SVG only, no Inkscape needed
+```
+
+- The script writes the SVG sources to `diagrams/svg/` and renders the PNGs with Inkscape (300 dpi) into the `figures/` folder of the chapter that includes them. Both SVG and PNG are checked in, so the manual builds without the script.
+- One function per diagram, listed in `DIAGRAMS` at the end of the script. To add a diagram, copy the closest existing function, then re-run the script.
+- Include a diagram at `width=15cm` **without** `frame` (the `frame` option is for screenshots).
+
+Style (defined at the top of the script, keep new diagrams consistent with it):
+
+| Element | Style |
+| - | - |
+| Canvas | 160 mm wide, user unit 1 mm, white background, no outer frame |
+| Font | DejaVu Sans, matching the Qt screenshots |
+| Text, axis | `#131334` (compass_dark) |
+| Block border | `#3B3AA7` (compass_medium), fill `#DCDCF7` |
+| Day boundary | `#9897EE` (compass_light), dashed |
+| Problem marker, removed data | `#A02020` (dark red) |
+
+- Time runs from left to right on one arrow axis. Recording files are blocks above the axis, one row per file that needs its own row.
+- Color is never the only carrier of information. Every block and every marker also has a text label.
+- Use a broken axis (two segments) when the interesting parts are minutes apart inside a 24 h span, and label it '(axis not to scale)'.
+
 ### Notes / Hints
 Three tiers:
 

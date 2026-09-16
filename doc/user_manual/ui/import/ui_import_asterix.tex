@@ -103,64 +103,190 @@ Below, the following items exist:
 \begin{itemize}
 \item Line ID: Line into which all data should be written
 \item UTC Day: Date of the recording (for all data)
-\item Reset Date Between Files: Use to import non-consecutive files with 24h time jumps
-\item Ignore 24h Time Jumps: Do not detect 24h time jumps in input data - import everything into same date
+\item Reset Date Between Files: Use to import non-consecutive files with 24h time jumps (see \nameref{sec:ui_import_asterix_timestamps})
+\item Ignore 24h Time Jumps: Do not detect 24h time jumps in input data - import everything into same date (see \nameref{sec:ui_import_asterix_timestamps})
 \item Debug in Console: Additional debugging information is output to the console, and the ASTERIX decoding is switched to single-threading for easier investigation
 \end{itemize}
 \ \\
 
 \subsubsection{Timestamp Calculation}
+\label{sec:ui_import_asterix_timestamps}
 
 ASTERIX information does not include useful date information, only \textbf{T}ime \textbf{o}f \textbf{D}ay (\textbf{ToD}), which represents seconds since midnight UTC. The full timestamp is therefore derived from the configured 'UTC Day' plus the ToD, with an automatic 24h rollover detection that advances the day when ToDs near 23:59 reset to values close to 00:00. \\
 
-Since ASTERIX ToDs do not always appear strictly sequentially, the detection allows for a small vicinity around the 24h boundary and only triggers once both late and early values are observed within that window. \\
+Since ASTERIX ToDs do not always appear strictly sequentially, the detection allows for a small vicinity around the 24h boundary and only triggers once both late and early values are observed within that window. The vicinity is 5 minutes, i.e. a time jump is set as soon as a ToD of 23:55:00 or later is followed by a ToD of 00:05:00 or earlier. Inside the vicinity, late ToDs keep the previous date and early ToDs get the new date, therefore records which are not in time order are still dated correctly. The detection state is cleared once the ToDs are more than 10 minutes away from midnight. \\
 
 Three controls in the Main tab influence the timestamp calculation:
 
 \begin{itemize}
-\item UTC Day: base date for the first ToD of the import
-\item Reset Date Between Files: re-anchors each file to 'UTC Day' as start day; use when the next file restarts at 00:00 of the same day rather than continuing the previous file's time line
-\item Ignore 24h Time Jumps: disables rollover detection entirely - all ToDs are mapped to the configured 'UTC Day'
+\item UTC Day: Date given to the first ToD of the import
+\item Reset Date Between Files: At each file change, the date is set back to 'UTC Day' and the detection state is cleared. Use it if the next file starts again at its own ToD, instead of continuing the time line of the previous file
+\item Ignore 24h Time Jumps: Disables the rollover detection, all ToDs are mapped to the current date
 \end{itemize}
 \ \\
 
-\paragraph{Configuration Examples}
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that 'Reset Date Between Files' is enabled by default, and that 'Ignore 24h Time Jumps' is disabled by default. \\
 
-The following examples show recommended settings for common file layouts:
+\paragraph{Overview}
+
+Two questions define the required settings:
 
 \begin{itemize}
-\item Single file, single data source, single day (e.g. SMR Day 1 00:01 - Day 1 23:59)
-  \begin{itemize}
-  \item UTC Day: Day 1
-  \item Reset Date Between Files: \textbf{off}
-  \item Ignore 24h Time Jumps: \textbf{off}
-  \end{itemize}
-\item Single file spanning midnight (e.g. PSR Day 1 22:00 - Day 2 02:00)
-  \begin{itemize}
-  \item UTC Day: Day 1
-  \item Reset Date Between Files: \textbf{off}
-  \item Ignore 24h Time Jumps: \textbf{off} (rollover is auto-detected)
-  \end{itemize}
-\item Multiple sequential files from the same source on one continuous day (e.g. File 1 PSR Day 1 00:01 - 06:00, File 2 PSR Day 1 06:01 - 12:00)
-  \begin{itemize}
-  \item UTC Day: Day 1
-  \item Reset Date Between Files: \textbf{off}
-  \item Ignore 24h Time Jumps: \textbf{off}
-  \end{itemize}
-\item Multiple files from different sensors, each starting again at 00:00 of the same day (e.g. File 1 SMR Day 1 00:01 - 23:59, File 2 MLAT Day 1 00:01 - 23:59)
-  \begin{itemize}
-  \item UTC Day: Day 1
-  \item Reset Date Between Files: \textbf{on} (without it, the second file would be misdated to Day 2)
-  \item Ignore 24h Time Jumps: \textbf{off}
-  \end{itemize}
-\item Recording with non-sequential ToDs where any auto-rollover would be wrong (e.g. tracker output with re-ordered messages, all within one day)
-  \begin{itemize}
-  \item UTC Day: Day 1
-  \item Reset Date Between Files: \textbf{off}
-  \item Ignore 24h Time Jumps: \textbf{on}
-  \end{itemize}
+\item Do the selected files continue one time line? Then 'Reset Date Between Files' has to be disabled. Does each file start again at its own ToD? Then it has to be enabled. If only one file is imported, the setting is irrelevant
+\item Is a date change in the data real? Then 'Ignore 24h Time Jumps' has to be disabled. Should all data be imported into the same date? Then it has to be enabled
 \end{itemize}
 \ \\
+
+The following table lists the common recording layouts. Each one is described in the referenced example.
+
+\begin{tabularx}{\textwidth}{ | l | X | l | c | c |}
+\hline
+  Example & Recording layout & UTC Day & Reset Date & Ignore Jumps \\ \hline
+  A & One file, inside one day & Recording day & - & - \\ \hline
+  B & One file, across midnight & First day & - & off \\ \hline
+  C & Two files, same day, each starting again & Recording day & on & off \\ \hline
+  D & Two files, day change at the file cut & First day & \textbf{off} & off \\ \hline
+  E & One 24h file, plus minutes of the adjacent days & Main day & - & \textbf{on} \\ \hline
+  F & Several files of one day, ToDs near midnight & Recording day & on & \textbf{on} \\ \hline
+\end{tabularx} \\
+\  \\
+
+A '-' means that the setting has no effect for this layout, therefore it can be left at its default value. 'Reset Date Between Files' has no effect if only one file is imported, since there is no file change. 'Ignore 24h Time Jumps' has no effect if no ToD comes close to midnight. \\
+
+Please \textbf{note} that Example E also requires a Time of Day filter, which is set in the Override / Filter tab (see \nameref{sec:task_import_asterix_override}). \\
+
+\paragraph{Example A: One File Inside One Day}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{figures/asterix_import_ts_a.png}
+  \caption{Example A - one file inside one day}
+\end{figure}
+
+One recording file which starts and ends inside the same day, e.g. a Radar recording from 06:00 to 18:00. All ToDs are mapped to the recording day.
+
+\begin{itemize}
+\item UTC Day: Recording day
+\item Reset Date Between Files: No effect, since only one file is imported
+\item Ignore 24h Time Jumps: No effect, since no ToD comes close to midnight
+\end{itemize}
+\ \\
+
+\paragraph{Example B: One File Across Midnight}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{figures/asterix_import_ts_b.png}
+  \caption{Example B - one file across midnight}
+\end{figure}
+
+One recording file which starts before and ends after midnight, e.g. from 22:00 to 02:00. The ToD reset happens inside the file and is detected automatically, therefore all data after midnight gets the next day.
+
+\begin{itemize}
+\item UTC Day: First day
+\item Reset Date Between Files: No effect, since only one file is imported
+\item Ignore 24h Time Jumps: Disabled, which is the default. If it is enabled, the data after midnight is dated one day too early
+\end{itemize}
+\ \\
+
+\paragraph{Example C: Two Files of the Same Day}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{figures/asterix_import_ts_c.png}
+  \caption{Example C - two files of the same day}
+\end{figure}
+
+Two files which cover the same day, e.g. one SMR file and one MLAT file, both from 00:01 to 23:59. Each file starts again at its own ToD.
+
+\begin{itemize}
+\item UTC Day: Recording day
+\item Reset Date Between Files: Enabled, which is the default. If it is disabled, the late ToDs at the end of the first file and the early ToDs at the start of the second file are read as a 24h time jump, and the second file is dated one day too late
+\item Ignore 24h Time Jumps: Disabled, which is the default. A time jump inside one of the files is then still detected
+\end{itemize}
+\ \\
+
+\paragraph{Example D: Two Files With the Day Change at the File Cut}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{figures/asterix_import_ts_d.png}
+  \caption{Example D - two files with the day change at the file cut}
+\end{figure}
+
+Two files which continue one time line, where the day changes at the cut between them, e.g. file 1 from 20:00 to 24:00 and file 2 from 00:00 to 04:00.
+
+\begin{itemize}
+\item UTC Day: First day
+\item Reset Date Between Files: \textbf{Disabled}, which is not the default. The late ToDs of file 1 and the early ToDs of file 2 are then used together, and the time jump is detected at the start of file 2. If it is enabled, file 2 is set back to 'UTC Day', and all of its data is dated one day too early
+\item Ignore 24h Time Jumps: Disabled, which is the default. The time jump at the file cut must be detected
+\end{itemize}
+\ \\
+
+Please \textbf{note} that the files are decoded in the order in which they are listed in the Main tab. \\
+
+\paragraph{Example E: One 24h File With Data of the Adjacent Days}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{figures/asterix_import_ts_e.png}
+  \caption{Example E - one 24h file with data of the adjacent days}
+\end{figure}
+
+One recording file which covers one full day, but also holds a few minutes of the previous and of the next day, e.g. from 23:58 to 00:02. All data is dated with the main day, and the minutes of the adjacent days are removed by a filter.
+
+\begin{itemize}
+\item UTC Day: Main day
+\item Reset Date Between Files: No effect, since only one file is imported
+\item Ignore 24h Time Jumps: \textbf{Enabled}, which is not the default. If it is disabled, the minutes of the previous day at the start of the file are read as a 24h time jump, and the whole main day is dated one day too late
+\item Filter Time of Day: Enabled, with the range 00:05:00 to 23:55:00, set in the Override / Filter tab (see \nameref{sec:task_import_asterix_override}). The minutes of the adjacent days are imported with a wrong date, and are removed by this filter
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that the Time of Day filter is applied after the timestamp calculation. It can therefore not prevent a wrong 24h time jump. It also removes the first and the last minutes of the wanted day, since the filter works on the ToD only. \\
+
+\paragraph{Example F: Several Files of One Day}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{figures/asterix_import_ts_f.png}
+  \caption{Example F - several files of one day}
+\end{figure}
+
+Several files which all belong to one day, e.g. one file per sensor, not necessarily covering the same hours. Every ToD is mapped to 'UTC Day'.
+
+\begin{itemize}
+\item UTC Day: Recording day
+\item Reset Date Between Files: Enabled, which is the default. Each file starts again at its own ToD
+\item Ignore 24h Time Jumps: \textbf{Enabled}, which is not the default. Use it if the files hold records close to midnight, e.g. a few records of the previous or of the next day, or records which are not in time order there. No date change can then happen
+\end{itemize}
+\ \\
+
+Please \textbf{note} that a real date change is no longer detected with this setting. It must therefore only be used for data of one day. \\
+
+\paragraph{Cases Which Require Several Imports}
+
+All settings are applied to all selected files. The following cases can therefore not be handled in one import, and require one import per group of files:
+
+\begin{itemize}
+\item Recordings of different days: Only one 'UTC Day' exists per import. Import each day separately, with the matching 'UTC Day'
+\item Data for different lines: Only one 'Line ID' exists per import. Import each line separately, e.g. a first recording into L1 and a second recording of the same sensors into L2
+\item Files which require different settings of the two check boxes, e.g. a continuous pair of files together with a separate single file
+\item Files which require different Override / Filter settings, e.g. a different Time of Day offset per file
+\end{itemize}
+\ \\
+
+\paragraph{Checking the Result}
+
+After the import, the resulting dates should be checked:
+
+\begin{itemize}
+\item The 'Timestamps' 'Min' and 'Max' values at the bottom of the Data Sources tool show the time span of all data in the database (see \nameref{sec:data_sources}). Both dates and times must match the expected recording period
+\item The Task Log lists one message per detected 24h time jump, as well as the last ToD and timestamp of each decoded file (see \nameref{sec:task_log})
+\end{itemize}
+\ \\
+
+Please \textbf{note} that a wrong date commonly shows as a time span of about 2 days instead of 1, or as a gap of exactly 24 hours between the data of different sensors. In such a case the data should be imported again with corrected settings.
 
 
 \subsubsection{Decoder}
