@@ -1,5 +1,10 @@
 {
     "name":"rff",
+    "recording_time":{
+        "start_item":"start_datetime",
+        "offset_item":"frame_relative_time_ms",
+        "offset_lsb":0.001
+    },
     "file_header_items":[
         {
             "name":"start_datetime",
@@ -23,6 +28,7 @@
         {
             "name":"frame_relative_time_ms",
             "type":"fixed_bytes",
+            "reverse_bytes":true,
             "length":4,
             "data_type":"uint"
         },

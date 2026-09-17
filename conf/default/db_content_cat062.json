@@ -5240,6 +5240,63 @@
                 "source": "I062/REF.TVS.Vy",
                 "unit": ""
             }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableTrackerrecording_time0",
+            "parameters": {
+                "data_type_str": "DOUBLE",
+                "db_column_name": "recording_time",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Recording time of the record's frame or packet in seconds since midnight. IOSS and RFF frame header, PCAP capture time. Null when the source carries no recording time.",
+                "dimension": "Time",
+                "group": "Time",
+                "is_key": false,
+                "name": "Recording Time",
+                "representation_str": "SECONDS_TO_TIME",
+                "short_name": "",
+                "source": "Internal: recording_time column",
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableTrackerrecording_day0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "recording_day",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "Recording day counter of the record's frame, 0 at the start of the recording. IOSS frame header, RFF computed from the file header. Null when the source carries no day counter.",
+                "dimension": "",
+                "group": "Time",
+                "is_key": false,
+                "name": "Recording Day",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Internal: recording_day column",
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "Variable",
+            "instance_name": "VariableTrackerrecording_date0",
+            "parameters": {
+                "data_type_str": "UINT",
+                "db_column_name": "recording_date",
+                "db_expression": "",
+                "db_expression_variables": {},
+                "description": "UTC date of the record's frame or packet as YYYYMMDD. RFF file header, PCAP capture time. Null when the source carries no absolute date.",
+                "dimension": "",
+                "group": "Time",
+                "is_key": false,
+                "name": "Recording Date",
+                "representation_str": "STANDARD",
+                "short_name": "",
+                "source": "Internal: recording_date column",
+                "unit": ""
+            }
         }
     ]
 }

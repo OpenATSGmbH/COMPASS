@@ -1174,6 +1174,78 @@
                 "group": "Accuracy",
                 "name": "X/Y StdDev Max"
             }
+        },
+        {
+            "class_name": "MetaVariable",
+            "instance_name": "MetaVariablerecording_time0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT001": "Recording Time",
+                    "CAT002": "Recording Time",
+                    "CAT004": "Recording Time",
+                    "CAT010": "Recording Time",
+                    "CAT019": "Recording Time",
+                    "CAT020": "Recording Time",
+                    "CAT021": "Recording Time",
+                    "CAT023": "Recording Time",
+                    "CAT025": "Recording Time",
+                    "CAT034": "Recording Time",
+                    "CAT048": "Recording Time",
+                    "CAT062": "Recording Time",
+                    "CAT063": "Recording Time",
+                    "CAT065": "Recording Time"
+                },
+                "group": "Time",
+                "name": "Recording Time"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
+            "instance_name": "MetaVariablerecording_day0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT001": "Recording Day",
+                    "CAT002": "Recording Day",
+                    "CAT004": "Recording Day",
+                    "CAT010": "Recording Day",
+                    "CAT019": "Recording Day",
+                    "CAT020": "Recording Day",
+                    "CAT021": "Recording Day",
+                    "CAT023": "Recording Day",
+                    "CAT025": "Recording Day",
+                    "CAT034": "Recording Day",
+                    "CAT048": "Recording Day",
+                    "CAT062": "Recording Day",
+                    "CAT063": "Recording Day",
+                    "CAT065": "Recording Day"
+                },
+                "group": "Time",
+                "name": "Recording Day"
+            }
+        },
+        {
+            "class_name": "MetaVariable",
+            "instance_name": "MetaVariablerecording_date0",
+            "parameters": {
+                "dbcont_variables": {
+                    "CAT001": "Recording Date",
+                    "CAT002": "Recording Date",
+                    "CAT004": "Recording Date",
+                    "CAT010": "Recording Date",
+                    "CAT019": "Recording Date",
+                    "CAT020": "Recording Date",
+                    "CAT021": "Recording Date",
+                    "CAT023": "Recording Date",
+                    "CAT025": "Recording Date",
+                    "CAT034": "Recording Date",
+                    "CAT048": "Recording Date",
+                    "CAT062": "Recording Date",
+                    "CAT063": "Recording Date",
+                    "CAT065": "Recording Date"
+                },
+                "group": "Time",
+                "name": "Recording Date"
+            }
         }
     ]
 }

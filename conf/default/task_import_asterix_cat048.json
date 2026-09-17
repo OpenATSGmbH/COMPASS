@@ -2598,6 +2598,60 @@
                 "mandatory": false,
                 "unit": ""
             }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordingTime",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, recording time of the record's frame or packet in seconds since midnight",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Recording Time",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "recording_time",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordingDay",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, recording day counter of the record's frame, 0 at the start of the recording",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Recording Day",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "recording_day",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordingDate",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, uTC date of the record's frame or packet as YYYYMMDD",
+                "db_content_name": "CAT048",
+                "db_content_variable_name": "Recording Date",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "recording_date",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
         }
     ]
 }

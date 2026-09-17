@@ -208,10 +208,13 @@ jASTERIX can add further flat top-level keys next to the decoded item keys. They
 |---|---|---|---|
 | `artas_md5` | `ARTAS Hash` (STRING, group Origin) | CAT001, CAT010, CAT020, CAT021, CAT048 | jASTERIX `add_artas_md5_hash`, set in `ASTERIXImportTask`. MD5 over the record bytes, used for ARTAS association. |
 | `record_data` | `Record Data` (STRING, group Origin), MetaVariable `Record Data` | CAT001, CAT010, CAT020, CAT021, CAT048, CAT062 | jASTERIX `add_record_data`, set in `ASTERIXImportTask`. The original ASTERIX record bytes as lowercase hex. |
+| `recording_time` | `Recording Time` (DOUBLE, seconds since midnight, group Time), MetaVariable `Recording Time` | all 14 ASTERIX DBContents | jASTERIX recording time of the frame or packet: IOSS/RFF frame header, PCAP capture time (jASTERIX `recording_*` keys, see its readme). Null for raw/netto and network input, and for the COMPASS PCAP import, which passes plain buffers. |
+| `recording_day` | `Recording Day` (UINT, group Time), MetaVariable `Recording Day` | all 14 ASTERIX DBContents | Day counter of the recording, 0 at its start. IOSS frame header, RFF computed. Null for PCAP. |
+| `recording_date` | `Recording Date` (UINT `YYYYMMDD`, group Time), MetaVariable `Recording Date` | all 14 ASTERIX DBContents | UTC date of the frame or packet. RFF file header, PCAP capture time. Null for IOSS. |
 
 `Record Data` costs about 45 bytes per record on disk. DuckDB compresses the hex text well, so it is only about a fifth larger than a raw binary column would be. RefTraj has no source record and does not carry the variable.
 
-Both keys are listed in `SYNTHESIZED_KEYS` of [`check_asterix_mapping_coverage.py`](../../../scripts/check_asterix_mapping_coverage.py), so the coverage checker does not treat them as fields outside the definition key space.
+All five keys are listed in `SYNTHESIZED_KEYS` of [`check_asterix_mapping_coverage.py`](../../../scripts/check_asterix_mapping_coverage.py), so the coverage checker does not treat them as fields outside the definition key space.
 
 ### In-place wire-value rewrites
 

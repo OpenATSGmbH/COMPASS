@@ -31,7 +31,7 @@
             "data_type":"uint"
         },
         {
-            "name":"time_ms",
+            "name":"recording_time",
             "type":"fixed_bytes",
             "length":3,
             "data_type":"uint",
