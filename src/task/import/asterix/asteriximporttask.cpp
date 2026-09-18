@@ -17,6 +17,7 @@
 
 #include "asteriximporttask.h"
 #include "dialogs.h"
+#include "asteriximportprogressdialog.h"
 #include "asteriximportprobeaggregator.h"
 #include "asterixnetworkreplaysender.h"
 #include "asterixreporthelpers.h"
@@ -61,8 +62,6 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QThread>
-#include <QLabel>
-#include <QProgressDialog>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QTimer>
@@ -814,6 +813,7 @@ void ASTERIXImportTask::reset()
     start_time_              = boost::posix_time::microsec_clock::local_time();
     last_insert_time_        = boost::posix_time::microsec_clock::local_time();
     last_file_progress_time_ = {};
+    last_file_progress_filename_ = "";
 
     error_         = false;
     error_message_ = "";
@@ -1046,7 +1046,7 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
 
     if (source_.isFileType())
     {
-        if (file_progress_dialog_->wasCanceled())
+        if (file_progress_dialog_->wasAborted())
         {
             stop();
             return;
@@ -1958,25 +1958,30 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
     if (!file_progress_dialog_)
     {
         file_progress_dialog_.reset(
-            new QProgressDialog(("Files '" + source_.filesAsString() + "'").c_str(), "Abort", 0, 100,
-                                Dialogs::statusDialogParent()));
-        file_progress_dialog_->setWindowTitle("Importing ASTERIX Recording(s)");
+            new ASTERIXImportProgressDialog(source_, Dialogs::statusDialogParent()));
         file_progress_dialog_->setWindowModality(Qt::ApplicationModal);
-        file_progress_dialog_->setAutoClose(false);
-        file_progress_dialog_->setAutoReset(false);
         // do not steal os focus from other applications when popping up
         file_progress_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
 
-        // wrapping label with a bounded width: long recording paths otherwise
-        // stretch the dialog to the longest filename (the status table inserts break
-        // opportunities after every path separator, see statusInfoString)
-        auto* label = new QLabel;
-        label->setTextFormat(Qt::RichText);
-        label->setWordWrap(true);
-        label->setMaximumWidth(800);
-        file_progress_dialog_->setLabel(label);
-
         force = true;
+    }
+
+    ASTERIXDecodeStatus status;
+
+    const bool decoding = (decode_job_ != nullptr);
+
+    if (decoding)
+    {
+        traced_assert(decode_job_->hasStatusInfo());
+        status = decode_job_->statusInfo();
+
+        // a new file was started: show the row states at once, do not wait for the next
+        // time slot. reading the status is cheap, it only collects the decoder counters
+        if (status.current_filename != last_file_progress_filename_)
+        {
+            last_file_progress_filename_ = status.current_filename;
+            force                        = true;
+        }
     }
 
     if (!force
@@ -1987,15 +1992,15 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
 
     last_file_progress_time_ = boost::posix_time::microsec_clock::local_time();
 
-    if (decode_job_)
+    if (decoding)
     {
-        traced_assert(decode_job_->hasStatusInfo());
-        file_progress_dialog_->setLabelText(decode_job_->statusInfoString().c_str());
-        file_progress_dialog_->setValue(decode_job_->statusInfoProgress());
+        file_progress_dialog_->updateStatus(status);
     }
-    else
+    else if (!last_file_progress_filename_.empty())
     {
-        file_progress_dialog_->setLabelText("Writing to database...");
+        // decoding is done, the queued data is being written. before the decode job exists
+        // the dialog keeps its initial message
+        file_progress_dialog_->setMessage("Writing to Database...");
     }
 }
 

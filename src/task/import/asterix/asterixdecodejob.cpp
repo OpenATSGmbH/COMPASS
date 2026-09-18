@@ -296,18 +296,10 @@ bool ASTERIXDecodeJob::hasStatusInfo()
 
 /**
 */
-std::string ASTERIXDecodeJob::statusInfoString()
+ASTERIXDecodeStatus ASTERIXDecodeJob::statusInfo()
 {
     traced_assert(hasStatusInfo());
-    return decoder_->statusInfoString();
-}
-
-/**
-*/
-float ASTERIXDecodeJob::statusInfoProgress() // percent
-{
-    traced_assert(hasStatusInfo());
-    return decoder_->statusInfoProgress();
+    return decoder_->statusInfo();
 }
 
 std::string ASTERIXDecodeJob::currentDataSourceName()

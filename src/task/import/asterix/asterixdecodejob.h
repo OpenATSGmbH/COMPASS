@@ -61,8 +61,7 @@ public:
     std::vector<std::unique_ptr<nlohmann::json>> extractedData();
 
     bool hasStatusInfo();
-    std::string statusInfoString();
-    float statusInfoProgress(); // percent
+    ASTERIXDecodeStatus statusInfo();
     std::string currentDataSourceName(); // used to distinguish file switches
 
     void forceBlockingDataProcessing();

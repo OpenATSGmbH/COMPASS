@@ -42,8 +42,8 @@ class TaskManager;
 
 class ASTERIXStatusDialog;
 class ASTERIXNetworkReplaySender;
+class ASTERIXImportProgressDialog;
 
-class QProgressDialog;
 class QTimer;
 
 namespace jASTERIX
@@ -176,8 +176,8 @@ protected:
     ASTERIXImportTaskSettings settings_;
     ASTERIXImportSource       source_;
 
-    std::unique_ptr<QProgressDialog> file_progress_dialog_;
-    std::unique_ptr<QTimer>          data_received_timer_;
+    std::unique_ptr<ASTERIXImportProgressDialog> file_progress_dialog_;
+    std::unique_ptr<QTimer>                      data_received_timer_;
 
     mutable std::shared_ptr<jASTERIX::jASTERIX> jasterix_;
     mutable std::string last_applied_asterix_config_; // signature of last config applied by configurejASTERIX, for logging
@@ -212,6 +212,7 @@ protected:
     boost::posix_time::ptime start_time_;
     boost::posix_time::ptime last_insert_time_;
     boost::posix_time::ptime last_file_progress_time_;
+    std::string              last_file_progress_filename_; // file shown in the progress dialog
 
     boost::posix_time::ptime last_live_update_time_;
 

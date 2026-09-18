@@ -39,8 +39,7 @@ public:
     ASTERIXImportSource::SourceType fileSourceType() const { return source_type_; }
 
     virtual bool hasStatusInfo() const override { return true; };
-    virtual std::string statusInfoString() const override;
-    virtual float statusInfoProgress() const override;
+    virtual ASTERIXDecodeStatus statusInfo() const override;
     virtual std::string currentDataSourceName() const override;
     virtual std::vector<std::string> errors() const override;
     virtual std::vector<std::string> warnings() const override;
