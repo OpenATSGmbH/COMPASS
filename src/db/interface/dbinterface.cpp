@@ -58,6 +58,9 @@
 
 #include "tbbhack.h"
 
+#include <algorithm>
+#include <chrono>
+#include <future>
 #include <QApplication>
 #include <QMessageBox>
 #include <QMutexLocker>
@@ -122,6 +125,8 @@ DBInterface::DBInterface(nlohmann::json& config, COMPASS& compass)
 DBInterface::~DBInterface()
 {
     logdbg;
+
+    waitForPendingTaskLogWrites();
 
     db_instance_ = nullptr;
 
@@ -354,6 +359,8 @@ void DBInterface::openDBFileFromMemory(const std::string& filename)
 void DBInterface::closeDB()
 {
     loginf;
+
+    waitForPendingTaskLogWrites();
 
     if (properties_loaded_)  // false if database not opened
         saveProperties();
@@ -1806,23 +1813,91 @@ std::vector<nlohmann::json> DBInterface::loadTaskLogInfo()
     return info;
 }
 
+/**
+ * Task log entries are written from the main thread, also while the live cleanup reconnects
+ * the database on a worker thread. The cleanup holds instance_mutex_ for its whole duration,
+ * so owning the lock means no cleanup is in progress and ready() is stable. The main thread
+ * never waits for the lock: a busy instance defers the write to a background thread.
+ */
 void DBInterface::saveTaskLogInfo(unsigned int msg_id, const nlohmann::json& info)
+{
+    {
+        boost::unique_lock<boost::mutex> locker(instance_mutex_, boost::try_to_lock);
+
+        if (locker.owns_lock())
+        {
+            if (ready())
+                saveTaskLogInfoInternal(msg_id, info);
+            // no database open: the entry stays in memory only
+
+            return;
+        }
+    }
+
+    loginf << "instance busy, deferring task log write " << msg_id;
+
+    boost::mutex::scoped_lock locker(pending_task_log_writes_mutex_);
+
+    // drop finished writes
+    pending_task_log_writes_.erase(
+        std::remove_if(pending_task_log_writes_.begin(), pending_task_log_writes_.end(),
+                       [] (const std::future<void>& f) 
+                       { return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; }),
+        pending_task_log_writes_.end());
+
+    pending_task_log_writes_.push_back(std::async(std::launch::async, [ this, msg_id, info ] ()
+    {
+        boost::mutex::scoped_lock locker(instance_mutex_);
+
+        if (!ready()) // database closed in the meantime
+            return;
+
+        try
+        {
+            saveTaskLogInfoInternal(msg_id, info);
+        }
+        catch (const std::exception& e)
+        {
+            logerr << "deferred task log write failed: " << e.what();
+        }
+    }));
+}
+
+/**
+ * Writes the task log entry. instance_mutex_ must be held by the caller, the database must be ready.
+ */
+void DBInterface::saveTaskLogInfoInternal(unsigned int msg_id, const nlohmann::json& info)
 {
     traced_assert(ready());
     traced_assert(existsTaskLogTable());
 
+    //storing all targets at once via a buffer is faster
+    std::shared_ptr<Buffer> buffer(new Buffer(LogStore::LogEntry::DBPropertyList));
+
+    auto& msg_id_vec = buffer->get<unsigned int>(LogStore::LogEntry::DBColumnID.name());
+    auto& info_vec   = buffer->get<nlohmann::json>(LogStore::LogEntry::DBColumnInfo.name());
+
+    msg_id_vec.set(0, msg_id);
+    info_vec.set(0, info);
+
+    insertBufferInternal(TABLE_NAME_TASK_LOG, buffer);
+}
+
+/**
+ * Waits for deferred task log writes. Called before the database is closed or the interface destroyed.
+ */
+void DBInterface::waitForPendingTaskLogWrites()
+{
+    std::vector<std::future<void>> pending;
+
     {
-        //storing all targets at once via a buffer is faster
-        std::shared_ptr<Buffer> buffer(new Buffer(LogStore::LogEntry::DBPropertyList));
-
-        auto& msg_id_vec   = buffer->get<unsigned int>(LogStore::LogEntry::DBColumnID.name());
-        auto& info_vec = buffer->get<nlohmann::json>(LogStore::LogEntry::DBColumnInfo.name());
-
-        msg_id_vec.set(0, msg_id);
-        info_vec.set(0, info);
-
-        insertBuffer(TABLE_NAME_TASK_LOG, buffer);
+        boost::mutex::scoped_lock locker(pending_task_log_writes_mutex_);
+        pending.swap(pending_task_log_writes_);
     }
+
+    for (auto& f : pending)
+        if (f.valid())
+            f.wait();
 }
 
 // ============================================================
@@ -2598,21 +2673,26 @@ void DBInterface::insertBuffer(const string& table_name,
     traced_assert(buffer);
     traced_assert(!cleanup_in_progress_);
 
+    #ifdef PROTECT_INSTANCE
+    boost::mutex::scoped_lock locker(instance_mutex_);
+    #endif
+
+    insertBufferInternal(table_name, buffer);
+}
+
+/**
+ * Inserts the buffer into the given table. instance_mutex_ must be held by the caller.
+ */
+void DBInterface::insertBufferInternal(const string& table_name, 
+                                       shared_ptr<Buffer> buffer)
+{
     if (!existsTable(table_name))
     {
         logerr << "table with name '" << table_name << "' does not exist";
         throw runtime_error("DBInterface: insertBuffer: table with name '" + table_name + "' does not exist");
     }
 
-    Result res;
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        res = db_instance_->defaultConnection().insertBuffer(table_name, buffer);
-    }
+    Result res = db_instance_->defaultConnection().insertBuffer(table_name, buffer);
 
     if (!res.ok())
     {

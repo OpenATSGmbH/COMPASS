@@ -214,7 +214,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("import_asterix_network_max_lines", po::value<int>(&import_asterix_network_max_lines_),
          "maximum number of lines per data source during ASTERIX network import, 1..4")
         ("import_asterix_network_ignore_future_ts", po::bool_switch(&import_asterix_network_ignore_future_ts_),
-         "ignore future timestamps during ASTERIX network import'")
+         "keep target reports with future timestamps during ASTERIX network import, skips the future timestamp check")
         ("asterix_framing", po::value<std::string>(&asterix_framing),
          "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'. if not set configuration value is used")
         ("asterix_decoder_cfg", po::value<std::string>(&asterix_decoder_cfg),

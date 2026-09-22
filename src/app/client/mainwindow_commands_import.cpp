@@ -1034,6 +1034,9 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
 
         if (max_lines_ != -1)
             import_task.settings().max_network_lines_ = max_lines_;
+
+        if (ignore_future_ts_)
+            import_task.settings().network_ignore_future_ts_ = true;
     }
     catch (exception& e)
     {
