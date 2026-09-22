@@ -440,8 +440,6 @@ private:
     std::unique_ptr<DataSourcesToolWidget> load_widget_;
     std::unique_ptr<DataSourcesStatusToolWidget> status_widget_;
 
-    static constexpr double max_fft_plot_distance_m_ = 5000.0;
-
     // Lazy RU-name cache over active context's data sources. ds_id lookup
     // itself is served directly by activeContext().dataSources() (a std::map),
     // so no by-id cache is needed. Invalidated on context switch and on any

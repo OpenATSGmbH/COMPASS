@@ -21,6 +21,8 @@
 
 #include <json.hpp>
 
+#include <cmath>
+
 using namespace std;
 using namespace nlohmann;
 
@@ -30,6 +32,9 @@ namespace context
 static const string latitude_key = "latitude";
 static const string longitude_key = "longitude";
 static const string altitude_key = "altitude";
+static const string mode_s_address_key = "mode_s_address";
+static const string mode_3a_code_key = "mode_3a_code";
+static const string mode_c_code_key = "mode_c_code";
 
 FFT::FFT() = default;
 
@@ -72,6 +77,121 @@ double FFT::altitude() const
 void FFT::altitude(double value)
 {
     info_[altitude_key] = value;
+}
+
+bool FFT::hasModeSAddress() const
+{
+    return info_.contains(mode_s_address_key);
+}
+
+unsigned int FFT::modeSAddress() const
+{
+    return info_.at(mode_s_address_key);
+}
+
+void FFT::modeSAddress(unsigned int value)
+{
+    info_[mode_s_address_key] = value;
+}
+
+bool FFT::hasMode3ACode() const
+{
+    return info_.contains(mode_3a_code_key);
+}
+
+unsigned int FFT::mode3ACode() const
+{
+    return info_.at(mode_3a_code_key);
+}
+
+void FFT::mode3ACode(unsigned int value)
+{
+    info_[mode_3a_code_key] = value;
+}
+
+bool FFT::hasModeCCode() const
+{
+    return info_.contains(mode_c_code_key);
+}
+
+float FFT::modeCCode() const
+{
+    return info_.at(mode_c_code_key);
+}
+
+void FFT::modeCCode(float value)
+{
+    info_[mode_c_code_key] = value;
+}
+
+bool FFT::hasSecondaryIdentification() const
+{
+    return hasModeSAddress() || hasMode3ACode();
+}
+
+bool FFT::isAlwaysFFTCode(boost::optional<unsigned int> mode_a_code)
+{
+    return mode_a_code && *mode_a_code == always_fft_mode_3a_code_;
+}
+
+pair<bool, float> FFT::matches(double latitude_deg, double longitude_deg,
+                               boost::optional<unsigned int> mode_s_address,
+                               bool ignore_mode_s,
+                               boost::optional<unsigned int> mode_a_code,
+                               boost::optional<float> mode_c_code) const
+{
+    bool secondary_matched = false;
+
+    // mode S address check
+    if (!ignore_mode_s && hasModeSAddress() && mode_s_address)
+    {
+        if (modeSAddress() != *mode_s_address)
+            return {false, 0};
+
+        secondary_matched = true;
+    }
+
+    // mode 3/A code check
+    if (hasMode3ACode() && mode_a_code)
+    {
+        if (mode3ACode() != *mode_a_code)
+            return {false, 0};
+
+        secondary_matched = true;
+    }
+
+    // mode C code check, confirmation only
+    if (hasModeCCode() && mode_c_code)
+    {
+        if (modeCCode() != *mode_c_code)
+            return {false, 0};
+    }
+
+    // without a secondary identification the target report can be from any
+    // aircraft overflying the FFT position
+    if (!secondary_matched)
+        return {false, 0};
+
+    // position check
+    if (hasPosition())
+    {
+        // approximate distance check using GeographicLib or simple haversine
+        double dlat = latitude_deg - latitude();
+        double dlon = longitude_deg - longitude();
+
+        // rough distance in meters (1 degree ~ 111km lat, cos(lat)*111km lon)
+        double cos_lat = cos(latitude_deg * M_PI / 180.0);
+        double dist_m = sqrt(dlat * dlat + dlon * dlon * cos_lat * cos_lat) * 111000.0;
+
+        if (dist_m > max_plot_distance_m_)
+            return {false, 0};
+    }
+
+    float alt = 0;
+    if (hasAltitude())
+        alt = static_cast<float>(altitude());
+
+    return {true, alt};
 }
 
 json FFT::toJSON() const
