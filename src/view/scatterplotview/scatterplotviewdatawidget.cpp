@@ -382,6 +382,13 @@ void ScatterPlotViewDataWidget::correctSeriesDateTime(ScatterSeriesCollection& c
 
 /**
 */
+std::string ScatterPlotViewDataWidget::selectionLayerId() const
+{
+    return kSelectedSeriesKey;
+}
+
+/**
+*/
 void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& stash)
 {
     loginf << "start"

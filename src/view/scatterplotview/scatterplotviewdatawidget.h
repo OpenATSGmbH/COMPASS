@@ -110,6 +110,10 @@ protected:
     virtual void processStash(const VariableViewStash<double>& stash) override final;
     virtual void resetStashDependentData() override final;
 
+    /// Selected points are pooled into the "Selected" overlay series and shown
+    /// under that layer panel id, not under their own group id.
+    virtual std::string selectionLayerId() const override final;
+
     virtual boost::optional<QRectF> getViewBounds() const override final;
 
     void viewInfoJSON_impl(nlohmann::json& info) const override;
