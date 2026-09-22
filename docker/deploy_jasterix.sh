@@ -23,10 +23,10 @@ mkdir -p "$APPDIR"
 find "$APPDIR" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 rm -f "$APPDIR/AppRun"
 
-mkdir -p appimage/appdir/bin/
-cp /usr/bin/jasterix_client appimage/appdir/bin/
-mkdir -p appimage/appdir/lib/
-cp /usr/lib/libjasterix.a appimage/appdir/lib/
+# linuxdeploy installs the executable into usr/bin and points AppRun there. The AppImage
+# carried a second copy in appdir/bin and the static library in appdir/lib, about 180 MB
+# uncompressed that nothing reads: AppRun and the desktop Exec entry resolve to usr/bin, and
+# users who link jASTERIX build the library themselves.
 
 cd ${WORKSPACE_BASE:-/app/workspace}/compass/docker/linuxdeploy/
 ./linuxdeploy-x86_64.AppImage --appdir $APPDIR --executable=/usr/bin/jasterix_client --desktop-file=$JASTERIX_DIR/appimage/jasterix.desktop --icon-file=$JASTERIX_DIR/appimage/atsdb.png --output appimage
