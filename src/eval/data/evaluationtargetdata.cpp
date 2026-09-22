@@ -1142,7 +1142,7 @@ std::string EvaluationTargetData::acadsStr() const
         if (cnt != 0)
             out << ", ";
 
-        out << String::hexStringFromInt(ta_it, 6, '0');
+        out << String::hexStringFromInt(ta_it, 6, '0', true);
         ++cnt;
     }
 

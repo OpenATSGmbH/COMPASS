@@ -63,7 +63,7 @@ std::function<bool(const unsigned int&, const unsigned int&)> Base::cmpACAD =
     [] (const unsigned int& val1, const unsigned int& val2) { return val1 == val2; };
 
 std::function<std::string(const unsigned int&)> Base::printACAD =
-    [] (const unsigned int& val) { return String::hexStringFromInt(val); };
+    [] (const unsigned int& val) { return String::hexStringFromInt(val, 6, '0', true); };
 
 // mode a
 std::function<boost::optional<unsigned int>(const dbContent::TargetReport::Chain&,

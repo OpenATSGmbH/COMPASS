@@ -957,8 +957,8 @@ void DBContentManager::showSurroundingData (std::set<unsigned int> utns)
 
         for (auto acad : target.aircraftAddresses())
         {
-            if (!aircraft_adresses.count(String::hexStringFromInt(acad, 6, '0')))
-                aircraft_adresses.insert(String::hexStringFromInt(acad, 6, '0'));
+            if (!aircraft_adresses.count(String::hexStringFromInt(acad, 6, '0', true)))
+                aircraft_adresses.insert(String::hexStringFromInt(acad, 6, '0', true));
         }
 
         for (auto m3a : target.modeACodes())
