@@ -146,17 +146,19 @@ TEST_CASE("representationString promotes char sized values", "[view][representat
 TEST_CASE("axis tick label casts the double back to the data type", "[view][representation]")
 {
     //the whole point of the exercise, an octal stream base does nothing to a double
-    CHECK(axis_ticks::label(4095.0, PropertyDataType::UINT, Representation::DEC_TO_OCTAL, 0) == "7777");
-    CHECK(axis_ticks::label(43200.0, PropertyDataType::FLOAT, Representation::SECONDS_TO_TIME, 0) == "12:00:00.000");
-    CHECK(axis_ticks::label(1.0, PropertyDataType::UCHAR, Representation::CLIMB_DESCENT, 0) == "CLB");
-    CHECK(axis_ticks::label(3958699.0, PropertyDataType::UINT, Representation::DEC_TO_HEX, 0) == "3C67AB");
+    CHECK(axis_ticks::label(4095.0, PropertyDataType::UINT, Representation::DEC_TO_OCTAL, axis_ticks::LabelStyle{0}) == "7777");
+    CHECK(axis_ticks::label(43200.0, PropertyDataType::FLOAT, Representation::SECONDS_TO_TIME, axis_ticks::LabelStyle{0}) == "12:00:00.000");
+    CHECK(axis_ticks::label(1.0, PropertyDataType::UCHAR, Representation::CLIMB_DESCENT, axis_ticks::LabelStyle{0}) == "CLB");
+    CHECK(axis_ticks::label(3958699.0, PropertyDataType::UINT, Representation::DEC_TO_HEX, axis_ticks::LabelStyle{0}) == "3C67AB");
 }
 
 TEST_CASE("axis tick label without representation uses the data type", "[view][representation]")
 {
-    CHECK(axis_ticks::label(42.0, PropertyDataType::UINT, Representation::STANDARD, 0) == "42");
-    CHECK(axis_ticks::label(42.4, PropertyDataType::UINT, Representation::STANDARD, 0) == "42");
-    CHECK(axis_ticks::label(1.5, PropertyDataType::DOUBLE, Representation::STANDARD, 2) == "1.50");
-    CHECK(axis_ticks::label(1.5, PropertyDataType::DOUBLE, Representation::STANDARD, 0) == "2");
-    CHECK(axis_ticks::label(1.0, PropertyDataType::BOOL, Representation::STANDARD, 0) == "1");
+    CHECK(axis_ticks::label(42.0, PropertyDataType::UINT, Representation::STANDARD, axis_ticks::LabelStyle{0}) == "42");
+    CHECK(axis_ticks::label(42.4, PropertyDataType::UINT, Representation::STANDARD, axis_ticks::LabelStyle{0}) == "42");
+    CHECK(axis_ticks::label(1.5, PropertyDataType::DOUBLE, Representation::STANDARD, axis_ticks::LabelStyle{2}) == "1.50");
+    CHECK(axis_ticks::label(1.5, PropertyDataType::DOUBLE, Representation::STANDARD, axis_ticks::LabelStyle{0}) == "2");
+    //a truth value reads better as a word
+    CHECK(axis_ticks::label(1.0, PropertyDataType::BOOL, Representation::STANDARD, axis_ticks::LabelStyle{0}) == "true");
+    CHECK(axis_ticks::label(0.0, PropertyDataType::BOOL, Representation::STANDARD, axis_ticks::LabelStyle{0}) == "false");
 }

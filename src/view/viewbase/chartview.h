@@ -59,6 +59,13 @@ public:
     void addLegendOnlyItem(const QString& name, const QColor& color);
     void setXAxisLabel(const QString& label);
 
+    /// Widens the chart margins so the outermost labels of a horizontal
+    /// category axis are not cut off. Qt centers such a label on its tick, so
+    /// half of it reaches past the plot area, and the default margin is
+    /// narrower than half a wide label such as a time of day.
+    /// Recomputed from the current labels, so a zoom never widens it for good.
+    static void reserveHorizontalLabelMargins(QtCharts::QChart* chart);
+
     virtual void onToolChanged();
 
 public slots:

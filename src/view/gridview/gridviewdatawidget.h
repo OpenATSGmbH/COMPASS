@@ -18,6 +18,7 @@
 #pragma once
 
 #include "variableviewstashdatawidget.h"
+#include "axisticks.h"
 #include "grid2dlayer.h"
 #include "grid2drendersettings.h"
 #include "colormap.h"
@@ -30,6 +31,8 @@
 #include <QRectF>
 
 #include <boost/optional.hpp>
+
+namespace QtCharts { class QCategoryAxis; }
 
 class GridView;
 class GridViewWidget;
@@ -140,6 +143,13 @@ private:
     void resetGridChart();
     void resetGridLayers();
 
+    void updateAxisInfoFromVariables();
+
+    /// Fills the axis with tick positions and labels for its current range.
+    /// Called once on creation and on every range change, since a zoom needs
+    /// ticks of its own.
+    void updateAxisTicks(QtCharts::QCategoryAxis* axis, int axis_id);
+
     DrawState updateGridChart();
     void updateRendering();
     DrawState updateChart(QtCharts::QChart* chart);
@@ -179,6 +189,15 @@ private:
     std::string  x_axis_name_;
     std::string  y_axis_name_;
     std::string  title_;
+
+    // Data type and representation per axis (0 = x, 1 = y). The stash flattens
+    // every value to double, so a tick label can only be formatted correctly if
+    // these are kept alongside.
+    PropertyDataType axis_data_type_[ 2 ] = { PropertyDataType::DOUBLE,
+                                              PropertyDataType::DOUBLE };
+
+    dbContent::Representation axis_repr_[ 2 ] = { dbContent::Representation::STANDARD,
+                                                  dbContent::Representation::STANDARD };
 
     /// Render settings declared inside the currently shown annotation's
     /// `render_settings` block. When present they override the view's own

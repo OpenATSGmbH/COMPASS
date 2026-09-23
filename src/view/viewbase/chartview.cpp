@@ -28,6 +28,7 @@
 #include <QLegend>
 #include <QLegendMarker>
 #include <QBarCategoryAxis>
+#include <QtCharts/QCategoryAxis>
 #include <QFontMetricsF>
 #include <QtMath>
 
@@ -166,6 +167,53 @@ void ChartView::setXAxisLabel(const QString& label)
 
     x_axis_label_item_->setText(label);
     updateXAxisLabelPosition();
+}
+
+/**
+ */
+void ChartView::reserveHorizontalLabelMargins(QtCharts::QChart* chart)
+{
+    if (!chart)
+        return;
+
+    //Qt's own default, the baseline this never falls below
+    const int MarginDefault = 20;
+
+    //a little air so a glyph does not touch the edge
+    const int Padding = 2;
+
+    qreal needed_left  = 0.0;
+    qreal needed_right = 0.0;
+
+    for (auto* axis : chart->axes(Qt::Horizontal))
+    {
+        auto* axis_cat = dynamic_cast<QtCharts::QCategoryAxis*>(axis);
+        if (!axis_cat || !axis_cat->labelsVisible())
+            continue;
+
+        //a rotated label does not reach out sideways
+        if (std::fabs((qreal)axis_cat->labelsAngle()) > 1.0)
+            continue;
+
+        const auto labels = axis_cat->categoriesLabels();
+        if (labels.isEmpty())
+            continue;
+
+        QFontMetricsF fm(axis_cat->labelsFont());
+
+        needed_left  = std::max(needed_left , fm.horizontalAdvance(labels.first()) / 2.0);
+        needed_right = std::max(needed_right, fm.horizontalAdvance(labels.last() ) / 2.0);
+    }
+
+    QMargins margins = chart->margins();
+
+    //recompute both sides from scratch, otherwise a wide label would leave its
+    //margin behind after zooming back out
+    margins.setLeft (std::max(MarginDefault, (int)std::ceil(needed_left ) + Padding));
+    margins.setRight(std::max(MarginDefault, (int)std::ceil(needed_right) + Padding));
+
+    if (margins != chart->margins())
+        chart->setMargins(margins);
 }
 
 /**

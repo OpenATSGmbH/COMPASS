@@ -20,6 +20,8 @@
 #include "gridviewdatawidget.h"
 #include "gridviewwidget.h"
 #include "viewvariable.h"
+#include "dbcontent/variable/variable.h"
+#include "dbcontent/variable/metavariable.h"
 #include "property_templates.h"
 
 #include "viewpointgenerator.h"
@@ -383,6 +385,36 @@ PropertyDataType GridView::currentLegendDataType() const
 
     //in all other cases the data type of the distributed variable should be the right one
     return data_type.value();
+}
+
+/**
+*/
+dbContent::Representation GridView::currentLegendRepresentation()
+{
+    //an annotation brings values, not variables
+    if (showsAnnotation())
+        return dbContent::Representation::STANDARD;
+
+    //a count or a statistic of a variable is not that variable any more, so a
+    //Mode 3/A standard deviation must not read as an octal code
+    if (settings_.value_type != (int)grid2d::ValueTypeMin &&
+        settings_.value_type != (int)grid2d::ValueTypeMax)
+        return dbContent::Representation::STANDARD;
+
+    auto& view_var = variable(2);
+
+    if (view_var.isMetaVariable() && view_var.metaVariablePtr())
+    {
+        //representation() asserts without sub variables
+        if (view_var.metaVariablePtr()->hasVariables())
+            return view_var.metaVariablePtr()->representation();
+    }
+    else if (view_var.variablePtr())
+    {
+        return view_var.variablePtr()->representation();
+    }
+
+    return dbContent::Representation::STANDARD;
 }
 
 /**

@@ -21,6 +21,9 @@
 #include <set>
 
 using namespace histogram_helpers;
+
+//the span aware time formatting itself is covered in test_axisticks.cpp, it
+//moved to axis_ticks when the grid view needed it too
 using TimeFields = BinLabelStyle::TimeFields;
 
 namespace
@@ -80,34 +83,6 @@ TEST_CASE("numberLabel never prints a negative zero", "[histogram][labels]")
     CHECK(numberLabel(-0.0, 2) == "0.00");
     CHECK(numberLabel(-0.001, 2) == "0.00");
     CHECK(numberLabel(-0.006, 2) == "-0.01");
-}
-
-TEST_CASE("timeFieldsForSpan picks the smallest unambiguous form", "[histogram][labels]")
-{
-    CHECK(timeFieldsForSpan(timeAt("2025-12-31 23:00:00"),
-                            timeAt("2026-01-01 01:00:00")) == TimeFields::Full);
-
-    CHECK(timeFieldsForSpan(timeAt("2026-09-22 23:00:00"),
-                            timeAt("2026-09-23 01:00:00")) == TimeFields::DateTime);
-
-    CHECK(timeFieldsForSpan(timeAt("2026-09-23 10:00:00"),
-                            timeAt("2026-09-23 11:00:00")) == TimeFields::Time);
-
-    //a range of seconds needs the milliseconds to stay distinct
-    CHECK(timeFieldsForSpan(timeAt("2026-09-23 10:00:00.000"),
-                            timeAt("2026-09-23 10:00:01.500")) == TimeFields::TimeMs);
-}
-
-TEST_CASE("timeLabel drops what the span does not need", "[histogram][labels]")
-{
-    const auto t = timeAt("2026-09-23 10:03:27.500");
-
-    CHECK(timeLabel(t, TimeFields::Full) == "2026-09-23 10:03:27");
-    CHECK(timeLabel(t, TimeFields::DateTime) == "09-23 10:03:27");
-    CHECK(timeLabel(t, TimeFields::Time) == "10:03:27");
-    CHECK(timeLabel(t, TimeFields::TimeMs) == "10:03:27.500");
-
-    CHECK(timeLabel(boost::posix_time::ptime(), TimeFields::Time) == "");
 }
 
 TEST_CASE("double histogram labels use the bin width", "[histogram][labels]")

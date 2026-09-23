@@ -23,6 +23,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/date_time/posix_time/posix_time_types.hpp>
+
 /**
  * Tick positions and tick labels for a numerical axis.
  *
@@ -34,13 +36,36 @@ namespace axis_ticks
 {
 
 /**
+ * Smallest date time part a timestamp label needs to stay unambiguous over the
+ * range it belongs to.
+ */
+enum class TimeFields
+{
+    Full = 0,  //date and time, the range crosses a year
+    DateTime,  //month, day and time, the range crosses a day
+    Time,      //time only
+    TimeMs     //time with milliseconds, the range covers seconds
+};
+
+/**
+ * What a label needs beyond its own value. Derived once per range, so that all
+ * labels of one axis read the same way.
+ */
+struct LabelStyle
+{
+    int        decimals    = 0;                 //decimals a STANDARD label needs, -1 for the default precision
+    bool       sub_second  = true;              //a Time of Day label keeps its milliseconds
+    TimeFields time_fields = TimeFields::Full;  //how much of a timestamp a label shows
+};
+
+/**
  * Result of a tick generation run.
  */
 struct Ticks
 {
-    std::vector<double> values;       //tick positions, ascending
-    double              step     = 0; //distance between two ticks
-    int                 decimals = 0; //decimals a STANDARD label needs at this step
+    std::vector<double> values;   //tick positions, ascending
+    double              step = 0; //distance between two ticks
+    LabelStyle          style;    //how the labels of these ticks should read
 };
 
 /**
@@ -56,6 +81,9 @@ bool isIntegralDataType(PropertyDataType dtype);
 /**
  * True if an axis for this variable needs tick labels of its own, because Qt
  * would present the value in a way COMPASS does not use elsewhere.
+ *
+ * A timestamp counts, since on a plain value axis it reads as milliseconds since
+ * epoch. A view that draws it on a QDateTimeAxis decides that before asking.
  */
 bool needsCustomLabels(PropertyDataType dtype, dbContent::Representation repr);
 
@@ -95,18 +123,25 @@ Ticks generate(double vmin,
                int target_count = TargetTickCountDefault);
 
 /**
+ * Smallest date time part the labels over [t0, t1] need.
+ */
+TimeFields timeFieldsForSpan(const boost::posix_time::ptime& t0,
+                             const boost::posix_time::ptime& t1);
+
+/**
+ * Formats a timestamp down to the given date time part.
+ */
+std::string timeLabel(const boost::posix_time::ptime& value, TimeFields fields);
+
+/**
  * Label for a single tick value. The value is cast back to the data type before
  * the representation is applied, since e.g. an octal stream base does nothing
  * to a double.
- *
- * sub_second only affects a time label. At a step of a second or more the
- * milliseconds are noise, so they are left out.
  */
 std::string label(double value,
                   PropertyDataType dtype,
                   dbContent::Representation repr,
-                  int decimals,
-                  bool sub_second = true);
+                  const LabelStyle& style = LabelStyle());
 
 /**
  * Labels for all ticks of a generation run.

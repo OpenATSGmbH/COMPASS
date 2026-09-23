@@ -1118,7 +1118,13 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
             axis->setLabelsPosition(QCategoryAxis::AxisLabelsPositionOnValue);
 
             connect(axis, &QCategoryAxis::rangeChanged, this,
-                    [ this, axis, axis_id ] (qreal, qreal) { updateAxisTicks(axis, axis_id); });
+                    [ this, chart, axis, axis_id ] (qreal, qreal)
+                    {
+                        updateAxisTicks(axis, axis_id);
+
+                        //the labels changed, so the room they need changed too
+                        ::ChartView::reserveHorizontalLabelMargins(chart);
+                    });
 
             updateAxisTicks(axis, axis_id);
 
@@ -1151,6 +1157,8 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
 
         traced_assert(chart->axes(Qt::Horizontal).size() == 1);
         traced_assert(chart->axes(Qt::Vertical).size() == 1);
+
+        ::ChartView::reserveHorizontalLabelMargins(chart);
     };
 
     if (has_data)

@@ -19,6 +19,7 @@
 #include "util/timeconv.h"
 #include "dbcontent/variable/variable.h"
 #include "histogram_raw.h"
+#include "axisticks.h"
 
 #include <string>
 #include <vector>
@@ -38,16 +39,8 @@
  */
 struct BinLabelStyle
 {
-    /**
-     * Smallest date time part a timestamp label needs to stay unambiguous.
-     */
-    enum class TimeFields
-    {
-        Full = 0,  //date and time, the histogram crosses a year
-        DateTime,  //month, day and time, the histogram crosses a day
-        Time,      //time only
-        TimeMs     //time with milliseconds, the histogram covers seconds
-    };
+    //shared with the axis labels of the other views
+    typedef axis_ticks::TimeFields TimeFields;
 
     int        decimals    = -1;                //decimals of a floating point label, -1 for the default precision
     TimeFields time_fields = TimeFields::Full;
@@ -115,51 +108,10 @@ namespace histogram_helpers
         return str;
     }
 
-    /**
-     * Smallest date time part the labels of a histogram over [t0, t1] need.
-     */
-    inline BinLabelStyle::TimeFields timeFieldsForSpan(const boost::posix_time::ptime& t0,
-                                                       const boost::posix_time::ptime& t1)
-    {
-        if (t0.is_not_a_date_time() || t1.is_not_a_date_time())
-            return BinLabelStyle::TimeFields::Full;
-
-        if (t0.date().year() != t1.date().year())
-            return BinLabelStyle::TimeFields::Full;
-
-        if (t0.date() != t1.date())
-            return BinLabelStyle::TimeFields::DateTime;
-
-        if ((t1 - t0).total_milliseconds() < 2000)
-            return BinLabelStyle::TimeFields::TimeMs;
-
-        return BinLabelStyle::TimeFields::Time;
-    }
-
-    /**
-     * Formats a timestamp down to the given date time part.
-     */
-    inline std::string timeLabel(const boost::posix_time::ptime& value,
-                                 BinLabelStyle::TimeFields fields)
-    {
-        if (value.is_not_a_date_time())
-            return "";
-
-        const std::string time = Utils::Time::toString(value.time_of_day(),
-                                                       fields == BinLabelStyle::TimeFields::TimeMs ? 3 : 0);
-
-        if (fields == BinLabelStyle::TimeFields::Time ||
-            fields == BinLabelStyle::TimeFields::TimeMs)
-            return time;
-
-        const std::string date = Utils::Time::toDateString(value); //YYYY-MM-DD
-
-        //drop the year if the histogram stays inside one
-        if (fields == BinLabelStyle::TimeFields::DateTime && date.size() > 5)
-            return date.substr(5) + " " + time;
-
-        return date + " " + time;
-    }
+    //the span aware time formatting is shared with the axis labels of the other
+    //views, so it lives in axis_ticks
+    using axis_ticks::timeFieldsForSpan;
+    using axis_ticks::timeLabel;
 }
 
 /**

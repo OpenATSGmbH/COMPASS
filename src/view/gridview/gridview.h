@@ -18,6 +18,7 @@
 #pragma once
 
 #include "variableview.h"
+#include "representation.h"
 #include "property.h"
 #include "grid2d_defs.h"
 #include "colormap_defs.h"
@@ -72,6 +73,10 @@ public:
 
     PropertyDataType currentDataType() const; 
     PropertyDataType currentLegendDataType() const; 
+
+    /// Representation the legend labels should use. A count or a statistic is
+    /// no longer the variable itself, so it carries no representation.
+    dbContent::Representation currentLegendRepresentation();
 
     virtual void accept(LatexVisitor& v) override;
 

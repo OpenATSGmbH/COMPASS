@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <type_traits>
 
 namespace axis_ticks
 {
@@ -64,9 +65,10 @@ bool isIntegralDataType(PropertyDataType dtype)
  */
 bool needsCustomLabels(PropertyDataType dtype, dbContent::Representation repr)
 {
-    //a timestamp is drawn on a date time axis, which brings its own labels
+    //on a plain value axis a timestamp reads as milliseconds since epoch. A view
+    //that puts it on a date time axis instead decides that before asking here.
     if (dtype == PropertyDataType::TIMESTAMP)
-        return false;
+        return true;
 
     //a representation always presents the value differently from a plain number
     if (repr != dbContent::Representation::STANDARD)
@@ -156,6 +158,48 @@ double niceHexStep(double raw_step)
 
 /**
  */
+TimeFields timeFieldsForSpan(const boost::posix_time::ptime& t0,
+                             const boost::posix_time::ptime& t1)
+{
+    if (t0.is_not_a_date_time() || t1.is_not_a_date_time())
+        return TimeFields::Full;
+
+    if (t0.date().year() != t1.date().year())
+        return TimeFields::Full;
+
+    if (t0.date() != t1.date())
+        return TimeFields::DateTime;
+
+    if ((t1 - t0).total_milliseconds() < 2000)
+        return TimeFields::TimeMs;
+
+    return TimeFields::Time;
+}
+
+/**
+ */
+std::string timeLabel(const boost::posix_time::ptime& value, TimeFields fields)
+{
+    if (value.is_not_a_date_time())
+        return "";
+
+    const std::string time = Utils::Time::toString(value.time_of_day(),
+                                                   fields == TimeFields::TimeMs ? 3 : 0);
+
+    if (fields == TimeFields::Time || fields == TimeFields::TimeMs)
+        return time;
+
+    const std::string date = Utils::Time::toDateString(value); //YYYY-MM-DD
+
+    //drop the year if the range stays inside one
+    if (fields == TimeFields::DateTime && date.size() > 5)
+        return date.substr(5) + " " + time;
+
+    return date + " " + time;
+}
+
+/**
+ */
 Ticks generate(double vmin,
                double vmax,
                PropertyDataType dtype,
@@ -169,14 +213,19 @@ Ticks generate(double vmin,
 
     const bool integral = isIntegralDataType(dtype);
 
+    const bool is_time_stamp = (dtype == PropertyDataType::TIMESTAMP);
+
     //a single value, or a range too narrow to hold a whole number
     if (vmax - vmin < 1e-12 || (integral && vmax - vmin < 1.0))
     {
         const double v = integral ? std::round((vmin + vmax) / 2.0) : (vmin + vmax) / 2.0;
 
         ticks.values.push_back(v);
-        ticks.step     = 0.0;
-        ticks.decimals = integral ? 0 : MaxDecimals;
+        ticks.step           = 0.0;
+        ticks.style.decimals = (integral || is_time_stamp) ? 0 : MaxDecimals;
+
+        if (is_time_stamp)
+            ticks.style.time_fields = TimeFields::Full;
 
         return ticks;
     }
@@ -188,20 +237,29 @@ Ticks generate(double vmin,
 
     double step;
 
-    switch (repr)
+    if (is_time_stamp)
     {
-        case dbContent::Representation::SECONDS_TO_TIME:
-            step = niceTimeStep(raw_step);
-            break;
-        case dbContent::Representation::DEC_TO_OCTAL:
-            step = niceOctalStep(raw_step);
-            break;
-        case dbContent::Representation::DEC_TO_HEX:
-            step = niceHexStep(raw_step);
-            break;
-        default:
-            step = niceStep(raw_step, integral);
-            break;
+        //a timestamp axis carries milliseconds since epoch, the step table is
+        //in seconds
+        step = niceTimeStep(raw_step / 1000.0) * 1000.0;
+    }
+    else
+    {
+        switch (repr)
+        {
+            case dbContent::Representation::SECONDS_TO_TIME:
+                step = niceTimeStep(raw_step);
+                break;
+            case dbContent::Representation::DEC_TO_OCTAL:
+                step = niceOctalStep(raw_step);
+                break;
+            case dbContent::Representation::DEC_TO_HEX:
+                step = niceHexStep(raw_step);
+                break;
+            default:
+                step = niceStep(raw_step, integral);
+                break;
+        }
     }
 
     //guard against a step so small that the axis would be flooded
@@ -212,10 +270,13 @@ Ticks generate(double vmin,
 
     //a representation brings its own formatting, a plain number needs as many
     //decimals as the step has
-    if (integral || repr != dbContent::Representation::STANDARD)
-        ticks.decimals = 0;
+    if (integral || is_time_stamp || repr != dbContent::Representation::STANDARD)
+        ticks.style.decimals = 0;
     else
-        ticks.decimals = std::min(MaxDecimals, std::max(0, (int) std::ceil(-std::log10(step))));
+        ticks.style.decimals = std::min(MaxDecimals, std::max(0, (int) std::ceil(-std::log10(step))));
+
+    //a Time of Day label only needs its milliseconds below a second
+    ticks.style.sub_second = (step > 0.0 && step < 1.0);
 
     //snap the first tick to a multiple of the step, so that the labels read as
     //round numbers instead of following the data minimum
@@ -241,6 +302,11 @@ Ticks generate(double vmin,
     if (ticks.values.empty())
         ticks.values.push_back(integral ? std::round((vmin + vmax) / 2.0) : (vmin + vmax) / 2.0);
 
+    //a timestamp label only shows the date time parts that differ across the range
+    if (is_time_stamp)
+        ticks.style.time_fields = timeFieldsForSpan(Utils::Time::fromLong((long) ticks.values.front()),
+                                                    Utils::Time::fromLong((long) ticks.values.back()));
+
     return ticks;
 }
 
@@ -254,19 +320,36 @@ struct TickLabelFunctor
     {
         const T v = property_templates::fromDouble<T>(value);
 
-        //at a step of a second or more the milliseconds are noise
-        if (repr == dbContent::Representation::SECONDS_TO_TIME && !sub_second)
+        //a timestamp only shows the date time parts the range needs
+        if constexpr (std::is_same<T, boost::posix_time::ptime>::value)
         {
-            label = Utils::String::timeStringFromDouble((double) value, false);
+            label = timeLabel(v, style.time_fields);
             return true;
         }
+        else
+        {
+            //at a step of a second or more the milliseconds are noise
+            if (repr == dbContent::Representation::SECONDS_TO_TIME && !style.sub_second)
+            {
+                label = Utils::String::timeStringFromDouble((double) value, false);
+                return true;
+            }
 
-        if (dbContent::representationString(label, repr, v))
-            return true;
+            if (dbContent::representationString(label, repr, v))
+                return true;
 
-        label = property_templates::toString<T>(v, decimals);
-
-        return true;
+            //a truth value reads better as a word than as 0 or 1
+            if constexpr (std::is_same<T, bool>::value)
+            {
+                label = v ? "true" : "false";
+                return true;
+            }
+            else
+            {
+                label = property_templates::toString<T>(v, style.decimals);
+                return true;
+            }
+        }
     }
 
     void error(PropertyDataType dtype)
@@ -274,10 +357,9 @@ struct TickLabelFunctor
         label = std::to_string(value);
     }
 
-    double                    value      = 0.0;
-    dbContent::Representation repr       = dbContent::Representation::STANDARD;
-    int                       decimals   = 0;
-    bool                      sub_second = true;
+    double                    value = 0.0;
+    dbContent::Representation repr  = dbContent::Representation::STANDARD;
+    LabelStyle                style;
     std::string               label;
 };
 
@@ -286,14 +368,12 @@ struct TickLabelFunctor
 std::string label(double value,
                   PropertyDataType dtype,
                   dbContent::Representation repr,
-                  int decimals,
-                  bool sub_second)
+                  const LabelStyle& style)
 {
     TickLabelFunctor func;
-    func.value      = value;
-    func.repr       = repr;
-    func.decimals   = decimals;
-    func.sub_second = sub_second;
+    func.value = value;
+    func.repr  = repr;
+    func.style = style;
 
     property_templates::invokeFunctor(dtype, func);
 
@@ -309,10 +389,8 @@ std::vector<std::string> labels(const Ticks& ticks,
     std::vector<std::string> l;
     l.reserve(ticks.values.size());
 
-    const bool sub_second = (ticks.step > 0.0 && ticks.step < 1.0);
-
     for (double v : ticks.values)
-        l.push_back(label(v, dtype, repr, ticks.decimals, sub_second));
+        l.push_back(label(v, dtype, repr, ticks.style));
 
     return l;
 }

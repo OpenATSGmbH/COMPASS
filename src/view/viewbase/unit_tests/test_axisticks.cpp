@@ -17,12 +17,14 @@
 
 #include "catch.hpp"
 #include "axisticks.h"
+#include "timeconv.h"
 
 #include <cmath>
 #include <set>
 
 using namespace axis_ticks;
 using Repr = dbContent::Representation;
+using axis_ticks::TimeFields;
 
 namespace
 {
@@ -65,8 +67,9 @@ TEST_CASE("needsCustomLabels", "[view][axisticks]")
     //a plain double is already presented correctly by Qt
     CHECK(!needsCustomLabels(PropertyDataType::DOUBLE, Repr::STANDARD));
 
-    //a timestamp goes on a date time axis
-    CHECK(!needsCustomLabels(PropertyDataType::TIMESTAMP, Repr::STANDARD));
+    //on a plain value axis a timestamp reads as milliseconds since epoch. The
+    //scatter plot decides on its date time axis before ever asking here.
+    CHECK(needsCustomLabels(PropertyDataType::TIMESTAMP, Repr::STANDARD));
 
     //whole numbers must not be broken into fractional ticks
     CHECK(needsCustomLabels(PropertyDataType::UINT, Repr::STANDARD));
@@ -114,7 +117,7 @@ TEST_CASE("generate returns ascending ticks inside the range", "[view][axisticks
     CHECK(isAscending(ticks.values));
     CHECK(allInside(ticks.values, 0.0, 1000.0));
     CHECK(ticks.step == Approx(200.0));
-    CHECK(ticks.decimals == 0);
+    CHECK(ticks.style.decimals == 0);
 }
 
 TEST_CASE("generate never produces a fractional step for integral types", "[view][axisticks]")
@@ -123,7 +126,7 @@ TEST_CASE("generate never produces a fractional step for integral types", "[view
     auto ticks = generate(0.0, 4.0, PropertyDataType::UCHAR, Repr::STANDARD, 8);
 
     CHECK(ticks.step >= 1.0);
-    CHECK(ticks.decimals == 0);
+    CHECK(ticks.style.decimals == 0);
 
     for (double v : ticks.values)
         CHECK(v == Approx(std::round(v)));
@@ -236,6 +239,62 @@ TEST_CASE("generate does not produce a negative zero tick", "[view][axisticks]")
         CHECK(s != "-0.00");
 
     CHECK(l.front() == "0.00");
+}
+
+TEST_CASE("timeFieldsForSpan picks the smallest unambiguous form", "[view][axisticks]")
+{
+    auto t = [ ] (const std::string& str) { return boost::posix_time::time_from_string(str); };
+
+    CHECK(timeFieldsForSpan(t("2025-12-31 23:00:00"), t("2026-01-01 01:00:00")) == TimeFields::Full);
+    CHECK(timeFieldsForSpan(t("2026-09-22 23:00:00"), t("2026-09-23 01:00:00")) == TimeFields::DateTime);
+    CHECK(timeFieldsForSpan(t("2026-09-23 10:00:00"), t("2026-09-23 11:00:00")) == TimeFields::Time);
+    CHECK(timeFieldsForSpan(t("2026-09-23 10:00:00.000"), t("2026-09-23 10:00:01.500")) == TimeFields::TimeMs);
+}
+
+TEST_CASE("timeLabel drops what the span does not need", "[view][axisticks]")
+{
+    const auto t = boost::posix_time::time_from_string("2026-09-23 10:03:27.500");
+
+    CHECK(timeLabel(t, TimeFields::Full) == "2026-09-23 10:03:27");
+    CHECK(timeLabel(t, TimeFields::DateTime) == "09-23 10:03:27");
+    CHECK(timeLabel(t, TimeFields::Time) == "10:03:27");
+    CHECK(timeLabel(t, TimeFields::TimeMs) == "10:03:27.500");
+}
+
+TEST_CASE("a timestamp axis breaks at round times", "[view][axisticks]")
+{
+    //one hour of data, as milliseconds since epoch
+    const double t0 = (double) Utils::Time::toLong(boost::posix_time::time_from_string("2026-09-23 10:00:00"));
+    const double t1 = (double) Utils::Time::toLong(boost::posix_time::time_from_string("2026-09-23 11:00:00"));
+
+    auto ticks = generate(t0, t1, PropertyDataType::TIMESTAMP, Repr::STANDARD, 8);
+
+    //ten minutes, not a ragged millisecond step
+    CHECK(ticks.step == Approx(600000.0));
+    CHECK(ticks.style.time_fields == TimeFields::Time);
+    CHECK(isAscending(ticks.values));
+    CHECK(allInside(ticks.values, t0, t1));
+
+    auto l = labels(ticks, PropertyDataType::TIMESTAMP, Repr::STANDARD);
+
+    REQUIRE(l.size() == ticks.values.size());
+    CHECK(l.front() == "10:00:00");
+    CHECK(l.back() == "11:00:00");
+}
+
+TEST_CASE("a timestamp axis across a day keeps the date", "[view][axisticks]")
+{
+    const double t0 = (double) Utils::Time::toLong(boost::posix_time::time_from_string("2026-09-22 22:00:00"));
+    const double t1 = (double) Utils::Time::toLong(boost::posix_time::time_from_string("2026-09-23 02:00:00"));
+
+    auto ticks = generate(t0, t1, PropertyDataType::TIMESTAMP, Repr::STANDARD, 8);
+    auto l     = labels(ticks, PropertyDataType::TIMESTAMP, Repr::STANDARD);
+
+    CHECK(ticks.style.time_fields == TimeFields::DateTime);
+
+    REQUIRE(!l.empty());
+    CHECK(l.front() == "09-22 22:00:00");
+    CHECK(l.back() == "09-23 02:00:00");
 }
 
 TEST_CASE("generate rejects a broken range", "[view][axisticks]")
