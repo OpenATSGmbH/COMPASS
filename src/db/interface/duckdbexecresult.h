@@ -69,6 +69,7 @@ private:
     void nextChunk(std::vector<void*>& data_vectors,
                    std::vector<uint64_t*>& valid_vectors,
                    size_t num_cols);
+    void destroyChunk();
     void fetchVectors(std::vector<void*>& data_vectors,
                       std::vector<uint64_t*>& valid_vectors,
                       size_t num_cols);
