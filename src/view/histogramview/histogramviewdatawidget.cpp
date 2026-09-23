@@ -31,6 +31,7 @@
 #include "histogramleafpayload.h"
 #include "histogramviewdatasource.h"
 #include "histogramviewchartview.h"
+#include "axisticks.h"
 #include "layertreemodel.h"
 #include "viewlayertreemodel.h"
 #include "annotationsrootitem.h"
@@ -544,12 +545,8 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
             int max_i = std::max(1, (int)std::ceil(max_count));
 
             // pick a "nice" tick step from {1, 2, 5} x 10^n targeting ~8 ticks
-            double raw_step = max_i / 8.0;
-            double pow10    = std::pow(10.0, std::floor(std::log10(raw_step)));
-            double n        = raw_step / pow10;
-            double nice     = (n <= 1.0) ? 1.0 : (n <= 2.0) ? 2.0 : (n <= 5.0) ? 5.0 : 10.0;
-            int step        = std::max(1, (int)(nice * pow10));
-            int upper       = (max_i / step + 1) * step;
+            int step  = (int)axis_ticks::niceStep(max_i / (double)axis_ticks::TargetTickCountDefault, true);
+            int upper = (max_i / step + 1) * step;
 
             QValueAxis* tmp_chart_y_axis = new QValueAxis;
             tmp_chart_y_axis->setRange(0, upper);
