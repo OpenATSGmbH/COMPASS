@@ -1420,7 +1420,8 @@ void ScatterPlotViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
         info[ "axis_zoom_active"  ] = bounds_valid ? zoomActive(bounds.value(), axis_bounds) : false;
 
-        chart_info[ "num_series"] = series.count();
+        //the selection series is not part of the data
+        chart_info[ "num_series"] = series.count() - (chart_view_->selectionSeries() ? 1 : 0);
 
         nlohmann::json series_infos = nlohmann::json::array();
 
@@ -1430,6 +1431,10 @@ void ScatterPlotViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
         {
             auto xy_series = dynamic_cast<QXYSeries*>(s);
             if (!xy_series)
+                continue;
+
+            //the selection is drawn as a series of its own, it is not data
+            if (s == chart_view_->selectionSeries())
                 continue;
 
             bool line_type = xy_series->type() == QAbstractSeries::SeriesType::SeriesTypeLine;

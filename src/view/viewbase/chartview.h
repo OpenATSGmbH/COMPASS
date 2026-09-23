@@ -27,6 +27,7 @@ class QRubberBand;
 namespace QtCharts
 {
     class QChart;
+    class QAbstractSeries;
     class QAreaSeries;
     class QLineSeries;
 }
@@ -65,6 +66,18 @@ public:
     /// narrower than half a wide label such as a time of day.
     /// Recomputed from the current labels, so a zoom never widens it for good.
     static void reserveHorizontalLabelMargins(QtCharts::QChart* chart);
+
+    /// The series the selection is drawn with, null unless the view uses
+    /// SelectionStyle::SeriesLines. It belongs to the chart like any other
+    /// series, so callers walking the series have to skip it.
+    const QtCharts::QAbstractSeries* selectionSeries() const;
+
+    /// Allocates a line series whose pointer is above every series already in
+    /// the chart. Qt Charts keeps accelerated series in a map keyed by the
+    /// series pointer, so they render in ascending pointer order and only the
+    /// highest one is guaranteed to stay on top. Public so that the invariant
+    /// can be asserted from outside.
+    static QtCharts::QLineSeries* allocateTopMostSeries(const QtCharts::QChart* chart);
 
     virtual void onToolChanged();
 
@@ -105,6 +118,11 @@ protected:
     void endSelection();
 
     bool isSelectionEnabled() const;
+
+    /// Geometry the rubber band should get for a selection region given in
+    /// viewport coordinates. The rubber band is a child of the view, so the
+    /// region has to be mapped out of the viewport.
+
 
 private:
     void createDisplayElements(QtCharts::QChart* chart);

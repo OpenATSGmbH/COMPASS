@@ -21,6 +21,8 @@
 #include <QApplication>
 #include <QEvent>
 #include <QRubberBand>
+
+#include <vector>
 #include <QChart>
 #include <QAreaSeries>
 #include <QLineSeries>
@@ -33,6 +35,49 @@
 #include <QtMath>
 
 const QColor ChartView::SelectionColor = Qt::red;
+
+/**
+ */
+QtCharts::QLineSeries* ChartView::allocateTopMostSeries(const QtCharts::QChart* chart)
+{
+    const void* highest = nullptr;
+
+    for (auto s : chart->series())
+        if (!highest || (const void*)s > highest)
+            highest = (const void*)s;
+
+    //The loop is guaranteed to end. A rejected candidate is held, never freed,
+    //so the allocator cannot hand out that block again. Only finitely many free
+    //blocks sit below the current top, and once they are drained the heap has to
+    //grow upwards. The cap is generous because rebuilding a chart frees the
+    //series of the previous one first, which leaves a pile of blocks of exactly
+    //the right size below the top.
+    const int MaxTries = 4096;
+
+    std::vector<QtCharts::QLineSeries*> rejected;
+    QtCharts::QLineSeries*              series = nullptr;
+
+    for (int i = 0; i < MaxTries && !series; ++i)
+    {
+        auto candidate = new QtCharts::QLineSeries;
+
+        if (!highest || (const void*)candidate > highest)
+            series = candidate;
+        else
+            rejected.push_back(candidate);
+    }
+
+    for (auto s : rejected)
+        delete s;
+
+    if (!series)
+    {
+        logwrn << "no free block above the existing series, selection may be covered";
+        series = new QtCharts::QLineSeries;
+    }
+
+    return series;
+}
 
 /**
  */
@@ -337,13 +382,26 @@ void ChartView::createDisplayElements(QtCharts::QChart* chart)
     }
     else if (sel_style_ == SelectionStyle::SeriesLines)
     {
+        //A widget drawn over the chart cannot win against an accelerated series.
+        //Qt Charts renders those into a QOpenGLWidget carrying
+        //Qt::WA_AlwaysStackOnTop, which composites above every other widget in
+        //the window whatever the stacking order says, and the attribute cannot
+        //be cleared because it comes paired with WA_TranslucentBackground.
+        //So the selection is drawn as an accelerated series of its own, added
+        //last and therefore rendered after the data in the same pass.
         QPen p(Qt::red);
         p.setStyle(Qt::PenStyle::DashLine);
+        p.setWidth(2);
 
-        selection_lines_ = new QtCharts::QLineSeries;
+        //the pointer decides the render order, so the selection has to be
+        //allocated above every series already in the chart, the pooled
+        //"Selected" overlay of the scatter plot included
+        selection_lines_ = allocateTopMostSeries(chart);
         selection_lines_->setUseOpenGL(true);
         selection_lines_->setPen(p);
-        
+
+        chart->addSeries(selection_lines_);
+
         updateSelectionLines(QRectF());
 
         //note: attaching the axis should be called after adding the series to the chart
@@ -351,7 +409,6 @@ void ChartView::createDisplayElements(QtCharts::QChart* chart)
             selection_lines_->attachAxis(axis);
         for (auto axis : chart->axes(Qt::Vertical))
             selection_lines_->attachAxis(axis);
-
     }
     else //SelectionStyle::RubberBand
     {
@@ -467,6 +524,13 @@ void ChartView::updateRubberBand(const QRectF& region)
     }
     
     rubber_band_->show();
+}
+
+/**
+ */
+const QtCharts::QAbstractSeries* ChartView::selectionSeries() const
+{
+    return selection_lines_;
 }
 
 /**
