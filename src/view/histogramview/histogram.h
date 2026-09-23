@@ -24,9 +24,34 @@
 #include <vector>
 #include <memory>
 #include <cmath>
+#include <iomanip>
+#include <sstream>
+#include <type_traits>
 
 #include <boost/date_time.hpp>
 #include <boost/optional.hpp>
+
+/**
+ * What a bin label needs beyond its own value. Derived once per histogram from
+ * the bin width and the covered range, so that all labels of one histogram read
+ * the same way.
+ */
+struct BinLabelStyle
+{
+    /**
+     * Smallest date time part a timestamp label needs to stay unambiguous.
+     */
+    enum class TimeFields
+    {
+        Full = 0,  //date and time, the histogram crosses a year
+        DateTime,  //month, day and time, the histogram crosses a day
+        Time,      //time only
+        TimeMs     //time with milliseconds, the histogram covers seconds
+    };
+
+    int        decimals    = -1;                //decimals of a floating point label, -1 for the default precision
+    TimeFields time_fields = TimeFields::Full;
+};
 
 namespace histogram_helpers
 {
@@ -47,6 +72,93 @@ namespace histogram_helpers
     inline bool checkFinite<boost::posix_time::ptime>(const boost::posix_time::ptime& v)
     {
         return true;
+    }
+
+    /**
+     * Decimals needed to resolve a value of the given magnitude. Returns -1 if
+     * the magnitude carries no information, e.g. for a category histogram.
+     *
+     * The epsilon keeps the result stable at a decade boundary. A width of
+     * 0.001 can come out of a subtraction as 0.0009999999999, which would
+     * otherwise ask for one decimal more.
+     */
+    inline int decimalsForStep(double step)
+    {
+        const int    MaxDecimals = 6;
+        const double Eps         = 1e-9;
+
+        if (!std::isfinite(step) || step <= 0.0)
+            return -1;
+
+        return std::min(MaxDecimals, std::max(0, (int) std::ceil(-std::log10(step) - Eps)));
+    }
+
+    /**
+     * Formats a number with the given decimals, or at the default precision if
+     * decimals is negative. A value that rounds to zero never reads as "-0.00".
+     */
+    inline std::string numberLabel(double value, int decimals)
+    {
+        if (decimals < 0)
+            return std::to_string(value);
+
+        std::ostringstream out;
+        out << std::fixed << std::setprecision(decimals) << value;
+
+        std::string str = out.str();
+
+        //strip the sign of a value that rounded to zero
+        if (!str.empty() && str.front() == '-' &&
+            str.find_first_of("123456789") == std::string::npos)
+            str.erase(0, 1);
+
+        return str;
+    }
+
+    /**
+     * Smallest date time part the labels of a histogram over [t0, t1] need.
+     */
+    inline BinLabelStyle::TimeFields timeFieldsForSpan(const boost::posix_time::ptime& t0,
+                                                       const boost::posix_time::ptime& t1)
+    {
+        if (t0.is_not_a_date_time() || t1.is_not_a_date_time())
+            return BinLabelStyle::TimeFields::Full;
+
+        if (t0.date().year() != t1.date().year())
+            return BinLabelStyle::TimeFields::Full;
+
+        if (t0.date() != t1.date())
+            return BinLabelStyle::TimeFields::DateTime;
+
+        if ((t1 - t0).total_milliseconds() < 2000)
+            return BinLabelStyle::TimeFields::TimeMs;
+
+        return BinLabelStyle::TimeFields::Time;
+    }
+
+    /**
+     * Formats a timestamp down to the given date time part.
+     */
+    inline std::string timeLabel(const boost::posix_time::ptime& value,
+                                 BinLabelStyle::TimeFields fields)
+    {
+        if (value.is_not_a_date_time())
+            return "";
+
+        const std::string time = Utils::Time::toString(value.time_of_day(),
+                                                       fields == BinLabelStyle::TimeFields::TimeMs ? 3 : 0);
+
+        if (fields == BinLabelStyle::TimeFields::Time ||
+            fields == BinLabelStyle::TimeFields::TimeMs)
+            return time;
+
+        const std::string date = Utils::Time::toDateString(value); //YYYY-MM-DD
+
+        //drop the year if the histogram stays inside one
+        if (fields == BinLabelStyle::TimeFields::DateTime && date.size() > 5)
+            return date.substr(5) + " " + time;
+
+        return date + " " + time;
     }
 }
 
@@ -77,25 +189,28 @@ struct HistogramBinT
 
     /**
      */
-    std::string label(dbContent::Variable* data_var) const
+    std::string label(dbContent::Variable* data_var,
+                      const BinLabelStyle& style = BinLabelStyle()) const
     {
-        return generateLabel(midValue(), data_var);
+        return generateLabel(midValue(), data_var, style);
     }
 
     /**
      * Generates a label string for the bins minimum value.
      */
-    std::string labelMin(dbContent::Variable* data_var) const
+    std::string labelMin(dbContent::Variable* data_var,
+                         const BinLabelStyle& style = BinLabelStyle()) const
     {
-        return generateLabel(min_value, data_var);
+        return generateLabel(min_value, data_var, style);
     }
 
     /**
      * Generates a label string for the bins maximum value.
      */
-    std::string labelMax(dbContent::Variable* data_var) const
+    std::string labelMax(dbContent::Variable* data_var,
+                         const BinLabelStyle& style = BinLabelStyle()) const
     {
-        return generateLabel(max_value, data_var);
+        return generateLabel(max_value, data_var, style);
     }
 
     /**
@@ -115,9 +230,14 @@ struct HistogramBinT
 private:
     /**
      * Generates a label string for the bin.
+     * Covers every whole number type. The representation matters here just as
+     * much as it does for a float, e.g. a Mode 3/A code reads as octal.
      */
-    std::string generateLabel(const T& value, dbContent::Variable* data_var) const
+    std::string generateLabel(const T& value, dbContent::Variable* data_var, const BinLabelStyle& style) const
     {
+        if (data_var && data_var->representation() != dbContent::Variable::Representation::STANDARD)
+            return data_var->getAsSpecialRepresentationString(value);
+
         return std::to_string(value);
     }
 
@@ -170,41 +290,37 @@ inline bool HistogramBinT<boost::posix_time::ptime>::isInside(const boost::posix
 }
 
 template<>
-inline std::string HistogramBinT<float>::generateLabel(const float& value, dbContent::Variable* data_var) const
+inline std::string HistogramBinT<float>::generateLabel(const float& value, dbContent::Variable* data_var, const BinLabelStyle& style) const
 {
-    std::string s;
     if (data_var && data_var->representation() != dbContent::Variable::Representation::STANDARD)
-        s = data_var->getAsSpecialRepresentationString(value);
-    else
-        s = std::to_string(value);
+        return data_var->getAsSpecialRepresentationString(value);
 
-    return s;
+    //the bin width decides how many decimals carry information
+    return histogram_helpers::numberLabel((double) value, style.decimals);
 }
 template<>
-inline std::string HistogramBinT<double>::generateLabel(const double& value, dbContent::Variable* data_var) const
+inline std::string HistogramBinT<double>::generateLabel(const double& value, dbContent::Variable* data_var, const BinLabelStyle& style) const
 {
-    std::string s;
     if (data_var && data_var->representation() != dbContent::Variable::Representation::STANDARD)
-        s = data_var->getAsSpecialRepresentationString(value);
-    else
-        s = std::to_string(value);
+        return data_var->getAsSpecialRepresentationString(value);
 
-    return s;
+    return histogram_helpers::numberLabel(value, style.decimals);
 }
 template<>
-inline std::string HistogramBinT<std::string>::generateLabel(const std::string& value, dbContent::Variable* data_var) const
+inline std::string HistogramBinT<std::string>::generateLabel(const std::string& value, dbContent::Variable* data_var, const BinLabelStyle& style) const
 {
     return value;
 }
 template<>
-inline std::string HistogramBinT<bool>::generateLabel(const bool& value, dbContent::Variable* data_var) const
+inline std::string HistogramBinT<bool>::generateLabel(const bool& value, dbContent::Variable* data_var, const BinLabelStyle& style) const
 {
     return (value ? "true" : "false");
 }
 template<>
-inline std::string HistogramBinT<boost::posix_time::ptime>::generateLabel(const boost::posix_time::ptime& value, dbContent::Variable* data_var) const
+inline std::string HistogramBinT<boost::posix_time::ptime>::generateLabel(const boost::posix_time::ptime& value, dbContent::Variable* data_var, const BinLabelStyle& style) const
 {
-    return Utils::Time::toString(value);
+    //a full date time on every bin does not fit under a rotated axis
+    return histogram_helpers::timeLabel(value, style.time_fields);
 }
 
 /**
@@ -270,6 +386,26 @@ public:
     }
 
     /**
+     * How the labels of this histogram should read. Derived from the bin width
+     * and the covered range, so that all bins agree.
+     */
+    BinLabelStyle labelStyle() const
+    {
+        BinLabelStyle style;
+
+        if constexpr (std::is_floating_point<T>::value)
+        {
+            //a label is the bin centre, which sits half a width off the edges.
+            //Resolving half a width keeps two neighbours at least two units
+            //apart, so no two labels can round onto each other.
+            if (step_size_.has_value())
+                style.decimals = histogram_helpers::decimalsForStep((double) step_size_.value() / 2.0);
+        }
+
+        return style;
+    }
+
+    /**
      * Returns the current configuration of the histogram.
      */
     HistogramConfig configuration() const
@@ -308,13 +444,15 @@ public:
         RawHistogram::RawHistogramBins bins;
         bins.reserve(bins_.size() + 1);
 
+        const auto style = labelStyle();
+
         auto addBin = [ & ] (const HistogramBinT<T>& b, RawHistogramBin::Tag tag, const std::string& label)
         {
             bins.push_back(RawHistogramBin(b.count, 
-                                           label.empty() ? b.label(data_var) : label,
+                                           label.empty() ? b.label(data_var, style) : label,
                                            tag,
-                                           label.empty() ? b.labelMin(data_var) : label,
-                                           label.empty() ? b.labelMax(data_var) : label));
+                                           label.empty() ? b.labelMin(data_var, style) : label,
+                                           label.empty() ? b.labelMax(data_var, style) : label));
         };
 
         for (const auto& b : bins_)
@@ -845,6 +983,22 @@ inline bool HistogramT<boost::posix_time::ptime>::createFromRange(size_t n,
 {
     //compute using conversion to long
     return createFromRangeT<long>(n, min_value, max_value);
+}
+
+/**
+ * Labels of a timestamp histogram only need the date time parts that differ
+ * across the covered range.
+ */
+template<>
+inline BinLabelStyle HistogramT<boost::posix_time::ptime>::labelStyle() const
+{
+    BinLabelStyle style;
+
+    if (!bins_.empty())
+        style.time_fields = histogram_helpers::timeFieldsForSpan(bins_.front().min_value,
+                                                                 bins_.back().max_value);
+
+    return style;
 }
 
 /**

@@ -536,7 +536,9 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
             tmp_chart_y_axis->setBase(10.0);
             //tmp_chart_y_axis->setMinorTickCount(10);
             //tmp_chart_y_axis->setMinorTickCount(-1);
-            tmp_chart_y_axis-> setRange(10e-2, std::pow(10.0, 1 + std::ceil(std::log10(max_count))));
+            //ceil already rounds up to the next decade, a further step would
+            //leave a full decade of empty space above the tallest bar
+            tmp_chart_y_axis->setRange(0.1, std::pow(10.0, std::ceil(std::log10(max_count))));
 
             chart_y_axis = tmp_chart_y_axis;
         }
@@ -904,6 +906,17 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
             chart_info[ "y_axis_label" ] = chart_view_->chart()->axes(Qt::Vertical).first()->titleText().toStdString();
             chart_info[ "y_axis_log"   ] = y_axis_log;
             chart_info[ "num_series"   ] = chart_view_->chart()->series().count();
+
+            //the bin labels as the axis really shows them
+            nlohmann::json tick_labels = nlohmann::json::array();
+
+            auto axes_x = chart_view_->chart()->axes(Qt::Horizontal);
+            if (!axes_x.empty())
+                if (auto axis_cat = dynamic_cast<QBarCategoryAxis*>(axes_x.first()))
+                    for (const auto& l : axis_cat->categories())
+                        tick_labels.push_back(l.toStdString());
+
+            chart_info[ "x_axis_tick_labels" ] = tick_labels;
 
             nlohmann::json series_infos = nlohmann::json::array();
 

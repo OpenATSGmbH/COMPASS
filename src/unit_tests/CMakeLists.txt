@@ -18,6 +18,7 @@ include("${CMAKE_SOURCE_DIR}/src/filter/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/reconstruction/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/gui/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/view/viewbase/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/view/histogramview/unit_tests/CMakeLists.txt")
 
 target_include_directories(compass_tests PRIVATE
     "${COMPASS_PATH}/lib"

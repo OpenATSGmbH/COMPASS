@@ -416,12 +416,13 @@ private:
         if (bin >= (int)it->second.numBins())
             return {};
 
-        const auto& b = it->second.getBin(bin);
+        const auto& b     = it->second.getBin(bin);
+        const auto  style = it->second.labelStyle();
 
         BinLabels labels;
-        labels.label     = b.label(label_variable_);
-        labels.label_min = b.labelMin(label_variable_);
-        labels.label_max = b.labelMax(label_variable_);
+        labels.label     = b.label(label_variable_, style);
+        labels.label_min = b.labelMin(label_variable_, style);
+        labels.label_max = b.labelMax(label_variable_, style);
 
         return labels;
     }
