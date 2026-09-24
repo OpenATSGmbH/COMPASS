@@ -19,6 +19,7 @@
 
 #include "configurable.h"
 #include "property.h"
+#include "representation.h"
 #include "stringconv.h"
 #include "logger.h"
 #include "traced_assert.h"
@@ -44,22 +45,9 @@ class Variable : public QObject, public Property, public Configurable
 {
     Q_OBJECT
   public:
-    enum class Representation
-    {  // TODO rework to m3a/ta
-        STANDARD,
-        SECONDS_TO_TIME,
-        DEC_TO_OCTAL,
-        DEC_TO_HEX,
-        FEET_TO_FLIGHTLEVEL,
-        DATA_SRC_NAME,
-        CLIMB_DESCENT,
-        FLOAT_PREC0,
-        FLOAT_PREC1,
-        FLOAT_PREC2,
-        FLOAT_PREC4,
-        LINE_NAME,
-        MLAT_RUS  // JSON int-array of contributing receiver indices, formatted via DBContextManager RU names
-    };
+    // the enum itself lives in representation.h, so that the context-free part
+    // of the formatting can be used without an application instance
+    using Representation = dbContent::Representation;
 
     static Representation stringToRepresentation(const std::string& representation_str);
     static std::string representationToString(Representation representation);
@@ -139,67 +127,20 @@ class Variable : public QObject, public Property, public Configurable
     {
         traced_assert(representation_ != Variable::Representation::STANDARD);
 
-        std::ostringstream out;
         try
         {
-            if (representation_ == Variable::Representation::SECONDS_TO_TIME)
-            {
-                return Utils::String::timeStringFromDouble(value);
-            }
-            else if (representation_ == Variable::Representation::DEC_TO_OCTAL)
-            {
-                out << std::oct << std::setfill('0') << std::setw(4) << value;
-            }
-            else if (representation_ == Variable::Representation::DEC_TO_HEX)
-            {
-                out << std::uppercase << std::hex << std::setfill('0') << std::setw(6) << value;
-            }
-            else if (representation_ == Variable::Representation::FEET_TO_FLIGHTLEVEL)
-            {
-                out << value / 100.0;
-            }
-            else if (representation_ == Variable::Representation::DATA_SRC_NAME)
-            {
+            //everything that can be resolved from the value alone
+            std::string str;
+            if (dbContent::representationString(str, representation_, value))
+                return str;
+
+            //the rest needs the application context
+            if (representation_ == Variable::Representation::DATA_SRC_NAME)
                 return getDataSourcesAsString(std::to_string(value));
-            }
-            else if (representation_ == Variable::Representation::CLIMB_DESCENT)
-            {
-                int numeric_value = static_cast<int>(value);
-                if (numeric_value == 0)
-                    return "LVL";
-                else if (numeric_value == 1)
-                    return "CLB";
-                else if (numeric_value == 2)
-                    return "DSC";
-                else
-                    return "UDF";
-            }
-            else if (representation_ == Variable::Representation::FLOAT_PREC0)
-            {
-                out << std::fixed << std::setprecision(0)<< value;
-            }
-            else if (representation_ == Variable::Representation::FLOAT_PREC1)
-            {
-                out << std::fixed << std::setprecision(1)<< value;
-            }
-            else if (representation_ == Variable::Representation::FLOAT_PREC2)
-            {
-                out << std::fixed << std::setprecision(2)<< value;
-            }
-            else if (representation_ == Variable::Representation::FLOAT_PREC4)
-            {
-                out << std::fixed << std::setprecision(4)<< value;
-            }
-            else if (representation_ == Variable::Representation::LINE_NAME)
-            {
-                return Utils::String::lineStrFrom(value);
-            }
-            else
-            {
-                throw std::runtime_error(
-                    "Variable: getAsSpecialRepresentationString: unknown representation " +
-                    std::to_string((int)representation_));
-            }
+
+            throw std::runtime_error(
+                "Variable: getAsSpecialRepresentationString: unknown representation " +
+                std::to_string((int)representation_));
         }
         catch (std::exception& e)
         {
@@ -212,7 +153,7 @@ class Variable : public QObject, public Property, public Configurable
             ;
         }
 
-        return out.str();
+        return "";
     }
 
     /// Formats a JSON-typed variable's value according to representation_.

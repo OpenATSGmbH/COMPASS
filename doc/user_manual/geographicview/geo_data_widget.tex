@@ -24,7 +24,7 @@ The following operations exist, if no tool is used (from the toolbar):
     - & Arrows & Traverse map \\ \hline
     MMB click \& drag & & - & Rotate map \\ \hline
     MMB scroll \& drag & & - & Zoom map \\ \hline
-    RMB click & & Quick menu & Clear labels/selection/measurements \\ \hline
+    RMB click & & Quick menu & Clear labels/selection/measurements/annotations \\ \hline
     RMB click & Data & Data menu & Various actions \\ \hline
     RMB click & Label & Label menu & Copy label cell, toggle, layer actions \\ \hline
     RMB click \& drag & & - & Zoom map \\ \hline
@@ -133,9 +133,8 @@ Depending on the grouping mode in the 'Config' tab, different parent layer items
 Several operations can be performed by a RMB click on the background map (no data).
 
 \begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_quick_operations.png}
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: RMB click on the background map, with labels, measurements, a selection, View Point annotations and an imported grid present, so all quick menu entries are shown]}}\vspace{1.5cm}}}
   \caption{Geographic View quick menu}
 \end{figure}
 
@@ -144,7 +143,11 @@ Several operations can be performed by a RMB click on the background map (no dat
  \item Clear Measurements: Remove all measurements
  \item Clear Selection: Clear selection
  \item Clear ARTAS Target Report Usage
+ \item Clear View Point Annotations: Remove the View Point annotations from the view
+ \item Clear Grid Annotations: Remove all imported grids from the view
 \end{itemize}
+
+Each entry is only listed if it has something to clear. If nothing can be cleared, no menu is opened. \\
 
 \subsubsection{Selection}
 \label{sec:geoview_selection}

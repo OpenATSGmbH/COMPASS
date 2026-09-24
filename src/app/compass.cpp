@@ -1038,6 +1038,13 @@ void COMPASS::shutdown()
     task_manager_->shutdown();
     task_manager_ = nullptr;
 
+    // A job still in flight keeps using the managers reset below. The live delete job is
+    // the one that hits this: its database cleanup reconnects, and reopening asks for the
+    // DBContent manager. So all jobs have to be done before anything is torn down.
+    // The call waits until no job is left.
+    if (job_manager_)
+        job_manager_->shutdown();
+
     traced_assert(db_interface_);
 
     context_manager_ = nullptr;
@@ -1046,9 +1053,6 @@ void COMPASS::shutdown()
     if (db_interface_->ready())
         dbcontent_manager_->saveTargets();
     dbcontent_manager_ = nullptr;
-
-    if (job_manager_)
-        job_manager_->shutdown();
 
     traced_assert(eval_manager_);
     eval_manager_->close();

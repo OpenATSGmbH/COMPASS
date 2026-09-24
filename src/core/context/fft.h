@@ -19,7 +19,10 @@
 
 #include <json.hpp>
 
+#include <boost/optional.hpp>
+
 #include <string>
+#include <utility>
 
 namespace context
 {
@@ -56,7 +59,60 @@ public:
     // suits remote FFTs measured by long-range radar
     double maxPlotDistanceM() const;
 
+    // --- secondary identification ---
+    // The Mode S address and the Mode 3/A code identify an FFT in the data.
+    // The Mode C code only confirms a match, it never establishes one.
+
+    bool hasModeSAddress() const;
+    unsigned int modeSAddress() const;
+    void modeSAddress(unsigned int value);
+
+    bool hasMode3ACode() const;
+    unsigned int mode3ACode() const;
+    void mode3ACode(unsigned int value);
+
+    bool hasModeCCode() const;
+    float modeCCode() const;
+    void modeCCode(float value);
+
+    /// True if at least one secondary identification value is set. An FFT
+    /// without any such value can not be identified in the data.
+    bool hasSecondaryIdentification() const;
+
+    /**
+     * Tests one target report against this FFT. Returns the match result and
+     * the FFT altitude to be used for the Radar slant range correction.
+     *
+     * A match needs the Mode S address or the Mode 3/A code to exist on both
+     * sides and be equal. The position alone is never sufficient, since
+     * aircraft can overfly the FFT position. Any value that exists on both
+     * sides and differs vetoes the match.
+     *
+     * The Mode C code only ever confirms a match that the Mode 3/A code has
+     * already established. It never qualifies one by itself, so a report is
+     * never taken for the FFT on position and Mode C alone - an aircraft
+     * overflying the FFT position at the same level would match that way.
+     *
+     * ignore_mode_s skips the Mode S address check for data that carries no
+     * aircraft address, e.g. CAT001.
+     */
+    std::pair<bool, float> matches(double latitude_deg, double longitude_deg,
+                                   boost::optional<unsigned int> mode_s_address,
+                                   bool ignore_mode_s,
+                                   boost::optional<unsigned int> mode_a_code,
+                                   boost::optional<float> mode_c_code) const;
+
+    /// The Mode 3/A code 7777 is reserved for SSR monitoring. A target report
+    /// carrying it is always from an FFT, without any further check.
+    static bool isAlwaysFFTCode(boost::optional<unsigned int> mode_a_code);
+
+    /// Default maximum distance between a target report position and the FFT
+    /// position for a position match, in meters. Used when the FFT carries no
+    /// own "max_plot_distance_m" info value.
     static constexpr double DefaultMaxPlotDistanceM = 5000.0;
+
+    /// Mode 3/A code 7777 octal, stored as the 12 bit value.
+    static constexpr unsigned int always_fft_mode_3a_code_ = 4095;
 
     nlohmann::json toJSON() const;
     static FFT fromJSON(const nlohmann::json& j);

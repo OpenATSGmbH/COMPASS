@@ -281,7 +281,7 @@ config \dots import configuration as JSON string, overrides existing settings or
 \textit{imports ASTERIX from defined network UDP streams} \\
 time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
 max\_lines (-m) \dots maximum number of lines per data source during ASTERIX network import, 1..4 \\
-ignore\_future\_ts \dots ignore future timestamps \\
+ignore\_future\_ts \dots keep target reports with future timestamps, skips the future timestamp check \\
 config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_asterix\_network\_stop} \\

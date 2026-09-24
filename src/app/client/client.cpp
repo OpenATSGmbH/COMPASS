@@ -214,7 +214,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("import_asterix_network_max_lines", po::value<int>(&import_asterix_network_max_lines_),
          "maximum number of lines per data source during ASTERIX network import, 1..4")
         ("import_asterix_network_ignore_future_ts", po::bool_switch(&import_asterix_network_ignore_future_ts_),
-         "ignore future timestamps during ASTERIX network import'")
+         "keep target reports with future timestamps during ASTERIX network import, skips the future timestamp check")
         ("import_asterix_network_replay_file", po::value<std::string>(&import_asterix_network_replay_file_),
          "simulates live input by replaying the given IOSS-framed ASTERIX recordings simultaneously "
          "via UDP to a configured network line, e.g. '/data/file1.ff;/data/file2.ff'")

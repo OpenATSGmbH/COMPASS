@@ -8,7 +8,28 @@ There are two kinds of annotations listed under this node.
 \paragraph*{View Point} Annotations provided by an active View Point, e.g. selected evaluation results or externally provided annotation data.
 See \nameref{sec:key_concepts_viewpoints} for an introductory explanation about View Points. \\
 
-View Point annotations persist as long as the providing View Point is active.
+View Point annotations persist as long as the providing View Point is active. \\
+
+Clicking on the symbol of the 'View Point' node will open a context menu containing the following operations:
+
+\begin{table}[H]
+    \center
+    \begin{tabular}{ | l | l |}
+      \hline
+      \textbf{Operation} & \textbf{Description} \\ \hline
+      Show & Shows all annotations of a selected name \\ \hline
+      Hide & Hides all annotations of a selected name \\ \hline
+      Remove All & Removes the View Point annotations from the view \\ \hline
+    \end{tabular}
+\end{table}
+
+The 'Show' and 'Hide' submenus list only annotation names that exist more than once. 'Remove All' is only listed if View Point annotations exist, and removes them in this Geographic View only. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: RMB click on the symbol of the 'View Point' node in the 'Layers' tab, with a View Point active that provides several annotations of the same name]}}\vspace{1.5cm}}}
+  \caption{Geographic View 'View Point' node operations}
+\end{figure}
 
 \paragraph*{Grids} Grid data imported into Geographic View. Grid data can be imported into 
 Geographic View either by sending it from a Grid View (see \nameref{sec:grid_export_geographic}), or as an external GeoTIFF file (see \nameref{sec:geo_geotiff_import}). \\

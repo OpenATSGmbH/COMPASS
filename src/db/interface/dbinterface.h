@@ -25,6 +25,10 @@
 #include <QObject>
 
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/locks.hpp>
+
+#include <future>
+#include <vector>
 
 #include <memory>
 #include <set>
@@ -248,6 +252,10 @@ public:
     DBContentManager& dbContentManager() { return dbcontent_man_; }
 
 protected:
+    void insertBufferInternal(const std::string& table_name, std::shared_ptr<Buffer> buffer);
+    void saveTaskLogInfoInternal(unsigned int msg_id, const nlohmann::json& info);
+    void waitForPendingTaskLogWrites();
+
     COMPASS& compass_;
     DBContentManager& dbcontent_man_;
 
@@ -287,6 +295,10 @@ protected:
     const std::string dbcolumn_content_property_name_{"dbcolumn_content"};
 
     mutable boost::mutex instance_mutex_;
+
+    // task log writes deferred while instance_mutex_ was busy (live cleanup reconnect)
+    std::vector<std::future<void>> pending_task_log_writes_;
+    boost::mutex                   pending_task_log_writes_mutex_;
 
     unsigned int read_chunk_size_;
 

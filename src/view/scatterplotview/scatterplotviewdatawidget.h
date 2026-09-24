@@ -22,6 +22,7 @@
 #include <memory>
 #include <vector>
 
+#include "axisticks.h"
 #include "scatterseries.h"
 #include "scatterplotviewchartview.h"
 
@@ -35,10 +36,12 @@ class LayerTreeModel;
 class AnnotationsRootItem;
 class ScatterLeafPayload;
 
-namespace QtCharts 
+namespace QtCharts
 {
     class QChart;
     class QAbstractAxis;
+    class QCategoryAxis;
+    class QDateTimeAxis;
     //class ScatterPlotViewChartView;
 }
 
@@ -114,12 +117,29 @@ protected:
     virtual void processStash(const VariableViewStash<double>& stash) override final;
     virtual void resetStashDependentData() override final;
 
+    /// Selected points are pooled into the "Selected" overlay series and shown
+    /// under that layer panel id, not under their own group id.
+    virtual std::string selectionLayerId() const override final;
+
     virtual boost::optional<QRectF> getViewBounds() const override final;
 
     void viewInfoJSON_impl(nlohmann::json& info) const override;
 
 private:
-    void updateDateTimeInfoFromVariables();
+    void updateAxisInfoFromVariables();
+    void setAnnotationAxisInfo();
+
+    /// Identity of an axis variable, used to detect a variable change between
+    /// two draws.
+    std::string currentVariableId(int axis_id) const;
+
+    /// Fills the axis with tick positions and labels for its current range.
+    /// Called once on creation and on every range change, since a zoom needs
+    /// ticks of its own.
+    void updateAxisTicks(QtCharts::QCategoryAxis* axis, int axis_id);
+
+    /// Picks the date time format from the span the axis shows.
+    void updateDateTimeFormat(QtCharts::QDateTimeAxis* axis);
 
     DrawState updateChart();
     DrawState updateDataSeries(QtCharts::QChart* chart);
@@ -150,6 +170,15 @@ private:
     bool x_axis_is_datetime_ = false;
     bool y_axis_is_datetime_ = false;
 
+    // Data type and representation per axis (0 = x, 1 = y). The stash flattens
+    // every value to double, so a tick label can only be formatted correctly if
+    // these are kept alongside.
+    PropertyDataType axis_data_type_[ 2 ] = { PropertyDataType::DOUBLE,
+                                              PropertyDataType::DOUBLE };
+
+    dbContent::Representation axis_repr_[ 2 ] = { dbContent::Representation::STANDARD,
+                                                  dbContent::Representation::STANDARD };
+
     DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
     LayerTreeModel*      layer_model_      {nullptr};   // owned by LayerPanelWidget
     AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
@@ -172,4 +201,11 @@ private:
     // data outside that range).
     int last_drawn_anno_group_idx_{-1};
     int last_drawn_anno_idx_      {-1};
+
+    // Identity of the two axis variables the chart was last drawn for. Used by
+    // updateVariableDisplay for the same reason as the annotation indices above:
+    // another variable means another value domain, so the previous axis ranges
+    // would hide the new data. A variable change only reloads when the variable
+    // is not in the loaded buffers, so the plain redraw path needs this check.
+    std::string last_drawn_var_[ 2 ];
 };

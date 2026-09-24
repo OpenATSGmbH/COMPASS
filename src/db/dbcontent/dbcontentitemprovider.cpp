@@ -731,6 +731,10 @@ std::string DBContentItemProvider::itemName(const nlohmann::json& item_id) const
 
         return ds + " " + Utils::String::lineStrFrom(lid) + " TN " + std::to_string(tn);
     }
+    else if (grouping_ == Grouping::Mode3ACode)
+    {
+        return Utils::String::octStringFromInt(item_id.get<unsigned int>(), 4, '0');
+    }
 
     if (item_id.is_string())
         return item_id.get<std::string>();

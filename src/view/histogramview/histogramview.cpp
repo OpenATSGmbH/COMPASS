@@ -58,7 +58,8 @@ HistogramView::HistogramView(nlohmann::json& config, ViewContainer* parent)
                                                         PropertyDataType::LONGINT,
                                                         PropertyDataType::ULONGINT,
                                                         PropertyDataType::FLOAT,
-                                                        PropertyDataType::DOUBLE };
+                                                        PropertyDataType::DOUBLE,
+                                                        PropertyDataType::TIMESTAMP };
 
     addVariable("data_var", "", "data_var", META_OBJECT_NAME, dbcontent_vars::meta_var_timestamp_.name(), true, true, false, valid_types);
 

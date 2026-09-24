@@ -885,7 +885,7 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
     for (const auto& r : result_.transponders)
     {
         std::string acad_str = r.has_acad
-            ? Utils::String::hexStringFromInt(static_cast<int>(r.acad), 6, '0')
+            ? Utils::String::hexStringFromInt(static_cast<int>(r.acad), 6, '0', true)
             : std::string("(unknown)");
         double pd = r.eui == 0 ? 1.0
                               : (static_cast<double>(r.eui) - static_cast<double>(r.mui))

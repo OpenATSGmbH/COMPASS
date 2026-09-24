@@ -31,6 +31,7 @@
 #include "histogramleafpayload.h"
 #include "histogramviewdatasource.h"
 #include "histogramviewchartview.h"
+#include "axisticks.h"
 #include "layertreemodel.h"
 #include "viewlayertreemodel.h"
 #include "annotationsrootitem.h"
@@ -658,7 +659,9 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
             tmp_chart_y_axis->setBase(10.0);
             //tmp_chart_y_axis->setMinorTickCount(10);
             //tmp_chart_y_axis->setMinorTickCount(-1);
-            tmp_chart_y_axis-> setRange(10e-2, std::pow(10.0, 1 + std::ceil(std::log10(max_count))));
+            //ceil already rounds up to the next decade, a further step would
+            //leave a full decade of empty space above the tallest bar
+            tmp_chart_y_axis->setRange(0.1, std::pow(10.0, std::ceil(std::log10(max_count))));
 
             chart_y_axis = tmp_chart_y_axis;
         }
@@ -667,12 +670,8 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
             int max_i = std::max(1, (int)std::ceil(max_count));
 
             // pick a "nice" tick step from {1, 2, 5} x 10^n targeting ~8 ticks
-            double raw_step = max_i / 8.0;
-            double pow10    = std::pow(10.0, std::floor(std::log10(raw_step)));
-            double n        = raw_step / pow10;
-            double nice     = (n <= 1.0) ? 1.0 : (n <= 2.0) ? 2.0 : (n <= 5.0) ? 5.0 : 10.0;
-            int step        = std::max(1, (int)(nice * pow10));
-            int upper       = (max_i / step + 1) * step;
+            int step  = (int)axis_ticks::niceStep(max_i / (double)axis_ticks::TargetTickCountDefault, true);
+            int upper = (max_i / step + 1) * step;
 
             QValueAxis* tmp_chart_y_axis = new QValueAxis;
             tmp_chart_y_axis->setRange(0, upper);
@@ -1030,6 +1029,17 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
             chart_info[ "y_axis_label" ] = chart_view_->chart()->axes(Qt::Vertical).first()->titleText().toStdString();
             chart_info[ "y_axis_log"   ] = y_axis_log;
             chart_info[ "num_series"   ] = chart_view_->chart()->series().count();
+
+            //the bin labels as the axis really shows them
+            nlohmann::json tick_labels = nlohmann::json::array();
+
+            auto axes_x = chart_view_->chart()->axes(Qt::Horizontal);
+            if (!axes_x.empty())
+                if (auto axis_cat = dynamic_cast<QBarCategoryAxis*>(axes_x.first()))
+                    for (const auto& l : axis_cat->categories())
+                        tick_labels.push_back(l.toStdString());
+
+            chart_info[ "x_axis_tick_labels" ] = tick_labels;
 
             nlohmann::json series_infos = nlohmann::json::array();
 

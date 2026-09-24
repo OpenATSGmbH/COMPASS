@@ -5,6 +5,7 @@ target_include_directories(compass_core PUBLIC
 
 target_sources(compass_core
     PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/representation.h"
         "${CMAKE_CURRENT_LIST_DIR}/variable.h"
         "${CMAKE_CURRENT_LIST_DIR}/variablewidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/variableset.h"
@@ -20,6 +21,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/metavariablewidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/metavariabledetailwidget.h"
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/representation.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/variable.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/variablewidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/variableset.cpp"

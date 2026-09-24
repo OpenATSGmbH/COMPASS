@@ -264,7 +264,7 @@ std::string ReconstructorInfo::asStr() const
 
     ss << BaseInfo::asStr();
 
-    ss << " acad " << (acad_ ? String::hexStringFromInt(*acad_, 6, '0') : "''")
+    ss << " acad " << (acad_ ? String::hexStringFromInt(*acad_, 6, '0', true) : "''")
        << " acid '" << (acid_ ? *acid_ : "")  << "'"
        << " m3a " << (mode_a_code_ ? mode_a_code_->asStr() : "");
 

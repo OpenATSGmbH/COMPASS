@@ -280,7 +280,7 @@ std::string Target::aircraftAddressesStr() const
         if (cnt != 0)
             out << ", ";
 
-        out << String::hexStringFromInt(it, 6, '0');
+        out << String::hexStringFromInt(it, 6, '0', true);
         ++cnt;
     }
 

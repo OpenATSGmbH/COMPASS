@@ -79,7 +79,8 @@ compass.interface.sendCommandAndUnpack('set_view_point ' + vp_escaped)
 ## Available commands
 
 **Database**: `create_db`, `open_db` (with `assure_open`), `open_recent_db` (by
-`filename` or `index`), `close_db` (with `strict`), `quit`
+`filename` or `index`), `close_db` (with `strict`), `quit`, `cleanup_db`, `db_info`,
+`get_task_log` (task log entries of the opened database as `entries` array)
 
 **Import**: `import_asterix_file`, `import_asterix_files`, `import_asterix_pcap_file`,
 `import_asterix_pcap_files` (all with `framing`, `line`, `date`, `time_offset`,

@@ -651,9 +651,9 @@ std::string ReconstructorTarget::acadsStr() const
     for (auto ta_it : acads_)
     {
         if (first)
-            ss << String::hexStringFromInt(ta_it, 6, '0');
+            ss << String::hexStringFromInt(ta_it, 6, '0', true);
         else
-            ss << ", " << String::hexStringFromInt(ta_it, 6, '0');
+            ss << ", " << String::hexStringFromInt(ta_it, 6, '0', true);
 
         first = false;
     }
