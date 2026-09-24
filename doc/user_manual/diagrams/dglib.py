@@ -44,6 +44,7 @@ Style rules (shared with make_diagrams.py, keep every diagram consistent):
     A newline in a label starts a second line.
 """
 
+import math
 import os
 import subprocess
 
@@ -210,6 +211,15 @@ class Canvas:
 # block diagram
 # ----------------------------------------------------------------------------
 
+def _edge_point(blk, x, y, dirx, diry):
+    """The point where a ray from (x, y) inside the block, in direction
+    (dirx, diry), leaves the block's rectangle."""
+    tx = ((blk["x1"] if dirx > 0 else blk["x0"]) - x) / dirx if dirx else math.inf
+    ty = ((blk["y1"] if diry > 0 else blk["y0"]) - y) / diry if diry else math.inf
+    t = min(tx, ty)
+    return (x + dirx * t, y + diry * t)
+
+
 class BlockDiagram(Canvas):
     """Blocks on a grid of cells, connected by straight or elbow arrows.
 
@@ -255,13 +265,17 @@ class BlockDiagram(Canvas):
                                 cx=(x0 + x1) / 2.0, cy=(y0 + y1) / 2.0)
 
     def arrow(self, src, dst, label=None, route=None, label_side=None,
-              color=COL_TEXT):
+              offset=0.0, color=COL_TEXT):
         """Connects two blocks. route: 'h' (horizontal), 'v' (vertical),
-        'vh' (out top/bottom, then sideways into the target), 'hv' (out
-        sideways, then down/up into the target), 'hvh' (out sideways, across,
-        in sideways). Chosen automatically when omitted. The label goes next
-        to the longest segment it fits: above a horizontal one, right of a
-        vertical one; label_side 'below' or 'left' flips that."""
+        'd' (a straight line between the two blocks, at any angle), 'vh'
+        (out top/bottom, then sideways into the target), 'hv' (out sideways,
+        then down/up into the target), 'hvh' (out sideways, across, in
+        sideways). Chosen automatically when omitted. The label goes next to
+        the longest segment it fits: above a horizontal one, right of a
+        vertical one; label_side 'below' or 'left' flips that. offset shifts
+        an 'h' arrow up or down, a 'v' arrow left or right and a 'd' arrow
+        sideways (mm), so two arrows between the same blocks, one per
+        direction, run side by side."""
         a, b = self.blocks[src], self.blocks[dst]
         right = b["cx"] > a["cx"]
         down = b["cy"] > a["cy"]
@@ -272,10 +286,17 @@ class BlockDiagram(Canvas):
 
         if route == "h":
             xs, xe = (a["x1"], b["x0"]) if right else (a["x0"], b["x1"])
-            pts = [(xs, a["cy"]), (xe, b["cy"])]
+            pts = [(xs, a["cy"] + offset), (xe, b["cy"] + offset)]
         elif route == "v":
             ys, ye = (a["y1"], b["y0"]) if down else (a["y0"], b["y1"])
-            pts = [(a["cx"], ys), (b["cx"], ye)]
+            pts = [(a["cx"] + offset, ys), (b["cx"] + offset, ye)]
+        elif route == "d":
+            dx, dy = b["cx"] - a["cx"], b["cy"] - a["cy"]
+            length = math.hypot(dx, dy)
+            ux, uy = dx / length, dy / length
+            px, py = -uy * offset, ux * offset          # sideways shift
+            pts = [_edge_point(a, a["cx"] + px, a["cy"] + py, ux, uy),
+                   _edge_point(b, b["cx"] + px, b["cy"] + py, -ux, -uy)]
         elif route == "vh":
             ys = a["y1"] if down else a["y0"]
             xe = b["x0"] if right else b["x1"]

@@ -5,11 +5,23 @@ steps, a time line. Diagrams of the user manual are **generated from Python
 scripts**, not drawn by hand, so they share one style and can be corrected
 later by editing a few lines.
 
-The style is deliberately simple. A diagram is a few labeled blocks, thin
-arrows, plain text and dashed guide lines. There is no UML vocabulary: no
-actors, activation bars, interaction frames, stereotypes or block variants.
-What a block is (a file, a task, a window) is said by its label, not by its
-shape or color.
+Two rules decide what a diagram looks like:
+
+- **Prefer simple block diagrams.** Components as blocks, the data path or
+  the flow as arrows, and nothing else. This is the form for component
+  diagrams, data path and flow diagrams, and mode overviews. A sequence
+  diagram is the exception, only where the order of steps is the point, and
+  then only as steps and plain text lines.
+- **Do not draw UML-like diagrams.** No state machines with guards and
+  labeled transitions, no sequence diagrams with actors, activation bars and
+  frames, no class or component notation. They are too complex for the
+  manual. What a block is (a file, a task, a window) is said by its label,
+  not by a shape, a stereotype or a color; what an arrow means is said by
+  the text next to the figure, and only where needed by a short label.
+
+A diagram is a few labeled blocks, thin arrows, plain text and dashed guide
+lines. If it needs more than that, it is too complex: split it, or describe
+it in the text.
 
 ## Folder
 
@@ -18,6 +30,7 @@ doc/user_manual/diagrams/
   readme_diagrams.md     this file
   dglib.py               library: BlockDiagram, SequenceDiagram, render_png
   make_diagrams.py       the time line diagrams of the ASTERIX import chapter
+  live_mode.py           the diagrams of the Live Mode chapter
   examples.py            one block and one sequence example
   examples/              the rendered examples (not included in the manual)
   svg/                   SVG sources of the manual's diagrams (checked in)
@@ -83,8 +96,12 @@ problem cases only.
 
 Rules:
 
+- As few elements as possible. Three blocks and five arrows are a good
+  diagram; a label on every arrow, a statement line and a group box on top
+  of that are not.
 - Color is never the only carrier of information. Every block and every
-  marker has a text label, and so has every arrow that carries a meaning.
+  marker has a text label. An arrow gets a label only where the text next to
+  the figure does not already say what it is.
 - Text never sits on a line. Arrow labels go inside their segment, the
   sequence diagram interrupts a lifeline behind a label that crosses it.
 - Labels are short phrases in sentence case, American English, no trailing
@@ -92,8 +109,9 @@ Rules:
   newline in a label starts a second line. Manual vocabulary applies (see
   `readme_user_manual.md`).
 - One block style. Do not invent shapes, fills or icons for kinds of blocks.
-- A statement line above the diagram says what it shows, as a sentence
-  ("in 'Live: Running' mode, network data is stored and displayed").
+- A statement line above the diagram is optional. The time lines use it for
+  the result of a case; a figure whose caption says what it shows does not
+  need one.
 - Block diagrams: data flows left to right, or top to bottom. At most 4
   columns by 3 rows.
 - Sequence diagrams: participants across the top as blocks, time runs
@@ -131,11 +149,15 @@ render_png(svg, "../live/figures/live_mode_flow.png")
   from the canvas width.
 - `block(key, col, row, label, span=1, alert=False)`: `span` merges columns,
   `alert` draws the dark red problem marker.
-- `arrow(src, dst, label=None, route=None, label_side=None)`: the route is
-  chosen from the positions ('h' horizontal, 'v' vertical, 'vh' out top or
-  bottom then sideways, 'hv', 'hvh'). The label goes next to the longest
+- `arrow(src, dst, label=None, route=None, label_side=None, offset=0.0)`:
+  the route is chosen from the positions ('h' horizontal, 'v' vertical, 'vh'
+  out top or bottom then sideways, 'hv', 'hvh'); 'd' is a straight line at
+  any angle, for a triangle of blocks. The label goes next to the longest
   segment it fits: above a horizontal one, right of a vertical one;
-  `label_side='below'` or `'left'` flips that.
+  `label_side='below'` or `'left'` flips that. `offset` shifts an 'h' arrow
+  up or down, a 'v' arrow left or right and a 'd' arrow sideways by that
+  many mm, for two arrows between the same blocks, one per direction (see
+  `live_mode.py`).
 - `note(col, row, label)`: plain text on a cell, fractions allowed.
 
 ### Sequence diagram
