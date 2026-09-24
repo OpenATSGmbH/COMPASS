@@ -47,7 +47,7 @@ Activating Live mode will influence the following UI components.
 \section{Data Sources \& Processing}
 \label{sec:data_sources_live_mode}
 
-For each data source, the defined lines are shown (as L1 ... L4 buttons). If no data is received (on a defined Line), the respective button is disabled (greyed out). If data is received over a line, it will become active and the received data stored in the database. A \textbf{update interval} needs to be specified for the respective data source, then the line button background color will become green if current data was received during the last 2 update intervals. \\
+For each data source, the defined lines are shown (as L1 ... L4 buttons). If data is received over a line, the received data is stored in the database. The line button background color becomes green if data was received on the line during the last 30 seconds, otherwise the button is shown in gray. In 'Live: Paused' mode, a line without any received data is disabled (grayed out). \\
 
 The line button can also be toggled - if a bold border is shown the data from the respective line stored not only in the database but \textbf{also} in main memory (RAM). The most recent 5 minutes of data are kept in main memory (RAM), and can be visualized in the existing Views. \\
 
@@ -202,7 +202,7 @@ In the file 'compass.json' the following parameters can be set:
 
 \subsection{Change Cache or Database Time Duration}
 
-Per default, the RAM cache is limited to 5 minutes, while the database content is limited to 60 minutes. To change these durations (if workstation performance allows for it), the following values can be set in the file 'db\_content.json' (values in minutes):
+Per default, the RAM cache is limited to 5 minutes, while the database content is limited to 60 minutes. To change these durations (if workstation performance allows for it), the following values can be set in the file 'compass.json' (values in minutes):
 
 \begin{lstlisting}
 ...
