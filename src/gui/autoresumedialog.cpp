@@ -33,6 +33,9 @@ AutoResumeDialog::AutoResumeDialog(unsigned int resume_time_s, QWidget *parent, 
     //setModal(true);
     setWindowModality(Qt::ApplicationModal);
 
+    // do not steal os focus from other applications when popping up
+    setAttribute(Qt::WA_ShowWithoutActivating, true);
+
     time_remaining_ = resume_time_s;
 
     QVBoxLayout* main_layout = new QVBoxLayout();

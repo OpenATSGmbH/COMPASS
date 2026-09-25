@@ -47,6 +47,9 @@ CreateARTASAssociationsStatusDialog::CreateARTASAssociationsStatusDialog(
 
     setModal(true);
 
+    // do not steal os focus from other applications when popping up
+    setAttribute(Qt::WA_ShowWithoutActivating, true);
+
     setMinimumSize(QSize(800, 600));
 
     QFont font_bold;

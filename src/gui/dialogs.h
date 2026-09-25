@@ -39,4 +39,6 @@ public:
 
     static QString getSaveFileName(QWidget* parent, const QString& caption,
                                    const QString& dir, const QString& filter = QString());
+
+    static QWidget* statusDialogParent();
 };

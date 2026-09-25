@@ -16,6 +16,7 @@
  */
 
 #include "reconstructortask.h"
+#include "dialogs.h"
 
 #include "compass.h"
 #include "reconstructortaskdialog.h"
@@ -480,7 +481,7 @@ void ReconstructorTask::run()
     tmp_label->setTextFormat(Qt::RichText);
 
     progress_dialog_.reset(new QProgressDialog("Reconstructing...", "Cancel", 0, 100,
-                                               QApplication::activeWindow()));
+                                               Dialogs::statusDialogParent()));
     progress_dialog_->setWindowTitle("Reconstructing References");
     progress_dialog_->setMinimumWidth(600);
     progress_dialog_->setLabel(tmp_label);
@@ -488,6 +489,8 @@ void ReconstructorTask::run()
     progress_dialog_->setAutoReset(false);
     progress_dialog_->setCancelButton(nullptr);
     progress_dialog_->setModal(true);
+    // do not steal os focus from other applications when popping up
+    progress_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
 
     progress_dialog_->show();
 
@@ -1260,12 +1263,14 @@ void ReconstructorTask::runCancelledSlot()
 
     cancelled_ = true;
 
-    QMessageBox* msg_box = new QMessageBox(QApplication::activeWindow());
+    QMessageBox* msg_box = new QMessageBox(Dialogs::statusDialogParent());
 
     msg_box->setWindowTitle("Cancelling Reconstruction");
     msg_box->setText("Please wait ...");
     msg_box->setStandardButtons(QMessageBox::NoButton);
     msg_box->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    msg_box->setAttribute(Qt::WA_ShowWithoutActivating, true);
     msg_box->show();
 
     Async::waitAndProcessEventsFor(50);
