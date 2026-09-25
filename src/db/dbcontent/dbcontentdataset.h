@@ -58,6 +58,11 @@ public:
     const BufferMap& buffers() const { return buffers_; }
     bool empty() const;
 
+    // true if the buffers honor the engine's read-set contract: every view-required
+    // variable of the read set is present as a column. Engine loads guarantee this,
+    // live feed data does not (columns no record carried are absent).
+    virtual bool fulfillsReadSet() const { return true; }
+
     const DBContentDataIndex& index() const;                 // lazily (re)built
     const dbContent::DBContentAccessor& accessor() const;    // via index
 
