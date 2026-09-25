@@ -1053,6 +1053,8 @@ void LabelGenerator::filterMode3aActive(bool filter_active)
         emit labelConfigChanged();
 
     config_.filter_mode3a_active_ = filter_active;
+
+    emit labelOptionsChangedSignal();
 }
 
 std::string LabelGenerator::filterMode3aValues() const
@@ -1067,6 +1069,8 @@ void LabelGenerator::filterMode3aValues(const std::string &filter_values)
 
     config_.filter_mode3a_values_ = filter_values;
     updateM3AValuesFromStr(config_.filter_mode3a_values_);
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::filterTIActive() const
@@ -1080,6 +1084,8 @@ void LabelGenerator::filterTIActive(bool filter_active)
         emit labelConfigChanged();
 
     config_.filter_ti_active_ = filter_active;
+
+    emit labelOptionsChangedSignal();
 }
 
 std::string LabelGenerator::filterTIValues() const
@@ -1094,6 +1100,8 @@ void LabelGenerator::filterTIValues(const std::string &filter_values)
 
     config_.filter_ti_values_ = filter_values;
     updateTIValuesFromStr(config_.filter_ti_values_);
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::filterTAActive() const
@@ -1107,6 +1115,8 @@ void LabelGenerator::filterTAActive(bool filter_active)
         emit labelConfigChanged();
 
     config_.filter_ta_active_ = filter_active;
+
+    emit labelOptionsChangedSignal();
 }
 
 std::string LabelGenerator::filterTAValues() const
@@ -1121,6 +1131,8 @@ void LabelGenerator::filterTAValues(const std::string &filter_values)
 
     config_.filter_ta_values_ = filter_values;
     updateTAValuesFromStr(config_.filter_ta_values_);
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::filterModecMinActive() const
@@ -1134,6 +1146,8 @@ void LabelGenerator::filterModecMinActive(bool value)
         emit labelConfigChanged();
 
     config_.filter_modec_min_active_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 float LabelGenerator::filterModecMinValue() const
@@ -1147,6 +1161,8 @@ void LabelGenerator::filterModecMinValue(float value)
         emit labelConfigChanged();
 
     config_.filter_modec_min_value_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::filterModecMaxActive() const
@@ -1160,6 +1176,8 @@ void LabelGenerator::filterModecMaxActive(bool value)
         emit labelConfigChanged();
 
     config_.filter_modec_max_active_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 float LabelGenerator::filterModecMaxValue() const
@@ -1173,6 +1191,8 @@ void LabelGenerator::filterModecMaxValue(float value)
         emit labelConfigChanged();
 
     config_.filter_modec_max_value_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::filterModecNullWanted() const
@@ -1186,6 +1206,8 @@ void LabelGenerator::filterModecNullWanted(bool value)
         emit labelConfigChanged();
 
     config_.filter_modec_null_wanted_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 void LabelGenerator::checkLabelConfig()
@@ -1601,6 +1623,8 @@ void LabelGenerator::filterPrimaryOnlyActive(bool value)
         emit labelConfigChanged();
 
     config_.filter_primary_only_active_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 float LabelGenerator::labelOpacity() const
