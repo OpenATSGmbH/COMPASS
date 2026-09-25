@@ -12,6 +12,7 @@ import math
 import os
 
 from dglib import BlockDiagram, render_png, MARGIN, W_TOTAL
+from make_diagrams import Diagram as TimeLine
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_SVG = os.path.join(HERE, "svg")
@@ -42,13 +43,52 @@ def modes():
     return d, "modes"
 
 
-DIAGRAMS = [modes]
+def flow():
+    """Where the live data goes in 'Live: Running': every network line is
+    decoded by the ASTERIX import and stored in the database; the toggled
+    lines, restricted by the filters, are also kept in main memory, which the
+    Geographic View displays. Rendered as figures/live_flow.png."""
+    d = BlockDiagram("live_flow", cols=4, rows=3, block_w=30.0)
+    d.block("net", 0, 1, "Network lines\nL1 to L4")
+    d.block("imp", 1, 1, "ASTERIX import")
+    d.block("db", 2, 0, "Database\nlast 60 min")
+    d.block("ram", 2, 2, "RAM\nlast 5 min")
+    d.block("geo", 3, 2, "Geographic View\n1 s update")
+    d.arrow("net", "imp", "UDP")
+    d.arrow("imp", "db", "all lines", route="vh")
+    d.arrow("imp", "ram", "selected lines\nfilters", route="vh")
+    d.arrow("ram", "geo")
+    return d, "live_flow"
+
+
+def data_windows():
+    """The two time windows of the live data on one time line: the database
+    holds the last 60 minutes, main memory the last 5 minutes. Data within
+    the last 5 minutes is inspected in 'Live: Running' with the time
+    scrollbar, older data in 'Live: Paused' with a load from the database.
+    Times are minutes before now, the axis is broken between the two parts.
+    No statement line above the figure. Rendered as
+    figures/live_data_windows.png."""
+    d = TimeLine("live_data_windows", [(-60.0, -15.0), (-6.0, 0.0)], 2)
+    d.block(0, -60.0, 0.0, "Database: last 60 min", "60 min ago", "now")
+    d.block(1, -5.0, 0.0, "RAM: last 5 min", "5 min ago", None)
+    d.tick(-35.0, "35 min ago", "'Live: Paused', load")
+    d.tick(-3.0, "3 min ago", "'Live: Running'")
+    d.note((4.0 + W_TOTAL - 14.0) / 2.0, d.axis_y + 8.0, "(axis not to scale)")
+    d.axis()
+    return d, "live_data_windows"
+
+
+DIAGRAMS = [modes, flow, data_windows]
 
 
 def main():
     for build in DIAGRAMS:
         diagram, png_name = build()
-        svg_path = diagram.write(OUT_SVG)
+        if isinstance(diagram, TimeLine):
+            svg_path = diagram.write()           # writes into svg/ itself
+        else:
+            svg_path = diagram.write(OUT_SVG)
         print("wrote " + svg_path)
         png_path = render_png(svg_path, os.path.join(OUT_PNG, png_name + ".png"))
         print("rendered " + png_path)

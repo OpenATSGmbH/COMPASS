@@ -51,6 +51,20 @@ For each data source, the defined lines are shown (as L1 ... L4 buttons). If dat
 
 The line button can also be toggled - if a bold border is shown the data from the respective line stored not only in the database but \textbf{also} in main memory (RAM). The most recent 5 minutes of data are kept in main memory (RAM), and can be visualized in the existing Views. \\
 
+\begin{figure}[H]
+  \center
+    \includegraphics[width=15cm]{figures/live_flow.png}
+  \caption{Live Mode Data Flow}
+\end{figure}
+
+The two time windows decide where data is inspected from: the most recent 5 minutes are shown in 'Live: Running' using the time window of the Geographic View, older data is loaded from the database in 'Live: Paused' mode. \\
+
+\begin{figure}[H]
+  \center
+    \includegraphics[width=15cm]{figures/live_data_windows.png}
+  \caption{Live Mode Data Windows}
+\end{figure}
+
 Please \textbf{note} that currently only the Geographic View displays data in live mode, for performance reasons the other Views are inactive.
 
 \section{Sensor Status Tool}
