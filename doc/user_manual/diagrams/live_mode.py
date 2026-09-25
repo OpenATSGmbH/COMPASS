@@ -55,9 +55,13 @@ def flow():
     d.block("ram", 2, 2, "RAM\nlast 5 min")
     d.block("geo", 3, 2, "Geographic View\n1 s update")
     d.arrow("net", "imp", "UDP")
-    d.arrow("imp", "db", "all lines", route="vh")
-    d.arrow("imp", "ram", "selected lines\nfilters", route="vh")
+    d.arrow("imp", "db", "all data", route="vh")
+    d.arrow("imp", "ram", route="vh")
     d.arrow("ram", "geo")
+    # the label is too wide for the arrow's horizontal run (23 mm), so it is
+    # set as a note just below that run, clear of the vertical segment and of
+    # the RAM block
+    d.note(1.132, 2.288, "selected data sources,\nlines, applied filters")
     return d, "live_flow"
 
 

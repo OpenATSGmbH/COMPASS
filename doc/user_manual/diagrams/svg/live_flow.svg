@@ -22,9 +22,9 @@
   <polyline points="38.00,30.50 46.00,30.50" fill="none" stroke="#131334" stroke-width="0.35" stroke-linejoin="round" marker-end="url(#arrow-dark)" />
   <text x="42.00" y="28.29" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">UDP</text>
   <polyline points="61.00,25.00 61.00,13.50 84.00,13.50" fill="none" stroke="#131334" stroke-width="0.35" stroke-linejoin="round" marker-end="url(#arrow-dark)" />
-  <text x="72.50" y="11.29" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">all lines</text>
+  <text x="72.50" y="11.29" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">all data</text>
   <polyline points="61.00,36.00 61.00,47.50 84.00,47.50" fill="none" stroke="#131334" stroke-width="0.35" stroke-linejoin="round" marker-end="url(#arrow-dark)" />
-  <text x="72.50" y="41.78" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">selected lines</text>
-  <text x="72.50" y="45.29" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">filters</text>
   <polyline points="114.00,47.50 122.00,47.50" fill="none" stroke="#131334" stroke-width="0.35" stroke-linejoin="round" marker-end="url(#arrow-dark)" />
+  <text x="66.02" y="51.59" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">selected data sources,</text>
+  <text x="66.02" y="55.10" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">lines, applied filters</text>
 </svg>
