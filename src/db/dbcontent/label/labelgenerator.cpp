@@ -720,7 +720,7 @@ unsigned int LabelGenerator::currentLOD() const
 
 void LabelGenerator::currentLOD(unsigned int current_lod)
 {
-    if (config_.auto_label_ != current_lod)
+    if (config_.current_lod_ != current_lod)
         emit labelConfigChanged();
 
     config_.current_lod_ = current_lod;
@@ -748,6 +748,7 @@ void LabelGenerator::toggleUseUTN()
     config_.use_utn_as_id_ = !config_.use_utn_as_id_;
 
     emit labelConfigChanged();
+    emit labelContentsChangedSignal();
 }
 
 bool LabelGenerator::useUTN()
@@ -1051,6 +1052,8 @@ void LabelGenerator::filterMode3aActive(bool filter_active)
         emit labelConfigChanged();
 
     config_.filter_mode3a_active_ = filter_active;
+
+    emit labelOptionsChangedSignal();
 }
 
 std::string LabelGenerator::filterMode3aValues() const
@@ -1065,6 +1068,8 @@ void LabelGenerator::filterMode3aValues(const std::string &filter_values)
 
     config_.filter_mode3a_values_ = filter_values;
     updateM3AValuesFromStr(config_.filter_mode3a_values_);
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::filterTIActive() const
@@ -1078,6 +1083,8 @@ void LabelGenerator::filterTIActive(bool filter_active)
         emit labelConfigChanged();
 
     config_.filter_ti_active_ = filter_active;
+
+    emit labelOptionsChangedSignal();
 }
 
 std::string LabelGenerator::filterTIValues() const
@@ -1092,6 +1099,8 @@ void LabelGenerator::filterTIValues(const std::string &filter_values)
 
     config_.filter_ti_values_ = filter_values;
     updateTIValuesFromStr(config_.filter_ti_values_);
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::filterTAActive() const
@@ -1105,6 +1114,8 @@ void LabelGenerator::filterTAActive(bool filter_active)
         emit labelConfigChanged();
 
     config_.filter_ta_active_ = filter_active;
+
+    emit labelOptionsChangedSignal();
 }
 
 std::string LabelGenerator::filterTAValues() const
@@ -1119,6 +1130,8 @@ void LabelGenerator::filterTAValues(const std::string &filter_values)
 
     config_.filter_ta_values_ = filter_values;
     updateTAValuesFromStr(config_.filter_ta_values_);
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::filterModecMinActive() const
@@ -1132,6 +1145,8 @@ void LabelGenerator::filterModecMinActive(bool value)
         emit labelConfigChanged();
 
     config_.filter_modec_min_active_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 float LabelGenerator::filterModecMinValue() const
@@ -1145,6 +1160,8 @@ void LabelGenerator::filterModecMinValue(float value)
         emit labelConfigChanged();
 
     config_.filter_modec_min_value_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::filterModecMaxActive() const
@@ -1158,6 +1175,8 @@ void LabelGenerator::filterModecMaxActive(bool value)
         emit labelConfigChanged();
 
     config_.filter_modec_max_active_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 float LabelGenerator::filterModecMaxValue() const
@@ -1171,6 +1190,8 @@ void LabelGenerator::filterModecMaxValue(float value)
         emit labelConfigChanged();
 
     config_.filter_modec_max_value_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 bool LabelGenerator::filterModecNullWanted() const
@@ -1184,6 +1205,8 @@ void LabelGenerator::filterModecNullWanted(bool value)
         emit labelConfigChanged();
 
     config_.filter_modec_null_wanted_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 void LabelGenerator::checkLabelConfig()
@@ -1282,10 +1305,15 @@ float LabelGenerator::labelDirectionAngle(LabelDirection direction)
 
 void LabelGenerator::labelDirection (unsigned int ds_id, LabelDirection direction)
 {
-    if (config_.label_directions_[to_string(ds_id)] != direction)
-        emit labelConfigChanged();
+    string key = to_string(ds_id);
 
-    config_.label_directions_[to_string(ds_id)] = direction;
+    if (config_.label_directions_.contains(key) && config_.label_directions_.at(key) == direction)
+        return;
+
+    config_.label_directions_[key] = direction;
+
+    emit labelConfigChanged();
+    emit labelOptionsChangedSignal(); // label positions depend on direction
 }
 
 void LabelGenerator::editLabelContents(const std::string& dbcontent_name)
@@ -1329,13 +1357,25 @@ unsigned int LabelGenerator::labelLine (unsigned int ds_id) // returns 0...3
 
 void LabelGenerator::labelLine (unsigned int ds_id, unsigned int line)
 {
+    if (!setLabelLine(ds_id, line))
+        return;
+
+    emit labelConfigChanged();
+    emit labelOptionsChangedSignal(); // labeled target reports depend on line
+}
+
+// sets the label line without emitting any signals, returns if changed
+bool LabelGenerator::setLabelLine (unsigned int ds_id, unsigned int line)
+{
     traced_assert(line <= 3);
     string key = to_string(ds_id);
 
-    if (config_.label_lines_[key] != line)
-        emit labelConfigChanged();
+    if (config_.label_lines_.contains(key) && config_.label_lines_.at(key) == line)
+        return false;
 
     config_.label_lines_[key] = line;
+
+    return true;
 }
 
 // updates lines to be label according to available lines with loaded data
@@ -1366,14 +1406,12 @@ void LabelGenerator::updateAvailableLabelLines()
                 continue; // has data in current line
             else // set to first line with data
             {
-                labelLine(ds_id, lines_map.begin()->first);
-                something_changed = true;
+                something_changed |= setLabelLine(ds_id, lines_map.begin()->first);
             }
         }
         else // set to first line as default
         {
-            labelLine(ds_id, 0);
-            something_changed = true;
+            something_changed |= setLabelLine(ds_id, 0);
         }
 
         logdbg << "ds_id " << ds_id
@@ -1383,7 +1421,9 @@ void LabelGenerator::updateAvailableLabelLines()
     if (something_changed)
     {
         logdbg << "emitting change";
+        emit labelConfigChanged();
         emit labelLinesChangedSignal();
+        emit labelOptionsChangedSignal(); // emit once for all changed lines
     }
 }
 
@@ -1391,13 +1431,19 @@ void LabelGenerator::editLabelContentsDoneSlot()
 {
     loginf;
 
+    traced_assert(label_edit_dialog_);
+
     auto cfg_new = label_edit_dialog_->labelConfig();
 
-    if (config_.label_config_ != cfg_new)
-        emit labelConfigChanged();
+    bool changed = config_.label_config_ != cfg_new;
 
-    traced_assert(label_edit_dialog_);
     config_.label_config_ = cfg_new;
+
+    if (changed)
+    {
+        emit labelConfigChanged();
+        emit labelContentsChangedSignal(); // emit after assignment, receivers regenerate texts
+    }
 
     label_edit_dialog_->close();
 
@@ -1503,6 +1549,33 @@ void LabelGenerator::addVariables (const std::string& dbcontent_name, dbContent:
     }
 }
 
+bool LabelGenerator::labelVariablesLoaded()
+{
+    // same buffers as used for label text generation
+    std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.compass().viewManager().currentBuffers();
+
+    for (auto& buf_it : buffers)
+    {
+        if (!dbcont_manager_.dbContent(buf_it.first).containsTargetReports()
+                || !config_.label_config_.contains(buf_it.first))
+            continue;
+
+        VariableSet label_set;
+        addVariables(buf_it.first, label_set);
+
+        for (auto var : label_set.getSet())
+        {
+            if (!buf_it.second->hasAnyPropertyNamed(var->name()))
+            {
+                loginf << "label variable '" << var->name() << "' not loaded in " << buf_it.first;
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 bool LabelGenerator::declutterLabels() const
 {
     return config_.declutter_labels_;
@@ -1549,6 +1622,8 @@ void LabelGenerator::filterPrimaryOnlyActive(bool value)
         emit labelConfigChanged();
 
     config_.filter_primary_only_active_ = value;
+
+    emit labelOptionsChangedSignal();
 }
 
 float LabelGenerator::labelOpacity() const

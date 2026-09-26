@@ -16,6 +16,7 @@
  */
 
 #include "loadcontroller.h"
+#include "dialogs.h"
 #include "viewmanager.h"
 #include "compass.h"
 #include "dbcontent/dbcontentmanager.h"

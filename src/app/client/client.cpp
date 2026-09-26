@@ -43,6 +43,7 @@
 #include <sstream>
 
 #include <QApplication>
+#include <QScreen>
 #include "questiondialog.h"
 
 #include <QMessageBox>
@@ -979,6 +980,21 @@ void Client::checkAndSetupConfig()
         loginf << "startup version " << VERSION;
         string config_version = config.getString("version");
         loginf << "configuration version " << config_version;
+
+        // display scaling info for later issue analysis
+        loginf << "qt version " << qVersion()
+               << " platform " << QGuiApplication::platformName().toStdString()
+               << " high dpi scaling "
+               << (QCoreApplication::testAttribute(Qt::AA_DisableHighDpiScaling) ? "disabled" : "enabled");
+
+        for (const QScreen* screen : QGuiApplication::screens())
+            loginf << "screen " << screen->name().toStdString()
+                   << " geometry " << screen->geometry().width() << "x" << screen->geometry().height()
+                   << " device pixel ratio " << screen->devicePixelRatio()
+                   << " logical dpi " << screen->logicalDotsPerInch()
+                   << " physical dpi " << screen->physicalDotsPerInch()
+                   << " physical size mm " << screen->physicalSize().width() << "x" << screen->physicalSize().height()
+                   << (screen == QGuiApplication::primaryScreen() ? " primary" : "");
 
         config_manager_ = std::make_unique<ConfigurationManager>();
         config_manager_->init(config.getString("main_configuration_file"));

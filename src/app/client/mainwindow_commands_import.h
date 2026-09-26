@@ -172,6 +172,32 @@ protected:
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
+// import_asterix_network_pause
+struct RTCommandImportASTERIXNetworkPause : public rtcommand::RTCommand
+{
+    RTCommandImportASTERIXNetworkPause();
+
+protected:
+    virtual bool run_impl() override;
+
+    DECLARE_RTCOMMAND(import_asterix_network_pause,
+                      "pauses the live display of the running ASTERIX network import, the database keeps receiving data")
+    DECLARE_RTCOMMAND_NOOPTIONS
+};
+
+// import_asterix_network_resume
+struct RTCommandImportASTERIXNetworkResume : public rtcommand::RTCommand
+{
+    RTCommandImportASTERIXNetworkResume();
+
+protected:
+    virtual bool run_impl() override;
+
+    DECLARE_RTCOMMAND(import_asterix_network_resume,
+                      "resumes the live display of the paused ASTERIX network import")
+    DECLARE_RTCOMMAND_NOOPTIONS
+};
+
 // import_json
 struct RTCommandImportJSONFile : public rtcommand::RTCommand
 {

@@ -89,7 +89,9 @@ compass.interface.sendCommandAndUnpack('set_view_point ' + vp_escaped)
 (`;`-separated IOSS recordings replayed simultaneously over UDP to a configured
 network line keeping their relative timing, ToD aligned to the current time
 unless `time_offset` is given), `replay_speed`, `replay_line`,
-`replay_stop_at_end`), `import_asterix_network_stop`,
+`replay_stop_at_end`), `import_asterix_network_pause` (pauses the
+live display, the database keeps receiving data, returns when the paused display is
+loaded), `import_asterix_network_resume`, `import_asterix_network_stop`,
 `import_json`, `import_gps_trail` (with `name`, `sac`, `sic`, `tod_offset`, `date`,
 `mode3a` octal, `address` hex, `id`, `config`), `import_view_points`,
 `import_sectors_json`, `import_data_sources`
