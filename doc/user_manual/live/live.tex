@@ -20,7 +20,9 @@ There exist 3 application modes:
 \end{figure}
 
 
-The application switches in Live mode when ASTERIX data is imported from the network, as described in \nameref{sec:ui_import_asterix_network}. \\ 
+The intended use of Live mode is surveillance monitoring: verifying that the surveillance sensors and their network lines deliver data as expected, and the quick inspection of reported issues. Live mode is not intended for operational control, and it is not designed as a permanent recording solution. To make this limitation visible to the users of an installation, the Geographic View can display a configurable status text, for instance 'Not for Control Purposes', as described in \nameref{sec:live_online_offline}. \\
+
+The application switches in Live mode when ASTERIX data is imported from the network, as described in \nameref{sec:ui_import_asterix_network}. \\
 
 Please note that the data sources have to be correctly set up for reading network traffic, as described in \nameref{sec:configure_datasources_network}. \\
 
@@ -160,7 +162,9 @@ To indicate if the displayed data is the currently most recent or from a previou
   \caption{Geographic View Overload Message}
 \end{figure} 
 
-The online state text is shown if the application is in Live:Running mode and the most recent data is displayed. In all other states (other application mode or previous time window displayed) the offline state text is displayed.
+The online state text is shown if the application is in Live:Running mode and the most recent data is displayed. In all other states (other application mode or previous time window displayed) the offline state text is displayed. \\
+
+The text captions are configurable, so an installation can display an intended-use note instead, for instance 'Not for Control Purposes' as the offline state text or as both texts.
 
 
 \section{Overload Detection}
