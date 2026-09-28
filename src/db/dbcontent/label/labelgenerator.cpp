@@ -1588,8 +1588,9 @@ void LabelGenerator::declutterLabels(bool declutter_labels)
 
     config_.declutter_labels_ = declutter_labels;
 
-    if (!config_.declutter_labels_)
-        emit labelClearAllSignal(); // since since do not update otherwise - reason unknown
+    // old workaround, also deleted manual labels. positions are reset by the options update below.
+    //if (!config_.declutter_labels_)
+    //    emit labelClearAllSignal(); // since since do not update otherwise - reason unknown
 
     emit labelOptionsChangedSignal(); // updates
 }
