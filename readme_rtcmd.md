@@ -79,12 +79,15 @@ compass.interface.sendCommandAndUnpack('set_view_point ' + vp_escaped)
 ## Available commands
 
 **Database**: `create_db`, `open_db` (with `assure_open`), `open_recent_db` (by
-`filename` or `index`), `close_db` (with `strict`), `quit`
+`filename` or `index`), `close_db` (with `strict`), `quit`, `cleanup_db`, `db_info`,
+`get_task_log` (task log entries of the opened database as `entries` array)
 
 **Import**: `import_asterix_file`, `import_asterix_files`, `import_asterix_pcap_file`,
 `import_asterix_pcap_files` (all with `framing`, `line`, `date`, `time_offset`,
 `ignore_time_jumps`, `config`), `import_asterix_network` (with `time_offset`,
-`max_lines`, `ignore_future_ts`, `config`), `import_asterix_network_stop`,
+`max_lines`, `ignore_future_ts`, `config`), `import_asterix_network_pause` (pauses the
+live display, the database keeps receiving data, returns when the paused display is
+loaded), `import_asterix_network_resume`, `import_asterix_network_stop`,
 `import_json`, `import_gps_trail` (with `name`, `sac`, `sic`, `tod_offset`, `date`,
 `mode3a` octal, `address` hex, `id`, `config`), `import_view_points`,
 `import_sectors_json`, `import_data_sources`

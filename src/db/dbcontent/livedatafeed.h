@@ -41,6 +41,9 @@ public:
     LiveDataFeed(DBContentManager& dbcont_man);
     virtual ~LiveDataFeed();
 
+    // live buffers contain what the inserts produced - sparse columns are legitimate
+    bool fulfillsReadSet() const override { return false; }
+
     // Live view read set per content (from ViewManager); the prune target.
     void setReadSetProvider(std::function<dbContent::VariableSet(const std::string&)> provider);
 

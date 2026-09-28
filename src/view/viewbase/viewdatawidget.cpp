@@ -259,7 +259,8 @@ void ViewDataWidget::updateFromSource(const DBContentDataSet& source,
 {
     logdbg;
 
-    data_ = source.buffers();
+    data_                   = source.buffers();
+    data_fulfills_read_set_ = source.fulfillsReadSet();
 
     if (item_provider_)
     {
@@ -279,8 +280,9 @@ void ViewDataWidget::clearData()
 {
     logdbg;
 
-    data_       = {};
-    draw_state_ = DrawState::NotDrawn;
+    data_                   = {};
+    data_fulfills_read_set_ = true;
+    draw_state_             = DrawState::NotDrawn;
 
     count_null_.reset();
     count_nan_.reset();

@@ -26,6 +26,16 @@ class DBInterface;
 class DBConnection;
 
 /**
+ * Returns the memory DuckDB's allocator holds back to the operating system.
+ *
+ * DuckDB statically links its own jemalloc under prefixed symbols (duckdb_je_*), which
+ * neither malloc_trim nor a preloaded allocator reaches, so its freed pages stay in the
+ * process without this. Meant to be called after work that read a lot of data, not per
+ * query. Does nothing if the allocator control symbol is not present.
+ */
+void duckDBClean();
+
+/**
  */
 class DuckDBInstance : public DBInstance
 {

@@ -46,6 +46,7 @@ class LabelGenerator : public QObject
 signals:
     void labelConfigChanged();
     void labelOptionsChangedSignal();
+    void labelContentsChangedSignal(); // label texts of existing labels need to be regenerated
     void labelLinesChangedSignal();
     void labelClearAllSignal();
     //void configChanged();
@@ -133,6 +134,7 @@ public:
     nlohmann::json labelConfig() const;
 
     void addVariables (const std::string& dbcontent_name, dbContent::VariableSet& read_set);
+    bool labelVariablesLoaded(); // checks if all label variables are contained in the current buffers
 
     bool declutterLabels() const;
     void declutterLabels(bool declutter_labels);
@@ -157,6 +159,8 @@ public:
 
 protected:
     //virtual void checkSubConfigurables();
+
+    bool setLabelLine (unsigned int ds_id, unsigned int line);
 
     bool updateM3AValuesFromStr(const std::string& values);
     bool updateTIValuesFromStr(const std::string& values);

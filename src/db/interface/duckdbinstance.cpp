@@ -24,6 +24,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include <dlfcn.h>
+
 #include <QString>
 #include <QFile>
 
@@ -58,6 +60,25 @@ namespace
         duckdb_config config_;
         bool ok_ = false;
     };
+}
+
+/**
+ */
+void duckDBClean()
+{
+    //jemalloc's mallctl, looked up at runtime: the symbol is prefixed and internal to
+    //libduckdb, so it may vanish with a DuckDB update - then this is a no-op
+    using MallctlFn = int (*)(const char*, void*, size_t*, void*, size_t);
+    static MallctlFn mallctl = (MallctlFn) dlsym(RTLD_DEFAULT, "duckdb_je_mallctl");
+
+    if (!mallctl)
+        return;
+
+    //arena 4096 is jemalloc's MALLCTL_ARENAS_ALL: purge the dirty pages of every arena
+    int ret = mallctl("arena.4096.purge", nullptr, nullptr, nullptr, 0);
+
+    if (ret != 0)
+        logwrn << "purging duckdb allocator arenas failed with " << ret;
 }
 
 /**

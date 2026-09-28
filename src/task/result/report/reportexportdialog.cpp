@@ -67,6 +67,11 @@ ReportExportDialog::ReportExportDialog(TaskResult& task_result,
     setWindowTitle("Export Report as " + format_str_);
     setMinimumWidth(800);
 
+    // batch export: pure progress display, do not steal os focus from other
+    // applications when popping up (interactive mode needs focus for its inputs)
+    if (no_interaction_mode_)
+        setAttribute(Qt::WA_ShowWithoutActivating, true);
+
     createUI();
     configureUI(export_dir);
 

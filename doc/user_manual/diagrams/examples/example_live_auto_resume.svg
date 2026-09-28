@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="160.0mm" height="81.32mm" viewBox="0 0 160.0 81.32">
+  <defs>
+    <marker id="arrow-dark" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="2.4" markerHeight="2.0" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 4 L 0 8 z" fill="#131334" /></marker>
+    <marker id="arrow-alert" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="2.4" markerHeight="2.0" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 4 L 0 8 z" fill="#A02020" /></marker>
+  </defs>
+  <rect x="0" y="0" width="160.0" height="81.32" fill="#FFFFFF" />
+  <text x="80.00" y="4.15" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">auto-resume from 'Live: Paused'</text>
+  <rect x="8.00" y="9.00" width="42.67" height="10.00" rx="1.2" ry="1.2" fill="#DCDCF7" stroke="#3B3AA7" stroke-width="0.4" />
+  <text x="29.33" y="15.12" font-family="DejaVu Sans, Verdana, sans-serif" font-size="3.2" fill="#131334" text-anchor="middle">User</text>
+  <rect x="58.67" y="9.00" width="42.67" height="10.00" rx="1.2" ry="1.2" fill="#DCDCF7" stroke="#3B3AA7" stroke-width="0.4" />
+  <text x="80.00" y="15.12" font-family="DejaVu Sans, Verdana, sans-serif" font-size="3.2" fill="#131334" text-anchor="middle">Main Window</text>
+  <rect x="109.33" y="9.00" width="42.67" height="10.00" rx="1.2" ry="1.2" fill="#DCDCF7" stroke="#3B3AA7" stroke-width="0.4" />
+  <text x="130.67" y="15.12" font-family="DejaVu Sans, Verdana, sans-serif" font-size="3.2" fill="#131334" text-anchor="middle">ASTERIX import</text>
+  <polyline points="29.33,27.10 80.00,27.10" fill="none" stroke="#131334" stroke-width="0.35" stroke-linejoin="round" marker-end="url(#arrow-dark)" />
+  <text x="54.67" y="25.80" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">'Pause' pressed</text>
+  <polyline points="80.00,39.61 130.67,39.61" fill="none" stroke="#131334" stroke-width="0.35" stroke-linejoin="round" marker-end="url(#arrow-dark)" />
+  <text x="105.33" y="34.80" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">switch to 'Live: Paused',</text>
+  <text x="105.33" y="38.31" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">network data is cached</text>
+  <text x="80.00" y="46.41" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">60 minutes pass ('auto_live_running_resume_ask_time')</text>
+  <polyline points="80.00,54.01 29.33,54.01" fill="none" stroke="#131334" stroke-width="0.35" stroke-linejoin="round" marker-end="url(#arrow-dark)" />
+  <text x="54.67" y="52.71" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">'Resume to Live:Running' dialog</text>
+  <text x="80.00" y="60.80" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">no action for 1 minute ('auto_live_running_resume_ask_wait_time')</text>
+  <polyline points="80.00,71.92 130.67,71.92" fill="none" stroke="#131334" stroke-width="0.35" stroke-linejoin="round" marker-end="url(#arrow-dark)" />
+  <text x="105.33" y="67.11" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">switch to 'Live: Running',</text>
+  <text x="105.33" y="70.62" font-family="DejaVu Sans, Verdana, sans-serif" font-size="2.7" fill="#131334" text-anchor="middle">cached data is stored</text>
+  <line x1="29.33" y1="19.00" x2="29.33" y2="77.32" stroke="#9897EE" stroke-width="0.35" stroke-dasharray="1.2,1.2" />
+  <line x1="80.00" y1="19.00" x2="80.00" y2="42.50" stroke="#9897EE" stroke-width="0.35" stroke-dasharray="1.2,1.2" />
+  <line x1="80.00" y1="48.42" x2="80.00" y2="56.90" stroke="#9897EE" stroke-width="0.35" stroke-dasharray="1.2,1.2" />
+  <line x1="80.00" y1="62.82" x2="80.00" y2="77.32" stroke="#9897EE" stroke-width="0.35" stroke-dasharray="1.2,1.2" />
+  <line x1="130.67" y1="19.00" x2="130.67" y2="77.32" stroke="#9897EE" stroke-width="0.35" stroke-dasharray="1.2,1.2" />
+</svg>

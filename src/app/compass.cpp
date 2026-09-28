@@ -16,6 +16,7 @@
  */
 
 #include "compass.h"
+#include "dialogs.h"
 #include "config.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -635,16 +636,18 @@ bool COMPASS::createNewDBFileFromMemory()
 
     traced_assert(canCreateDBFileFromMemory());
 
-    QMessageBox* msg_box = new QMessageBox(QApplication::activeWindow());
+    QMessageBox* msg_box = new QMessageBox(Dialogs::statusDialogParent());
 
     msg_box->setWindowTitle("Exporting Database");
     msg_box->setText("Please wait ...");
     msg_box->setStandardButtons(QMessageBox::NoButton);
     msg_box->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    msg_box->setAttribute(Qt::WA_ShowWithoutActivating, true);
     msg_box->show();
 
     Async::waitAndProcessEventsFor(50);
-        
+
     auto result = createNewDBFileFromMemoryInternal();
 
     //@TODO: filename should be set as last path?
@@ -693,12 +696,14 @@ bool COMPASS::exportDBFile(const std::string& filename)
     traced_assert(db_opened_);
     traced_assert(!db_export_in_progress_);
 
-    QMessageBox* msg_box = new QMessageBox(QApplication::activeWindow());
+    QMessageBox* msg_box = new QMessageBox(Dialogs::statusDialogParent());
 
     msg_box->setWindowTitle("Exporting Database");
     msg_box->setText("Please wait ...");
     msg_box->setStandardButtons(QMessageBox::NoButton);
     msg_box->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    msg_box->setAttribute(Qt::WA_ShowWithoutActivating, true);
     msg_box->show();
 
     Async::waitAndProcessEventsFor(50);
@@ -1025,6 +1030,13 @@ void COMPASS::shutdown()
     task_manager_->shutdown();
     task_manager_ = nullptr;
 
+    // A job still in flight keeps using the managers reset below. The live delete job is
+    // the one that hits this: its database cleanup reconnects, and reopening asks for the
+    // DBContent manager. So all jobs have to be done before anything is torn down.
+    // The call waits until no job is left.
+    if (job_manager_)
+        job_manager_->shutdown();
+
     traced_assert(db_interface_);
 
     context_manager_ = nullptr;
@@ -1033,9 +1045,6 @@ void COMPASS::shutdown()
     if (db_interface_->ready())
         dbcontent_manager_->saveTargets();
     dbcontent_manager_ = nullptr;
-
-    if (job_manager_)
-        job_manager_->shutdown();
 
     traced_assert(eval_manager_);
     eval_manager_->close();

@@ -78,6 +78,11 @@ protected:
                      int var_y,
                      bool correct_datetime = false);
 
+    /// Derived hook: the layer panel id under which selected points are shown,
+    /// for views that pool them into one overlay layer instead of leaving them
+    /// in their own group layer. Empty if the view does not do that.
+    virtual std::string selectionLayerId() const { return {}; }
+
     const VariableViewStash<double>& getStash() const { return stash_; }
 
 private:

@@ -1501,56 +1501,16 @@ pair<bool, float> DBContextManager::isFromFFT(double latitude_deg, double longit
         return {false, 0};
 
     // special case: mode 3/A code 7777 (4095 octal) always treated as FFT
-    if (mode_a_code && *mode_a_code == 4095)
+    if (FFT::isAlwaysFFTCode(mode_a_code))
         return {true, 0};
 
     for (const auto& f : activeContext().ffts())
     {
-        bool match = true;
+        auto result = f.matches(latitude_deg, longitude_deg, mode_s_address, ignore_mode_s,
+                                mode_a_code, mode_c_code);
 
-        // mode S address check
-        if (!ignore_mode_s && f.info().contains("mode_s_address") && mode_s_address)
-        {
-            if (f.info().at("mode_s_address").get<unsigned int>() != *mode_s_address)
-                match = false;
-        }
-
-        // mode 3/A check
-        if (match && f.info().contains("mode_3a_code") && mode_a_code)
-        {
-            if (f.info().at("mode_3a_code").get<unsigned int>() != *mode_a_code)
-                match = false;
-        }
-
-        // mode C check
-        if (match && f.info().contains("mode_c_code") && mode_c_code)
-        {
-            if (f.info().at("mode_c_code").get<float>() != *mode_c_code)
-                match = false;
-        }
-
-        // position check
-        if (match && f.hasPosition())
-        {
-            // approximate distance check using GeographicLib or simple haversine
-            double dlat = latitude_deg - f.latitude();
-            double dlon = longitude_deg - f.longitude();
-
-            // rough distance in meters (1 degree ~ 111km lat, cos(lat)*111km lon)
-            double cos_lat = cos(latitude_deg * M_PI / 180.0);
-            double dist_m = sqrt(dlat * dlat + dlon * dlon * cos_lat * cos_lat) * 111000.0;
-
-            if (dist_m > max_fft_plot_distance_m_)
-                match = false;
-        }
-
-        if (match)
-        {
-            float alt = 0;
-            if (f.hasAltitude())
-                alt = static_cast<float>(f.altitude());
-            return {true, alt};
-        }
+        if (result.first)
+            return result;
     }
 
     return {false, 0};

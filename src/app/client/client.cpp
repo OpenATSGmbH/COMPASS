@@ -43,6 +43,7 @@
 #include <sstream>
 
 #include <QApplication>
+#include <QScreen>
 #include "questiondialog.h"
 
 #include <QMessageBox>
@@ -214,7 +215,7 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("import_asterix_network_max_lines", po::value<int>(&import_asterix_network_max_lines_),
          "maximum number of lines per data source during ASTERIX network import, 1..4")
         ("import_asterix_network_ignore_future_ts", po::bool_switch(&import_asterix_network_ignore_future_ts_),
-         "ignore future timestamps during ASTERIX network import'")
+         "keep target reports with future timestamps during ASTERIX network import, skips the future timestamp check")
         ("asterix_framing", po::value<std::string>(&asterix_framing),
          "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'. if not set configuration value is used")
         ("asterix_decoder_cfg", po::value<std::string>(&asterix_decoder_cfg),
@@ -953,6 +954,21 @@ void Client::checkAndSetupConfig()
         loginf << "startup version " << VERSION;
         string config_version = config.getString("version");
         loginf << "configuration version " << config_version;
+
+        // display scaling info for later issue analysis
+        loginf << "qt version " << qVersion()
+               << " platform " << QGuiApplication::platformName().toStdString()
+               << " high dpi scaling "
+               << (QCoreApplication::testAttribute(Qt::AA_DisableHighDpiScaling) ? "disabled" : "enabled");
+
+        for (const QScreen* screen : QGuiApplication::screens())
+            loginf << "screen " << screen->name().toStdString()
+                   << " geometry " << screen->geometry().width() << "x" << screen->geometry().height()
+                   << " device pixel ratio " << screen->devicePixelRatio()
+                   << " logical dpi " << screen->logicalDotsPerInch()
+                   << " physical dpi " << screen->physicalDotsPerInch()
+                   << " physical size mm " << screen->physicalSize().width() << "x" << screen->physicalSize().height()
+                   << (screen == QGuiApplication::primaryScreen() ? " primary" : "");
 
         config_manager_ = std::make_unique<ConfigurationManager>();
         config_manager_->init(config.getString("main_configuration_file"));

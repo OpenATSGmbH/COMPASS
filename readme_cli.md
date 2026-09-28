@@ -64,7 +64,7 @@ Notes:
 | `--import_asterix_network` | Import ASTERIX from defined network UDP streams |
 | `--import_asterix_network_time_offset arg` | Additive time offset for network import, `HH:MM:SS.ZZZ` |
 | `--import_asterix_network_max_lines arg` | Max lines per data source during network import, 1..4 |
-| `--import_asterix_network_ignore_future_ts` | Silently drop target reports with future timestamps |
+| `--import_asterix_network_ignore_future_ts` | Keep target reports with future timestamps, skips the future timestamp check |
 | `--asterix_framing arg` | Framing: `none` (raw/netto), `ioss`, `ioss_seq`, `rff` |
 | `--asterix_decoder_cfg arg` | Decoder config JSON string (see below) |
 | `--import_asterix_parameters arg` | Import parameter overrides JSON string, same parameter set as the runtime commands' `config` argument (see "ASTERIX import configuration parameters" in `readme_rtcmd.md`) |

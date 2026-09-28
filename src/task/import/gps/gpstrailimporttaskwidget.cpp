@@ -410,7 +410,8 @@ void GPSTrailImportTaskWidget::updateConfig ()
     traced_assert(set_target_address_check_);
     set_target_address_check_->setChecked(task_.setTargetAddress());
     traced_assert(target_address_edit_);
-    target_address_edit_->setText(String::hexStringFromInt(task_.targetAddress()).c_str());
+    target_address_edit_->setText(
+                String::hexStringFromInt(task_.targetAddress(), 6, '0', true).c_str());
 
     traced_assert(set_callsign_check_);
     set_callsign_check_->setChecked(task_.setCallsign());

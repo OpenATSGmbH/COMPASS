@@ -139,8 +139,8 @@ LabelGeneratorWidget::LabelGeneratorWidget(LabelGenerator& label_generator)
 
     QLineEdit* filter_mode3a_edit = new QLineEdit();
     filter_mode3a_edit->setText(label_generator_.filterMode3aValues().c_str());
-    connect(filter_mode3a_edit, &QLineEdit::textEdited,
-            this, &LabelGeneratorWidget::filterMode3AChangedSlot);
+    connect(filter_mode3a_edit, &QLineEdit::editingFinished, // apply on enter or focus loss
+            [ this, filter_mode3a_edit ] () { filterMode3AChangedSlot(filter_mode3a_edit->text()); });
     filter_layout->addWidget(filter_mode3a_edit, row, 1);
 
     // mc
@@ -161,9 +161,15 @@ LabelGeneratorWidget::LabelGeneratorWidget(LabelGenerator& label_generator)
         auto validator0 = new TextFieldDoubleValidator(ModeCMin, ModeCMax, Precision);
         validator0->setNotation(QDoubleValidator::Notation::StandardNotation);
         filter_modec_min_edit->setValidator(validator0);
-        filter_modec_min_edit->setText(QString::number(label_generator_.filterModecMinValue(), 'f', Precision)); 
-        connect(filter_modec_min_edit, &QLineEdit::textEdited,
-                this, &LabelGeneratorWidget::filterModeCMinChangedSlot);
+        filter_modec_min_edit->setText(QString::number(label_generator_.filterModecMinValue(), 'f', Precision));
+        connect(filter_modec_min_edit, &QLineEdit::editingFinished, // apply on enter or focus loss
+                [ this, filter_modec_min_edit ] () { filterModeCMinChangedSlot(filter_modec_min_edit->text()); });
+        connect(filter_modec_min_edit, &QLineEdit::textEdited, // range slider changes, apply immediately
+                [ this, filter_modec_min_edit ] (const QString& text)
+                {
+                    if (!filter_modec_min_edit->hasFocus())
+                        filterModeCMinChangedSlot(text);
+                });
         filter_layout->addWidget(filter_modec_min_edit, row, 1);
 
         ++row;
@@ -178,8 +184,14 @@ LabelGeneratorWidget::LabelGeneratorWidget(LabelGenerator& label_generator)
         validator1->setNotation(QDoubleValidator::Notation::StandardNotation);
         filter_modec_max_edit->setValidator(validator1);
         filter_modec_max_edit->setText(QString::number(label_generator_.filterModecMaxValue(), 'f', Precision));
-        connect(filter_modec_max_edit, &QLineEdit::textEdited,
-                this, &LabelGeneratorWidget::filterModeCMaxChangedSlot);
+        connect(filter_modec_max_edit, &QLineEdit::editingFinished, // apply on enter or focus loss
+                [ this, filter_modec_max_edit ] () { filterModeCMaxChangedSlot(filter_modec_max_edit->text()); });
+        connect(filter_modec_max_edit, &QLineEdit::textEdited, // range slider changes, apply immediately
+                [ this, filter_modec_max_edit ] (const QString& text)
+                {
+                    if (!filter_modec_max_edit->hasFocus())
+                        filterModeCMaxChangedSlot(text);
+                });
         filter_layout->addWidget(filter_modec_max_edit, row, 1);
 
         ++row;
@@ -209,8 +221,8 @@ LabelGeneratorWidget::LabelGeneratorWidget(LabelGenerator& label_generator)
 
     QLineEdit* filter_ti_edit = new QLineEdit();
     filter_ti_edit->setText(label_generator_.filterTIValues().c_str());
-    connect(filter_ti_edit, &QLineEdit::textEdited,
-            this, &LabelGeneratorWidget::filterTIChangedSlot);
+    connect(filter_ti_edit, &QLineEdit::editingFinished, // apply on enter or focus loss
+            [ this, filter_ti_edit ] () { filterTIChangedSlot(filter_ti_edit->text()); });
     filter_layout->addWidget(filter_ti_edit, row, 1);
 
     // ta
@@ -223,8 +235,8 @@ LabelGeneratorWidget::LabelGeneratorWidget(LabelGenerator& label_generator)
 
     QLineEdit* filter_ta_edit = new QLineEdit();
     filter_ta_edit->setText(label_generator_.filterTAValues().c_str());
-    connect(filter_ta_edit, &QLineEdit::textEdited,
-            this, &LabelGeneratorWidget::filterTAChangedSlot);
+    connect(filter_ta_edit, &QLineEdit::editingFinished, // apply on enter or focus loss
+            [ this, filter_ta_edit ] () { filterTAChangedSlot(filter_ta_edit->text()); });
     filter_layout->addWidget(filter_ta_edit, row, 1);
 
     // psr only
@@ -360,6 +372,9 @@ void LabelGeneratorWidget::filterMode3AChangedSlot(const QString& text)
 {
     string values = text.toStdString();
 
+    if (values == label_generator_.filterMode3aValues()) // unchanged, e.g. focus loss
+        return;
+
     loginf << "value " << values;
 
     label_generator_.filterMode3aValues(values);
@@ -376,6 +391,9 @@ void LabelGeneratorWidget::filterModeCMinChangedSlot(const QString& text)
     bool ok;
 
     float value = text.toFloat(&ok);
+
+    if (ok && value == label_generator_.filterModecMinValue()) // unchanged, e.g. focus loss
+        return;
 
     if (ok)
         label_generator_.filterModecMinValue(value);
@@ -395,6 +413,9 @@ void LabelGeneratorWidget::filterModeCMaxChangedSlot(const QString& text)
     bool ok;
 
     float value = text.toFloat(&ok);
+
+    if (ok && value == label_generator_.filterModecMaxValue()) // unchanged, e.g. focus loss
+        return;
 
     if (ok)
         label_generator_.filterModecMaxValue(value);
@@ -418,6 +439,9 @@ void LabelGeneratorWidget::filterTIChangedSlot(const QString& text)
 {
     string values = text.toStdString();
 
+    if (values == label_generator_.filterTIValues()) // unchanged, e.g. focus loss
+        return;
+
     loginf << "value " << values;
 
     label_generator_.filterTIValues(values);
@@ -432,6 +456,9 @@ void LabelGeneratorWidget::filterTAActiveChangedSlot(bool checked)
 void LabelGeneratorWidget::filterTAChangedSlot(const QString& text)
 {
     string values = text.toStdString();
+
+    if (values == label_generator_.filterTAValues()) // unchanged, e.g. focus loss
+        return;
 
     loginf << "value " << values;
 

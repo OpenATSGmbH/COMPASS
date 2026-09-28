@@ -19,6 +19,7 @@
 #include "taskresultswidget.h"
 
 #include "compass.h"
+#include "dialogs.h"
 #include "createartasassociationstask.h"
 #include "jsonimporttask.h"
 #include "radarplotpositioncalculatortask.h"
@@ -680,12 +681,13 @@ ResultT<nlohmann::json> TaskManager::exportResult(const std::string& name,
     auto r = result(name);
     traced_assert(r);
 
-    ResultReport::ReportExportDialog dlg(*r, 
-                                         *report_export_, 
+    ResultReport::ReportExportDialog dlg(*r,
+                                         *report_export_,
                                          mode,
                                          no_interaction_mode,
                                          export_dir,
-                                         section);
+                                         section,
+                                         Dialogs::statusDialogParent()); // centered over the main window
     dlg.exec();
 
     return dlg.result();

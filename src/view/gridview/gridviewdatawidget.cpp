@@ -56,8 +56,11 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QLegend>
 #include <QtCharts/QValueAxis>
+#include <QtCharts/QCategoryAxis>
 
 #include <algorithm>
+#include <cmath>
+#include <set>
 
 /**
 */
@@ -83,6 +86,8 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
 
     x_axis_name_ = view_->variable(0).description();
     y_axis_name_ = view_->variable(1).description();
+
+    updateAxisInfoFromVariables();
 
     updateGridChart();
 
@@ -192,6 +197,8 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 
     x_axis_name_ = view_->variable(0).description();
     y_axis_name_ = view_->variable(1).description();
+
+    updateAxisInfoFromVariables();
     title_       = "";
 
     // Build one payload per group (total count + # Null), unconditionally -
@@ -253,6 +260,8 @@ void GridViewDataWidget::buildGridFromStash()
     // render path keeps the data widget's view of them consistent.
     x_axis_name_ = view_->variable(0).description();
     y_axis_name_ = view_->variable(1).description();
+
+    updateAxisInfoFromVariables();
 
     const auto& data_ranges = getStash().dataRanges();
 
@@ -594,6 +603,82 @@ QPixmap GridViewDataWidget::renderPixmap()
 }
 
 /**
+ */
+void GridViewDataWidget::updateAxisInfoFromVariables()
+{
+    for (int axis_id = 0; axis_id < 2; ++axis_id)
+    {
+        auto& view_var = view_->variable(axis_id);
+
+        auto dtype = view_var.dataType();
+        axis_data_type_[ axis_id ] = dtype.has_value() ? dtype.value() : PropertyDataType::DOUBLE;
+
+        auto repr = dbContent::Representation::STANDARD;
+
+        if (view_var.isMetaVariable() && view_var.metaVariablePtr())
+        {
+            //representation() asserts without sub variables
+            if (view_var.metaVariablePtr()->hasVariables())
+                repr = view_var.metaVariablePtr()->representation();
+        }
+        else if (view_var.variablePtr())
+        {
+            repr = view_var.variablePtr()->representation();
+        }
+
+        axis_repr_[ axis_id ] = repr;
+    }
+}
+
+/**
+ */
+void GridViewDataWidget::updateAxisTicks(QtCharts::QCategoryAxis* axis, int axis_id)
+{
+    traced_assert(axis);
+    traced_assert(axis_id >= 0 && axis_id < 2);
+
+    const auto dtype = axis_data_type_[ axis_id ];
+    const auto repr  = axis_repr_[ axis_id ];
+
+    //drop the ticks of the previous range, categories are keyed by their label
+    const auto old_labels = axis->categoriesLabels();
+    for (const auto& l : old_labels)
+        axis->remove(l);
+
+    const double vmin = axis->min();
+    const double vmax = axis->max();
+
+    auto ticks       = axis_ticks::generate(vmin, vmax, dtype, repr);
+    auto tick_labels = axis_ticks::labels(ticks, dtype, repr);
+
+    traced_assert(ticks.values.size() == tick_labels.size());
+
+    //a category must end above the start value, so keep the start just below
+    const double span  = std::max(std::fabs(vmax - vmin), 1e-9);
+    const double start = vmin - span * 1e-9;
+
+    axis->setStartValue(start);
+
+    std::set<QString> used;
+
+    for (size_t i = 0; i < ticks.values.size(); ++i)
+    {
+        if (ticks.values[ i ] <= start)
+            continue;
+
+        QString label = QString::fromStdString(tick_labels[ i ]);
+
+        //Qt keys categories by label and drops a duplicate without a word
+        if (used.count(label))
+            continue;
+
+        used.insert(label);
+
+        axis->append(label, ticks.values[ i ]);
+    }
+}
+
+/**
 */
 boost::optional<QRectF> GridViewDataWidget::getXYVariableBounds(bool fix_small_ranges) const
 {
@@ -711,11 +796,25 @@ ViewDataWidget::DrawState GridViewDataWidget::updateGridChart()
     if (colormap_.has_value())
     {
         auto dtype = view_->currentLegendDataType();
+        auto repr  = view_->currentLegendRepresentation();
+
+        //the legend labels read like an axis: the representation decides the
+        //form, the value range decides how many decimals carry information
+        axis_ticks::LabelStyle style;
+        style.decimals = GridView::DecimalsDefault;
+
+        const auto& range = colormap_->valueRange();
+        if (range.has_value() && range->second > range->first)
+            style.decimals = axis_ticks::generate(range->first,
+                                                  range->second,
+                                                  dtype,
+                                                  repr,
+                                                  (int)std::max((size_t)2, colormap_->numColors())).style.decimals;
 
         //update legend widget
         auto decoratorFunc = [ = ] (double v)
         {
-            return property_templates::double2String(dtype, v, GridView::DecimalsDefault);
+            return axis_ticks::label(v, dtype, repr, style);
         };
 
         legend_->setColorMap(colormap_.value());
@@ -880,19 +979,68 @@ ViewDataWidget::DrawState GridViewDataWidget::updateChart(QtCharts::QChart* char
 
     auto createAxes = [ & ] ()
     {
+        //createDefaultAxes puts the value range on the axes, which the grid
+        //image is positioned against. Replacing an axis afterwards would lose
+        //that range, so the ranges are carried over by hand.
         chart->createDefaultAxes();
+
+        traced_assert(chart->axes(Qt::Horizontal).size() == 1);
+        traced_assert(chart->axes(Qt::Vertical).size() == 1);
+
+        auto replaceByCategoryAxis = [ & ] (int axis_id, Qt::Alignment alignment)
+        {
+            const auto orientation = (alignment == Qt::AlignBottom) ? Qt::Horizontal : Qt::Vertical;
+
+            auto axis_old = dynamic_cast<QtCharts::QValueAxis*>(chart->axes(orientation).at(0));
+            if (!axis_old)
+                return;
+
+            //a plain value axis is right for a plain floating point value
+            if (!axis_ticks::needsCustomLabels(axis_data_type_[ axis_id ], axis_repr_[ axis_id ]))
+                return;
+
+            const double vmin = axis_old->min();
+            const double vmax = axis_old->max();
+
+            //QCategoryAxis derives from QValueAxis, so the value space the grid
+            //image is drawn against stays exactly the same
+            auto axis = new QtCharts::QCategoryAxis;
+            axis->setLabelsPosition(QtCharts::QCategoryAxis::AxisLabelsPositionOnValue);
+
+            chart->removeAxis(axis_old);
+            chart->addAxis(axis, alignment);
+
+            for (auto series : chart->series())
+                series->attachAxis(axis);
+
+            axis->setRange(vmin, vmax);
+
+            connect(axis, &QtCharts::QCategoryAxis::rangeChanged, this,
+                    [ this, chart, axis, axis_id ] (qreal, qreal)
+                    {
+                        updateAxisTicks(axis, axis_id);
+
+                        //the labels changed, so the room they need changed too
+                        ::ChartView::reserveHorizontalLabelMargins(chart);
+                    });
+
+            updateAxisTicks(axis, axis_id);
+        };
+
+        replaceByCategoryAxis(0, Qt::AlignBottom);
+        replaceByCategoryAxis(1, Qt::AlignLeft);
 
         //config x axis
         loginf << "title x ' "
                << view_->variable(0).description() << "'";
-        traced_assert(chart->axes(Qt::Horizontal).size() == 1);
         chart->axes(Qt::Horizontal).at(0)->setTitleText(x_axis_name_.c_str());
 
         //config y axis
         loginf << "title y ' "
                << view_->variable(1).description() << "'";
-        traced_assert(chart->axes(Qt::Vertical).size() == 1);
         chart->axes(Qt::Vertical).at(0)->setTitleText(y_axis_name_.c_str());
+
+        ::ChartView::reserveHorizontalLabelMargins(chart);
     };
 
     if (has_data)
@@ -963,18 +1111,87 @@ void GridViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
     info[ "data_bounds_ymax"  ] = bounds_valid ? xy_bounds->bottom()      : 0.0;
     info[ "data_bounds_zmax"  ] = bounds_valid ?  z_bounds.value().second : 0.0;
 
-    // auto zoomActive = [ & ] (const QRectF& bounds_data, const QRectF& bounds_axis)
-    // {
-    //     if (!bounds_data.isValid() || !bounds_axis.isValid())
-    //         return false;
+    auto zoomActive = [ & ] (const QRectF& bounds_data, const QRectF& bounds_axis)
+    {
+        if (!bounds_data.isValid() || !bounds_axis.isValid())
+            return false;
 
-    //     return (bounds_axis.left()   > bounds_data.left()  ||
-    //             bounds_axis.right()  < bounds_data.right() ||
-    //             bounds_axis.top()    > bounds_data.top()   ||
-    //             bounds_axis.bottom() < bounds_data.bottom());
-    // };
+        return (bounds_axis.left()   > bounds_data.left()  ||
+                bounds_axis.right()  < bounds_data.right() ||
+                bounds_axis.top()    > bounds_data.top()   ||
+                bounds_axis.bottom() < bounds_data.bottom());
+    };
 
-    //@TODO
+    bool has_axes = grid_chart_ &&
+                    grid_chart_->chart() &&
+                   !grid_chart_->chart()->axes(Qt::Horizontal).empty() &&
+                   !grid_chart_->chart()->axes(Qt::Vertical).empty();
+
+    QRectF axis_bounds;
+
+    if (has_axes)
+    {
+        auto axis_x = grid_chart_->chart()->axes(Qt::Horizontal).first();
+        auto axis_y = grid_chart_->chart()->axes(Qt::Vertical).first();
+
+        auto axis_value_x = dynamic_cast<QtCharts::QValueAxis*>(axis_x);
+        auto axis_value_y = dynamic_cast<QtCharts::QValueAxis*>(axis_y);
+
+        if (axis_value_x && axis_value_y)
+            axis_bounds = QRectF(axis_value_x->min(),
+                                 axis_value_y->min(),
+                                 axis_value_x->max() - axis_value_x->min(),
+                                 axis_value_y->max() - axis_value_y->min());
+
+        //Qt keeps the tick text of a plain value axis to itself, only a category
+        //axis can report what it actually shows
+        auto axisType = [ ] (QtCharts::QAbstractAxis* axis)
+        {
+            if (dynamic_cast<QtCharts::QCategoryAxis*>(axis))
+                return std::string("category");
+
+            return std::string("value");
+        };
+
+        auto axisTickLabels = [ ] (QtCharts::QAbstractAxis* axis)
+        {
+            nlohmann::json labels = nlohmann::json::array();
+
+            if (auto axis_cat = dynamic_cast<QtCharts::QCategoryAxis*>(axis))
+                for (const auto& l : axis_cat->categoriesLabels())
+                    labels.push_back(l.toStdString());
+
+            return labels;
+        };
+
+        nlohmann::json chart_info;
+
+        chart_info[ "x_axis_label"       ] = axis_x->titleText().toStdString();
+        chart_info[ "y_axis_label"       ] = axis_y->titleText().toStdString();
+        chart_info[ "x_axis_type"        ] = axisType(axis_x);
+        chart_info[ "y_axis_type"        ] = axisType(axis_y);
+        chart_info[ "x_axis_tick_labels" ] = axisTickLabels(axis_x);
+        chart_info[ "y_axis_tick_labels" ] = axisTickLabels(axis_y);
+
+        info[ "chart" ] = chart_info;
+    }
+
+    info[ "axis_bounds_valid" ] = has_axes && axis_bounds.isValid();
+    info[ "axis_bounds_xmin"  ] = has_axes ? axis_bounds.left()   : 0.0;
+    info[ "axis_bounds_ymin"  ] = has_axes ? axis_bounds.top()    : 0.0;
+    info[ "axis_bounds_xmax"  ] = has_axes ? axis_bounds.right()  : 0.0;
+    info[ "axis_bounds_ymax"  ] = has_axes ? axis_bounds.bottom() : 0.0;
+
+    info[ "axis_zoom_active"  ] = bounds_valid && has_axes ? zoomActive(xy_bounds.value(), axis_bounds) : false;
+
+    //the legend as the user reads it next to the grid
+    nlohmann::json legend_entries = nlohmann::json::array();
+
+    if (legend_)
+        for (const auto& entry : legend_->currentLegend().entries())
+            legend_entries.push_back(entry.second);
+
+    info[ "legend_entries" ] = legend_entries;
 }
 
 /**

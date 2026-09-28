@@ -19,6 +19,9 @@
 #include "fft.h"
 #include "logger.h"
 #include "textfielddoublevalidator.h"
+#include "textfieldhexvalidator.h"
+#include "textfieldoctvalidator.h"
+#include "stringconv.h"
 #include "traced_assert.h"
 
 #include <QFormLayout>
@@ -93,11 +96,13 @@ FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
     form->addRow(new QLabel("Altitude [ft]"), altitude_edit_);
 
     mode_s_edit_ = new QLineEdit();
+    mode_s_edit_->setValidator(new TextFieldHexValidator(6));
     mode_s_edit_->setPlaceholderText("not set");
     connect(mode_s_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::modeSEditedSlot);
     form->addRow(new QLabel("Mode S Address"), mode_s_edit_);
 
     mode_3a_edit_ = new QLineEdit();
+    mode_3a_edit_->setValidator(new TextFieldOctValidator(4));
     mode_3a_edit_->setPlaceholderText("not set");
     connect(mode_3a_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::mode3AEditedSlot);
     form->addRow(new QLabel("Mode 3/A Code"), mode_3a_edit_);
@@ -154,12 +159,14 @@ void FFTEditWidget::show(FFT& fft)
 
     // mode codes
     if (info.contains("mode_s_address"))
-        mode_s_edit_->setText(QString::number(info.at("mode_s_address").get<unsigned int>()));
+        mode_s_edit_->setText(Utils::String::hexStringFromInt(
+                                  info.at("mode_s_address").get<unsigned int>(), 6, '0', true).c_str());
     else
         mode_s_edit_->setText("");
 
     if (info.contains("mode_3a_code"))
-        mode_3a_edit_->setText(QString::number(info.at("mode_3a_code").get<unsigned int>()));
+        mode_3a_edit_->setText(Utils::String::octStringFromInt(
+                                   info.at("mode_3a_code").get<unsigned int>(), 4, '0').c_str());
     else
         mode_3a_edit_->setText("");
 
@@ -292,15 +299,13 @@ void FFTEditWidget::modeSEditedSlot()
     {
         changed = eraseInfoValue(info, "mode_s_address");
     }
-    else
+    // incomplete input is left in the field instead of being written back,
+    // so it is not lost while the user is still typing
+    else if (mode_s_edit_->hasAcceptableInput())
     {
-        bool ok = false;
-        unsigned int val = text.toUInt(&ok);
+        unsigned int val = Utils::String::intFromHexString(text.toStdString());
 
-        // unparseable input is left in the field instead of being written back,
-        // so it is not lost while the user is still typing
-        if (ok)
-            changed = setInfoValue(info, "mode_s_address", val);
+        changed = setInfoValue(info, "mode_s_address", val);
     }
 
     if (changed && on_changed_)
@@ -321,13 +326,11 @@ void FFTEditWidget::mode3AEditedSlot()
     {
         changed = eraseInfoValue(info, "mode_3a_code");
     }
-    else
+    else if (mode_3a_edit_->hasAcceptableInput())
     {
-        bool ok = false;
-        unsigned int val = text.toUInt(&ok);
+        unsigned int val = Utils::String::intFromOctalString(text.toStdString());
 
-        if (ok)
-            changed = setInfoValue(info, "mode_3a_code", val);
+        changed = setInfoValue(info, "mode_3a_code", val);
     }
 
     if (changed && on_changed_)

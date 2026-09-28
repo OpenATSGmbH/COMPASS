@@ -24,7 +24,7 @@ The following operations exist, if no tool is used (from the toolbar):
     - & Arrows & Traverse map \\ \hline
     MMB click \& drag & & - & Rotate map \\ \hline
     MMB scroll \& drag & & - & Zoom map \\ \hline
-    RMB click & & Quick menu & Clear labels/selection/measurements \\ \hline
+    RMB click & & Quick menu & Clear labels/selection/measurements/annotations \\ \hline
     RMB click & Data & Data menu & Various actions \\ \hline
     RMB click & Label & Label menu & Copy label cell, toggle, layer actions \\ \hline
     RMB click \& drag & & - & Zoom map \\ \hline
@@ -134,8 +134,7 @@ Several operations can be performed by a RMB click on the background map (no dat
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_quick_operations.png}
+    \includegraphics[width=10cm,frame]{figures/geoview_quick_menu.png}
   \caption{Geographic View quick menu}
 \end{figure}
 
@@ -144,7 +143,11 @@ Several operations can be performed by a RMB click on the background map (no dat
  \item Clear Measurements: Remove all measurements
  \item Clear Selection: Clear selection
  \item Clear ARTAS Target Report Usage
+ \item Clear View Point Annotations: Remove the View Point annotations from the view
+ \item Clear Grid Annotations: Remove all imported grids from the view
 \end{itemize}
+
+Each entry is only listed if it has something to clear. If nothing can be cleared, no menu is opened. \\
 
 \subsubsection{Selection}
 \label{sec:geoview_selection}

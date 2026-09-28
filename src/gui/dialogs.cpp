@@ -21,6 +21,8 @@
 #include "logger.h"
 
 #include <QFileDialog>
+#include <QApplication>
+#include <QMainWindow>
 
 namespace
 {
@@ -81,4 +83,21 @@ QString Dialogs::getSaveFileName(QWidget* parent, const QString& caption,
         return test_result.isEmpty() ? QString() : test_result.first();
 
     return QFileDialog::getSaveFileName(parent, caption, dir, filter);
+}
+
+/**
+ * Parent for status/progress popups. Prefer the application main window, so the
+ * popup is centered over it regardless of which window (if any) currently has
+ * focus - QApplication::activeWindow() is null whenever another application is
+ * active, which would leave the popup placement to the window manager.
+ */
+QWidget* Dialogs::statusDialogParent()
+{
+    for (auto win : QApplication::topLevelWidgets())
+    {
+        if (auto* mw = dynamic_cast<QMainWindow*>(win))
+            return mw;
+    }
+
+    return QApplication::activeWindow();
 }

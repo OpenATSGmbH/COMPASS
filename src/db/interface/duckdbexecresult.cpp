@@ -63,9 +63,11 @@ DuckDBExecResult::DuckDBExecResult() = default;
  */
 DuckDBExecResult::~DuckDBExecResult()
 {
+    //a chunk may still be held when the result is dropped before being read to the end
+    destroyChunk();
+
     if (result_valid_)
     {
-        //@TODO: any extra freeing needed?
         duckdb_destroy_result(&result_);
         result_valid_ = false;
     }
@@ -216,11 +218,30 @@ void DuckDBExecResult::nextChunk(std::vector<void*>& data_vectors,
                                  std::vector<uint64_t*>& valid_vectors, 
                                  size_t num_cols)
 {
+    //duckdb_fetch_chunk transfers ownership of the chunk to the caller, so the one
+    //consumed up to here must be released before the next is fetched - otherwise every
+    //chunk of every query is leaked inside DuckDB's own (statically linked, prefixed)
+    //jemalloc, where neither heaptrack nor malloc_trim can see or reclaim it
+    destroyChunk();
+
     chunk_          = duckdb_fetch_chunk(result_);
     chunk_idx_      = 0;
-    chunk_num_rows_ = duckdb_data_chunk_get_size(chunk_.value());
+    chunk_num_rows_ = hasChunk() ? duckdb_data_chunk_get_size(chunk_.value()) : 0;
 
     fetchVectors(data_vectors, valid_vectors, num_cols);
+}
+
+/**
+ * Releases the currently held data chunk (if any).
+ */
+void DuckDBExecResult::destroyChunk()
+{
+    if (hasChunk())
+        duckdb_destroy_data_chunk(&chunk_.value());
+
+    chunk_.reset();
+    chunk_num_rows_ = 0;
+    chunk_idx_      = 0;
 }
 
 /**

@@ -8,14 +8,35 @@ There are two kinds of annotations listed under this node.
 \paragraph*{View Point} Annotations provided by an active View Point, e.g. selected evaluation results or externally provided annotation data.
 See \nameref{sec:key_concepts_viewpoints} for an introductory explanation about View Points. \\
 
-View Point annotations persist as long as the providing View Point is active.
+View Point annotations persist as long as the providing View Point is active. \\
+
+A RMB click on the 'View Point' node opens a context menu containing the following operations:
+
+\begin{table}[H]
+    \center
+    \begin{tabular}{ | l | l |}
+      \hline
+      \textbf{Operation} & \textbf{Description} \\ \hline
+      Show & Shows all annotations of a selected name \\ \hline
+      Hide & Hides all annotations of a selected name \\ \hline
+      Remove All & Removes the View Point annotations from the view \\ \hline
+    \end{tabular}
+\end{table}
+
+The 'Show' and 'Hide' submenus list only annotation names that exist more than once. 'Remove All' is only listed if View Point annotations exist, and removes them in this Geographic View only. \\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=6cm,frame]{figures/geoview_annotationops_viewpoint.png}
+  \caption{Geographic View 'View Point' node operations}
+\end{figure}
 
 \paragraph*{Grids} Grid data imported into Geographic View. Grid data can be imported into 
 Geographic View either by sending it from a Grid View (see \nameref{sec:grid_export_geographic}), or as an external GeoTIFF file (see \nameref{sec:geo_geotiff_import}). \\
 
 Imported grid items persist in a Geographic View until COMPASS is closed. \\
 
-Clicking on the symbol of the 'Grids' node will open a context menu containing the following operations:
+A RMB click on the 'Grids' node opens a context menu containing the following operations:
 
 \begin{table}[H]
     \center
@@ -33,7 +54,7 @@ Clicking on the symbol of the 'Grids' node will open a context menu containing t
   \caption{Geographic View 'Grids' node operations}
 \end{figure}
 
-Clicking on the symbol of an imported grid item will open a context menu containing the following operations:
+A RMB click on an imported grid item opens a context menu containing the following operations:
 
 \begin{table}[H]
     \center
