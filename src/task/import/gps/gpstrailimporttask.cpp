@@ -17,6 +17,7 @@
 
 #include "gpstrailimporttask.h"
 #include "gpstrailimporttaskdialog.h"
+#include "dialogs.h"
 #include "compass.h"
 #include "dbinterface.h"
 #include "stringconv.h"
@@ -945,11 +946,13 @@ void GPSTrailImportTask::insertDoneSlot()
     //    COMPASS::instance().interface().databaseContentChanged();
     //    object.updateToDatabaseContent();
 
-    QMessageBox msg_box;
+    QMessageBox msg_box(Dialogs::statusDialogParent()); // centered over the main window
 
     msg_box.setWindowTitle("Import GPS Trail");
     msg_box.setText("Import of "+QString::number(gps_fixes_.size())+" GPS fixes done.");
     msg_box.setStandardButtons(QMessageBox::Ok);
+    // do not steal os focus from other applications when popping up
+    msg_box.setAttribute(Qt::WA_ShowWithoutActivating, true);
 
     if (allow_user_interactions_)
         msg_box.exec();

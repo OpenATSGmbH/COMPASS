@@ -168,9 +168,12 @@ void SimpleAccuracyEstimator::postProccessNewSlice()
         }
     }
 
+    // median statistics need at least 4 values, otherwise the IQR is undefined
+    const size_t min_median_samples = 4;
+
     for (auto& [ds_id, org_vec] : org_errors)
     {
-        if (org_vec.empty())
+        if (org_vec.size() < min_median_samples || cor_errors[ds_id].size() < min_median_samples)
             continue;
 
         auto org_stat = Number::getMedianStatistics(org_vec);

@@ -16,6 +16,7 @@
  */
 
 #include "asynctask.h"
+#include "dialogs.h"
 #include "logger.h"
 
 #include <QHBoxLayout>
@@ -116,8 +117,9 @@ void AsyncTask::abort()
 bool AsyncTask::runAsyncDialog(bool auto_close,
                                QWidget* parent)
 {
-    //generate the managing dialog
-    AsyncTaskDialog dlg(this, auto_close, parent);
+    //generate the managing dialog - centered over the main window unless a
+    //specific parent is given
+    AsyncTaskDialog dlg(this, auto_close, parent ? parent : Dialogs::statusDialogParent());
 
     //start async task
     auto result = std::async(std::launch::async, 
@@ -240,6 +242,8 @@ AsyncTaskDialog::AsyncTaskDialog(AsyncTask* task,
 
     setWindowTitle(task_->title());
     setMinimumWidth(500);
+    // do not steal os focus from other applications when popping up
+    setAttribute(Qt::WA_ShowWithoutActivating, true);
 
     createUI();
     updateState();

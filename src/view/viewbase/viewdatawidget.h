@@ -170,6 +170,10 @@ protected:
     const BufferData& viewData() const { return data_; }
     BufferData& viewData() { return data_; } //exposed because of selection
 
+    // whether the mirrored data honors the engine's read-set contract (see
+    // DBContentDataSet::fulfillsReadSet); false for live feed data
+    bool dataFulfillsReadSet() const { return data_fulfills_read_set_; }
+
     ViewWidget* getWidget() { return view_widget_; }
 
 private:
@@ -185,6 +189,8 @@ private:
 
     BufferData data_;
     DrawState  draw_state_ = DrawState::NotDrawn;
+
+    bool data_fulfills_read_set_ = true; // mirrored from the source in updateFromSource
 
     bool is_exporting_ = false;
 

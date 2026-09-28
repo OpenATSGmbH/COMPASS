@@ -138,7 +138,18 @@ bool RTCommandRunner::execWaitCondition(std::shared_ptr<RTCommand> cmd, RTComman
 
     if (c.type == RTCommandWaitCondition::Type::Signal)
     {
-        ok = waitForCondition([ = ] () { return stash->spySignalReceived(); }, c.signal_timeout_ms);
+        // the QSignalSpy lives in the main thread and its list is appended there on
+        // signal delivery - polling it directly from this thread is a data race, so
+        // each poll is a blocking queued invoke executing the check in the main thread
+        ok = waitForCondition([ = ] ()
+        {
+            bool received = false;
+            if (!QMetaObject::invokeMethod(stash, "spySignalReceived",
+                                           Qt::BlockingQueuedConnection,
+                                           Q_RETURN_ARG(bool, received)))
+                return false;
+            return received;
+        }, c.signal_timeout_ms);
     }
     else if (c.type == RTCommandWaitCondition::Type::Delay)
     {

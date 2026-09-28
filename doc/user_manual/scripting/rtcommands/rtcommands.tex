@@ -284,8 +284,17 @@ max\_lines (-m) \dots maximum number of lines per data source during ASTERIX net
 ignore\_future\_ts \dots keep target reports with future timestamps, skips the future timestamp check \\
 config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
+\textbf{import\_asterix\_network\_pause} \\
+\textit{pauses the live display of the running ASTERIX network import, the database keeps receiving data} \\
+The command is the same as the 'Pause' button in the status bar. The application mode changes to 'Live Mode: Paused' and the views show the current database content. The command returns when this paused display is loaded. \\
+
+\textbf{import\_asterix\_network\_resume} \\
+\textit{resumes the live display of the paused ASTERIX network import} \\
+The command is the same as the 'Resume' button in the status bar. The application mode changes back to 'Live Mode: Running'. \\
+
 \textbf{import\_asterix\_network\_stop} \\
 \textit{stops import ASTERIX from network} \\
+The command is the same as the 'Stop' button in the status bar. The application mode changes to 'Offline Mode'. \\
 
 \textbf{import\_asterix\_pcap\_file} \\
 \textit{imports ASTERIX PCAP file with given filename, e.g. '/data/file1.pcap'} \\

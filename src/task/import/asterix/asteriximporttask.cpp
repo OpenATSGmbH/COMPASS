@@ -16,6 +16,7 @@
  */
 
 #include "asteriximporttask.h"
+#include "dialogs.h"
 #include "asteriximportprobeaggregator.h"
 #include "asterixreporthelpers.h"
 #include "asterix_decoding_config.h"
@@ -1788,11 +1789,13 @@ void ASTERIXImportTask::updateFileProgressDialog(bool force)
     {
         file_progress_dialog_.reset(
             new QProgressDialog(("Files '" + source_.filesAsString() + "'").c_str(), "Abort", 0, 100,
-                                QApplication::activeWindow()));
+                                Dialogs::statusDialogParent()));
         file_progress_dialog_->setWindowTitle("Importing ASTERIX Recording(s)");
         file_progress_dialog_->setWindowModality(Qt::ApplicationModal);
         file_progress_dialog_->setAutoClose(false);
         file_progress_dialog_->setAutoReset(false);
+        // do not steal os focus from other applications when popping up
+        file_progress_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
 
         force = true;
     }

@@ -16,6 +16,7 @@
  */
 
 #include "evaluationmanager.h"
+#include "dialogs.h"
 #include "evaluationstandard.h"
 #include "evaluationdialog.h"
 #include "eval/requirement/group.h"
@@ -593,11 +594,13 @@ void EvaluationManager::loadData(const EvaluationCalculator& calculator)
     // Modal wait dialog around the blocking load below. The load pumps events (op->wait) and,
     // being an issuer-private batch load, raises no progress dialog of its own - without a
     // modal the user could drive the UI into another evaluation or load meanwhile.
-    QMessageBox msg_box(QApplication::activeWindow());
+    QMessageBox msg_box(Dialogs::statusDialogParent());
     msg_box.setWindowTitle("Evaluation");
     msg_box.setText("Loading data ...");
     msg_box.setStandardButtons(QMessageBox::NoButton);
     msg_box.setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    msg_box.setAttribute(Qt::WA_ShowWithoutActivating, true);
     msg_box.show();
     QCoreApplication::processEvents(); // paint before the load busies the main thread
 

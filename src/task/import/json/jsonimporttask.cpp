@@ -16,6 +16,7 @@
  */
 
 #include "jsonimporttask.h"
+#include "dialogs.h"
 #include "compass.h"
 #include "buffer.h"
 #include "dbinterface.h"
@@ -890,7 +891,7 @@ void JSONImportTask::updateMsgBox()
 
     if (!msg_box_)
     {
-        msg_box_.reset(new QMessageBox(QApplication::activeWindow()));
+        msg_box_.reset(new QMessageBox(Dialogs::statusDialogParent()));
 
         loginf << "creating";
 
@@ -898,6 +899,9 @@ void JSONImportTask::updateMsgBox()
             msg_box_->setWindowTitle("Test Import JSON Data Status");
         else
             msg_box_->setWindowTitle("Import JSON Data Status");
+
+        // do not steal os focus from other applications when popping up
+        msg_box_->setAttribute(Qt::WA_ShowWithoutActivating, true);
 
         traced_assert(msg_box_);
     }

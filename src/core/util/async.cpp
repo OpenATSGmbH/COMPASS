@@ -16,6 +16,7 @@
  */
 
 #include "async.h"
+#include "dialogs.h"
 #include "stringconv.h"
 #include "logger.h"
 #include "traced_assert.h"
@@ -62,10 +63,12 @@ bool waitDialogAsync(const std::function<bool()>& task,
 
     start_time = boost::posix_time::microsec_clock::local_time();
 
-    QProgressDialog dialog("", "", 0, steps, QApplication::activeWindow());
+    QProgressDialog dialog("", "", 0, steps, Dialogs::statusDialogParent());
     dialog.setWindowTitle(QString::fromStdString(task_name));
     dialog.setCancelButton(nullptr);
     dialog.setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    dialog.setAttribute(Qt::WA_ShowWithoutActivating, true);
 
     QLabel* progress_label = new QLabel("", &dialog);
     progress_label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
