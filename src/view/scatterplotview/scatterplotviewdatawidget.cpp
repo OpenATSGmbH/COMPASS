@@ -52,12 +52,15 @@
 #include <QtCharts/QLegend>
 #include <QtCharts/QLegendMarker>
 #include <QtCharts/QValueAxis>
+#include <QtCharts/QCategoryAxis>
 #include <QtCharts/QDateTimeAxis>
 #include <QGraphicsLayout>
 #include <QShortcut>
 #include <QApplication>
 
 #include <algorithm>
+#include <cmath>
+#include <set>
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -97,7 +100,7 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
     x_axis_name_ = view_->variable(0).description();
     y_axis_name_ = view_->variable(1).description();
 
-    updateDateTimeInfoFromVariables();
+    updateAxisInfoFromVariables();
     updateChart();
 
     // Layer panel signals are wired by ScatterPlotViewConfigWidget via
@@ -137,6 +140,12 @@ void ScatterPlotViewDataWidget::resetSeries()
 
     x_axis_is_datetime_ = false;
     y_axis_is_datetime_ = false;
+
+    axis_data_type_[ 0 ] = PropertyDataType::DOUBLE;
+    axis_data_type_[ 1 ] = PropertyDataType::DOUBLE;
+
+    axis_repr_[ 0 ] = dbContent::Representation::STANDARD;
+    axis_repr_[ 1 ] = dbContent::Representation::STANDARD;
 
     bounds_ = {};
 
@@ -327,11 +336,21 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
                                (cur_group_idx != last_drawn_anno_group_idx_ ||
                                 cur_anno_idx  != last_drawn_anno_idx_);
 
+    // Same reasoning for the variables: another variable puts the data into
+    // another value domain, so the captured range would hide it. A variable
+    // change only reloads when the new variable is not in the loaded buffers,
+    // so a redraw alone must drop the range too.
+    const std::string cur_var_x   = currentVariableId(0);
+    const std::string cur_var_y   = currentVariableId(1);
+    const bool        vars_switched = (cur_var_x != last_drawn_var_[ 0 ] ||
+                                       cur_var_y != last_drawn_var_[ 1 ]);
+
     // Remember the current axis ranges so a redraw caused by e.g. a selection
     // change does not throw away the user's zoom. Only do this if the prior
     // render actually drew content - otherwise the "captured" range is the
     // meaningless default of an empty chart.
     bool capture_zoom = !anno_switched &&
+                        !vars_switched &&
                         prior_draw_had_content_ &&
                         chart_view_ &&
                         chart_view_->chart() &&
@@ -371,7 +390,27 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
     last_drawn_anno_group_idx_ = in_anno_mode ? cur_group_idx : -1;
     last_drawn_anno_idx_       = in_anno_mode ? cur_anno_idx  : -1;
 
+    // Same for the variables this draw is for.
+    last_drawn_var_[ 0 ] = cur_var_x;
+    last_drawn_var_[ 1 ] = cur_var_y;
+
     return draw_state;
+}
+
+/**
+ * Identity of an axis variable, used to detect a variable change between two
+ * draws. Empty while no variable is set.
+ */
+std::string ScatterPlotViewDataWidget::currentVariableId(int axis_id) const
+{
+    traced_assert(axis_id >= 0 && axis_id < 2);
+
+    const auto& view_var = view_->variable(axis_id);
+
+    if (!view_var.hasVariable())
+        return "";
+
+    return view_var.variableDBContent() + "|" + view_var.variableName();
 }
 
 /**
@@ -383,10 +422,142 @@ void ScatterPlotViewDataWidget::resetStashDependentData()
 
 /**
 */
-void ScatterPlotViewDataWidget::updateDateTimeInfoFromVariables()
+void ScatterPlotViewDataWidget::updateAxisInfoFromVariables()
 {
     x_axis_is_datetime_ = variableIsDateTime(0);
     y_axis_is_datetime_ = variableIsDateTime(1);
+
+    for (int axis_id = 0; axis_id < 2; ++axis_id)
+    {
+        auto& view_var = view_->variable(axis_id);
+
+        auto dtype = view_var.dataType();
+        axis_data_type_[ axis_id ] = dtype.has_value() ? dtype.value() : PropertyDataType::DOUBLE;
+
+        auto repr = dbContent::Representation::STANDARD;
+
+        if (view_var.isMetaVariable() && view_var.metaVariablePtr())
+        {
+            //representation() asserts without sub variables
+            if (view_var.metaVariablePtr()->hasVariables())
+                repr = view_var.metaVariablePtr()->representation();
+        }
+        else if (view_var.variablePtr())
+        {
+            repr = view_var.variablePtr()->representation();
+        }
+
+        axis_repr_[ axis_id ] = repr;
+
+        loginf << "axis " << axis_id
+               << " data type " << Property::asString(axis_data_type_[ axis_id ])
+               << " representation " << dbContent::Variable::representationToString(repr);
+    }
+}
+
+/**
+ * An annotation brings values, not variables, so only the timestamp flag is known.
+ */
+void ScatterPlotViewDataWidget::setAnnotationAxisInfo()
+{
+    axis_data_type_[ 0 ] = x_axis_is_datetime_ ? PropertyDataType::TIMESTAMP : PropertyDataType::DOUBLE;
+    axis_data_type_[ 1 ] = y_axis_is_datetime_ ? PropertyDataType::TIMESTAMP : PropertyDataType::DOUBLE;
+
+    axis_repr_[ 0 ] = dbContent::Representation::STANDARD;
+    axis_repr_[ 1 ] = dbContent::Representation::STANDARD;
+}
+
+/**
+ */
+void ScatterPlotViewDataWidget::updateAxisTicks(QtCharts::QCategoryAxis* axis, int axis_id)
+{
+    traced_assert(axis);
+    traced_assert(axis_id >= 0 && axis_id < 2);
+
+    const auto dtype = axis_data_type_[ axis_id ];
+    const auto repr  = axis_repr_[ axis_id ];
+
+    //drop the ticks of the previous range, categories are keyed by their label
+    const auto old_labels = axis->categoriesLabels();
+    for (const auto& l : old_labels)
+        axis->remove(l);
+
+    const double vmin = axis->min();
+    const double vmax = axis->max();
+
+    auto ticks       = axis_ticks::generate(vmin, vmax, dtype, repr);
+    auto tick_labels = axis_ticks::labels(ticks, dtype, repr);
+
+    traced_assert(ticks.values.size() == tick_labels.size());
+
+    //a category must end above the start value, so keep the start just below
+    const double span  = std::max(std::fabs(vmax - vmin), 1e-9);
+    const double start = vmin - span * 1e-9;
+
+    axis->setStartValue(start);
+
+    std::set<QString> used;
+
+    for (size_t i = 0; i < ticks.values.size(); ++i)
+    {
+        if (ticks.values[ i ] <= start)
+            continue;
+
+        QString label = QString::fromStdString(tick_labels[ i ]);
+
+        //Qt keys categories by label and drops a duplicate without a word
+        if (used.count(label))
+            continue;
+
+        used.insert(label);
+
+        axis->append(label, ticks.values[ i ]);
+    }
+}
+
+/**
+ */
+void ScatterPlotViewDataWidget::updateDateTimeFormat(QtCharts::QDateTimeAxis* axis)
+{
+    traced_assert(axis);
+
+    const auto dt0 = axis->min();
+    const auto dt1 = axis->max();
+
+    QString format = "hh:mm:ss";
+    int     angle  = 0;
+
+    if (dt0.isValid() && dt1.isValid())
+    {
+        const qint64 span_ms = dt0.msecsTo(dt1);
+
+        if (dt0.date().year() != dt1.date().year())
+        {
+            format = "yyyy-MM-dd hh:mm:ss";
+            angle  = -90;
+        }
+        else if (dt0.date().month() != dt1.date().month())
+        {
+            format = "MMM dd hh:mm:ss";
+            angle  = -90;
+        }
+        else if (dt0.date().day() != dt1.date().day())
+        {
+            format = "ddd hh:mm:ss";
+            angle  = -90;
+        }
+        else if (span_ms > 0 && span_ms < 2000)
+        {
+            //a zoom below two seconds needs the milliseconds
+            format = "hh:mm:ss.zzz";
+        }
+    }
+
+    if (axis->format() != format)
+        axis->setFormat(format);
+
+    if (axis->labelsAngle() != angle)
+        axis->setLabelsAngle(angle);
 }
 
 /**
@@ -408,6 +579,13 @@ void ScatterPlotViewDataWidget::correctSeriesDateTime(ScatterSeriesCollection& c
     }
 
     //loginf << "corrected datetime!";
+}
+
+/**
+*/
+std::string ScatterPlotViewDataWidget::selectionLayerId() const
+{
+    return kSelectedSeriesKey;
 }
 
 /**
@@ -521,7 +699,7 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
     y_axis_name_ = view_->variable(1).description();
     title_       = "";
 
-    updateDateTimeInfoFromVariables();
+    updateAxisInfoFromVariables();
 
     correctSeriesDateTime(scatter_series_);
 
@@ -569,6 +747,8 @@ bool ScatterPlotViewDataWidget::updateFromAnnotations()
 
         x_axis_is_datetime_ = scatter_series_.commonDataTypeX() == ScatterSeries::DataTypeTimestamp;
         y_axis_is_datetime_ = scatter_series_.commonDataTypeY() == ScatterSeries::DataTypeTimestamp;
+
+        setAnnotationAxisInfo();
 
         correctSeriesDateTime(scatter_series_);
 
@@ -935,70 +1115,49 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
     //!take care: this functional may assert if it is called when no series has yet been added to the chart!
     auto createAxes = [ & ] ()
     {
-        bool dynamic_labels = false;
-
-        const std::pair<QString, bool> DateTimeFormatDefault = { "hh:mm:ss", false };
-
-        auto dateTimeFormatFromSeries = [ & ] (int axis_id)
+        auto genDateTimeAxis = [ & ] (const std::string& title)
         {
-            if (dynamic_labels)
-            {
-                boost::optional<qreal> tmin, tmax;
-                for (auto s : chart->series())
-                {
-                    auto scatter_series = dynamic_cast<QScatterSeries*>(s);
-                    if (!scatter_series)
-                        continue;
-
-                    for (const auto& pos : scatter_series->points())
-                    {
-                        qreal v = axis_id == 0 ? pos.x() : pos.y();
-                        if (!tmin.has_value() || v < tmin.value()) tmin = v;
-                        if (!tmax.has_value() || v > tmax.value()) tmax = v;
-                    }
-                }
-
-                if (!tmin.has_value() || !tmax.has_value())
-                    return std::pair<QString, bool>("yyyy-MM-dd hh:mm:ss", true);
-
-                auto date_time0 = QDateTime::fromMSecsSinceEpoch(tmin.value());
-                auto date_time1 = QDateTime::fromMSecsSinceEpoch(tmax.value());
-
-                bool needs_year  = date_time0.date().year()  != date_time1.date().year();
-                bool needs_month = date_time0.date().month() != date_time1.date().month();
-                bool needs_day   = date_time0.date().day()   != date_time1.date().day();
-
-                if (needs_year)
-                    return std::pair<QString, bool>("yyyy-MM-dd hh:mm:ss", true);
-                if (needs_month)
-                    return std::pair<QString, bool>("MMM dd hh:mm:ss", true);
-                if (needs_day)
-                    return std::pair<QString, bool>("ddd hh:mm:ss", false);
-
-                return std::pair<QString, bool>("hh:mm:ss", false);
-            }
-            else
-            {
-                return DateTimeFormatDefault;
-            }
-        };
-
-        auto genDateTimeAxis = [ & ] (const std::string& title, int axis_id)
-        {
-            auto format = dateTimeFormatFromSeries(axis_id);
-
             auto axis = new QDateTimeAxis;
-            axis->setFormat(format.first);
             axis->setTitleText(QString::fromStdString(title));
-            axis->setLabelsAngle(format.second ? -90 : 0);
+
+            //the format follows the span the axis shows, so a zoom into one
+            //second does not keep a day wide format
+            connect(axis, &QDateTimeAxis::rangeChanged, this,
+                    [ this, axis ] (QDateTime, QDateTime) { updateDateTimeFormat(axis); });
+
+            updateDateTimeFormat(axis);
 
             return dynamic_cast<QAbstractAxis*>(axis);
         };
 
-        auto genValueAxis = [ & ] (const std::string& title)
+        auto genValueAxis = [ & ] (const std::string& title, int axis_id)
         {
-            auto axis = new QValueAxis;
+            //a plain floating point value is already presented correctly by Qt
+            if (!axis_ticks::needsCustomLabels(axis_data_type_[ axis_id ], axis_repr_[ axis_id ]))
+            {
+                auto axis = new QValueAxis;
+                axis->setTitleText(QString::fromStdString(title));
+
+                return dynamic_cast<QAbstractAxis*>(axis);
+            }
+
+            //everything else needs tick labels of our own. QCategoryAxis derives
+            //from QValueAxis, so the value coordinate system stays intact and
+            //zoom, selection and range handling keep working unchanged
+            auto axis = new QCategoryAxis;
             axis->setTitleText(QString::fromStdString(title));
+            axis->setLabelsPosition(QCategoryAxis::AxisLabelsPositionOnValue);
+
+            connect(axis, &QCategoryAxis::rangeChanged, this,
+                    [ this, chart, axis, axis_id ] (qreal, qreal)
+                    {
+                        updateAxisTicks(axis, axis_id);
+
+                        //the labels changed, so the room they need changed too
+                        ::ChartView::reserveHorizontalLabelMargins(chart);
+                    });
+
+            updateAxisTicks(axis, axis_id);
 
             return dynamic_cast<QAbstractAxis*>(axis);
         };
@@ -1008,7 +1167,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
                                  bool is_date_time,
                                  Qt::Alignment alignment)
         {
-            QAbstractAxis* axis = is_date_time ? genDateTimeAxis(title, axis_id) : genValueAxis(title);
+            QAbstractAxis* axis = is_date_time ? genDateTimeAxis(title) : genValueAxis(title, axis_id);
             traced_assert(axis);
 
             chart->addAxis(axis, alignment);
@@ -1029,6 +1188,8 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
 
         traced_assert(chart->axes(Qt::Horizontal).size() == 1);
         traced_assert(chart->axes(Qt::Vertical).size() == 1);
+
+        ::ChartView::reserveHorizontalLabelMargins(chart);
     };
 
     if (has_data)
@@ -1243,6 +1404,44 @@ void ScatterPlotViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
         chart_info[ "x_axis_label" ] = axis_x->titleText().toStdString();
         chart_info[ "y_axis_label" ] = axis_y->titleText().toStdString();
 
+        //Qt keeps the tick text of a value or date time axis to itself, only a
+        //category axis can report what it actually shows
+        auto axisType = [ ] (QAbstractAxis* axis)
+        {
+            if (dynamic_cast<QDateTimeAxis*>(axis))
+                return std::string("datetime");
+            if (dynamic_cast<QCategoryAxis*>(axis))
+                return std::string("category");
+
+            return std::string("value");
+        };
+
+        auto axisFormat = [ ] (QAbstractAxis* axis)
+        {
+            if (auto axis_dt = dynamic_cast<QDateTimeAxis*>(axis))
+                return axis_dt->format().toStdString();
+
+            return std::string();
+        };
+
+        auto axisTickLabels = [ ] (QAbstractAxis* axis)
+        {
+            nlohmann::json labels = nlohmann::json::array();
+
+            if (auto axis_cat = dynamic_cast<QCategoryAxis*>(axis))
+                for (const auto& l : axis_cat->categoriesLabels())
+                    labels.push_back(l.toStdString());
+
+            return labels;
+        };
+
+        chart_info[ "x_axis_type"        ] = axisType(axis_x);
+        chart_info[ "y_axis_type"        ] = axisType(axis_y);
+        chart_info[ "x_axis_format"      ] = axisFormat(axis_x);
+        chart_info[ "y_axis_format"      ] = axisFormat(axis_y);
+        chart_info[ "x_axis_tick_labels" ] = axisTickLabels(axis_x);
+        chart_info[ "y_axis_tick_labels" ] = axisTickLabels(axis_y);
+
         bool   has_axis_bounds = (range_x.has_value() && range_y.has_value());
         QRectF axis_bounds     = has_axis_bounds ? QRectF(range_x.value().first, 
                                                           range_y.value().first, 
@@ -1257,7 +1456,8 @@ void ScatterPlotViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
         info[ "axis_zoom_active"  ] = bounds_valid ? zoomActive(bounds.value(), axis_bounds) : false;
 
-        chart_info[ "num_series"] = series.count();
+        //the selection series is not part of the data
+        chart_info[ "num_series"] = series.count() - (chart_view_->selectionSeries() ? 1 : 0);
 
         nlohmann::json series_infos = nlohmann::json::array();
 
@@ -1267,6 +1467,10 @@ void ScatterPlotViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
         {
             auto xy_series = dynamic_cast<QXYSeries*>(s);
             if (!xy_series)
+                continue;
+
+            //the selection is drawn as a series of its own, it is not data
+            if (s == chart_view_->selectionSeries())
                 continue;
 
             bool line_type = xy_series->type() == QAbstractSeries::SeriesType::SeriesTypeLine;

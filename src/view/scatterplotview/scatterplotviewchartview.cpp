@@ -34,7 +34,10 @@ namespace QtCharts
 ScatterPlotViewChartView::ScatterPlotViewChartView (ScatterPlotViewDataWidget* data_widget, 
                                                     QChart* chart, 
                                                     QWidget* parent)
-:   ChartView   (chart, ChartView::SelectionStyle::RubberBand, parent)
+:   //the data is drawn with OpenGL acceleration, which composites above any
+    //widget laid over the chart, so the selection has to be an accelerated
+    //series too
+    ChartView   (chart, ChartView::SelectionStyle::SeriesLines, parent)
 ,   data_widget_(data_widget)
 {
     traced_assert(data_widget_);

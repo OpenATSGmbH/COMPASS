@@ -105,8 +105,8 @@ The 'Network Lines' tab defines up to 4 network lines (L1 to L4) per data source
 \item 4 different lines are possible, each with:
 \begin{itemize}
   \item Listen IP: Defines the used network interface and IGMP requests
-  \item Multicast IP
-  \item Multicast Port
+  \item MCast IP
+  \item MCast Port
   \item Sender IP: Optional, for filtering purposes
 \end{itemize}
 \end{itemize}
@@ -114,7 +114,7 @@ The 'Network Lines' tab defines up to 4 network lines (L1 to L4) per data source
 
 Please \textbf{note} that for using real multicast addresses (inside of 224.0.0.0 to 239.255.255.255), it is recommended to also define the Listen IP as the local address of the network interface to be used. Otherwise the multicast data might not be received, or the wrong network interface might be picked up, causing COMPASS to receive no data. \\
 
-Please also \textbf{note} that if e.g. only Multicast IP and port are set, and the Multicast IP is set to a non-multicast one (outside of 224.0.0.0 to 239.255.255.255), a local replay is possible (without real multi-casting). \\
+Please also \textbf{note} that if e.g. only MCast IP and MCast Port are set, and the MCast IP is set to a non-multicast one (outside of 224.0.0.0 to 239.255.255.255), a local replay is possible (without real multi-casting). \\
 
 \paragraph{Radar Ranges Tab}
 \label{sec:configure_datasources_radar_ranges}

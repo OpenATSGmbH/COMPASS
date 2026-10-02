@@ -18,7 +18,7 @@ pipeline {
         booleanParam(name: 'TAG_CALCULATE',       defaultValue: true, description: 'Tag: calculate')
         booleanParam(name: 'TAG_CONTEXT',         defaultValue: true, description: 'Tag: context (Data Context imports and deletes, at_20230422)')
         booleanParam(name: 'TAG_CTX_GUI',         defaultValue: true, description: 'Tags: ctx_gui, ctx_gui_loww (Data Context dialogs, at_20230422 + loww_20260609)')
-        booleanParam(name: 'TAG_EVAL',            defaultValue: true, description: 'Tag: eval')
+        booleanParam(name: 'TAG_EVAL',            defaultValue: true, description: 'Tag: eval (+ eval_loww, eval_eddf)')
         booleanParam(name: 'TAG_UI',              defaultValue: true, description: 'Tag: ui (all UI tests)')
         booleanParam(name: 'TAG_VIEWS',           defaultValue: true, description: 'Tag: views')
         booleanParam(name: 'TAG_TABLEVIEW',       defaultValue: true, description: 'Tag: tableview')
@@ -42,6 +42,7 @@ pipeline {
         booleanParam(name: 'DATASET_2H',     defaultValue: false, description: 'Dataset: at_20230422_2h (2h)')
         booleanParam(name: 'DATASET_LOWW',   defaultValue: true,  description: 'Dataset: loww_20260609_4h (Vienna airport surface, 4h)')
         booleanParam(name: 'DATASET_SKEYES', defaultValue: true,  description: 'Dataset: skeyes_20251203 (multi-sensor, sensor status + tracker, 7h)')
+        booleanParam(name: 'DATASET_EDDF',   defaultValue: true,  description: 'Dataset: eddf_20251117 (Frankfurt airport surface, DGPS drive, 5h)')
     }
 
     environment {
@@ -60,6 +61,15 @@ pipeline {
         // that are illegal in a container name.
         CI_BRANCH           = "${env.BRANCH_NAME.replaceAll('[^A-Za-z0-9_.-]', '_')}"
         CI_TAG              = "${env.BRANCH_NAME.replaceAll('[^A-Za-z0-9_.-]', '_')}-${env.BUILD_NUMBER}"
+        // Memory sampling of the COMPASS process. Most test cases reuse one
+        // instance, so memory accumulates over a dataset run. Build 6 on v100
+        // was killed by the OOM killer after 27 silent minutes, with no trace
+        // in any test log - the sampler writes results/memory.csv and a warning
+        // line into the running test's output before that point is reached.
+        MEM_SAMPLE_INTERVAL_SEC = '60'
+        // crunch has 61 GB of RAM. The warning has to leave room to act, so it
+        // sits well below the point at which the kernel steps in.
+        MEM_WARN_MB             = '40000'
     }
 
     stages {
@@ -165,7 +175,7 @@ pipeline {
                                  params.TAG_ANALYZE || params.TAG_ARTAS_SPF || params.TAG_MLAT_RU ||
                                  params.TAG_SENSOR_STATUS || params.TAG_TRACKER_CONTRIB
                     def anyDataset = params.DATASET_05H || params.DATASET_2H || params.DATASET_LOWW ||
-                                     params.DATASET_SKEYES
+                                     params.DATASET_SKEYES || params.DATASET_EDDF
                     return anyTag && anyDataset
                 }
             }
@@ -178,7 +188,7 @@ pipeline {
                     if (params.TAG_CALCULATE)       tags << 'calculate'
                     if (params.TAG_CONTEXT)         tags << 'context'
                     if (params.TAG_CTX_GUI)         { tags << 'ctx_gui'; tags << 'ctx_gui_loww' }
-                    if (params.TAG_EVAL)            { tags << 'eval'; tags << 'eval_loww' }
+                    if (params.TAG_EVAL)            { tags << 'eval'; tags << 'eval_loww'; tags << 'eval_eddf' }
                     if (params.TAG_UI)              tags << 'ui'
                     if (params.TAG_VIEWS)           tags << 'views'
                     if (params.TAG_TABLEVIEW)       tags << 'tableview'
@@ -202,6 +212,7 @@ pipeline {
                     if (params.DATASET_2H)   datasets << [name: 'at_20230422_2h',   manifest: "${TEST_DATA_PATH}/at_20230422/at_20230422_2h.json"]
                     if (params.DATASET_LOWW) datasets << [name: 'loww_20260609_4h', manifest: "${TEST_DATA_PATH}/loww_20260609/loww_20260609_4h.json"]
                     if (params.DATASET_SKEYES) datasets << [name: 'skeyes_20251203', manifest: "${TEST_DATA_PATH}/skeyes_20251203/skeyes_20251203.json"]
+                    if (params.DATASET_EDDF) datasets << [name: 'eddf_20251117',   manifest: "${TEST_DATA_PATH}/eddf_20251117/eddf_20251117.json"]
 
                     // Find the run directory created by collect_artifacts.sh
                     def runDir = sh(
@@ -266,6 +277,8 @@ pipeline {
                                 --tags='${tagsStr}' \
                                 --deps=tests \
                                 --no-prompt \
+                                --mem-interval=${MEM_SAMPLE_INTERVAL_SEC} \
+                                --mem-warn=${MEM_WARN_MB} \
                                 --cfg-override=none ; \
                               echo \$? > '${rcFile}' ; } \
                                 2>&1 | tee '${runDir}/test_${dataset.name}.log'
@@ -304,8 +317,18 @@ pipeline {
             // Jenkins artifact list. Workspace cleanup of any leftover copies
             // from earlier pipeline versions that did archive them.
             sh "rm -f compass_crash_*.log"
-            // Archive test logs
-            archiveArtifacts artifacts: '**/test_*.log', allowEmptyArchive: true
+            // Collect the per-dataset memory curves next to the test logs, so an
+            // OOM-killed run can be read back from the build artifacts alone.
+            sh """
+                rm -rf memory_csv && mkdir -p memory_csv
+                for f in ${TEST_DATA_PATH}/runs/*/results/memory.csv; do
+                    [ -f "\$f" ] || continue
+                    ds=\$(basename \$(dirname \$(dirname "\$f")))
+                    cp "\$f" "memory_csv/memory_\$ds.csv"
+                done
+            """
+            // Archive test logs and memory curves
+            archiveArtifacts artifacts: '**/test_*.log, memory_csv/*.csv', allowEmptyArchive: true
             // Copy each dataset's JUnit XML into the workspace and publish
             // per-test results. One file per dataset - a single file would only
             // ever carry the last dataset's tests.

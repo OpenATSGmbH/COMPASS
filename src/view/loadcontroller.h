@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 
+#include <QPointer>
+
 class COMPASS;
 class LoadOperation;
 class QProgressDialog;

@@ -20,6 +20,7 @@
 #include "variableview.h"
 #include "viewwidget.h"
 #include "viewasyncprocessor.h"
+#include "layertreemodel.h"
 
 #include "buffer.h"
 #include "dbcontent/dbcontent.h"
@@ -556,11 +557,36 @@ void VariableViewStashDataWidget::selectData(double x_min,
 
     map<unsigned int, vector<unsigned long>> selected_rec_nums;
 
+    // Points the user has hidden in the layer panel are not drawn, so they must
+    // not be selectable either. The stored hidden ids are the stash group keys,
+    // see the leaf payloads' persistenceId().
+    auto* layer_model = layerTreeModel();
+
+    const std::set<std::string> hidden_groups =
+        layer_model ? layer_model->storedHiddenIds() : std::set<std::string>{};
+
+    // Views that pool selected points into one overlay layer draw them under
+    // that id, not under their group id. A selected point is therefore shown
+    // when the overlay layer is shown, whatever its group's checkbox says. This
+    // keeps a sub-selection inside the already selected data working while all
+    // data layers are hidden.
+    const std::string selection_layer_id = selectionLayerId();
+
+    const bool has_selection_layer    = !selection_layer_id.empty();
+    const bool selection_layer_hidden = has_selection_layer
+                                     && hidden_groups.count(selection_layer_id) > 0;
+
     // collect all selected rec nums per dbcont id
     for (const auto& dbc_stash_it : getStash().groupedStashes())
     {
         group_name = dbc_stash_it.first;
         const auto& dbc_stash = dbc_stash_it.second;
+
+        const bool group_hidden = hidden_groups.count(group_name) > 0;
+
+        // nothing of this group is drawn
+        if (group_hidden && (!has_selection_layer || selection_layer_hidden))
+            continue;
 
         const std::vector<double>&        x_values       = dbc_stash.variable_stashes[ var_x ].values;
         const std::vector<double>&        y_values       = dbc_stash.variable_stashes[ var_y ].values;
@@ -568,6 +594,7 @@ void VariableViewStashDataWidget::selectData(double x_min,
 
         traced_assert(x_values.size() == y_values.size());
         traced_assert(x_values.size() == rec_num_values.size());
+        traced_assert(x_values.size() == dbc_stash.selected_values.size());
 
         double x, y;
         bool in_range;
@@ -575,6 +602,13 @@ void VariableViewStashDataWidget::selectData(double x_min,
 
         for (unsigned int cnt=0; cnt < x_values.size(); ++cnt)
         {
+            // a selected point is drawn by the overlay layer, an unselected one
+            // by its group layer
+            const bool in_selection_layer = has_selection_layer && dbc_stash.selected_values[ cnt ];
+
+            if (in_selection_layer ? selection_layer_hidden : group_hidden)
+                continue;
+
             x = x_values.at(cnt);
             y = y_values.at(cnt);
             rec_num = rec_num_values.at(cnt);

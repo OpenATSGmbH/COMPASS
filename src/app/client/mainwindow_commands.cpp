@@ -71,6 +71,8 @@ REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXPCAPFile)
 REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXPCAPFiles)
 REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkStart)
 REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkStop)
+REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkPause)
+REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkResume)
 REGISTER_RTCOMMAND(main_window::RTCommandImportJSONFile)
 REGISTER_RTCOMMAND(main_window::RTCommandImportGPSTrail)
 
@@ -113,6 +115,8 @@ void init_commands()
     main_window::RTCommandImportASTERIXPCAPFiles::init();
     main_window::RTCommandImportASTERIXNetworkStart::init();
     main_window::RTCommandImportASTERIXNetworkStop::init();
+    main_window::RTCommandImportASTERIXNetworkPause::init();
+    main_window::RTCommandImportASTERIXNetworkResume::init();
 
     main_window::RTCommandImportJSONFile::init();
     main_window::RTCommandImportGPSTrail::init();

@@ -1057,6 +1057,9 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
         if (max_lines_ != -1)
             import_task.settings().max_network_lines_ = max_lines_;
 
+        if (ignore_future_ts_)
+            import_task.settings().network_ignore_future_ts_ = true;
+
         if (replay_files_.size() && time_offset_str_.empty())
         {
             // align the recording start to the current wall clock: shift every
@@ -1226,6 +1229,83 @@ bool RTCommandImportASTERIXNetworkStop::run_impl()
     //return false;
 
     // if ok
+    return true;
+}
+
+// import asterix network pause
+
+RTCommandImportASTERIXNetworkPause::RTCommandImportASTERIXNetworkPause()
+    : rtcommand::RTCommand()
+{
+    // the pause loads the paused display from the database, done when the main window reports it
+    condition.setSignal("mainwindow.dataLoaded", -1);
+}
+
+bool RTCommandImportASTERIXNetworkPause::run_impl()
+{
+    if (!compass_->dbOpened())
+    {
+        setResultMessage("Database not opened");
+        return false;
+    }
+
+    if (compass_->appMode() != AppMode::LiveRunning)
+    {
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        return false;
+    }
+
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+
+    if (!import_task.isRunning() || !import_task.source().isNetworkType())
+    {
+        setResultMessage("No ASTERIX network import running");
+        return false;
+    }
+
+    MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
+    traced_assert(main_window);
+
+    main_window->livePauseResumeSlot(); // toggles Running to Paused
+
+    return true;
+}
+
+// import asterix network resume
+
+RTCommandImportASTERIXNetworkResume::RTCommandImportASTERIXNetworkResume()
+    : rtcommand::RTCommand()
+{
+    condition.setDelay(500); // the live window is shown synchronously, same as the stop
+}
+
+bool RTCommandImportASTERIXNetworkResume::run_impl()
+{
+    if (!compass_->dbOpened())
+    {
+        setResultMessage("Database not opened");
+        return false;
+    }
+
+    if (compass_->appMode() != AppMode::LivePaused)
+    {
+        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        return false;
+    }
+
+    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+
+    if (!import_task.isRunning() || !import_task.source().isNetworkType())
+    {
+        setResultMessage("No ASTERIX network import running");
+        return false;
+    }
+
+    MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
+    traced_assert(main_window);
+
+    main_window->livePauseResumeSlot(); // toggles Paused to Running
+
     return true;
 }
 

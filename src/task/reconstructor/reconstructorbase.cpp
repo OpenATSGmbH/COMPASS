@@ -265,7 +265,7 @@ void ReconstructorBase::TargetsContainer::checkACADLookup()
         if (!acad_2_utn_.count(acad))
         {
             logerr << "acad "
-                   << String::hexStringFromInt(acad, 6, '0')
+                   << String::hexStringFromInt(acad, 6, '0', true)
                    << " not in lookup";
         }
 
