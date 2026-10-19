@@ -264,22 +264,25 @@ TransponderId transponderIdOf(unsigned int utn, AnalysisDataset& dataset)
     return out;
 }
 
-// Per-sector slot accumulation: a report slot is attributed to every selected
-// sector layer it lies in (evaluation's exact SectorLayer::isInside). `eui` /
-// `mui` accumulate across targets; `touched` is reset per target so the caller
-// can add the target's aircraft address once per sector.
+// Per-sector slot accumulation: a slot (or a share of it) is attributed to
+// every selected sector layer it lies in (evaluation's exact
+// SectorLayer::isInside). `eui` / `mui` accumulate weighted counts across
+// targets; `touched` is reset per target so the caller can add the target's
+// aircraft address once per sector.
 struct SectorWalkAccum
 {
     const std::vector<std::shared_ptr<SectorLayer>>* layers = nullptr;
-    std::vector<std::uint64_t> eui;
-    std::vector<std::uint64_t> mui;
-    std::vector<char>          touched;
+    std::vector<double> eui;
+    std::vector<double> mui;
+    std::vector<char>   touched;
 };
 
-// Time-difference walk per target, counting the #EUI / #MUI attributed to this
+// Time-difference walk per target, counting the weighted #EUI / #MUI of this
 // target while also attributing them to the shared grid cells. Mirrors the MLAT
-// coverage walk; the returned pair feeds the per-transponder breakdown.
-std::pair<std::uint64_t, std::uint64_t>
+// coverage walk (pieces sampled along the reference path, see
+// `analysis::walkReferencePeriodTimeDifference()`); the returned pair feeds the
+// per-transponder breakdown.
+std::pair<double, double>
 walkTargetTimeDifferenceCounted(unsigned int utn,
                                 const std::vector<RefPeriod>& periods,
                                 const std::vector<ptime>& tst_ts_sorted,
@@ -292,10 +295,10 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
 {
     const time_duration d_max = boost::posix_time::seconds(60);
 
-    std::uint64_t eui = 0;
-    std::uint64_t mui = 0;
+    double eui = 0.0;
+    double mui = 0.0;
 
-    auto accumSectors = [&](const CellAttribution& ca, bool is_miss) {
+    auto accumSectors = [&](const CellAttribution& ca, double w_eui, double w_mui) {
         if (!sec || !sec->layers)
             return;
         dbContent::TargetPosition pos;
@@ -308,7 +311,8 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
             const auto& L = (*sec->layers)[i];
             if (L && L->isInside(pos, false, false))
             {
-                if (is_miss) ++sec->mui[i]; else ++sec->eui[i];
+                sec->eui[i] += w_eui;
+                sec->mui[i] += w_mui;
                 sec->touched[i] = 1;
             }
         }
@@ -319,25 +323,33 @@ walkTargetTimeDifferenceCounted(unsigned int utn,
     walk_params.use_miss_tolerance = settings.use_miss_tolerance_;
     walk_params.miss_tolerance_s   = settings.miss_tolerance_s_;
 
-    auto slotFunc = [ & ] (const ptime& t, bool is_miss)
+    auto pieceFunc = [ & ] (const ptime& begin, const ptime& end, double expected, bool is_miss)
     {
-        auto ca = refCellAt(dataset, utn, t, d_max);
-        if (!ca.valid)
-            return;
+        analysis::samplePiece(begin, end, walk_params.sample_step_s,
+                              [ & ] (const ptime& t, double frac)
+        {
+            auto ca = refCellAt(dataset, utn, t, d_max);
+            if (!ca.valid)
+                return;
 
-        for (auto* g : grids)
-            is_miss ? g->addMUI(ca.lat, ca.lon, ca.alt_ft) : g->addEUI(ca.lat, ca.lon, ca.alt_ft);
+            const double w_eui = expected * frac;
+            const double w_mui = is_miss ? w_eui : 0.0;
 
-        if (is_miss) ++mui; else ++eui;
+            for (auto* g : grids)
+            {
+                g->addEUI(ca.lat, ca.lon, ca.alt_ft, w_eui);
+                if (is_miss)
+                    g->addMUI(ca.lat, ca.lon, ca.alt_ft, w_mui);
+            }
 
-        accumSectors(ca, is_miss);
+            eui += w_eui;
+            mui += w_mui;
+
+            accumSectors(ca, w_eui, w_mui);
+        });
     };
 
-    walkReferencePeriodsTimeDifference(
-        periods, tst_ts_sorted, walk_params,
-        [ & ] (const ptime& t) { slotFunc(t, false); },
-        [ & ] (const ptime& t) { slotFunc(t, true ); },
-        on_gap);
+    walkReferencePeriodsTimeDifference(periods, tst_ts_sorted, walk_params, pieceFunc, on_gap);
 
     return {eui, mui};
 }
@@ -382,7 +394,7 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
 
     // Per-MOPS-version and per-target-type summary grids + PD counters. The
     // target type is the reconstructed target category, not the raw report ECAT.
-    struct GroupCounts { std::uint64_t eui = 0; std::uint64_t mui = 0; };
+    struct GroupCounts { double eui = 0.0; double mui = 0.0; };
     std::map<unsigned int, std::unique_ptr<TargetReport3DGrid>> mops_grids;
     std::map<unsigned int, GroupCounts>                         mops_counts;
     std::map<int, std::unique_ptr<TargetReport3DGrid>>          type_grids;  // Category int
@@ -540,7 +552,7 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
     gap_rows.flush();
 
     auto horizontal = grid.projectHorizontal();
-    std::uint64_t total_eui = 0, total_mui = 0;
+    double total_eui = 0.0, total_mui = 0.0;
     double worst_pd = 1.0;
     bool   worst_set = false;
     std::vector<double> per_cell_pd;
@@ -549,10 +561,12 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
     {
         total_eui += kv.second.num_eui;
         total_mui += kv.second.num_mui;
-        if (kv.second.num_eui == 0) continue;
-        double pd = (static_cast<double>(kv.second.num_eui)
-                     - static_cast<double>(kv.second.num_mui))
-                    / static_cast<double>(kv.second.num_eui);
+        if (kv.second.num_eui <= 0.0) continue;
+        double pd = (kv.second.num_eui - kv.second.num_mui) / kv.second.num_eui;
+        if (pd < -1e-9)
+            logerr << "cell with more missed than expected slots, #EUI "
+                   << kv.second.num_eui << " #MUI " << kv.second.num_mui;
+        pd = std::max(0.0, pd);  // rounding only, see the check above
         per_cell_pd.push_back(pd);
         if (kv.second.num_eui >= 5 && (!worst_set || pd < worst_pd))
         {
@@ -560,10 +574,7 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
             worst_set = true;
         }
     }
-    double overall_pd = total_eui > 0
-                           ? (static_cast<double>(total_eui) - static_cast<double>(total_mui))
-                                 / static_cast<double>(total_eui)
-                           : 0.0;
+    double overall_pd = total_eui > 0.0 ? (total_eui - total_mui) / total_eui : 0.0;
 
     result_.valid              = true;
     result_.targets_walked     = targets_walked;
@@ -626,9 +637,8 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
         result_.transponders.push_back(unknown_row);
 
     auto pdOf = [](const TransponderRow& r) -> double {
-        if (r.eui == 0) return 1.0;
-        return (static_cast<double>(r.eui) - static_cast<double>(r.mui))
-               / static_cast<double>(r.eui);
+        if (r.eui <= 0.0) return 1.0;
+        return (r.eui - r.mui) / r.eui;
     };
     std::sort(result_.transponders.begin(), result_.transponders.end(),
               [&](const TransponderRow& a, const TransponderRow& b) {
@@ -680,10 +690,7 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
         r.num_transponders = sector_acads[si].size();
         r.eui              = sec.eui[si];
         r.mui              = sec.mui[si];
-        r.pd               = sec.eui[si] > 0
-            ? (static_cast<double>(sec.eui[si]) - static_cast<double>(sec.mui[si]))
-                  / static_cast<double>(sec.eui[si])
-            : 0.0;
+        r.pd               = sec.eui[si] > 0.0 ? (sec.eui[si] - sec.mui[si]) / sec.eui[si] : 0.0;
         result_.sectors.push_back(std::move(r));
     }
 }
@@ -692,15 +699,14 @@ namespace
 {
 std::optional<double> pdScalar(const TargetReport3DGrid::Cell& c)
 {
-    if (c.num_eui == 0)
+    if (c.num_eui <= 0.0)
         return std::nullopt;
-    return (static_cast<double>(c.num_eui) - static_cast<double>(c.num_mui))
-           / static_cast<double>(c.num_eui);
+    return std::max(0.0, (c.num_eui - c.num_mui) / c.num_eui);
 }
 
 std::uint64_t pdSampleCount(const TargetReport3DGrid::Cell& c)
 {
-    return c.num_eui;
+    return static_cast<std::uint64_t>(std::llround(c.num_eui));
 }
 
 void attachPDFigure(ResultReport::Section& section,
@@ -834,8 +840,8 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
     summary.addRow({"Targets w/o RefTraj",   std::to_string(result_.targets_no_ref)});
     summary.addRow({"Targets w/o test data", std::to_string(result_.targets_no_tst)});
     summary.addRow({"Transponders",          std::to_string(result_.transponders.size())});
-    summary.addRow({"Total expected slots (#EUI)", std::to_string(result_.total_eui)});
-    summary.addRow({"Total missed slots (#MUI)",   std::to_string(result_.total_mui)});
+    summary.addRow({"Total expected slots (#EUI)", formatNumber(result_.total_eui, 1)});
+    summary.addRow({"Total missed slots (#MUI)",   formatNumber(result_.total_mui, 1)});
     summary.addRow({"Overall PD",                  formatNumber(result_.overall_pd)});
     summary.addRow({"Cells with EUI",              std::to_string(result_.cells_with_eui)});
     summary.addRow({"Median per-cell PD",          formatNumber(result_.median_per_cell_pd)});
@@ -901,13 +907,11 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
         std::string acad_str = r.has_acad
             ? Utils::String::hexStringFromInt(static_cast<int>(r.acad), 6, '0', true)
             : std::string("(unknown)");
-        double pd = r.eui == 0 ? 1.0
-                              : (static_cast<double>(r.eui) - static_cast<double>(r.mui))
-                                    / static_cast<double>(r.eui);
+        double pd = r.eui <= 0.0 ? 1.0 : (r.eui - r.mui) / r.eui;
         tt.addRow({acad_str,
                    r.callsign.empty() ? std::string("-") : r.callsign,
-                   std::to_string(r.eui),
-                   std::to_string(r.mui),
+                   formatNumber(r.eui, 1),
+                   formatNumber(r.mui, 1),
                    formatNumber(pd)});
     }
 
@@ -919,14 +923,14 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
                                     {"Sector", "Transponders", "#EUI", "#MUI", "PD"}, false);
         st.addRow({"All (in scope)",
                    std::to_string(result_.transponders.size()),
-                   std::to_string(result_.total_eui),
-                   std::to_string(result_.total_mui),
+                   formatNumber(result_.total_eui, 1),
+                   formatNumber(result_.total_mui, 1),
                    formatNumber(result_.overall_pd)});
         for (const auto& r : result_.sectors)
             st.addRow({r.label,
                        std::to_string(r.num_transponders),
-                       std::to_string(r.eui),
-                       std::to_string(r.mui),
+                       formatNumber(r.eui, 1),
+                       formatNumber(r.mui, 1),
                        formatNumber(r.pd)});
     }
 
@@ -947,10 +951,9 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
     // Summary breakdowns by MOPS version and by target type: per group, a PD
     // counter row plus a horizontal PD map. These replace infeasible
     // per-transponder figures (one per aircraft address).
-    auto pdRatio = [](std::uint64_t eui, std::uint64_t mui) -> double {
-        if (eui == 0) return 1.0;
-        return (static_cast<double>(eui) - static_cast<double>(mui))
-               / static_cast<double>(eui);
+    auto pdRatio = [](double eui, double mui) -> double {
+        if (eui <= 0.0) return 1.0;
+        return (eui - mui) / eui;
     };
 
     auto writeGroupBreakdown = [&](const std::string& title,
@@ -965,7 +968,7 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
         auto& gtbl = gsec.addTable("Overview", 4,
                                    {key_header, "#EUI", "#MUI", "PD"}, false);
         for (const auto& g : groups)
-            gtbl.addRow({g.label, std::to_string(g.eui), std::to_string(g.mui),
+            gtbl.addRow({g.label, formatNumber(g.eui, 1), formatNumber(g.mui, 1),
                          formatNumber(pdRatio(g.eui, g.mui))});
         if (dropped > 0)
             gtbl.addRow({"(" + std::to_string(dropped) + " more, not shown)",

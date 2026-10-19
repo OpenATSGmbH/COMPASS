@@ -47,8 +47,7 @@ void walkReferencePeriodTimeDifference(
     const EvaluationRequirement::PDHelpers::RefPeriod& period,
     const std::vector<ptime>&                          tst_ts_sorted,
     const PDWalkParams&                                params,
-    const PDWalkSlotFunc&                              on_expected,
-    const PDWalkSlotFunc&                              on_miss,
+    const PDWalkPieceFunc&                             on_piece,
     const PDWalkGapFunc&                               on_gap)
 {
     if (!params.mv)
@@ -59,24 +58,7 @@ void walkReferencePeriodTimeDifference(
 
     const MovementUI& mv = *params.mv;
 
-    // expected slots, stepped with the update interval valid at each slot
-    {
-        std::size_t guard = 0;
-
-        for (ptime t_slot = period.begin; t_slot < period.end; )
-        {
-            if (on_expected)
-                on_expected(t_slot);
-
-            const double ui = mv.uiAt(t_slot);
-            if (ui <= 0.0 || ++guard > params.max_iterations)
-                break;
-
-            t_slot = addSeconds(t_slot, ui);
-        }
-    }
-
-    // gaps: period start, test reports inside the period, period end
+    // time line: period start, test reports inside the period, period end
     auto first = std::lower_bound(tst_ts_sorted.begin(), tst_ts_sorted.end(), period.begin);
     auto last  = std::upper_bound(tst_ts_sorted.begin(), tst_ts_sorted.end(), period.end);
 
@@ -90,6 +72,9 @@ void walkReferencePeriodTimeDifference(
 
     const double tol_s = params.use_miss_tolerance ? params.miss_tolerance_s : 0.0;
 
+    std::vector<ptime>  miss_t;
+    std::vector<double> miss_ui;
+
     for (std::size_t i = 0; i + 1 < walk.size(); ++i)
     {
         const ptime gap_start = walk[ i     ];
@@ -98,9 +83,15 @@ void walkReferencePeriodTimeDifference(
         if (gap_end <= gap_start)
             continue;
 
-        std::size_t guard = 0;
-        unsigned int num_missed = 0;
+        const double ui_start = mv.uiAt(gap_start);
+        if (ui_start <= 0.0)
+            continue;
 
+        // missed slots by the gap rule
+        miss_t.clear();
+        miss_ui.clear();
+
+        std::size_t guard = 0;
         for (ptime t_miss = gap_start;;)
         {
             const double ui = mv.uiAt(t_miss);
@@ -112,14 +103,37 @@ void walkReferencePeriodTimeDifference(
             if (t_miss >= gap_end || partialSeconds(gap_end - t_miss) < tol_s)
                 break;
 
-            if (on_miss)
-                on_miss(t_miss);
-
-            ++num_missed;
+            miss_t.push_back(t_miss);
+            miss_ui.push_back(mv.uiAt(t_miss));
         }
 
-        if (on_gap && num_missed > 0)
-            on_gap(gap_start, gap_end, num_missed);
+        const std::size_t num_missed = miss_t.size();
+
+        if (num_missed == 0)
+        {
+            // detected gap: the whole gap as a fraction of the update interval
+            if (on_piece)
+                on_piece(gap_start, gap_end, partialSeconds(gap_end - gap_start) / ui_start, false);
+            continue;
+        }
+
+        // detected piece up to the first miss, carrying the rest of the last slot
+        const double ui_last  = miss_ui.back() > 0.0 ? miss_ui.back() : ui_start;
+        const double rest     = partialSeconds(gap_end - miss_t.back()) / ui_last;
+
+        if (on_piece)
+        {
+            on_piece(gap_start, miss_t.front(), rest, false);
+
+            for (std::size_t k = 0; k < num_missed; ++k)
+            {
+                const ptime piece_end = k + 1 < num_missed ? miss_t[ k + 1 ] : gap_end;
+                on_piece(miss_t[ k ], piece_end, 1.0, true);
+            }
+        }
+
+        if (on_gap)
+            on_gap(gap_start, gap_end, static_cast<unsigned int>(num_missed));
     }
 }
 
@@ -129,12 +143,38 @@ void walkReferencePeriodsTimeDifference(
     const std::vector<EvaluationRequirement::PDHelpers::RefPeriod>& periods,
     const std::vector<ptime>&                                       tst_ts_sorted,
     const PDWalkParams&                                             params,
-    const PDWalkSlotFunc&                                           on_expected,
-    const PDWalkSlotFunc&                                           on_miss,
+    const PDWalkPieceFunc&                                          on_piece,
     const PDWalkGapFunc&                                            on_gap)
 {
     for (const auto& period : periods)
-        walkReferencePeriodTimeDifference(period, tst_ts_sorted, params, on_expected, on_miss, on_gap);
+        walkReferencePeriodTimeDifference(period, tst_ts_sorted, params, on_piece, on_gap);
+}
+
+/**
+ */
+void samplePiece(const ptime&            begin,
+                 const ptime&            end,
+                 double                  max_step_s,
+                 const PDWalkSampleFunc& on_sample)
+{
+    if (!on_sample)
+        return;
+
+    const double len_s = partialSeconds(end - begin);
+    if (len_s <= 0.0)
+    {
+        // zero-length piece: one sample at its time carries all of it
+        on_sample(begin, 1.0);
+        return;
+    }
+
+    const double step = max_step_s > 0.0 ? max_step_s : len_s;
+    const std::size_t n = std::max<std::size_t>(1, static_cast<std::size_t>(std::ceil(len_s / step)));
+    const double sub = len_s / static_cast<double>(n);
+    const double frac = 1.0 / static_cast<double>(n);
+
+    for (std::size_t k = 0; k < n; ++k)
+        on_sample(addSeconds(begin, (static_cast<double>(k) + 0.5) * sub), frac);
 }
 
 } // namespace analysis

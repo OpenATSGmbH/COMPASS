@@ -56,6 +56,8 @@ Per-cell Probability of Detection (PD) on a 3D grid. Rendered as horizontal, alt
 \end{table}
 \ \\
 
+With the 'Time Difference' method, the expected and missed updates are found from the time line of each target only: the gaps between its target reports give the missed updates, with the same rule as the detection requirement in the evaluation. Each expected update stands for a part of the reference trajectory, about one update interval long. This part is split over the grid cells it passes, by the time the target spends in each cell. A missed update is counted in the same cells as its expected update, so no cell can have more missed than expected updates, and the PD of each cell is always between 0 and 1. For this reason the numbers of expected and missed updates in the result tables can have decimals. \\
+
 \begin{figure}[H]
   \centering
   \hspace*{-2.5cm}

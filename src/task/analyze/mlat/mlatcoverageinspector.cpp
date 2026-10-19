@@ -147,18 +147,19 @@ struct CellAttribution
     double alt_ft = 0.0;
 };
 
-// Per-sector slot accumulation: a slot is attributed to every selected sector
-// layer it lies in (evaluation's exact SectorLayer::isInside). `eui`/`mui`
-// accumulate across targets; `touched` is reset per target so the caller can
-// count each target once per sector.
+// Per-sector slot accumulation: a slot (or a share of it) is attributed to
+// every selected sector layer it lies in (evaluation's exact
+// SectorLayer::isInside). `eui`/`mui` accumulate weighted counts across
+// targets; `touched` is reset per target so the caller can count each target
+// once per sector.
 struct SectorWalkAccum
 {
     const std::vector<std::shared_ptr<SectorLayer>>* layers = nullptr;
-    std::vector<std::uint64_t> eui;
-    std::vector<std::uint64_t> mui;
-    std::vector<char>          touched;
+    std::vector<double> eui;
+    std::vector<double> mui;
+    std::vector<char>   touched;
 
-    void accum(const CellAttribution& ca, bool is_miss)
+    void accum(const CellAttribution& ca, double w_eui, double w_mui)
     {
         if (!layers)
             return;
@@ -172,7 +173,8 @@ struct SectorWalkAccum
             const auto& L = (*layers)[i];
             if (L && L->isInside(pos, false, false))
             {
-                if (is_miss) ++mui[i]; else ++eui[i];
+                eui[i] += w_eui;
+                mui[i] += w_mui;
                 touched[i] = 1;
             }
         }
@@ -217,17 +219,13 @@ std::vector<ptime> gatherTestTimestamps(unsigned int utn,
 
 // Time-difference walk per target.
 //
-// For each reference period:
-//   - attribute one #EUI per UI slot, at the cell of the reference position
-//     at slot timestamp `period.begin + k * UI`;
-//   - walk the test timestamps that fall inside `[period.begin, period.end]`
-//     and form gaps (period.begin -> first test, between consecutive tests,
-//     last test -> period.end; or `period` itself when no tests are inside);
-//   - for each gap, attribute one #MUI per missed UI slot at the cell of the
-//     reference position at the slot timestamp.
-//
-// The walk itself is shared with the ADS-B coverage inspector, see
-// `analysis::walkReferencePeriodTimeDifference()`.
+// The walk (shared with the ADS-B coverage inspector, see
+// `analysis::walkReferencePeriodTimeDifference()`) cuts each reference period
+// into pieces of the reference time line, from the gaps between the test
+// reports only: one piece per missed slot (1 #EUI and 1 #MUI) and one detected
+// piece per gap (the remaining fraction of a slot). Each piece is sampled along
+// the reference path and its weight split over the cells by the time spent in
+// each, so a missed slot and its expected slot always share the same cells.
 // Both per-cell counters live on `grid`; the caller aggregates them.
 void walkTargetTimeDifference(unsigned int utn,
                               const std::vector<RefPeriod>& periods,
@@ -246,22 +244,27 @@ void walkTargetTimeDifference(unsigned int utn,
     walk_params.use_miss_tolerance = settings.use_miss_tolerance_;
     walk_params.miss_tolerance_s   = settings.miss_tolerance_s_;
 
-    auto slotFunc = [ & ] (const ptime& t, bool is_miss)
+    auto pieceFunc = [ & ] (const ptime& begin, const ptime& end, double expected, bool is_miss)
     {
-        auto ca = refCellAt(dataset, utn, t, d_max);
-        if (!ca.valid)
-            return;
+        analysis::samplePiece(begin, end, walk_params.sample_step_s,
+                              [ & ] (const ptime& t, double frac)
+        {
+            auto ca = refCellAt(dataset, utn, t, d_max);
+            if (!ca.valid)
+                return;
 
-        is_miss ? grid.addMUI(ca.lat, ca.lon, ca.alt_ft) : grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
+            const double w_eui = expected * frac;
+            const double w_mui = is_miss ? w_eui : 0.0;
 
-        if (sec) sec->accum(ca, is_miss);
+            grid.addEUI(ca.lat, ca.lon, ca.alt_ft, w_eui);
+            if (is_miss)
+                grid.addMUI(ca.lat, ca.lon, ca.alt_ft, w_mui);
+
+            if (sec) sec->accum(ca, w_eui, w_mui);
+        });
     };
 
-    walkReferencePeriodsTimeDifference(
-        periods, tst_ts_sorted, walk_params,
-        [ & ] (const ptime& t) { slotFunc(t, false); },
-        [ & ] (const ptime& t) { slotFunc(t, true ); },
-        on_gap);
+    walkReferencePeriodsTimeDifference(periods, tst_ts_sorted, walk_params, pieceFunc, on_gap);
 }
 }  // anonymous namespace
 
@@ -320,12 +323,9 @@ void walkTargetStatusMessage(unsigned int utn,
             if (!ca.valid)
                 continue;
             grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
-            if (sec) sec->accum(ca, false);
             if (ev.is_miss)
-            {
                 grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
-                if (sec) sec->accum(ca, true);
-            }
+            if (sec) sec->accum(ca, 1.0, ev.is_miss ? 1.0 : 0.0);
         }
 
         closeGap(period.end);
@@ -480,7 +480,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     gap_rows.flush();
 
     auto horizontal = grid.projectHorizontal();
-    std::uint64_t total_eui = 0, total_mui = 0;
+    double total_eui = 0.0, total_mui = 0.0;
     double worst_pd = 1.0;
     bool   worst_set = false;
     std::vector<double> per_cell_pd;
@@ -489,10 +489,12 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     {
         total_eui += kv.second.num_eui;
         total_mui += kv.second.num_mui;
-        if (kv.second.num_eui == 0) continue;
-        double pd = (static_cast<double>(kv.second.num_eui)
-                     - static_cast<double>(kv.second.num_mui))
-                    / static_cast<double>(kv.second.num_eui);
+        if (kv.second.num_eui <= 0.0) continue;
+        double pd = (kv.second.num_eui - kv.second.num_mui) / kv.second.num_eui;
+        if (pd < -1e-9)
+            logerr << "cell with more missed than expected slots, #EUI "
+                   << kv.second.num_eui << " #MUI " << kv.second.num_mui;
+        pd = std::max(0.0, pd);  // rounding only, see the check above
         per_cell_pd.push_back(pd);
         if (kv.second.num_eui >= 5 && (!worst_set || pd < worst_pd))
         {
@@ -500,10 +502,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
             worst_set = true;
         }
     }
-    double overall_pd = total_eui > 0
-                           ? (static_cast<double>(total_eui) - static_cast<double>(total_mui))
-                                 / static_cast<double>(total_eui)
-                           : 0.0;
+    double overall_pd = total_eui > 0.0 ? (total_eui - total_mui) / total_eui : 0.0;
 
     result_.valid              = true;
     result_.targets_walked     = targets_walked;
@@ -568,10 +567,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         r.num_targets = sector_target_count[si];
         r.eui         = sec.eui[si];
         r.mui         = sec.mui[si];
-        r.pd          = sec.eui[si] > 0
-            ? (static_cast<double>(sec.eui[si]) - static_cast<double>(sec.mui[si]))
-                  / static_cast<double>(sec.eui[si])
-            : 0.0;
+        r.pd          = sec.eui[si] > 0.0 ? (sec.eui[si] - sec.mui[si]) / sec.eui[si] : 0.0;
         result_.sectors.push_back(std::move(r));
     }
 }
@@ -581,15 +577,14 @@ namespace
 // Per-cell PD scalar: only cells with #EUI > 0 contribute.
 std::optional<double> pdScalar(const TargetReport3DGrid::Cell& c)
 {
-    if (c.num_eui == 0)
+    if (c.num_eui <= 0.0)
         return std::nullopt;
-    return (static_cast<double>(c.num_eui) - static_cast<double>(c.num_mui))
-           / static_cast<double>(c.num_eui);
+    return std::max(0.0, (c.num_eui - c.num_mui) / c.num_eui);
 }
 
 std::uint64_t pdSampleCount(const TargetReport3DGrid::Cell& c)
 {
-    return c.num_eui;
+    return static_cast<std::uint64_t>(std::llround(c.num_eui));
 }
 
 void attachPDFigure(ResultReport::Section& section,
@@ -754,8 +749,8 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     summary.addRow({"Targets walked",        std::to_string(result_.targets_walked)});
     summary.addRow({"Targets w/o RefTraj",   std::to_string(result_.targets_no_ref)});
     summary.addRow({"Targets w/o test data", std::to_string(result_.targets_no_tst)});
-    summary.addRow({"Total expected slots (#EUI)", std::to_string(result_.total_eui)});
-    summary.addRow({"Total missed slots (#MUI)",   std::to_string(result_.total_mui)});
+    summary.addRow({"Total expected slots (#EUI)", formatNumber(result_.total_eui, 1)});
+    summary.addRow({"Total missed slots (#MUI)",   formatNumber(result_.total_mui, 1)});
     summary.addRow({"Overall PD",                  formatNumber(result_.overall_pd)});
     summary.addRow({"Cells with EUI",              std::to_string(result_.cells_with_eui)});
     summary.addRow({"Median per-cell PD",          formatNumber(result_.median_per_cell_pd)});
@@ -821,14 +816,14 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
                                     {"Sector", "Targets", "#EUI", "#MUI", "PD"}, false);
         st.addRow({"All (in scope)",
                    std::to_string(result_.targets_walked),
-                   std::to_string(result_.total_eui),
-                   std::to_string(result_.total_mui),
+                   formatNumber(result_.total_eui, 1),
+                   formatNumber(result_.total_mui, 1),
                    formatNumber(result_.overall_pd)});
         for (const auto& r : result_.sectors)
             st.addRow({r.label,
                        std::to_string(r.num_targets),
-                       std::to_string(r.eui),
-                       std::to_string(r.mui),
+                       formatNumber(r.eui, 1),
+                       formatNumber(r.mui, 1),
                        formatNumber(r.pd)});
     }
 

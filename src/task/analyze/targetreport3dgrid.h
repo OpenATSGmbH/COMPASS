@@ -45,6 +45,8 @@ struct Grid2DLayer;
  * the three 2D projections temporarily duplicates per-cell content.
  *
  *  - PD counters: num_eui (expected slots), num_mui (missed slots) for Feature 2.
+ *    Both are weighted: the time-difference walk splits a slot over the cells
+ *    its piece of the reference path crosses, so the counts can be fractional.
  *    num_extra counts reports beyond the expected count per slot (SMR splits).
  *  - Accuracy running sums for Feature 3:
  *      sum_distance_m / num_distance     -> mean horizontal offset
@@ -70,8 +72,8 @@ class TargetReport3DGrid
 public:
     struct Cell
     {
-        std::uint64_t num_eui   = 0;
-        std::uint64_t num_mui   = 0;
+        double        num_eui   = 0.0;
+        double        num_mui   = 0.0;
         std::uint64_t num_extra = 0;  // reports beyond the expected count per slot
 
         std::uint64_t num_samples    = 0;  // total accuracy samples added (any kind)
@@ -98,8 +100,8 @@ public:
      */
     TargetReport3DGrid(double cell_size_m, double cell_size_ft, double ref_lat_deg);
 
-    void addEUI(double lat_deg, double lon_deg, double baro_alt_ft);
-    void addMUI(double lat_deg, double lon_deg, double baro_alt_ft);
+    void addEUI(double lat_deg, double lon_deg, double baro_alt_ft, double weight = 1.0);
+    void addMUI(double lat_deg, double lon_deg, double baro_alt_ft, double weight = 1.0);
     void addExtra(double lat_deg, double lon_deg, double baro_alt_ft, std::uint64_t num = 1);
     void addAccuracySample(double lat_deg, double lon_deg, double baro_alt_ft,
                            double distance_m, double reported_stddev_m);
