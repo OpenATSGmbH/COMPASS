@@ -90,8 +90,6 @@ std::pair<QImage,RasterReference> Grid2DLayerRenderer::render(const Grid2DLayer&
 
     //std::cout << "vmin: " << vmin << ", vmax: " << vmax << std::endl;
 
-    double vrange = vmax - vmin;
-    
     auto getColor = [ & ] (size_t cx, size_t cy)
     {
         //handle cell selection
@@ -109,9 +107,7 @@ std::pair<QImage,RasterReference> Grid2DLayerRenderer::render(const Grid2DLayer&
         if (use_colormap_range)
             return settings.color_map.sampleValue(v);
 
-        double t = (v - vmin) / vrange;
-
-        return settings.color_map.sample(t);
+        return settings.color_map.sample(settings.color_map.factorOfValue(v, vmin, vmax));
     };
 
     for (size_t y = 0, y0 = 0; y < nrows; ++y, y0 += pixels_per_cell)

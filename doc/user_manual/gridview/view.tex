@@ -108,6 +108,7 @@ Below the variable selection, several parameters can be used to further configur
     \item \textbf{Grid Resolution}: The number of grid cells displayed, both in X- and Y-direction. The grid covers the extent of the target reports that have a value of the distributed variable, so a Report Variable with values in a small region gets the full resolution in that region.
     \item \textbf{Color Scale}: The color scheme used for colorization of grid cells. The following scales are available: 'Green2Red', 'Red2Green', 'Blue2Green2Red', 'Parula', 'Heat', 'Jet', 'Turbo', 'Hot', 'Monochrome Gray', 'Magma', 'Inferno', 'Plasma', 'Viridis', 'Cividis', 'Github', 'Monochrome Red', 'Monochrome Green', 'Monochrome Blue', 'Cubehelix', 'HSV' and 'Custom'.
     \item \textbf{Color Steps}: Number of discrete colors used for colorization of grid cells.
+    \item \textbf{Logarithmic Scale}: If checked, the values are assigned to the colors on a logarithmic scale. Each factor of ten in the value gets the same share of the colors, so a few very large values do not hide the differences between the small values. Values at or below the lower end of the color scale get the first color. If the lower end is 0 or below, 1/1000 of the upper end is used as the lower end.
     \item \textbf{Color Min. Value}: The value the lower end of the color scale is assigned to.
         If not set, the minimum of all distributed values will be chosen.
         If empty, a clue about the needed value format is shown (e.g. DOUBLE).

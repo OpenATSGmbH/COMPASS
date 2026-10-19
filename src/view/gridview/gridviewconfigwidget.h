@@ -79,6 +79,7 @@ protected:
     void gridResolutionChanged();
     void colorScaleChanged();
     void colorStepsChanged();
+    void colorLogScaleChanged();
     void minValueChanged();
     void maxValueChanged();
     
@@ -101,6 +102,7 @@ protected:
     QLabel*              grid_resolution_placeh_label_ = nullptr;
     ColorScaleSelection* color_selection_              = nullptr;
     QSpinBox*            color_steps_box_              = nullptr;
+    QCheckBox*           color_log_check_              = nullptr;
     PropertyValueEdit*   color_value_min_box_          = nullptr;
     PropertyValueEdit*   color_value_max_box_          = nullptr;
     QPushButton*         reset_min_button_             = nullptr;

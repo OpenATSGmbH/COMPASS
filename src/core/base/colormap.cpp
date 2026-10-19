@@ -23,6 +23,7 @@
 #include "logger.h"
 
 #include <QComboBox>
+#include <cmath>
 #include <QLabel>
 #include <QGridLayout>
 
@@ -535,9 +536,61 @@ QColor ColorMap::sampleValue(double v) const
     if (vrange < 1e-12)
         return colors_.front();
     
-    const double t = (v - range.first) / vrange;
-    
-    return sample(t);
+    return sample(factorOfValue(v, range.first, range.second));
+}
+
+/**
+*/
+void ColorMap::setLogScale(bool log_scale, double floor)
+{
+    log_scale_ = log_scale;
+    log_floor_ = floor;
+}
+
+namespace
+{
+/// Lower and upper bound used for the logarithmic mapping, both > 0.
+std::pair<double, double> logBounds(double vmin, double vmax, double floor)
+{
+    double lo = vmin;
+    if (lo <= 0.0)
+        lo = floor > 0.0 ? floor : std::max(std::fabs(vmax) * 1e-3, 1e-12);
+
+    double hi = std::max(vmax, lo * (1.0 + 1e-9));
+
+    return std::make_pair(lo, hi);
+}
+}
+
+/**
+*/
+double ColorMap::factorOfValue(double v, double vmin, double vmax) const
+{
+    if (!log_scale_)
+    {
+        const double vrange = vmax - vmin;
+        if (vrange < 1e-12)
+            return 0.0;
+        return (v - vmin) / vrange;
+    }
+
+    auto b = logBounds(vmin, vmax, log_floor_);
+    if (v <= b.first)
+        return 0.0;
+
+    return (std::log(v) - std::log(b.first)) / (std::log(b.second) - std::log(b.first));
+}
+
+/**
+*/
+double ColorMap::valueAtFactor(double t, double vmin, double vmax) const
+{
+    if (!log_scale_)
+        return vmin + t * (vmax - vmin);
+
+    auto b = logBounds(vmin, vmax, log_floor_);
+
+    return b.first * std::pow(b.second / b.first, t);
 }
 
 /**
@@ -590,23 +643,23 @@ ColorLegend ColorMap::colorLegend(bool add_sel_color,
     {
         if (type_ == Type::LinearRanges)
         {
-            legend.addEntry(colors_.front(), "< " + active_decorator(range.first));
+            legend.addEntry(colors_.front(), "< " + active_decorator(valueAtFactor(0.0, range.first, range.second)));
 
             for (size_t i = 1; i < n_colors_ - 1; ++i)
             {
-                const double v0 = range.first + value_factors_[ i     ] * vrange;
-                const double v1 = range.first + value_factors_[ i + 1 ] * vrange;
+                const double v0 = valueAtFactor(value_factors_[ i     ], range.first, range.second);
+                const double v1 = valueAtFactor(value_factors_[ i + 1 ], range.first, range.second);
 
                 legend.addEntry(colors_[ i ], active_decorator(v0) + " - " + active_decorator(v1));
             }
 
-            legend.addEntry(colors_.back(), ">= " + active_decorator(range.second));
+            legend.addEntry(colors_.back(), ">= " + active_decorator(valueAtFactor(1.0, range.first, range.second)));
         }
         else
         {
             for (size_t i = 0; i < n_colors_; ++i)
             {
-                const double v = range.first + value_factors_[ i ] * vrange;
+                const double v = valueAtFactor(value_factors_[ i ], range.first, range.second);
                 legend.addEntry(colors_[ i ], active_decorator(v));
             }
         }

@@ -51,6 +51,7 @@
 #include "viewlayertreemodel.h"
 #include "annotationsrootitem.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QLineEdit>
 #include <QSpinBox>
@@ -155,6 +156,15 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
     connect(color_steps_box_, QOverload<int>::of(&QSpinBox::valueChanged), this, &GridViewConfigWidget::colorStepsChanged);
 
     layout->addRow("Color Steps:", color_steps_box_);
+
+    color_log_check_ = new QCheckBox;
+    color_log_check_->setToolTip("Map the values to the colors on a logarithmic scale");
+
+    UI_TEST_OBJ_NAME(color_log_check_, "color_log_scale");
+
+    connect(color_log_check_, &QCheckBox::clicked, this, &GridViewConfigWidget::colorLogScaleChanged);
+
+    layout->addRow("Logarithmic Scale:", color_log_check_);
 
     color_value_min_box_ = new PropertyValueEdit();
     reset_min_button_    = new QPushButton("Reset");
@@ -451,6 +461,13 @@ void GridViewConfigWidget::colorStepsChanged()
 
 /**
 */
+void GridViewConfigWidget::colorLogScaleChanged()
+{
+    view_->setColorLogScale(color_log_check_->isChecked(), true);
+}
+
+/**
+*/
 void GridViewConfigWidget::minValueChanged()
 {
     auto v_str = color_value_min_box_->isValid() ? color_value_min_box_->valueAsString() : "";
@@ -497,6 +514,10 @@ void GridViewConfigWidget::updateConfig()
     color_steps_box_->blockSignals(true);
     color_steps_box_->setValue((int)settings.render_color_num_steps);
     color_steps_box_->blockSignals(false);
+
+    color_log_check_->blockSignals(true);
+    color_log_check_->setChecked(settings.render_color_log_scale);
+    color_log_check_->blockSignals(false);
 
     //@TODO: updateDistributedVariable()?
     updateVariableDataType();

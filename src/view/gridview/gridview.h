@@ -48,6 +48,7 @@ public:
         std::string  render_color_value_max;
         int          render_color_scale;
         unsigned int render_color_num_steps;
+        bool         render_color_log_scale;
     };
 
     enum class Variable
@@ -65,6 +66,7 @@ public:
     void setPixelsPerCell(unsigned int n, bool notify_changes);
     void setColorScale(colorscale::ColorScale scale, bool notify_changes);
     void setColorSteps(unsigned int n, bool notify_changes);
+    void setColorLogScale(bool log_scale, bool notify_changes);
     void setMinValue(const std::string& value_str, bool notify_changes);
     void setMaxValue(const std::string& value_str, bool notify_changes);
 
