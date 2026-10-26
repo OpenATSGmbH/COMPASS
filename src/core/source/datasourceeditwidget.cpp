@@ -1099,11 +1099,13 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
     auto lat_box = new QDoubleSpinBox;
     lat_box->setMinimum(-90);
     lat_box->setMaximum( 90);
+    lat_box->setDecimals(12); // set before setValue, which rounds to the current decimals
     lat_box->setValue(add ? 0 : ru_def_in.latitude);
 
     auto lon_box = new QDoubleSpinBox;
     lon_box->setMinimum(-180);
     lon_box->setMaximum( 180);
+    lon_box->setDecimals(12);
     lon_box->setValue(add ? 0 : ru_def_in.longitude);
 
     auto alt_box = new QDoubleSpinBox;
@@ -1753,8 +1755,8 @@ void DataSourceEditWidget::updateMLAT(context::DataSource* ds)
             item->setData(0, Qt::DisplayRole, std::stoi(key));
             item->setData(1, Qt::DisplayRole, QString::fromStdString(ru_json.value("name", "")));
             item->setData(2, Qt::DisplayRole, QString::fromStdString(ru_json.value("comment", "")));
-            item->setData(3, Qt::DisplayRole, ru_json.value("latitude", 0.0));
-            item->setData(4, Qt::DisplayRole, ru_json.value("longitude", 0.0));
+            item->setData(3, Qt::DisplayRole, QString::number(ru_json.value("latitude", 0.0), 'g', 12));
+            item->setData(4, Qt::DisplayRole, QString::number(ru_json.value("longitude", 0.0), 'g', 12));
             item->setData(5, Qt::DisplayRole, ru_json.value("altitude", 0.0));
 
             remote_units_list_->addTopLevelItem(item);

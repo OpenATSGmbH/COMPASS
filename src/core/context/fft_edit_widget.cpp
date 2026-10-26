@@ -78,13 +78,13 @@ FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
     form->addRow(new QLabel("Name"), name_edit_);
 
     latitude_edit_ = new QLineEdit();
-    latitude_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 8, true));
+    latitude_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 12, true));
     latitude_edit_->setPlaceholderText("not set");
     connect(latitude_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::positionEditedSlot);
     form->addRow(new QLabel("Latitude"), latitude_edit_);
 
     longitude_edit_ = new QLineEdit();
-    longitude_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 8, true));
+    longitude_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 12, true));
     longitude_edit_->setPlaceholderText("not set");
     connect(longitude_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::positionEditedSlot);
     form->addRow(new QLabel("Longitude"), longitude_edit_);

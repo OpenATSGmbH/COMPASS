@@ -120,7 +120,7 @@ ASTERIXOverrideWidget::ASTERIXOverrideWidget(ASTERIXImportTask& task, QWidget* p
     grid->addWidget(new QLabel("Latitude Min [deg]"), row, 1);
 
     filter_rec_latitude_min_edit_ = new QLineEdit();
-    filter_rec_latitude_min_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 10));
+    filter_rec_latitude_min_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 12));
     connect(filter_rec_latitude_min_edit_, &QLineEdit::textEdited, this, &ASTERIXOverrideWidget::recLatitudeMinEditedSlot);
     grid->addWidget(filter_rec_latitude_min_edit_, row, 2);
 
@@ -129,7 +129,7 @@ ASTERIXOverrideWidget::ASTERIXOverrideWidget(ASTERIXImportTask& task, QWidget* p
     grid->addWidget(new QLabel("Latitude Max [deg]"), row, 1);
 
     filter_rec_latitude_max_edit_ = new QLineEdit();
-    filter_rec_latitude_max_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 10));
+    filter_rec_latitude_max_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 12));
     connect(filter_rec_latitude_max_edit_, &QLineEdit::textEdited, this, &ASTERIXOverrideWidget::recLatitudeMaxEditedSlot);
     grid->addWidget(filter_rec_latitude_max_edit_, row, 2);
 
@@ -138,7 +138,7 @@ ASTERIXOverrideWidget::ASTERIXOverrideWidget(ASTERIXImportTask& task, QWidget* p
     grid->addWidget(new QLabel("Longitude Min [deg]"), row, 1);
 
     filter_rec_longitude_min_edit_ = new QLineEdit();
-    filter_rec_longitude_min_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 10));
+    filter_rec_longitude_min_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 12));
     connect(filter_rec_longitude_min_edit_, &QLineEdit::textEdited, this, &ASTERIXOverrideWidget::recLongitudeMinEditedSlot);
     grid->addWidget(filter_rec_longitude_min_edit_, row, 2);
 
@@ -147,7 +147,7 @@ ASTERIXOverrideWidget::ASTERIXOverrideWidget(ASTERIXImportTask& task, QWidget* p
     grid->addWidget(new QLabel("Longitude Max [deg]"), row, 1);
 
     filter_rec_longitude_max_edit_ = new QLineEdit();
-    filter_rec_longitude_max_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 10));
+    filter_rec_longitude_max_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 12));
     connect(filter_rec_longitude_max_edit_, &QLineEdit::textEdited, this, &ASTERIXOverrideWidget::recLongitudeMaxEditedSlot);
     grid->addWidget(filter_rec_longitude_max_edit_, row, 2);
 
@@ -168,7 +168,7 @@ ASTERIXOverrideWidget::ASTERIXOverrideWidget(ASTERIXImportTask& task, QWidget* p
     grid->addWidget(new QLabel("Center Latitude [deg]"), row, 1);
 
     filter_circ_latitude_edit_ = new QLineEdit();
-    filter_circ_latitude_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 10));
+    filter_circ_latitude_edit_->setValidator(new TextFieldDoubleValidator(-90, 90, 12));
     connect(filter_circ_latitude_edit_, &QLineEdit::textEdited, this, &ASTERIXOverrideWidget::circLatitudeEditedSlot);
     grid->addWidget(filter_circ_latitude_edit_, row, 2);
 
@@ -177,7 +177,7 @@ ASTERIXOverrideWidget::ASTERIXOverrideWidget(ASTERIXImportTask& task, QWidget* p
     grid->addWidget(new QLabel("Center Longitude [deg]"), row, 1);
 
     filter_circ_longitude_edit_ = new QLineEdit();
-    filter_circ_longitude_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 10));
+    filter_circ_longitude_edit_->setValidator(new TextFieldDoubleValidator(-180, 180, 12));
     connect(filter_circ_longitude_edit_, &QLineEdit::textEdited, this, &ASTERIXOverrideWidget::circLongitudeEditedSlot);
     grid->addWidget(filter_circ_longitude_edit_, row, 2);
 
@@ -264,21 +264,21 @@ void ASTERIXOverrideWidget::updateSlot()
     traced_assert(filter_position_rec_active_check_);
     filter_position_rec_active_check_->setChecked(task_.settings().filter_position_rec_active_);
     traced_assert(filter_rec_latitude_min_edit_);
-    filter_rec_latitude_min_edit_->setText(QString::number(task_.settings().filter_rec_latitude_min_, 'g', 10));
+    filter_rec_latitude_min_edit_->setText(QString::number(task_.settings().filter_rec_latitude_min_, 'g', 12));
     traced_assert(filter_rec_latitude_max_edit_);
-    filter_rec_latitude_max_edit_->setText(QString::number(task_.settings().filter_rec_latitude_max_, 'g', 10));
+    filter_rec_latitude_max_edit_->setText(QString::number(task_.settings().filter_rec_latitude_max_, 'g', 12));
     traced_assert(filter_rec_longitude_min_edit_);
-    filter_rec_longitude_min_edit_->setText(QString::number(task_.settings().filter_rec_longitude_min_, 'g', 10));
+    filter_rec_longitude_min_edit_->setText(QString::number(task_.settings().filter_rec_longitude_min_, 'g', 12));
     traced_assert(filter_rec_longitude_max_edit_);
-    filter_rec_longitude_max_edit_->setText(QString::number(task_.settings().filter_rec_longitude_max_, 'g', 10));
+    filter_rec_longitude_max_edit_->setText(QString::number(task_.settings().filter_rec_longitude_max_, 'g', 12));
 
     // pos circ filter
     traced_assert(filter_position_circ_active_check_);
     filter_position_circ_active_check_->setChecked(task_.settings().filter_position_circ_active_);
     traced_assert(filter_circ_latitude_edit_);
-    filter_circ_latitude_edit_->setText(QString::number(task_.settings().filter_circ_latitude_, 'g', 10));
+    filter_circ_latitude_edit_->setText(QString::number(task_.settings().filter_circ_latitude_, 'g', 12));
     traced_assert(filter_circ_longitude_edit_);
-    filter_circ_longitude_edit_->setText(QString::number(task_.settings().filter_circ_longitude_, 'g', 10));
+    filter_circ_longitude_edit_->setText(QString::number(task_.settings().filter_circ_longitude_, 'g', 12));
     traced_assert(filter_circ_range_edit_);
     filter_circ_range_edit_->setText(QString::number(task_.settings().filter_circ_range_, 'g', 2));
 
