@@ -53,7 +53,7 @@ struct LabelGeneratorConfig
 
     bool filter_primary_only_active_ {false};
 
-    float label_opacity_ {0.9};
+    float label_opacity_ {0.65};
 
     bool  auto_lod_    {true};
     unsigned int current_lod_ {1}; // selected lod (1...3), used if auto lod is off

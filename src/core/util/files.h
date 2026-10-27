@@ -28,6 +28,7 @@
 #include <boost/optional.hpp>
 
 class QColor;
+class QImage;
 
 static const std::string SYSTEM_INSTALL_PATH = CMAKE_INSTALL_PREFIX + std::string("/compass/");
 
@@ -66,6 +67,7 @@ QStringList getSubdirectories(const std::string& path);
 std::string getIconFilepath(const std::string& filename, bool verify = true);
 std::string getImageFilepath(const std::string& filename, bool verify = true);
 QIcon createIcon(const std::string& name, const QColor& color = QColor());
+QImage invertImage(const QImage& img); // inverts rgb, keeps alpha (e.g. black-on-transparent => white-on-transparent)
 
 std::string getFontFilepath(const std::string& filename, bool verify = true);
 

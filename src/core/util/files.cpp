@@ -24,6 +24,7 @@
 #include <QRegularExpression>
 #include <QApplication>
 #include <QIconEngine>
+#include <QImage>
 #include <QPainter>
 #include <QPixmapCache>
 #include <QStyle>
@@ -327,6 +328,25 @@ QIcon createIcon(const std::string& name, const QColor& color)
     return QIcon(QPixmap::fromImage(img));
 }
 
+QImage invertImage(const QImage& src)
+{
+    QImage img = src.convertToFormat(QImage::Format_ARGB32);
+    const int h = img.height();
+    const int w = img.width();
+    for (int y = 0; y < h; ++y)
+    {
+        QRgb* line = reinterpret_cast<QRgb*>(img.scanLine(y));
+        for (int x = 0; x < w; ++x)
+        {
+            QRgb p = line[x];
+            if (qAlpha(p) == 0)
+                continue;
+            line[x] = qRgba(255 - qRed(p), 255 - qGreen(p), 255 - qBlue(p), qAlpha(p));
+        }
+    }
+    return img;
+}
+
 namespace
 {
 /// QIconEngine that loads a path-based icon and inverts RGB (keeping alpha)
@@ -378,21 +398,7 @@ public:
 private:
     static QPixmap invert(const QPixmap& src)
     {
-        QImage img = src.toImage().convertToFormat(QImage::Format_ARGB32);
-        const int h = img.height();
-        const int w = img.width();
-        for (int y = 0; y < h; ++y)
-        {
-            QRgb* line = reinterpret_cast<QRgb*>(img.scanLine(y));
-            for (int x = 0; x < w; ++x)
-            {
-                QRgb p = line[x];
-                if (qAlpha(p) == 0)
-                    continue;
-                line[x] = qRgba(255 - qRed(p), 255 - qGreen(p), 255 - qBlue(p), qAlpha(p));
-            }
-        }
-        return QPixmap::fromImage(img);
+        return QPixmap::fromImage(invertImage(src.toImage()));
     }
 
     QString path_;

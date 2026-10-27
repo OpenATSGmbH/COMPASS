@@ -905,6 +905,16 @@ void Client::applyDarkMode(bool dark)
     dark_pal.setColor(QPalette::Disabled, QPalette::HighlightedText, dark_pal.highlightedText().color().darker());
 
     QApplication::setPalette(dark_pal);
+
+    // Fusion paints the menu background as Base.lighter(108) and separators as a
+    // fixed translucent black, which vanishes on the dark Base => lighter Base for
+    // menus only. Must stay above Window.darker(160) (menu frame) to keep the frame
+    // visible. Set after the app palette, since QApplication::setPalette() clears
+    // class-specific palettes (which also resets this on the light path).
+    QPalette menu_pal = dark_pal;
+    menu_pal.setColor(QPalette::Base, QColor(65, 65, 65));
+    QApplication::setPalette(menu_pal, "QMenu");
+
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a2a2a; border: 1px solid white; }");
 }
 

@@ -41,7 +41,7 @@ LabelGeneratorConfig::LabelGeneratorConfig()
     , filter_ta_active_           (false)
     , filter_ta_values_           ("AADDCC")
     , filter_primary_only_active_ (false)
-    , label_opacity_              (0.9f)
+    , label_opacity_              (0.65f)
     , use_utn_as_id_ (false)
 {
 }

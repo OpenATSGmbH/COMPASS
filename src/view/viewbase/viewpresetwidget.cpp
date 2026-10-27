@@ -699,16 +699,40 @@ void ViewPresetItemWidget::updateContents()
     preview_label_->setText(preset_->preview.isNull() ? "No preview available" : "");
     preview_label_->setPixmap(preset_->preview.isNull() ? QPixmap() : QPixmap::fromImage(preset_->preview));
 
-    auto col = palette().color(QPalette::Window);
-    col = QColor(col.red() - 20, col.green() - 20, col.blue() - 20);
-
-    QPixmap pm = preset_->deployed ? decorate(QPixmap(Utils::Files::getImageFilepath("ats_transp.png").c_str()), col) : 
-                                     decorate(QPixmap(Utils::Files::getImageFilepath("user_wide.png").c_str() ), col);
-    
-    deployed_label_->setPixmap(pm.scaledToHeight(IconHeight, Qt::SmoothTransformation));
+    updateIcon();
 
     //example presets cannot be modified
     //edit_button_->setVisible(!preset_->deployed);
+}
+
+/**
+ * Updates the deployed/user icon from the current palette.
+ * Notice: The colored logo is not inverted in dark mode (would distort its colors) => it gets a lighter box instead.
+*/
+void ViewPresetItemWidget::updateIcon()
+{
+    const auto win  = palette().color(QPalette::Window);
+    const bool dark = win.lightness() < 128;
+
+    //box is darker than the background in light mode, lighter in dark mode
+    const int    shift = dark ? 20 : -20;
+    const QColor col(win.red() + shift, win.green() + shift, win.blue() + shift);
+
+    QImage img;
+    if (preset_->deployed)
+    {
+        img = QImage(Utils::Files::getImageFilepath("ats_transp.png").c_str());
+    }
+    else
+    {
+        img = QImage(Utils::Files::getImageFilepath("user_wide.png").c_str());
+        if (dark)
+            img = Utils::Files::invertImage(img);
+    }
+
+    QPixmap pm = decorate(QPixmap::fromImage(img), col);
+
+    deployed_label_->setPixmap(pm.scaledToHeight(IconHeight, Qt::SmoothTransformation));
 }
 
 /**
@@ -799,6 +823,17 @@ void ViewPresetItemWidget::leaveEvent(QEvent* event)
         main_widget_->setBackgroundRole(QPalette::Window);
         main_widget_->setAutoFillBackground(false);
     }
+}
+
+/**
+*/
+void ViewPresetItemWidget::changeEvent(QEvent* event)
+{
+    QWidget::changeEvent(event);
+
+    //icon is baked from the palette => refresh on dark mode toggle
+    if (event->type() == QEvent::PaletteChange && preset_)
+        updateIcon();
 }
 
 /********************************************************************************************

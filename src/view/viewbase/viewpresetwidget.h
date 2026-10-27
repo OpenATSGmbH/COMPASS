@@ -118,9 +118,11 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void enterEvent(QEvent* event) override;
     void leaveEvent(QEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 private:
     void createUI();
+    void updateIcon();
 
     void removeButtonPressed();
     void editButtonPressed();
