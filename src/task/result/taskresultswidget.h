@@ -68,6 +68,9 @@ public:
     std::string currentReportName() const;
 
 protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
+    QString reportTablesToolTip(const std::string& name) const;
+
     void updateResults(const std::string& selected_result = "");
     void resultHeaderChanged(const QString& name);
     void updateResultUI(const std::string& name);
