@@ -17,15 +17,20 @@
 
 #pragma once
 
+#include "json_fwd.hpp"
+
 #include <QColor>
 #include <QIcon>
 #include <QVariant>
 
+#include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 class LayerTreeModel;
+class QAction;
 class QMenu;
 
 /**
@@ -67,6 +72,18 @@ public:
     /// LayerTreeModel::refreshSubtree.
     std::vector<std::unique_ptr<LayerTreeItem>> moveChildrenOut();
 
+    typedef std::function<std::vector<std::unique_ptr<LayerTreeItem>>()> BuildFunc;
+
+    /// structural changes with model notification if attached (plain operations otherwise)
+    LayerTreeItem* appendChildNotified(std::unique_ptr<LayerTreeItem> child);
+    /// the removed subtree's remembered states are dropped
+    void removeChildNotified(int row);
+    /// replaces all children by the built ones (build runs after the old ones are removed)
+    /// complete => the remembered states of items that did not come back are dropped
+    void replaceChildren(const BuildFunc& build, bool complete = true);
+    /// notifies a changed display of the item (e.g. name), if attached
+    void notifyChanged();
+
     /// model attachment; LayerTreeModel calls setModel on the invisible root
     /// which propagates to every descendant.
     void setModel(LayerTreeModel* model);
@@ -75,11 +92,22 @@ public:
     // ---- identity / persistence -------------------------------------------
 
     const std::string& name() const { return name_; }
+    /// plain name change, for detached items or items whose key does not follow the name
     void setName(const std::string& name) { name_ = name; }
+    /// renames an attached item: moves the remembered states of its subtree to the new key, notifies the change
+    void rename(const std::string& name);
 
     /// Stable identifier used for viewpoint round-trip of hidden state. Empty
     /// string means "do not persist".
     virtual std::string persistenceId() const { return {}; }
+
+    /// identifier of the item among its siblings (plain, escaped by stateKey()), empty => the name
+    virtual std::string stateKeyId() const { return persistenceId(); }
+
+    /// Unique key of the item state across rebuilds: the parent's key plus the item's escaped segment
+    /// (stateKeyId(), else the name with "#n" for repeated sibling names) => keys start with their parent's key.
+    /// Notice: also called on items about to be removed.
+    std::string stateKey() const;
 
     // ---- display -----------------------------------------------------------
 
@@ -103,6 +131,8 @@ public:
 
     virtual bool canHide() const { return true; }
     bool hidden() const { return hidden_; }
+    /// hidden state when first attached to a model, only deviations from it are remembered
+    bool defaultHidden() const { return default_hidden_; }
     /// self or any ancestor hidden
     bool effectiveHidden() const;
 
@@ -118,10 +148,27 @@ public:
     void hideSubtree(bool emit_signal = true);
     void showSubtree(bool emit_signal = true);
 
+    // ---- item config -------------------------------------------------------
+
+    /// true => the hidden state is written to config(), set per subtree via persistsSubtreeToConfig()
+    bool persistHiddenStateToConfig() const;
+    /// true => this item and all items below persist their hidden state to the config
+    virtual bool persistsSubtreeToConfig() const { return false; }
+
+    /// the item's entry in the model's config, created on first access
+    /// Notice: only after attach, the key depends on the parent chain
+    nlohmann::json& config();
+    /// read-only, an empty object if there is no entry or not attached (none is created)
+    const nlohmann::json& config() const;
+
     // ---- context menu -----------------------------------------------------
 
     /// Append this item's own actions to `menu`. Default: no-op.
     virtual void buildContextMenu(QMenu& menu) { (void)menu; }
+
+    /// runs func on the item with this item's key when the action is triggered, nothing if there is none
+    /// Notice: menus may stay open across rebuilds (QMenu::exec()) => never capture the item itself
+    void connectItemAction(QAction* action, const std::function<void(LayerTreeItem&)>& func) const;
 
     // ---- hooks -------------------------------------------------------------
 
@@ -129,17 +176,30 @@ public:
     /// Subclasses override to push state to owned data (e.g. chart series).
     virtual void onEffectiveHiddenChanged() {}
 
+    /// called once after the item got attached to a model (e.g. config-dependent setup)
+    /// Notice: may run inside model insert/reset notifications => no structural changes
+    virtual void onAttached() {}
+    /// called after the model's config was replaced (e.g. preset applied)
+    virtual void onConfigChanged() {}
+
 protected:
+    friend class LayerTreeModel; // restores the state of attached items
+
     /// Recompute rounded-square color icon (14x14) from color_.
     void rebuildColorIcon();
 
     /// Apply updateHidden hook to self and all descendants.
     void cascadeEffectiveHidden();
 
+    void storeHiddenState();
+    /// hidden state from the config, if persisted there
+    std::optional<bool> configuredHidden() const;
+
     std::string    name_;
     QColor         color_;
     QIcon          color_icon_;
     bool           hidden_{false};
+    bool           default_hidden_{false};
 
     LayerTreeItem* parent_item_{nullptr};
     LayerTreeModel* model_{nullptr};

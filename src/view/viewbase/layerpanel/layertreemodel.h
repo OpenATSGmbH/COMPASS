@@ -18,6 +18,7 @@
 #pragma once
 
 #include "layertreedefs.h"
+#include "layertreestate.h"
 
 #include <QAbstractItemModel>
 #include <QHeaderView>
@@ -47,6 +48,9 @@ class QMenu;
  *
  * Signals emitted by items (via model_ pointer) are re-emitted here so panel
  * / view code can subscribe.
+ *
+ * Remembered state (item states, item config, effective-hidden ids) lives in state(),
+ * the model applies it to the tree (attach, config changes, pruning).
  */
 class LayerTreeModel : public QAbstractItemModel
 {
@@ -60,6 +64,8 @@ signals:
     /// were just rebuilt. Lets panel-level code (re-)apply expansion or other
     /// view state without having to subscribe to begin/endInsertRows manually.
     void subtreeRefreshedSignal(LayerTreeItem* parent);
+    /// a destroyed panel stored its view state, e.g. for its successor
+    void viewStateHandedOverSignal();
 
 public:
     enum DataRole
@@ -100,8 +106,18 @@ public:
     /// build_children must return the new children detached (not yet attached
     /// to parent); the model performs begin/endRemoveRows and
     /// begin/endInsertRows around the mutation.
+    /// complete => the remembered states of items below parent that did not come back are dropped,
+    /// false for intermediate rebuilds (e.g. emptied at loading start), pruned later via pruneItemStates()
     void refreshSubtree(LayerTreeItem* parent,
-                        const std::function<std::vector<std::unique_ptr<LayerTreeItem>>()>& build_children);
+                        const std::function<std::vector<std::unique_ptr<LayerTreeItem>>()>& build_children,
+                        bool complete);
+
+    /// appends a child to an attached parent, with insert notification
+    LayerTreeItem* appendChildItem(LayerTreeItem* parent, std::unique_ptr<LayerTreeItem> item);
+    /// removes a child of an attached parent, with remove notification, and drops its subtree's states
+    void removeChildItem(LayerTreeItem* parent, int row);
+    /// notifies a changed display of an attached item (e.g. name)
+    void itemChanged(LayerTreeItem* item);
 
     // ---- traversal ---------------------------------------------------------
 
@@ -133,27 +149,30 @@ public:
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
-    // ---- persistence helpers ---------------------------------------------
+    // ---- remembered state --------------------------------------------------
 
-    /// Collect persistenceId() of every descendant leaf currently in an
-    /// effective-hidden state. Empty ids are skipped.
-    std::set<std::string> persistedHiddenIds() const;
+    /// item states, item config root, effective-hidden ids (kept current on every hiddenChangedSignal
+    /// and after each refreshSubtree(), cleared on database close via state().clear())
+    LayerTreeState& state() { return state_; }
+    const LayerTreeState& state() const { return state_; }
 
-    /// For every descendant item (group or leaf) whose persistenceId() is in
-    /// `ids`, set hidden=true.
-    void applyPersistedHiddenIds(const std::set<std::string>& ids);
+    /// drops the states below scope (nullptr => whole tree) doPruneItem() rejects, call after a complete rebuild
+    void pruneItemStates(const LayerTreeItem* scope = nullptr);
+    /// drops the given components (combination of LayerTreeState::PersistFlag) of the subtree's item states
+    void clearItemStates(const LayerTreeItem* subtree, int flags);
 
-    // ---- hidden-state memory -----------------------------------------------
+    /// the item with the given state key, nullptr if there is none
+    LayerTreeItem* findItem(const std::string& key) const;
 
-    /// Remembered effective-hidden ids (item hidden itself or via an unchecked
-    /// ancestor group). Kept current on every hiddenChangedSignal and after
-    /// each refreshSubtree(); meant for data filtering (e.g. skip hidden
-    /// layers when aggregating). In-memory only - cleared on database close
-    /// via clearStoredHiddenState().
-    const std::set<std::string>& storedHiddenIds() const { return stored_hidden_ids_; }
+    /// binds the view's item config (see LayerTreeState::bindConfig()) and applies it to the current items
+    void bindConfig(nlohmann::json* root);
+    /// re-applies the config to all items, e.g. after a preset was applied
+    void configChanged();
 
-    /// Forget the remembered hidden state (called on database close).
-    void clearStoredHiddenState();
+    /// called by items on hidden changes
+    void storeHiddenState(const LayerTreeItem& item);
+    /// called by items when a subtree got attached to this model
+    void subtreeAttached(LayerTreeItem* subtree);
 
     // ---- icon-change re-queries ------------------------------------------
 
@@ -161,8 +180,18 @@ public:
     /// icon-related roles). Used after color mutations propagate through.
     void notifyIconChanged(LayerTreeItem* item);
 
+protected:
+    /// prune criterion, default: the item is not in the pruned scope
+    virtual bool doPruneItem(const std::string& key,
+                             const LayerTreeState::ItemState& state,
+                             const std::set<std::string>& present_keys) const;
+
 private:
+    QModelIndex indexOfItem(const LayerTreeItem* item) const;
+
     void captureHiddenState();
+    void flushHiddenNotification();
+    void checkUniqueKeys(const LayerTreeItem* parent) const;
 
     QVariant aggregateColumnFor(LayerTreeItem* item, int column,
                                 const LayerColumnSpec& spec) const;
@@ -176,7 +205,7 @@ private:
     std::unique_ptr<LayerTreeItem>  root_item_;
     std::vector<LayerColumnSpec>    custom_columns_;
 
-    std::set<std::string> stored_hidden_ids_;        // effective-hidden ids, see storedHiddenIds()
-    std::set<std::string> stored_unchecked_ids_;     // own-hidden (unchecked checkbox) ids, restored in refreshSubtree()
-    bool applying_hidden_state_ = false;             // guards captureHiddenState() re-entry
+    LayerTreeState state_;
+    bool           restoring_state_       = false; // suppresses storing while restoring
+    bool           hidden_notify_pending_ = false; // restored hidden states not signalled yet
 };

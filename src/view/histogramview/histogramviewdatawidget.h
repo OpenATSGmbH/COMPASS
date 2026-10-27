@@ -47,7 +47,7 @@ class DBContent;
 class DBContentRootItem;
 class HistogramGenerator;
 class HistogramLeafPayload;
-class LayerTreeModel;
+class ViewLayerTreeModel;
 class AnnotationsRootItem;
 
 enum HistogramViewDataTool
@@ -93,9 +93,9 @@ public:
     /// Called by HistogramViewConfigWidget once the LayerPanelWidget is built.
     /// Provides the DBContent root item (owned by the panel's model) and the
     /// layer tree model used for future hidden-state round-tripping.
-    void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
+    void attachLayerPanel(DBContentRootItem* root, ViewLayerTreeModel* layer_model);
 
-    LayerTreeModel* layerTreeModel() override { return layer_model_; }
+    ViewLayerTreeModel* layerTreeModel() override { return layer_model_; }
 
 signals:
     void exportDoneSignal(bool canceled);
@@ -162,7 +162,7 @@ protected:
     std::string                                       title_;
 
     DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
-    LayerTreeModel*      layer_model_      {nullptr};   // owned by LayerPanelWidget
+    ViewLayerTreeModel*  layer_model_      {nullptr};   // owned by LayerPanelWidget
     AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
 
     std::vector<std::unique_ptr<HistogramLeafPayload>> payloads_;

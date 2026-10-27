@@ -21,8 +21,10 @@
 #include "layertreedefs.h"
 
 #include "viewlayertreemodel.h"
+#include "color_provider.h"
 
 class ViewLayerTreeModel;
+class COMPASS;
 
 /**
  */
@@ -42,4 +44,20 @@ public:
     {
         return dynamic_cast<ViewLayerTreeModel*>(LayerPanelWidget::model());
     }
+
+    /// default expansion of the items outside the Data subtree (default: annotations fully)
+    void setDefaultExpansion(const DefaultExpansionFunc& func) override;
+    /// default expansion of the Data subtree: the root plus depth levels below it (-1 = collapsed)
+    void setDataExpansion(int depth);
+    /// Data expansion follows the COMPASS color mode
+    void followColorMode(COMPASS& compass);
+
+    /// levels below the Data root expanded by default, so the rows distinguishing the mode's colors are visible
+    static int dataExpansionDepth(context::ColorProvider::Mode mode);
+
+private:
+    bool isExpandedByDefault(const LayerTreeItem& item, int depth) const;
+
+    DefaultExpansionFunc default_expansion_;         // items outside the Data subtree, see setDefaultExpansion()
+    int                  data_expansion_depth_ = -1; // see setDataExpansion()
 };

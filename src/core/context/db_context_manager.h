@@ -67,6 +67,8 @@ signals:
     void dataSourcesChangedSignal();
     void fftsChangedSignal();
     void sectorsChangedSignal();
+    /// a sector layer was renamed, emitted right before the sectorsChangedSignal of the rename
+    void sectorLayerRenamedSignal(const std::string& old_name, const std::string& new_name);
     void countsChangedSignal();
     void asterixInfoChangedSignal();
     /// the loading selection of data source types, data sources or lines was reset

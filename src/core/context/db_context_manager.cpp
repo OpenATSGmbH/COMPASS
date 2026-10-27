@@ -2188,6 +2188,8 @@ void DBContextManager::renameSectorLayer(const std::string& old_name, const std:
 
     rebuildSectorLayers();
 
+    // lets views move state keyed by the layer name before they rebuild
+    emit sectorLayerRenamedSignal(old_name, new_name);
     emit sectorsChangedSignal();
 }
 

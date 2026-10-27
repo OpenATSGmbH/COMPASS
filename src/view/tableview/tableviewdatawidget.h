@@ -33,7 +33,7 @@ class AllBufferTableWidget;
 class Buffer;
 class DBContent;
 class DBContentRootItem;
-class LayerTreeModel;
+class ViewLayerTreeModel;
 class TableLeafPayload;
 
 class TableViewDataWidget : public ViewDataWidget
@@ -69,9 +69,9 @@ public:
     /// Called by TableViewConfigWidget once the LayerPanelWidget is built.
     /// Provides the DBContent root item (owned by the panel's model) and the
     /// layer tree model used for hidden-state round-tripping.
-    void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
+    void attachLayerPanel(DBContentRootItem* root, ViewLayerTreeModel* layer_model);
 
-    LayerTreeModel* layerTreeModel() override { return layer_model_; }
+    ViewLayerTreeModel* layerTreeModel() override { return layer_model_; }
 
 protected:
     virtual void toolChanged_impl(int mode) override;
@@ -92,8 +92,8 @@ protected:
 
     AllBufferTableWidget*  all_buffer_table_widget_{nullptr};
 
-    DBContentRootItem* db_content_root_{nullptr};   // owned by layer panel model
-    LayerTreeModel*    layer_model_    {nullptr};   // owned by LayerPanelWidget
+    DBContentRootItem*  db_content_root_{nullptr};   // owned by layer panel model
+    ViewLayerTreeModel* layer_model_    {nullptr};   // owned by LayerPanelWidget
 
     std::vector<std::unique_ptr<TableLeafPayload>> payloads_;
 

@@ -59,6 +59,31 @@ std::mt19937& rng()
 } // anonymous
 
 // ============================================================
+// Modes
+// ============================================================
+
+std::string ColorProvider::modeName(Mode mode)
+{
+    switch (mode)
+    {
+        case Mode::DSType:         return "DSType";
+        case Mode::DBContent:      return "DBContent";
+        case Mode::DataSource:     return "Data Source";
+        case Mode::DataSourceLine: return "Data Source + Line";
+    }
+    return "Unknown";
+}
+
+const std::vector<ColorProvider::Mode>& ColorProvider::modes()
+{
+    static const std::vector<Mode> modes = { Mode::DSType,
+                                             Mode::DataSource,
+                                             Mode::DataSourceLine,
+                                             Mode::DBContent };
+    return modes;
+}
+
+// ============================================================
 // Default palettes
 // ============================================================
 

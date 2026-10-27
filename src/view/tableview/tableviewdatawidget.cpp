@@ -30,7 +30,7 @@
 #include "dbcontent/variable/metavariable.h"
 #include "color_provider.h"
 #include "dbcontentlayer.h"
-#include "layertreemodel.h"
+#include "viewlayertreemodel.h"
 #include "tableleafpayload.h"
 #include "logger.h"
 #include "number.h"
@@ -69,7 +69,7 @@ TableViewDataWidget::TableViewDataWidget(TableViewWidget* view_widget,
 
 TableViewDataWidget::~TableViewDataWidget() = default;
 
-void TableViewDataWidget::attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model)
+void TableViewDataWidget::attachLayerPanel(DBContentRootItem* root, ViewLayerTreeModel* layer_model)
 {
     db_content_root_ = root;
     layer_model_     = layer_model;
@@ -471,7 +471,7 @@ void TableViewDataWidget::applyLayerTree(const std::map<std::string, view_layer_
     const bool was_guarded = in_layer_recompute_;
     in_layer_recompute_ = true;
 
-    layer_model_->refreshSubtree(db_content_root_, [&]() {
+    layer_model_->refreshDataSubtree([&]() {
         payloads_ = std::move(new_payloads);
         return db_content_root_->buildChildrenFrom(entries);
     });

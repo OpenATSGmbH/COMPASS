@@ -592,6 +592,8 @@ const context::DataSource* DataSourceCountItem::dataSource() const
  * DataSourceLineButton
  **************************************************************************************************/
 
+const bool DataSourceLineButton::DisableAllLinesInLivePause = true;
+
 /**
  */
 DataSourceLineButton::DataSourceLineButton(DataSourcesWidget* widget, 
@@ -716,8 +718,8 @@ void DataSourceLineButton::updateContent()
         {
             // programmatic visual update must not emit toggled -> lineChanged,
             // which would mutate the user's line selection (lineLoadingWanted).
-            // e.g. greying out a temporarily-empty line on pause must not
-            // deselect it, or its live data would be filtered out on resume.
+            // e.g. greying out a line on pause must not deselect it, or its
+            // live data would be filtered out on resume.
             QSignalBlocker blocker(this);
             setChecked(c);
             last_checked_     = c;
@@ -742,14 +744,15 @@ void DataSourceLineButton::updateContent()
 
         if (!hidden)
         {
-            disabled = app_mode == AppMode::LivePaused ?
-                (ctx_man.numInsertedPerLine(ds_id_, "").count(line_id_) == 0) : false;
+            // see DisableAllLinesInLivePause
+            disabled = app_mode == AppMode::LivePaused &&
+                       (DisableAllLinesInLivePause || !ctx_man.numInsertedLinesMap(ds_id_).count(line_id_));
 
             if (disabled)
             {
-                // no-data placeholder during pause: greyed, but the true retained
-                // selection stays visible (checked = getUseDSLine), and lineLoadingWanted
-                // is untouched thanks to the signal blocker in apply_checked.
+                // greyed during pause, but the retained selection stays visible (checked =
+                // getUseDSLine), and lineLoadingWanted is untouched thanks to the signal
+                // blocker in apply_checked.
                 bg_color = QColor(dark_mode ? Qt::darkGray : Qt::lightGray);
             }
             else

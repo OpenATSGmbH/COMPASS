@@ -27,7 +27,6 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTreeWidget>
-#include <QComboBox>
 
 #include <iostream>
 
@@ -269,61 +268,12 @@ std::pair<bool, std::string> GeoTIFFImportDialog::checkFile_impl(const std::stri
 {
     auto info = GeoTIFF::getInfo(fn);
 
-    gtiff_infos_[ fn ] = info;
-
     bool gtiff_ok = info.isValid();
 
     std::string msg = gtiff_ok ? std::to_string(info.img_w) + "x" + std::to_string(info.img_h) + " - " + std::to_string(info.bands) + " band(s)": 
                                  "Invalid GeoTIFF (Code " + std::to_string((int)info.error) + ")";
     
     return std::make_pair(gtiff_ok, msg);
-}
-
-/**
-*/
-void GeoTIFFImportDialog::initItem_impl(QTreeWidgetItem* item, int idx, const std::string& fn)
-{
-    int upsampling_col = numDefaultColumns() + 0;
-
-    auto it = gtiff_infos_.find(fn);
-    
-    if (it == gtiff_infos_.end() || !it->second.isValid())
-        return;
-
-    const auto& info = it->second;
-    int subsampling_auto = (int)GeoTIFF::maximumSubsamples(info.img_w, info.img_h);
-    
-    auto subsampling_combo = new QComboBox;
-    subsampling_combo->setFixedWidth(100);
-
-    for (int s = 0; s <= (int)GeoTIFF::DefaultSubsamples; ++s)
-    {
-        int factor = s == 0 ? subsampling_auto : s;
-        QString factor_str = factor == 1 ? "Off" : "x" + QString::number(factor);
-
-        QString txt_combo = s == 0 ? "Auto (" + factor_str + ")" : factor_str;
-
-        subsampling_combo->addItem(txt_combo, QVariant(s == 0 ? subsampling_auto : s));
-    }
-    
-    subsampling_combo->setCurrentIndex(0);
-
-    treeWidget()->setItemWidget(item, upsampling_col, subsampling_combo);
-
-    updateSizeInfo(idx);
-
-    connect(subsampling_combo, QOverload<int>::of(&QComboBox::currentIndexChanged), [ = ] { updateSizeInfo(idx); });
-}
-
-/**
-*/
-std::vector<GeoTIFFImportDialog::CustomColumn> GeoTIFFImportDialog::customColumns() const
-{
-    std::vector<GeoTIFFImportDialog::CustomColumn> columns;
-    columns.emplace_back("Subsampling", false, QHeaderView::ResizeMode::Fixed);
-    columns.emplace_back("Imported Image Size", false, QHeaderView::ResizeMode::Stretch);
-
-    return columns;
 }
 
 QString GeoTIFFImportDialog::infoColumnName() const
@@ -333,90 +283,6 @@ QString GeoTIFFImportDialog::infoColumnName() const
 
 /**
 */
-void GeoTIFFImportDialog::itemChanged_impl(QTreeWidgetItem* item, int column) 
+void GeoTIFFImportDialog::itemChanged_impl(QTreeWidgetItem* item, int column)
 {
-}
-
-/**
-*/
-QComboBox* GeoTIFFImportDialog::subsamplingCombo(int idx) const
-{
-    if (idx < 0)
-        return nullptr;
-
-    auto item = treeWidget()->topLevelItem(idx);
-    if (!item)
-        return nullptr;
-
-    return subsamplingCombo(item);
-}
-
-/**
-*/
-QComboBox* GeoTIFFImportDialog::subsamplingCombo(QTreeWidgetItem* item) const
-{
-    int upsampling_col = numDefaultColumns() + 0;
-
-    auto w = treeWidget()->itemWidget(item, upsampling_col);
-    if (!w)
-        return nullptr;
-
-    auto combo = dynamic_cast<QComboBox*>(w);
-    if (!combo)
-        return nullptr;
-
-    return combo;
-}
-
-/**
-*/
-int GeoTIFFImportDialog::fileSubsampling(const std::string& fn) const
-{
-    auto item = fileItem(fn);
-    if (!item)
-        return -1;
-
-    auto combo = subsamplingCombo(item);
-    if (!combo)
-        return -1;
-
-    return combo->currentData().toInt();
-}
-
-/**
-*/
-void GeoTIFFImportDialog::updateSizeInfo(int idx)
-{
-    if (idx < 0)
-        return;
-
-    auto item = treeWidget()->topLevelItem(idx);
-    if (!item)
-        return;
-
-    int image_size_col = numDefaultColumns() + 1;
-
-    item->setText(image_size_col, "");
-
-    std::string fn = item->text(1).toStdString();
-
-    auto it = gtiff_infos_.find(fn);
-    if (it == gtiff_infos_.end() || !it->second.isValid())
-        return;
-
-    int subsampling = fileSubsampling(fn);
-    if (subsampling < 1)
-        return;
-
-    int w     = it->second.img_w * subsampling;
-    int h     = it->second.img_h * subsampling;
-    int bands = it->second.bands;
-    int bytes = it->second.raster_bytes;
-
-    double size_in_bytes = (double)w * h * bands * bytes;
-    std::string size_str = Utils::Files::fileSizeString(size_in_bytes);
-    
-    QString info = QString::number(w) + "x" + QString::number(h) + " - " + QString::fromStdString(size_str);
-
-    item->setText(image_size_col, info);
 }

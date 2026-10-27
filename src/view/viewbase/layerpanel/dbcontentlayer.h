@@ -21,10 +21,9 @@
 
 #include <QVariant>
 
+#include <optional>
 #include <string>
 #include <vector>
-
-class QTreeView;
 
 /**
  * Abstract view-supplied adapter for the leaf payload of a DBContent row.
@@ -87,14 +86,21 @@ enum class DBContentLayerLevel
 class DBContentGroupItem : public LayerTreeItem
 {
 public:
-    DBContentGroupItem(const std::string& name, DBContentLayerLevel level);
+    DBContentGroupItem(const std::string& name,
+                       DBContentLayerLevel level,
+                       const std::optional<unsigned int>& ds_id = std::nullopt);
 
     DBContentLayerLevel level() const { return level_; }
+    /// data source groups only, if the view provides the id
+    const std::optional<unsigned int>& dsID() const { return ds_id_; }
 
     /// Stable path-based id ("group:<DSType>[/<DS>[/<Line>]]") so group-level
     /// unchecks can be restored across tree rebuilds. Empty for the root
     /// level - the root item itself survives rebuilds.
     std::string persistenceId() const override;
+
+    /// by data source id if set, else by name (the key path covers the parents)
+    std::string stateKeyId() const override;
 
     /// Recompute color_ from direct children: common valid color, or invalid
     /// if children disagree. Assumes children's colors are up-to-date.
@@ -103,7 +109,8 @@ public:
     void buildContextMenu(QMenu& menu) override;
 
 protected:
-    DBContentLayerLevel level_;
+    DBContentLayerLevel         level_;
+    std::optional<unsigned int> ds_id_; // data source groups only, see dsID()
 };
 
 // ---------------------------------------------------------------------------
@@ -118,7 +125,8 @@ class DBContentLeafItem : public LayerTreeItem
 public:
     DBContentLeafItem(const std::string& name, DBContentLeafPayload* payload);
 
-    std::string persistenceId() const override;
+    /// cached, the payload may be destroyed before the leaf is removed
+    std::string persistenceId() const override { return persistence_id_; }
 
     QVariant itemData(int column) const override;
 
@@ -130,6 +138,7 @@ public:
 
 private:
     DBContentLeafPayload* payload_ {nullptr};
+    std::string           persistence_id_;
 };
 
 // ---------------------------------------------------------------------------
@@ -147,11 +156,12 @@ class DBContentRootItem : public DBContentGroupItem
 public:
     struct LeafEntry
     {
-        std::string           ds_type;
-        std::string           ds_name;
-        std::string           line;          ///< e.g. "L1"
-        std::string           dbcontent;
-        DBContentLeafPayload* payload;       ///< lifetime owned by the view
+        std::string                 ds_type;
+        std::string                 ds_name;
+        std::string                 line;          ///< e.g. "L1"
+        std::string                 dbcontent;
+        DBContentLeafPayload*       payload;       ///< lifetime owned by the view
+        std::optional<unsigned int> ds_id;         ///< data source groups by id if set, else by name
     };
 
     DBContentRootItem();
@@ -167,13 +177,4 @@ public:
     /// been reattached so color_ on each group reflects the common color of
     /// its (new) direct children.
     void recomputeColorsRecursive();
-
-    /// Expand the tree so the row whose color distinguishes the current
-    /// color mode is visible.
-    ///   DSType         -> collapsed
-    ///   DataSource     -> depth 0
-    ///   DataSourceLine -> depth 1
-    ///   DBContent      -> depth 2
-    /// `mode` follows COMPASS::colorMode().
-    void applyDefaultExpansionForColorMode(QTreeView* tree_view, unsigned int mode) const;
 };

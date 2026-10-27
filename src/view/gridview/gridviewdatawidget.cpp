@@ -305,7 +305,7 @@ void GridViewDataWidget::buildGridFromStash()
     const auto  value_type = (grid2d::ValueType)settings.value_type;
 
     const std::set<std::string> hidden_series =
-        layer_model_ ? layer_model_->storedHiddenIds() : std::set<std::string>{};
+        layer_model_ ? layer_model_->state().hiddenIds() : std::set<std::string>{};
 
     //extent of the rows the grid will hold: a finite position and, except for the count of
     //missing values, a value of the distributed variable. For a Report Variable most rows have
@@ -445,7 +445,7 @@ void GridViewDataWidget::buildGridFromStash()
 /**
 */
 void GridViewDataWidget::attachLayerPanel(DBContentRootItem* root,
-                                          LayerTreeModel* layer_model)
+                                          ViewLayerTreeModel* layer_model)
 {
     db_content_root_ = root;
     layer_model_     = layer_model;
@@ -528,7 +528,7 @@ void GridViewDataWidget::rebuildLayerTree()
     const bool was_guarded = in_layer_recompute_;
     in_layer_recompute_ = true;
 
-    layer_model_->refreshSubtree(db_content_root_, [&]() {
+    layer_model_->refreshDataSubtree([&]() {
         return db_content_root_->buildChildrenFrom(entries);
     });
 

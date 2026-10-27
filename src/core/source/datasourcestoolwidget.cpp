@@ -17,6 +17,7 @@
 
 #include "datasourcestoolwidget.h"
 #include "compass.h"
+#include "color_provider.h"
 #include "db_context_manager.h"
 #include "datasourceswidget.h"
 #include "dbcontentmanager.h"
@@ -93,10 +94,9 @@ void DataSourcesToolWidget::createUI()
         UI_TEST_OBJ_NAME(color_mode_combo_, "Color Mode")
         // Items carry the ColorProvider::Mode enum value as user data so the
         // UI order can be changed independently of the persisted numeric mode.
-        color_mode_combo_->addItem("DSType",              (unsigned int)0); // DSType
-        color_mode_combo_->addItem("Data Source",         (unsigned int)2); // DataSource
-        color_mode_combo_->addItem("Data Source + Line",  (unsigned int)3); // DataSourceLine
-        color_mode_combo_->addItem("DBContent",           (unsigned int)1); // DBContent
+        for (auto mode : context::ColorProvider::modes())
+            color_mode_combo_->addItem(QString::fromStdString(context::ColorProvider::modeName(mode)),
+                                       (unsigned int)mode);
 
         unsigned int current = ctx_man_.compass().colorMode();
         int current_idx = color_mode_combo_->findData(current);

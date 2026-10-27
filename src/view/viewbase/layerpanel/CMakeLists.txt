@@ -7,6 +7,7 @@ target_sources(compass_view
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/layertreeitem.h"
         "${CMAKE_CURRENT_LIST_DIR}/layertreemodel.h"
+        "${CMAKE_CURRENT_LIST_DIR}/layertreestate.h"
         "${CMAKE_CURRENT_LIST_DIR}/layertreedefs.h"
         "${CMAKE_CURRENT_LIST_DIR}/layertreeitemdelegate.h"
         "${CMAKE_CURRENT_LIST_DIR}/layerpanelwidget.h"
@@ -19,6 +20,7 @@ target_sources(compass_view
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/layertreeitem.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/layertreemodel.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/layertreestate.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/layertreeitemdelegate.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/layerpanelwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentlayer.cpp"

@@ -32,7 +32,7 @@ class ScatterPlotViewDataSource;
 
 class Buffer;
 class DBContentRootItem;
-class LayerTreeModel;
+class ViewLayerTreeModel;
 class AnnotationsRootItem;
 class ScatterLeafPayload;
 
@@ -79,9 +79,9 @@ public:
     /// Called by ScatterPlotViewConfigWidget once the LayerPanelWidget is
     /// built. Provides the DBContent root item (owned by the panel's model)
     /// and the layer tree model used for hidden-state round-tripping.
-    void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
+    void attachLayerPanel(DBContentRootItem* root, ViewLayerTreeModel* layer_model);
 
-    LayerTreeModel* layerTreeModel() override { return layer_model_; }
+    ViewLayerTreeModel* layerTreeModel() override { return layer_model_; }
 
 signals:
     /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
@@ -180,7 +180,7 @@ private:
                                                   dbContent::Representation::STANDARD };
 
     DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
-    LayerTreeModel*      layer_model_      {nullptr};   // owned by LayerPanelWidget
+    ViewLayerTreeModel*  layer_model_      {nullptr};   // owned by LayerPanelWidget
     AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
 
     std::vector<std::unique_ptr<ScatterLeafPayload>> payloads_;

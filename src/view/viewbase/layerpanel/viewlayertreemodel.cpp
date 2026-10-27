@@ -48,3 +48,11 @@ ViewLayerTreeModel::ViewLayerTreeModel(const std::vector<LayerColumnSpec>& custo
 /**
  */
 ViewLayerTreeModel::~ViewLayerTreeModel() = default;
+
+/**
+ * Notice: rebuilds from incomplete data (e.g. emptied at loading start) keep the states.
+ */
+void ViewLayerTreeModel::refreshDataSubtree(const std::function<std::vector<std::unique_ptr<LayerTreeItem>>()>& build)
+{
+    refreshSubtree(dbcontent_root_item_, build, data_complete_);
+}

@@ -29,6 +29,7 @@
 
 #include "dbcontentlayer.h"
 #include "viewlayerpanelwidget.h"
+#include "colormodelabel.h"
 #include "viewlayertreemodel.h"
 #include "annotationsrootitem.h"
 
@@ -72,14 +73,7 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
 
     auto layout = configLayout();
 
-    {
-        color_mode_label_ = new QLabel(this);
-        color_mode_label_->setText("Color Mode: " + colorModeText(view_->compass().colorMode()));
-        layout->addWidget(color_mode_label_);
-
-        connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
-                this, &ScatterPlotViewConfigWidget::colorModeChangedSlot);
-    }
+    layout->addWidget(new ColorModeLabel(view_->compass(), this));
 
     {
         // Register the scatter-specific "# NULL" column (custom col 0).
@@ -102,9 +96,7 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
         connect(layer_panel_->model(), &LayerTreeModel::hiddenChangedSignal,
                 data_widget, &ScatterPlotViewDataWidget::updateChartSlot);
 
-        // Data widget rebuilt the tree -> re-apply default expansion.
-        connect(data_widget, &ScatterPlotViewDataWidget::layerTreeRebuiltSignal,
-                this, &ScatterPlotViewConfigWidget::applyDefaultExpansionSlot);
+        layer_panel_->followColorMode(view_->compass());
 
         layout->addWidget(layer_panel_);
     }
@@ -131,43 +123,6 @@ void ScatterPlotViewConfigWidget::useConnectionLinesSlot()
 
     traced_assert(use_connection_lines_);
     view_->useConnectionLines(use_connection_lines_->checkState() == Qt::Checked);
-}
-
-/**
-*/
-void ScatterPlotViewConfigWidget::applyDefaultExpansionSlot()
-{
-    if (!db_content_root_ || !layer_panel_)
-        return;
-    db_content_root_->applyDefaultExpansionForColorMode(
-        layer_panel_->treeView(), view_->compass().colorMode());
-}
-
-/**
-*/
-void ScatterPlotViewConfigWidget::colorModeChangedSlot(unsigned int mode)
-{
-    traced_assert(color_mode_label_);
-    color_mode_label_->setText("Color Mode: " + colorModeText(mode));
-
-    // Re-expand so the level that differentiates colors stays visible; the
-    // data widget will re-run resolveSeriesColor on the next redraw triggered
-    // by COMPASS::colorModeChangedSignal elsewhere.
-    applyDefaultExpansionSlot();
-}
-
-/**
-*/
-QString ScatterPlotViewConfigWidget::colorModeText(unsigned int mode)
-{
-    switch (mode)
-    {
-        case 0: return "DSType";
-        case 1: return "DBContent";
-        case 2: return "Data Source";
-        case 3: return "Data Source + Line";
-        default: return "Unknown";
-    }
 }
 
 /**

@@ -151,7 +151,7 @@ HistogramViewDataWidget::~HistogramViewDataWidget()
 /**
  */
 void HistogramViewDataWidget::attachLayerPanel(DBContentRootItem* root,
-                                               LayerTreeModel* layer_model)
+                                               ViewLayerTreeModel* layer_model)
 {
     db_content_root_ = root;
     layer_model_     = layer_model;
@@ -479,7 +479,7 @@ void HistogramViewDataWidget::updateFromVariables()
     // previously each row built its layer id, split it in groupKeyFor and probed two
     // string keyed maps, over millions of rows.
     const std::set<std::string> hidden_layer_ids =
-        layer_model_ ? layer_model_->storedHiddenIds() : std::set<std::string>{};
+        layer_model_ ? layer_model_->state().hiddenIds() : std::set<std::string>{};
 
     const auto& pool = row_layer_index_.pool;
 
@@ -1150,7 +1150,7 @@ void HistogramViewDataWidget::applyLayerTree(const std::map<std::string, view_la
     }
 
     // refreshSubtree re-applies the stored hidden state to the fresh leaves.
-    layer_model_->refreshSubtree(db_content_root_, [&]() {
+    layer_model_->refreshDataSubtree([&]() {
         payloads_ = std::move(new_payloads);
         return db_content_root_->buildChildrenFrom(entries);
     });

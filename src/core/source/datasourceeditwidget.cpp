@@ -37,7 +37,6 @@
 #include <QFormLayout>
 #include <QFileDialog>
 #include <QSpinBox>
-#include <QDoubleSpinBox>
 #include <QMenu>
 
 using namespace std;
@@ -881,7 +880,10 @@ void DataSourceEditWidget::longitudeEditedSlot(const QString& value_str)
         }
     }
 
-    loginf << "'" << value << "'";
+    loginf << "'" << value << "' ok " << ok;
+
+    if (!ok)
+        return;
 
 traced_assert(current_ds_);
     currentDataSource().longitude(value);
@@ -1141,6 +1143,12 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
         {
             err = "Please choose a non-empty name.";
         }
+        else if (!lat_box->hasAcceptableInput() ||
+                 !lon_box->hasAcceptableInput() ||
+                 !alt_box->hasAcceptableInput())
+        {
+            err = "Please enter a valid latitude, longitude and altitude.";
+        }
 
         if (!err.isEmpty())
         {
@@ -1160,9 +1168,9 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
     ru_def.index     = index_box->value();
     ru_def.name      = name_box->text().toStdString();
     ru_def.comment   = comment_box->text().toStdString();
-    ru_def.latitude  = lat_box->value();
-    ru_def.longitude = lon_box->value();
-    ru_def.altitude  = alt_box->value();
+    ru_def.latitude  = lat_box->text().toDouble();
+    ru_def.longitude = lon_box->text().toDouble();
+    ru_def.altitude  = alt_box->text().toDouble();
 
     {
         auto key = std::to_string(ru_def.index);

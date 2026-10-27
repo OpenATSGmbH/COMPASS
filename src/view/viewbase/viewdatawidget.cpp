@@ -19,7 +19,7 @@
 #include "viewwidget.h"
 #include "view.h"
 #include "viewtoolswitcher.h"
-#include "layertreemodel.h"
+#include "viewlayertreemodel.h"
 #include "logger.h"
 #include "buffer.h"
 #include "variable.h"
@@ -170,6 +170,15 @@ void ViewDataWidget::notifyProcessingFinished()
 
     emit dataLoaded();
     emit processingFinishedSignal();
+}
+
+/**
+ * Data subtree rebuilds prune the states of vanished data items only while the data is complete.
+ */
+void ViewDataWidget::setLayerDataComplete(bool complete)
+{
+    if (auto* layer_model = layerTreeModel())
+        layer_model->setDataComplete(complete);
 }
 
 /**
@@ -390,6 +399,9 @@ void ViewDataWidget::updateFromSource(const DBContentDataSet& source,
     data_                   = source.buffers();
     data_fulfills_read_set_ = source.fulfillsReadSet();
 
+    // set before the provider and the derived class rebuild from the data (reload end and live tick alike)
+    setLayerDataComplete(last);
+
     if (item_provider_)
     {
         item_provider_->setSource(&source);
@@ -418,6 +430,9 @@ void ViewDataWidget::clearData()
     shutdownAsyncProcessor();
     pending_loading_done_ = false;
     pending_data_loaded_  = false;
+
+    // before the provider reset below empties the data subtree
+    setLayerDataComplete(false);
 
     data_                   = {};
     data_fulfills_read_set_ = true;
@@ -628,7 +643,7 @@ void ViewDataWidget::databaseClosed()
 {
     //hidden-layer memory is per database session - forget it on close
     if (auto* layer_model = layerTreeModel())
-        layer_model->clearStoredHiddenState();
+        layer_model->state().clear();
 
     databaseClosed_impl();
 }

@@ -155,7 +155,7 @@ void ScatterPlotViewDataWidget::resetSeries()
 /**
 */
 void ScatterPlotViewDataWidget::attachLayerPanel(DBContentRootItem* root,
-                                                 LayerTreeModel* layer_model)
+                                                 ViewLayerTreeModel* layer_model)
 {
     db_content_root_ = root;
     layer_model_     = layer_model;
@@ -246,7 +246,8 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
     // Scoped subtree refresh: removes old children, swaps payloads while the
     // DBContent root is empty, then attaches the new subtree. Avoids a full
     // modelReset that would make QHeaderView drop its section widths.
-    layer_model_->refreshSubtree(db_content_root_, [&]() {
+    auto buildChildren = [&]()
+    {
         payloads_ = std::move(new_payloads);
         auto children = db_content_root_->buildChildrenFrom(entries);
         if (selected_payload)
@@ -258,7 +259,14 @@ void ScatterPlotViewDataWidget::rebuildLayerTree()
             children.insert(children.begin(), std::move(leaf));
         }
         return children;
-    });
+    };
+
+    // annotation series are no loaded data => the data-complete pruning does not apply, keep the states
+    if (view_->showsAnnotation())
+        layer_model_->refreshSubtree(db_content_root_, buildChildren, false);
+    else
+        layer_model_->refreshDataSubtree(buildChildren);
+
     db_content_root_->recomputeColorsRecursive();
 
     emit layerTreeRebuiltSignal();

@@ -41,6 +41,8 @@ class DataSourcesWidget;
 class DataSourceLineButton : public QPushButton
 {
 public:
+    static const bool DisableAllLinesInLivePause; // true = all lines disabled in live pause, false = only lines without data
+
     DataSourceLineButton(DataSourcesWidget* widget,
                          unsigned int line_id,
                          unsigned int button_size_px);

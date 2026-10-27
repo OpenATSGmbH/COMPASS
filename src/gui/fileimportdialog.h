@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include "geotiff_defs.h"
-
 #include <string>
 #include <map>
 
@@ -30,7 +28,6 @@ class QPushButton;
 class QCheckBox;
 class QTreeWidget;
 class QTreeWidgetItem;
-class QComboBox;
 
 /**
  */
@@ -110,21 +107,9 @@ public:
                         Qt::WindowFlags f = Qt::WindowFlags());
     virtual ~GeoTIFFImportDialog() = default;
 
-    int fileSubsampling(const std::string& fn) const;
-
 protected:
-    virtual std::vector<CustomColumn> customColumns() const override;
     virtual std::pair<bool, std::string> checkFile_impl(const std::string& fn) const override;
-    virtual void initItem_impl(QTreeWidgetItem* item, int idx, const std::string& fn) override;
     virtual void itemChanged_impl(QTreeWidgetItem* item, int column) override;
 
     virtual QString infoColumnName() const override;
-
-private:
-    void updateSizeInfo(int idx);
-
-    QComboBox* subsamplingCombo(int idx) const;
-    QComboBox* subsamplingCombo(QTreeWidgetItem* item) const;
-
-    mutable std::map<std::string, GeoTIFFInfo> gtiff_infos_;
 };

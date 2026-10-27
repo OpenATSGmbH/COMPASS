@@ -43,7 +43,16 @@ public:
 
     bool showsAnnotations() const { return annotations_root_item_ != nullptr; }
 
+    /// the view's data set is final (source finalize received, neither cleared nor partially updated since)
+    void setDataComplete(bool complete) { data_complete_ = complete; }
+    bool dataComplete() const { return data_complete_; }
+
+    /// rebuilds the data subtree, prunes the states of vanished data items if the data is complete
+    void refreshDataSubtree(const std::function<std::vector<std::unique_ptr<LayerTreeItem>>()>& build);
+
 private:
     DBContentRootItem*   dbcontent_root_item_   = nullptr;
     AnnotationsRootItem* annotations_root_item_ = nullptr;
+
+    bool data_complete_ = false; // see setDataComplete()
 };

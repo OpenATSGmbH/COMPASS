@@ -49,6 +49,7 @@ namespace context
 class ColorProvider
 {
 public:
+    /// values as stored by COMPASS::colorMode()
     enum class Mode
     {
         DSType,
@@ -62,6 +63,11 @@ public:
         Light,
         Dark
     };
+
+    /// display name of a color mode, used by all UI elements showing one
+    static std::string modeName(Mode mode);
+    /// all color modes in UI order
+    static const std::vector<Mode>& modes();
 
     /// default DSType palette (Radar=green, ADSB=blue, MLAT=red, ...)
     static const std::map<std::string, QColor>& defaultDSTypeColors();

@@ -364,14 +364,10 @@ class ViewPointGenFeatureGeoImage : public ViewPointGenFeature
 public:
     ViewPointGenFeatureGeoImage(const std::string& fn,
                                 const RasterReference& ref,
-                                const ColorLegend& legend = ColorLegend(),
-                                bool subsample = true,
-                                int subsampling = -1);
+                                const ColorLegend& legend = ColorLegend());
     ViewPointGenFeatureGeoImage(const QImage& data,
                                 const RasterReference& ref,
-                                const ColorLegend& legend = ColorLegend(),
-                                bool subsample = true,
-                                int subsampling = -1);
+                                const ColorLegend& legend = ColorLegend());
     virtual ~ViewPointGenFeatureGeoImage() = default;
 
     static std::string imageToByteString(const QImage& img, const std::string& format);
@@ -387,8 +383,6 @@ public:
     static const std::string FeatureGeoImageFieldNameData;
     static const std::string FeatureGeoImageFieldNameReference;
     static const std::string FeatureGeoImageFieldNameLegend;
-    static const std::string FeatureGeoImageFieldNameSubsample;
-    static const std::string FeatureGeoImageFieldNameSubsampling;
 
 protected:
     virtual void toJSON_impl(nlohmann::json& j, bool write_binary_if_possible) const override;
@@ -398,8 +392,6 @@ private:
     QImage          data_;
     RasterReference ref_;
     ColorLegend     legend_;
-    bool            subsample_ = false;
-    int             subsampling_;
 };
 
 /**

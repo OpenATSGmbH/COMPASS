@@ -19,6 +19,7 @@
 
 #include <QWidget>
 
+#include <functional>
 #include <memory>
 #include <set>
 #include <string>
@@ -28,6 +29,8 @@ class LayerTreeModel;
 class LayerTreeItemDelegate;
 class LayerColumnSpec;
 
+class QItemSelection;
+class QModelIndex;
 class QTreeView;
 
 /**
@@ -41,12 +44,18 @@ class QTreeView;
  * Context menu: clicked items contribute their own section via
  * LayerTreeItem::buildContextMenu(); the panel appends a global "All" section
  * (Select All, Deselect All, Expand All, Collapse All).
+ *
+ * View state: expansion and selection are snapshotted into the model's item state map
+ * before rows vanish and restored when they return. Others use the default expansion policy.
  */
 class LayerPanelWidget : public QWidget
 {
     Q_OBJECT
 
 public:
+    /// decides if an item without remembered expansion starts expanded (depth 0 = top level)
+    typedef std::function<bool(const LayerTreeItem& item, int depth)> DefaultExpansionFunc;
+
     /// If `delegate` is null, a default LayerTreeItemDelegate is used.
     /// The panel takes ownership of a non-null delegate.
     explicit LayerPanelWidget(QWidget* parent = nullptr,
@@ -63,26 +72,38 @@ public:
     /// Convenience: append a top-level item to the model's invisible root.
     LayerTreeItem* addRootItem(std::unique_ptr<LayerTreeItem> item);
 
-    /// Persistence helpers routed through the model.
-    std::set<std::string> persistedHiddenIds() const;
-    void applyPersistedHiddenIds(const std::set<std::string>& ids);
-
-    void enableAutoExpand(int max_depth = -1);
     void expandLayers(int max_depth = -1);
+
+    virtual void setDefaultExpansion(const DefaultExpansionFunc& func);
 
 private slots:
     void onContextMenuRequested(const QPoint& pos);
 
+protected:
+    /// current expansion/selection into the model's item state map
+    void captureViewStateAll();
+    /// expansion/selection from the model's item state map, else the default policy
+    void restoreViewStateAll();
+
 private:
+    typedef std::function<void(const QModelIndex&, LayerTreeItem*, int)> VisitFunc;
+
     void init(LayerTreeItemDelegate* delegate);
 
-    void autoExpand();
+    void visitRows(const QModelIndex& parent, int first, int last, int depth, const VisitFunc& func) const;
+    int depthOf(const QModelIndex& index) const;
+    bool defaultExpanded(const LayerTreeItem& item, int depth) const;
+
+    void captureViewState(const QModelIndex& parent, int first, int last);
+    void restoreViewState(const QModelIndex& parent, int first, int last);
+    void updatePendingSelection(const QItemSelection& selected);
 
     LayerTreeModel*                 model_    {nullptr};
     LayerTreeItemDelegate*          delegate_ {nullptr};
     QTreeView*                      tree_view_{nullptr};
 
-    bool model_is_external_     = false;
-    bool auto_expand_           = false;
-    int  auto_expand_max_depth_ = -1;
+    bool model_is_external_ = false;
+
+    DefaultExpansionFunc expansion_policy_;             // effective default policy, see setDefaultExpansion()
+    bool                 restoring_view_state_ = false;
 };

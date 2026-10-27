@@ -22,6 +22,8 @@
 #include "dbcontentlayer.h"
 #include "annotationsrootitem.h"
 
+#include "compass.h"
+
 #include <QTreeView>
 
 #include <functional>
@@ -40,32 +42,94 @@ ViewLayerPanelWidget::ViewLayerPanelWidget(const std::vector<LayerColumnSpec>& c
 {
     model()->applyHeaderSettings(treeView()->header());
 
-    // Auto-expand the Annotations subtree when it's rebuilt so newly added
-    // group + leaf rows are visible immediately. Restricted to the
-    // AnnotationsRootItem subtree to avoid fighting the DBContent root's
-    // color-mode-driven default expansion (handled by the view's config
-    // widget on layerTreeRebuiltSignal).
-    connect(model(), &LayerTreeModel::subtreeRefreshedSignal,
-            this, [this](LayerTreeItem* parent)
+    // other items: annotations fully expanded
+    default_expansion_ = [ this ] (const LayerTreeItem& item, int)
     {
-        auto* anno_root = model()->annotationsRootItem();
-        if (!anno_root || parent != anno_root)
-            return;
+        const auto* anno_root = model()->annotationsRootItem();
 
-        QTreeView* view = treeView();
-        LayerTreeModel* m = model();
+        for (const LayerTreeItem* it = &item; it; it = it->parentItem())
+            if (anno_root && it == anno_root)
+                return true;
 
-        const QModelIndex anno_idx = m->index(anno_root->row(), 0, QModelIndex());
-        if (!anno_idx.isValid())
-            return;
+        return false;
+    };
 
-        std::function<void(const QModelIndex&)> expand_walk = [&](const QModelIndex& idx)
-        {
-            view->expand(idx);
-            const int n = m->rowCount(idx);
-            for (int i = 0; i < n; ++i)
-                expand_walk(m->index(i, 0, idx));
-        };
-        expand_walk(anno_idx);
+    LayerPanelWidget::setDefaultExpansion([ this ] (const LayerTreeItem& item, int depth)
+    {
+        return isExpandedByDefault(item, depth);
     });
+}
+
+/**
+ * Policy for the items outside the Data subtree.
+ */
+void ViewLayerPanelWidget::setDefaultExpansion(const DefaultExpansionFunc& func)
+{
+    // deviations from the previous policy are kept
+    captureViewStateAll();
+
+    default_expansion_ = func;
+
+    restoreViewStateAll();
+}
+
+/**
+ * Notice: resets the remembered expansion of the Data items on change, they follow the new default.
+ */
+void ViewLayerPanelWidget::setDataExpansion(int depth)
+{
+    if (depth == data_expansion_depth_)
+        return;
+
+    // the other items keep their deviations from the (unchanged) default
+    captureViewStateAll();
+
+    data_expansion_depth_ = depth;
+
+    if (const auto* db_root = model()->dbContentRootItem())
+        model()->clearItemStates(db_root, LayerTreeState::PersistExpansion);
+
+    restoreViewStateAll();
+}
+
+/**
+ */
+void ViewLayerPanelWidget::followColorMode(COMPASS& compass)
+{
+    setDataExpansion(dataExpansionDepth((context::ColorProvider::Mode)compass.colorMode()));
+
+    connect(&compass, &COMPASS::colorModeChangedSignal, this, [ this ] (unsigned int mode)
+    {
+        setDataExpansion(dataExpansionDepth((context::ColorProvider::Mode)mode));
+    });
+}
+
+/**
+ * The Data root itself is always expanded.
+ */
+int ViewLayerPanelWidget::dataExpansionDepth(context::ColorProvider::Mode mode)
+{
+    switch (mode)
+    {
+        case context::ColorProvider::Mode::DSType:         return 0; // collapsed below the root
+        case context::ColorProvider::Mode::DataSource:     return 1; // data source rows
+        case context::ColorProvider::Mode::DataSourceLine: return 2; // line rows
+        case context::ColorProvider::Mode::DBContent:      return 3; // everything
+    }
+    return 3;
+}
+
+/**
+ * Data root plus data_expansion_depth_ levels below it, else the policy for the other items.
+ */
+bool ViewLayerPanelWidget::isExpandedByDefault(const LayerTreeItem& item, int depth) const
+{
+    const auto* db_root = model()->dbContentRootItem();
+
+    int rel_depth = 0;
+    for (const LayerTreeItem* it = &item; it; it = it->parentItem(), ++rel_depth)
+        if (db_root && it == db_root)
+            return data_expansion_depth_ >= 0 && rel_depth <= data_expansion_depth_;
+
+    return default_expansion_ && default_expansion_(item, depth);
 }

@@ -39,7 +39,7 @@ class GridViewWidget;
 class Grid2D;
 class ColorLegendWidget;
 class DBContentRootItem;
-class LayerTreeModel;
+class ViewLayerTreeModel;
 class AnnotationsRootItem;
 class GridLeafPayload;
 
@@ -101,9 +101,9 @@ public:
     /// Provides the DBContent root item (owned by the panel's model) and the
     /// layer tree model used for hidden-state round-tripping and recompute
     /// triggering.
-    void attachLayerPanel(DBContentRootItem* root, LayerTreeModel* layer_model);
+    void attachLayerPanel(DBContentRootItem* root, ViewLayerTreeModel* layer_model);
 
-    LayerTreeModel* layerTreeModel() override { return layer_model_; }
+    ViewLayerTreeModel* layerTreeModel() override { return layer_model_; }
 
 signals:
     /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
@@ -157,7 +157,7 @@ private:
 
     /// Rebuild grid_ / grid_layers_ / value ranges by iterating the current
     /// stash and accumulating only groups not hidden in the layer panel
-    /// (the layer model's storedHiddenIds()). Safe to call on a layer toggle -
+    /// (the layer model's state().hiddenIds()). Safe to call on a layer toggle -
     /// touches neither the stash nor the layer tree, so DBContentLeafItem
     /// payload pointers stay valid.
     void buildGridFromStash();
@@ -206,7 +206,7 @@ private:
     boost::optional<Grid2DRenderSettings> annotation_render_settings_;
 
     DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
-    LayerTreeModel*      layer_model_      {nullptr};   // owned by LayerPanelWidget
+    ViewLayerTreeModel*  layer_model_      {nullptr};   // owned by LayerPanelWidget
     AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
 
     std::vector<std::unique_ptr<GridLeafPayload>> payloads_;

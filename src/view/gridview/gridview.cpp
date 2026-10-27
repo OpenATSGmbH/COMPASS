@@ -183,9 +183,16 @@ void GridView::setValueType(grid2d::ValueType type, bool notify_changes)
     if (settings_.value_type == type)
         return;
 
+    auto data_type_before_change = currentDataType();
+
     setParameter(settings_.value_type, (int)type);
-    setParameter(settings_.render_color_value_min, std::string(""));
-    setParameter(settings_.render_color_value_max, std::string(""));
+
+    //data type changed => reset min max values (otherwise they stay valid and are kept)
+    if (data_type_before_change != currentDataType())
+    {
+        setParameter(settings_.render_color_value_min, std::string(""));
+        setParameter(settings_.render_color_value_max, std::string(""));
+    }
 
     if (notify_changes)
         notifyRefreshNeeded();

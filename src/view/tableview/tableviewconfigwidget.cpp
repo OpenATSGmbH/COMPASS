@@ -30,6 +30,7 @@
 
 #include "dbcontentlayer.h"
 #include "viewlayerpanelwidget.h"
+#include "colormodelabel.h"
 #include "viewlayertreemodel.h"
 
 #include <QCheckBox>
@@ -88,12 +89,7 @@ TableViewConfigWidget::TableViewConfigWidget(TableViewWidget* view_widget, QWidg
                 this, &TableViewConfigWidget::toggleIgnoreNonTargetReports);
         cfg_layout->addWidget(ignore_non_target_reports_check_);
 
-        color_mode_label_ = new QLabel(this);
-        color_mode_label_->setText("Color Mode: " + colorModeText(view_->compass().colorMode()));
-        cfg_layout->addWidget(color_mode_label_);
-
-        connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
-                this, &TableViewConfigWidget::colorModeChangedSlot);
+        cfg_layout->addWidget(new ColorModeLabel(view_->compass(), this));
 
         // Layer panel - fills remaining vertical space below the checkboxes.
         // No addStretch() anymore: the panel's tree view is the stretchy child.
@@ -103,8 +99,7 @@ TableViewConfigWidget::TableViewConfigWidget(TableViewWidget* view_widget, QWidg
         auto* data_widget = view_widget->getViewDataWidget();
         data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
 
-        connect(data_widget, &TableViewDataWidget::layerTreeRebuiltSignal,
-                this, &TableViewConfigWidget::applyDefaultExpansionSlot);
+        layer_panel_->followColorMode(view_->compass());
 
         cfg_layout->addWidget(layer_panel_);
 
@@ -166,34 +161,6 @@ void TableViewConfigWidget::exportDoneSlot(bool canceled)
         QMessageBox msgBox(this);
         msgBox.setText("Export complete.");
         msgBox.exec();
-    }
-}
-
-void TableViewConfigWidget::colorModeChangedSlot(unsigned int mode)
-{
-    traced_assert(color_mode_label_);
-    color_mode_label_->setText("Color Mode: " + colorModeText(mode));
-
-    applyDefaultExpansionSlot();
-}
-
-void TableViewConfigWidget::applyDefaultExpansionSlot()
-{
-    if (!db_content_root_ || !layer_panel_)
-        return;
-    db_content_root_->applyDefaultExpansionForColorMode(
-        layer_panel_->treeView(), view_->compass().colorMode());
-}
-
-QString TableViewConfigWidget::colorModeText(unsigned int mode)
-{
-    switch (mode)
-    {
-        case 0: return "DSType";
-        case 1: return "DBContent";
-        case 2: return "Data Source";
-        case 3: return "Data Source + Line";
-        default: return "Unknown";
     }
 }
 

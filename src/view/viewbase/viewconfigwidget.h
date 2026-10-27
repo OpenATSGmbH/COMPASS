@@ -52,9 +52,9 @@ public:
     nlohmann::json viewInfoJSON() const override final;
 
     static const int MinWidth  = 400;
-    
+
 protected:
-    virtual void onDisplayChange_impl() {} 
+    virtual void onDisplayChange_impl() {}
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
 
     ViewWidget* getWidget() { return view_widget_; }

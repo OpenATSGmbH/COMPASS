@@ -87,14 +87,6 @@ void AnnotationsRootItem::update(const std::vector<VariableView::AnnotationGroup
         return out;
     };
 
-    if (model_)
-        model_->refreshSubtree(this, build);
-    else
-    {
-        // No model attached yet: just swap children directly. Used during
-        // initial wiring before the panel is on screen.
-        clearChildren();
-        for (auto& c : build())
-            appendChild(std::move(c));
-    }
+    // plain swap while no model is attached yet (initial wiring before the panel is on screen)
+    replaceChildren(build);
 }

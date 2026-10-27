@@ -20,7 +20,7 @@
 #include "variableview.h"
 #include "viewwidget.h"
 #include "viewasyncprocessor.h"
-#include "layertreemodel.h"
+#include "viewlayertreemodel.h"
 
 #include "buffer.h"
 #include "dbcontent/dbcontent.h"
@@ -563,7 +563,7 @@ void VariableViewStashDataWidget::selectData(double x_min,
     auto* layer_model = layerTreeModel();
 
     const std::set<std::string> hidden_groups =
-        layer_model ? layer_model->storedHiddenIds() : std::set<std::string>{};
+        layer_model ? layer_model->state().hiddenIds() : std::set<std::string>{};
 
     // Views that pool selected points into one overlay layer draw them under
     // that id, not under their group id. A selected point is therefore shown

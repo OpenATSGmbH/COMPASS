@@ -31,6 +31,7 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/axisticks.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewscreenshotdialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/colormapwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/colormodelabel.h"
         "${CMAKE_CURRENT_LIST_DIR}/plotmetadata.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewinfo.h"
         
@@ -58,6 +59,7 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/axisticks.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/viewscreenshotdialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/colormapwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/colormodelabel.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/plotmetadata.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/viewinfo.cpp"
 )
