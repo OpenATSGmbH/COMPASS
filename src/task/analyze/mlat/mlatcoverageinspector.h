@@ -115,8 +115,8 @@ private:
     {
         std::string   label;
         std::size_t   num_targets = 0;
-        std::uint64_t eui = 0;
-        std::uint64_t mui = 0;
+        double        eui = 0.0;   // weighted, see coveragepdwalk.h
+        double        mui = 0.0;
         double        pd  = 0.0;
     };
 
@@ -129,8 +129,8 @@ private:
         unsigned int targets_walked = 0;
         unsigned int targets_no_ref = 0;
         unsigned int targets_no_tst = 0;
-        std::uint64_t total_eui    = 0;
-        std::uint64_t total_mui    = 0;
+        double total_eui           = 0.0;   // weighted, see coveragepdwalk.h
+        double total_mui           = 0.0;
         double overall_pd          = 0.0;
 
         // Measured per-target inter-report interval (the actual update cadence),

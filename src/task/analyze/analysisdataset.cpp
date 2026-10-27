@@ -35,7 +35,12 @@
 #include "logger.h"
 #include "viewmanager.h"
 
+#include <QCoreApplication>
+#include <QThread>
+
 #include <algorithm>
+#include <atomic>
+#include <future>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -200,7 +205,22 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
     // OK; consumers (status-message PD) check `statusCycles().empty()`.
     loadStatusCycles();
 
-    buildChains(selected_ds_ids, ref_ds_ids, test_dbcontents);
+    // The chain build runs the scope filter (sector inside test) on every
+    // report and can take minutes. Run it on a worker thread and keep the Qt
+    // event loop running on the main thread, so the application stays
+    // responsive. Same std::async + polling pattern as the inspector compute.
+    std::atomic<bool> done{false};
+    auto fut = std::async(std::launch::async, [&]() {
+        buildChains(selected_ds_ids, ref_ds_ids, test_dbcontents);
+        done.store(true, std::memory_order_release);
+    });
+
+    while (!done.load(std::memory_order_acquire))
+    {
+        QCoreApplication::processEvents();
+        QThread::msleep(50);
+    }
+    fut.get();
 
     if (!hasUsableData())
     {

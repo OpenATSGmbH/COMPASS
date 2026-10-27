@@ -59,14 +59,14 @@ TargetReport3DGrid::cellAt(double lat_deg, double lon_deg, double baro_alt_ft)
     return cells_[keyFor(lat_deg, lon_deg, baro_alt_ft)];
 }
 
-void TargetReport3DGrid::addEUI(double lat_deg, double lon_deg, double baro_alt_ft)
+void TargetReport3DGrid::addEUI(double lat_deg, double lon_deg, double baro_alt_ft, double weight)
 {
-    cellAt(lat_deg, lon_deg, baro_alt_ft).num_eui += 1;
+    cellAt(lat_deg, lon_deg, baro_alt_ft).num_eui += weight;
 }
 
-void TargetReport3DGrid::addMUI(double lat_deg, double lon_deg, double baro_alt_ft)
+void TargetReport3DGrid::addMUI(double lat_deg, double lon_deg, double baro_alt_ft, double weight)
 {
-    cellAt(lat_deg, lon_deg, baro_alt_ft).num_mui += 1;
+    cellAt(lat_deg, lon_deg, baro_alt_ft).num_mui += weight;
 }
 
 void TargetReport3DGrid::addExtra(double lat_deg, double lon_deg, double baro_alt_ft,

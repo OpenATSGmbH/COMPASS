@@ -125,6 +125,19 @@ public:
     QColor sample(double t) const;
     QColor sampleValue(double v) const;
 
+    /// Logarithmic value mapping, off by default. Values at or below the
+    /// lower range bound get the first color. A lower bound <= 0 is replaced
+    /// by `floor` if > 0, else by 1e-3 of the upper bound.
+    void setLogScale(bool log_scale, double floor = 0.0);
+    bool logScale() const { return log_scale_; }
+    double logFloor() const { return log_floor_; }
+
+    /// Position [0, 1] of value v in the range [vmin, vmax], linear or
+    /// logarithmic depending on logScale().
+    double factorOfValue(double v, double vmin, double vmax) const;
+    /// Inverse of factorOfValue().
+    double valueAtFactor(double t, double vmin, double vmax) const;
+
     ColorLegend colorLegend(bool add_sel_color = true,
                             bool add_null_color = true,
                             const ValueDecorator& decorator = ValueDecorator()) const;
@@ -149,4 +162,6 @@ private:
     std::vector<QColor> special_colors_;
     OValueRange         value_range_;
     bool                sample_values_symm_ = false;
+    bool                log_scale_ = false;
+    double              log_floor_ = 0.0;
 };

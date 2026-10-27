@@ -40,6 +40,9 @@ nlohmann::json Grid2DRenderSettings::toJSON() const
     {
         obj["color_scale"] = static_cast<int>(color_map.colorScale());
         obj["color_steps"] = static_cast<int>(color_map.colorSteps());
+        obj["log_scale"]   = color_map.logScale();
+        if (color_map.logScale())
+            obj["log_floor"] = color_map.logFloor();
 
         // Emit the resolved color stops so non-Qt consumers (compass_web)
         // don't have to recreate a ColorMap to colour their renderings.
@@ -90,6 +93,9 @@ bool Grid2DRenderSettings::fromJSON(const nlohmann::json& obj)
         color_map.create(static_cast<colorscale::ColorScale>(scale_int),
                          static_cast<std::size_t>(steps));
     }
+
+    if (obj.contains("log_scale") && obj.at("log_scale").is_boolean())
+        color_map.setLogScale(obj.at("log_scale").get<bool>(), obj.value("log_floor", 0.0));
 
     if (obj.contains("pixels_per_cell") && obj.at("pixels_per_cell").is_number_integer())
         pixels_per_cell = obj.at("pixels_per_cell").get<int>();

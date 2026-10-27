@@ -1036,6 +1036,18 @@ void GridViewDataWidget::updateRendering()
                                             range);
         }
 
+        //logarithmic scale: annotation override -> view setting
+        if (annotation_render_settings_.has_value()
+            && annotation_render_settings_->color_map.valid())
+        {
+            render_settings.color_map.setLogScale(annotation_render_settings_->color_map.logScale(),
+                                                  annotation_render_settings_->color_map.logFloor());
+        }
+        else
+        {
+            render_settings.color_map.setLogScale(settings.render_color_log_scale);
+        }
+
         colormap_ = render_settings.color_map;
     }
 

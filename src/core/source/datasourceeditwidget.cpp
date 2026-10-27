@@ -1098,28 +1098,29 @@ bool DataSourceEditWidget::editRemoteUnit(int idx)
     auto comment_box = new QLineEdit;
     comment_box->setText(add ? "" : QString::fromStdString(ru_def_in.comment));
 
-    // position input as in the FFT edit widget, a remote unit always needs a position => no empty values
-    auto lat_box = new QLineEdit;
-    lat_box->setValidator(new TextFieldDoubleValidator(-90, 90, 8, lat_box));
-    lat_box->setPlaceholderText("not set");
-    lat_box->setText(add ? "" : QString::number(ru_def_in.latitude, 'g', 12));
+    auto lat_box = new QDoubleSpinBox;
+    lat_box->setMinimum(-90);
+    lat_box->setMaximum( 90);
+    lat_box->setDecimals(12); // set before setValue, which rounds to the current decimals
+    lat_box->setValue(add ? 0 : ru_def_in.latitude);
 
-    auto lon_box = new QLineEdit;
-    lon_box->setValidator(new TextFieldDoubleValidator(-180, 180, 8, lon_box));
-    lon_box->setPlaceholderText("not set");
-    lon_box->setText(add ? "" : QString::number(ru_def_in.longitude, 'g', 12));
+    auto lon_box = new QDoubleSpinBox;
+    lon_box->setMinimum(-180);
+    lon_box->setMaximum( 180);
+    lon_box->setDecimals(12);
+    lon_box->setValue(add ? 0 : ru_def_in.longitude);
 
-    auto alt_box = new QLineEdit;
-    alt_box->setValidator(new TextFieldDoubleValidator(-10000, 100000, 1, alt_box));
-    alt_box->setPlaceholderText("not set");
-    alt_box->setText(add ? "" : QString::number(ru_def_in.altitude, 'f', 1));
+    auto alt_box = new QDoubleSpinBox;
+    alt_box->setMinimum(std::numeric_limits<double>::lowest());
+    alt_box->setMaximum(std::numeric_limits<double>::max());
+    alt_box->setValue(add ? 0 : ru_def_in.altitude);
 
-    data_layout->addRow("Index: "        , index_box);
-    data_layout->addRow("Name: "         , name_box);
-    data_layout->addRow("Comment: "      , comment_box);
-    data_layout->addRow("Latitude: "     , lat_box);
-    data_layout->addRow("Longitude: "    , lon_box);
-    data_layout->addRow("Altitude [m]: " , alt_box);
+    data_layout->addRow("Index: "    , index_box);
+    data_layout->addRow("Name: "     , name_box);
+    data_layout->addRow("Comment: "  , comment_box);
+    data_layout->addRow("Latitude: " , lat_box);
+    data_layout->addRow("Longitude: ", lon_box);
+    data_layout->addRow("Altitude: " , alt_box);
 
     auto ok_button = new QPushButton(add ? "Add" : "Apply");
     auto cancel_button = new QPushButton("Cancel");
@@ -1762,8 +1763,8 @@ void DataSourceEditWidget::updateMLAT(context::DataSource* ds)
             item->setData(0, Qt::DisplayRole, std::stoi(key));
             item->setData(1, Qt::DisplayRole, QString::fromStdString(ru_json.value("name", "")));
             item->setData(2, Qt::DisplayRole, QString::fromStdString(ru_json.value("comment", "")));
-            item->setData(3, Qt::DisplayRole, ru_json.value("latitude", 0.0));
-            item->setData(4, Qt::DisplayRole, ru_json.value("longitude", 0.0));
+            item->setData(3, Qt::DisplayRole, QString::number(ru_json.value("latitude", 0.0), 'g', 12));
+            item->setData(4, Qt::DisplayRole, QString::number(ru_json.value("longitude", 0.0), 'g', 12));
             item->setData(5, Qt::DisplayRole, ru_json.value("altitude", 0.0));
 
             remote_units_list_->addTopLevelItem(item);

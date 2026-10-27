@@ -44,6 +44,7 @@ GridView::Settings::Settings()
 ,   render_color_value_max(""       )
 ,   render_color_scale    ((int)colorscale::ColorScale::Green2Red)
 ,   render_color_num_steps(10       )
+,   render_color_log_scale(false    )
 {
 }
 
@@ -59,6 +60,7 @@ GridView::GridView(nlohmann::json& config, ViewContainer* parent)
     registerParameter("max_grid_resolution", &settings_.max_grid_resolution, Settings().max_grid_resolution);
     registerParameter("render_color_scale", &settings_.render_color_scale, Settings().render_color_scale);
     registerParameter("render_color_num_steps", &settings_.render_color_num_steps, Settings().render_color_num_steps);
+    registerParameter("render_color_log_scale", &settings_.render_color_log_scale, Settings().render_color_log_scale);
     registerParameter("render_color_value_min", &settings_.render_color_value_min, Settings().render_color_value_min);
     registerParameter("render_color_value_max", &settings_.render_color_value_max, Settings().render_color_value_max);
 
@@ -230,6 +232,19 @@ void GridView::setColorSteps(unsigned int n, bool notify_changes)
         return;
 
     setParameter(settings_.render_color_num_steps, n);
+
+    if (notify_changes)
+        notifyRefreshNeeded();
+}
+
+/**
+*/
+void GridView::setColorLogScale(bool log_scale, bool notify_changes)
+{
+    if (settings_.render_color_log_scale == log_scale)
+        return;
+
+    setParameter(settings_.render_color_log_scale, log_scale);
 
     if (notify_changes)
         notifyRefreshNeeded();
