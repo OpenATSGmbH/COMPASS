@@ -211,6 +211,15 @@ public:
     static const PropertyList DBPropertyList;
     static const PropertyList DBHeaderPropertyList;
 
+    // per-target report sections, stored apart from the result content (see DBInterface::saveResult)
+    static const std::string  DBSectionsTableName;
+    static const Property     DBColumnSectionResultID;
+    static const Property     DBColumnSectionIndex;
+    static const Property     DBColumnSectionJSON;
+    static const PropertyList DBSectionsPropertyList;
+
+    static const std::string FieldSectionRef;
+
     static const std::string FieldID;
     static const std::string FieldName;
     static const std::string FieldType;

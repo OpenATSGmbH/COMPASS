@@ -16,6 +16,7 @@
  */
 
 #include "analysisdataset.h"
+#include "evaluationconstraints.h"
 
 #include "buffer.h"
 #include "compass.h"
@@ -353,6 +354,9 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
 
     const ScopeFilter& sf = scope_filter_;
 
+    // data exclusions of the evaluation, nullptr when not used
+    const EvaluationConstraints* excl = sf.eval_exclusions.get();
+
     // Per-report inside test (mirrors EvaluationTargetData::computeSectorInsideInfo):
     // a report is in scope when its ground state, barometric flight level and
     // sector membership pass the configured constraints. `lat/lon/mc/gb` are the
@@ -461,6 +465,23 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
 
             unsigned int utn = utn_vec.get(i);
             ptime ts         = ts_vec.get(i);
+
+            if (excl)
+            {
+                if (!excl->useTarget(utn))
+                {
+                    excluded_utns_.insert(utn);
+                    ++num_ref_records_excluded_;
+                    continue;
+                }
+                if (!excl->isTimeStampNotExcluded(utn, ts))
+                {
+                    // kept as a break, the reference period ends here as in the evaluation
+                    ref_breaks_[utn].insert(ts);
+                    ++num_ref_records_excluded_;
+                    continue;
+                }
+            }
 
             if (!inScope(ref_lat_vec, ref_lon_vec, ref_mc_vec, ref_gb_vec, i, targetGroundOnly(utn)))
                 continue;
@@ -603,6 +624,13 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
 
             if (utn_vec.isNull(i))
             {
+                // no target, only the global time rule applies
+                if (excl && !excl->isTimeStampNotExcluded(ts))
+                {
+                    ++num_tst_records_excluded_;
+                    continue;
+                }
+
                 if (!inScope(tst_lat_vec, tst_lon_vec, tst_mc_vec, tst_gb_vec, i, ds_ground_only))
                     continue;
 
@@ -612,6 +640,18 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
             }
 
             unsigned int utn = utn_vec.get(i);
+
+            if (excl)
+            {
+                const bool use = excl->useTarget(utn);
+                if (!use || !excl->isTimeStampNotExcluded(utn, ts))
+                {
+                    if (!use)
+                        excluded_utns_.insert(utn);
+                    ++num_tst_records_excluded_;
+                    continue;
+                }
+            }
 
             if (!inScope(tst_lat_vec, tst_lon_vec, tst_mc_vec, tst_gb_vec, i,
                          ds_ground_only || targetGroundOnly(utn)))
@@ -653,6 +693,20 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
            << num_unassoc_records_total_ << " unassociated test records, "
            << num_non_psr_skipped_ << " non-PSR CAT010 records skipped, "
            << status_cycles_by_ds_.size() << " sources with scan cycles";
+
+    if (excl)
+        loginf << "evaluation exclusions: " << excluded_utns_.size() << " targets, "
+               << num_ref_records_excluded_ << " reference and "
+               << num_tst_records_excluded_ << " test records excluded";
+}
+
+const std::set<ptime>* AnalysisDataset::referenceBreaks(unsigned int utn) const
+{
+    auto it = ref_breaks_.find(utn);
+    if (it == ref_breaks_.end() || it->second.empty())
+        return nullptr;
+
+    return &it->second;
 }
 
 void AnalysisDataset::addToReferenceChain(unsigned int utn, ptime ts, unsigned int idx)

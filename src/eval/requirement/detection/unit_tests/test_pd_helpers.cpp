@@ -315,3 +315,64 @@ TEST_CASE("PDHelpers::buildReferencePeriods - multiple periods all kept",
     REQUIRE(periods[1].end - periods[1].begin == seconds(3));
     REQUIRE(periods[2].end - periods[2].begin == seconds(3));
 }
+
+TEST_CASE("PDHelpers::buildReferencePeriods - split at a break shorter than the max gap",
+          "[pd_helpers][periods]")
+{
+    // updates every second over 0-19 s, the updates at 8 s and 9 s were removed
+    // (excluded time window), the remaining 2 s gap is below the max gap
+    std::set<ptime> ts;
+    std::set<ptime> breaks;
+    for (int i = 0; i < 20; ++i)
+    {
+        if (i == 8 || i == 9)
+            breaks.insert(t0() + seconds(i));
+        else
+            ts.insert(t0() + seconds(i));
+    }
+
+    // without the breaks the gap is bridged
+    auto bridged = buildReferencePeriods(ts, seconds(4), seconds(1));
+    REQUIRE(bridged.size() == 1);
+
+    // with the breaks the period ends before and starts after the removed updates
+    auto periods = buildReferencePeriods(ts, seconds(4), seconds(1), &breaks);
+    REQUIRE(periods.size() == 2);
+    REQUIRE(periods[0].begin == t0());
+    REQUIRE(periods[0].end   == t0() + seconds(7));
+    REQUIRE(periods[1].begin == t0() + seconds(10));
+    REQUIRE(periods[1].end   == t0() + seconds(19));
+}
+
+TEST_CASE("PDHelpers::buildReferencePeriods - breaks outside the data change nothing",
+          "[pd_helpers][periods]")
+{
+    std::set<ptime> ts;
+    for (int i = 0; i < 10; ++i)
+        ts.insert(t0() + seconds(i));
+
+    // before the first and after the last update, and exactly on an update
+    std::set<ptime> breaks{t0() - seconds(5), t0() + seconds(20), t0() + seconds(3)};
+
+    auto periods = buildReferencePeriods(ts, seconds(4), seconds(1), &breaks);
+    REQUIRE(periods.size() == 1);
+    REQUIRE(periods[0].begin == t0());
+    REQUIRE(periods[0].end   == t0() + seconds(9));
+
+    std::set<ptime> no_breaks;
+    auto periods_empty = buildReferencePeriods(ts, seconds(4), seconds(1), &no_breaks);
+    REQUIRE(periods_empty.size() == 1);
+}
+
+TEST_CASE("PDHelpers::buildReferencePeriods - break plus min duration",
+          "[pd_helpers][periods]")
+{
+    // a break right after the first update leaves a degenerate first period
+    std::set<ptime> ts{t0(), t0() + seconds(2), t0() + seconds(3), t0() + seconds(4)};
+    std::set<ptime> breaks{t0() + seconds(1)};
+
+    auto periods = buildReferencePeriods(ts, seconds(4), seconds(1), &breaks);
+    REQUIRE(periods.size() == 1);   // [0, 0] dropped by the min duration
+    REQUIRE(periods[0].begin == t0() + seconds(2));
+    REQUIRE(periods[0].end   == t0() + seconds(4));
+}

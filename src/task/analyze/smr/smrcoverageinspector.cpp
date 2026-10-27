@@ -1286,7 +1286,7 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
             ref_ts.insert(kv.first);
 
         auto periods = EvaluationRequirement::PDHelpers::buildReferencePeriods(
-            ref_ts, ref_max_gap, min_period_duration);
+            ref_ts, ref_max_gap, min_period_duration, dataset->referenceBreaks(utn));
         if (periods.empty())
         {
             ++result_.targets_no_ref;
