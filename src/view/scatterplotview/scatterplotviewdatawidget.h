@@ -31,10 +31,6 @@ class ScatterPlotViewWidget;
 class ScatterPlotViewDataSource;
 
 class Buffer;
-class DBContentRootItem;
-class ViewLayerTreeModel;
-class AnnotationsRootItem;
-class ScatterLeafPayload;
 
 namespace QtCharts
 {
@@ -76,23 +72,8 @@ public:
 
     static const int ConnectLinesDataCountMax;
 
-    /// Called by ScatterPlotViewConfigWidget once the LayerPanelWidget is
-    /// built. Provides the DBContent root item (owned by the panel's model)
-    /// and the layer tree model used for hidden-state round-tripping.
-    void attachLayerPanel(DBContentRootItem* root, ViewLayerTreeModel* layer_model);
-
-    ViewLayerTreeModel* layerTreeModel() override { return layer_model_; }
-
-signals:
-    /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
-    /// The config widget uses this to re-apply default expansion.
-    void layerTreeRebuiltSignal();
-
 public slots:
     void rectangleSelectedSlot(QPointF p1, QPointF p2);
-
-    void invertSelectionSlot();
-    void clearSelectionSlot();
 
     void resetZoomSlot();
 
@@ -149,10 +130,13 @@ private:
     void setAxisRange(QtCharts::QAbstractAxis* axis, double vmin, double vmax);
     boost::optional<std::pair<double, double>> getAxisRange(QtCharts::QAbstractAxis* axis) const;
 
-    /// Rebuild payloads_ from scatter_series_ and repopulate the DBContent
-    /// subtree. refreshSubtree re-applies the stored hidden state. Emits
-    /// layerTreeRebuiltSignal.
-    void rebuildLayerTree();
+    /// layer snapshots from scatter_series_, data subtree updated in place
+    virtual void rebuildLayerTree() override final;
+    /// redraws the chart with the checked layers
+    virtual void layerVisibilityChanged() override final;
+    /// nothing, the own color mode redraw rebuilds the layer tree
+    virtual void colorModeChanged() override final;
+    void applyLayerVisibility();
 
     ScatterPlotView*           view_       {nullptr};
     ScatterPlotViewDataSource* data_source_{nullptr};
@@ -178,12 +162,6 @@ private:
 
     dbContent::Representation axis_repr_[ 2 ] = { dbContent::Representation::STANDARD,
                                                   dbContent::Representation::STANDARD };
-
-    DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
-    ViewLayerTreeModel*  layer_model_      {nullptr};   // owned by LayerPanelWidget
-    AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
-
-    std::vector<std::unique_ptr<ScatterLeafPayload>> payloads_;
 
     boost::optional<QRectF> bounds_;
 

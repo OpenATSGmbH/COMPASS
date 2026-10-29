@@ -31,6 +31,7 @@ class LayerColumnSpec;
 
 class QItemSelection;
 class QModelIndex;
+class QTimer;
 class QTreeView;
 
 /**
@@ -45,15 +46,16 @@ class QTreeView;
  * LayerTreeItem::buildContextMenu(); the panel appends a global "All" section
  * (Select All, Deselect All, Expand All, Collapse All).
  *
- * View state: expansion and selection are snapshotted into the model's item state map
- * before rows vanish and restored when they return. Others use the default expansion policy.
+ * View state: kept rows keep expansion and selection natively (the model updates in place), new rows
+ * get the default expansion policy, vanished rows are forgotten. A destroyed panel leaves its view
+ * state on the items (LayerTreeItem::ViewHandover) for the next panel on the same model.
  */
 class LayerPanelWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    /// decides if an item without remembered expansion starts expanded (depth 0 = top level)
+    /// decides if a new item starts expanded (depth 0 = top level)
     typedef std::function<bool(const LayerTreeItem& item, int depth)> DefaultExpansionFunc;
 
     /// If `delegate` is null, a default LayerTreeItemDelegate is used.
@@ -74,16 +76,24 @@ public:
 
     void expandLayers(int max_depth = -1);
 
+    /// rows following the previous default switch to the new one, rows expanded or collapsed by the
+    /// user (and rows handed over from a previous panel) keep their expansion
     virtual void setDefaultExpansion(const DefaultExpansionFunc& func);
+
+    /// display of stale items, combination of LayerTreeItemDelegate::StaleIndication flags (default: all)
+    void setStaleIndication(int flags);
+    /// the wait icon animates (model has stale items, icon enabled)
+    bool isSpinnerActive() const;
 
 private slots:
     void onContextMenuRequested(const QPoint& pos);
 
 protected:
-    /// current expansion/selection into the model's item state map
-    void captureViewStateAll();
-    /// expansion/selection from the model's item state map, else the default policy
-    void restoreViewStateAll();
+    /// a policy input changed: rows that followed old_default follow the current policy, the others
+    /// (user deviations, handed over rows) keep their expansion
+    void defaultExpansionChanged(const DefaultExpansionFunc& old_default);
+    /// the row and its descendants get the default expansion
+    void applyDefaultExpansion(const QModelIndex& index);
 
 private:
     typedef std::function<void(const QModelIndex&, LayerTreeItem*, int)> VisitFunc;
@@ -91,19 +101,30 @@ private:
     void init(LayerTreeItemDelegate* delegate);
 
     void visitRows(const QModelIndex& parent, int first, int last, int depth, const VisitFunc& func) const;
+    void visitAllRows(const VisitFunc& func) const;
     int depthOf(const QModelIndex& index) const;
-    bool defaultExpanded(const LayerTreeItem& item, int depth) const;
+    bool defaultExpanded(const LayerTreeItem& item, int depth, const DefaultExpansionFunc& policy) const;
+    void setExpanded(const QModelIndex& index, bool expanded);
 
-    void captureViewState(const QModelIndex& parent, int first, int last);
-    void restoreViewState(const QModelIndex& parent, int first, int last);
-    void updatePendingSelection(const QItemSelection& selected);
+    /// new rows (insert, reset) get the default expansion
+    void applyDefaultExpansionToRows(const QModelIndex& parent, int first, int last);
+    void applyDefaultExpansionToAll();
+
+    /// leaves expansion, selection and current row on the items (destructor)
+    void handOverViewState();
+    /// applies the view state left on the items, default_others => the rows without one get the default
+    void takeOverViewState(bool default_others);
+    void clearViewHandover();
+
+    void updateSpinner();
+    void spinnerTick();
 
     LayerTreeModel*                 model_    {nullptr};
     LayerTreeItemDelegate*          delegate_ {nullptr};
     QTreeView*                      tree_view_{nullptr};
+    QTimer*                         spinner_timer_{nullptr}; // animates the wait icon of stale items
 
     bool model_is_external_ = false;
 
-    DefaultExpansionFunc expansion_policy_;             // effective default policy, see setDefaultExpansion()
-    bool                 restoring_view_state_ = false;
+    DefaultExpansionFunc expansion_policy_; // effective default policy, see setDefaultExpansion()
 };

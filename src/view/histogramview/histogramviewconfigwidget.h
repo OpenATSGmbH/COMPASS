@@ -22,7 +22,6 @@
 class HistogramView;
 class HistogramViewWidget;
 
-class DBContentRootItem;
 class ViewLayerPanelWidget;
 
 namespace dbContent {
@@ -65,5 +64,4 @@ protected:
     QCheckBox* log_check_{nullptr};
 
     ViewLayerPanelWidget*  layer_panel_      {nullptr};
-    DBContentRootItem*     db_content_root_  {nullptr};
 };

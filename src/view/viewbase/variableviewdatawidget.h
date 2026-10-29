@@ -101,8 +101,16 @@ protected:
     const VariableView* variableView() const { return variable_view_; }
     VariableView* variableView() { return variable_view_; }
 
+    /// the annotations subtree follows the view's annotations
+    virtual void layerPanelAttached() override;
+
+    /// reports an error of the annotation display to the current view point, if there is one
+    void reportAnnotationError(const std::string& msg);
+
 private:
     void resetVariableStates();
+    /// annotations subtree of the layer panel from the view's annotations (if attached and shown)
+    void updateAnnotationsTree();
     
     VariableView* variable_view_ = nullptr;
 

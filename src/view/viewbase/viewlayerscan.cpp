@@ -59,6 +59,59 @@ namespace
 
 /**
  */
+int lineIndexFrom(const std::string& line)
+{
+    return (line.size() >= 2 && line[ 0 ] == 'L') ? std::max(0, std::atoi(line.c_str() + 1) - 1) : 0;
+}
+
+/**
+ */
+std::optional<LayerId> parseLayerId(const std::string& id)
+{
+    std::vector<std::string> parts;
+
+    size_t start = 0;
+    for (size_t i = 0; i <= id.size(); ++i)
+    {
+        if (i == id.size() || id[ i ] == ':')
+        {
+            parts.push_back(id.substr(start, i - start));
+            start = i + 1;
+        }
+    }
+
+    if (parts.size() != 4)
+        return std::nullopt;
+
+    LayerId layer_id;
+    layer_id.ds_type    = parts[ 0 ];
+    layer_id.ds_name    = parts[ 1 ];
+    layer_id.line       = parts[ 2 ];
+    layer_id.dbcontent  = parts[ 3 ];
+    layer_id.line_index = lineIndexFrom(layer_id.line);
+
+    return layer_id;
+}
+
+/**
+ * Notice: keeps the layer visible in the layer panel.
+ */
+LayerId layerIdOrUnknown(const std::string& id)
+{
+    if (auto layer_id = parseLayerId(id))
+        return *layer_id;
+
+    LayerId layer_id;
+    layer_id.ds_type   = "<unknown>";
+    layer_id.ds_name   = id;
+    layer_id.line      = "L1";
+    layer_id.dbcontent = "<unknown>";
+
+    return layer_id;
+}
+
+/**
+ */
 ScanInput makeScanInput(const std::map<std::string, std::shared_ptr<Buffer>>& data,
                         COMPASS& compass)
 {
@@ -135,9 +188,7 @@ std::map<std::string, LayerAgg> aggregateLayers(const ScanInput& input)
                 a.line       = line_str;
                 a.dbcontent  = scan_buf.dbcontent_name;
                 a.count      = 1;
-                a.line_index = (line_str.size() >= 2 && line_str[0] == 'L')
-                             ? std::max(0, std::atoi(line_str.c_str() + 1) - 1)
-                             : 0;
+                a.line_index = lineIndexFrom(line_str);
                 agg.emplace(full_key, std::move(a));
             }
             else

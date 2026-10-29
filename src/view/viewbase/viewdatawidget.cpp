@@ -20,6 +20,9 @@
 #include "view.h"
 #include "viewtoolswitcher.h"
 #include "viewlayertreemodel.h"
+#include "viewlayersnapshot.h"
+#include "compass.h"
+#include "color_provider.h"
 #include "logger.h"
 #include "buffer.h"
 #include "variable.h"
@@ -27,10 +30,14 @@
 #include "stringconv.h"
 #include "dbcontentitemprovider.h"
 #include "dbcontentdataset.h"
+#include "dbcontent/dbcontent.h"
 #include "viewasyncprocessor.h"
+#include "traced_assert.h"
 
 #include <QApplication>
+#include <QLayout>
 #include <QPainter>
+#include <QScopedValueRollback>
 
 #include <iostream>
 
@@ -66,6 +73,227 @@ ViewDataWidget::ViewDataWidget(ViewWidget* view_widget, QWidget* parent, Qt::Win
     dbc_colors_["CAT048" ] = QColor(QString::fromStdString(Color_CAT048 ));
     dbc_colors_["RefTraj"] = QColor(QString::fromStdString(Color_RefTraj));
     dbc_colors_["CAT062" ] = QColor(QString::fromStdString(Color_CAT062 ));
+
+    connect(this, &ViewDataWidget::dataLoaded, this, &ViewDataWidget::endDataReload);
+}
+
+/**
+ */
+void ViewDataWidget::setItemProvider(DBContentItemProvider* provider)
+{
+    // only the own connection, the derived widget may have further ones
+    disconnect(provider_reset_connection_);
+
+    item_provider_ = provider;
+
+    // the reset releases the payloads the layer tree's leaves point at
+    if (item_provider_)
+        provider_reset_connection_ = connect(item_provider_, &DBContentItemProvider::dataAboutToBeResetSignal,
+                                             this, &ViewDataWidget::beginDataReload);
+}
+
+/**
+ */
+void ViewDataWidget::beginDataReload()
+{
+    if (auto* layer_model = layerTreeModel())
+        layer_model->beginDataReload();
+}
+
+/**
+ */
+void ViewDataWidget::releaseWidgetLater(QWidget* widget, QLayout* layout)
+{
+    if (!widget)
+        return;
+
+    if (layout)
+        layout->removeWidget(widget);
+
+    widget->setParent(nullptr);
+    widget->hide();
+    widget->deleteLater();
+}
+
+/**
+ */
+void ViewDataWidget::invertSelectionSlot()
+{
+    loginf;
+
+    for (auto& buf_it : viewData())
+    {
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
+
+        for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
+        {
+            if (selected_vec.isNull(cnt))
+                selected_vec.set(cnt, true);
+            else
+                selected_vec.set(cnt, !selected_vec.get(cnt));
+        }
+    }
+
+    view_widget_->getView()->emitSelectionChange();
+}
+
+/**
+ */
+void ViewDataWidget::clearSelectionSlot()
+{
+    loginf;
+
+    for (auto& buf_it : viewData())
+    {
+        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
+        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
+
+        for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
+            selected_vec.set(cnt, false);
+    }
+
+    view_widget_->getView()->emitSelectionChange();
+}
+
+/**
+ * Notice: the first rebuild runs here, the model may come from a rebuilt config widget.
+ */
+void ViewDataWidget::attachLayerPanel(ViewLayerTreeModel* layer_model)
+{
+    traced_assert(layer_model);
+
+    // e.g. a rebuilt config widget attaches again
+    for (const auto& connection : layer_connections_)
+        disconnect(connection);
+    layer_connections_.clear();
+
+    layer_model_ = layer_model;
+
+    auto visibilityChanged = [ this ] ()
+    {
+        if (!updating_layer_tree_)
+            layerVisibilityChanged();
+    };
+
+    layer_connections_.push_back(connect(layer_model_, &LayerTreeModel::hiddenChangedSignal, this, visibilityChanged));
+    layer_connections_.push_back(connect(&view_widget_->getView()->compass(), &COMPASS::colorModeChangedSignal,
+                                         this, [ this ] (unsigned int) { colorModeChanged(); }));
+
+    rebuildLayerTree();
+
+    layerPanelAttached();
+}
+
+/**
+ */
+void ViewDataWidget::updateLayerTree(LayerSnapshots layers, bool content_final)
+{
+    if (layer_model_)
+    {
+        std::vector<DBContentRootItem::LeafEntry>    entries;
+        std::vector<DBContentRootItem::TopLeafEntry> top_leaves;
+        entries.reserve(layers.size());
+
+        for (const auto& layer : layers)
+        {
+            const auto& id = layer->id();
+
+            if (layer->isTopLeaf())
+                top_leaves.push_back({ id.dbcontent, layer.get() });
+            else
+                entries.push_back({ id.ds_type, id.ds_name, id.line, id.dbcontent, layer.get() });
+        }
+
+        // hidden signals of the update itself (e.g. configured states of new leaves) => no visibility hook
+        QScopedValueRollback<bool> updating(updating_layer_tree_, true);
+
+        layer_model_->updateDataSubtree(entries, top_leaves, content_final);
+    }
+
+    // the leaves point at the new snapshots now
+    layer_snapshots_ = std::move(layers);
+}
+
+/**
+ */
+void ViewDataWidget::refreshLayerTree()
+{
+    LayerSnapshots layers = std::move(layer_snapshots_);
+    updateLayerTree(std::move(layers));
+}
+
+/**
+ */
+const ViewDataWidget::LayerAggregates& ViewDataWidget::layerAggregates()
+{
+    // the aggregation only depends on the loaded buffers - reused e.g. when a color mode change
+    // restyles the panel, the scan is a full row scan (seconds at millions of rows)
+    if (!layer_agg_valid_)
+    {
+        layer_agg_cache_ = view_layer_scan::aggregateLayers(
+            view_layer_scan::makeScanInput(viewData(), view_widget_->getView()->compass()));
+        layer_agg_valid_ = true;
+    }
+
+    return layer_agg_cache_;
+}
+
+/**
+ */
+void ViewDataWidget::setLayerAggregates(LayerAggregates aggregates)
+{
+    layer_agg_cache_ = std::move(aggregates);
+    layer_agg_valid_ = true;
+}
+
+/**
+ */
+ViewDataWidget::LayerSnapshots ViewDataWidget::snapshotsFromAggregates(const LayerAggregates& aggregates) const
+{
+    auto& compass = view_widget_->getView()->compass();
+
+    LayerSnapshots layers;
+    layers.reserve(aggregates.size());
+
+    for (const auto& [ key, agg ] : aggregates)
+    {
+        const QColor color = context::resolveSeriesColor(agg.ds_type, agg.ds_name, agg.line_index, agg.dbcontent, compass);
+
+        layers.push_back(std::make_unique<ViewLayerSnapshot>(key, agg, agg.count, 0, color));
+    }
+
+    return layers;
+}
+
+/**
+ */
+void ViewDataWidget::snapshotHiddenLayerIds()
+{
+    hidden_layer_ids_ = layer_model_ ? layer_model_->state().hiddenIds() : std::set<std::string>{};
+}
+
+/**
+ */
+bool ViewDataWidget::hiddenLayerIdsChanged() const
+{
+    const std::set<std::string> empty;
+    const auto& current = layer_model_ ? layer_model_->state().hiddenIds() : empty;
+
+    return current != hidden_layer_ids_;
+}
+
+/**
+ */
+void ViewDataWidget::endDataReload()
+{
+    auto* layer_model = layerTreeModel();
+    if (!layer_model || !layer_model->dataReloading())
+        return;
+
+    logwrn << "data rows not updated by the reload, removing them";
+
+    layer_model->clearDataSubtree();
 }
 
 /**
@@ -173,7 +401,7 @@ void ViewDataWidget::notifyProcessingFinished()
 }
 
 /**
- * Data subtree rebuilds prune the states of vanished data items only while the data is complete.
+ * Partial data updates are skipped during a reload, see ViewLayerTreeModel::updateDataSubtree().
  */
 void ViewDataWidget::setLayerDataComplete(bool complete)
 {
@@ -433,6 +661,12 @@ void ViewDataWidget::clearData()
 
     // before the provider reset below empties the data subtree
     setLayerDataComplete(false);
+
+    // no reload follows => the data rows go (forgotten, see readme F7), before the payloads are released;
+    // a reload keeps them stale until its data arrives
+    auto* layer_model = layerTreeModel();
+    if (layer_model && !layer_model->dataReloading())
+        layer_model->clearDataSubtree();
 
     data_                   = {};
     data_fulfills_read_set_ = true;

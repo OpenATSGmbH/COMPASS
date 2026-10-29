@@ -17,6 +17,9 @@
 
 #include "viewconfigwidget.h"
 #include "viewwidget.h"
+#include "viewdatawidget.h"
+#include "view.h"
+#include "viewlayerpanelwidget.h"
 #include "viewpresetwidget.h"
 #include "viewmanager.h"
 #include "compass.h"
@@ -116,6 +119,21 @@ nlohmann::json ViewConfigWidget::viewInfoJSON() const
     viewInfoJSON_impl(info);
 
     return info;
+}
+
+/**
+ */
+ViewLayerPanelWidget* ViewConfigWidget::createLayerPanel(const std::vector<LayerColumnSpec>& custom_columns,
+                                                         bool show_annotations)
+{
+    auto* layer_panel = new ViewLayerPanelWidget(custom_columns, show_annotations, this);
+
+    // the data widget fills the data rows and reacts on visibility changes
+    view_widget_->getViewDataWidget()->attachLayerPanel(layer_panel->model());
+
+    layer_panel->followColorMode(view_widget_->getView()->compass());
+
+    return layer_panel;
 }
 
 /********************************************************************************************

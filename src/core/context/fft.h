@@ -36,6 +36,9 @@ class FFT
 public:
     FFT();
 
+    /// session-only identity (random uuid), not serialized and not compared, copies keep it
+    const std::string& runtimeId() const { return runtime_id_; }
+
     std::string name() const { return name_; }
     void name(const std::string& name) { name_ = name; }
 
@@ -121,6 +124,7 @@ public:
     bool operator!=(const FFT& other) const { return !(*this == other); }
 
 private:
+    std::string runtime_id_; // see runtimeId()
     std::string name_;
     // always an object - erase() throws on a null json, and a newly created
     // FFT is edited before any info is set

@@ -97,6 +97,9 @@ void VariableViewStashDataWidget::postUpdateVariableDataEvent()
 {
     loginf;
 
+    //synchronous path => main thread
+    prepareStashProcessing();
+
     //compute part (worker-safe)
     processStashData();
 
@@ -138,6 +141,9 @@ bool VariableViewStashDataWidget::postLoadTrigger()
 
     if (viewData().empty())
         return false;
+
+    //the worker must not read Qt-side state
+    prepareStashProcessing();
 
     asyncProcessor().launch(
         variableView()->className() + " stash update",

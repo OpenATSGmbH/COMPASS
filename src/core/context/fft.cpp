@@ -21,6 +21,11 @@
 
 #include <json.hpp>
 
+#include <boost/lexical_cast.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include <cmath>
 
 using namespace std;
@@ -36,7 +41,13 @@ static const string mode_s_address_key = "mode_s_address";
 static const string mode_3a_code_key = "mode_3a_code";
 static const string mode_c_code_key = "mode_c_code";
 
-FFT::FFT() = default;
+/**
+ * Notice: every constructed FFT gets a new runtime id, copies keep it.
+ */
+FFT::FFT()
+:   runtime_id_(boost::lexical_cast<std::string>(boost::uuids::random_generator()()))
+{
+}
 
 bool FFT::hasPosition() const
 {

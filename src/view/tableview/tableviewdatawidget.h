@@ -32,9 +32,6 @@ class TableViewDataSource;
 class AllBufferTableWidget;
 class Buffer;
 class DBContent;
-class DBContentRootItem;
-class ViewLayerTreeModel;
-class TableLeafPayload;
 
 class TableViewDataWidget : public ViewDataWidget
 {
@@ -42,10 +39,6 @@ class TableViewDataWidget : public ViewDataWidget
 
 signals:
     void exportDoneSignal(bool canceled);
-
-    /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
-    /// The config widget uses this to re-apply default expansion.
-    void layerTreeRebuiltSignal();
 
 public slots:
     void exportDataSlot();
@@ -66,13 +59,6 @@ public:
 
     void updateToSettingsChange();
 
-    /// Called by TableViewConfigWidget once the LayerPanelWidget is built.
-    /// Provides the DBContent root item (owned by the panel's model) and the
-    /// layer tree model used for hidden-state round-tripping.
-    void attachLayerPanel(DBContentRootItem* root, ViewLayerTreeModel* layer_model);
-
-    ViewLayerTreeModel* layerTreeModel() override { return layer_model_; }
-
 protected:
     virtual void toolChanged_impl(int mode) override;
     virtual void loadingStarted_impl() override;
@@ -87,38 +73,20 @@ protected:
 
     void viewInfoJSON_impl(nlohmann::json& info) const override;
 
+    /// layer snapshots from the (cached) layer aggregation of the loaded buffers
+    virtual void rebuildLayerTree() override final;
+    /// the allowed layers => model filter + redraw
+    virtual void layerVisibilityChanged() override final;
+
     TableView*           view_{nullptr};
     TableViewDataSource* data_source_{nullptr};
 
     AllBufferTableWidget*  all_buffer_table_widget_{nullptr};
 
-    DBContentRootItem*  db_content_root_{nullptr};   // owned by layer panel model
-    ViewLayerTreeModel* layer_model_    {nullptr};   // owned by LayerPanelWidget
-
-    std::vector<std::unique_ptr<TableLeafPayload>> payloads_;
-
 private:
-    /// Rebuild payloads_ from the loaded buffers and repopulate the DBContent
-    /// subtree. Emits layerTreeRebuiltSignal.
-    void rebuildLayerTree();
-
-    /// the layer aggregation of the current data: it depends only on the loaded
-    /// buffers, but recomputing it is a full row scan (seconds at millions of rows).
-    /// rebuildLayerTree() consumers that merely restyle the panel (color mode
-    /// changes) reuse it; filled by the async prepare commit and the sync scan,
-    /// invalidated on data change/clear
-    std::map<std::string, view_layer_scan::LayerAgg> layer_agg_cache_;
-    bool layer_agg_valid_ {false};
-
-    /// Re-entry guard: refreshSubtree re-applies the stored hidden state to the
-    /// fresh leaves, which emits hiddenChangedSignal. Without this guard a
-    /// recompute redraw with hidden layers would trigger another redraw from
-    /// its own commit (commitLoadedData -> applyLayerTree), looping forever.
-    bool in_layer_recompute_ {false};
-
-    /// Rebuild payloads_ + the DBContent subtree from precomputed layer aggregates
-    /// (the tree/payload part of rebuildLayerTree; the scan may run on a worker).
-    void applyLayerTree(const std::map<std::string, view_layer_scan::LayerAgg>& agg);
+    /// layer snapshots + data subtree from layer aggregates (the scan may run on a worker),
+    /// pushes the allowed layers to the model
+    void applyLayerTree(const LayerAggregates& agg);
 
     /// Compute the allowed-layer-ids set + per-layer icon colors from current
     /// panel state and push them onto the AllBufferTableModel. Empty layer
@@ -133,6 +101,6 @@ private:
     /// main-thread commit of the asynchronously prepared load data: layer tree, model
     /// row data, selection, draw state
     bool launchAsyncPrepare();
-    void commitLoadedData(const std::map<std::string, view_layer_scan::LayerAgg>& agg,
+    void commitLoadedData(const LayerAggregates& agg,
                           AllBufferTableModel::PreparedData&& prepared);
 };

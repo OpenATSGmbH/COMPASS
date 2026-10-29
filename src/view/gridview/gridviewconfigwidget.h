@@ -29,7 +29,6 @@ class GridView;
 class ColorScaleSelection;
 class PropertyValueEdit;
 
-class DBContentRootItem;
 class ViewLayerPanelWidget;
 
 class QCheckBox;
@@ -105,5 +104,4 @@ protected:
     QLabel*              range_info_label_             = nullptr;
 
     ViewLayerPanelWidget* layer_panel_     {nullptr};
-    DBContentRootItem*    db_content_root_ {nullptr};
 };

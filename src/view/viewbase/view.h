@@ -100,6 +100,8 @@ public:
     virtual bool followsLiveData() const { return false; }
     virtual void loadingDone();
     virtual void clearData();
+    /// a reload follows the next clear, see ViewDataWidget::beginDataReload()
+    void beginDataReload();
     virtual void appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current);
 
     // true while the view still processes data asynchronously after loadingDone()

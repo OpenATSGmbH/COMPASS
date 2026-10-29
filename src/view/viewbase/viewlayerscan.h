@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -39,16 +40,29 @@ class COMPASS;
 namespace view_layer_scan
 {
 
-/// aggregate of one layer: identity split into parts plus the row count
-struct LayerAgg
+/// identity of a layer, the parts of its id "<ds_type>:<ds_name>:L<n>:<dbcontent>"
+struct LayerId
 {
-    std::string  ds_type;
-    std::string  ds_name;
-    std::string  line;
-    std::string  dbcontent;
-    unsigned int count      = 0;
-    int          line_index = 0;   // 0..3, for color resolution
+    std::string ds_type;
+    std::string ds_name;
+    std::string line;           // e.g. "L1"
+    std::string dbcontent;
+    int         line_index = 0; // 0..3, for color resolution
 };
+
+/// aggregate of one layer: identity split into parts plus the row count
+struct LayerAgg : public LayerId
+{
+    unsigned int count = 0;
+};
+
+/// line index from the line token ("L1" => 0), 0 if malformed
+int lineIndexFrom(const std::string& line);
+
+/// splits a layer id, nullopt if it does not follow the scheme (e.g. a ':' in a name)
+std::optional<LayerId> parseLayerId(const std::string& id);
+/// as parseLayerId(), a malformed id becomes its own data source below an "<unknown>" type
+LayerId layerIdOrUnknown(const std::string& id);
 
 /// one buffer with its resolved ds id / line id column names
 struct ScanBuffer

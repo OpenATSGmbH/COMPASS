@@ -127,6 +127,7 @@ public:
                                      const std::string& name = "",
                                      const std::string& ds_type = "Other");
     void deleteDataSource(unsigned int ds_id);
+    void deleteAllDataSources();
 
     /// if ds.baseColor() is invalid, pick a hue-distant base color (using the
     /// active context's preference) and derive line_colors_. No-op otherwise.
@@ -289,6 +290,7 @@ public:
     bool hasFFT(const std::string& name) const;
     const FFT* fft(const std::string& name) const;
     FFT* fft(const std::string& name);
+    const FFT* fftByRuntimeId(const std::string& runtime_id) const;
     std::vector<std::string> allFFTNames() const;
 
     FFT& createFFT(const std::string& name);

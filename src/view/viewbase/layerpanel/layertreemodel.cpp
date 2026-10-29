@@ -56,42 +56,87 @@ LayerTreeItem* LayerTreeModel::addRootItem(std::unique_ptr<LayerTreeItem> item)
 LayerTreeItem* LayerTreeModel::appendChildItem(LayerTreeItem* parent, std::unique_ptr<LayerTreeItem> item)
 {
     traced_assert(parent);
+
+    return insertChildItem(parent, parent->childCount(), std::move(item));
+}
+
+/**
+ */
+LayerTreeItem* LayerTreeModel::insertChildItem(LayerTreeItem* parent, int row, std::unique_ptr<LayerTreeItem> item)
+{
+    std::vector<std::unique_ptr<LayerTreeItem>> items;
+    items.push_back(std::move(item));
+
+    insertChildItems(parent, row, std::move(items));
+
+    return parent->child(row);
+}
+
+/**
+ */
+void LayerTreeModel::insertChildItems(LayerTreeItem* parent, int row, std::vector<std::unique_ptr<LayerTreeItem>> items)
+{
+    traced_assert(parent);
     traced_assert(parent->model() == this);
+    traced_assert(row >= 0 && row <= parent->childCount());
 
-    const int row = parent->childCount();
+    if (items.empty())
+        return;
 
-    beginInsertRows(indexOfItem(parent), row, row);
-    LayerTreeItem* raw = parent->appendChild(std::move(item));
+    const int n = (int)items.size();
+
+    beginInsertRows(indexOfItem(parent), row, row + n - 1);
+    for (int i = 0; i < n; ++i)
+        parent->insertChild(row + i, std::move(items[ i ]));
     endInsertRows();
 
-    // the hidden states of recurring items were restored on attach, see subtreeAttached()
+    // the configured hidden states were applied on attach, see subtreeAttached()
     checkUniqueKeys(parent);
-    flushHiddenNotification();
-    captureHiddenState();
+    structureChanged();
+}
 
-    return raw;
+/**
+ */
+void LayerTreeModel::moveChildItem(LayerTreeItem* parent, int from, int to)
+{
+    traced_assert(parent);
+    traced_assert(parent->model() == this);
+    traced_assert(from >= 0 && from < parent->childCount());
+    traced_assert(to >= 0 && to < parent->childCount());
+
+    if (from == to)
+        return;
+
+    const QModelIndex parent_idx = indexOfItem(parent);
+
+    // Qt counts the destination before the move
+    const bool ok = beginMoveRows(parent_idx, from, from, parent_idx, to < from ? to : to + 1);
+    traced_assert(ok);
+
+    parent->moveChild(from, to);
+
+    endMoveRows();
 }
 
 /**
  */
 void LayerTreeModel::removeChildItem(LayerTreeItem* parent, int row)
 {
+    removeChildItems(parent, row, row);
+}
+
+/**
+ * Notice: the removed items are forgotten, the effective-hidden ids follow with structureChanged().
+ */
+void LayerTreeModel::removeChildItems(LayerTreeItem* parent, int first, int last)
+{
     traced_assert(parent);
     traced_assert(parent->model() == this);
-    traced_assert(row >= 0 && row < parent->childCount());
+    traced_assert(first >= 0 && first <= last && last < parent->childCount());
 
-    const std::string key = parent->child(row)->stateKey();
-
-    beginRemoveRows(indexOfItem(parent), row, row);
-    parent->removeChildAt(row);
+    beginRemoveRows(indexOfItem(parent), first, last);
+    parent->removeChildrenAt(first, last);
     endRemoveRows();
-
-    // explicit removal => gone for good; after the removal, the panel snapshots the removed rows
-    if (!key.empty())
-    {
-        state_.clearItemState(key, LayerTreeState::PersistAll);
-        state_.prune([] (const std::string&, const LayerTreeState::ItemState&) { return true; }, key + "/");
-    }
 }
 
 /**
@@ -104,6 +149,59 @@ void LayerTreeModel::itemChanged(LayerTreeItem* item)
     const QModelIndex idx = indexOfItem(item);
 
     emit dataChanged(idx, idx.sibling(idx.row(), columnCount() - 1));
+}
+
+/**
+ */
+void LayerTreeModel::childItemsChanged(LayerTreeItem* parent)
+{
+    traced_assert(parent);
+    traced_assert(parent->model() == this);
+
+    const int n = parent->childCount();
+    if (n == 0)
+        return;
+
+    emit dataChanged(createIndex(0, 0, parent->child(0)),
+                     createIndex(n - 1, columnCount() - 1, parent->child(n - 1)));
+}
+
+/**
+ * Notice: the hidden signal and the effective-hidden ids follow once at the end.
+ */
+void LayerTreeModel::updateSubtree(LayerTreeItem* item)
+{
+    traced_assert(item);
+    traced_assert(item->model() == this);
+
+    ++update_depth_;
+    const bool changed = item->updateChildren();
+    --update_depth_;
+
+    // the display of the item and its ancestors depends on the subtree (aggregates)
+    if (changed)
+        for (LayerTreeItem* it = item; it && it != root_item_.get(); it = it->parentItem())
+            itemChanged(it);
+
+    structureChanged();
+}
+
+/**
+ */
+void LayerTreeModel::updateAll()
+{
+    updateSubtree(root_item_.get());
+}
+
+/**
+ */
+void LayerTreeModel::structureChanged()
+{
+    if (update_depth_ > 0)
+        return;
+
+    flushHiddenNotification();
+    captureHiddenState();
 }
 
 /**
@@ -155,44 +253,6 @@ void LayerTreeModel::applyHeaderSettings(QHeaderView* header) const
             header->resizeSection(col, spec.default_width);
         }
     }
-}
-
-void LayerTreeModel::refreshSubtree(LayerTreeItem* parent,
-                                    const std::function<std::vector<std::unique_ptr<LayerTreeItem>>()>& build_children,
-                                    bool complete)
-{
-    traced_assert(parent);
-
-    const QModelIndex parent_idx = indexOfItem(parent);
-
-    const int old_count = parent->childCount();
-    if (old_count > 0)
-    {
-        beginRemoveRows(parent_idx, 0, old_count - 1);
-        parent->clearChildren();
-        endRemoveRows();
-    }
-
-    auto new_children = build_children();
-    const int new_count = (int)new_children.size();
-    if (new_count > 0)
-    {
-        beginInsertRows(parent_idx, 0, new_count - 1);
-        for (auto& c : new_children)
-            parent->appendChild(std::move(c));
-        endInsertRows();
-    }
-
-    // the hidden states of recurring items were restored on attach, see subtreeAttached()
-    checkUniqueKeys(parent);
-    flushHiddenNotification();
-    captureHiddenState();
-
-    // complete rebuild => forget the states of items that did not come back
-    if (complete)
-        pruneItemStates(parent);
-
-    emit subtreeRefreshedSignal(parent);
 }
 
 void LayerTreeModel::traverse(const std::function<void(const QModelIndex&, LayerTreeItem*)>& fn,
@@ -350,7 +410,7 @@ int LayerTreeModel::columnCount(const QModelIndex& /*parent*/) const
     return totalColumnCount();
 }
 
-// ---- remembered state -----------------------------------------------------
+// ---- config and hidden ids ------------------------------------------------
 
 /**
  * Keeps the effective-hidden ids (consumed by view-side data filters) aligned with the tree.
@@ -367,61 +427,6 @@ void LayerTreeModel::captureHiddenState()
             walk(it->child(i));
     };
     walk(root_item_.get());
-}
-
-/**
- * Only checks the entries below the scope (keys with the scope's key as prefix), the scope's own
- * entry belongs to the parent scope.
- */
-void LayerTreeModel::pruneItemStates(const LayerTreeItem* scope)
-{
-    if (!state_.hasItemStates())
-        return;
-
-    if (!scope)
-        scope = root_item_.get();
-
-    traced_assert(scope->model() == this || scope == root_item_.get());
-
-    std::set<std::string> present_keys;
-
-    std::function<void(const LayerTreeItem*)> collect = [&](const LayerTreeItem* it)
-    {
-        for (int i = 0; i < it->childCount(); ++i)
-        {
-            const std::string key = it->child(i)->stateKey();
-            if (!key.empty())
-                present_keys.insert(key);
-
-            collect(it->child(i));
-        }
-    };
-    collect(scope);
-
-    const std::string scope_key  = scope->stateKey();
-    const std::string key_prefix = scope_key.empty() ? std::string() : scope_key + "/";
-
-    state_.prune([ & ] (const std::string& key, const LayerTreeState::ItemState& state)
-    {
-        return doPruneItem(key, state, present_keys);
-    }, key_prefix);
-}
-
-/**
- * Notice: only covers the items currently in the subtree.
- */
-void LayerTreeModel::clearItemStates(const LayerTreeItem* subtree, int flags)
-{
-    traced_assert(subtree);
-
-    std::function<void(const LayerTreeItem*)> clear = [&](const LayerTreeItem* it)
-    {
-        state_.clearItemState(it->stateKey(), flags);
-
-        for (int i = 0; i < it->childCount(); ++i)
-            clear(it->child(i));
-    };
-    clear(subtree);
 }
 
 /**
@@ -459,32 +464,8 @@ LayerTreeItem* LayerTreeModel::findItem(const std::string& key) const
 }
 
 /**
- */
-bool LayerTreeModel::doPruneItem(const std::string& key,
-                                 const LayerTreeState::ItemState& /*state*/,
-                                 const std::set<std::string>& present_keys) const
-{
-    return present_keys.count(key) == 0;
-}
-
-/**
- */
-void LayerTreeModel::storeHiddenState(const LayerTreeItem& item)
-{
-    if (restoring_state_ || !state_.persists(LayerTreeState::PersistHidden))
-        return;
-
-    const bool hidden    = item.hidden();
-    const bool deviation = hidden != item.defaultHidden();
-
-    state_.updateItemState(item.stateKey(), [ & ] (LayerTreeState::ItemState& state)
-    {
-        state.hidden = deviation ? std::optional<bool>(hidden) : std::nullopt;
-    });
-}
-
-/**
- * Restores the remembered hidden states of a newly attached subtree.
+ * Applies the configured hidden states (persisted subtrees) to a newly attached subtree, the
+ * other items keep their constructed state.
  * Notice: may run inside begin/endInsertRows or a reset => the hidden signal is deferred.
  */
 void LayerTreeModel::subtreeAttached(LayerTreeItem* subtree)
@@ -493,18 +474,11 @@ void LayerTreeModel::subtreeAttached(LayerTreeItem* subtree)
 
     bool changed = false;
 
-    const bool restore_hidden = state_.persists(LayerTreeState::PersistHidden);
-
-    restoring_state_ = true;
-
     std::function<void(LayerTreeItem*)> restore = [&](LayerTreeItem* it)
     {
         if (it->canHide())
         {
-            // the session map wins, the config covers the first attach after a start or database close
-            const LayerTreeState::ItemState* state = restore_hidden ? state_.itemState(it->stateKey()) : nullptr;
-
-            const std::optional<bool> target = state && state->hidden ? state->hidden : it->configuredHidden();
+            const std::optional<bool> target = it->configuredHidden();
 
             if (target && *target != it->hidden())
             {
@@ -519,8 +493,6 @@ void LayerTreeModel::subtreeAttached(LayerTreeItem* subtree)
             restore(it->child(i));
     };
     restore(subtree);
-
-    restoring_state_ = false;
 
     // below an unchecked ancestor => new items start effectively hidden
     const LayerTreeItem* parent = subtree->parentItem();
@@ -550,8 +522,7 @@ void LayerTreeModel::bindConfig(nlohmann::json* root)
 }
 
 /**
- * Applies the persisted hidden states of the config (it wins over the session map here)
- * and lets all items re-read their settings.
+ * Applies the persisted hidden states of the config and lets all items re-read their settings.
  */
 void LayerTreeModel::configChanged()
 {

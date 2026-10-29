@@ -23,16 +23,152 @@
 #include <QMenu>
 #include <QString>
 
+#include <algorithm>
 #include <functional>
-#include <unordered_map>
+#include <set>
+
+namespace
+{
+    const char* StaleTooltip = "Data is being reloaded";
+
+    /// the stale flag of the Data subtree the item belongs to
+    bool dataStale(const LayerTreeItem* item)
+    {
+        for (const LayerTreeItem* it = item; it; it = it->parentItem())
+            if (const auto* root = dynamic_cast<const DBContentRootItem*>(it))
+                return root->isStale();
+
+        return false;
+    }
+
+    /// update key of the entry on the given level (1 = DSType ... 4 = leaf), as updateKey() of the item
+    std::string entryKey(const DBContentRootItem::LeafEntry& entry, size_t level)
+    {
+        switch (level)
+        {
+            case 1: return entry.ds_type;
+            case 2: return entry.ds_id ? "ds:" + std::to_string(*entry.ds_id) : entry.ds_name;
+            case 3: return entry.line;
+            default:
+            {
+                const std::string id = entry.payload->persistenceId();
+                return id.empty() ? entry.dbcontent : id;
+            }
+        }
+    }
+
+    /// group name on the given level (1 = DSType ... 3 = line), leaf name on level 4
+    const std::string& entryName(const DBContentRootItem::LeafEntry& entry, size_t level)
+    {
+        switch (level)
+        {
+            case 1:  return entry.ds_type;
+            case 2:  return entry.ds_name;
+            case 3:  return entry.line;
+            default: return entry.dbcontent;
+        }
+    }
+
+    /// leaf below the root: keyed as the item (persistence id, else the name)
+    std::string topLeafKey(const DBContentRootItem::TopLeafEntry& entry)
+    {
+        const std::string id = entry.payload->persistenceId();
+        return id.empty() ? entry.name : id;
+    }
+
+    const size_t LeafLevel = 4;
+}
 
 // ---- DBContentGroupItem ---------------------------------------------------
 
 DBContentGroupItem::DBContentGroupItem(const std::string& name,
                                        DBContentLayerLevel level,
-                                       const std::optional<unsigned int>& ds_id)
-    : LayerTreeItem(name), level_(level), ds_id_(ds_id)
+                                       const std::optional<unsigned int>& ds_id,
+                                       const DBContentRootItem* data_root,
+                                       const std::vector<std::string>& path)
+    : LayerTreeItem(name), level_(level), ds_id_(ds_id), data_root_(data_root), path_(path)
 {
+}
+
+/**
+ * Static (not reconciled) outside an update of the root.
+ */
+std::optional<std::vector<std::string>> DBContentGroupItem::childKeys() const
+{
+    if (!data_root_)
+        return std::nullopt;
+
+    return data_root_->entryChildKeys(path_);
+}
+
+/**
+ */
+std::unique_ptr<LayerTreeItem> DBContentGroupItem::createChild(const std::string& key)
+{
+    traced_assert(data_root_);
+
+    const auto* entry = data_root_->findEntry(path_, key);
+    if (!entry)
+        return nullptr;
+
+    const size_t level = path_.size() + 1;
+
+    if (level == LeafLevel)
+        return std::make_unique<DBContentLeafItem>(entry->dbcontent, entry->payload);
+
+    std::vector<std::string> path = path_;
+    path.push_back(key);
+
+    return std::make_unique<DBContentGroupItem>(entryName(*entry, level),
+                                                (DBContentLayerLevel)level,
+                                                level == 2 ? entry->ds_id : std::nullopt,
+                                                data_root_,
+                                                path);
+}
+
+/**
+ * Leaves are rebound to the entry's payload, groups follow name changes (e.g. a renamed data source).
+ */
+bool DBContentGroupItem::updateChild(LayerTreeItem& child)
+{
+    traced_assert(data_root_);
+
+    const auto* entry = data_root_->findEntry(path_, child.updateKey());
+    if (!entry)
+        return false;
+
+    const size_t level = path_.size() + 1;
+
+    bool changed = false;
+
+    const std::string& name = entryName(*entry, level);
+    if (child.name() != name)
+    {
+        child.setName(name);
+        changed = true;
+    }
+
+    if (level == LeafLevel)
+    {
+        static_cast<DBContentLeafItem&>(child).setPayload(entry->payload);
+        changed = true; // count, color
+    }
+
+    return changed;
+}
+
+/**
+ */
+bool DBContentGroupItem::isStale() const
+{
+    return dataStale(this);
+}
+
+/**
+ */
+QVariant DBContentGroupItem::tooltip() const
+{
+    return isStale() ? QVariant(StaleTooltip) : QVariant();
 }
 
 std::string DBContentGroupItem::stateKeyId() const
@@ -142,18 +278,48 @@ QVariant DBContentLeafItem::itemData(int column) const
 {
     if (column == 0)
         return QString::fromStdString(name_);
+    if (!payload_)
+        return {};
     if (column == 1)
-        return QVariant((qulonglong)(payload_ ? payload_->count() : 0u));
+        return QVariant((qulonglong)payload_->count());
     // custom columns start at 2
-    if (payload_)
-        return payload_->customColumn(column - 2);
-    return {};
+    return payload_->customColumn(column - 2);
 }
 
 void DBContentLeafItem::onEffectiveHiddenChanged()
 {
     if (payload_)
         payload_->setVisible(!effectiveHidden());
+}
+
+/**
+ * Notice: a new payload starts visible, toggles while detached are pushed here.
+ */
+void DBContentLeafItem::setPayload(DBContentLeafPayload* payload)
+{
+    payload_ = payload;
+
+    if (!payload_)
+        return;
+
+    traced_assert(payload_->persistenceId() == persistence_id_);
+
+    setColor(payload_->color());
+    payload_->setVisible(!effectiveHidden());
+}
+
+/**
+ */
+bool DBContentLeafItem::isStale() const
+{
+    return dataStale(this);
+}
+
+/**
+ */
+QVariant DBContentLeafItem::tooltip() const
+{
+    return isStale() ? QVariant(StaleTooltip) : QVariant();
 }
 
 void DBContentLeafItem::buildContextMenu(QMenu& menu)
@@ -168,56 +334,182 @@ void DBContentLeafItem::buildContextMenu(QMenu& menu)
 // ---- DBContentRootItem ---------------------------------------------------
 
 DBContentRootItem::DBContentRootItem()
-    : DBContentGroupItem("Data", DBContentLayerLevel::Root)
+    : DBContentGroupItem("Data", DBContentLayerLevel::Root, std::nullopt, this, {})
 {
 }
 
-namespace
+/**
+ * Notice: entries without payload are skipped.
+ */
+void DBContentRootItem::updateFrom(const std::vector<LeafEntry>& entries,
+                                   const std::vector<TopLeafEntry>& top_leaves)
 {
-    /// matches by ds_id if given (same-named data sources stay apart), else by name
-    DBContentGroupItem* findOrCreateGroup(LayerTreeItem* parent,
-                                          const std::string& name,
-                                          DBContentLayerLevel level,
-                                          const std::optional<unsigned int>& ds_id = std::nullopt)
+    entries_    = &entries;
+    top_leaves_ = &top_leaves;
+
+    entry_keys_.clear();
+    entry_keys_.reserve(entries.size());
+
+    for (const auto& entry : entries)
     {
-        for (int i = 0; i < parent->childCount(); ++i)
+        if (!entry.payload)
         {
-            auto* c = static_cast<DBContentGroupItem*>(parent->child(i));
-
-            if (ds_id ? c->dsID() == ds_id : !c->dsID() && c->name() == name)
-                return c;
+            entry_keys_.emplace_back();
+            continue;
         }
-        auto group = std::make_unique<DBContentGroupItem>(name, level, ds_id);
-        auto* raw  = group.get();
-        parent->appendChild(std::move(group));
-        return raw;
+
+        std::vector<std::string> keys;
+        keys.reserve(LeafLevel);
+        for (size_t level = 1; level <= LeafLevel; ++level)
+            keys.push_back(entryKey(entry, level));
+
+        entry_keys_.push_back(std::move(keys));
     }
+
+    update();
+
+    // the payloads may be released by the view now
+    entries_    = nullptr;
+    top_leaves_ = nullptr;
+    entry_keys_.clear();
 }
 
-std::vector<std::unique_ptr<LayerTreeItem>> DBContentRootItem::buildChildrenFrom(
-    const std::vector<LeafEntry>& entries) const
+/**
+ */
+void DBContentRootItem::detachPayloads()
 {
-    // Assemble the subtree on a detached scratch parent, then move its
-    // children out. The caller passes this list to refreshSubtree which
-    // reattaches them to the real DBContentRootItem inside scoped
-    // begin/endInsertRows - avoids the full modelReset that would make
-    // QHeaderView drop its section widths.
-    auto scratch = std::make_unique<DBContentGroupItem>("<scratch>", DBContentLayerLevel::Root);
-
-    for (const auto& e : entries)
+    std::function<void(LayerTreeItem*)> detach = [ & ] (LayerTreeItem* item)
     {
-        if (!e.payload)
+        if (auto* leaf = dynamic_cast<DBContentLeafItem*>(item))
+            leaf->setPayload(nullptr);
+
+        for (int i = 0; i < item->childCount(); ++i)
+            detach(item->child(i));
+    };
+    detach(this);
+}
+
+/**
+ */
+std::optional<std::vector<std::string>> DBContentRootItem::entryChildKeys(const std::vector<std::string>& path) const
+{
+    if (!entries_)
+        return std::nullopt;
+
+    const size_t level = path.size() + 1;
+    traced_assert(level <= LeafLevel);
+
+    std::vector<std::string> keys;
+    std::set<std::string>    seen;
+
+    for (const auto& entry_keys : entry_keys_)
+    {
+        if (entry_keys.empty())
             continue;
 
-        auto* ds_type_group = findOrCreateGroup(scratch.get(),    e.ds_type,   DBContentLayerLevel::DSType);
-        auto* ds_group      = findOrCreateGroup(ds_type_group,    e.ds_name,   DBContentLayerLevel::DataSource, e.ds_id);
-        auto* line_group    = findOrCreateGroup(ds_group,         e.line,      DBContentLayerLevel::Line);
+        if (!std::equal(path.begin(), path.end(), entry_keys.begin()))
+            continue;
 
-        auto leaf = std::make_unique<DBContentLeafItem>(e.dbcontent, e.payload);
-        line_group->appendChild(std::move(leaf));
+        const std::string& key = entry_keys[ level - 1 ];
+        if (seen.insert(key).second)
+            keys.push_back(key);
     }
 
-    return scratch->moveChildrenOut();
+    return keys;
+}
+
+/**
+ */
+const DBContentRootItem::LeafEntry* DBContentRootItem::findEntry(const std::vector<std::string>& path,
+                                                                 const std::string& key) const
+{
+    if (!entries_)
+        return nullptr;
+
+    const size_t level = path.size() + 1;
+    traced_assert(level <= LeafLevel);
+
+    for (size_t i = 0; i < entry_keys_.size(); ++i)
+    {
+        const auto& entry_keys = entry_keys_[ i ];
+        if (entry_keys.empty())
+            continue;
+
+        if (entry_keys[ level - 1 ] == key && std::equal(path.begin(), path.end(), entry_keys.begin()))
+            return &(*entries_)[ i ];
+    }
+
+    return nullptr;
+}
+
+/**
+ */
+const DBContentRootItem::TopLeafEntry* DBContentRootItem::findTopLeaf(const std::string& key) const
+{
+    if (!top_leaves_)
+        return nullptr;
+
+    for (const auto& entry : *top_leaves_)
+        if (entry.payload && topLeafKey(entry) == key)
+            return &entry;
+
+    return nullptr;
+}
+
+/**
+ * The top leaves first, then the DSType groups.
+ */
+std::optional<std::vector<std::string>> DBContentRootItem::childKeys() const
+{
+    auto keys = entryChildKeys({});
+    if (!keys)
+        return std::nullopt;
+
+    std::vector<std::string> all;
+    all.reserve(top_leaves_->size() + keys->size());
+
+    for (const auto& entry : *top_leaves_)
+        if (entry.payload)
+            all.push_back(topLeafKey(entry));
+
+    all.insert(all.end(), keys->begin(), keys->end());
+
+    return all;
+}
+
+/**
+ */
+std::unique_ptr<LayerTreeItem> DBContentRootItem::createChild(const std::string& key)
+{
+    if (const auto* top_leaf = findTopLeaf(key))
+        return std::make_unique<DBContentLeafItem>(top_leaf->name, top_leaf->payload);
+
+    return DBContentGroupItem::createChild(key);
+}
+
+/**
+ */
+bool DBContentRootItem::updateChild(LayerTreeItem& child)
+{
+    if (auto* leaf = dynamic_cast<DBContentLeafItem*>(&child))
+    {
+        const auto* top_leaf = findTopLeaf(child.updateKey());
+        if (!top_leaf)
+            return false;
+
+        leaf->setName(top_leaf->name);
+        leaf->setPayload(top_leaf->payload);
+        return true;
+    }
+
+    return DBContentGroupItem::updateChild(child);
+}
+
+/**
+ */
+void DBContentRootItem::onSubtreeUpdated()
+{
+    recomputeColorsRecursive();
 }
 
 void DBContentRootItem::recomputeColorsRecursive()

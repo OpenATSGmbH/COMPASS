@@ -20,10 +20,13 @@
 #include "layertreemodel.h"
 #include "traced_assert.h"
 
+#include <algorithm>
+
 #include <QApplication>
 #include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPen>
 #include <QStyleOptionButton>
 
 namespace
@@ -31,6 +34,9 @@ namespace
     constexpr int kSpace = 2;
     constexpr int kIconW = 14;
     constexpr int kIconH = 14;
+
+    constexpr int kSpinnerSize   = 12;
+    constexpr int kSpinnerMargin = 4;
 }
 
 LayerTreeItemDelegate::LayerTreeItemDelegate(QObject* parent)
@@ -41,6 +47,13 @@ LayerTreeItemDelegate::LayerTreeItemDelegate(QObject* parent)
 void LayerTreeItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
                                   const QModelIndex& index) const
 {
+    auto* item = static_cast<LayerTreeItem*>(index.internalPointer());
+    traced_assert(item);
+
+    const bool stale   = item->isStale();
+    const bool greyed  = stale && (stale_indication_ & StaleGreyed);
+    const bool spinner = stale && (stale_indication_ & StaleSpinner);
+
     if (index.column() != 0)
     {
         QStyleOptionViewItem opt = option;
@@ -48,12 +61,15 @@ void LayerTreeItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem&
         QVariant align = index.data(Qt::TextAlignmentRole);
         if (align.isValid())
             opt.displayAlignment = Qt::Alignment(align.toInt());
+        if (greyed)
+            opt.palette.setColor(QPalette::Text, opt.palette.color(QPalette::Disabled, QPalette::Text));
         QStyledItemDelegate::paint(painter, opt, index);
+
+        // the count is empty while stale
+        if (spinner && index.column() == 1)
+            paintSpinner(painter, option.rect);
         return;
     }
-
-    auto* item = static_cast<LayerTreeItem*>(index.internalPointer());
-    traced_assert(item);
 
     QFont font = QApplication::font();
     QFontMetrics fm(font);
@@ -87,10 +103,40 @@ void LayerTreeItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem&
     }
 
     painter->setFont(font);
+    if (greyed)
+        painter->setPen(option.palette.color(QPalette::Disabled, QPalette::Text));
     const QString text = index.data(Qt::DisplayRole).toString();
     QRect textRect = option.rect;
     textRect.setLeft(x);
     painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, text);
+
+    painter->restore();
+}
+
+/**
+ * Open arc at the right of the rect, rotated clockwise by the current step.
+ */
+void LayerTreeItemDelegate::paintSpinner(QPainter* painter, const QRect& rect) const
+{
+    const int size = std::min(rect.height() - 4, kSpinnerSize);
+    if (size <= 0)
+        return;
+
+    const QRectF spinner_rect(rect.right() - kSpinnerMargin - size,
+                              rect.top() + (rect.height() - size) / 2.0,
+                              size,
+                              size);
+
+    QPen pen(QApplication::palette().color(QPalette::Disabled, QPalette::Text), 2.0);
+    pen.setCapStyle(Qt::RoundCap);
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setPen(pen);
+
+    // Qt angles are counter-clockwise in 1/16 degrees
+    const int start = -spinner_step_ * (360 / SpinnerSteps) * 16;
+    painter->drawArc(spinner_rect.adjusted(1, 1, -1, -1), start, 270 * 16);
 
     painter->restore();
 }

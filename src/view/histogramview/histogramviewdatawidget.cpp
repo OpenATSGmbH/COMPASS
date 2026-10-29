@@ -29,7 +29,7 @@
 #include "dbcontent/variable/metavariable.h"
 #include "dbcontent/variable/reportvariable.h"
 #include "dbcontentlayer.h"
-#include "histogramleafpayload.h"
+#include "viewlayersnapshot.h"
 #include "histogramviewdatasource.h"
 #include "histogramviewchartview.h"
 #include "axisticks.h"
@@ -126,18 +126,6 @@ HistogramViewDataWidget::HistogramViewDataWidget(HistogramViewWidget* view_widge
     x_axis_name_ = view_->variable(0).description();
 
     updateChart();
-
-    // Annotations subtree of the layer panel mirrors view_->annotations(); the
-    // panel is wired via attachLayerPanel and may not yet be present at
-    // construction time.
-    connect(view_, &VariableView::annotationsChangedSignal, this, [this]()
-    {
-        if (annotations_root_)
-            annotations_root_->update(view_->annotations(),
-                                      view_->currentAnnotationGroupIdx(),
-                                      view_->currentAnnotationIdx(),
-                                      view_);
-    });
 }
 
 /**
@@ -149,42 +137,23 @@ HistogramViewDataWidget::~HistogramViewDataWidget()
 }
 
 /**
+ * The histogram is rebuilt without the hidden layers (the hidden set itself is kept by
+ * the layer tree model).
  */
-void HistogramViewDataWidget::attachLayerPanel(DBContentRootItem* root,
-                                               ViewLayerTreeModel* layer_model)
+void HistogramViewDataWidget::layerVisibilityChanged()
 {
-    db_content_root_ = root;
-    layer_model_     = layer_model;
+    redrawData(true);
+}
 
-    if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
-        annotations_root_ = vlm->annotationsRootItem();
-
-    // Visibility toggle -> trigger a full redraw so the histogram is rebuilt
-    // without the hidden layers (the hidden set itself is captured/restored
-    // by LayerTreeModel).
-    connect(layer_model_, &LayerTreeModel::hiddenChangedSignal,
-            this, [this]() { redrawData(true); });
-
-    // Color-mode change -> resolveSeriesColor outputs differ -> rebuild
-    // payloads (leaf icon + panel group colors) AND redraw the chart so
-    // the stacked bar colors match. The histogram values are unchanged -
-    // redrawData(true) does recompute, but rebuilding the histogram on a
-    // color-mode toggle is cheap compared to a buffer reload.
-    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
-            this, [this](unsigned int) {
-                rebuildLayerTree();
-                redrawData(true);
-            });
-
+/**
+ * resolveSeriesColor outputs differ => snapshots (leaf icon + panel group colors) AND the
+ * chart, so the stacked bar colors match. The histogram values are unchanged -
+ * redrawData(true) does recompute, but that is cheap compared to a buffer reload.
+ */
+void HistogramViewDataWidget::colorModeChanged()
+{
     rebuildLayerTree();
-
-    // Same for annotations: VariableView may have already populated them via
-    // a view point load that fired before attachLayerPanel.
-    if (annotations_root_)
-        annotations_root_->update(view_->annotations(),
-                                  view_->currentAnnotationGroupIdx(),
-                                  view_->currentAnnotationIdx(),
-                                  view_);
+    redrawData(true);
 }
 
 /**
@@ -210,7 +179,7 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
 
     //new data -> per-row layer ids and the layer aggregation are stale
     row_layer_ids_valid_ = false;
-    layer_agg_valid_     = false;
+    invalidateLayerAggregates();
 
     // Offline the per-row scans - the layer aggregation for the panel and the row
     // layer ids the generator consumes - run on a worker; the commit installs them and
@@ -219,14 +188,14 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
     // Live stays synchronous: the feed mutates the same buffers every tick.
     bool async = view_->compass().appMode() != AppMode::LiveRunning
               && !viewData().empty()
-              && db_content_root_ && layer_model_;
+              && hasLayerPanel();
 
     if (async)
     {
         auto scan_input = std::make_shared<view_layer_scan::ScanInput>(
             view_layer_scan::makeScanInput(viewData(), view_->compass()));
 
-        auto agg     = std::make_shared<std::map<std::string, view_layer_scan::LayerAgg>>();
+        auto agg     = std::make_shared<LayerAggregates>();
         auto row_ids = std::make_shared<view_layer_scan::RowLayerIndex>();
 
         asyncProcessor().launch("histogram view layer data",
@@ -240,10 +209,9 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
                 row_layer_index_     = std::move(*row_ids);
                 row_layer_ids_valid_ = true;
 
-                layer_agg_cache_ = std::move(*agg);
-                layer_agg_valid_ = true;
+                setLayerAggregates(std::move(*agg));
 
-                applyLayerTree(layer_agg_cache_);
+                applyLayerTree(layerAggregates());
             });
 
         return;
@@ -260,7 +228,7 @@ void HistogramViewDataWidget::resetVariableData()
     resetHistogram();
 
     row_layer_ids_valid_ = false;
-    layer_agg_valid_     = false;
+    invalidateLayerAggregates();
 }
 
 /**
@@ -272,6 +240,10 @@ void HistogramViewDataWidget::resetVariableData()
  */
 bool HistogramViewDataWidget::postLoadTrigger()
 {
+    //main thread right before the generator update, asynchronous or not (redrawData_impl):
+    //the worker must not read the layer tree model
+    snapshotHiddenLayerIds();
+
     //annotations are display work, live mutates the buffers per tick - default redraw
     if (view_->showsAnnotation())
         return false;
@@ -317,28 +289,11 @@ void HistogramViewDataWidget::resetVariableDisplay()
 }
 
 /**
- * Drops the current chart view without destroying it synchronously.
- *
- * The view owns a QChart with its axes and a QGraphicsScene, and Qt may still be inside
- * that object graph when we get here: since the chart update runs from the asynchronous
- * load commit (a queued call), the outgoing view can still have pending events. Deleting
- * it in place crashed inside QtCharts (QGraphicsScene::clear -> ~QChart ->
- * deleteAllAxes -> ~QObject). deleteLater lets it die once the event loop unwinds; it is
- * taken out of the layout and hidden right away, so nothing shows it in the meantime.
+ * Drops the current chart view without destroying it synchronously, see releaseWidgetLater().
  */
 void HistogramViewDataWidget::releaseChartView()
 {
-    if (!chart_view_)
-        return;
-
-    auto* view = chart_view_.release();
-
-    if (main_layout_)
-        main_layout_->removeWidget(view);
-
-    view->setParent(nullptr);
-    view->hide();
-    view->deleteLater();
+    releaseWidgetLater(chart_view_.release(), main_layout_);
 }
 
 /**
@@ -403,9 +358,7 @@ bool HistogramViewDataWidget::updateFromAnnotations()
     catch (const std::exception& e)
     {
         histogram_raw_.clear();
-        if (view_->hasViewPoint())
-            view_->viewPoint().reportError(view_->getName(),
-                std::string("annotation error: ") + e.what());
+        reportAnnotationError(e.what());
         return false;
     }
 
@@ -478,8 +431,8 @@ void HistogramViewDataWidget::updateFromVariables()
     // color-mode group key and the hidden flag. A row then costs one array lookup;
     // previously each row built its layer id, split it in groupKeyFor and probed two
     // string keyed maps, over millions of rows.
-    const std::set<std::string> hidden_layer_ids =
-        layer_model_ ? layer_model_->state().hiddenIds() : std::set<std::string>{};
+    // snapshot taken on the main thread (postLoadTrigger()), this may run on a worker
+    const std::set<std::string>& hidden_layer_ids = hiddenLayerIds();
 
     const auto& pool = row_layer_index_.pool;
 
@@ -554,12 +507,8 @@ void HistogramViewDataWidget::compileRawDataFromGenerator()
     const unsigned int color_mode = view_->compass().colorMode();
 
     std::map<std::string, QColor> group_colors;
-    for (const auto& p : payloads_)
-    {
-        if (!p) continue;
-        group_colors.try_emplace(groupKeyFor(p->persistenceId(), color_mode),
-                                 p->color());
-    }
+    for (const auto& layer : layerSnapshots())
+        group_colors.try_emplace(groupKeyFor(layer->key(), color_mode), layer->color());
 
     histogram_generator_->getResults().toRaw(histogram_raw_, group_colors, ColorSelected);
 }
@@ -890,46 +839,6 @@ void HistogramViewDataWidget::rectangleSelectedSlot(unsigned int index1, unsigne
     endTool();
 }
 
-/**
- */
-void HistogramViewDataWidget::invertSelectionSlot()
-{
-    loginf;
-
-    for (auto& buf_it : viewData())
-    {
-        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
-
-        for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
-        {
-            if (selected_vec.isNull(cnt))
-                selected_vec.set(cnt, true);
-            else
-                selected_vec.set(cnt, !selected_vec.get(cnt));
-        }
-    }
-
-    emit view_->selectionChangedSignal();
-}
-
-/**
- */
-void HistogramViewDataWidget::clearSelectionSlot()
-{
-    loginf;
-
-    for (auto& buf_it : viewData())
-    {
-        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
-
-        for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
-            selected_vec.set(cnt, false);
-    }
-
-    emit view_->selectionChangedSignal();
-}
 
 /**
  */
@@ -1096,67 +1005,27 @@ void HistogramViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
     }
 }
 
+/**
+ * Notice: the cached aggregation is reused while the data is unchanged (e.g. a color mode
+ * change), on the asynchronous load path the scan runs on a worker, see updateDataEvent.
+ */
 void HistogramViewDataWidget::rebuildLayerTree()
 {
-    if (!db_content_root_ || !layer_model_)
+    if (!hasLayerPanel())
         return;
 
-    // the aggregation only depends on the loaded buffers - reuse it when the data is
-    // unchanged: a color mode change restyles the panel from the same aggregates, and
-    // the recompute is a full row scan (measured as a seconds-long main thread stall)
-    if (layer_agg_valid_)
-    {
-        applyLayerTree(layer_agg_cache_);
-        return;
-    }
-
-    // shared scan helper; on the asynchronous load path the scan runs on a worker
-    // instead, see updateDataEvent
-    layer_agg_cache_ = view_layer_scan::aggregateLayers(
-        view_layer_scan::makeScanInput(viewData(), view_->compass()));
-    layer_agg_valid_ = true;
-
-    applyLayerTree(layer_agg_cache_);
+    applyLayerTree(layerAggregates());
 }
 
 /**
- * The tree/payload part of rebuildLayerTree, from precomputed layer aggregates.
+ * The tree part of rebuildLayerTree, from precomputed layer aggregates.
  */
-void HistogramViewDataWidget::applyLayerTree(const std::map<std::string, view_layer_scan::LayerAgg>& agg)
+void HistogramViewDataWidget::applyLayerTree(const LayerAggregates& agg)
 {
-    if (!db_content_root_ || !layer_model_)
+    if (!hasLayerPanel())
         return;
 
-    auto& compass = view_->compass();
-
-    std::vector<std::unique_ptr<HistogramLeafPayload>> new_payloads;
-    std::vector<DBContentRootItem::LeafEntry>          entries;
-    new_payloads.reserve(agg.size());
-    entries.reserve(agg.size());
-
-    for (const auto& kv : agg)
-    {
-        const std::string&               full_key = kv.first;
-        const view_layer_scan::LayerAgg& a        = kv.second;
-
-        QColor color = context::resolveSeriesColor(
-            a.ds_type, a.ds_name, a.line_index, a.dbcontent, compass);
-
-        new_payloads.emplace_back(std::make_unique<HistogramLeafPayload>(
-            full_key, a.count, color));
-
-        entries.push_back({a.ds_type, a.ds_name, a.line, a.dbcontent,
-                           new_payloads.back().get()});
-    }
-
-    // refreshSubtree re-applies the stored hidden state to the fresh leaves.
-    layer_model_->refreshDataSubtree([&]() {
-        payloads_ = std::move(new_payloads);
-        return db_content_root_->buildChildrenFrom(entries);
-    });
-    db_content_root_->recomputeColorsRecursive();
-
-    emit layerTreeRebuiltSignal();
+    updateLayerTree(snapshotsFromAggregates(agg));
 }
 
 void HistogramViewDataWidget::computeRowLayerIds()

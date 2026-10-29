@@ -31,7 +31,7 @@
 #include "dbcontent/variable/metavariable.h"
 #include "scatterplotviewdatasource.h"
 #include "scatterplotviewchartview.h"
-#include "scatterleafpayload.h"
+#include "viewlayersnapshot.h"
 #include "dbcontentlayer.h"
 #include "layertreemodel.h"
 #include "viewlayertreemodel.h"
@@ -103,22 +103,10 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
     updateAxisInfoFromVariables();
     updateChart();
 
-    // Layer panel signals are wired by ScatterPlotViewConfigWidget via
-    // attachLayerPanel(); color-mode redraw is connected here independently.
+    // color-mode redraw also without a layer panel (the commit rebuilds the layer tree),
+    // see colorModeChanged()
     connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
             this, [this](unsigned int /*mode*/) { redrawData(true); });
-
-    // Annotations subtree of the layer panel mirrors view_->annotations(); the
-    // panel is wired via attachLayerPanel and may not yet be present at
-    // construction time.
-    connect(view_, &VariableView::annotationsChangedSignal, this, [this]()
-    {
-        if (annotations_root_)
-            annotations_root_->update(view_->annotations(),
-                                      view_->currentAnnotationGroupIdx(),
-                                      view_->currentAnnotationIdx(),
-                                      view_);
-    });
 }
 
 /**
@@ -149,127 +137,78 @@ void ScatterPlotViewDataWidget::resetSeries()
 
     bounds_ = {};
 
-    rebuildLayerTree();
+    // no layer tree rebuild here: runs on the recompute worker too, the tree holds
+    // snapshots and is rebuilt on the main thread (commit, annotations, clear)
 }
 
 /**
-*/
-void ScatterPlotViewDataWidget::attachLayerPanel(DBContentRootItem* root,
-                                                 ViewLayerTreeModel* layer_model)
-{
-    db_content_root_ = root;
-    layer_model_     = layer_model;
-
-    if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
-        annotations_root_ = vlm->annotationsRootItem();
-
-    // If scatter_series_ was already populated before the panel was attached,
-    // push it into the tree now so the UI matches reality.
-    rebuildLayerTree();
-
-    // Same for annotations: VariableView may have already populated them via
-    // a view point load that fired before attachLayerPanel.
-    if (annotations_root_)
-        annotations_root_->update(view_->annotations(),
-                                  view_->currentAnnotationGroupIdx(),
-                                  view_->currentAnnotationIdx(),
-                                  view_);
-}
-
-/**
-*/
+ * Layer snapshots from scatter_series_ (main thread, the worker may refill the series later),
+ * keyed "<ds_type>:<ds_name>:L<n>:<dbcontent>". The pooled "Selected" overlay series does not
+ * fit that scheme - it becomes a top leaf, always visible regardless of how the data subtree
+ * expands.
+ */
 void ScatterPlotViewDataWidget::rebuildLayerTree()
 {
-    if (!db_content_root_ || !layer_model_)
-        return;
+    LayerSnapshots layers;
+    layers.reserve(scatter_series_.numDataSeries());
 
-    // Build new payloads from scatter_series_, parsing the "<ds_type>:<ds_name>
-    // :L<n>:<dbcontent>" key convention. The pooled "Selected" overlay series
-    // does not fit that scheme - it is kept aside and injected as a dedicated
-    // top-level leaf after the DBContent subtree is built.
-    std::vector<std::unique_ptr<ScatterLeafPayload>> new_payloads;
-    std::vector<DBContentRootItem::LeafEntry>        entries;
-    new_payloads.reserve(scatter_series_.numDataSeries());
-    entries.reserve(scatter_series_.numDataSeries());
-
-    ScatterLeafPayload* selected_payload = nullptr;
-
-    for (auto& kv : scatter_series_.dataSeries())
+    for (const auto& [ key, series ] : scatter_series_.dataSeries())
     {
-        const std::string& full_key = kv.first;
-        auto& data_series           = kv.second;
+        const bool selected = key == kSelectedSeriesKey;
 
-        if (full_key == kSelectedSeriesKey)
-        {
-            new_payloads.emplace_back(
-                std::make_unique<ScatterLeafPayload>(full_key, &data_series));
-            selected_payload = new_payloads.back().get();
-            continue;
-        }
+        view_layer_scan::LayerId id;
+        if (selected)
+            id.dbcontent = kSelectedSeriesKey;
+        else
+            id = view_layer_scan::layerIdOrUnknown(key);
 
-        std::string ds_type, ds_name, line_tok, dbcontent;
-        {
-            std::vector<std::string> parts;
-            size_t start = 0;
-            for (size_t i = 0; i <= full_key.size(); ++i)
-            {
-                if (i == full_key.size() || full_key[i] == ':')
-                {
-                    parts.push_back(full_key.substr(start, i - start));
-                    start = i + 1;
-                }
-            }
-            if (parts.size() == 4)
-            {
-                ds_type   = parts[0];
-                ds_name   = parts[1];
-                line_tok  = parts[2];
-                dbcontent = parts[3];
-            }
-            else
-            {
-                // malformed key fallback - collapse to a single leaf under an
-                // "<unknown>" branch so it's still visible.
-                ds_type   = "<unknown>";
-                ds_name   = full_key;
-                line_tok  = "L1";
-                dbcontent = "<unknown>";
-            }
-        }
+        auto layer = std::make_unique<ViewLayerSnapshot>(key,
+                                                         id,
+                                                         (unsigned int)series.scatter_series.points.size(),
+                                                         (unsigned int)series.null_count,
+                                                         series.color,
+                                                         series.visible);
+        layer->setTopLeaf(selected);
 
-        new_payloads.emplace_back(
-            std::make_unique<ScatterLeafPayload>(full_key, &data_series));
-        entries.push_back({ds_type, ds_name, line_tok, dbcontent,
-                           new_payloads.back().get()});
+        layers.push_back(std::move(layer));
     }
 
-    // Scoped subtree refresh: removes old children, swaps payloads while the
-    // DBContent root is empty, then attaches the new subtree. Avoids a full
-    // modelReset that would make QHeaderView drop its section widths.
-    auto buildChildren = [&]()
+    // annotation series are no loaded data => final even while the data is incomplete
+    updateLayerTree(std::move(layers), view_->showsAnnotation());
+
+    // the update above set the flags of the new snapshots
+    applyLayerVisibility();
+}
+
+/**
+ * Applies the visibility flags of the layer snapshots to the series. Main thread,
+ * not while a recompute worker fills the series.
+ */
+void ScatterPlotViewDataWidget::applyLayerVisibility()
+{
+    auto& data_series = scatter_series_.dataSeries();
+
+    for (const auto& layer : layerSnapshots())
     {
-        payloads_ = std::move(new_payloads);
-        auto children = db_content_root_->buildChildrenFrom(entries);
-        if (selected_payload)
-        {
-            // Place the Selected overlay at the top of the tree so it is
-            // always visible regardless of how the DBContent subtree expands.
-            auto leaf = std::make_unique<DBContentLeafItem>(
-                kSelectedSeriesKey, selected_payload);
-            children.insert(children.begin(), std::move(leaf));
-        }
-        return children;
-    };
+        auto it = data_series.find(layer->key());
+        if (it != data_series.end())
+            it->second.visible = layer->visible();
+    }
+}
 
-    // annotation series are no loaded data => the data-complete pruning does not apply, keep the states
-    if (view_->showsAnnotation())
-        layer_model_->refreshSubtree(db_content_root_, buildChildren, false);
-    else
-        layer_model_->refreshDataSubtree(buildChildren);
+/**
+ */
+void ScatterPlotViewDataWidget::layerVisibilityChanged()
+{
+    updateChartSlot();
+}
 
-    db_content_root_->recomputeColorsRecursive();
-
-    emit layerTreeRebuiltSignal();
+/**
+ * The own color mode redraw (see constructor) recomputes the series, its commit rebuilds the
+ * layer tree.
+ */
+void ScatterPlotViewDataWidget::colorModeChanged()
+{
 }
 
 /**
@@ -306,24 +245,11 @@ void ScatterPlotViewDataWidget::resetVariableDisplay()
 }
 
 /**
- * Drops the current chart view without destroying it synchronously: the chart owns a
- * QGraphicsScene with its axes, and this can run from the asynchronous load commit while
- * Qt still has pending events for it. Destroying it in place crashed inside QtCharts
- * (QGraphicsScene::clear -> ~QChart -> deleteAllAxes).
+ * Drops the current chart view without destroying it synchronously, see releaseWidgetLater().
  */
 void ScatterPlotViewDataWidget::releaseChartView()
 {
-    if (!chart_view_)
-        return;
-
-    auto* view = chart_view_.release();
-
-    if (main_layout_)
-        main_layout_->removeWidget(view);
-
-    view->setParent(nullptr);
-    view->hide();
-    view->deleteLater();
+    releaseWidgetLater(chart_view_.release(), main_layout_);
 }
 
 /**
@@ -651,42 +577,15 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
         {
             std::string name = dbc_stash.first;
 
-            // group key format: "<ds_type>:<ds_name>:L<n>:<dbcontent_name>"
-            std::string ds_type;
-            std::string ds_name;
-            int line_index = 0;
-            std::string dbcontent_name;
-            {
-                std::vector<std::string> parts;
-                size_t start = 0;
-                for (size_t i = 0; i <= name.size(); ++i)
-                {
-                    if (i == name.size() || name[i] == ':')
-                    {
-                        parts.push_back(name.substr(start, i - start));
-                        start = i + 1;
-                    }
-                }
-                if (parts.size() == 4)
-                {
-                    ds_type        = parts[0];
-                    ds_name        = parts[1];
-                    const auto& lt = parts[2];
-                    dbcontent_name = parts[3];
-                    if (lt.size() >= 2 && lt[0] == 'L')
-                    {
-                        try { line_index = std::stoi(lt.substr(1)) - 1; } // L1->0
-                        catch (...) { line_index = 0; }
-                    }
-                }
-                else
-                {
-                    ds_name = name; // malformed key fallback
-                }
-            }
+            // group key format: "<ds_type>:<ds_name>:L<n>:<dbcontent_name>", malformed => only the name
+            view_layer_scan::LayerId layer_id;
+            if (auto parsed = view_layer_scan::parseLayerId(name))
+                layer_id = *parsed;
+            else
+                layer_id.ds_name = name;
 
             QColor line_color = context::resolveSeriesColor(
-                ds_type, ds_name, line_index, dbcontent_name, view_->compass(),
+                layer_id.ds_type, layer_id.ds_name, layer_id.line_index, layer_id.dbcontent, view_->compass(),
                 [this](const std::string& key) { return colorForGroupName(key); });
 
             scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx, dbc_null_count);
@@ -727,8 +626,12 @@ bool ScatterPlotViewDataWidget::updateFromAnnotations()
 
     bounds_ = {};
 
+    // the series were reset before => the tree follows (main thread)
     if (!view_->hasCurrentAnnotation())
+    {
+        rebuildLayerTree();
         return false;
+    }
 
     try
     {
@@ -773,9 +676,9 @@ bool ScatterPlotViewDataWidget::updateFromAnnotations()
     catch (const std::exception& e)
     {
         scatter_series_.clear();
-        if (view_->hasViewPoint())
-            view_->viewPoint().reportError(view_->getName(),
-                std::string("annotation error: ") + e.what());
+        rebuildLayerTree();
+
+        reportAnnotationError(e.what());
         return false;
     }
 
@@ -870,46 +773,6 @@ void ScatterPlotViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2) /
     endTool();
 }
 
-/**
-*/
-void ScatterPlotViewDataWidget::invertSelectionSlot()
-{
-    loginf;
-
-    for (auto& buf_it : viewData())
-    {
-        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
-
-        for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
-        {
-            if (selected_vec.isNull(cnt))
-                selected_vec.set(cnt, true);
-            else
-                selected_vec.set(cnt, !selected_vec.get(cnt));
-        }
-    }
-
-    emit view_->selectionChangedSignal();
-}
-
-/**
-*/
-void ScatterPlotViewDataWidget::clearSelectionSlot()
-{
-    loginf;
-
-    for (auto& buf_it : viewData())
-    {
-        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
-
-        for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
-            selected_vec.set(cnt, false);
-    }
-
-    emit view_->selectionChangedSignal();
-}
 
 /**
  * vmin and vmax are expected to be in the chart's coordinate system.
@@ -1021,6 +884,12 @@ void ScatterPlotViewDataWidget::resetZoomSlot()
 */
 void ScatterPlotViewDataWidget::updateChartSlot()
 {
+    // a recompute worker fills the series => its commit applies the flags and draws
+    if (hasPendingAsyncWork_impl())
+        return;
+
+    applyLayerVisibility();
+
     //remember current axis ranges if available
     bool has_axes0 = chart_view_ && 
                      chart_view_->chart() &&

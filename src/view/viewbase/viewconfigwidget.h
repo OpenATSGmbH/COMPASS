@@ -21,10 +21,14 @@
 #include "appmode.h"
 #include "json_fwd.hpp"
 
+#include <vector>
+
 #include <QWidget>
 
 class ViewWidget;
 class View;
+class ViewLayerPanelWidget;
+struct LayerColumnSpec;
 
 class QTabWidget;
 class QVBoxLayout;
@@ -58,6 +62,11 @@ protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
 
     ViewWidget* getWidget() { return view_widget_; }
+
+    /// layer panel attached to the view's data widget, its Data expansion follows the color mode
+    /// Notice: the caller places it in its layout
+    ViewLayerPanelWidget* createLayerPanel(const std::vector<LayerColumnSpec>& custom_columns,
+                                           bool show_annotations);
 
 private:
     ViewWidget* view_widget_ = nullptr;

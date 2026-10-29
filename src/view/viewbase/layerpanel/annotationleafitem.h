@@ -35,27 +35,39 @@ class VariableView;
  *    every other AnnotationLeafItem hidden silently, then activate self and
  *    forward to VariableView::setCurrentAnnotation + showAnnotation.
  *
- * persistenceId() is intentionally empty: the active annotation is captured
- * by VariableView::current_annotation_group_idx_ / current_annotation_idx_,
- * which are already persisted by the view.
+ * persistenceId() is intentionally empty and the checked state is not part of
+ * any config: the active annotation is captured by
+ * VariableView::current_annotation_group_idx_ / current_annotation_idx_, which
+ * are already persisted by the view.
+ *
+ * Kept across updates by its update key (title, "#n" for repeated titles below
+ * the same parent), see AnnotationsRootItem::updateFrom().
  */
 class AnnotationLeafItem : public LayerTreeItem
 {
 public:
     AnnotationLeafItem(const std::string& name,
+                       const std::string& update_key,
                        int                group_idx,
                        int                annotation_idx,
                        VariableView*      view);
     ~AnnotationLeafItem() override = default;
 
     void setHidden(bool value, bool emit_signal = true) override;
+    std::string updateKey() const override { return update_key_; }
 
     int groupIdx() const { return group_idx_; }
     int annotationIdx() const { return annotation_idx_; }
+    /// position of the annotation in the view's groups, changes with the annotations
+    void setIndices(int group_idx, int annotation_idx);
+
+    /// radio state from the view's current annotation, silent (no activation, no hidden signal)
+    void setActive(bool active);
 
 private:
     void activateAsRadio(bool emit_signal);
 
+    std::string   update_key_;
     int           group_idx_      {-1};
     int           annotation_idx_ {-1};
     VariableView* view_           {nullptr};

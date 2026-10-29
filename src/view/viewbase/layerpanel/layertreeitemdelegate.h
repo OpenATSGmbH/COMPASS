@@ -33,16 +33,35 @@
  *
  * Other columns: delegate to the default painting path, with alignment taken
  * from the model's TextAlignmentRole.
+ *
+ * Stale items (LayerTreeItem::isStale()): greyed text and / or a rotating wait
+ * icon in the count column, see setStaleIndication(). The icon is advanced by
+ * the panel (advanceSpinner()) while the model has stale items.
  */
 class LayerTreeItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 
 public:
+    /// display of stale items, combined in the stale indication flags
+    enum StaleIndication
+    {
+        StaleGreyed  = 1 << 0, // greyed text
+        StaleSpinner = 1 << 1  // rotating wait icon in the count column
+    };
+
+    static const int SpinnerSteps = 12; // wait icon positions per turn
+
     explicit LayerTreeItemDelegate(QObject* parent = nullptr);
 
     void setReserveIconColumn(bool on) { reserve_icon_column_ = on; }
     bool reserveIconColumn() const { return reserve_icon_column_; }
+
+    void setStaleIndication(int flags) { stale_indication_ = flags; }
+    int staleIndication() const { return stale_indication_; }
+
+    /// next position of the wait icon
+    void advanceSpinner() { spinner_step_ = (spinner_step_ + 1) % SpinnerSteps; }
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
@@ -52,5 +71,9 @@ public:
                      const QModelIndex& index) override;
 
 private:
+    void paintSpinner(QPainter* painter, const QRect& rect) const;
+
     bool reserve_icon_column_ {true};
+    int  stale_indication_    = StaleGreyed | StaleSpinner;
+    int  spinner_step_        = 0;
 };

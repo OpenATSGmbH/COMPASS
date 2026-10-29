@@ -22,6 +22,9 @@
 
 #include <QIcon>
 
+#include <map>
+#include <optional>
+#include <string>
 #include <vector>
 
 /**
@@ -34,10 +37,10 @@
  * model is consumer-side flat: VariableView::scanViewPointForAnnotations
  * collapses any nested feature hierarchy into 2 levels keyed by plot_group_.
  *
- * Lifecycle: data widgets call update() in response to
- * VariableView::annotationsChangedSignal. The update routes through
- * LayerTreeModel::refreshSubtree so expansion / selection elsewhere in the
- * panel survive.
+ * Lifecycle: data widgets call updateFrom() in response to
+ * VariableView::annotationsChangedSignal. The subtree is updated in place:
+ * recurring groups and annotations (by name / title) are kept, so expansion
+ * and selection survive natively.
  */
 class AnnotationsRootItem : public LayerTreeItem
 {
@@ -47,16 +50,51 @@ public:
 
     QVariant icon() const override;
 
-    /// Rebuild the annotation subtree from the supplied groups. The leaf at
-    /// (current_group_idx, current_anno_idx) starts with hidden_ == false;
-    /// every other leaf starts hidden. Empty groups -> empty subtree.
-    /// `view` is the VariableView passed through to each leaf so radio-style
+    /// Updates the annotation subtree in place from the supplied groups. The leaf at
+    /// (current_group_idx, current_anno_idx) is the checked one (radio), every other
+    /// leaf unchecked. Empty groups -> empty subtree. Annotations of an unnamed group
+    /// sit directly below the root. `view` is passed through to each leaf so radio-style
     /// activation can call setCurrentAnnotation / showAnnotation.
-    void update(const std::vector<VariableView::AnnotationGroup>& groups,
-                int           current_group_idx,
-                int           current_anno_idx,
-                VariableView* view);
+    void updateFrom(const std::vector<VariableView::AnnotationGroup>& groups,
+                    int           current_group_idx,
+                    int           current_anno_idx,
+                    VariableView* view);
+
+    std::optional<std::vector<std::string>> childKeys() const override;
+    std::unique_ptr<LayerTreeItem> createChild(const std::string& key) override;
+    bool updateChild(LayerTreeItem& child) override;
+
+    // used by the group items during updateFrom(); parent key empty => the root's own leaves
+
+    /// update keys of the leaves below the parent, nullopt outside updateFrom()
+    std::optional<std::vector<std::string>> leafKeys(const std::string& parent_key) const;
+    std::unique_ptr<LayerTreeItem> createLeaf(const std::string& parent_key, const std::string& key) const;
+    /// indices and radio state of a kept leaf, true if its checked state changed
+    bool updateLeaf(const std::string& parent_key, LayerTreeItem& child) const;
 
 private:
+    struct LeafSpec
+    {
+        std::string key;
+        std::string title;
+        int         group_idx      = -1;
+        int         annotation_idx = -1;
+    };
+
+    struct Layout
+    {
+        std::vector<std::string>                     root_keys;   // groups and own leaves in display order
+        std::map<std::string, std::string>           group_names; // group key -> name
+        std::map<std::string, std::vector<LeafSpec>> leaves;      // parent key -> leaves in display order
+    };
+
+    const LeafSpec* findLeaf(const std::string& parent_key, const std::string& key) const;
+    bool isCurrent(const LeafSpec& spec) const;
+
     QIcon icon_;
+
+    std::optional<Layout> layout_;                 // during updateFrom() only
+    int                   current_group_idx_ = -1;
+    int                   current_anno_idx_  = -1;
+    VariableView*         view_              = nullptr;
 };
