@@ -20,6 +20,8 @@
 #include "dbcontentlayer.h"
 #include "annotationsrootitem.h"
 
+#include <functional>
+
 #include <QTreeView>
 
 /**
@@ -50,9 +52,85 @@ ViewLayerTreeModel::ViewLayerTreeModel(const std::vector<LayerColumnSpec>& custo
 ViewLayerTreeModel::~ViewLayerTreeModel() = default;
 
 /**
- * Notice: rebuilds from incomplete data (e.g. emptied at loading start) keep the states.
  */
-void ViewLayerTreeModel::refreshDataSubtree(const std::function<std::vector<std::unique_ptr<LayerTreeItem>>()>& build)
+void ViewLayerTreeModel::updateDataSubtree(const std::vector<DBContentRootItem::LeafEntry>& entries,
+                                           const std::vector<DBContentRootItem::TopLeafEntry>& top_leaves,
+                                           bool content_final)
 {
-    refreshSubtree(dbcontent_root_item_, build, data_complete_);
+    const bool final = data_complete_ || content_final;
+
+    // partial data would drop the stale rows not loaded yet
+    if (dataReloading() && !final)
+        return;
+
+    dbcontent_root_item_->updateFrom(entries, top_leaves);
+
+    if (final)
+        setDataStale(false);
+}
+
+/**
+ */
+void ViewLayerTreeModel::beginDataReload()
+{
+    if (dataReloading() || dbcontent_root_item_->childCount() == 0)
+        return;
+
+    dbcontent_root_item_->detachPayloads();
+
+    setDataStale(true);
+}
+
+/**
+ */
+void ViewLayerTreeModel::clearDataSubtree()
+{
+    dbcontent_root_item_->updateFrom({}, {});
+
+    setDataStale(false);
+}
+
+/**
+ */
+bool ViewLayerTreeModel::dataReloading() const
+{
+    return dbcontent_root_item_->isStale();
+}
+
+/**
+ */
+bool ViewLayerTreeModel::hasStaleItems() const
+{
+    return dataReloading();
+}
+
+/**
+ * Notice: repaints the whole data subtree (greyed rows, empty counts).
+ */
+void ViewLayerTreeModel::setDataStale(bool stale)
+{
+    if (dbcontent_root_item_->isStale() == stale)
+        return;
+
+    dbcontent_root_item_->setStale(stale);
+
+    notifySubtreeChanged(dbcontent_root_item_);
+
+    emit staleChangedSignal();
+}
+
+/**
+ */
+void ViewLayerTreeModel::notifySubtreeChanged(LayerTreeItem* item)
+{
+    itemChanged(item);
+
+    std::function<void(LayerTreeItem*)> notify = [ & ] (LayerTreeItem* parent)
+    {
+        childItemsChanged(parent);
+
+        for (int i = 0; i < parent->childCount(); ++i)
+            notify(parent->child(i));
+    };
+    notify(item);
 }

@@ -28,7 +28,6 @@ namespace dbContent {
 class TableView;
 class TableViewWidget;
 
-class DBContentRootItem;
 class ViewLayerPanelWidget;
 
 class QCheckBox;
@@ -70,7 +69,6 @@ protected:
     QPushButton*    export_button_{nullptr};
 
     ViewLayerPanelWidget* layer_panel_      {nullptr};
-    DBContentRootItem*    db_content_root_  {nullptr};
 
     dbContent::VariableOrderedSetWidget* set_config_widget_ {nullptr};
 };

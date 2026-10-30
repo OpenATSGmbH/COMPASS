@@ -44,24 +44,6 @@
 using namespace Utils;
 using namespace dbContent;
 
-namespace
-{
-    /// Sum aggregator for integer-valued custom columns - ignores invalid
-    /// entries and returns an invalid QVariant if no valid value was found.
-    QVariant sumULongLong(const std::vector<QVariant>& vals)
-    {
-        unsigned long long sum = 0;
-        bool any = false;
-        for (const auto& v : vals)
-        {
-            bool ok = false;
-            unsigned long long n = v.toULongLong(&ok);
-            if (ok) { sum += n; any = true; }
-        }
-        return any ? QVariant((qulonglong)sum) : QVariant();
-    }
-}
-
 /**
 */
 ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* view_widget,
@@ -75,31 +57,8 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
 
     layout->addWidget(new ColorModeLabel(view_->compass(), this));
 
-    {
-        // Register the scatter-specific "# NULL" column (custom col 0).
-        LayerColumnSpec null_col;
-        null_col.header           = "# NULL";
-        null_col.default_width    = 70;
-        null_col.resize_mode      = QHeaderView::Interactive;
-        null_col.alignment        = Qt::AlignRight | Qt::AlignVCenter;
-        null_col.group_aggregator = &sumULongLong;
-
-        layer_panel_     = new ViewLayerPanelWidget({ null_col }, view_->canShowAnnotations(), this);
-        db_content_root_ = layer_panel_->model()->dbContentRootItem();
-
-        // Hand the root + model to the data widget so it can populate and
-        // round-trip hidden state.
-        auto* data_widget = view_widget->getViewDataWidget();
-        data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
-
-        // Visibility change -> redraw chart.
-        connect(layer_panel_->model(), &LayerTreeModel::hiddenChangedSignal,
-                data_widget, &ScatterPlotViewDataWidget::updateChartSlot);
-
-        layer_panel_->followColorMode(view_->compass());
-
-        layout->addWidget(layer_panel_);
-    }
+    layer_panel_ = createLayerPanel({ ViewLayerPanelWidget::nullCountColumn() }, view_->canShowAnnotations());
+    layout->addWidget(layer_panel_);
 
     use_connection_lines_ = new QCheckBox("Use Connection Lines");
     use_connection_lines_->setChecked(view_->useConnectionLines());

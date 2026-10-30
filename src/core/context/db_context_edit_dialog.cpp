@@ -601,10 +601,8 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
                 "Delete all data sources from this context?"))
             return;
 
-        auto& ctx = manager_.activeContext();
-        ctx.dataSources().clear();
-        manager_.saveContext(manager_.activeContextName());
-        rebuildTree();
+        // rebuilds the tree via dataSourcesChangedSignal
+        manager_.deleteAllDataSources();
     });
 
     // disable if empty or if any data source has data in the database

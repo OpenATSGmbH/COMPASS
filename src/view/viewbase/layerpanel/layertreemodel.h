@@ -49,8 +49,10 @@ class QMenu;
  * Signals emitted by items (via model_ pointer) are re-emitted here so panel
  * / view code can subscribe.
  *
- * Remembered state (item states, item config, effective-hidden ids) lives in state(),
- * the model applies it to the tree (attach, config changes, pruning).
+ * The items hold their checked state, the tree view their expansion and selection; producers
+ * update the tree in place (LayerTreeItem::update()), vanished items are forgotten. The item config
+ * and the effective-hidden ids live in state(), the model applies the config on attach and on
+ * config changes.
  */
 class LayerTreeModel : public QAbstractItemModel
 {
@@ -60,12 +62,10 @@ signals:
     void hiddenChangedSignal();
     void colorChangedSignal();
     void modelChangedSignal();
-    /// Emitted at the end of refreshSubtree() with the parent whose children
-    /// were just rebuilt. Lets panel-level code (re-)apply expansion or other
-    /// view state without having to subscribe to begin/endInsertRows manually.
-    void subtreeRefreshedSignal(LayerTreeItem* parent);
-    /// a destroyed panel stored its view state, e.g. for its successor
+    /// a destroyed panel left its view state on the items, e.g. for its successor
     void viewStateHandedOverSignal();
+    /// items became stale or current again, see hasStaleItems()
+    void staleChangedSignal();
 
 public:
     enum DataRole
@@ -89,6 +89,9 @@ public:
 
     LayerTreeItem* invisibleRootItem() const { return root_item_.get(); }
 
+    /// true while items show outdated content (LayerTreeItem::isStale()), see staleChangedSignal()
+    virtual bool hasStaleItems() const { return false; }
+
     // ---- columns -----------------------------------------------------------
 
     /// Register a custom column (appended after Name, Count).
@@ -100,24 +103,31 @@ public:
     /// Apply each column's resize/width/alignment to the given header.
     void applyHeaderSettings(QHeaderView* header) const;
 
-    // ---- scoped refresh ---------------------------------------------------
-
-    /// Scoped refill of a subtree without nuking expansion/selection elsewhere.
-    /// build_children must return the new children detached (not yet attached
-    /// to parent); the model performs begin/endRemoveRows and
-    /// begin/endInsertRows around the mutation.
-    /// complete => the remembered states of items below parent that did not come back are dropped,
-    /// false for intermediate rebuilds (e.g. emptied at loading start), pruned later via pruneItemStates()
-    void refreshSubtree(LayerTreeItem* parent,
-                        const std::function<std::vector<std::unique_ptr<LayerTreeItem>>()>& build_children,
-                        bool complete);
+    // ---- structural changes ------------------------------------------------
 
     /// appends a child to an attached parent, with insert notification
     LayerTreeItem* appendChildItem(LayerTreeItem* parent, std::unique_ptr<LayerTreeItem> item);
-    /// removes a child of an attached parent, with remove notification, and drops its subtree's states
+    /// inserts a child into an attached parent at the given row, with insert notification
+    LayerTreeItem* insertChildItem(LayerTreeItem* parent, int row, std::unique_ptr<LayerTreeItem> item);
+    /// inserts consecutive children at the given row, one insert notification
+    void insertChildItems(LayerTreeItem* parent, int row, std::vector<std::unique_ptr<LayerTreeItem>> items);
+    /// moves a child of an attached parent to the row to (its final row), with move notification
+    void moveChildItem(LayerTreeItem* parent, int from, int to);
+    /// removes a child of an attached parent, with remove notification
     void removeChildItem(LayerTreeItem* parent, int row);
+    /// as removeChildItem() for the row range [first, last], one remove notification
+    void removeChildItems(LayerTreeItem* parent, int first, int last);
     /// notifies a changed display of an attached item (e.g. name)
     void itemChanged(LayerTreeItem* item);
+    /// notifies a changed display of all children of an attached item (all columns)
+    void childItemsChanged(LayerTreeItem* parent);
+
+    // ---- update in place ----------------------------------------------------
+
+    /// updates the subtree of an attached item in place, see LayerTreeItem::update()
+    void updateSubtree(LayerTreeItem* item);
+    /// updates the whole tree in place
+    void updateAll();
 
     // ---- traversal ---------------------------------------------------------
 
@@ -149,17 +159,12 @@ public:
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
-    // ---- remembered state --------------------------------------------------
+    // ---- config and hidden ids ---------------------------------------------
 
-    /// item states, item config root, effective-hidden ids (kept current on every hiddenChangedSignal
-    /// and after each refreshSubtree(), cleared on database close via state().clear())
+    /// item config root, effective-hidden ids (kept current on every hiddenChangedSignal and after
+    /// structural changes, cleared on database close via state().clear())
     LayerTreeState& state() { return state_; }
     const LayerTreeState& state() const { return state_; }
-
-    /// drops the states below scope (nullptr => whole tree) doPruneItem() rejects, call after a complete rebuild
-    void pruneItemStates(const LayerTreeItem* scope = nullptr);
-    /// drops the given components (combination of LayerTreeState::PersistFlag) of the subtree's item states
-    void clearItemStates(const LayerTreeItem* subtree, int flags);
 
     /// the item with the given state key, nullptr if there is none
     LayerTreeItem* findItem(const std::string& key) const;
@@ -169,8 +174,6 @@ public:
     /// re-applies the config to all items, e.g. after a preset was applied
     void configChanged();
 
-    /// called by items on hidden changes
-    void storeHiddenState(const LayerTreeItem& item);
     /// called by items when a subtree got attached to this model
     void subtreeAttached(LayerTreeItem* subtree);
 
@@ -180,18 +183,14 @@ public:
     /// icon-related roles). Used after color mutations propagate through.
     void notifyIconChanged(LayerTreeItem* item);
 
-protected:
-    /// prune criterion, default: the item is not in the pruned scope
-    virtual bool doPruneItem(const std::string& key,
-                             const LayerTreeState::ItemState& state,
-                             const std::set<std::string>& present_keys) const;
-
 private:
     QModelIndex indexOfItem(const LayerTreeItem* item) const;
 
     void captureHiddenState();
     void flushHiddenNotification();
     void checkUniqueKeys(const LayerTreeItem* parent) const;
+    /// after a structural change, deferred to the end of an update
+    void structureChanged();
 
     QVariant aggregateColumnFor(LayerTreeItem* item, int column,
                                 const LayerColumnSpec& spec) const;
@@ -206,6 +205,6 @@ private:
     std::vector<LayerColumnSpec>    custom_columns_;
 
     LayerTreeState state_;
-    bool           restoring_state_       = false; // suppresses storing while restoring
-    bool           hidden_notify_pending_ = false; // restored hidden states not signalled yet
+    bool           hidden_notify_pending_ = false; // configured hidden states applied on attach, not signalled yet
+    int            update_depth_          = 0;     // running (nested) updateSubtree() calls
 };

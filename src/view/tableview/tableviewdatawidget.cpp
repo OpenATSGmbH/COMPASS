@@ -31,7 +31,7 @@
 #include "color_provider.h"
 #include "dbcontentlayer.h"
 #include "viewlayertreemodel.h"
-#include "tableleafpayload.h"
+#include "viewlayersnapshot.h"
 #include "logger.h"
 #include "number.h"
 #include "stringconv.h"
@@ -69,31 +69,16 @@ TableViewDataWidget::TableViewDataWidget(TableViewWidget* view_widget,
 
 TableViewDataWidget::~TableViewDataWidget() = default;
 
-void TableViewDataWidget::attachLayerPanel(DBContentRootItem* root, ViewLayerTreeModel* layer_model)
+/**
+ * Single fire at the end of any visibility change (group toggles cascade through multiple
+ * leaves but emit hiddenChangedSignal once). A color mode change only rebuilds the layer
+ * tree (default): AllBufferTableModel::setLayerColors emits dataChanged so the icon column
+ * refreshes without a full redraw.
+ */
+void TableViewDataWidget::layerVisibilityChanged()
 {
-    db_content_root_ = root;
-    layer_model_     = layer_model;
-
-    // Single fire at end of any visibility change (group toggles cascade
-    // through multiple leaves but emit hiddenChangedSignal once). The guard
-    // skips the signal re-emitted by applyLayerTree's own refreshSubtree
-    // (which re-applies the stored hidden state to the fresh leaves).
-    connect(layer_model_, &LayerTreeModel::hiddenChangedSignal,
-            this, [this]() {
-                if (in_layer_recompute_)
-                    return;
-                pushLayerStateToModel();
-                redrawData(true);
-            });
-
-    // Color-mode change (from the data source widget) → resolveSeriesColor
-    // outputs differ → rebuild payloads + icons. AllBufferTableModel::
-    // setLayerColors emits dataChanged so the icon column refreshes without
-    // a full redraw.
-    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
-            this, [this](unsigned int) { rebuildLayerTree(); });
-
-    rebuildLayerTree();
+    pushLayerStateToModel();
+    redrawData(true);
 }
 
 void TableViewDataWidget::clearData_impl()
@@ -103,7 +88,7 @@ void TableViewDataWidget::clearData_impl()
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->clear();
 
-    layer_agg_valid_ = false;
+    invalidateLayerAggregates();
 
     logdbg << "end";
 }
@@ -119,7 +104,7 @@ void TableViewDataWidget::loadingStarted_impl()
 
     //new data incoming - the cached layer aggregation goes stale; the async prepare
     //commit refills it
-    layer_agg_valid_ = false;
+    invalidateLayerAggregates();
 }
 
 void TableViewDataWidget::updateFromSource_impl(const DBContentDataSet& /*source*/,
@@ -215,10 +200,9 @@ void TableViewDataWidget::commitLoadedData(const std::map<std::string, view_laye
 
     //keep the worker-computed aggregation: color mode changes restyle the panel from
     //it without another full row scan (see rebuildLayerTree)
-    layer_agg_cache_ = agg;
-    layer_agg_valid_ = true;
+    setLayerAggregates(agg);
 
-    applyLayerTree(layer_agg_cache_);
+    applyLayerTree(layerAggregates());
 
     auto selected_ranges = std::move(prepared.selected_ranges);
 
@@ -409,89 +393,38 @@ void TableViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
     info[ "tables" ] = table_infos;
 }
 
+/**
+ * Records per (ds_type, ds_name, line, dbcontent) layer from the (cached) layer aggregation;
+ * on the asynchronous load path the scan runs on a worker instead, see loadingDone_impl.
+ */
 void TableViewDataWidget::rebuildLayerTree()
 {
-    if (!db_content_root_ || !layer_model_)
+    if (!hasLayerPanel())
         return;
 
-    // the aggregation only depends on the loaded buffers - reuse it when the data is
-    // unchanged: a color mode change restyles the panel from the same aggregates, and
-    // the recompute is a full row scan (measured as a seconds-long main thread stall)
-    if (layer_agg_valid_)
-    {
-        applyLayerTree(layer_agg_cache_);
-        return;
-    }
-
-    // Count records per (ds_type, ds_name, line, dbcontent) layer by scanning
-    // ds_id + line_id columns on each loaded buffer (shared scan helper; on the
-    // asynchronous load path the scan runs on a worker instead, see loadingDone_impl).
-    layer_agg_cache_ = view_layer_scan::aggregateLayers(
-        view_layer_scan::makeScanInput(viewData(), view_->compass()));
-    layer_agg_valid_ = true;
-
-    applyLayerTree(layer_agg_cache_);
+    applyLayerTree(layerAggregates());
 }
 
 /**
- * The tree/payload part of rebuildLayerTree, from precomputed layer aggregates.
+ * The tree part of rebuildLayerTree, from precomputed layer aggregates.
  */
-void TableViewDataWidget::applyLayerTree(const std::map<std::string, view_layer_scan::LayerAgg>& agg)
+void TableViewDataWidget::applyLayerTree(const LayerAggregates& agg)
 {
-    if (!db_content_root_ || !layer_model_)
+    if (!hasLayerPanel())
         return;
 
-    auto& compass = view_->compass();
-
-    // Build payloads + LeafEntry list.
-    std::vector<std::unique_ptr<TableLeafPayload>> new_payloads;
-    std::vector<DBContentRootItem::LeafEntry>      entries;
-    new_payloads.reserve(agg.size());
-    entries.reserve(agg.size());
-
-    for (const auto& kv : agg)
-    {
-        const std::string&              full_key = kv.first;
-        const view_layer_scan::LayerAgg& a       = kv.second;
-
-        QColor color = context::resolveSeriesColor(
-            a.ds_type, a.ds_name, a.line_index, a.dbcontent, compass);
-
-        new_payloads.emplace_back(std::make_unique<TableLeafPayload>(
-            full_key, a.count, color));
-
-        entries.push_back({a.ds_type, a.ds_name, a.line, a.dbcontent,
-                           new_payloads.back().get()});
-    }
-
-    // Scoped subtree refresh - keeps the header widths untouched. Also
-    // re-applies the stored hidden state to the fresh leaves, which emits
-    // hiddenChangedSignal - guarded so it does not trigger another redraw
-    // (see attachLayerPanel).
-    const bool was_guarded = in_layer_recompute_;
-    in_layer_recompute_ = true;
-
-    layer_model_->refreshDataSubtree([&]() {
-        payloads_ = std::move(new_payloads);
-        return db_content_root_->buildChildrenFrom(entries);
-    });
-
-    in_layer_recompute_ = was_guarded;
-
-    db_content_root_->recomputeColorsRecursive();
+    updateLayerTree(snapshotsFromAggregates(agg));
 
     // Push initial allowed set to the model so the first redraw filters correctly.
     pushLayerStateToModel();
-
-    emit layerTreeRebuiltSignal();
 }
 
 /**
  */
 bool TableViewDataWidget::anyLayerHidden() const
 {
-    for (const auto& payload : payloads_)
-        if (payload && !payload->visible())
+    for (const auto& layer : layerSnapshots())
+        if (!layer->visible())
             return true;
 
     return false;
@@ -506,7 +439,9 @@ void TableViewDataWidget::pushLayerStateToModel()
     if (!model)
         return;
 
-    if (payloads_.empty())
+    const auto& layers = layerSnapshots();
+
+    if (layers.empty())
     {
         model->setAllowedLayerIds(std::nullopt);
         model->setLayerColors({});
@@ -517,26 +452,21 @@ void TableViewDataWidget::pushLayerStateToModel()
     std::map<std::string, QColor> layer_colors;
 
     auto& dbcont_man = view_->compass().dbContentManager();
-    for (const auto& payload : payloads_)
+    for (const auto& layer : layers)
     {
-        if (payload->visible())
-            allowed.insert(payload->persistenceId());
+        if (layer->visible())
+            allowed.insert(layer->key());
 
         // Only target-report DBContents get a colored icon. Matches scatter's
         // leafColorFor rule: non-TR DBContents render as blank space.
-        const std::string dbcontent = [&]() {
-            // persistenceId is "<ds_type>:<ds_name>:L<n>:<dbcontent>"
-            const std::string& k = payload->persistenceId();
-            auto last = k.rfind(':');
-            return last == std::string::npos ? std::string{} : k.substr(last + 1);
-        }();
+        const std::string& dbcontent = layer->id().dbcontent;
 
         QColor color;
         if (dbcont_man.existsDBContent(dbcontent) &&
             dbcont_man.dbContent(dbcontent).containsTargetReports())
-            color = payload->color();
+            color = layer->color();
 
-        layer_colors.emplace(payload->persistenceId(), color);
+        layer_colors.emplace(layer->key(), color);
     }
 
     model->setAllowedLayerIds(std::move(allowed));

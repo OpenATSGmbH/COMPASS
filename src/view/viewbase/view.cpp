@@ -316,6 +316,14 @@ void View::clearData()
 
 /**
 */
+void View::beginDataReload()
+{
+    if (widget_ && widget_->getViewDataWidget())
+        widget_->getViewDataWidget()->beginDataReload();
+}
+
+/**
+*/
 void View::appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current)
 {
     logdbg << "app_mode " << toString(app_mode_current)

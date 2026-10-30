@@ -69,24 +69,6 @@
 using namespace Utils;
 using namespace dbContent;
 
-namespace
-{
-    /// Sum aggregator for integer-valued custom columns - ignores invalid
-    /// entries and returns an invalid QVariant if no valid value was found.
-    QVariant sumULongLong(const std::vector<QVariant>& vals)
-    {
-        unsigned long long sum = 0;
-        bool any = false;
-        for (const auto& v : vals)
-        {
-            bool ok = false;
-            unsigned long long n = v.toULongLong(&ok);
-            if (ok) { sum += n; any = true; }
-        }
-        return any ? QVariant((qulonglong)sum) : QVariant();
-    }
-}
-
 /**
 */
 GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
@@ -226,25 +208,7 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
     {
         config_layout->addWidget(new ColorModeLabel(view_->compass(), this));
 
-        LayerColumnSpec null_col;
-        null_col.header           = "# Null";
-        null_col.default_width    = 70;
-        null_col.resize_mode      = QHeaderView::Interactive;
-        null_col.alignment        = Qt::AlignRight | Qt::AlignVCenter;
-        null_col.group_aggregator = &sumULongLong;
-
-        layer_panel_     = new ViewLayerPanelWidget({ null_col }, view_->canShowAnnotations(), this);
-        db_content_root_ = layer_panel_->model()->dbContentRootItem();
-
-        auto* data_widget = view_widget->getViewDataWidget();
-        data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
-
-        // Visibility toggle -> recompute grid (only checked layers contribute).
-        connect(layer_panel_->model(), &LayerTreeModel::hiddenChangedSignal,
-                data_widget, &GridViewDataWidget::layersChangedSlot);
-
-        // Data expansion mirrors the other views (follows the COMPASS color mode)
-        layer_panel_->followColorMode(view_->compass());
+        layer_panel_ = createLayerPanel({ ViewLayerPanelWidget::nullCountColumn() }, view_->canShowAnnotations());
 
         config_layout->addWidget(layer_panel_);
     }

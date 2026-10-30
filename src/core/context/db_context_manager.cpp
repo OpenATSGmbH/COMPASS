@@ -532,6 +532,14 @@ void DBContextManager::deleteDataSource(unsigned int ds_id)
     emit dataSourcesChangedSignal();
 }
 
+void DBContextManager::deleteAllDataSources()
+{
+    traced_assert(hasActiveContext());
+    activeContext().dataSources().clear();
+    saveContext(active_context_name_);
+    emit dataSourcesChangedSignal();
+}
+
 // ============================================================
 // Data source loading/filtering
 // ============================================================
@@ -1452,6 +1460,21 @@ FFT* DBContextManager::fft(const string& name)
     if (!hasActiveContext()) return nullptr;
     for (auto& f : activeContext().ffts())
         if (f.name() == name) return &f;
+    return nullptr;
+}
+
+/**
+ * Lookup by FFT::runtimeId(), stable while the FFT exists (names may change).
+ */
+const FFT* DBContextManager::fftByRuntimeId(const string& runtime_id) const
+{
+    if (!hasActiveContext())
+        return nullptr;
+
+    for (const auto& f : activeContext().ffts())
+        if (f.runtimeId() == runtime_id)
+            return &f;
+
     return nullptr;
 }
 

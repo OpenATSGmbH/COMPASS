@@ -78,13 +78,7 @@ HistogramViewConfigWidget::HistogramViewConfigWidget(HistogramViewWidget* view_w
 
         config_layout->addWidget(new ColorModeLabel(view_->compass(), this));
 
-        layer_panel_     = new ViewLayerPanelWidget({}, view_->canShowAnnotations(), this);
-        db_content_root_ = layer_panel_->model()->dbContentRootItem();
-
-        auto* data_widget = view_widget->getViewDataWidget();
-        data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
-
-        layer_panel_->followColorMode(view_->compass());
+        layer_panel_ = createLayerPanel({}, view_->canShowAnnotations());
 
         config_layout->addWidget(layer_panel_);
     }

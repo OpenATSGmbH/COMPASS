@@ -68,7 +68,7 @@ namespace
     }
 
     /**
-     * Recreates the context items within a model reset (as the OSG roots do).
+     * Recreates the context items (r1, r2) within a model reset.
      */
     void resetContext(LayerTreeModel& model, LayerTreeItem* ctx)
     {
@@ -76,9 +76,11 @@ namespace
 
         ctx->clearChildren();
 
-        auto fresh = makeContext();
-        for (auto& child : fresh->moveChildrenOut())
-            ctx->appendChild(std::move(child));
+        ctx->appendChild(std::make_unique<HookItem>("r1"));
+
+        auto r2 = std::make_unique<HookItem>("r2");
+        r2->setHidden(true);
+        ctx->appendChild(std::move(r2));
 
         model.endResetModel();
     }
@@ -127,26 +129,15 @@ TEST_CASE("LayerTreeItem reads the persisted hidden state on attach", "[view][la
 
     REQUIRE(ctx->child(0)->hidden());
     REQUIRE(ctx->child(1)->hidden()); // default
-    REQUIRE(!model.state().itemState("Ctx/r1")); // config value, not a session state
 
-    SECTION("also after a database close")
+    SECTION("also for recreated items, e.g. after a database close")
     {
-        ctx->child(1)->setHidden(false);
+        ctx->child(1)->setHidden(false); // written to the config
 
         model.state().clear();
         resetContext(model, ctx);
 
         REQUIRE(ctx->child(0)->hidden());
-        REQUIRE(!ctx->child(1)->hidden());
-    }
-
-    SECTION("the session map wins over the config")
-    {
-        ctx->child(1)->setHidden(false);              // deviation => session state
-        config[ "Ctx/r2" ][ "hidden" ] = true;        // stale config
-
-        resetContext(model, ctx);
-
         REQUIRE(!ctx->child(1)->hidden());
     }
 }

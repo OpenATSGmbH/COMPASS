@@ -9,7 +9,6 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/basetablewidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/allbuffertablemodel.h"
         "${CMAKE_CURRENT_LIST_DIR}/allbuffertablewidget.h"
-        "${CMAKE_CURRENT_LIST_DIR}/tableleafpayload.h"
         "${CMAKE_CURRENT_LIST_DIR}/tableviewdatasource.h"
         "${CMAKE_CURRENT_LIST_DIR}/tableview.h"
         "${CMAKE_CURRENT_LIST_DIR}/tableviewconfigwidget.h"

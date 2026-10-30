@@ -27,6 +27,8 @@
 //#include "histogram.h"
 //#include "results/base.h"
 
+#include <set>
+
 #include <QVariant>
 
 #include <boost/optional.hpp>
@@ -44,11 +46,7 @@ class QTabWidget;
 class QHBoxLayout;
 class Buffer;
 class DBContent;
-class DBContentRootItem;
 class HistogramGenerator;
-class HistogramLeafPayload;
-class ViewLayerTreeModel;
-class AnnotationsRootItem;
 
 enum HistogramViewDataTool
 {
@@ -90,19 +88,8 @@ public:
 
     ViewInfo getViewInfo() const;
 
-    /// Called by HistogramViewConfigWidget once the LayerPanelWidget is built.
-    /// Provides the DBContent root item (owned by the panel's model) and the
-    /// layer tree model used for future hidden-state round-tripping.
-    void attachLayerPanel(DBContentRootItem* root, ViewLayerTreeModel* layer_model);
-
-    ViewLayerTreeModel* layerTreeModel() override { return layer_model_; }
-
 signals:
     void exportDoneSignal(bool canceled);
-
-    /// Emitted after rebuildLayerTree() has replaced the DBContent subtree.
-    /// The config widget uses this to re-apply default expansion.
-    void layerTreeRebuiltSignal();
 
 public slots:
     void exportDataSlot(bool overwrite);
@@ -111,9 +98,6 @@ public slots:
     void resetZoomSlot();
 
     void rectangleSelectedSlot (unsigned int index1, unsigned int index2);
-
-    void invertSelectionSlot();
-    void clearSelectionSlot();
 
 protected:
     // load-time asynchronous recompute: the generator update runs on a worker (it
@@ -133,6 +117,13 @@ protected:
 
     void toolChanged_impl(int mode) override;
     void viewInfoJSON_impl(nlohmann::json& info) const override;
+
+    /// layer snapshots from the (cached) layer aggregation of the loaded buffers
+    virtual void rebuildLayerTree() override final;
+    /// hidden layers are left out => full redraw
+    virtual void layerVisibilityChanged() override final;
+    /// other layer colors => snapshots and chart
+    virtual void colorModeChanged() override final;
 
     void resetHistogram();
     /// drops the current chart view via deleteLater - see the implementation
@@ -161,12 +152,6 @@ protected:
     std::string                                       x_axis_name_;
     std::string                                       title_;
 
-    DBContentRootItem*   db_content_root_  {nullptr};   // owned by layer panel model
-    ViewLayerTreeModel*  layer_model_      {nullptr};   // owned by LayerPanelWidget
-    AnnotationsRootItem* annotations_root_ {nullptr};   // owned by layer panel model (null if view has no annotations)
-
-    std::vector<std::unique_ptr<HistogramLeafPayload>> payloads_;
-
     /// Current zoom bin range [first, second], valid only while zoom is
     /// active. Captured on zoomToSubrange and re-applied after a generator
     /// regeneration (e.g. selection-triggered redrawData(true)) so the
@@ -182,24 +167,13 @@ protected:
     view_layer_scan::RowLayerIndex row_layer_index_;
 
     /// row_layer_ids_ matches the current data (invalidated on data change/clear,
-    /// NOT per redraw - the ids only depend on the loaded buffers)
+    /// NOT per redraw - the ids only depend on the loaded buffers; the base's layer
+    /// aggregation cache follows the same validity)
     bool row_layer_ids_valid_ {false};
 
-    /// the layer aggregation of the current data, cached with the same validity as
-    /// the row layer ids: it depends only on the loaded buffers, but recomputing it
-    /// is a full row scan (seconds at millions of rows). rebuildLayerTree() consumers
-    /// that merely restyle the panel (color mode changes) reuse it
-    std::map<std::string, view_layer_scan::LayerAgg> layer_agg_cache_;
-    bool layer_agg_valid_ {false};
-
 private:
-    /// Rebuild payloads_ from the loaded buffers and repopulate the DBContent
-    /// subtree. Emits layerTreeRebuiltSignal.
-    void rebuildLayerTree();
-
-    /// Rebuild payloads_ + the DBContent subtree from precomputed layer aggregates
-    /// (the tree/payload part of rebuildLayerTree; the scan may run on a worker).
-    void applyLayerTree(const std::map<std::string, view_layer_scan::LayerAgg>& agg);
+    /// layer snapshots + data subtree from layer aggregates (the scan may run on a worker)
+    void applyLayerTree(const LayerAggregates& agg);
 
     /// Populate row_layer_ids_ from current viewData(). Empty string for
     /// rows without ds_id/line_id (unmappable).

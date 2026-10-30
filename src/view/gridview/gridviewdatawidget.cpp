@@ -24,7 +24,7 @@
 #include "grid2dlayer.h"
 #include "grid2drendersettings.h"
 #include "grid2dlayerrenderer.h"
-#include "gridleafpayload.h"
+#include "viewlayersnapshot.h"
 
 #include "viewvariable.h"
 #include "viewpointgenerator.h"
@@ -90,18 +90,6 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
     updateAxisInfoFromVariables();
 
     updateGridChart();
-
-    // Annotations subtree of the layer panel mirrors view_->annotations(); the
-    // panel is wired via attachLayerPanel and may not yet be present at
-    // construction time.
-    connect(view_, &VariableView::annotationsChangedSignal, this, [this]()
-    {
-        if (annotations_root_)
-            annotations_root_->update(view_->annotations(),
-                                      view_->currentAnnotationGroupIdx(),
-                                      view_->currentAnnotationIdx(),
-                                      view_);
-    });
 }
 
 /**
@@ -128,21 +116,8 @@ void GridViewDataWidget::resetGridChart()
     legend_->setVisible(false);
     legend_->showSelectionColor(false);
 
-    // deleteLater, not a synchronous reset: the chart owns a QGraphicsScene with its
-    // axes, and this can run from the asynchronous load commit while Qt still has
-    // pending events for it - destroying it in place crashed inside QtCharts
-    // (QGraphicsScene::clear -> ~QChart -> deleteAllAxes)
-    if (grid_chart_)
-    {
-        auto* chart = grid_chart_.release();
-
-        if (layout())
-            layout()->removeWidget(chart);
-
-        chart->setParent(nullptr);
-        chart->hide();
-        chart->deleteLater();
-    }
+    // deleteLater, not a synchronous reset, see releaseWidgetLater()
+    releaseWidgetLater(grid_chart_.release(), layout());
 
     grid_rendering_ = QImage();
     grid_roi_       = QRectF();
@@ -165,15 +140,33 @@ void GridViewDataWidget::resetGridLayers()
 }
 
 /**
- * Qt-side commit after processStash (main thread): the layer panel rebuild. The old
- * payloads retired in processStash are released only now - the old tree leaves held
- * raw pointers into them until the rebuild replaced them.
+ * Snapshot of the layer panel's hidden groups for buildGridFromStash(), which may run
+ * on a worker.
+ */
+void GridViewDataWidget::prepareStashProcessing()
+{
+    snapshotHiddenLayerIds();
+}
+
+/**
+ * Qt-side commit after processStash (main thread): the pending layers become current
+ * and the layer tree is rebound to them, the old ones are released only afterwards.
+ * Hidden groups changed since the snapshot (toggled during the recompute, or new leaves
+ * below an unchecked group) => the grid is rebuilt here.
  */
 void GridViewDataWidget::commitStashDisplayData()
 {
-    rebuildLayerTree();
+    if (pending_layers_)
+    {
+        updateLayerTree(std::move(*pending_layers_));
+        pending_layers_.reset();
+    }
 
-    retired_payloads_.clear();
+    if (!view_->showsAnnotation() && hiddenLayerIdsChanged())
+    {
+        snapshotHiddenLayerIds();
+        buildGridFromStash();
+    }
 }
 
 /**
@@ -191,13 +184,10 @@ void GridViewDataWidget::resetStashDependentData()
     resetGridLayers();
     annotation_render_settings_.reset();
 
-    // NOTE: payloads_ intentionally not cleared here. The layer tree's
-    // DBContentLeafItems hold raw pointers into these payloads and outlive
-    // this reset - clearing would dangle the tree and crash on next click or
-    // render (itemData() / onEffectiveHiddenChanged dereference payload_).
-    // Payload lifetime is managed by processStash(): on a non-toggle
-    // recompute a fresh vector is built and swapped in, and the old one stays
-    // alive until the tree has been rebuilt to reference the new entries.
+    // NOTE: the layer snapshots are intentionally not cleared here (may run on a
+    // worker). The layer tree's DBContentLeafItems hold raw pointers into them -
+    // only the main thread commit replaces them, after rebinding the tree to the
+    // pending ones processStash() built.
 }
 
 /**
@@ -219,12 +209,12 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
     updateAxisInfoFromVariables();
     title_       = "";
 
-    // Build one payload per group (total count + # Null), unconditionally -
+    // Build one snapshot per group (total count + #NULL), unconditionally -
     // the panel should show the full dataset breakdown regardless of which
     // layers are currently visible.
     size_t num_null_values = 0;
-    std::vector<std::unique_ptr<GridLeafPayload>> new_payloads;
-    new_payloads.reserve(getStash().groupedStashes().size());
+    LayerSnapshots layers;
+    layers.reserve(getStash().groupedStashes().size());
 
     for (const auto& dbc_values : getStash().groupedStashes())
     {
@@ -233,36 +223,24 @@ void GridViewDataWidget::processStash(const VariableViewStash<double>& stash)
 
         num_null_values += gds.nan_count;
 
-        // Display name for the leaf row: the dbcontent token from the group
-        // key "<ds_type>:<ds_name>:L<n>:<dbcontent>" - fall back to the full
-        // key if the scheme is not met.
-        std::string leaf_name = group_key;
-        {
-            auto last = group_key.find_last_of(':');
-            if (last != std::string::npos && last + 1 < group_key.size())
-                leaf_name = group_key.substr(last + 1);
-        }
-
-        new_payloads.emplace_back(std::make_unique<GridLeafPayload>(
-            group_key, leaf_name,
-            (unsigned int)gds.size(),
-            gds.nan_count));
+        // group key "<ds_type>:<ds_name>:L<n>:<dbcontent>" as produced when
+        // group_per_datasource is on, malformed keys below an "<unknown>" branch
+        layers.push_back(std::make_unique<ViewLayerSnapshot>(group_key,
+                                                             view_layer_scan::layerIdOrUnknown(group_key),
+                                                             (unsigned int)gds.size(),
+                                                             (unsigned int)gds.nan_count));
     }
 
     addNullCount(num_null_values);
 
-    // Swap rather than move-assign: the OLD payloads end up in new_payloads and are
-    // retired below. The old tree leaves hold raw pointers into them, so they must
-    // stay alive until commitStashDisplayData rebuilt the tree on the main thread
-    // (this function may run on a worker thread; the tree rebuild does not).
-    payloads_.swap(new_payloads);
-    retired_payloads_ = std::move(new_payloads);
+    // Pending until commitStashDisplayData rebinds the tree on the main thread
+    // (this function may run on a worker thread): the tree keeps pointing at
+    // the current snapshots, which only the commit replaces. A failed or
+    // discarded run just leaves its pending layers to be replaced by the next one.
+    pending_layers_ = std::move(layers);
 
     // Aggregate visible groups into the Grid2D.
     buildGridFromStash();
-
-    // The fresh tree with leaves pointing at the new payloads is built in
-    // commitStashDisplayData.
 }
 
 /**
@@ -304,8 +282,8 @@ void GridViewDataWidget::buildGridFromStash()
     const auto& settings   = view_->settings();
     const auto  value_type = (grid2d::ValueType)settings.value_type;
 
-    const std::set<std::string> hidden_series =
-        layer_model_ ? layer_model_->state().hiddenIds() : std::set<std::string>{};
+    // snapshot taken on the main thread, this may run on a worker
+    const std::set<std::string>& hidden_series = hiddenLayerIds();
 
     //extent of the rows the grid will hold: a finite position and, except for the count of
     //missing values, a value of the distributed variable. For a Report Variable most rows have
@@ -443,107 +421,11 @@ void GridViewDataWidget::buildGridFromStash()
 }
 
 /**
-*/
-void GridViewDataWidget::attachLayerPanel(DBContentRootItem* root,
-                                          ViewLayerTreeModel* layer_model)
+ * Notice: not for the hidden states the tree update itself restores (see ViewDataWidget),
+ * those are picked up by commitStashDisplayData().
+ */
+void GridViewDataWidget::layerVisibilityChanged()
 {
-    db_content_root_ = root;
-    layer_model_     = layer_model;
-
-    if (auto* vlm = dynamic_cast<ViewLayerTreeModel*>(layer_model))
-        annotations_root_ = vlm->annotationsRootItem();
-
-    // Color-mode change -> rebuild the layer tree. The leaves themselves have
-    // no color, but the rebuild resets all expansion state via refreshSubtree
-    // (begin/endRemoveRows), and the resulting layerTreeRebuiltSignal lets
-    // the config widget re-apply the depth that matches the new color mode.
-    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
-            this, [this](unsigned int) { rebuildLayerTree(); });
-
-    // If payloads_ was already populated before the panel was attached, push
-    // it into the tree now so the UI matches reality.
-    rebuildLayerTree();
-
-    // Same for annotations: VariableView may have already populated them via
-    // a view point load that fired before attachLayerPanel.
-    if (annotations_root_)
-        annotations_root_->update(view_->annotations(),
-                                  view_->currentAnnotationGroupIdx(),
-                                  view_->currentAnnotationIdx(),
-                                  view_);
-}
-
-/**
-*/
-void GridViewDataWidget::rebuildLayerTree()
-{
-    if (!db_content_root_ || !layer_model_)
-        return;
-
-    std::vector<DBContentRootItem::LeafEntry> entries;
-    entries.reserve(payloads_.size());
-
-    for (auto& p : payloads_)
-    {
-        const std::string& key = p->persistenceId();
-
-        // Parse "<ds_type>:<ds_name>:L<n>:<dbcontent>" - the group key format
-        // produced when group_per_datasource is on. Malformed keys fall back
-        // to a single leaf under an "<unknown>" branch.
-        std::string ds_type, ds_name, line_tok, dbcontent;
-        {
-            std::vector<std::string> parts;
-            size_t start = 0;
-            for (size_t i = 0; i <= key.size(); ++i)
-            {
-                if (i == key.size() || key[i] == ':')
-                {
-                    parts.push_back(key.substr(start, i - start));
-                    start = i + 1;
-                }
-            }
-            if (parts.size() == 4)
-            {
-                ds_type   = parts[0];
-                ds_name   = parts[1];
-                line_tok  = parts[2];
-                dbcontent = parts[3];
-            }
-            else
-            {
-                ds_type   = "<unknown>";
-                ds_name   = key;
-                line_tok  = "L1";
-                dbcontent = "<unknown>";
-            }
-        }
-
-        entries.push_back({ds_type, ds_name, line_tok, dbcontent, p.get()});
-    }
-
-    // Re-entry guard: refreshSubtree re-applies the stored hidden state to the
-    // fresh leaves, which emits hiddenChangedSignal and routes back to
-    // layersChangedSlot. Without this guard a data load with stored hidden
-    // layers would trigger a recursive recompute.
-    const bool was_guarded = in_layer_recompute_;
-    in_layer_recompute_ = true;
-
-    layer_model_->refreshDataSubtree([&]() {
-        return db_content_root_->buildChildrenFrom(entries);
-    });
-
-    in_layer_recompute_ = was_guarded;
-
-    emit layerTreeRebuiltSignal();
-}
-
-/**
-*/
-void GridViewDataWidget::layersChangedSlot()
-{
-    if (in_layer_recompute_)
-        return;
-
     // Annotation mode: hiddenChangedSignal here originates from the
     // annotations subtree's radio activation (AnnotationLeafItem). The
     // activation already triggered a full redraw via setCurrentAnnotation ->
@@ -554,18 +436,18 @@ void GridViewDataWidget::layersChangedSlot()
     if (view_->showsAnnotation())
         return;
 
-    in_layer_recompute_ = true;
+    // a recompute worker fills the stash and the grid => its commit picks up the toggle
+    if (hasPendingAsyncWork_impl())
+        return;
+
+    prepareStashProcessing();
 
     // Match the scatter plot pattern: a layer toggle only re-aggregates and
-    // re-renders. Do NOT call redrawData(true) - that resets the stash and
-    // payloads_, which would dangle the tree items' payload_ pointers and
-    // crash on the next cascadeEffectiveHidden(). The stash and layer tree
-    // are untouched here; we only rebuild the Grid2D from the currently
-    // visible groups and redraw the chart.
+    // re-renders, no full recompute redraw. The stash and layer tree are
+    // untouched here; we only rebuild the Grid2D from the currently visible
+    // groups and redraw the chart.
     buildGridFromStash();
     updateGridChart();
-
-    in_layer_recompute_ = false;
 }
 
 /**
@@ -585,31 +467,23 @@ bool GridViewDataWidget::updateFromAnnotations()
 
     const auto& feature = anno.feature_json;
 
-    auto reportErr = [&](const std::string& msg)
-    {
-        traced_assert(view_->hasViewPoint());
-
-        view_->viewPoint().reportError(view_->getName(),
-                std::string("annotation error: ") + msg);
-    };
-
     if (!feature.is_object() || !feature.contains(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid))
     {
-        reportErr("missing '" + std::string(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid) + "' field");
+        reportAnnotationError("missing '" + std::string(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid) + "' field");
         return false;
     }
 
     std::unique_ptr<Grid2DLayer> layer(new Grid2DLayer);
     if (!layer->fromJSON(feature[ ViewPointGenFeatureGrid::FeatureGridFieldNameGrid ]))
     {
-        reportErr("could not read grid layer");
+        reportAnnotationError("could not read grid layer");
         return false;
     }
 
     if (layer->data.cols() < 1 ||
         layer->data.rows() < 1)
     {
-        reportErr("grid layer empty");
+        reportAnnotationError("grid layer empty");
         return false;
     }
     
@@ -812,46 +686,6 @@ void GridViewDataWidget::rectangleSelectedSlot (QPointF p1, QPointF p2)
     endTool();
 }
 
-/**
-*/
-void GridViewDataWidget::invertSelectionSlot()
-{
-    loginf;
-
-    for (auto& buf_it : viewData())
-    {
-        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
-
-        for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
-        {
-            if (selected_vec.isNull(cnt))
-                selected_vec.set(cnt, true);
-            else
-                selected_vec.set(cnt, !selected_vec.get(cnt));
-        }
-    }
-
-    emit view_->selectionChangedSignal();
-}
-
-/**
-*/
-void GridViewDataWidget::clearSelectionSlot()
-{
-    loginf;
-
-    for (auto& buf_it : viewData())
-    {
-        traced_assert(buf_it.second->has<bool>(dbcontent_vars::selected_var_.name()));
-        NullableVector<bool>& selected_vec = buf_it.second->get<bool>(dbcontent_vars::selected_var_.name());
-
-        for (unsigned int cnt=0; cnt < buf_it.second->size(); ++cnt)
-            selected_vec.set(cnt, false);
-    }
-
-    emit view_->selectionChangedSignal();
-}
 
 /**
 */

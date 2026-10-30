@@ -7,4 +7,5 @@ target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_layertreemodelstate.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_layertreeitemconfig.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_layertreestate.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_layertreeupdate.cpp
 )

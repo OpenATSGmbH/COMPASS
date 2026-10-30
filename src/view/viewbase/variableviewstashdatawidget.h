@@ -70,6 +70,9 @@ protected:
 
     virtual boost::optional<QRectF> getViewBounds() const;
 
+    /// main thread, before the stash is filled and processed (on a worker or not): snapshot
+    /// Qt-side state processStash() needs (e.g. the layer tree's hidden ids)
+    virtual void prepareStashProcessing() {}
     /// derived behavior during postUpdateVariableDataEvent(); must not touch Qt
     /// models/widgets - it may run on a worker thread (see postLoadTrigger)
     virtual void processStash(const VariableViewStash<double>& stash) = 0;

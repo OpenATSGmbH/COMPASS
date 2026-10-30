@@ -22,12 +22,14 @@
 #include "viewlayerpanelwidget.h"
 #include "viewlayertreemodel.h"
 #include "dbcontentlayer.h"
+#include "annotationsrootitem.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <QCoreApplication>
 #include <QItemSelectionModel>
 #include <QTreeView>
 
@@ -40,23 +42,15 @@ namespace
                                    { "B", { "b2" } } }; // repeated group name
 
     /**
-     * Fresh detached groups for the given layout.
+     * Fresh detached group for the given layout entry.
      */
-    std::vector<std::unique_ptr<LayerTreeItem>> buildChildren(const Layout& layout)
+    std::unique_ptr<LayerTreeItem> buildGroup(const std::string& name, const std::vector<std::string>& leaves)
     {
-        std::vector<std::unique_ptr<LayerTreeItem>> children;
-        children.reserve(layout.size());
+        auto group = std::make_unique<LayerTreeItem>(name);
+        for (const auto& leaf : leaves)
+            group->appendChild(std::make_unique<LayerTreeItem>(leaf));
 
-        for (const auto& [ name, leaves ] : layout)
-        {
-            auto group = std::make_unique<LayerTreeItem>(name);
-            for (const auto& leaf : leaves)
-                group->appendChild(std::make_unique<LayerTreeItem>(leaf));
-
-            children.push_back(std::move(group));
-        }
-
-        return children;
+        return group;
     }
 
     /**
@@ -72,9 +66,14 @@ namespace
             panel.reset(new LayerPanelWidget(nullptr, nullptr, &model, true));
         }
 
+        /// removes all groups, inserts fresh ones
         void rebuild(const Layout& layout)
         {
-            model.refreshSubtree(top, [ & ] () { return buildChildren(layout); }, false);
+            if (top->childCount() > 0)
+                model.removeChildItems(top, 0, top->childCount() - 1);
+
+            for (const auto& [ name, leaves ] : layout)
+                model.appendChildItem(top, buildGroup(name, leaves));
         }
 
         void resetRebuild(const Layout& layout)
@@ -82,8 +81,8 @@ namespace
             model.beginResetModel();
 
             top->clearChildren();
-            for (auto& child : buildChildren(layout))
-                top->appendChild(std::move(child));
+            for (const auto& [ name, leaves ] : layout)
+                top->appendChild(buildGroup(name, leaves));
 
             model.endResetModel();
         }
@@ -113,37 +112,31 @@ namespace
     const std::vector<int> CRows   = { 0, 3 };
 }
 
-TEST_CASE("LayerPanelWidget restores expansion after a subtree rebuild", "[view][layerpanel]")
+TEST_CASE("LayerPanelWidget gives replaced rows the default expansion", "[view][layerpanel]")
 {
     Fixture f;
 
     f.view()->expand(f.index(TopRows));
     f.view()->expand(f.index(ARows));
 
-    f.rebuild(DefaultLayout);
+    SECTION("after a removal and a new insert")
+    {
+        f.rebuild(DefaultLayout);
 
-    REQUIRE(f.view()->isExpanded(f.index(TopRows)));
-    REQUIRE(f.view()->isExpanded(f.index(ARows)));
-    REQUIRE(!f.view()->isExpanded(f.index(B1Rows)));
-    REQUIRE(!f.view()->isExpanded(f.index(B2Rows)));
+        REQUIRE(f.view()->isExpanded(f.index(TopRows))); // kept
+        REQUIRE(!f.view()->isExpanded(f.index(ARows)));
+    }
+
+    SECTION("after a model reset")
+    {
+        f.resetRebuild(DefaultLayout);
+
+        REQUIRE(!f.view()->isExpanded(f.index(TopRows)));
+        REQUIRE(!f.view()->isExpanded(f.index(ARows)));
+    }
 }
 
-TEST_CASE("LayerPanelWidget restores expansion after a model reset", "[view][layerpanel]")
-{
-    Fixture f;
-
-    f.view()->expand(f.index(TopRows));
-    f.view()->expand(f.index(B2Rows)); // second of the repeated "B" groups
-
-    f.resetRebuild(DefaultLayout);
-
-    REQUIRE(f.view()->isExpanded(f.index(TopRows)));
-    REQUIRE(f.view()->isExpanded(f.index(B2Rows)));
-    REQUIRE(!f.view()->isExpanded(f.index(B1Rows)));
-    REQUIRE(!f.view()->isExpanded(f.index(ARows)));
-}
-
-TEST_CASE("LayerPanelWidget applies the default expansion to unknown items only", "[view][layerpanel]")
+TEST_CASE("LayerPanelWidget applies the default expansion to new rows only", "[view][layerpanel]")
 {
     Fixture f;
 
@@ -154,128 +147,44 @@ TEST_CASE("LayerPanelWidget applies the default expansion to unknown items only"
 
     f.view()->collapse(f.index(ARows));
 
-    Layout layout = DefaultLayout;
-    layout.push_back({ "C", { "c1" } });
+    f.model.appendChildItem(f.top, buildGroup("C", { "c1" }));
 
-    f.rebuild(layout);
-
-    REQUIRE(!f.view()->isExpanded(f.index(ARows))); // collapsed by the user
+    REQUIRE(!f.view()->isExpanded(f.index(ARows))); // kept, collapsed by the user
     REQUIRE(f.view()->isExpanded(f.index(B1Rows)));
     REQUIRE(f.view()->isExpanded(f.index(CRows)));  // new => default
 }
 
-TEST_CASE("LayerPanelWidget records only expansion deviating from the default", "[view][layerpanel]")
-{
-    Fixture f;
-
-    f.panel->setDefaultExpansion([] (const LayerTreeItem&, int depth) { return depth == 0; });
-
-    f.view()->collapse(f.index(TopRows));
-    f.view()->expand(f.index(ARows));
-
-    f.resetRebuild(DefaultLayout);
-
-    REQUIRE(f.model.state().itemState("Top"));
-    REQUIRE(!*f.model.state().itemState("Top")->expanded);  // collapsed against the default
-    REQUIRE(f.model.state().itemState("Top/A"));
-    REQUIRE(*f.model.state().itemState("Top/A")->expanded); // expanded against the default
-    REQUIRE(!f.model.state().itemState("Top/B"));           // default
-    REQUIRE(!f.model.state().itemState("Top/A/a1"));        // default
-
-    REQUIRE(!f.view()->isExpanded(f.index(TopRows)));
-    REQUIRE(f.view()->isExpanded(f.index(ARows)));
-}
-
-TEST_CASE("LayerPanelWidget restores selection and current item", "[view][layerpanel]")
+TEST_CASE("LayerPanelWidget keeps the selection of kept rows", "[view][layerpanel]")
 {
     Fixture f;
 
     f.selection()->setCurrentIndex(f.index(A2Rows), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 
-    SECTION("after a subtree rebuild")
-    {
-        f.rebuild(DefaultLayout);
+    f.model.appendChildItem(f.top, buildGroup("C", { "c1" }));
 
-        REQUIRE(f.selection()->isSelected(f.index(A2Rows)));
-        REQUIRE(f.view()->currentIndex() == f.index(A2Rows));
-    }
+    REQUIRE(f.selection()->isSelected(f.index(A2Rows)));
+    REQUIRE(f.view()->currentIndex() == f.index(A2Rows));
 
-    SECTION("after a model reset")
-    {
-        f.resetRebuild(DefaultLayout);
+    f.rebuild(DefaultLayout);
 
-        REQUIRE(f.selection()->isSelected(f.index(A2Rows)));
-        REQUIRE(f.view()->currentIndex() == f.index(A2Rows));
-    }
-
-    SECTION("unless the user selected something else meanwhile")
-    {
-        f.rebuild({});
-
-        f.selection()->setCurrentIndex(f.index(TopRows), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-
-        f.rebuild(DefaultLayout);
-
-        REQUIRE(!f.selection()->isSelected(f.index(A2Rows)));
-        REQUIRE(f.selection()->isSelected(f.index(TopRows)));
-        REQUIRE(f.view()->currentIndex() == f.index(TopRows));
-    }
-
-    SECTION("unless the database was closed meanwhile")
-    {
-        f.view()->expand(f.index(TopRows));
-        f.view()->expand(f.index(ARows));
-
-        f.rebuild({});
-        f.model.state().clear();
-        f.rebuild(DefaultLayout);
-
-        REQUIRE(!f.selection()->isSelected(f.index(A2Rows)));
-        REQUIRE(!f.view()->isExpanded(f.index(ARows)));
-    }
-}
-
-TEST_CASE("LayerPanelWidget remembers only the enabled view state components", "[view][layerpanel]")
-{
-    Fixture f;
-
-    f.view()->expand(f.index(TopRows));
-    f.view()->expand(f.index(ARows));
-    f.selection()->setCurrentIndex(f.index(A2Rows), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-
-    SECTION("without PersistExpansion")
-    {
-        f.model.state().setPersistFlags(LayerTreeState::PersistAll & ~LayerTreeState::PersistExpansion);
-
-        f.rebuild(DefaultLayout);
-
-        REQUIRE(!f.view()->isExpanded(f.index(ARows)));
-        REQUIRE(f.selection()->isSelected(f.index(A2Rows)));
-    }
-
-    SECTION("without PersistSelection")
-    {
-        f.model.state().setPersistFlags(LayerTreeState::PersistAll & ~LayerTreeState::PersistSelection);
-
-        f.rebuild(DefaultLayout);
-
-        REQUIRE(f.view()->isExpanded(f.index(ARows)));
-        REQUIRE(!f.selection()->isSelected(f.index(A2Rows)));
-        REQUIRE(f.view()->currentIndex() != f.index(A2Rows));
-    }
+    REQUIRE(!f.selection()->isSelected(f.index(A2Rows))); // replaced => forgotten
 }
 
 TEST_CASE("LayerPanelWidget keeps user expansion when the default policy changes", "[view][layerpanel]")
 {
     Fixture f;
 
-    f.view()->expand(f.index(TopRows));
-    f.view()->expand(f.index(ARows));
-
-    f.panel->setDefaultExpansion([] (const LayerTreeItem&, int) { return false; });
+    f.panel->setDefaultExpansion([] (const LayerTreeItem&, int depth) { return depth == 0; });
 
     REQUIRE(f.view()->isExpanded(f.index(TopRows)));
-    REQUIRE(f.view()->isExpanded(f.index(ARows)));
+
+    f.view()->expand(f.index(ARows)); // against the default
+
+    f.panel->setDefaultExpansion([] (const LayerTreeItem&, int depth) { return depth == 1; });
+
+    REQUIRE(!f.view()->isExpanded(f.index(TopRows))); // followed the default
+    REQUIRE(f.view()->isExpanded(f.index(ARows)));    // user deviation
+    REQUIRE(f.view()->isExpanded(f.index(B1Rows)));   // followed the default
 }
 
 namespace
@@ -290,23 +199,23 @@ namespace
             rebuild();
         }
 
+        /// replaces the subtree below the DBContent root
         void rebuild()
         {
-            auto* root = panel.model()->dbContentRootItem();
+            auto* model = panel.model();
+            auto* root  = model->dbContentRootItem();
 
-            panel.model()->refreshSubtree(root, [] ()
-            {
-                auto line = std::make_unique<LayerTreeItem>("L1");
-                auto ds   = std::make_unique<LayerTreeItem>("S1");
-                auto type = std::make_unique<LayerTreeItem>("T1");
+            if (root->childCount() > 0)
+                model->removeChildItems(root, 0, root->childCount() - 1);
 
-                ds->appendChild(std::move(line));
-                type->appendChild(std::move(ds));
+            auto line = std::make_unique<LayerTreeItem>("L1");
+            auto ds   = std::make_unique<LayerTreeItem>("S1");
+            auto type = std::make_unique<LayerTreeItem>("T1");
 
-                std::vector<std::unique_ptr<LayerTreeItem>> children;
-                children.push_back(std::move(type));
-                return children;
-            }, false);
+            ds->appendChild(std::move(line));
+            type->appendChild(std::move(ds));
+
+            model->appendChildItem(root, std::move(type));
         }
 
         bool expanded(const std::vector<int>& rows) const
@@ -345,15 +254,19 @@ TEST_CASE("ViewLayerPanelWidget expands the DBContent subtree to the color mode 
     REQUIRE(f.expanded(T1Rows));
     REQUIRE(!f.expanded(S1Rows));
 
-    SECTION("user changes survive rebuilds")
+    SECTION("replaced rows get the default")
     {
         f.setExpanded(T1Rows, false);
-        f.setExpanded(S1Rows, true);
 
         f.rebuild();
 
-        REQUIRE(!f.expanded(T1Rows));
-        REQUIRE(f.expanded(S1Rows));
+        REQUIRE(f.expanded(T1Rows));
+    }
+
+    SECTION("user changes")
+    {
+        f.setExpanded(T1Rows, false);
+        f.setExpanded(S1Rows, true);
 
         SECTION("the same depth again keeps them")
         {
@@ -401,10 +314,63 @@ TEST_CASE("LayerPanelWidget hands its view state over to the next panel", "[view
 
     f.view()->expand(f.index(TopRows));
     f.view()->expand(f.index(B1Rows));
+    f.selection()->setCurrentIndex(f.index(A2Rows), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 
-    f.panel.reset(new LayerPanelWidget(nullptr, nullptr, &f.model, true)); // e.g. config widget rebuild
+    auto checkTakenOver = [ & ] ()
+    {
+        REQUIRE(f.view()->isExpanded(f.index(TopRows)));
+        REQUIRE(f.view()->isExpanded(f.index(B1Rows)));
+        REQUIRE(!f.view()->isExpanded(f.index(ARows)));
+        REQUIRE(f.selection()->isSelected(f.index(A2Rows)));
+        REQUIRE(f.view()->currentIndex() == f.index(A2Rows));
+    };
 
-    REQUIRE(f.view()->isExpanded(f.index(TopRows)));
-    REQUIRE(f.view()->isExpanded(f.index(B1Rows)));
-    REQUIRE(!f.view()->isExpanded(f.index(ARows)));
+    SECTION("created after the predecessor is gone")
+    {
+        f.panel.reset();
+        f.panel.reset(new LayerPanelWidget(nullptr, nullptr, &f.model, true));
+
+        checkTakenOver();
+    }
+
+    SECTION("created before the predecessor is gone (e.g. config widget rebuild)")
+    {
+        f.panel.reset(new LayerPanelWidget(nullptr, nullptr, &f.model, true));
+
+        checkTakenOver();
+        REQUIRE(!f.top->viewHandover()); // taken over => cleared
+    }
+
+    SECTION("the handover is cleared after the construction")
+    {
+        f.panel.reset();
+        f.panel.reset(new LayerPanelWidget(nullptr, nullptr, &f.model, true));
+
+        REQUIRE(f.top->viewHandover());
+
+        QCoreApplication::sendPostedEvents();
+        QCoreApplication::processEvents();
+
+        REQUIRE(!f.top->viewHandover());
+    }
+}
+
+TEST_CASE("ViewLayerPanelWidget keeps the handed over expansion against its policy", "[view][layerpanel]")
+{
+    ViewLayerTreeModel model({}, true);
+
+    // the annotations root expands by default
+    model.appendChildItem(model.annotationsRootItem(), std::make_unique<LayerTreeItem>("a1"));
+
+    const QModelIndex anno_index = model.index(model.annotationsRootItem()->row(), 0);
+
+    auto panel = std::make_unique<ViewLayerPanelWidget>(std::vector<LayerColumnSpec>(), true, nullptr, nullptr, &model);
+    REQUIRE(panel->treeView()->isExpanded(anno_index));
+
+    panel->treeView()->collapse(anno_index);
+
+    panel.reset();
+    panel = std::make_unique<ViewLayerPanelWidget>(std::vector<LayerColumnSpec>(), true, nullptr, nullptr, &model);
+
+    REQUIRE(!panel->treeView()->isExpanded(anno_index));
 }

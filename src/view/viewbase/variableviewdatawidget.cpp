@@ -18,6 +18,9 @@
 #include "variableviewdatawidget.h"
 #include "variableview.h"
 #include "viewvariable.h"
+#include "viewlayertreemodel.h"
+#include "viewabledataconfig.h"
+#include "annotationsrootitem.h"
 
 #include "property_templates.h"
 
@@ -36,6 +39,9 @@ VariableViewDataWidget::VariableViewDataWidget(ViewWidget* view_widget,
 
     //init states
     resetVariableStates();
+
+    // the layer panel may be attached later, see layerPanelAttached()
+    connect(variable_view_, &VariableView::annotationsChangedSignal, this, [ this ] () { updateAnnotationsTree(); });
 }
 
 /**
@@ -43,6 +49,38 @@ VariableViewDataWidget::VariableViewDataWidget(ViewWidget* view_widget,
 VariableViewDataWidget::~VariableViewDataWidget()
 {
     logdbg;
+}
+
+/**
+ * The view may have collected annotations before (e.g. a view point load).
+ */
+void VariableViewDataWidget::layerPanelAttached()
+{
+    updateAnnotationsTree();
+}
+
+/**
+*/
+void VariableViewDataWidget::reportAnnotationError(const std::string& msg)
+{
+    if (!variable_view_->hasViewPoint())
+        return;
+
+    variable_view_->viewPoint().reportError(variable_view_->getName(), "annotation error: " + msg);
+}
+
+/**
+*/
+void VariableViewDataWidget::updateAnnotationsTree()
+{
+    auto* layer_model = layerPanelModel();
+    if (!layer_model || !layer_model->annotationsRootItem())
+        return;
+
+    layer_model->annotationsRootItem()->updateFrom(variable_view_->annotations(),
+                                                   variable_view_->currentAnnotationGroupIdx(),
+                                                   variable_view_->currentAnnotationIdx(),
+                                                   variable_view_);
 }
 
 /**

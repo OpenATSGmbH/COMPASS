@@ -481,3 +481,43 @@ TEST_CASE("FFT matching with both secondary values set", "[context][fft]")
         REQUIRE(result.first);
     }
 }
+
+TEST_CASE("FFT runtime id", "[context][fft]")
+{
+    FFT fft;
+    fft.name("FFT1");
+
+    FFT other;
+    other.name("FFT1");
+
+    SECTION("every FFT gets its own id")
+    {
+        REQUIRE_FALSE(fft.runtimeId().empty());
+        REQUIRE(fft.runtimeId() != other.runtimeId());
+    }
+
+    SECTION("copies keep the id, e.g. on a vector reallocation")
+    {
+        FFT copy = fft;
+        REQUIRE(copy.runtimeId() == fft.runtimeId());
+
+        std::vector<FFT> ffts;
+        ffts.push_back(fft);
+        const std::string id = ffts.front().runtimeId();
+
+        for (int i = 0; i < 100; ++i)
+            ffts.push_back(other);
+
+        REQUIRE(ffts.front().runtimeId() == id);
+    }
+
+    SECTION("the id is not compared and not serialized")
+    {
+        REQUIRE(fft == other);
+
+        FFT restored = FFT::fromJSON(fft.toJSON());
+        REQUIRE(restored == fft);
+        REQUIRE(restored.runtimeId() != fft.runtimeId());
+        REQUIRE(fft.toJSON().dump().find(fft.runtimeId()) == std::string::npos);
+    }
+}

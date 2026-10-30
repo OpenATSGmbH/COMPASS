@@ -18,11 +18,13 @@
 #pragma once
 
 #include "viewcomponent.h"
+#include "viewlayerscan.h"
 #include "appmode.h"
 #include "json_fwd.hpp"
 
 #include <map>
 #include <memory>
+#include <set>
 #include <vector>
 #include <string>
 
@@ -34,9 +36,11 @@ class ViewWidget;
 class ViewToolSwitcher;
 class Buffer;
 class ViewLayerTreeModel;
+class ViewLayerSnapshot;
 class DBContentItemProvider;
 class DBContentDataSet;
 class ViewAsyncProcessor;
+class QLayout;
 
 namespace dbContent
 {
@@ -74,13 +78,18 @@ public:
     DrawState redrawData(bool recompute, bool notify = false);
     void liveReload();
 
+    /// a reload follows: the layer tree keeps its data rows (stale, detached from their payloads)
+    /// until the reloaded data updates them, instead of being emptied by the clear
+    void beginDataReload();
+
     // Optional item provider, registered by a derived widget which OWNS it (the
     // provider's lifetime is tied to the derived widget's, whose teardown may be
     // order-sensitive). The base only borrows it: it drives the provider's input
     // from the current source (updateFromSource) and resets it on clearData().
     // The derived widget must setItemProvider(nullptr) before destroying it.
     // Views without a provider are unaffected.
-    void setItemProvider(DBContentItemProvider* provider) { item_provider_ = provider; }
+    // Every provider reset starts a reload of the layer tree's data rows (beginDataReload()).
+    void setItemProvider(DBContentItemProvider* provider);
     bool hasItemProvider() const { return item_provider_ != nullptr; }
     DBContentItemProvider* itemProvider() { return item_provider_; }
 
@@ -101,7 +110,12 @@ public:
 
     /// The view's layer panel tree model, if any. Lets the base class manage
     /// per-database-session layer state (e.g. forget hidden layers on close).
-    virtual ViewLayerTreeModel* layerTreeModel() { return nullptr; }
+    /// Default: the attached one (see attachLayerPanel()).
+    virtual ViewLayerTreeModel* layerTreeModel() { return layer_model_; }
+
+    /// The layer panel model of the view (owned by the config widget's panel): its data rows follow the
+    /// view's layer snapshots (updateLayerTree()), visibility and color mode changes reach the hooks.
+    void attachLayerPanel(ViewLayerTreeModel* layer_model);
 
     virtual void isExporting(bool ok) { is_exporting_ = ok; }
     bool isExporting() const { return is_exporting_; }
@@ -141,6 +155,11 @@ public:
     static const std::string Color_CAT062;
 
     static const QColor      ColorSelected;
+
+public slots:
+    /// inverts / clears the selection flags of the view's data, notifies the view
+    virtual void invertSelectionSlot();
+    virtual void clearSelectionSlot();
 
 signals:
     void displayChanged();
@@ -209,16 +228,75 @@ protected:
 
     ViewWidget* getWidget() { return view_widget_; }
 
+    /// Takes the widget out of the layout (if given) and destroys it via deleteLater, not in place:
+    /// charts own a QGraphicsScene with their axes, and this can run from an asynchronous commit
+    /// while Qt still has pending events for it (destroying in place crashed inside QtCharts:
+    /// QGraphicsScene::clear -> ~QChart -> deleteAllAxes). Hidden right away.
+    static void releaseWidgetLater(QWidget* widget, QLayout* layout);
+
+    // ---- layer panel (views with layer snapshots, see attachLayerPanel()) ----------
+
+    typedef std::vector<std::unique_ptr<ViewLayerSnapshot>> LayerSnapshots;
+    typedef std::map<std::string, view_layer_scan::LayerAgg> LayerAggregates;
+
+    /// rebuilds the snapshots and calls updateLayerTree(), on attach and by default on color mode changes
+    virtual void rebuildLayerTree() { refreshLayerTree(); }
+    /// the checked state of layer tree items changed (not for the changes of the tree update itself)
+    virtual void layerVisibilityChanged() {}
+    /// the global color mode changed, default: rebuildLayerTree()
+    virtual void colorModeChanged() { rebuildLayerTree(); }
+    /// the layer panel got attached (after the first rebuild)
+    virtual void layerPanelAttached() {}
+
+    bool hasLayerPanel() const { return layer_model_ != nullptr; }
+    ViewLayerTreeModel* layerPanelModel() const { return layer_model_; }
+
+    /// the snapshots become current, the layer tree's data rows are updated in place (if attached),
+    /// the previous snapshots are released afterwards; content_final, see ViewLayerTreeModel::updateDataSubtree()
+    /// Notice: main thread only
+    void updateLayerTree(LayerSnapshots layers, bool content_final = false);
+    /// updates the data rows from the current snapshots again
+    void refreshLayerTree();
+    const LayerSnapshots& layerSnapshots() const { return layer_snapshots_; }
+
+    /// layer aggregation of the loaded data (row scan, main thread), cached until invalidated
+    const LayerAggregates& layerAggregates();
+    /// aggregation computed elsewhere (e.g. on a worker), cached
+    void setLayerAggregates(LayerAggregates aggregates);
+    void invalidateLayerAggregates() { layer_agg_valid_ = false; }
+
+    /// snapshots of aggregated layers, colors resolved for the current color mode
+    LayerSnapshots snapshotsFromAggregates(const LayerAggregates& aggregates) const;
+
+    /// main thread: snapshot of the layer panel's hidden ids (state().hiddenIds()) for processing
+    /// which may run on a worker - workers read hiddenLayerIds(), never the model
+    void snapshotHiddenLayerIds();
+    const std::set<std::string>& hiddenLayerIds() const { return hidden_layer_ids_; }
+    /// main thread: the panel's current hidden ids differ from the snapshot
+    bool hiddenLayerIdsChanged() const;
+
 private:
     friend class ViewLoadStateWidget;
 
     void toolChanged(int mode, const QCursor& cursor);
     void setLayerDataComplete(bool complete);
+    /// stale data rows left after the data was loaded (the view updated nothing) are removed
+    void endDataReload();
 
     ViewWidget*       view_widget_   = nullptr;
     ViewToolSwitcher* tool_switcher_ = nullptr;
 
-    DBContentItemProvider* item_provider_ = nullptr; // optional, NOT owned (see setItemProvider)
+    DBContentItemProvider*  item_provider_ = nullptr;   // optional, NOT owned (see setItemProvider)
+    QMetaObject::Connection provider_reset_connection_; // reset => reload of the layer tree's data rows
+
+    ViewLayerTreeModel* layer_model_         = nullptr; // attached layer panel model, NOT owned
+    std::vector<QMetaObject::Connection> layer_connections_; // of the attached layer panel
+    LayerSnapshots      layer_snapshots_;               // the data rows' payloads
+    bool                updating_layer_tree_ = false;   // hidden signals of the own tree update => no hook
+    LayerAggregates     layer_agg_cache_;               // see layerAggregates()
+    bool                layer_agg_valid_     = false;
+
+    std::set<std::string> hidden_layer_ids_; // see snapshotHiddenLayerIds()
 
     BufferData data_;
     DrawState  draw_state_ = DrawState::NotDrawn;

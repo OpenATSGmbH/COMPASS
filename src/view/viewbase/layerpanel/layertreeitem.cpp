@@ -18,9 +18,13 @@
 #include "layertreeitem.h"
 #include "layertreemodel.h"
 
+#include "logger.h"
 #include "traced_assert.h"
 
 #include "json.hpp"
+
+#include <map>
+#include <set>
 
 #include <QAction>
 #include <QBrush>
@@ -79,18 +83,43 @@ int LayerTreeItem::row() const
 
 LayerTreeItem* LayerTreeItem::appendChild(std::unique_ptr<LayerTreeItem> child)
 {
+    return insertChild(childCount(), std::move(child));
+}
+
+/**
+*/
+LayerTreeItem* LayerTreeItem::insertChild(int row, std::unique_ptr<LayerTreeItem> child)
+{
+    traced_assert(child);
+    traced_assert(row >= 0 && row <= childCount());
+
     const bool attach = model_ && !child->model_;
 
     child->parent_item_ = this;
     child->setModel(model_);
     LayerTreeItem* raw = child.get();
-    children_.push_back(std::move(child));
+    children_.insert(children_.begin() + row, std::move(child));
 
-    // newly attached => the model restores the remembered state
+    // newly attached => the model applies the config
     if (attach)
         model_->subtreeAttached(raw);
 
     return raw;
+}
+
+/**
+*/
+void LayerTreeItem::moveChild(int from, int to)
+{
+    traced_assert(from >= 0 && from < childCount());
+    traced_assert(to >= 0 && to < childCount());
+
+    if (from == to)
+        return;
+
+    auto child = std::move(children_[ from ]);
+    children_.erase(children_.begin() + from);
+    children_.insert(children_.begin() + to, std::move(child));
 }
 
 void LayerTreeItem::clearChildren()
@@ -105,13 +134,13 @@ void LayerTreeItem::removeChildAt(int row)
     children_.erase(children_.begin() + row);
 }
 
-std::vector<std::unique_ptr<LayerTreeItem>> LayerTreeItem::moveChildrenOut()
+/**
+*/
+void LayerTreeItem::removeChildrenAt(int first, int last)
 {
-    auto out = std::move(children_);
-    children_.clear();
-    for (auto& c : out)
-        c->parent_item_ = nullptr;
-    return out;
+    traced_assert(first >= 0 && first <= last && last < childCount());
+
+    children_.erase(children_.begin() + first, children_.begin() + last + 1);
 }
 
 LayerTreeItem* LayerTreeItem::appendChildNotified(std::unique_ptr<LayerTreeItem> child)
@@ -130,24 +159,226 @@ void LayerTreeItem::removeChildNotified(int row)
         removeChildAt(row);
 }
 
-void LayerTreeItem::replaceChildren(const BuildFunc& build, bool complete)
-{
-    if (model_)
-    {
-        model_->refreshSubtree(this, build, complete);
-        return;
-    }
-
-    clearChildren();
-
-    for (auto& child : build())
-        appendChild(std::move(child));
-}
-
 void LayerTreeItem::notifyChanged()
 {
     if (model_)
         model_->itemChanged(this);
+}
+
+/**
+*/
+void LayerTreeItem::insertChildrenNotified(int row, std::vector<std::unique_ptr<LayerTreeItem>> children)
+{
+    if (model_)
+    {
+        model_->insertChildItems(this, row, std::move(children));
+        return;
+    }
+
+    for (auto& child : children)
+        insertChild(row++, std::move(child));
+}
+
+/**
+*/
+void LayerTreeItem::moveChildNotified(int from, int to)
+{
+    if (model_)
+        model_->moveChildItem(this, from, to);
+    else
+        moveChild(from, to);
+}
+
+/**
+*/
+void LayerTreeItem::removeChildrenNotified(int first, int last)
+{
+    if (model_)
+        model_->removeChildItems(this, first, last);
+    else
+        removeChildrenAt(first, last);
+}
+
+/**
+*/
+void LayerTreeItem::update()
+{
+    if (model_)
+        model_->updateSubtree(this);
+    else
+        updateChildren();
+}
+
+/**
+*/
+std::string LayerTreeItem::updateKey() const
+{
+    const std::string id = stateKeyId();
+
+    return id.empty() ? name_ : id;
+}
+
+/**
+ * Reconciles the own children (dynamic items only), recurses into the kept ones (new ones were
+ * updated before their insert), then onSubtreeUpdated().
+ * Notice: kept rows get one dataChanged if they or their subtrees changed (aggregates).
+ */
+bool LayerTreeItem::updateChildren()
+{
+    bool changed      = false;
+    bool kept_changed = false;
+
+    std::vector<LayerTreeItem*> kept;
+
+    const auto keys = childKeys();
+    if (keys)
+    {
+        changed = reconcileChildren(*keys, kept, kept_changed);
+    }
+    else
+    {
+        kept.reserve(children_.size());
+        for (auto& child : children_)
+            kept.push_back(child.get());
+    }
+
+    for (auto* child : kept)
+        if (child->updateChildren())
+            kept_changed = true;
+
+    if (kept_changed && model_)
+        model_->childItemsChanged(this);
+
+    onSubtreeUpdated();
+
+    return changed || kept_changed;
+}
+
+/**
+ * First removes the children whose key vanished (in contiguous ranges), then walks the keys by
+ * position: keeps a matching child (a later one is moved up), else creates and fills a new one
+ * (consecutive new ones are inserted together).
+ */
+bool LayerTreeItem::reconcileChildren(const std::vector<std::string>& keys,
+                                      std::vector<LayerTreeItem*>& kept,
+                                      bool& kept_changed)
+{
+    bool changed = false;
+
+    const std::set<std::string> wanted(keys.begin(), keys.end());
+
+    // vanished children and duplicates (the first one stays)
+    {
+        std::set<std::string> present;
+        std::vector<bool>     drop(children_.size(), false);
+
+        for (size_t i = 0; i < children_.size(); ++i)
+        {
+            const std::string key = children_[ i ]->updateKey();
+
+            // only children added by other means can repeat a key
+            const bool duplicate = !present.insert(key).second;
+            if (duplicate)
+                logwrn << "duplicate child '" << key << "' below '" << name_ << "', removed";
+
+            drop[ i ] = duplicate || !wanted.count(key);
+        }
+
+        for (int last = childCount() - 1; last >= 0; --last)
+        {
+            if (!drop[ last ])
+                continue;
+
+            int first = last;
+            while (first > 0 && drop[ first - 1 ])
+                --first;
+
+            removeChildrenNotified(first, last);
+            changed = true;
+
+            last = first;
+        }
+    }
+
+    std::map<std::string, LayerTreeItem*> existing;
+    for (auto& child : children_)
+        existing.emplace(child->updateKey(), child.get());
+
+    kept.reserve(keys.size());
+
+    int row = 0;
+
+    std::set<std::string>                       seen;
+    std::vector<std::unique_ptr<LayerTreeItem>> pending;
+
+    auto insertPending = [ & ] ()
+    {
+        if (pending.empty())
+            return;
+
+        const int n = (int)pending.size();
+
+        insertChildrenNotified(row, std::move(pending));
+        pending.clear();
+
+        row    += n;
+        changed = true;
+    };
+
+    for (const auto& key : keys)
+    {
+        if (!seen.insert(key).second)
+        {
+            logwrn << "duplicate child key '" << key << "' below '" << name_ << "', skipped";
+            continue;
+        }
+
+        auto it = existing.find(key);
+        if (it == existing.end())
+        {
+            auto child = createChild(key);
+            if (!child)
+            {
+                logwrn << "no child created for key '" << key << "' below '" << name_ << "'";
+                continue;
+            }
+
+            traced_assert(child->updateKey() == key);
+            traced_assert(!child->model());
+
+            // detached => its subtree is complete when inserted (one insert, one config pass)
+            child->update();
+
+            pending.push_back(std::move(child));
+            continue;
+        }
+
+        insertPending();
+
+        LayerTreeItem* child = it->second;
+        const int      from  = indexOf(child);
+
+        traced_assert(from >= row);
+
+        if (from != row)
+        {
+            moveChildNotified(from, row);
+            changed = true;
+        }
+
+        if (updateChild(*child))
+            kept_changed = true;
+
+        kept.push_back(child);
+        ++row;
+    }
+
+    insertPending();
+
+    // all remaining children are wanted => matched
+    traced_assert(row == childCount());
+
+    return changed;
 }
 
 void LayerTreeItem::rename(const std::string& name)
@@ -160,7 +391,7 @@ void LayerTreeItem::rename(const std::string& name)
         return;
 
     // id-keyed items keep their key => nothing moves
-    model_->state().renameItemStates(old_key, stateKey());
+    model_->state().renameItemConfigs(old_key, stateKey());
 
     notifyChanged();
 }
@@ -179,17 +410,19 @@ void LayerTreeItem::connectItemAction(QAction* action, const std::function<void(
         if (!model)
             return;
 
-        if (LayerTreeItem* item = model->findItem(key))
-            func(*item);
+        LayerTreeItem* item = model->findItem(key);
+        if (!item)
+        {
+            logwrn << "layer tree item '" << key << "' not available (any more)";
+            return;
+        }
+
+        func(*item);
     });
 }
 
 void LayerTreeItem::setModel(LayerTreeModel* model)
 {
-    // first attach => the constructed state is the default
-    if (model && !model_)
-        default_hidden_ = hidden_;
-
     model_ = model;
     for (auto& c : children_)
         c->setModel(model);
@@ -305,11 +538,9 @@ void LayerTreeItem::showSubtree(bool emit_signal)
 
 void LayerTreeItem::storeHiddenState()
 {
-    // not attached => constructed state, nothing to remember
+    // not attached => constructed state, nothing to persist
     if (!model_)
         return;
-
-    model_->storeHiddenState(*this);
 
     if (persistHiddenStateToConfig())
         config()[ "hidden" ] = hidden_;

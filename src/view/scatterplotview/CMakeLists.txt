@@ -12,7 +12,6 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewdatawidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/scatterseries.h"
-        "${CMAKE_CURRENT_LIST_DIR}/scatterleafpayload.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotview.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewdatasource.cpp"

@@ -22,7 +22,6 @@
 class ScatterPlotViewWidget;
 class ScatterPlotView;
 
-class DBContentRootItem;
 class ViewLayerPanelWidget;
 
 class QCheckBox;
@@ -54,7 +53,6 @@ protected:
     ScatterPlotView* view_ = nullptr;
 
     ViewLayerPanelWidget* layer_panel_      {nullptr};
-    DBContentRootItem*    db_content_root_  {nullptr};
 
     QCheckBox* use_connection_lines_ {nullptr};
 };

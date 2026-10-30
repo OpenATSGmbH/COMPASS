@@ -203,9 +203,16 @@ bool RTCommandDeleteAllDataSources::run_impl()
         return false;
     }
 
+    // the open database's data references its data sources
+    if (compass_->dbOpened() && compass_->dbContextManager().hasInsertedData())
+    {
+        setResultMessage("Cannot delete data sources while a database with imported data is open");
+        return false;
+    }
+
     // clear all data sources from active context
     if (compass_->dbContextManager().hasActiveContext())
-        compass_->dbContextManager().activeContext().dataSources().clear();
+        compass_->dbContextManager().deleteAllDataSources();
 
     return true;
 }

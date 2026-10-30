@@ -21,6 +21,8 @@
 #include "viewlayertreemodel.h"
 #include "dbcontentlayer.h"
 
+#include "json.hpp"
+
 #include <memory>
 #include <optional>
 #include <string>
@@ -76,6 +78,18 @@ namespace
     }
 
     /**
+     * Removes all children of an attached parent and appends fresh ones.
+     */
+    void rebuildChildren(LayerTreeModel& model, LayerTreeItem* parent, const std::vector<Spec>& specs)
+    {
+        if (parent->childCount() > 0)
+            model.removeChildItems(parent, 0, parent->childCount() - 1);
+
+        for (auto& item : buildItems(specs))
+            model.appendChildItem(parent, std::move(item));
+    }
+
+    /**
      * Top-level item "Data" whose children are rebuilt per load.
      */
     struct Fixture
@@ -88,7 +102,7 @@ namespace
 
         void rebuild(const std::vector<Spec>& specs)
         {
-            model.refreshSubtree(data, [ & ] () { return buildItems(specs); }, false);
+            rebuildChildren(model, data, specs);
         }
 
         void resetRebuild(const std::vector<Spec>& specs)
@@ -107,141 +121,7 @@ namespace
         LayerTreeModel model;
         LayerTreeItem* data = nullptr;
     };
-}
 
-TEST_CASE("LayerTreeModel restores the checked state of recurring items", "[view][layerpanel]")
-{
-    Fixture f;
-
-    f.item(0)->setHidden(true);
-    f.item(1)->setHidden(false); // hidden by default
-
-    SECTION("after a subtree rebuild")
-    {
-        f.rebuild(DefaultSpecs);
-
-        REQUIRE(f.item(0)->hidden());
-        REQUIRE(!f.item(1)->hidden());
-    }
-
-    SECTION("after a model reset")
-    {
-        f.resetRebuild(DefaultSpecs);
-
-        REQUIRE(f.item(0)->hidden());
-        REQUIRE(!f.item(1)->hidden());
-    }
-
-    SECTION("after the item vanished for a while")
-    {
-        f.rebuild({ { "d2", true } });
-        f.rebuild(DefaultSpecs);
-
-        REQUIRE(f.item(0)->hidden());
-    }
-
-    SECTION("with a single hidden signal per rebuild")
-    {
-        QSignalSpy spy(&f.model, &LayerTreeModel::hiddenChangedSignal);
-
-        f.rebuild(DefaultSpecs);
-
-        REQUIRE(spy.count() == 1);
-    }
-}
-
-TEST_CASE("LayerTreeModel stores only checked states deviating from the default", "[view][layerpanel]")
-{
-    Fixture f;
-
-    REQUIRE(!f.item(0)->defaultHidden());
-    REQUIRE(f.item(1)->defaultHidden());
-
-    f.item(0)->setHidden(true);
-    REQUIRE(f.model.state().itemState("Data/d1"));
-
-    f.item(0)->setHidden(false);
-    REQUIRE(!f.model.state().itemState("Data/d1"));
-
-    f.data->showSubtree(); // bulk action: d1 stays default, d2 deviates
-
-    REQUIRE(!f.model.state().itemState("Data/d1"));
-    REQUIRE(f.model.state().itemState("Data/d2"));
-    REQUIRE(!*f.model.state().itemState("Data/d2")->hidden);
-}
-
-TEST_CASE("LayerTreeModel does not remember checked states without PersistHidden", "[view][layerpanel]")
-{
-    Fixture f;
-
-    REQUIRE(f.model.state().persistFlags() == LayerTreeState::PersistAll);
-
-    f.item(0)->setHidden(true);
-
-    f.model.state().setPersistFlags(LayerTreeState::PersistAll & ~LayerTreeState::PersistHidden);
-
-    REQUIRE(!f.model.state().itemState("Data/d1")); // dropped on disable
-
-    f.item(1)->setHidden(false);
-    REQUIRE(!f.model.state().itemState("Data/d2"));
-
-    f.rebuild(DefaultSpecs);
-
-    REQUIRE(!f.item(0)->hidden());
-    REQUIRE(f.item(1)->hidden());
-}
-
-TEST_CASE("LayerTreeModel prunes the states of missing items", "[view][layerpanel]")
-{
-    Fixture f;
-
-    f.item(0)->setHidden(true);
-    f.item(1)->setHidden(false);
-
-    f.rebuild({ { "d2", true } }); // d1 missing
-    f.model.pruneItemStates();
-
-    REQUIRE(!f.model.state().itemState("Data/d1"));
-    REQUIRE(f.model.state().itemState("Data/d2"));
-
-    f.rebuild(DefaultSpecs);
-
-    REQUIRE(!f.item(0)->hidden()); // back with its default
-    REQUIRE(!f.item(1)->hidden()); // kept
-}
-
-namespace
-{
-    /**
-     * Model which never prunes.
-     */
-    class KeepingModel : public LayerTreeModel
-    {
-    protected:
-        bool doPruneItem(const std::string&, const LayerTreeState::ItemState&, const std::set<std::string>&) const override
-        {
-            return false;
-        }
-    };
-}
-
-TEST_CASE("LayerTreeModel prunes by the doPruneItem() criterion", "[view][layerpanel]")
-{
-    KeepingModel model;
-
-    auto* data = model.addRootItem(std::make_unique<LayerTreeItem>("Data"));
-    model.refreshSubtree(data, [] () { return buildItems(DefaultSpecs); }, false);
-
-    data->child(0)->setHidden(true);
-
-    model.refreshSubtree(data, [] () { return buildItems({}); }, false);
-    model.pruneItemStates();
-
-    REQUIRE(model.state().itemState("Data/d1"));
-}
-
-namespace
-{
     /**
      * Item keyed by an id instead of its name.
      */
@@ -255,19 +135,7 @@ namespace
     private:
         std::string id_;
     };
-}
 
-TEST_CASE("LayerTreeItem keys ids below the parent's key", "[view][layerpanel]")
-{
-    Fixture f;
-
-    auto* item = f.data->appendChildNotified(std::make_unique<IdItem>("name", "id:1"));
-
-    REQUIRE(item->stateKey() == "Data/id:1");
-}
-
-namespace
-{
     /**
      * Item identified among its siblings by an id instead of its name.
      */
@@ -301,6 +169,39 @@ namespace
     };
 }
 
+TEST_CASE("LayerTreeModel forgets the checked state of removed items", "[view][layerpanel]")
+{
+    Fixture f;
+
+    f.item(0)->setHidden(true);
+    f.item(1)->setHidden(false); // hidden by default
+
+    SECTION("after a removal and a new insert")
+    {
+        f.rebuild(DefaultSpecs);
+
+        REQUIRE(!f.item(0)->hidden());
+        REQUIRE(f.item(1)->hidden());
+    }
+
+    SECTION("after a model reset")
+    {
+        f.resetRebuild(DefaultSpecs);
+
+        REQUIRE(!f.item(0)->hidden());
+        REQUIRE(f.item(1)->hidden());
+    }
+}
+
+TEST_CASE("LayerTreeItem keys ids below the parent's key", "[view][layerpanel]")
+{
+    Fixture f;
+
+    auto* item = f.data->appendChildNotified(std::make_unique<IdItem>("name", "id:1"));
+
+    REQUIRE(item->stateKey() == "Data/id:1");
+}
+
 TEST_CASE("LayerTreeItem escapes the key separators in names and ids", "[view][layerpanel]")
 {
     LayerTreeModel model;
@@ -331,50 +232,42 @@ TEST_CASE("LayerTreeItem escapes the key separators in names and ids", "[view][l
 
     SECTION("a '/' in a name does not put the item into another subtree")
     {
-        slash->setHidden(true);
-        b->setHidden(true);
-
-        model.refreshSubtree(a, [] () { return std::vector<std::unique_ptr<LayerTreeItem>>(); }, true);
-
-        REQUIRE(!model.state().itemState("a/b"));
-        REQUIRE(model.state().itemState("a\\/b"));
+        REQUIRE(model.findItem("a/b") == b);
+        REQUIRE(model.findItem("a\\/b") == slash);
     }
 }
 
-TEST_CASE("LayerTreeItem keeps the remembered states of a renamed item", "[view][layerpanel]")
+TEST_CASE("LayerTreeItem moves the item configs of a renamed item", "[view][layerpanel]")
 {
     Fixture f;
 
     f.item(0)->appendChildNotified(std::make_unique<LayerTreeItem>("c"));
+    f.item(0)->config()[ "x" ] = 1;
+    f.item(0)->child(0)->config()[ "y" ] = 2;
     f.item(0)->setHidden(true);
-    f.item(0)->child(0)->setHidden(true);
 
     int changes = 0;
     QObject::connect(&f.model, &QAbstractItemModel::dataChanged, [ & ] { ++changes; });
 
     f.item(0)->rename("renamed");
 
+    const auto& root = f.model.state().configRoot();
+
     REQUIRE(f.item(0)->name() == "renamed");
+    REQUIRE(f.item(0)->hidden()); // the item keeps its state
     REQUIRE(changes == 1);
-    REQUIRE(!f.model.state().itemState("Data/d1"));
-    REQUIRE(f.model.state().itemState("Data/renamed"));
-    REQUIRE(f.model.state().itemState("Data/renamed/c"));
-
-    SECTION("a rebuild with the new name restores them")
-    {
-        f.rebuild({ { "renamed" }, { "d2", true } });
-
-        REQUIRE(f.item(0)->hidden());
-    }
+    REQUIRE(!root.contains("Data/d1"));
+    REQUIRE(root.contains("Data/renamed"));
+    REQUIRE(root.contains("Data/renamed/c"));
 
     SECTION("id-keyed items keep their key")
     {
         auto* id_item = f.data->appendChildNotified(std::make_unique<KeyIdItem>("name", "id"));
-        id_item->setHidden(true);
+        id_item->config()[ "x" ] = 1;
 
         id_item->rename("other");
 
-        REQUIRE(f.model.state().itemState("Data/id"));
+        REQUIRE(root.contains("Data/id"));
     }
 }
 
@@ -395,16 +288,16 @@ TEST_CASE("LayerTreeItem resolves menu actions by key when triggered", "[view][l
 {
     auto model = std::make_unique<LayerTreeModel>();
     auto* data = model->addRootItem(std::make_unique<LayerTreeItem>("Data"));
-    model->refreshSubtree(data, [] () { return buildItems(DefaultSpecs); }, false);
+    rebuildChildren(*model, data, DefaultSpecs);
 
     std::vector<std::string> triggered;
 
     QAction action(nullptr);
     data->child(0)->connectItemAction(&action, [ & ] (LayerTreeItem& item) { triggered.push_back(item.stateKey()); });
 
-    SECTION("a rebuilt item => its successor")
+    SECTION("a replaced item => its successor")
     {
-        model->refreshSubtree(data, [] () { return buildItems(DefaultSpecs); }, false);
+        rebuildChildren(*model, data, DefaultSpecs);
         action.trigger();
 
         REQUIRE(triggered == std::vector<std::string>{ "Data/d1" });
@@ -437,7 +330,7 @@ TEST_CASE("DBContentRootItem groups data sources by id if given", "[view][layerp
 
     auto rebuild = [ & ] (const std::vector<DBContentRootItem::LeafEntry>& entries)
     {
-        model.refreshDataSubtree([ & ] () { return root->buildChildrenFrom(entries); });
+        model.updateDataSubtree(entries);
     };
 
     SECTION("same-named data sources with ids stay apart")
@@ -461,82 +354,35 @@ TEST_CASE("DBContentRootItem groups data sources by id if given", "[view][layerp
     }
 }
 
-TEST_CASE("LayerTreeModel prunes only the states below the given scope", "[view][layerpanel]")
-{
-    Fixture f;
-
-    auto* other    = f.model.addRootItem(std::make_unique<LayerTreeItem>("Other"));
-    auto* database = f.model.addRootItem(std::make_unique<LayerTreeItem>("Database")); // "Data" as name prefix
-    other->appendChildNotified(std::make_unique<LayerTreeItem>("o1"));
-    database->appendChildNotified(std::make_unique<LayerTreeItem>("b1"));
-
-    f.data->setHidden(true); // the scope's own entry
-    f.item(0)->setHidden(true);
-    other->child(0)->setHidden(true);
-    database->child(0)->setHidden(true);
-
-    // rebuilds without pruning => d1, o1, b1 missing
-    auto none = [] () { return std::vector<std::unique_ptr<LayerTreeItem>>(); };
-
-    f.rebuild({ { "d2", true } });
-    f.model.refreshSubtree(other, none, false);
-    f.model.refreshSubtree(database, none, false);
-
-    f.model.pruneItemStates(f.data);
-
-    REQUIRE(!f.model.state().itemState("Data/d1"));
-    REQUIRE(f.model.state().itemState("Data"));
-    REQUIRE(f.model.state().itemState("Other/o1"));
-    REQUIRE(f.model.state().itemState("Database/b1"));
-
-    SECTION("pruned by its own scope")
-    {
-        f.model.pruneItemStates(other);
-
-        REQUIRE(!f.model.state().itemState("Other/o1"));
-        REQUIRE(f.model.state().itemState("Database/b1"));
-    }
-
-    SECTION("pruned by the whole tree")
-    {
-        f.model.pruneItemStates();
-
-        REQUIRE(!f.model.state().itemState("Other/o1"));
-        REQUIRE(!f.model.state().itemState("Database/b1"));
-        REQUIRE(f.model.state().itemState("Data"));
-    }
-}
-
-TEST_CASE("ViewLayerTreeModel prunes data states only while the data is complete", "[view][layerpanel]")
+TEST_CASE("ViewLayerTreeModel keeps the checked state of kept data rows only", "[view][layerpanel]")
 {
     ViewLayerTreeModel model({}, false);
 
-    auto rebuild = [ & ] (const std::vector<Spec>& specs)
-    {
-        model.refreshDataSubtree([ & ] () { return buildItems(specs); });
-    };
+    TestPayload p1("p1"), p2("p2");
+
+    const std::vector<DBContentRootItem::LeafEntry> both  = { { "Radar", "DS", "L1", "CAT048", &p1 },
+                                                              { "Radar", "DS", "L1", "CAT021", &p2 } };
+    const std::vector<DBContentRootItem::LeafEntry> only2 = { { "Radar", "DS", "L1", "CAT021", &p2 } };
+
+    auto firstLeaf = [ & ] () { return model.dbContentRootItem()->child(0)->child(0)->child(0)->child(0); };
 
     model.setDataComplete(true);
-    rebuild(DefaultSpecs);
+    model.updateDataSubtree(both);
 
-    const std::string key = model.dbContentRootItem()->child(0)->stateKey();
-    model.dbContentRootItem()->child(0)->setHidden(true);
+    firstLeaf()->setHidden(true);
 
-    // reload: cleared => emptied, then rebuilt from the final data
+    // kept
+    model.updateDataSubtree(both);
+    REQUIRE(firstLeaf()->hidden());
+
+    // vanished, also from incomplete data => forgotten
     model.setDataComplete(false);
-    rebuild({});
+    model.updateDataSubtree(only2);
+    REQUIRE(firstLeaf()->name() == "CAT021");
 
-    REQUIRE(model.state().itemState(key));
-
-    model.setDataComplete(true);
-    rebuild(DefaultSpecs);
-
-    REQUIRE(model.dbContentRootItem()->child(0)->hidden());
-
-    // live tick / reload without the item
-    rebuild({ { "d2", true } });
-
-    REQUIRE(!model.state().itemState(key));
+    model.updateDataSubtree(both);
+    REQUIRE(firstLeaf()->name() == "CAT048");
+    REQUIRE(!firstLeaf()->hidden());
 }
 
 TEST_CASE("LayerTreeModel signals hidden changes without a layout change", "[view][layerpanel]")
@@ -550,9 +396,9 @@ TEST_CASE("LayerTreeModel signals hidden changes without a layout change", "[vie
 
     f.item(0)->setHidden(true);
     f.data->showSubtree();
-    f.rebuild(DefaultSpecs); // restores d1 unchecked
+    f.rebuild(DefaultSpecs); // new items with their defaults => no hidden change
 
-    REQUIRE(hidden_spy.count() == 3);
+    REQUIRE(hidden_spy.count() == 2);
     REQUIRE(layout_changes == 0);
 }
 
@@ -578,54 +424,22 @@ TEST_CASE("LayerTreeItem notifies structural changes of attached items without a
     f.item(0)->notifyChanged();
     REQUIRE(changes == 1);
 
-    f.data->replaceChildren([] () { return buildItems(DefaultSpecs); });
-    REQUIRE(f.data->childCount() == 2);
-    REQUIRE(removes == 2);
-    REQUIRE(inserts == 2);
-
     REQUIRE(resets == 0);
 }
 
-TEST_CASE("LayerTreeItem drops the states of removed items", "[view][layerpanel]")
+TEST_CASE("LayerTreeItem forgets removed items", "[view][layerpanel]")
 {
     Fixture f;
 
     f.item(0)->appendChildNotified(std::make_unique<LayerTreeItem>("c"));
     f.item(0)->setHidden(true);
     f.item(0)->child(0)->setHidden(true);
-    f.item(1)->setHidden(false);
 
     f.data->removeChildNotified(0);
-
-    REQUIRE(!f.model.state().itemState("Data/d1"));
-    REQUIRE(!f.model.state().itemState("Data/d1/c"));
-    REQUIRE(f.model.state().itemState("Data/d2"));
-
     f.data->appendChildNotified(std::make_unique<TrackingItem>("d1"));
 
     REQUIRE(f.data->child(1)->name() == "d1");
     REQUIRE(!f.data->child(1)->hidden()); // back with its default
-}
-
-TEST_CASE("LayerTreeItem prunes on complete child replacements only", "[view][layerpanel]")
-{
-    Fixture f;
-
-    f.item(0)->setHidden(true);
-
-    SECTION("complete")
-    {
-        f.data->replaceChildren([] () { return buildItems({ { "d2", true } }); });
-
-        REQUIRE(!f.model.state().itemState("Data/d1"));
-    }
-
-    SECTION("incomplete")
-    {
-        f.data->replaceChildren([] () { return buildItems({ { "d2", true } }); }, false);
-
-        REQUIRE(f.model.state().itemState("Data/d1"));
-    }
 }
 
 TEST_CASE("LayerTreeItem changes detached items without notification", "[view][layerpanel]")
@@ -633,12 +447,12 @@ TEST_CASE("LayerTreeItem changes detached items without notification", "[view][l
     LayerTreeItem detached("Detached");
 
     detached.appendChildNotified(std::make_unique<LayerTreeItem>("a"));
-    detached.replaceChildren([] () { return buildItems({ { "b" }, { "c" } }); });
+    detached.appendChildNotified(std::make_unique<LayerTreeItem>("b"));
     detached.removeChildNotified(0);
     detached.notifyChanged();
 
     REQUIRE(detached.childCount() == 1);
-    REQUIRE(detached.child(0)->name() == "c");
+    REQUIRE(detached.child(0)->name() == "b");
 }
 
 TEST_CASE("LayerTreeModel keeps the default of new items", "[view][layerpanel]")
@@ -663,17 +477,25 @@ TEST_CASE("LayerTreeModel pushes the effective state to items under an unchecked
     REQUIRE(*f.item(0)->pushed_hidden);
 }
 
-TEST_CASE("LayerTreeModel forgets the item states on database close", "[view][layerpanel]")
+TEST_CASE("LayerTreeModel keeps the effective-hidden ids current", "[view][layerpanel]")
 {
     Fixture f;
 
-    f.item(0)->setHidden(true);
+    auto* item = f.data->appendChildNotified(std::make_unique<IdItem>("name", "id:1"));
+    REQUIRE(f.model.state().hiddenIds().empty());
+
+    item->setHidden(true);
+    REQUIRE(f.model.state().hiddenIds() == std::set<std::string>{ "id:1" });
+
+    f.data->setHidden(false);
+    item->setHidden(false);
+    f.data->setHidden(true); // via the ancestor
+    REQUIRE(f.model.state().hiddenIds() == std::set<std::string>{ "id:1" });
+
+    // ids without an item stay until the database close
+    f.data->removeChildNotified(f.data->indexOf(item));
+    REQUIRE(f.model.state().hiddenIds() == std::set<std::string>{ "id:1" });
 
     f.model.state().clear();
-
-    REQUIRE(!f.model.state().itemState("Data/d1"));
-
-    f.rebuild(DefaultSpecs);
-
-    REQUIRE(!f.item(0)->hidden());
+    REQUIRE(f.model.state().hiddenIds().empty());
 }

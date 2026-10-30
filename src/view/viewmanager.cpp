@@ -1275,6 +1275,10 @@ void ViewManager::issueLoad(const LoadRequest& req, bool blocking)
     // restored onto the freshly loaded buffers as they arrive (selection carry-over)
     captureSelection();
 
+    // the layer trees keep their data rows (stale) until the new data arrives
+    for (auto& view_it : views_)
+        view_it.second->beginDataReload();
+
     clearDataInViews();
 
     auto op = std::make_shared<LoadOperation>(compass_.dbContentManager(), req);

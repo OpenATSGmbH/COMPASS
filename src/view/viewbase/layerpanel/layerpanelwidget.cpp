@@ -24,9 +24,15 @@
 #include <QHeaderView>
 #include <QItemSelectionModel>
 #include <QMenu>
-#include <QScopedValueRollback>
+#include <QPointer>
+#include <QTimer>
 #include <QTreeView>
 #include <QVBoxLayout>
+
+namespace
+{
+    const int SpinnerIntervalMS = 100; // wait icon step interval
+}
 
 /**
  * Default ctor.
@@ -62,7 +68,7 @@ LayerPanelWidget::~LayerPanelWidget()
     {
         model_->disconnect(this);
 
-        captureViewStateAll();
+        handOverViewState();
 
         emit model_->viewStateHandedOverSignal();
     }
@@ -82,24 +88,30 @@ void LayerPanelWidget::init(LayerTreeItemDelegate* delegate)
     tree_view_ = new QTreeView(this);
     tree_view_->setObjectName("layer_tree"); // ui tests: item paths and context menus
 
-    // connected before setModel() => runs before the selection model prunes vanishing rows
-    connect(model_, &QAbstractItemModel::rowsAboutToBeRemoved, this, &LayerPanelWidget::captureViewState);
-    connect(model_, &QAbstractItemModel::modelAboutToBeReset,  this, &LayerPanelWidget::captureViewStateAll);
-
     tree_view_->setModel(model_);
 
     // connected after setModel() => runs after the view has registered the new rows
-    connect(model_, &QAbstractItemModel::rowsInserted, this, &LayerPanelWidget::restoreViewState);
-    connect(model_, &QAbstractItemModel::modelReset,   this, &LayerPanelWidget::restoreViewStateAll);
-    connect(tree_view_->selectionModel(), &QItemSelectionModel::selectionChanged,
-            this, &LayerPanelWidget::updatePendingSelection);
-    connect(model_, &LayerTreeModel::viewStateHandedOverSignal, this, &LayerPanelWidget::restoreViewStateAll);
+    connect(model_, &QAbstractItemModel::rowsInserted, this, &LayerPanelWidget::applyDefaultExpansionToRows);
+    connect(model_, &QAbstractItemModel::modelReset,   this, &LayerPanelWidget::applyDefaultExpansionToAll);
+
+    // the predecessor was destroyed after this panel was created
+    connect(model_, &LayerTreeModel::viewStateHandedOverSignal, this, [ this ] ()
+    {
+        takeOverViewState(false);
+        clearViewHandover();
+    });
 
     // checkboxes are painted from the items' hidden state => repaint, no relayout
     connect(model_, &LayerTreeModel::hiddenChangedSignal, tree_view_, [ this ] { tree_view_->viewport()->update(); });
 
     delegate_ = delegate ? delegate : new LayerTreeItemDelegate(this);
     tree_view_->setItemDelegate(delegate_);
+
+    spinner_timer_ = new QTimer(this);
+    spinner_timer_->setInterval(SpinnerIntervalMS);
+    connect(spinner_timer_, &QTimer::timeout, this, &LayerPanelWidget::spinnerTick);
+    connect(model_, &LayerTreeModel::staleChangedSignal, this, &LayerPanelWidget::updateSpinner);
+    updateSpinner();
 
     // Header settings are re-applied after columns are registered; callers
     // should call model->addColumn(...) then model->applyHeaderSettings(header).
@@ -112,8 +124,60 @@ void LayerPanelWidget::init(LayerTreeItemDelegate* delegate)
     layout->addWidget(tree_view_);
     setLayout(layout);
 
-    // an existing model may carry the state of a previous panel
-    restoreViewStateAll();
+    // an existing model may carry the view state of a previous panel; kept on the items until the
+    // construction is done, so the policies set by derived panels leave the handed over rows alone
+    takeOverViewState(true);
+
+    // an external model may be destroyed before
+    QPointer<LayerTreeModel> model = model_;
+    QTimer::singleShot(0, this, [ this, model ] ()
+    {
+        if (model)
+            clearViewHandover();
+    });
+}
+
+/**
+ */
+void LayerPanelWidget::setStaleIndication(int flags)
+{
+    delegate_->setStaleIndication(flags);
+
+    updateSpinner();
+    tree_view_->viewport()->update();
+}
+
+/**
+ */
+bool LayerPanelWidget::isSpinnerActive() const
+{
+    return spinner_timer_->isActive();
+}
+
+/**
+ * Runs the wait icon timer only while it has something to show.
+ */
+void LayerPanelWidget::updateSpinner()
+{
+    const bool spin = model_->hasStaleItems() &&
+                      (delegate_->staleIndication() & LayerTreeItemDelegate::StaleSpinner);
+
+    if (spin && !spinner_timer_->isActive())
+        spinner_timer_->start();
+    else if (!spin && spinner_timer_->isActive())
+        spinner_timer_->stop();
+}
+
+/**
+ * Notice: a viewport update only repaints the visible rows, nothing while the panel is hidden.
+ */
+void LayerPanelWidget::spinnerTick()
+{
+    if (!tree_view_->isVisible())
+        return;
+
+    delegate_->advanceSpinner();
+    tree_view_->viewport()->update();
 }
 
 LayerTreeItem* LayerPanelWidget::addRootItem(std::unique_ptr<LayerTreeItem> item)
@@ -185,16 +249,14 @@ void LayerPanelWidget::expandLayers(int max_depth)
 }
 
 /**
- * Notice: also applied to the current items following the previous default.
  */
 void LayerPanelWidget::setDefaultExpansion(const DefaultExpansionFunc& func)
 {
-    // user deviations from the previous default are kept
-    captureViewStateAll();
+    const DefaultExpansionFunc old_default = expansion_policy_;
 
     expansion_policy_ = func;
 
-    restoreViewStateAll();
+    defaultExpansionChanged(old_default);
 }
 
 /**
@@ -234,122 +296,125 @@ int LayerPanelWidget::depthOf(const QModelIndex& index) const
 
 /**
  */
-bool LayerPanelWidget::defaultExpanded(const LayerTreeItem& item, int depth) const
-{
-    return item.isExpandable() && expansion_policy_ && expansion_policy_(item, depth);
-}
-
-/**
- * Remembers expansion and selection of the given rows and their descendants before they vanish.
- * Notice: requires the items to be still alive, i.e. models must notify before mutating.
- */
-void LayerPanelWidget::captureViewState(const QModelIndex& parent, int first, int last)
-{
-    auto& state = model_->state();
-
-    const bool persist_expansion = state.persists(LayerTreeState::PersistExpansion);
-    const bool persist_selection = state.persists(LayerTreeState::PersistSelection);
-
-    if (!persist_expansion && !persist_selection)
-        return;
-
-    auto* selection = persist_selection ? tree_view_->selectionModel() : nullptr;
-
-    const QModelIndex current     = persist_selection ? tree_view_->currentIndex() : QModelIndex();
-    const QModelIndex current_row = current.isValid() ? current.sibling(current.row(), 0) : QModelIndex();
-
-    auto captureItem = [ & ] (const QModelIndex& index, LayerTreeItem* item, int depth)
-    {
-        const std::string key = item->stateKey();
-        if (key.empty())
-            return;
-
-        const bool expanded  = item->isExpandable() && tree_view_->isExpanded(index);
-        const bool deviation = expanded != defaultExpanded(*item, depth);
-        const bool selected  = selection && selection->isSelected(index);
-
-        state.updateItemState(key, [ & ] (LayerTreeState::ItemState& item_state)
-        {
-            // only deviations from the default policy are remembered
-            if (persist_expansion)
-                item_state.expanded = deviation ? std::optional<bool>(expanded) : std::nullopt;
-
-            if (selected)
-                item_state.selected = true;
-        });
-
-        if (current_row.isValid() && index == current_row)
-            state.setPendingCurrent(key);
-    };
-
-    visitRows(parent, first, last, depthOf(parent) + 1, captureItem);
-}
-
-/**
- */
-void LayerPanelWidget::captureViewStateAll()
+void LayerPanelWidget::visitAllRows(const VisitFunc& func) const
 {
     const int n = model_->rowCount();
     if (n > 0)
-        captureViewState(QModelIndex(), 0, n - 1);
+        visitRows(QModelIndex(), 0, n - 1, 0, func);
 }
 
 /**
- * Applies remembered expansion (else the default policy) and the pending selection to the given
- * rows and their descendants.
  */
-void LayerPanelWidget::restoreViewState(const QModelIndex& parent, int first, int last)
+bool LayerPanelWidget::defaultExpanded(const LayerTreeItem& item, int depth, const DefaultExpansionFunc& policy) const
+{
+    return item.isExpandable() && policy && policy(item, depth);
+}
+
+/**
+ */
+void LayerPanelWidget::setExpanded(const QModelIndex& index, bool expanded)
+{
+    if (expanded != tree_view_->isExpanded(index))
+        tree_view_->setExpanded(index, expanded);
+}
+
+/**
+ */
+void LayerPanelWidget::applyDefaultExpansionToRows(const QModelIndex& parent, int first, int last)
+{
+    visitRows(parent, first, last, depthOf(parent) + 1, [ & ] (const QModelIndex& index, LayerTreeItem* item, int depth)
+    {
+        if (item->isExpandable())
+            setExpanded(index, defaultExpanded(*item, depth, expansion_policy_));
+    });
+}
+
+/**
+ */
+void LayerPanelWidget::applyDefaultExpansionToAll()
+{
+    const int n = model_->rowCount();
+    if (n > 0)
+        applyDefaultExpansionToRows(QModelIndex(), 0, n - 1);
+}
+
+/**
+ */
+void LayerPanelWidget::applyDefaultExpansion(const QModelIndex& index)
+{
+    if (index.isValid())
+        applyDefaultExpansionToRows(index.parent(), index.row(), index.row());
+}
+
+/**
+ * A row's expansion equal to old_default => it followed the default, else the user changed it.
+ */
+void LayerPanelWidget::defaultExpansionChanged(const DefaultExpansionFunc& old_default)
+{
+    visitAllRows([ & ] (const QModelIndex& index, LayerTreeItem* item, int depth)
+    {
+        if (!item->isExpandable() || item->viewHandover())
+            return;
+
+        if (tree_view_->isExpanded(index) != defaultExpanded(*item, depth, old_default))
+            return;
+
+        setExpanded(index, defaultExpanded(*item, depth, expansion_policy_));
+    });
+}
+
+/**
+ */
+void LayerPanelWidget::handOverViewState()
 {
     auto* selection = tree_view_->selectionModel();
 
-    QScopedValueRollback<bool> restoring(restoring_view_state_, true);
+    const QModelIndex current     = tree_view_->currentIndex();
+    const QModelIndex current_row = current.isValid() ? current.sibling(current.row(), 0) : QModelIndex();
 
-    auto restoreItem = [ & ] (const QModelIndex& index, LayerTreeItem* item, int depth)
+    visitAllRows([ & ] (const QModelIndex& index, LayerTreeItem* item, int)
     {
-        const std::string key = item->stateKey();
+        LayerTreeItem::ViewHandover handover;
+        handover.expanded = item->isExpandable() && tree_view_->isExpanded(index);
+        handover.selected = selection && selection->isSelected(index);
+        handover.current  = current_row.isValid() && index == current_row;
 
-        const LayerTreeState::ItemState* state = model_->state().itemState(key);
+        item->setViewHandover(handover);
+    });
+}
 
-        if (item->isExpandable())
+/**
+ */
+void LayerPanelWidget::takeOverViewState(bool default_others)
+{
+    auto* selection = tree_view_->selectionModel();
+
+    visitAllRows([ & ] (const QModelIndex& index, LayerTreeItem* item, int depth)
+    {
+        const auto& handover = item->viewHandover();
+
+        if (!handover)
         {
-            const bool expand = state && state->expanded ? *state->expanded : defaultExpanded(*item, depth);
+            if (default_others && item->isExpandable())
+                setExpanded(index, defaultExpanded(*item, depth, expansion_policy_));
 
-            if (expand != tree_view_->isExpanded(index))
-                tree_view_->setExpanded(index, expand);
+            return;
         }
 
-        if (!state || !selection || (!state->selected && !state->current))
-            return;
+        if (item->isExpandable())
+            setExpanded(index, handover->expanded);
 
-        if (state->selected)
+        if (handover->selected && selection)
             selection->select(index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
 
-        if (state->current)
+        if (handover->current && selection)
             selection->setCurrentIndex(index, QItemSelectionModel::NoUpdate);
-
-        // restored => no longer pending
-        model_->state().clearItemState(key, LayerTreeState::PersistSelection);
-    };
-
-    visitRows(parent, first, last, depthOf(parent) + 1, restoreItem);
+    });
 }
 
 /**
  */
-void LayerPanelWidget::restoreViewStateAll()
+void LayerPanelWidget::clearViewHandover()
 {
-    const int n = model_->rowCount();
-    if (n > 0)
-        restoreViewState(QModelIndex(), 0, n - 1);
-}
-
-/**
- * A new selection by the user supersedes the pending one.
- */
-void LayerPanelWidget::updatePendingSelection(const QItemSelection& selected)
-{
-    if (restoring_view_state_ || selected.isEmpty())
-        return;
-
-    model_->state().clearPendingSelection();
+    model_->traverse([] (const QModelIndex&, LayerTreeItem* item) { item->clearViewHandover(); });
 }
