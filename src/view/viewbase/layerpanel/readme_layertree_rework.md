@@ -1231,7 +1231,14 @@ Parents               >
 
 - app mode gate and its tooltip removed in `ClickHandler::handleReleaseRMB()` => the menu shows in
   live running as offline
-- selection actions stay enabled while live running (weak spot 3, accepted for now)
+- selection actions stay enabled while live running (weak spot 3); for consistency the toolbar's
+  select tool, "Toggle Show Only Selected" and "Invert Selection" are enabled in live running too
+  (their live disable callbacks removed in `geographicviewwidget.cpp`)
+- extra geometry actions (ARTAS usage, ground lines, ground speed vectors, position accuracy
+  ellipses, MLAT RUs; show and clear) are disabled while live running, decided when the menu is
+  built: in the target report actions (the "Target Report" submenu stays, its actions greyed), the
+  item actions and the layer actions (`addTargetReportActions()`, `addItemActions()`,
+  `addNodeActions()`, so also the layer tree and item list menus)
 
 ### Tests and verification
 
