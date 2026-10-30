@@ -46,6 +46,22 @@ protected:
 };
 
 /**
+ * filter_eval_targets
+ */
+struct RTCommandFilterEvalTargets : public rtcommand::RTCommand
+{
+    bool        use_all_ {false};
+    bool        no_run_ {false};
+    std::string config_;
+
+protected:
+    virtual bool run_impl() override;
+
+    DECLARE_RTCOMMAND(filter_eval_targets, "sets the evaluation target filter configuration and runs the filter on the target use flags, replies with the target counts")
+    DECLARE_RTCOMMAND_OPTIONS
+};
+
+/**
  * get_eval_standards
  */
 struct RTCommandGetEvalStandards : public rtcommand::RTCommand

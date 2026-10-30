@@ -112,18 +112,29 @@ struct RefPeriod
 // dropped (matches detection.cpp's hardcoded 1 s floor; the caller chooses
 // the threshold).
 //
+// `breaks` are timestamps of removed reference updates (for example in an
+// excluded time window). A period also ends at the last timestamp before a
+// break, and the next one starts at the first timestamp after it, whatever the
+// length of the removed part. This is how the evaluation ends a period at an
+// excluded reference update (TimePeriodCollection::createFromReference()).
+//
 // Mirrors the reference-period construction in
 // `Detection::evaluate()` (readme_detection.md section 3.2), minus the
-// sector / exclusion-interval filter, which are evaluation-specific.
+// sector filter, which is evaluation-specific. The exclusion-interval filter
+// is applied by the caller, which removes the excluded timestamps and passes
+// them as breaks.
 inline std::vector<RefPeriod> buildReferencePeriods(
     const std::set<boost::posix_time::ptime>& timestamps,
     boost::posix_time::time_duration          max_gap,
-    boost::posix_time::time_duration          min_duration)
+    boost::posix_time::time_duration          min_duration,
+    const std::set<boost::posix_time::ptime>* breaks = nullptr)
 {
     std::vector<RefPeriod> periods;
 
     if (timestamps.empty())
         return periods;
+
+    const bool use_breaks = breaks && !breaks->empty();
 
     auto it = timestamps.begin();
     RefPeriod current{*it, *it};
@@ -132,7 +143,16 @@ inline std::vector<RefPeriod> buildReferencePeriods(
     for (; it != timestamps.end(); ++it)
     {
         const auto ts = *it;
-        if (ts - current.end > max_gap)
+
+        // a removed update between the period end and this timestamp
+        bool has_break = false;
+        if (use_breaks)
+        {
+            auto br = breaks->upper_bound(current.end);
+            has_break = br != breaks->end() && *br < ts;
+        }
+
+        if (has_break || ts - current.end > max_gap)
         {
             periods.push_back(current);
             current = RefPeriod{ts, ts};

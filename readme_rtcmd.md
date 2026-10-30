@@ -103,6 +103,11 @@ loaded), `import_asterix_network_resume`, `import_asterix_network_stop`,
 **Evaluation**: `evaluate` (with `config`, `result`, `run_filter`; without `result` the report
 gets the default name "<standard> <test data source> L<line> Evaluation", the reply
 `{"report": <name>}` gives the stored name),
+`filter_eval_targets` (with `config` = Evaluation target filter parameters as in the
+`EvaluationTargetFilter` configuration, e.g. `exclude_target_categories`,
+`exclude_target_category_values`; `use_all` sets "Use" on for all targets first, the filter only
+disables targets; `no_run` only applies `config` and `use_all`; the target use flags are saved in
+the database, reply `{"targets", "used", "ignored"}`),
 `get_eval_standards` (standards with requirement groups/requirements, no DB needed)
 
 **Data retrieval**: `get_utns` (with `nodesc`), `get_target`, `get_target_stats`,

@@ -56,6 +56,14 @@ const PropertyList TaskResult::DBHeaderPropertyList = PropertyList({ TaskResult:
                                                                      TaskResult::DBColumnName,
                                                                      TaskResult::DBColumnJSONHeader,
                                                                      TaskResult::DBColumnResultType });
+const std::string  TaskResult::DBSectionsTableName     = "report_sections";
+const Property     TaskResult::DBColumnSectionResultID = Property("result_id"    , PropertyDataType::UINT  );
+const Property     TaskResult::DBColumnSectionIndex    = Property("section_index", PropertyDataType::UINT  );
+const Property     TaskResult::DBColumnSectionJSON     = Property("json_content" , PropertyDataType::JSON  );
+const PropertyList TaskResult::DBSectionsPropertyList  = PropertyList({ TaskResult::DBColumnSectionResultID,
+                                                                        TaskResult::DBColumnSectionIndex,
+                                                                        TaskResult::DBColumnSectionJSON });
+const std::string TaskResult::FieldSectionRef           = "section_ref";
 const std::string TaskResult::FieldID                   = "id";
 const std::string TaskResult::FieldName                 = "name";
 const std::string TaskResult::FieldType                 = "type";

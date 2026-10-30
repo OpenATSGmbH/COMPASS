@@ -32,6 +32,7 @@
 class COMPASS;
 
 class SectorLayer;
+class EvaluationConstraints;
 
 namespace dbContent
 {
@@ -97,6 +98,13 @@ public:
         // CAT010 source that also carries MLAT reports contributes SMR
         // reports only.
         bool smr_only = false;
+
+        // When set, the data exclusions of the evaluation apply: targets with the use
+        // flag off are dropped, and target reports in excluded time windows (per target
+        // and global) are dropped. Unassociated reports only get the global rule. The
+        // excluded reference timestamps are kept as period breaks, see
+        // referenceBreaks(). Checked apart from the position based constraints below.
+        std::shared_ptr<const EvaluationConstraints> eval_exclusions;
 
         bool active() const
         {
@@ -175,6 +183,17 @@ public:
 
     /// Number of CAT010 rows that were skipped by the SMR-only filter.
     unsigned int numNonPSRRecordsSkipped() const { return num_non_psr_skipped_; }
+
+    /// Evaluation exclusions: number of loaded targets dropped by their use flag, and of
+    /// reference and test records dropped (excluded target or excluded time window).
+    unsigned int numExcludedTargets() const { return static_cast<unsigned int>(excluded_utns_.size()); }
+    unsigned int numReferenceRecordsExcluded() const { return num_ref_records_excluded_; }
+    unsigned int numTestRecordsExcluded() const { return num_tst_records_excluded_; }
+
+    /// Timestamps of the reference records of `utn` dropped by an excluded time window,
+    /// to pass as breaks to `buildReferencePeriods()`, so that a reference period ends
+    /// there as in the evaluation. nullptr when there are none.
+    const std::set<boost::posix_time::ptime>* referenceBreaks(unsigned int utn) const;
 
     /// Whether the loaded test buffer of `dbcontent_name` holds at least one value of the
     /// variable `property` (meta variable when `meta` is true). boost::none when that data
@@ -324,6 +343,11 @@ private:
     unsigned int num_tst_records_total_     = 0;
     unsigned int num_unassoc_records_total_ = 0;
     unsigned int num_non_psr_skipped_       = 0;
+
+    std::set<unsigned int> excluded_utns_;
+    unsigned int num_ref_records_excluded_ = 0;
+    unsigned int num_tst_records_excluded_ = 0;
+    std::map<unsigned int, std::set<boost::posix_time::ptime>> ref_breaks_;
 
     double center_lat_deg_ = 0.0;
     double min_lat_ = 0.0, max_lat_ = 0.0;

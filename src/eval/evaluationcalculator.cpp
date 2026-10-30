@@ -448,14 +448,11 @@ void EvaluationCalculator::clearConstraints()
 {
     global_time_filter_enabled_ = false;
 
-    global_time_window_json_ = nlohmann::json();
-    global_time_window_ = Utils::TimeWindow();
-
+    global_time_window_json_            = nlohmann::json();
     global_exclusion_time_windows_json_ = nlohmann::json();
-    global_exclusion_time_windows_ = Utils::TimeWindowCollection();
+    target_constraints_json_            = nlohmann::json();
 
-    target_constraints_json_ = nlohmann::json();
-    target_constraints_.clear();
+    constraints_.clear();
 }
 
 /**
@@ -1859,15 +1856,11 @@ void EvaluationCalculator::updateConstraints()
     clearConstraints();
 
     //obtain current constraints
-    bool load_filter_valid = !eval_man_.loadTimestampBegin().is_not_a_date_time() &&
-                             !eval_man_.loadTimestampEnd().is_not_a_date_time();
-
-    global_time_filter_enabled_    = eval_man_.useTimestampFilter();
-    global_time_window_            = load_filter_valid ? Utils::TimeWindow(eval_man_.loadTimestampBegin(), eval_man_.loadTimestampEnd()) : Utils::TimeWindow();
-    global_exclusion_time_windows_ = eval_man_.excludedTimeWindows();
-    target_constraints_            = eval_man_.dbContentManager().targetModel()->evaluationConstraints(true);
+    constraints_.update(eval_man_);
 
     //update serializable json
+    global_time_filter_enabled_ = constraints_.globalTimeFilterEnabled();
+
     storeGlobalTimeWindow();
     storeGlobalExclusionTimeWindows();
     storeTargetConstraints();
@@ -1877,125 +1870,64 @@ void EvaluationCalculator::updateConstraints()
  */
 bool EvaluationCalculator::isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const
 {
-    // global time filters disabled? => not excluded
-    if (!global_time_filter_enabled_)
-        return true;
-
-    //check if ts outside of global load window => excluded
-    if (global_time_window_.valid() && !global_time_window_.contains(ts))
-        return false;
-
-    // check if ts inside global load exclusion windows => excluded
-    if (global_exclusion_time_windows_.contains(ts))
-        return false;
-
-    // not excluded
-    return true;
+    return constraints_.isTimeStampNotExcluded(ts);
 }
 
 /**
  */
 bool EvaluationCalculator::globalTimeFilterEnabled() const
 {
-    return global_time_filter_enabled_;
+    return constraints_.globalTimeFilterEnabled();
 }
 
 /**
  */
 void EvaluationCalculator::storeGlobalTimeWindow()
 {
-    global_time_window_json_ = global_time_window_.valid() ? global_time_window_.getAsJson() : nlohmann::json();
+    global_time_window_json_ = constraints_.globalTimeWindowAsJSON();
 }
 
 /**
  */
 void EvaluationCalculator::loadGlobalTimeWindow()
 {
-    global_time_window_ = Utils::TimeWindow();
-
-    if (global_time_window_json_.is_null())
-        return;
-
-    global_time_window_.setFrom(global_time_window_json_);
+    constraints_.globalTimeFilterEnabled(global_time_filter_enabled_);
+    constraints_.globalTimeWindowFromJSON(global_time_window_json_);
 }
 
 /**
  */
 void EvaluationCalculator::storeGlobalExclusionTimeWindows()
 {
-    global_exclusion_time_windows_json_= global_exclusion_time_windows_.asJSON();
+    global_exclusion_time_windows_json_ = constraints_.globalExclusionTimeWindowsAsJSON();
 }
 
 /**
  */
 void EvaluationCalculator::loadGlobalExclusionTimeWindows()
 {
-    global_exclusion_time_windows_ = Utils::TimeWindowCollection();
-
-    if (global_exclusion_time_windows_json_.is_null())
-        return;
-
-    global_exclusion_time_windows_.setFrom(global_exclusion_time_windows_json_);
+    constraints_.globalExclusionTimeWindowsFromJSON(global_exclusion_time_windows_json_);
 }
 
 /**
  */
 void EvaluationCalculator::storeTargetConstraints()
 {
-    target_constraints_json_ = nlohmann::json::object();
-
-    for (const auto& tc : target_constraints_)
-    {
-        if (!tc.second.hasActiveConstraint())
-            continue;
-
-        auto key = std::to_string(tc.first);
-        target_constraints_json_[ key ] = tc.second.toJSON();
-    }
+    target_constraints_json_ = constraints_.targetConstraintsAsJSON();
 }
 
 /**
  */
 void EvaluationCalculator::loadTargetConstraints()
 {
-    target_constraints_.clear();
-
-    if (target_constraints_json_.is_null())
-        return;
-
-    traced_assert(target_constraints_json_.is_object());
-
-    for (const auto& tc_json : target_constraints_json_.items())
-    {
-        QString s = QString::fromStdString(tc_json.key());
-
-        bool ok;
-        auto utn = s.toUInt(&ok);
-        traced_assert(ok);
-
-        dbContent::TargetEvalConstraints tc;
-        ok = tc.fromJSON(tc_json.value());
-        traced_assert(ok);
-
-        if (!tc.hasActiveConstraint())
-            continue;
-
-        target_constraints_[ utn ] = tc;
-    }
+    constraints_.targetConstraintsFromJSON(target_constraints_json_);
 }
 
 /**
  */
 const dbContent::TargetEvalConstraints* EvaluationCalculator::targetConstraint(unsigned int utn) const
 {
-    if (target_constraints_.empty())
-        return nullptr;
-
-    auto it = target_constraints_.find(utn);
-    if (it == target_constraints_.end())
-        return nullptr;
-
-    return &it->second;
+    return constraints_.targetConstraint(utn);
 }
 
 /**

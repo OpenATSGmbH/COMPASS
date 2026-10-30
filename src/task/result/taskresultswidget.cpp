@@ -42,6 +42,8 @@
 #include <QMenu>
 #include <QWidgetAction>
 #include <QComboBox>
+#include <QAbstractItemView>
+#include <QHelpEvent>
 #include "questiondialog.h"
 
 #include <QMessageBox>
@@ -78,6 +80,9 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
             });
 
     report_combo_->setDisabled(true);
+
+    //creates the report tables tooltips on demand
+    report_combo_->view()->viewport()->installEventFilter(this);
 
     top_layout->addWidget(report_combo_);
 
@@ -265,6 +270,57 @@ void TaskResultsWidget::updateResultsSlot()
 }
 
 /**
+ * Creates the report tables tooltip of a result combo item when it is shown first.
+ * The table storage sizes need one DB query per table, which is too slow to do for all results.
+ */
+bool TaskResultsWidget::eventFilter(QObject* obj, QEvent* event)
+{
+    if (event->type() == QEvent::ToolTip && obj == report_combo_->view()->viewport())
+    {
+        auto help_event = static_cast<QHelpEvent*>(event);
+        QModelIndex index = report_combo_->view()->indexAt(help_event->pos());
+
+        if (index.isValid() && !index.data(Qt::ToolTipRole).isValid())
+        {
+            QString tooltip = reportTablesToolTip(index.data(Qt::DisplayRole).toString().toStdString());
+
+            //empty tooltip => stored as well, no new query on the next hover
+            report_combo_->setItemData(index.row(), tooltip, Qt::ToolTipRole);
+        }
+    }
+
+    return ToolBoxWidget::eventFilter(obj, event);
+}
+
+/**
+ */
+QString TaskResultsWidget::reportTablesToolTip(const std::string& name) const
+{
+    if (!task_man_.hasResult(name))
+        return "";
+
+    auto result = task_man_.result(name);
+
+    if (!result->hasReportTables())
+        return "";
+
+    const auto& tables = result->reportTables();
+
+    size_t size_bytes = 0;
+    for (const auto& t : tables)
+    {
+        auto size = task_man_.compass().dbInterface().tableStorageSize(t.tableName(result->id()));
+        if (size.ok())
+            size_bytes += size.result();
+    }
+
+    return QString("%1 Report Table(s), %2 row(s), %3 MB")
+        .arg(tables.size())
+        .arg(result->numReportTableRows())
+        .arg(size_bytes / 1e6, 0, 'f', 1);
+}
+
+/**
  */
 void TaskResultsWidget::updateResults(const std::string& selected_result)
 {
@@ -282,28 +338,8 @@ void TaskResultsWidget::updateResults(const std::string& selected_result)
     {
         loginf << "adding '" << res_it.second->name() << "'";
 
+        //the report tables tooltip is created on demand, see eventFilter()
         report_combo_->addItem(res_it.second->name().c_str());
-
-        //the report tables of the result as tooltip
-        if (res_it.second->hasReportTables())
-        {
-            const auto& tables = res_it.second->reportTables();
-
-            size_t size_bytes = 0;
-            for (const auto& t : tables)
-            {
-                auto size = task_man_.compass().dbInterface().tableStorageSize(t.tableName(res_it.second->id()));
-                if (size.ok())
-                    size_bytes += size.result();
-            }
-
-            QString tooltip = QString("%1 Report Table(s), %2 row(s), %3 MB")
-                                  .arg(tables.size())
-                                  .arg(res_it.second->numReportTableRows())
-                                  .arg(size_bytes / 1e6, 0, 'f', 1);
-
-            report_combo_->setItemData(report_combo_->count() - 1, tooltip, Qt::ToolTipRole);
-        }
 
         if (current_report_name_ == res_it.second->name())
             current_found = true;
