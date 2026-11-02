@@ -130,9 +130,6 @@ public:
     static const std::string ContentPropertyTargets;
 
     static const std::string ConstraintsSectionID;
-    static const std::string ConstraintsTSTableName;
-    static const std::string ConstraintsReqTableName;
-    static const std::string ConstraintsPlaceholderTxtName;
 
 protected:
     std::pair<nlohmann::json, unsigned int> rawCellData(const EvaluationTarget& target, 

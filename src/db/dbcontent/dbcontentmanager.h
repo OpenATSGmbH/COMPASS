@@ -194,6 +194,7 @@ public:
     std::string emitterCategoryStr(unsigned int utn) const;
 
     void autoFilterUTNS();
+    void setUseAllTargets(bool value);
     void showUTN (unsigned int utn);
     void showUTNs (std::set<unsigned int> utns);
 

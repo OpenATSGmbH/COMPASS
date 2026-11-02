@@ -705,6 +705,14 @@ std::string SQLGenerator::getTableReportContentsCreateStatement()
 
 /**
  */
+std::string SQLGenerator::getTableReportSectionsCreateStatement()
+{
+    // no primary key, a result owns many rows
+    return getCreateTableStatement(TaskResult::DBSectionsTableName, TaskResult::DBSectionsPropertyList, -1);
+}
+
+/**
+ */
 string SQLGenerator::getInsertDBUpdateStringBind(shared_ptr<Buffer> buffer,
                                                  string tablename)
 {

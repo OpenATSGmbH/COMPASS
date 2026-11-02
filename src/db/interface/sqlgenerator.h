@@ -104,6 +104,7 @@ public:
     std::string getTableTaskLogCreateStatement();
     std::string getTableTaskResultsCreateStatement();
     std::string getTableReportContentsCreateStatement();
+    std::string getTableReportSectionsCreateStatement();
 
     std::string getDeleteStatement (const std::string& table, const std::string& filter);
 

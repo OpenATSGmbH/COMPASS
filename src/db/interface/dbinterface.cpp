@@ -39,6 +39,7 @@
 
 #include "task/taskmanager.h"
 #include "task/result/taskresult.h"
+#include "task/result/report/report.h"
 #include "task/result/report/section.h"
 #include "task/result/report/sectioncontent.h"
 #include "task/result/report/sectioncontentfigure.h"
@@ -97,6 +98,81 @@ const PropertyList& reportContentsInsertProperties()
         Property(ResultReport::SectionContent::DBColumnJSONContent.name(), PropertyDataType::STRING) });
 
     return props;
+}
+
+/**
+ * Property list used to insert per-target report sections, the JSON text is written as a plain string
+ * (see reportContentsInsertProperties()).
+ */
+const PropertyList& reportSectionsInsertProperties()
+{
+    static const PropertyList props({
+        TaskResult::DBColumnSectionResultID,
+        TaskResult::DBColumnSectionIndex,
+        Property(TaskResult::DBColumnSectionJSON.name(), PropertyDataType::STRING) });
+
+    return props;
+}
+
+/**
+ * Replaces each per-target section in the sub section tree of the given section JSON by a
+ * reference object, the cut out sections are added as JSON text. The index in the given vector
+ * is the reference.
+ */
+void extractPerTargetSections(nlohmann::json& j_section, std::vector<std::string>& sections)
+{
+    auto it = j_section.find(ResultReport::Section::FieldSubSections);
+    if (it == j_section.end() || !it->is_array())
+        return;
+
+    for (auto& j_sub : *it)
+    {
+        auto it_pt = j_sub.find(ResultReport::Section::FieldPerTarget);
+
+        if (it_pt != j_sub.end() && it_pt->is_boolean() && it_pt->get<bool>())
+        {
+            sections.push_back(j_sub.dump());
+
+            j_sub = nlohmann::json::object();
+            j_sub[ TaskResult::FieldSectionRef ] = sections.size() - 1;
+        }
+        else
+        {
+            extractPerTargetSections(j_sub, sections);
+        }
+    }
+}
+
+/**
+ * Replaces each section reference in the sub section tree of the given section JSON by the
+ * referenced section. Returns false if a referenced section is missing.
+ */
+bool restorePerTargetSections(nlohmann::json& j_section, std::map<unsigned int, nlohmann::json>& sections)
+{
+    auto it = j_section.find(ResultReport::Section::FieldSubSections);
+    if (it == j_section.end() || !it->is_array())
+        return true;
+
+    for (auto& j_sub : *it)
+    {
+        auto it_ref = j_sub.find(TaskResult::FieldSectionRef);
+
+        if (it_ref != j_sub.end())
+        {
+            auto it_sec = sections.find(it_ref->get<unsigned int>());
+            if (it_sec == sections.end())
+                return false;
+
+            j_sub = std::move(it_sec->second);
+            sections.erase(it_sec);
+        }
+        else if (!restorePerTargetSections(j_sub, sections))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 }
 
@@ -2179,6 +2255,128 @@ void DBInterface::createReportContentsTable()
 }
 
 /**
+ */
+bool DBInterface::existsReportSectionsTable() const
+{
+    return existsTable(TaskResult::DBSectionsTableName);
+}
+
+/**
+ */
+void DBInterface::createReportSectionsTable()
+{
+    traced_assert(ready());
+    traced_assert(!existsReportSectionsTable());
+
+    {
+        #ifdef PROTECT_INSTANCE
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        #endif
+
+        execute(sqlGenerator().getTableReportSectionsCreateStatement());
+        updateTableInfo();
+    }
+}
+
+/**
+ * Returns the content JSON of the given result without its per-target report sections, which
+ * are added to the given vector as JSON text and replaced by references in the returned JSON.
+ * The per-target sections hold most of an evaluation report, stored apart they are written in
+ * batches instead of as one large value.
+ */
+nlohmann::json DBInterface::resultContentWithoutSections(const TaskResult& result,
+                                                         std::vector<std::string>& sections) const
+{
+    nlohmann::json content = result.toJSON();
+
+    auto it_report = content.find(TaskResult::FieldReport);
+    if (it_report != content.end())
+    {
+        auto it_root = it_report->find(ResultReport::Report::FieldRootSection);
+        if (it_root != it_report->end())
+            extractPerTargetSections(*it_root, sections);
+    }
+
+    return content;
+}
+
+/**
+ * Deletes the per-target report sections of the given result.
+ */
+void DBInterface::deleteReportSections(unsigned int result_id)
+{
+    if (!existsReportSectionsTable())
+        return;
+
+    auto cmd = sqlGenerator().getDeleteCommand(TaskResult::DBSectionsTableName,
+                                               db::SQLFilter(TaskResult::DBColumnSectionResultID.name(),
+                                                             std::to_string(result_id),
+                                                             db::SQLFilter::ComparisonOp::Is).statement());
+    auto res = execute(*cmd);
+    if (res->hasError())
+        throw std::runtime_error(res->error());
+}
+
+/**
+ * Writes the given per-target report sections of a result. The sections are aggregated into
+ * batches of a minimum size, only the last batch may be smaller. The vector is emptied.
+ */
+void DBInterface::writeReportSections(unsigned int result_id,
+                                      std::vector<std::string>& sections)
+{
+    if (!existsReportSectionsTable())
+        createReportSectionsTable();
+
+    const size_t min_batch_bytes = 16 * 1024 * 1024;
+
+    std::shared_ptr<Buffer> buffer;
+
+    NullableVector<unsigned int>* result_id_vec = nullptr;
+    NullableVector<unsigned int>* index_vec     = nullptr;
+    NullableVector<std::string>*  json_vec      = nullptr;
+
+    size_t current_bytes = 0;
+    size_t current_row   = 0;
+
+    for (size_t i = 0; i < sections.size(); ++i)
+    {
+        if (!buffer)
+        {
+            buffer.reset(new Buffer(reportSectionsInsertProperties()));
+
+            result_id_vec = &buffer->get<unsigned int>(TaskResult::DBColumnSectionResultID.name());
+            index_vec     = &buffer->get<unsigned int>(TaskResult::DBColumnSectionIndex.name());
+            json_vec      = &buffer->get<std::string>(TaskResult::DBColumnSectionJSON.name());
+
+            current_bytes = 0;
+            current_row   = 0;
+        }
+
+        current_bytes += sections[ i ].size();
+
+        result_id_vec->set(current_row, result_id);
+        index_vec->set(current_row, (unsigned int)i);
+        json_vec->set(current_row, std::move(sections[ i ]));
+
+        ++current_row;
+
+        if (current_bytes >= min_batch_bytes)
+        {
+            insertBuffer(TaskResult::DBSectionsTableName, buffer);
+            buffer.reset();
+        }
+    }
+
+    //insert last batch
+    if (buffer && current_row > 0)
+        insertBuffer(TaskResult::DBSectionsTableName, buffer);
+
+    loginf << "result " << result_id << ": wrote " << sections.size() << " per-target section(s)";
+
+    sections.clear();
+}
+
+/**
  * Creates a report table, replacing an existing table of the same name.
  */
 void DBInterface::createReportTable(const std::string& table_name,
@@ -2394,7 +2592,12 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
         auto result_id   = result.id();
         auto result_name = result.name();
 
-        //write result
+        //remove per-target sections left behind under this result id by an aborted run
+        deleteReportSections(result_id);
+
+        //write result, without the per-target sections
+        std::vector<std::string> sections;
+
         {
             std::shared_ptr<Buffer> buffer(new Buffer(TaskResult::DBPropertyList));
 
@@ -2407,11 +2610,14 @@ Result DBInterface::saveResult(const TaskResult& result, bool cleanup_db_if_need
             id_vec.set(0, result_id);
             name_vec.set(0, result.name());
             header_vec.set(0, result.header().toJSON());
-            content_vec.set(0, result.toJSON());
+            content_vec.set(0, resultContentWithoutSections(result, sections));
             type_vec.set(0, (int)result.type());
 
             insertBuffer(TaskResult::DBTableName, buffer);
         }
+
+        //write per-target sections
+        writeReportSections(result_id, sections);
 
         //write contents
         {
@@ -2561,6 +2767,8 @@ Result DBInterface::deleteResult(const TaskResult& result,
             if (result_del_result->hasError())
                 throw std::runtime_error(result_del_result->error());
 
+            deleteReportSections(old_id);
+
             //drop the report tables of the old result, the tables of the result being saved stay
             std::set<std::string> keep;
             if (keep_own_tables && old_id == result.id())
@@ -2640,19 +2848,27 @@ Result DBInterface::updateResultContent(const TaskResult& result)
 
     try
     {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
+        //the per-target sections are written apart, see saveResult()
+        std::vector<std::string> sections;
 
-        string str = sqlGenerator().getUpdateCellStatement(TaskResult::DBTableName,
-                                                           TaskResult::DBColumnJSONContent.name(),
-                                                           result.toJSON(),
-                                                           TaskResult::DBColumnID.name(),
-                                                           result.id());
-        // uses replace with utn as unique key
-        auto res = execute(str);
-        if (!res.ok())
-            return res;
+        {
+            #ifdef PROTECT_INSTANCE
+            boost::mutex::scoped_lock locker(instance_mutex_);
+            #endif
+
+            string str = sqlGenerator().getUpdateCellStatement(TaskResult::DBTableName,
+                                                               TaskResult::DBColumnJSONContent.name(),
+                                                               resultContentWithoutSections(result, sections),
+                                                               TaskResult::DBColumnID.name(),
+                                                               result.id());
+            // uses replace with utn as unique key
+            auto res = execute(str);
+            if (!res.ok())
+                return res;
+        }
+
+        deleteReportSections(result.id());
+        writeReportSections(result.id(), sections);
     }
     catch(const std::exception& ex)
     {
@@ -2682,6 +2898,16 @@ ResultT<std::vector<std::shared_ptr<TaskResult>>> DBInterface::loadResults()
 
     try
     {
+        //remove per-target sections without a result, left behind by aborted runs
+        if (existsReportSectionsTable())
+        {
+            auto res = execute("DELETE FROM " + TaskResult::DBSectionsTableName +
+                               " WHERE " + TaskResult::DBColumnSectionResultID.name() +
+                               " NOT IN (SELECT " + TaskResult::DBColumnID.name() + " FROM " + TaskResult::DBTableName + ");");
+            if (!res.ok())
+                logwrn << "could not remove orphan per-target sections: " << res.error();
+        }
+
         // the content column is left out on purpose, it holds the whole report section tree.
         // TaskResult reads it through loadResultContent() when the result is first used.
         auto cmd = sqlGenerator().getSelectCommand(TaskResult::DBTableName, TaskResult::DBHeaderPropertyList, "");
@@ -2795,7 +3021,46 @@ ResultT<nlohmann::json> DBInterface::loadResultContent(unsigned int result_id)
         if (content_vec.isNull(0))
             throw std::runtime_error("Result content is empty");
 
-        return ResultT<nlohmann::json>::succeeded(content_vec.get(0));
+        nlohmann::json content = content_vec.get(0);
+
+        //read the per-target sections and put them back into the section tree
+        std::map<unsigned int, nlohmann::json> sections;
+
+        if (existsReportSectionsTable())
+        {
+            auto sec_filter = db::SQLFilter(TaskResult::DBColumnSectionResultID.name(),
+                                            std::to_string(result_id),
+                                            db::SQLFilter::ComparisonOp::Is).statement();
+
+            auto sec_cmd = sqlGenerator().getSelectCommand(TaskResult::DBSectionsTableName,
+                                                           TaskResult::DBSectionsPropertyList,
+                                                           sec_filter);
+            auto sec_result = execute(*sec_cmd);
+
+            if (sec_result->hasError())
+                throw std::runtime_error("Could not obtain per-target sections: " + sec_result->error());
+
+            if (sec_result->containsData() && sec_result->buffer())
+            {
+                auto sb = sec_result->buffer();
+
+                auto& index_vec = sb->get<unsigned int>(TaskResult::DBColumnSectionIndex.name());
+                auto& json_vec  = sb->get<nlohmann::json>(TaskResult::DBColumnSectionJSON.name());
+
+                for (size_t i = 0; i < sb->size(); ++i)
+                    sections[ index_vec.get(i) ] = json_vec.get(i);
+            }
+        }
+
+        auto it_report = content.find(TaskResult::FieldReport);
+        if (it_report != content.end())
+        {
+            auto it_root = it_report->find(ResultReport::Report::FieldRootSection);
+            if (it_root != it_report->end() && !restorePerTargetSections(*it_root, sections))
+                throw std::runtime_error("Per-target section missing");
+        }
+
+        return ResultT<nlohmann::json>::succeeded(content);
     }
     catch(const std::exception& ex)
     {

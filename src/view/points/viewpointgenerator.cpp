@@ -201,6 +201,17 @@ void ViewPointGenFeaturePointGeometry::addPoints(const std::vector<Eigen::Vector
         colors_.insert(colors_.end(), colors->begin(), colors->end());
 }
 
+namespace
+{
+/**
+ * Color as #RRGGBB, or as #AARRGGBB if the color is not opaque.
+*/
+std::string colorName(const QColor& c)
+{
+    return c.name(c.alpha() < 255 ? QColor::HexArgb : QColor::HexRgb).toStdString();
+}
+}
+
 /**
 */
 void ViewPointGenFeaturePointGeometry::toJSON_impl(nlohmann::json& j, bool write_binary_if_possible) const
@@ -227,7 +238,7 @@ void ViewPointGenFeaturePointGeometry::toJSON_impl(nlohmann::json& j, bool write
 
         for (const auto& c : colors_)
         {
-            nlohmann::json color = c.name().toStdString();
+            nlohmann::json color = colorName(c);
             colors.push_back(color);
         }
 
@@ -235,7 +246,7 @@ void ViewPointGenFeaturePointGeometry::toJSON_impl(nlohmann::json& j, bool write
     }
     else
     {
-        props[FeatureFieldNamePropColor] = color_.name().toStdString();
+        props[FeatureFieldNamePropColor] = colorName(color_);
     }
 
     writeGeometry(geom);

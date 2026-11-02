@@ -21,6 +21,7 @@
 
 #include "evaluationdefs.h"
 #include "evaluationsettings.h"
+#include "evaluationconstraints.h"
 #include "evaluationdata.h"
 #include "evaluationresultsgenerator.h"
 #include "datasourcecompoundcoverage.h"
@@ -239,11 +240,13 @@ public:
     double sectorDeltaDeg() const { return sector_delta_deg_; }
 
     bool globalTimeFilterEnabled() const;
-    const Utils::TimeWindow& globalTimeWindow() const { return global_time_window_; }
-    const Utils::TimeWindowCollection& globalExclusionTimeWindows() const { return global_exclusion_time_windows_; }
+    const Utils::TimeWindow& globalTimeWindow() const { return constraints_.globalTimeWindow(); }
+    const Utils::TimeWindowCollection& globalExclusionTimeWindows() const { return constraints_.globalExclusionTimeWindows(); }
 
     const dbContent::TargetEvalConstraints* targetConstraint(unsigned int utn) const;
-    const std::map<unsigned int, dbContent::TargetEvalConstraints>& targetConstraints() const { return target_constraints_; }
+    const std::map<unsigned int, dbContent::TargetEvalConstraints>& targetConstraints() const { return constraints_.targetConstraints(); }
+
+    const EvaluationConstraints& constraints() const { return constraints_; }
 
     std::string constraintsAsString() const;
 
@@ -290,13 +293,6 @@ protected:
     void storeTargetConstraints();
     void loadTargetConstraints();
 
-    nlohmann::json globalTimeWindowAsJSON() const;
-    nlohmann::json globalExclustionTimeWindowsAsJSON() const;
-    nlohmann::json targetConstraintsAsJSON() const;
-    Utils::TimeWindow globalTimeWindowFromJSON(const nlohmann::json& j) const;
-    Utils::TimeWindowCollection globalExclustionTimeWindowsFromJSON(const nlohmann::json& j) const;
-    std::map<unsigned int, dbContent::TargetEvalConstraints> targetConstraintsFromJSON(const nlohmann::json& j) const;
-
     void clearEvalData();
     void clearConstraints();
 
@@ -326,13 +322,12 @@ protected:
     std::unique_ptr<EvaluationResultsGenerator>            results_gen_;
     std::unique_ptr<dbContent::DataSourceCompoundCoverage> tst_srcs_coverage_;
 
-    bool                                                     global_time_filter_enabled_ = false;
-    nlohmann::json                                           global_time_window_json_;
-    Utils::TimeWindow                                        global_time_window_;
-    nlohmann::json                                           global_exclusion_time_windows_json_;
-    Utils::TimeWindowCollection                              global_exclusion_time_windows_;
-    nlohmann::json                                           target_constraints_json_;
-    std::map<unsigned int, dbContent::TargetEvalConstraints> target_constraints_;
+    // registered constraint parameters, the stored form of constraints_
+    bool                  global_time_filter_enabled_ = false;
+    nlohmann::json        global_time_window_json_;
+    nlohmann::json        global_exclusion_time_windows_json_;
+    nlohmann::json        target_constraints_json_;
+    EvaluationConstraints constraints_;
 
     std::string custom_report_name_;
 

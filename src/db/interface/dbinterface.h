@@ -211,8 +211,10 @@ public:
 
     bool existsTaskResultsTable() const;
     bool existsReportContentsTable() const;
+    bool existsReportSectionsTable() const;
     void createTaskResultsTable();
     void createReportContentsTable();
+    void createReportSectionsTable();
     Result saveResult(const TaskResult& result, 
                       bool cleanup_db_if_needed);
     Result deleteResult(const TaskResult& result,
@@ -307,6 +309,12 @@ protected:
 
     void updateTableInfo();
     Result cleanupDBInternal();
+
+    nlohmann::json resultContentWithoutSections(const TaskResult& result,
+                                                std::vector<std::string>& sections) const;
+    void deleteReportSections(unsigned int result_id);
+    void writeReportSections(unsigned int result_id,
+                             std::vector<std::string>& sections);
 
     std::unique_ptr<DBInstance> db_instance_;
 

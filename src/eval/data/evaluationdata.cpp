@@ -56,9 +56,6 @@ const std::string EvaluationData::TargetsTableName        = "Evaluated Targets";
 const std::string EvaluationData::ContentPropertyTargets  = "targets";
 
 const std::string EvaluationData::ConstraintsSectionID          = "Overview:Excluded Data";
-const std::string EvaluationData::ConstraintsTSTableName        = "Excluded Time Windows";
-const std::string EvaluationData::ConstraintsReqTableName       = "Excluded Requirements";
-const std::string EvaluationData::ConstraintsPlaceholderTxtName = "No excluded data defined.";
 
 /**
  */
@@ -610,146 +607,12 @@ void EvaluationData::addConstraintsSection(std::shared_ptr<ResultReport::Report>
     //add constraints section
     auto& section_constraints = report->getSection(ConstraintsSectionID);
 
-    //add + fill timestamp constraints table
-    bool        global_ts_filter_enabled = calculator_.globalTimeFilterEnabled();
-    const auto& global_ts_window         = calculator_.globalTimeWindow();
-    const auto& global_ts_excl_wins      = calculator_.globalExclusionTimeWindows();
+    //per-target rows only for the evaluated targets
+    std::set<unsigned int> utns;
+    for (const auto& target : target_data_)
+        utns.insert(target.utn_);
 
-    auto targets = toTargets();
-
-    //check needed number of rows
-    size_t num_excluded_tw  = 0;
-    size_t num_excluded_req = 0;
-
-    if (global_ts_filter_enabled)
-    {
-        if (global_ts_window.valid())
-            num_excluded_tw += 2;
-
-        for (const auto& w : global_ts_excl_wins)
-            if (w.valid())
-                ++num_excluded_tw;
-    }
-
-    for (const auto& t : toTargets())
-    {
-        for (const auto& w : t.second.evalExcludedTimeWindows())
-            if (w.valid())
-                ++num_excluded_tw;
-
-        if (!t.second.evalExcludedRequirements().empty())
-            ++num_excluded_req;
-    }
-
-    //no content? => add placeholder text
-    if (num_excluded_tw == 0 && 
-        num_excluded_req == 0)
-    {
-        auto& txt = section_constraints.addText(ConstraintsPlaceholderTxtName);
-        txt.addText(ConstraintsPlaceholderTxtName);
-
-        return;
-    }
-    
-    //create excluded time window table
-    if (num_excluded_tw > 0)
-    {
-        std::vector<std::string> headings_constraints_ts;
-        headings_constraints_ts.push_back("Target");
-        headings_constraints_ts.push_back("Type");
-        headings_constraints_ts.push_back("Timestamp");
-        headings_constraints_ts.push_back("Comment");
-
-        auto& table_constraints_ts = section_constraints.addTable(ConstraintsTSTableName, 
-                                                                headings_constraints_ts.size(), 
-                                                                headings_constraints_ts);
-
-        if (global_ts_filter_enabled)
-        {
-            if (global_ts_window.valid())
-            {
-                {
-                    auto row = nlohmann::json::array();
-                    row.push_back("All");
-                    row.push_back("Timestamp Begin");
-                    row.push_back(Utils::Time::toString(global_ts_window.begin()));
-                    row.push_back("");
-
-                    table_constraints_ts.addRow(row);
-                }
-                {
-                    auto row = nlohmann::json::array();
-                    row.push_back("All");
-                    row.push_back("Timestamp End");
-                    row.push_back(Utils::Time::toString(global_ts_window.end()));
-                    row.push_back("");
-
-                    table_constraints_ts.addRow(row);
-                }
-            }
-
-            for (const auto& w : global_ts_excl_wins)
-            {
-                if (!w.valid())
-                    continue;
-
-                auto row = nlohmann::json::array();
-                row.push_back("All");
-                row.push_back("Exclusion Window");
-                row.push_back(w.asStr());
-                row.push_back(w.comment());
-
-                table_constraints_ts.addRow(row);
-            }
-        }
-
-        for (const auto& t : toTargets())
-        {
-            for (const auto& w : t.second.evalExcludedTimeWindows())
-            {
-                if (!w.valid())
-                    continue;
-
-                auto row = nlohmann::json::array();
-                row.push_back("UTN " + std::to_string(t.second.utn_));
-                row.push_back("Exclusion Window");
-                row.push_back(w.asStr());
-                row.push_back(w.comment());
-
-                table_constraints_ts.addRow(row);
-            }
-        }
-    }
-
-    //create excluded requirements table
-    if (num_excluded_req > 0)
-    {
-        std::vector<std::string> headings_constraints_req;
-        headings_constraints_req.push_back("Target");
-        headings_constraints_req.push_back("Excluded Requirements");
-
-        auto& table_constraints_req = section_constraints.addTable(ConstraintsReqTableName, 
-                                                                headings_constraints_req.size(), 
-                                                                headings_constraints_req);
-
-        for (const auto& t : toTargets())
-        {
-            if (!t.second.evalExcludedRequirements().empty())
-            {
-                QStringList strings;
-                for (const auto& s : t.second.evalExcludedRequirements())
-                    strings.push_back(QString::fromStdString(s));
-
-                auto s = strings.join(", ").toStdString();
-
-                auto row = nlohmann::json::array();
-                row.push_back("UTN " + std::to_string(t.second.utn_));
-                row.push_back(s);
-
-                table_constraints_req.addRow(row);
-            }
-        }
-    }
+    calculator_.constraints().addReportSection(section_constraints, &utns, true);
 }
 
 /**

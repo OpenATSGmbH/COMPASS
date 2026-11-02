@@ -44,6 +44,8 @@
 #include "compass.h"
 #include "mainwindow.h"
 #include "taskmanager.h"
+#include "evaluationmanager.h"
+#include "evaluationconstraints.h"
 #include "db_context_manager.h"
 #include "sectorlayer.h"
 #include "data_source.h"
@@ -98,6 +100,8 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     registerParameter("min_fl",                     &min_fl_,                     min_fl_);
     registerParameter("use_max_fl",                 &use_max_fl_,                 use_max_fl_);
     registerParameter("max_fl",                     &max_fl_,                     max_fl_);
+
+    registerParameter("use_eval_exclusions",        &use_eval_exclusions_,        use_eval_exclusions_);
 
     registerParameter("limit_by_sectors",           &limit_by_sectors_,           limit_by_sectors_);
     registerParameter("used_sectors",               &used_sectors_,               nlohmann::json::object());
@@ -1075,6 +1079,18 @@ void AnalyzeDataSourceTask::run()
         }
         info.addRow({"Limit by sectors", sec});
     }
+    info.addRow({"Use evaluation exclusions", use_eval_exclusions_ ? "yes" : "no"});
+
+    // snapshot of the evaluation exclusions at run start, see EvaluationConstraints
+    std::shared_ptr<EvaluationConstraints> eval_exclusions;
+    if (use_eval_exclusions_)
+    {
+        eval_exclusions = std::make_shared<EvaluationConstraints>();
+        eval_exclusions->update(compass().evaluationManager());
+
+        auto& excl_section = overview.addSubSection(EvaluationConstraints::ExcludedDataSectionHeading);
+        eval_exclusions->addReportSection(excl_section, nullptr, false);
+    }
 
     advanceStep("Preparing result...");
 
@@ -1115,6 +1131,8 @@ void AnalyzeDataSourceTask::run()
         // SMR: keep only PSR reports of CAT010 sources that also carry MLAT reports.
         scope_filter.smr_only = (ds_type_ == "SMR");
 
+        scope_filter.eval_exclusions = eval_exclusions;
+
         dataset->setScopeFilter(scope_filter);
         dataset->setRequireReference(any_needs_reference);
 
@@ -1150,6 +1168,15 @@ void AnalyzeDataSourceTask::run()
             if (dataset->numNonPSRRecordsSkipped() > 0)
                 info.addRow({"Non-PSR CAT010 records skipped",
                              std::to_string(dataset->numNonPSRRecordsSkipped())});
+            if (eval_exclusions)
+            {
+                info.addRow({"Excluded targets",
+                             std::to_string(dataset->numExcludedTargets())});
+                info.addRow({"Excluded reference records",
+                             std::to_string(dataset->numReferenceRecordsExcluded())});
+                info.addRow({"Excluded test records",
+                             std::to_string(dataset->numTestRecordsExcluded())});
+            }
             if (!dataset->statusCyclesByDS().empty())
             {
                 std::string cycles;

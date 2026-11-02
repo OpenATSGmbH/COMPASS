@@ -479,8 +479,20 @@ void EvaluationManager::addVariables (const std::string dbcontent_name, dbConten
     if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_max_stddev_xy_))
         read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_max_stddev_xy_));
 
+    // reference position accuracy (Chain::posAccuracy, X/Y path for CAT010, CAT020, CAT062, RefTraj)
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_x_stddev_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_xy_cov_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_xy_cov_));
+
     if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_))
         read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
+
+    // identification requirements (Chain::acid)
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_));
 
     // flight level
     read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_));
@@ -494,9 +506,17 @@ void EvaluationManager::addVariables (const std::string dbcontent_name, dbConten
     // the CAT062 Mode C is the selection "Mode C Code" over I062/340, I062/135 and I062/136,
     // reached through the Meta Variable above
 
-    // CAT021 time stamps for the ADS-B Latency requirement
+    // CAT021 time stamps for the ADS-B Latency requirement, quality indicators for the
+    // reference position accuracy (Chain::posAccuracy, ADS-B path)
     if (dbcontent_name == "CAT021")
     {
+        if (dbcontent_man.canGetVariable("CAT021", dbcontent_vars::var_cat021_mops_version_))
+            read_set.add(dbcontent_man.getVariable("CAT021", dbcontent_vars::var_cat021_mops_version_));
+        if (dbcontent_man.canGetVariable("CAT021", dbcontent_vars::var_cat021_nacp_))
+            read_set.add(dbcontent_man.getVariable("CAT021", dbcontent_vars::var_cat021_nacp_));
+        if (dbcontent_man.canGetVariable("CAT021", dbcontent_vars::var_cat021_nucp_nic_))
+            read_set.add(dbcontent_man.getVariable("CAT021", dbcontent_vars::var_cat021_nucp_nic_));
+
         if (dbcontent_man.canGetVariable("CAT021", dbcontent_vars::var_cat021_tomr_position_))
             read_set.add(dbcontent_man.getVariable("CAT021", dbcontent_vars::var_cat021_tomr_position_));
         if (dbcontent_man.canGetVariable("CAT021", dbcontent_vars::var_cat021_tort_))

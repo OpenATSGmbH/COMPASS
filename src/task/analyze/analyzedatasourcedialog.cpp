@@ -27,6 +27,7 @@
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "mlataccuracyinspector.h"
 #include "adsbaccuracyinspector.h"
+#include "mlatrueffectinspector.h"
 #endif
 
 #include "compass.h"
@@ -427,6 +428,17 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
         scope_form->addRow("Maximum Flight Level", row);
     }
 
+    // data exclusions of the evaluation: target use flags, excluded time windows
+    auto* eval_excl_cb = new QCheckBox();
+    eval_excl_cb->setChecked(task_.useEvalExclusions());
+    eval_excl_cb->setToolTip("Leave out the targets and time windows excluded in the evaluation "
+                             "(targets not used, excluded time windows per target and global)");
+    connect(eval_excl_cb, &QCheckBox::toggled, this, [this](bool on) {
+        if (updating_ui_) return;
+        task_.setUseEvalExclusions(on);
+    });
+    scope_form->addRow("Use Evaluation Exclusions", eval_excl_cb);
+
     // Limit by sectors: precise per-report inside test (as in the evaluation)
     // against the selected sector layers; when off, all data is used.
     {
@@ -771,6 +783,19 @@ void buildADSBAccuracySettings(QFormLayout* form,
     bind_float(factor, &s.min_factor_of_interest_);
     form->addRow("Dubious Factor Threshold", factor);
 }
+
+void buildRUEffectSettings(QFormLayout* form,
+                           MLATRUEffectInspectorSettings& s)
+{
+    auto* worst_spin = new QSpinBox();
+    worst_spin->setRange(1, 100);
+    worst_spin->setValue(static_cast<int>(s.max_worst_rus_));
+    worst_spin->setToolTip("Maximum number of Remote Units in the 'Worst Remote Units' list,"
+                           " the report has one map per listed Remote Unit");
+    QObject::connect(worst_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.max_worst_rus_ = static_cast<unsigned int>(v); });
+    form->addRow("Worst Remote Units", worst_spin);
+}
 #endif
 
 void buildADSBDataItemSettings(QFormLayout* form,
@@ -991,6 +1016,8 @@ QWidget* AnalyzeDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* 
         buildAccuracySettings(form, task_.accuracySettings());
     else if (cn == "ADSBAccuracyInspector")
         buildADSBAccuracySettings(form, task_.adsbAccuracySettings());
+    else if (cn == "MLATRUEffectInspector")
+        buildRUEffectSettings(form, task_.ruEffectSettings());
 #endif
 
     layout->addStretch(1);

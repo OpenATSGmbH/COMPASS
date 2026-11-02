@@ -27,10 +27,13 @@
 #include "mainwindow.h"
 #include "compass.h"
 #include "dbcontentmanager.h"
+#include "evaluationtargetfilter.h"
+#include "targetmodel.h"
 
 #include <boost/program_options.hpp>
 
 REGISTER_RTCOMMAND(RTCommandEvaluate)
+REGISTER_RTCOMMAND(RTCommandFilterEvalTargets)
 REGISTER_RTCOMMAND(RTCommandGetEvalStandards)
 
 static COMPASS* s_compass = nullptr;
@@ -41,6 +44,7 @@ void init_evaluation_commands(COMPASS& compass)
 {
     s_compass = &compass;
     RTCommandEvaluate::init();
+    RTCommandFilterEvalTargets::init();
     RTCommandGetEvalStandards::init();
 }
 
@@ -114,6 +118,78 @@ void RTCommandEvaluate::assignVariables_impl(const VariablesMap& variables)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
     RTCOMMAND_GET_VAR_OR_THROW(variables, "result", std::string, result_name_)
     RTCOMMAND_CHECK_VAR(variables, "run_filter", run_filter_)
+}
+
+/***************************************************************************************
+ * RTCommandFilterEvalTargets
+ ***************************************************************************************/
+
+bool RTCommandFilterEvalTargets::run_impl()
+{
+    if (!(*s_compass).dbOpened())
+    {
+        setResultMessage("Database not opened");
+        return false;
+    }
+
+    if ((*s_compass).appMode() != AppMode::Offline)
+    {
+        setResultMessage("Wrong application mode "+(*s_compass).appModeStr());
+        return false;
+    }
+
+    DBContentManager& dbcont_man = (*s_compass).dbContentManager();
+
+    if (!dbcont_man.hasTargetsInfo())
+    {
+        setResultMessage("No targets in database");
+        return false;
+    }
+
+    //try to parse configuration
+    if (!config_.empty())
+    {
+        auto res = (*s_compass).evaluationManager().targetFilter().applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
+
+    // the filter only disables targets, so use all targets first for a filter from scratch
+    if (use_all_)
+        dbcont_man.setUseAllTargets(true);
+
+    if (!no_run_)
+        dbcont_man.autoFilterUTNS();
+
+    unsigned int num_targets = dbcont_man.numTargets();
+    unsigned int num_ignored = dbcont_man.targetModel()->getIgnoredUTNs().size();
+
+    nlohmann::json reply;
+    reply["targets"] = num_targets;
+    reply["used"]    = num_targets - num_ignored;
+    reply["ignored"] = num_ignored;
+    setJSONReply(reply);
+
+    return true;
+}
+
+void RTCommandFilterEvalTargets::collectOptions_impl(OptionsDescription& options,
+                                                     PosOptionsDescription& positional)
+{
+    ADD_RTCOMMAND_OPTIONS(options)
+        ("config,c", po::value<std::string>()->default_value(""), "evaluation target filter configuration as json string")
+        ("use_all,a", "use all targets before the filter runs")
+        ("no_run,n", "do not run the filter, only apply the configuration and use_all");
+}
+
+void RTCommandFilterEvalTargets::assignVariables_impl(const VariablesMap& variables)
+{
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
+    RTCOMMAND_CHECK_VAR(variables, "use_all", use_all_)
+    RTCOMMAND_CHECK_VAR(variables, "no_run", no_run_)
 }
 
 /***************************************************************************************

@@ -1252,6 +1252,14 @@ void DBContentManager::autoFilterUTNS()
 
 /**
  */
+void DBContentManager::setUseAllTargets(bool value)
+{
+    traced_assert(target_model_);
+    target_model_->setAllUseTargets(value);
+}
+
+/**
+ */
 void DBContentManager::showUTN (unsigned int utn)
 {
     loginf << "utn " << utn;

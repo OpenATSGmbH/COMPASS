@@ -169,6 +169,11 @@ public:
     void  setUseMaxFL(bool v)      { use_max_fl_ = v; }
     void  setMaxFL(float v)        { max_fl_ = v; }
 
+    /// Apply the data exclusions of the evaluation (targets with the use flag off,
+    /// excluded time windows per target and global), see EvaluationConstraints.
+    bool  useEvalExclusions() const { return use_eval_exclusions_; }
+    void  setUseEvalExclusions(bool v) { use_eval_exclusions_ = v; }
+
     /// Limit the analysis to reports inside the selected sector layers (precise
     /// per-report inside test, as in the evaluation). When off, all data is used.
     bool  limitBySectors() const { return limit_by_sectors_; }
@@ -276,6 +281,8 @@ private:
     float        min_fl_             = 0.0f;
     bool         use_max_fl_         = false;
     float        max_fl_             = 600.0f;
+
+    bool         use_eval_exclusions_ = false;
 
     bool           limit_by_sectors_ = false;
     nlohmann::json used_sectors_;     // sector-layer name -> bool (unlisted = true)

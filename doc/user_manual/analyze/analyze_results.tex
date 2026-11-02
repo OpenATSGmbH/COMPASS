@@ -6,7 +6,10 @@ When a run completes, the Analyze task produces a result report similar in shape
 The result tree is structured as:
 
 \begin{itemize}
-\item Overview: combined dataset summary, selected Data Sources, RefTraj reference, license tier
+\item Overview: combined dataset summary, selected Data Sources, RefTraj reference, license tier, Scope Filter settings
+\begin{itemize}
+\item With 'Use Evaluation Exclusions': the number of excluded targets and target reports, and an 'Excluded Data' section with the excluded time windows (as in \nameref{sec:eval_report_excl_data}, without the excluded requirements)
+\end{itemize}
 \item One top-level section per executed inspector
 \begin{itemize}
 \item Data Item Inspection: per-DS, per-CAT cumulative tables
