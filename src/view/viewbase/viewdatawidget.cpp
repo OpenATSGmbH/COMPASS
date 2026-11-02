@@ -287,6 +287,10 @@ bool ViewDataWidget::hiddenLayerIdsChanged() const
  */
 void ViewDataWidget::endDataReload()
 {
+    // the item list (stale until the provider's refresh) as the layer tree below
+    if (item_provider_)
+        item_provider_->finishPendingRefresh();
+
     auto* layer_model = layerTreeModel();
     if (!layer_model || !layer_model->dataReloading())
         return;
@@ -875,9 +879,12 @@ void ViewDataWidget::databaseOpened()
  */
 void ViewDataWidget::databaseClosed()
 {
-    //hidden-layer memory is per database session - forget it on close
+    //hidden-layer and item memory is per database session - forget it on close
     if (auto* layer_model = layerTreeModel())
         layer_model->state().clear();
+
+    if (item_provider_)
+        item_provider_->clearItemStates();
 
     databaseClosed_impl();
 }

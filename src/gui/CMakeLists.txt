@@ -25,6 +25,7 @@ target_sources(compass_gui
         "${CMAKE_CURRENT_LIST_DIR}/questiondialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/dialogs.h"
         "${CMAKE_CURRENT_LIST_DIR}/styledlabel.h"
+        "${CMAKE_CURRENT_LIST_DIR}/waitspinner.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rangeedit.cpp"
@@ -44,6 +45,7 @@ target_sources(compass_gui
         "${CMAKE_CURRENT_LIST_DIR}/questiondialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/dialogs.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/styledlabel.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/waitspinner.cpp"
 )
 
 target_include_directories(compass_gui PUBLIC "${CMAKE_CURRENT_LIST_DIR}")

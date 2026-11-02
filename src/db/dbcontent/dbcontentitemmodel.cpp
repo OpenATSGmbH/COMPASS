@@ -16,8 +16,17 @@
  */
 
 #include "dbcontentitemmodel.h"
+#include "sortedlistdiff.h"
 
 #include "logger.h"
+#include "traced_assert.h"
+
+#include <algorithm>
+
+namespace
+{
+    const char* StaleTooltip = "Data is being reloaded"; // as the layer tree's stale rows
+}
 
 #include <QApplication>
 #include <QMenu>
@@ -28,8 +37,10 @@ DBContentItemModel::DBContentItemModel(DBContentItemProvider& provider, QObject*
     : QAbstractListModel(parent)
     , provider_(provider)
 {
+    // no clearing on a provider reset: the rows stay readable (stale) until the refresh updates them in
+    // place. Both queued, the stale mark only while the refresh is outstanding (see dataAboutToBeResetSlot())
     connect(&provider_, &DBContentItemProvider::dataAboutToBeResetSignal,
-            this, &DBContentItemModel::dataResetSlot,
+            this, &DBContentItemModel::dataAboutToBeResetSlot,
             Qt::QueuedConnection);
 
     connect(&provider_, &DBContentItemProvider::dataRefreshedSignal,
@@ -41,6 +52,9 @@ DBContentItemModel::DBContentItemModel(DBContentItemProvider& provider, QObject*
 
     connect(&provider_, &DBContentItemProvider::showItemColorsChangedSignal,
             this, &DBContentItemModel::showItemColorsChangedSlot);
+
+    connect(&provider_, &DBContentItemProvider::itemStatesClearedSignal,
+            this, &DBContentItemModel::itemStatesClearedSlot);
 
     connect(&provider_, &DBContentItemProvider::groupingChangedSignal,
             this, &DBContentItemModel::groupingChangedSlot);
@@ -88,6 +102,12 @@ QVariant DBContentItemModel::data(const QModelIndex& index, int role) const
         return {};
 
     const auto& item_id = item_ids_.at(index.row());
+
+    if (stale_ && role == Qt::ForegroundRole)
+        return QApplication::palette().color(QPalette::Disabled, QPalette::Text);
+
+    if (stale_ && role == Qt::ToolTipRole)
+        return QString(StaleTooltip);
 
     if (role == Qt::DisplayRole)
     {
@@ -185,7 +205,7 @@ void DBContentItemModel::setSiblingsVisible(const nlohmann::json& item_id, bool 
 
 /**
  */
-void DBContentItemModel::showContextMenu(const QModelIndex& index, 
+void DBContentItemModel::showContextMenu(const QModelIndex& index,
                                          const QPoint& global_pos,
                                          QWidget* parent)
 {
@@ -245,19 +265,39 @@ void DBContentItemModel::itemDoubleClickedSlot(const QModelIndex& index)
 // --- Private slots ---
 
 /**
+ * The provider resets its data => the rows are stale until the next refresh.
+ * Notice: Queued => only if the refresh is still outstanding: a live tick already refreshed in the same turn,
+ * a database close emptied the list in between.
  */
-void DBContentItemModel::dataResetSlot()
+void DBContentItemModel::dataAboutToBeResetSlot()
 {
-    beginResetModel();
-    item_ids_.clear();
-    endResetModel();
+    if (provider_.refreshPending())
+        setStale(true);
 }
 
 /**
  */
 void DBContentItemModel::dataRefreshedSlot()
 {
-    rebuild();
+    update();
+}
+
+/**
+ * Notice: Repaints all rows (greyed text, tooltip).
+ */
+void DBContentItemModel::setStale(bool stale)
+{
+    if (stale_ == stale)
+        return;
+
+    stale_ = stale;
+
+    if (!item_ids_.empty())
+        emit dataChanged(index(0, 0),
+                         index((int)item_ids_.size() - 1, columnCount() - 1),
+                         { Qt::ForegroundRole, Qt::ToolTipRole });
+
+    emit staleChangedSignal();
 }
 
 /**
@@ -288,6 +328,19 @@ void DBContentItemModel::showItemColorsChangedSlot()
 }
 
 /**
+ * The provider forgot its item states (grouping change, database close) => the list is emptied, the next
+ * refresh builds it from scratch.
+ */
+void DBContentItemModel::itemStatesClearedSlot()
+{
+    beginResetModel();
+    item_ids_.clear();
+    endResetModel();
+
+    setStale(false);
+}
+
+/**
  */
 void DBContentItemModel::groupingChangedSlot()
 {
@@ -302,7 +355,51 @@ void DBContentItemModel::groupingChangedSlot()
 // --- Private ---
 
 /**
- * Collects + sorts all item ids of the provider and resets the model.
+ * Collects all item ids of the provider, sorted by the strict key (sort value, id): different ids may
+ * share a sort value (e.g. ACIDs once spaces are removed). The sort values of the given extra ids
+ * (e.g. the current rows) are added to sort_values as well.
+ */
+std::vector<nlohmann::json> DBContentItemModel::sortedItemIds(SortValues& sort_values,
+                                                              const std::vector<nlohmann::json>& extra_ids) const
+{
+    std::vector<nlohmann::json> item_ids;
+    item_ids.reserve(provider_.itemLocations().size());
+
+    for (const auto& [ item_id, locations ] : provider_.itemLocations())
+    {
+        item_ids.push_back(item_id);
+        sort_values[ item_id ] = provider_.itemSortValue(item_id);
+    }
+
+    for (const auto& item_id : extra_ids)
+    {
+        if (!sort_values.count(item_id))
+            sort_values[ item_id ] = provider_.itemSortValue(item_id);
+    }
+
+    std::sort(item_ids.begin(), item_ids.end(), lessThan(sort_values));
+
+    return item_ids;
+}
+
+/**
+ */
+std::function<bool(const nlohmann::json&, const nlohmann::json&)> DBContentItemModel::lessThan(const SortValues& sort_values)
+{
+    return [ &sort_values ] (const nlohmann::json& a, const nlohmann::json& b)
+    {
+        const auto& sa = sort_values.at(a);
+        const auto& sb = sort_values.at(b);
+
+        if (sa != sb)
+            return sa < sb;
+
+        return a < b;
+    };
+}
+
+/**
+ * Collects + sorts all item ids of the provider and resets the model (initial build, grouping change).
  * Sets a wait cursor itself: the triggering signals are queued (see ctor), so this
  * runs in a later event loop turn, outside of any cursor the original caller (e.g.
  * the grouping combo) might have set around its own work.
@@ -313,21 +410,65 @@ void DBContentItemModel::rebuild()
 
     beginResetModel();
 
-    item_ids_.clear();
-
-    std::map<nlohmann::json, nlohmann::json> name_cache;
-
-    for (const auto& [item_id, locations] : provider_.itemLocations())
-    {
-        item_ids_.push_back(item_id);
-        name_cache[item_id] = provider_.itemSortValue(item_id);
-    }
-
-    std::sort(item_ids_.begin(), item_ids_.end(),
-              [&name_cache](const nlohmann::json& a, const nlohmann::json& b)
-              { return name_cache.at(a) < name_cache.at(b); });
+    SortValues sort_values;
+    item_ids_ = sortedItemIds(sort_values, {});
 
     endResetModel();
 
+    setStale(false);
+
     QApplication::restoreOverrideCursor();
+}
+
+/**
+ * Updates the rows in place from the provider's items: vanished rows are removed, new ones inserted,
+ * kept rows stay (the view keeps their selection, current row and scroll position) and are refreshed.
+ * An empty list (initial build, grouping change) is built as a full reset.
+ */
+void DBContentItemModel::update()
+{
+    if (item_ids_.empty())
+    {
+        // nothing to list (e.g. an empty live data window) => no full reset and no wait cursor per tick
+        if (provider_.itemLocations().empty())
+            setStale(false);
+        else
+            rebuild();
+
+        return;
+    }
+
+    SortValues sort_values;
+    const auto item_ids = sortedItemIds(sort_values, item_ids_);
+
+    const auto ops = dbContent::diffSortedLists(item_ids_, item_ids, lessThan(sort_values));
+
+    for (const auto& op : ops)
+    {
+        const int first = (int)op.row;
+        const int last  = (int)(op.row + op.count) - 1;
+
+        if (op.insert)
+        {
+            beginInsertRows(QModelIndex(), first, last);
+            item_ids_.insert(item_ids_.begin() + op.row,
+                             item_ids.begin() + op.target_begin,
+                             item_ids.begin() + op.target_begin + op.count);
+            endInsertRows();
+        }
+        else
+        {
+            beginRemoveRows(QModelIndex(), first, last);
+            item_ids_.erase(item_ids_.begin() + op.row, item_ids_.begin() + op.row + op.count);
+            endRemoveRows();
+        }
+    }
+
+    traced_assert(item_ids_ == item_ids);
+
+    // check state, color and the identification column of kept rows may have changed
+    if (!item_ids_.empty())
+        emit dataChanged(index(0, 0), index((int)item_ids_.size() - 1, columnCount() - 1));
+
+    setStale(false);
 }

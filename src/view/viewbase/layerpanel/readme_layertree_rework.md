@@ -8,7 +8,8 @@ The work came in two rounds: steps 1 - 8 (and R1 - R3) built a remembered state 
 map) around trees that were destroyed and rebuilt; the update rework (U0 - U6, R4, R5) then made the
 producers update the tree in place and removed the session map again. The sections "Done" and "Step
 plan" describe the first round as it was built, the concepts below the current state. The section
-"Target report context menu in live mode" (M1 - M4) enables that menu in live running.
+"Target report context menu in live mode" (M1 - M4) enables that menu in live running, "Item list
+across live ticks and reloads" (L1 - L3) brings the same state handling to the item list.
 
 ## Concepts (as implemented)
 
@@ -1248,6 +1249,153 @@ Parents               >
   for ticks, then trigger each action on a report that is still there and on one that left the data
   window (warning in the log, no tooltip, no action); menu structure in both menus; offline behavior
   unchanged
+
+## Item list across live ticks and reloads (L1 - L5, done, application check open)
+
+The item list of the geographic view (`DBContentItemView` / `DBContentItemModel` over the
+`DBContentItemProvider`, "Item Mode" grouping) is recomputed on every live tick and reload and loses
+each item's check state and the selection, current row and scroll position. Goal: the same behavior
+as the layer tree - kept items keep their state, vanished items are forgotten (user decision), new
+items start checked.
+
+### Current state (research)
+
+- check state: the provider's `item_visibility_` (item id -> visible, only deviations stored),
+  cleared by `resetData()` on every reset: `reset()` from `clearData()` at loading start and live
+  session start, `applyChange(reset = true)` on every live tick. New layers never read it => even a
+  kept map would not hide the items again (layers start with all items visible; the live tick
+  rebinds stashed layers via `rebuildFromGroup()`, offline arrivals are built asynchronously and
+  attached later)
+- the item colors (`item_colors_`, a pure function of the id) are cleared on the same reset
+- model: `dataResetSlot()` empties the list on `dataAboutToBeResetSignal`, `rebuild()` refills it
+  with `beginResetModel()` / `endResetModel()` on `dataRefreshedSignal`, both queued => the
+  QTreeView drops selection, current row and scroll position, and the list is empty in between, on
+  every tick; `rebuild()` also sets a wait cursor each time
+- the list is sorted by `itemSortValue(item_id)`, a pure function of the id and the grouping =>
+  old and new lists of the same grouping are sorted by the same key
+- a grouping change resets the model (`groupingChangedSlot()`): every id changes shape, a full
+  reset is correct there
+
+### L1 - Check state in the provider, applied to the layers
+
+- `resetData()` keeps `item_visibility_` and `item_colors_`; they are cleared on a grouping change
+  (`setGrouping()`, before the update) and on database close (`ViewDataWidget::databaseClosed()`,
+  next to the layer tree state clear, via the item provider)
+- vanished => forgotten: after the final rebuild (`contentRebuilt()`, i.e. `last = true`) the
+  provider erases visibility and color entries whose id has no locations any more
+  (`item_locations_`). A cancelled or failed load also forgets them (as the layer tree, U5
+  decision B / F7)
+- hidden items reach the geometry: the base marks each `dbContent::Item` with its visibility when it
+  builds the groups (`rebuildContent()`, main thread), the layers build their item hidden flags from
+  that snapshot => sync builds, the live rebind (`rebuildFromGroup()`) and asynchronous builds read
+  no shared map from a worker. A toggle during an outstanding asynchronous build is re-synced from
+  the provider when the arrival is attached (`attachArrivalDirect()` / `arrivalCompileDone()`)
+- the counts follow (`requestCountUpdate()` as today)
+
+Done notes:
+
+- `DBContentItemProvider`: `clearItemStates()` (grouping change, `ViewDataWidget::databaseClosed()`),
+  `pruneItemStates()` at the start of `contentRebuilt()`, `dbContent::Item::hidden` set in
+  `rebuildContent()`
+- `GeometryItemGroupLayer::init()` sets the Hidden flag of item range and points from the snapshot
+  (covers the synchronous build, the live rebind via `build()` and the asynchronous build);
+  `GeometryItemProvider::syncItemVisibility()` re-applies toggles made during an asynchronous build
+  when its layers are swapped in
+- found on the way: `itemLocations(item_id)` asserted that the item exists, its only caller
+  `iterateLayers(item_id)` (all item actions, the item list checkboxes) would have hit the assert for
+  an item that left the data (e.g. the item submenu of an open target report menu in live mode, M2).
+  Now it returns an empty list for a missing id => the warning of M2 applies
+
+### L2 - Model updated in place
+
+- no clearing on `dataAboutToBeResetSignal` any more: the old rows stay readable until the update
+  (the name is a pure function of the id, visibility and color lookups keep their entries or fall
+  back to their defaults)
+- `dataRefreshedSignal` -> `update()`: the new id list sorted by the strict key (sort value, id) -
+  different ACIDs can share a sort value once spaces are removed - and one merge walk over the old
+  and the new list => contiguous `beginRemoveRows` / `beginInsertRows` ranges, kept rows untouched
+  => the QTreeView keeps selection, current row, scroll position and hover natively
+- kept rows: one `dataChanged` over all rows and columns (check state, color, the best available
+  identification of column 1 can change)
+- the diff as a pure helper (old ids, new ids, key) -> ranges, so it can be tested without a
+  provider
+- the full reset stays for the initial build and a grouping change (selection cleared on purpose
+  there); the wait cursor only for the full reset
+
+Done notes: `dbContent::diffSortedLists()` in `src/db/dbcontent/sortedlistdiff.h` (header only,
+ops applied in order, rows relative to the list after the previous ops); `DBContentItemModel`:
+`dataResetSlot()` removed, `update()` (empty list => `rebuild()`), `sortedItemIds()` /
+`lessThan()` with the strict key, also used by `rebuild()`
+
+Wait cursor per live tick (reported after L2): before L2 every refresh ran `rebuild()`, which sets a
+wait cursor => it flashed on every tick; L2 removed that for a filled list. Remaining case fixed:
+an empty list with no items in the provider (e.g. an empty live data window) went through
+`rebuild()` on every tick, `update()` now only ends the stale state there.
+
+Regression fixed (found after L2): a reset no longer empties the list and a database close emits no
+refresh (`ViewManager::databaseClosedSlot()`: clear data in the views, then `databaseClosed()`) =>
+the old items stayed listed after closing the database. `clearItemStates()` now emits
+`itemStatesClearedSignal()`, the model empties the list on it (`itemStatesClearedSlot()`); only the
+grouping change and the database close clear the item states, both should end with an empty list
+
+### L3 - Tests and documentation
+
+- unit tests (`src/db/dbcontent/unit_tests/test_sortedlistdiff.cpp`, new module test directory
+  registered in `src/unit_tests/CMakeLists.txt`, done): the diff helper (keep / remove / add,
+  contiguous ranges, equal sort values with different ids, empty old / new lists) and a QTreeView
+  over a list model driven by the helper (selection and current row of kept rows survive, removed
+  selected rows drop out)
+- the provider needs a `DBContentManager` => visibility persistence and pruning are checked in the
+  application: live running, uncheck items and select some, wait for ticks (state kept, list does
+  not flicker); a target leaving the data window (its entry forgotten, it comes back checked);
+  reload; grouping change and database close (all cleared)
+- readme: done notes per stage, the F2 checklist
+
+### L4 - Stale mode (after L3, done)
+
+As the layer tree: while the provider reloads, the list shows the previous items greyed with the
+tooltip "Data is being reloaded", and a wait icon spins next to the "Item Mode" combo.
+
+- `DBContentItemModel`: stale from `dataAboutToBeResetSignal` (queued) until the next refresh
+  (`update()` / `rebuild()`) or the list being emptied (`itemStatesClearedSlot()`);
+  `Qt::ForegroundRole` / `Qt::ToolTipRole` while stale, `staleChangedSignal()`
+- the stale mark is set only while the provider's refresh is outstanding
+  (`DBContentItemProvider::refreshPending()`): a live tick resets and refreshes in one turn, so its
+  queued mark finds nothing pending (no greying, no repaint per tick); a database close empties the
+  list before the queued mark arrives (`clearItemStates()` clears the pending flag)
+- safety net as the layer tree's `endDataReload()`: a load ending without a refresh (e.g. cancelled)
+  gets one (`DBContentItemProvider::finishPendingRefresh()` from `ViewDataWidget::endDataReload()`,
+  logs a warning, prunes the item states as a final rebuild would)
+- wait icon: `WaitSpinnerWidget` and `waitSpinner::paint()` in `src/gui/waitspinner.h/.cpp` (the item
+  list in `src/db/dbcontent` must not depend on view code); the layer tree delegate and panel use
+  the same painting, steps and interval
+- checkbox toggles while stale are stored in the provider and applied when the item comes back
+  (snapshot, L1), or forgotten with it
+- not unit tested (the model needs a provider with a `DBContentManager`), application check: a long
+  offline reload (greyed, icon spins, both end with the new data), live ticks (never greyed), a
+  cancelled load, database close (empty, no icon)
+
+### L5 - Filter box (after L4, done)
+
+- the field is hidden by default, toggled by a checkable tool button next to the combo
+  (`filter.png`); Ctrl+F always opens it (or keeps it open), focuses it and selects its text,
+  Escape in the field closes it (user decision, no Ctrl+F toggle: it would close and clear the
+  filter on the usual "find again" key); opening focuses the field, closing clears the filter and
+  focuses the list; database close closes it
+- keys via an event filter on the children that take the focus (combo, button, field, list),
+  claimed in the `ShortcutOverride` => they win over window wide shortcuts with the same keys
+  added later (e.g. a menu Ctrl+F), which keep working everywhere else; no `QShortcut`
+- a `QLineEdit` below the "Item Mode" combo (clear button) lists only the matching items: case
+  insensitive, anywhere in the text, `*` and `?` as wildcards (user decision), over all columns
+  (also the best available identification of the UTN mode)
+- a `QSortFilterProxyModel` between `DBContentItemModel` and the QTreeView
+  (`setFilterWildcard()`); it passes the in-place row updates of L2 on, the selection and scroll
+  position stay; the view maps its indexes to the model for the context menu and double click
+- the context menu is independent of the filter (user decision): "Show / Hide All" and "Show /
+  Hide Others" act on all items, also the ones the filter does not list
+- the filter text is kept across grouping changes, cleared on database close
+  (`DBContentItemView::clearFilter()` from `GeographicViewConfigWidget::databaseClosedSlot()`), not
+  persisted in the config
 
 ## Future improvements
 

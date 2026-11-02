@@ -58,6 +58,7 @@ signals:
     void dataChangedSignal(unsigned int dbc_id, size_t group_idx);
     void dataRefreshedSignal();
     void itemVisibilityChangedSignal();
+    void itemStatesClearedSignal(); // item states forgotten (grouping change, database close) => lists empty
     void groupingChangedSignal();
     void showItemColorsChangedSignal();
 
@@ -73,6 +74,9 @@ public:
 
     void update();
     void reset();
+    void clearItemStates();
+    void finishPendingRefresh();
+    bool refreshPending() const { return refresh_pending_; }
 
     // Source-fed path: setSource points the provider at the current DBContentDataSet
     // (nullptr => no data); applyChange rebuilds the affected contents, keyed by content
@@ -100,7 +104,9 @@ public:
     // --- per-item visibility cache ---
     // Single source of truth for "is item visible?". The DBContentItemModel
     // queries this cache for its check-state column. New ids default to
-    // visible (true). Cache is cleared on reset(). Subclasses propagate the
+    // visible (true). Cache is kept across resets, items vanished from the data
+    // are forgotten after the final rebuild, cleared on a grouping change and by
+    // clearItemStates() (database close). Subclasses propagate the
     // change to their backing store via the *_impl() hooks below; external
     // mutations should call setItemVisibleSilent()/setItemsVisibleSilent()
     // and emit itemVisibilityChangedSignal() once the batch completes.
@@ -170,6 +176,7 @@ protected:
 
 private:
     void resetData();
+    void pruneItemStates();
     void rebuildContent(unsigned int dbc_id);
     void contentRebuilt();
 
@@ -193,7 +200,9 @@ private:
     // pointee stability is unchanged
     std::vector<std::shared_ptr<dbContent::ItemGroup>>  item_groups_;               // per (dbcontent, ds, line) item groups
     std::map<nlohmann::json, ItemLocations>             item_locations_;            // per item group locations
-    std::map<nlohmann::json, bool>                      item_visibility_;           // per item visibility cache; missing entries default to true
-    std::map<nlohmann::json, QColor>                    item_colors_;
+    std::map<nlohmann::json, bool>                      item_visibility_;           // per item visibility cache; missing entries default to true,
+                                                                                    // kept across resets (see resetData())
+    std::map<nlohmann::json, QColor>                    item_colors_;               // per item color, kept as the visibility
     bool                                                show_item_colors_ {false};
+    bool                                                refresh_pending_  {false};  // reset, final rebuild outstanding
 };

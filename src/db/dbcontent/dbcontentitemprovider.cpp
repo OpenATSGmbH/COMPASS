@@ -145,23 +145,34 @@ std::vector<DBContentItemProvider::Grouping> DBContentItemProvider::getGroupings
 
 /**
  */
+/**
+ * Notice: Empty for an item not (any more) in the data, e.g. one offered by a list or menu before a live tick.
+ */
 const DBContentItemProvider::ItemLocations& DBContentItemProvider::itemLocations(const nlohmann::json& item_id) const
 {
-    traced_assert(item_locations_.count(item_id));
-    return item_locations_.at(item_id);
+    static const ItemLocations empty;
+
+    auto it = item_locations_.find(item_id);
+    if (it == item_locations_.end())
+        return empty;
+
+    return it->second;
 }
 
 /**
  * Sets the grouping mode used to partition buffer rows into items.
  * Triggers a full rebuild of all item groups if the grouping changes.
+ * Notice: The item states belong to the ids of the old grouping => cleared.
  */
-void DBContentItemProvider::setGrouping(Grouping grouping, 
+void DBContentItemProvider::setGrouping(Grouping grouping,
                                         bool run_update)
 {
     if (grouping_ == grouping)
         return;
 
     grouping_ = grouping;
+
+    clearItemStates();
 
     if (run_update)
         updateInternal(true);
@@ -203,6 +214,8 @@ void DBContentItemProvider::reset()
  * Internal reset: wipes provider state and notifies subclasses + observers.
  * Used both by the public reset() and by dataChanged(ids, reset=true) so the
  * reset + per-content rebuild can run atomically in one event-loop turn.
+ * Notice: The item states (visibility, colors) are kept by item id, items that did not come back are
+ * forgotten after the final rebuild (see contentRebuilt()).
  */
 void DBContentItemProvider::resetData()
 {
@@ -212,10 +225,66 @@ void DBContentItemProvider::resetData()
 
     item_groups_.clear();
     item_locations_.clear();
+
+    refresh_pending_ = true;
+
+    emit dataResetSignal();
+}
+
+/**
+ * Called when a load ended: a reset without a following refresh (e.g. a cancelled load) is refreshed with the
+ * current items, so item lists do not stay stale.
+ */
+void DBContentItemProvider::finishPendingRefresh()
+{
+    if (!refresh_pending_)
+        return;
+
+    logwrn << "data reset not followed by a refresh, refreshing";
+
+    refresh_pending_ = false;
+
+    pruneItemStates();
+
+    emit dataRefreshedSignal();
+}
+
+/**
+ * Forgets the item states (visibility, colors), e.g. on a grouping change or a database close.
+ * Notice: Item lists are not emptied by a reset (they are updated in place on the refresh) => they
+ * are emptied here, e.g. after a database close no refresh follows.
+ */
+void DBContentItemProvider::clearItemStates()
+{
     item_visibility_.clear();
     item_colors_.clear();
 
-    emit dataResetSignal();
+    // the emptied lists wait for no refresh (database close), a grouping change resets again afterwards
+    refresh_pending_ = false;
+
+    emit itemStatesClearedSignal();
+}
+
+/**
+ * Forgets the states of items without locations, i.e. that vanished from the data.
+ */
+void DBContentItemProvider::pruneItemStates()
+{
+    for (auto it = item_visibility_.begin(); it != item_visibility_.end();)
+    {
+        if (item_locations_.count(it->first))
+            ++it;
+        else
+            it = item_visibility_.erase(it);
+    }
+
+    for (auto it = item_colors_.begin(); it != item_colors_.end();)
+    {
+        if (item_locations_.count(it->first))
+            ++it;
+        else
+            it = item_colors_.erase(it);
+    }
 }
 
 /**
@@ -562,6 +631,7 @@ void DBContentItemProvider::rebuildContent(unsigned int dbc_id)
                 item.item_id   = item_indices_it.first;
                 item.idx_begin = idx0;
                 item.idx_end   = idx1;
+                item.hidden    = !itemVisible(item.item_id); // kept across resets => the layers start with it
 
                 size_t item_idx = group->items.size();
 
@@ -618,6 +688,11 @@ void DBContentItemProvider::setGroupIDNames(dbContent::ItemGroup& group) const
  */
 void DBContentItemProvider::contentRebuilt()
 {
+    // the data is complete here => vanished items are forgotten
+    pruneItemStates();
+
+    refresh_pending_ = false;
+
     contentRebuilt_impl();
 
     loginf << groupingAsString();

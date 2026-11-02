@@ -31,7 +31,7 @@
 
 namespace
 {
-    const int SpinnerIntervalMS = 100; // wait icon step interval
+    const int SpinnerIntervalMS = waitSpinner::IntervalMS; // wait icon step interval
 }
 
 /**

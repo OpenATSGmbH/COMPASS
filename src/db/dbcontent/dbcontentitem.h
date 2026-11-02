@@ -62,9 +62,11 @@ struct Item
         return item_id.is_null() ? "None" : item_id.dump(0);
     }
 
-    nlohmann::json            item_id;   // item id (content determined by grouping)
-    unsigned int              idx_begin; // range index into group buffer indices begin
-    unsigned int              idx_end;   // range index into group buffer indices end
+    nlohmann::json            item_id;          // item id (content determined by grouping)
+    unsigned int              idx_begin;        // range index into group buffer indices begin
+    unsigned int              idx_end;          // range index into group buffer indices end
+    bool                      hidden = false;   // unchecked in the item list when the group was built
+                                                // (snapshot, the provider's visibility stays the truth)
 };
 
 /**
