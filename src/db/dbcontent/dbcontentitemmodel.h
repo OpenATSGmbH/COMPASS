@@ -19,6 +19,8 @@
 
 #include "dbcontentitemprovider.h"
 
+#include <functional>
+#include <map>
 #include <vector>
 
 #include "json.hpp"
@@ -84,9 +86,13 @@ public:
     /** Toggles visibility for all current items via the provider. */
     void setAllVisible(bool visible);
 
+    /** True while the provider reloads its data: the rows show the previous items, greyed. */
+    bool isStale() const { return stale_; }
+
     /**
      * Shows a context menu at global_pos.
-     * Call this from the QTreeView's customContextMenuRequested handler.
+     * Call this from the QTreeView's customContextMenuRequested handler,
+     * index is a model (not a proxy) index.
      * The menu always contains "Show All" and "Hide All".
      * If index is valid, fillItemContextMenu() is called first to allow
      * subclass-specific entries to appear above those fixed actions.
@@ -102,19 +108,32 @@ protected:
     virtual void fillItemContextMenu(QMenu& menu, const nlohmann::json& item_id) {}
     virtual void onItemDoubleClicked(const nlohmann::json& item_id) {}
 
+signals:
+    void staleChangedSignal();
+
 public slots:
     void itemDoubleClickedSlot(const QModelIndex& index);
 
 private slots:
-    void dataResetSlot();
+    void dataAboutToBeResetSlot();
     void dataRefreshedSlot();
     void itemVisibilityChangedSlot();
     void showItemColorsChangedSlot();
+    void itemStatesClearedSlot();
     void groupingChangedSlot();
 
 private:
+    typedef std::map<nlohmann::json, nlohmann::json> SortValues; // item id -> sort value
+
+    std::vector<nlohmann::json> sortedItemIds(SortValues& sort_values,
+                                              const std::vector<nlohmann::json>& extra_ids) const;
+    static std::function<bool(const nlohmann::json&, const nlohmann::json&)> lessThan(const SortValues& sort_values);
+
     void rebuild();
+    void update();
+    void setStale(bool stale);
 
     DBContentItemProvider&          provider_;
-    std::vector<nlohmann::json>     item_ids_;   // ordered list of unique item IDs
+    std::vector<nlohmann::json>     item_ids_;          // ordered list of unique item IDs
+    bool                            stale_    = false;  // provider reset, refresh pending
 };

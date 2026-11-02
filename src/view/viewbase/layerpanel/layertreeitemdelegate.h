@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "waitspinner.h"
+
 #include <QStyledItemDelegate>
 
 /**
@@ -50,7 +52,7 @@ public:
         StaleSpinner = 1 << 1  // rotating wait icon in the count column
     };
 
-    static const int SpinnerSteps = 12; // wait icon positions per turn
+    static const int SpinnerSteps = waitSpinner::Steps; // wait icon positions per turn
 
     explicit LayerTreeItemDelegate(QObject* parent = nullptr);
 

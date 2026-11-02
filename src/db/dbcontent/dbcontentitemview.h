@@ -25,13 +25,20 @@
 
 class DBContentItemModel;
 class QComboBox;
+class QLineEdit;
+class QSortFilterProxyModel;
+class QToolButton;
 class QTreeView;
+class WaitSpinnerWidget;
 
 /**
  * Widget combining a grouping selector and a flat item list for a DBContentItemModel.
  *
  * Layout (top → bottom):
- *   [ QComboBox  - grouping mode selector ]
+ *   [ QComboBox  - grouping mode selector ] [ filter button ] [ wait icon while the list is stale ]
+ *   [ QLineEdit  - filter, lists only matching items (* and ? as wildcards), toggled by the filter
+ *                  button, opened by Ctrl+F (focus inside the widget, text selected), closed by
+ *                  Escape; closing clears the filter ]
  *   [ QTreeView  - flat item list with checkbox + context menu ]
  *
  * The combo is pre-populated with all DBContentItemProvider grouping modes and
@@ -53,16 +60,30 @@ public:
     void setActiveGroupings(unsigned int flags);
     bool isGroupingActive(dbContent::Grouping grouping) const;
 
+    void clearFilter();
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
 private slots:
     void groupingChangedSlot(const QString& text);
+    void filterChangedSlot(const QString& text);
+    void setFilterVisible(bool visible);
+    void contextMenuSlot(const QPoint& pos);
 
 private:
     void updateGrouping();
+    void updateStaleIndication();
+    void openFilter();
 
     DBContentItemModel& model_;
 
-    QComboBox* grouping_box_ {nullptr};
-    QTreeView* tree_view_    {nullptr};
+    QComboBox*             grouping_box_  {nullptr};
+    QToolButton*           filter_button_ {nullptr};  // checked => filter field open
+    QLineEdit*             filter_edit_   {nullptr};
+    QSortFilterProxyModel* proxy_model_   {nullptr};  // filter between model_ and tree_view_
+    QTreeView*             tree_view_     {nullptr};  // shows proxy_model_ => map its indexes to model_
+    WaitSpinnerWidget*     stale_spinner_ {nullptr};
 
     unsigned int active_groupings_ = std::numeric_limits<unsigned int>::max();
 };

@@ -30,6 +30,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/dbcontent_commands.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemprovider.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemmodel.h"
+        "${CMAKE_CURRENT_LIST_DIR}/sortedlistdiff.h"
         "${CMAKE_CURRENT_LIST_DIR}/dbcontentitemview.h"
         "${CMAKE_CURRENT_LIST_DIR}/db_content_edit_dialog.h"
     PRIVATE

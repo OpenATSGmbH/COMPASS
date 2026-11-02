@@ -18,6 +18,8 @@
 #include "layertreeitemdelegate.h"
 #include "layertreeitem.h"
 #include "layertreemodel.h"
+
+#include "waitspinner.h"
 #include "traced_assert.h"
 
 #include <algorithm>
@@ -127,18 +129,7 @@ void LayerTreeItemDelegate::paintSpinner(QPainter* painter, const QRect& rect) c
                               size,
                               size);
 
-    QPen pen(QApplication::palette().color(QPalette::Disabled, QPalette::Text), 2.0);
-    pen.setCapStyle(Qt::RoundCap);
-
-    painter->save();
-    painter->setRenderHint(QPainter::Antialiasing, true);
-    painter->setPen(pen);
-
-    // Qt angles are counter-clockwise in 1/16 degrees
-    const int start = -spinner_step_ * (360 / SpinnerSteps) * 16;
-    painter->drawArc(spinner_rect.adjusted(1, 1, -1, -1), start, 270 * 16);
-
-    painter->restore();
+    waitSpinner::paint(painter, spinner_rect, spinner_step_);
 }
 
 bool LayerTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* /*model*/,
