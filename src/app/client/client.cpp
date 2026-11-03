@@ -452,6 +452,26 @@ bool Client::run ()
         {
             QFont system_font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
 
+#ifdef _WIN32
+            // Windows: the Ubuntu font shipped in data/fonts/ubuntu, at the size of the Ubuntu
+            // desktop font, so COMPASS looks as on Linux (the Windows UI font is smaller)
+            const int     WindowsAppFontPointSize = 11; // default of the Ubuntu desktop
+            const QString font_dir = QString::fromStdString(system_install_path_ + "data/fonts/ubuntu/");
+            bool fonts_loaded = true;
+
+            for (const char* file : { "Ubuntu-R.ttf", "Ubuntu-B.ttf", "Ubuntu-RI.ttf", "Ubuntu-BI.ttf" })
+            {
+                if (QFontDatabase::addApplicationFont(font_dir + file) < 0)
+                {
+                    logwrn << "could not load font '" << (font_dir + file).toStdString() << "'";
+                    fonts_loaded = false;
+                }
+            }
+
+            if (fonts_loaded)
+                system_font = QFont("Ubuntu", WindowsAppFontPointSize);
+#endif
+
             system_font.setPointSizeF(system_font.pointSizeF() * compass_->appFontScale());
             setFont(system_font);
         }
