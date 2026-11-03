@@ -9,7 +9,13 @@
 #   compass/conf, compass/data                        COMPASS configuration and data
 #   proj/                                             PROJ data (proj.db)
 #
-# Usage (inside the container, after win_build.sh): win_deploy.sh [--with_tests]
+# DLLs that nothing imports are removed (win_unused_dlls.py). The remaining imports are
+# Windows system DLLs only (Windows 10 or later).
+#
+# Usage (inside the container, after win_build.sh): win_deploy.sh [--with_tests] [--zip]
+#   --with_tests  also compass_tests.exe (not for the zip file)
+#   --zip         /out/COMPASS_<version>_win64.zip with the folder COMPASS_<version>_win64,
+#                 the Windows counterpart of the AppImage
 
 set -e
 
@@ -20,9 +26,20 @@ STRIP=x86_64-w64-mingw32-strip
 rm -rf "$DEPLOY"
 mkdir -p "$DEPLOY/lib" "$DEPLOY/compass"
 
-# executables without debug information (about 2 GB each with it)
+WITH_TESTS=0
+ZIP=0
+for arg in "$@"; do
+    case "$arg" in
+        --with_tests) WITH_TESTS=1 ;;
+        --zip)        ZIP=1 ;;
+        *)            echo "unknown option $arg"; exit 1 ;;
+    esac
+done
+
 EXES="compass_client.exe compass_handler.exe"
-if [ "$1" == "--with_tests" ]; then EXES="$EXES compass_tests.exe"; fi
+if [ $WITH_TESTS == 1 ]; then EXES="$EXES compass_tests.exe"; fi
+
+# executables without debug information (about 2 GB each with it)
 for exe in $EXES; do
     $STRIP -o "$DEPLOY/$exe" "$BUILD/bin/$exe"
 done
@@ -44,8 +61,26 @@ for plugin_dir in platforms styles imageformats iconengines; do
     fi
 done
 
-# COMPASS configuration and data
+# COMPASS configuration and data, licence
 cp -r /src/compass/conf /src/compass/data "$DEPLOY/compass/"
+cp /src/compass/LICENSE "$DEPLOY/"
+
+# DLLs that nothing imports (e.g. Qt modules COMPASS does not use)
+python3 /src/compass/docker/win_unused_dlls.py "$DEPLOY" --remove | tail -1
 
 echo "deployed to $DEPLOY"
 du -sh "$DEPLOY"
+
+if [ $ZIP == 1 ]; then
+    VERSION=$(grep -oP 'CPACK_PACKAGE_VERSION_(MAJOR|MINOR|PATCH) "\K[0-9]+' /src/compass/CMakeLists.txt \
+              | paste -sd.)
+    NAME="COMPASS_${VERSION}_win64"
+    STAGE=/out/zip_stage
+    rm -rf "$STAGE" "/out/$NAME.zip"
+    mkdir -p "$STAGE"
+    ln -s "$DEPLOY" "$STAGE/$NAME"
+    (cd "$STAGE" && 7z a -tzip -mx=7 -l "/out/$NAME.zip" "$NAME" > /dev/null)
+    rm -rf "$STAGE"
+    echo "zip file /out/$NAME.zip"
+    ls -la "/out/$NAME.zip"
+fi
