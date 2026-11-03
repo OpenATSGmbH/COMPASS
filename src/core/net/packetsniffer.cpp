@@ -82,6 +82,18 @@ std::string ipv4ToString(const u_char* address)
     return std::to_string(address[0]) + "." + std::to_string(address[1]) + "."
            + std::to_string(address[2]) + "." + std::to_string(address[3]);
 }
+
+// 64-bit file position, ftell returns a 32-bit long on Windows
+std::int64_t filePosition(FILE* fp)
+{
+    if (!fp)
+        return -1;
+#ifdef _WIN32
+    return _ftelli64(fp);
+#else
+    return ftello(fp);
+#endif
+}
 }
 
 #ifndef DLT_LINUX_SLL2
@@ -837,7 +849,7 @@ Result PacketSniffer::readFile(ReadStyle read_style,
             if (err && std::string(err).find("truncated dump file") != std::string::npos)
             {
                 FILE* fp = pcap_file(pcap_file_);
-                std::int64_t pos = fp ? ftell(fp) : -1;
+                std::int64_t pos = filePosition(fp);
                 //long total = fp ? Utils::Files::fileSize(pcap_filename_) : -1;
 
                 logwrn << "truncated dump tail ignored at byte " << pos;
@@ -936,7 +948,7 @@ ResultT<PacketSniffer::Chunk> PacketSniffer::readFileNext(size_t max_packets,
             if (err && std::string(err).find("truncated dump file") != std::string::npos)
             {
                 FILE* fp = pcap_file(pcap_file_);
-                std::int64_t pos = fp ? ftell(fp) : -1;
+                std::int64_t pos = filePosition(fp);
 
                 logwrn << "truncated dump tail ignored at byte " << pos;
                 warning = "truncated dump tail ignored";

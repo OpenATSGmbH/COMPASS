@@ -957,6 +957,11 @@ void Client::checkAndSetupConfig()
             // proj.db of the package, on Linux PROJ finds it in the system paths
             string proj_path = string(appdir) + "/proj";
             qputenv("PROJ_DATA", proj_path.c_str());
+
+            // osgEarth loads arial.ttf as default font on Windows only, use the font the
+            // geographic view sets later anyway
+            string font_path = system_install_path_ + "data/fonts/times.ttf";
+            qputenv("OSGEARTH_DEFAULT_FONT", font_path.c_str());
 #endif
         }
 #endif
