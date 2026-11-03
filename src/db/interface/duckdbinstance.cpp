@@ -291,7 +291,9 @@ Result DuckDBInstance::cleanupDBInMem_impl()
 #ifdef __linux__
     std::string temp_path = "/dev/shm/compass_memdb_cleanup.tmp";
 #else
-    std::string temp_path = "compass_memdb_cleanup.tmp"; 
+    // system temp folder, the working folder can be write-protected (e.g. on Windows)
+    std::string temp_path =
+        (boost::filesystem::temp_directory_path() / "compass_memdb_cleanup.tmp").generic_string();
 #endif
 
     if (Files::fileExists(temp_path)) {

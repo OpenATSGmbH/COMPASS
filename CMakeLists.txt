@@ -26,6 +26,16 @@ add_definitions ( -UNDEBUG -Wall -std=c++17 -fno-omit-frame-pointer) # -DQT_NO_K
 ENDIF()
 
 IF (WIN32)
+# Windows resources of the executables (application manifest, UTF-8 code page), compiled
+# directly with windres: the RC language would get the add_definitions compiler flags
+set(COMPASS_WINDOWS_RC "${CMAKE_BINARY_DIR}/compass_rc.o")
+add_custom_command(
+    OUTPUT "${COMPASS_WINDOWS_RC}"
+    COMMAND x86_64-w64-mingw32-windres -O coff -i compass.rc -o "${COMPASS_WINDOWS_RC}"
+    WORKING_DIRECTORY "${COMPASS_PATH}/src/app/windows"
+    DEPENDS "${COMPASS_PATH}/src/app/windows/compass.rc" "${COMPASS_PATH}/src/app/windows/compass.manifest")
+add_custom_target(compass_windows_rc DEPENDS "${COMPASS_WINDOWS_RC}")
+
 # M_PI etc. (math.h), no min/max macros and fewer other macros (windows.h, included by TBB)
 add_definitions(-D_USE_MATH_DEFINES -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
 ENDIF()
