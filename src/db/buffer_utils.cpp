@@ -79,7 +79,7 @@ void transformVariables(Buffer& buffer, dbContent::VariableSet& list, bool dbcol
         logdbg << "variable " << var_it->name() << " db column " << name_in_db;
 
         variable_name = var_it->name();
-        name_in_db = var_it->dbColumnOrExpression();
+        name_in_db = var_it->dbColumnName();
 
         PropertyDataType data_type = var_it->dataType();
 

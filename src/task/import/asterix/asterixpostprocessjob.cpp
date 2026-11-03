@@ -18,6 +18,7 @@
 #include "dbcontent/dbcontent.h"
 #include "asterixpostprocessjob.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/variable/calculationplan.h"
 #include "buffer.h"
 #include "compass.h"
 #include "files.h"
@@ -80,20 +81,26 @@ static const char* kObfuscationFile = "/tmp/compass_obfuscation.json";
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(
     map<string, shared_ptr<Buffer>> buffers,
     ASTERIXImportTaskSettings settings,
+    std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
     COMPASS& compass)
     : Job("ASTERIXPostprocessJob"),
     buffers_(std::move(buffers)),
     settings_(settings),
+    calc_plan_(std::move(calc_plan)),
     compass_(compass)
 {
+    traced_assert(calc_plan_);
 }
 
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(map<string, shared_ptr<Buffer>> buffers,
+                                             std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
                                              COMPASS& compass)
     : Job("ASTERIXPostprocessJob"),
     buffers_(std::move(buffers)),
+    calc_plan_(std::move(calc_plan)),
     compass_(compass)
 {
+    traced_assert(calc_plan_);
 }
 
 ASTERIXPostprocessJob::~ASTERIXPostprocessJob()
@@ -122,10 +129,13 @@ void ASTERIXPostprocessJob::run_impl()
     // by dbContent::SelectionFiller before the timestamp calculation, the calculations below
     // fill the rows still null
 
+    // the calculated variables with an operator, DS ID first of all, the radar plot positions need it
+    calc_plan_->run(buffers_);
+
     checkARTASHashes();
     doRadarPlotPositionCalculations();
     doXYPositionCalculations();
-    doGroundSpeedCalculations();
+    doCAT021SpeedTrackCalculations();
 
     if (settings_.filter_tod_active_  || settings_.filter_position_rec_active_ 
         || settings_.filter_position_circ_active_ || settings_.filter_modec_active_)
@@ -215,110 +225,21 @@ void ASTERIXPostprocessJob::doXYPositionCalculations()
     compass_.projectionManager().doXYPositionCalculations(buffers_);
 }
 
-void ASTERIXPostprocessJob::doGroundSpeedCalculations()
+void ASTERIXPostprocessJob::doCAT021SpeedTrackCalculations()
 {
-    // general vx/vy to ground speed/track angle conversion
-
-    string dbcontent_name;
+    // ground speed and track angle from vx/vy are calculated variables with an operator,
+    // see readme_calc_operators.md
 
     DBContentManager& dbcont_man = compass_.dbContentManager();
     ProjectionManager& proj_man = compass_.projectionManager();
 
-    string vx_var_name;
-    string vy_var_name;
     string speed_var_name;
     string track_angle_var_name;
-
-    double speed_ms, track_angle_rad, track_angle_deg;
-
-    for (auto& buf_it : buffers_)
-    {
-        dbcontent_name = buf_it.first;
-
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_)
-            || !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_))
-            continue;
-
-        shared_ptr<Buffer> buffer = buf_it.second;
-        unsigned int buffer_size = buffer->size();
-        //assert(buffer_size);
-
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_));
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_));
-
-        dbContent::Variable& vx_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_);
-        dbContent::Variable& vy_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_);
-        dbContent::Variable& speed_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_);
-        dbContent::Variable& track_angle_var =
-            dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_);
-
-        vx_var_name = vx_var.name();
-        vy_var_name = vy_var.name();
-        speed_var_name = speed_var.name();
-        track_angle_var_name = track_angle_var.name();
-
-        traced_assert(vx_var.dataType() == PropertyDataType::DOUBLE);
-        traced_assert(vy_var.dataType() == PropertyDataType::DOUBLE);
-        traced_assert(speed_var.dataType() == PropertyDataType::DOUBLE);
-        traced_assert(track_angle_var.dataType() == PropertyDataType::DOUBLE);
-
-        if (!buffer->has<double>(vx_var_name) || !buffer->has<double>(vy_var_name))
-            continue; // cant calculate
-
-        if (buffer->has<double>(speed_var_name) && buffer->has<double>(track_angle_var_name)
-            && buffer->get<double>(speed_var_name).isNeverNull()
-            && buffer->get<double>(track_angle_var_name).isNeverNull())
-        {
-            logdbg << "start"
-                   << dbcontent_name << " speed and track angle already set";
-
-            continue; // no need for calculation
-        }
-
-        if (!buffer->has<double>(speed_var_name))
-            buffer->addProperty(speed_var_name, PropertyDataType::DOUBLE); // add if needed
-
-        if (!buffer->has<double>(track_angle_var_name))
-            buffer->addProperty(track_angle_var_name, PropertyDataType::DOUBLE); // add if needed
-
-        NullableVector<double>& vx_vec = buffer->get<double>(vx_var_name);
-        NullableVector<double>& vy_vec = buffer->get<double>(vy_var_name);
-        NullableVector<double>& speed_vec = buffer->get<double>(speed_var_name);
-        NullableVector<double>& track_angle_vec = buffer->get<double>(track_angle_var_name);
-
-        unsigned int cnt = 0;
-
-        for (unsigned int index=0; index < buffer_size; index++)
-        {
-            if (vx_vec.isNull(index) || vy_vec.isNull(index)) // can not calculate
-                continue;
-
-            if (!speed_vec.isNull(index) && !track_angle_vec.isNull(index)) // already set
-                continue;
-
-            speed_ms = sqrt(pow(vx_vec.get(index), 2)+pow(vy_vec.get(index), 2)) ; // for 1s
-            track_angle_rad = atan2(vx_vec.get(index), vy_vec.get(index));
-
-            track_angle_deg = track_angle_rad * RAD2DEG;
-
-            if (track_angle_deg < 0)
-                track_angle_deg += 360.0;
-
-            speed_vec.set(index, speed_ms * M_S2KNOTS);
-            track_angle_vec.set(index, track_angle_deg);
-
-            ++cnt;
-        }
-
-        logdbg << "start"
-               << dbcontent_name << " speed and track angle calc " << cnt << " / " << buffer_size;
-    }
-
 
     // cat021: the Meta Variables are "Ground Speed*" and "Track Angle*", filled from the
     // decoded I021/160 values first, then from the SGV fields of the REF for surface targets
 
-    dbcontent_name = "CAT021";
+    string dbcontent_name = "CAT021";
 
     if (buffers_.count(dbcontent_name) && buffers_.at(dbcontent_name)->size())
     {
@@ -818,13 +739,11 @@ void ASTERIXPostprocessJob::doObfuscate()
 
             dbContent::Variable& var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_);
 
-            // the identification columns: the Meta variable when it has a column, and every
-            // decoded candidate of a string selection over it, "Aircraft Identification*" of
-            // CAT062 is resolved on read from its candidates and has no column of its own
+            // the identification columns: the Meta variable and every decoded candidate of a
+            // string selection over it, "Aircraft Identification*" of CAT062 and its candidates
             std::set<std::string> var_names;
 
-            if (var.dbExpression().empty())
-                var_names.insert(var.name());
+            var_names.insert(var.name());
 
             for (const auto& var_it : dbcont_man.dbContent(dbcontent_name).variables())
             {

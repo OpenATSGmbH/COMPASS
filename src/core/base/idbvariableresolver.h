@@ -80,9 +80,6 @@ public:
     virtual std::string variableDBTableName(const std::string& dbcontent_name,
                                             const std::string& var_name,
                                             const std::string& var_dbcontent_name) const = 0;
-    virtual std::string variableDBExpression(const std::string& dbcontent_name,
-                                             const std::string& var_name,
-                                             const std::string& var_dbcontent_name) const = 0;
 
     // selection variables, see readme_dbcontent.md: the companion variable holding the
     // candidate index, the 1-based index of the candidate running a named calculation, and

@@ -26,7 +26,7 @@ class ASTERIXPostProcess
   public:
     ASTERIXPostProcess();
 
-    // flat format: post-process flat category data in-place, adding category/ds_id/line_id arrays
+    // flat format: post-process flat category data in-place, adding category/line_id arrays
     void postProcessFlat(unsigned int category, unsigned int line_id,
                          nlohmann::json& flat_cat_data, size_t num_records);
 

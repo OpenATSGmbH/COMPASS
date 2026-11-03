@@ -38,6 +38,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
 #include "dbcontent/variable/selectionfiller.h"
+#include "dbcontent/variable/calculationplan.h"
 #include "db_context_manager.h"
 #include "files.h"
 #include "logger.h"
@@ -909,6 +910,9 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     if (settings_.obfuscate_secondary_info_)
         ASTERIXPostprocessJob::loadObfuscationMaps();
 
+    // the calculated variables, read from the variable model here on the main thread
+    calc_plan_ = dbContent::CalculationPlan::create(compass_.dbContentManager());
+
     // re-push chunk sizes in case the RAM tier was changed after construction
     jASTERIX::frame_chunk_size      = settings_.chunk_size_jasterix;
     jASTERIX::data_block_chunk_size = settings_.chunk_size_jasterix;
@@ -1233,7 +1237,7 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
     ts_calculator_.setProcessingDone();
 
     std::shared_ptr<ASTERIXPostprocessJob> postprocess_job =
-        make_shared<ASTERIXPostprocessJob>(std::move(job_buffers), settings_, compass_);
+        make_shared<ASTERIXPostprocessJob>(std::move(job_buffers), settings_, calc_plan_, compass_);
 
     postprocess_jobs_.push_back(postprocess_job);
 

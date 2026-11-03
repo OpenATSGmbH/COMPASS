@@ -71,7 +71,7 @@ The read path is in [readme_loading.md](readme_loading.md). The insert path is t
   - `description` - free-form semantic description of what the value means. A rewrite of the wire value, "Rescaled to covariance: rho * sigma_x * sigma_y.", is one sentence at its end.
   - `origin` - where the value comes from, one of:
     - `asterix` - decoded from one ASTERIX item. `data_item` names it in EUROCONTROL notation, `"I048/140.Time-of-Day"`, REF and SPF items as `"I021/REF.SGV.GSS"`. The item is the mapping key of the Variable in `task_import_asterix_cat<NNN>.json` with the category prefix, an edition variant with two mapping keys under one item, CAT021 `NUCp or NIC`, names the first. `scripts/check_asterix_mapping_coverage.py` fails on a `data_item` that is no mapping key of its Variable.
-    - `calculated` - computed by COMPASS from other Variables of the same record, listed in `inputs`: `["Vx", "Vy"]`, `["Range", "Azimuth", "3D Height"]`, `["Time of Day*"]` for `Timestamp`. The 6 `db_expression` Variables are calculated too, their inputs are the `db_expression_variables`.
+    - `calculated` - computed by COMPASS from other Variables of the same record, listed in `inputs`: `["Vx", "Vy"]`, `["Range", "Azimuth", "3D Height"]`, `["Time of Day*"]` for `Timestamp`. The `calculation` parameter names how, see "Calculated variables with an operator" under "Post-import derivations".
     - `internal` - bookkeeping, not from the data: `Line ID`, `Record Number`, `ARTAS Hash`, `Record Data`, the recording columns, `UTN`.
     - `selection` - chosen per record from an ordered candidate list, see "Selection variables" under "Post-import derivations". `selection` holds the candidates, `source_variable` names the companion UCHAR Variable with the 1-based index of the candidate that supplied the value.
     - empty on the 77 RefTraj Variables: the DBContent carries `"origin": "calculated"` for all of them, `Variable::origin()` falls back to it. A Report Variable answers `report`.
@@ -79,7 +79,9 @@ The read path is in [readme_loading.md](readme_loading.md). The insert path is t
   - `Variable::displayName(max_chars)` is the name shown where space is tight: the longest of item plus name (`I062/136 Flight Level Measured`), item plus short name (`I062/136 Meas FL`), name and short name that fits into `max_chars`, the shortest form when none fits, 0 means no limit, never truncated. Variables without a data item and MetaVariables have the forms name and short name only, `MetaVariable::shortName()` is the short name of its members when they agree. The stored name never changes, configurations reference it. Call sites: the Table View header shows `displayName(16)` (`BaseBufferTableModel::HeaderMaxChars`), its `VariableNameRole` carries the variable name for the clipboard copy, the Timestamp sort column and the UI state export. The `VariableSelectionWidget` button shows `displayName(24)` by default and keeps the selected names as members, `uiGet()` and `selectionAsString()` return the names, not the shown text; `setLabelMaxChars()` lowers the limit, the 3x3 label fields of the `LabelContentDialog` use 12 (`LabelFieldMaxChars`). Axis titles and the chart legends carry no variable names, the axis titles come from `ViewVariable::description()` without a limit.
   - `short_name` - at most 10 characters, a hard limit, none for a name of 12 characters or fewer, a soft threshold. Readable before cryptic (`Gnd Speed`, `Meas FL`, `Rec Num`), a mnemonic only when the specification and the users use it (`ACID`, `ACAD`, `MSSC`, `BPS`). One scheme across the contents, the shared abbreviation list is in section 3.4 of `readme_calc_dbcontent.md`: mode codes `MC`, `M2`, `M3A`, `M5`, the garbled, valid and smoothed flags as a suffix letter (`MC G`, `M3A V`), families by a suffix (`BPS ADD`, `BPS Age`, `M3A LM`, `WTC FPL`, `TI TOA`), the `Track` prefix of a flag dropped (`Confirmed`, `Ghost Tgt`). Unique within a DBContent, `check_asterix_mapping_coverage.py` fails on a duplicate or a longer one, `scripts/apply_short_names.py` applies a name to short name mapping to the repo and the user config copies. The `VariableEditDialog` refuses a longer one.
   - The `VariableEditDialog` edits `origin`, `data_item`, `inputs`, the candidate list of a selection (up, down, remove, add a Variable of the content) and `source_variable` in expert mode. A change of the candidates applies to the next import.
-  - `db_expression` - optional SQL expression for *computed* columns (the column doesn't physically exist; SQL evaluates it on read).
+  - `calculation` - the operator of a calculated Variable, `{"op": "max"}`, an empty object when none. Every Variable has a real column, the import writes the value, so a buffer from the import (live mode) and a buffer read from the DB carry the same columns. There is no SQL expression on read (`db_expression` was removed, see `readme_calc_operators.md` in the repo root).
+
+    All other selection Variables have a column, the import fills it.
   - `is_key` - primary-key flag.
   - `group` - semantic group used by the variable selection dialog's "Group" mode. One of: `Origin`, `Type`, `Time`, `Position`, `Accuracy`, `Movement`, `Secondary Identification`, `Altitude`, `Track`, `Ages`, `Warning/Alert`; empty falls into the `Other` bucket. Initially assigned by [`scripts/assign_variable_groups.py`](../../../scripts/assign_variable_groups.py) (name heuristics + per-item defaults + explicit overrides); hand-editable per variable. `MetaVariable` carries the same parameter.
 - **MetaVariable** (`variable/metavariable.h`) - the unified concept across DBContents. Maps a single conceptual name (`"Time of Day"`, `"Aircraft Address"`, `"Position Latitude"`) to per-DBContent Variable names. Example from [`db_content.json`](../../../conf/default/db_content.json):
@@ -124,8 +126,7 @@ All schema is JSON; nothing is hard-coded. There are two parallel families of fi
       "origin": "asterix",
       "data_item": "I048/140.Time-of-Day",
       "inputs": [], "selection": [], "source_variable": "",
-      "is_key": false,
-      "db_expression": ""
+      "is_key": false
     }
   }
   ```
@@ -193,17 +194,16 @@ Other DB tables (no DBContent backing them):
 
 ## Post-import derivations
 
-Most DBContent Variables are filled by direct `JSONDataMapping` from a single jASTERIX JSON key, origin `asterix`. The cases that are *not* a direct mapping fall into four groups; the `origin`, `inputs` and `selection` parameters of the Variable say which one (see "Variable model" above).
+Most DBContent Variables are filled by direct `JSONDataMapping` from a single jASTERIX JSON key, origin `asterix`. The cases that are *not* a direct mapping fall into the groups below; the `origin`, `inputs` and `selection` parameters of the Variable say which one (see "Variable model" above).
 
 ### Synthesized columns (added to every record)
 
-[`asterixpostprocess.cpp`](../../import/asterix/asterixpostprocess.cpp) `postProcessFlat`, before the `JSONDataMapping` step. Three columns are appended to every record's JSON dictionary:
+[`asterixpostprocess.cpp`](../../import/asterix/asterixpostprocess.cpp) `postProcessFlat`, before the `JSONDataMapping` step. Two columns are appended to every record's JSON dictionary:
 
 | Column | Source |
 |---|---|
 | `category` | The ASTERIX category number, constant per buffer. |
 | `line_id` | The import line/source identifier passed to the decoder, constant per buffer. |
-| `ds_id` | Bit-packed `(SAC, SIC)` from `010.SAC` / `010.SIC` (`Number::dsIdFrom`). Falls back to `(0, 255)` with a warning when SAC or SIC is absent. |
 
 ### Decoder-provided columns
 
@@ -219,7 +219,7 @@ jASTERIX can add further flat top-level keys next to the decoded item keys. They
 
 `Record Data` costs about 45 bytes per record on disk. DuckDB compresses the hex text well, so it is only about a fifth larger than a raw binary column would be. RefTraj has no source record and does not carry the variable.
 
-All five keys are listed in `SYNTHESIZED_KEYS` of [`check_asterix_mapping_coverage.py`](../../../scripts/check_asterix_mapping_coverage.py), so the coverage checker does not treat them as fields outside the definition key space.
+The two synthesized and the five decoder-provided keys are listed in `SYNTHESIZED_KEYS` of [`check_asterix_mapping_coverage.py`](../../../scripts/check_asterix_mapping_coverage.py), so the coverage checker does not treat them as fields outside the definition key space.
 
 ### In-place wire-value rewrites
 
@@ -236,7 +236,7 @@ The Variable still maps from a single ASTERIX item, but the value written into t
 
 A Variable with origin `selection` carries an ordered candidate list in `selection`. A candidate is a Variable of the same DBContent, `{"variable": "Latitude HR"}`, or a named calculation, `{"calculation": "xy_projection_rs2g", "label": "X/Y projection RS2G"}`. A Variable candidate can require boolean Variables to be true or false, `"require_true": ["Mode C Valid LM"]`, `"require_false": ["Mode C Garbled LM"]`, a missing or null flag does not block it. The companion `source_variable`, an UCHAR Variable named `<name> Source`, holds the 1-based position of the candidate that supplied the value, null when none did. Its representation `SELECTION_SOURCE` prints the candidate label, the data item part of a Variable candidate (`I021/073`) or the explicit label of a calculation, so a Table View column reads `I021/073` and a filter accepts the label (`Variable::selectionSourceLabel()` and `selectionSourceIndex()`, resolved through `Variable::selectionOf()`).
 
-[`selectionfiller.cpp`](variable/selectionfiller.cpp) `dbContent::SelectionFiller` fills them, called by `ASTERIXImportTask` on every decoded buffer before the timestamp calculation and the post-processing job: per row the first candidate with a value wins, its value is copied and its index written. Selections sharing a `source_variable` are chosen together, a candidate position counts only when every member has a value there, so `Latitude*` and `Longitude*` always come from the same item. A calculation candidate ends the search for a row, the code running that calculation fills the rows still null and sets their index, `ProjectionManager::doXYPositionCalculations` for the X/Y projection. A candidate of another data type or dimension than the selection is skipped with an error, a candidate with another unit of the same dimension is converted on copy with the factor of the `UnitManager` (the three CAT062 Mode C candidates are all feet, the conversion matters for future definitions). A string selection stores no copy: `Aircraft Identification*` has a `db_expression` with a CASE over the source index, resolved on read, the filler writes the index only.
+[`selectionfiller.cpp`](variable/selectionfiller.cpp) `dbContent::SelectionFiller` fills them, called by `ASTERIXImportTask` on every decoded buffer before the timestamp calculation and the post-processing job: per row the first candidate with a value wins, its value is copied and its index written. Selections sharing a `source_variable` are chosen together, a candidate position counts only when every member has a value there, so `Latitude*` and `Longitude*` always come from the same item. A calculation candidate ends the search for a row, the code running that calculation fills the rows still null and sets their index, `ProjectionManager::doXYPositionCalculations` for the X/Y projection. A candidate of another data type or dimension than the selection is skipped with an error, a candidate with another unit of the same dimension is converted on copy with the factor of the `UnitManager` (the three CAT062 Mode C candidates are all feet, the conversion matters for future definitions). A string selection is copied like any other, `Aircraft Identification*` has the column `aircraft_identification_used`.
 
 | DBContent | Variable | Candidates in order | Source variable |
 |---|---|---|---|
@@ -253,20 +253,38 @@ Consumers of a selection, through the MetaVariable:
 
 - The label generator, `TargetReportAccessor`, `TargetReport::Chain`, the evaluation and the reconstructors read the chosen value and carry no fallback chain of their own. The CAT062 altitude of all of them is the `Mode C Code` selection, the reconstructor's `trackedBarometricAltitude()` keeps reading I062/135 for the dubious track check.
 - The flags of one decoded item, the MetaVariables `Mode C Valid` and `Mode C Garbled` on I062/340, do not describe a value the selection took from another candidate. A selection applied the flag conditions of its candidates, so a chosen value counts as valid and not garbled: `DBContentVariableLookup::metaVarIsSelection()`, reached through `BufferAccessor` and `DBContentAccessor`, tells the accessor, the chain and the label generator (`Variable::isSelection()`) to skip the flags. The evaluation `Mode C` requirements take this path through `Chain::modeC()`.
-- A filter is a search: the ACID and Mode C filters match every variable candidate of the selection, `Variable::selectionCandidateVariables()` through `IDBVariableResolver::variableSelectionCandidateVariables()`, any candidate in range or matching the text, null when no candidate has a value. A content without a selection keeps the single column of the MetaVariable. The live mode `filterBuffer()` reads the candidate columns, a string selection has no column in an import buffer.
+- A filter is a search: the ACID and Mode C filters match every variable candidate of the selection, `Variable::selectionCandidateVariables()` through `IDBVariableResolver::variableSelectionCandidateVariables()`, any candidate in range or matching the text, null when no candidate has a value. A content without a selection keeps the single column of the MetaVariable. The live mode `filterBuffer()` reads the candidate columns.
 
 An edition variant is not a selection: CAT021 `NUCp or NIC` keeps two mappings, DO-260 `I021/090.NUCp or NIC` and DO-260A `I021/090.PA`, under one `data_item`.
 
-### Computed variables (not from any single ASTERIX item)
+### Calculated variables with an operator
 
-[`asterixpostprocessjob.cpp`](../../task/import/asterix/asterixpostprocessjob.cpp) `run_impl` runs the projection and velocity calculations once the buffer is built; [`asterixtimestampcalculator.cpp`](../../task/import/asterix/asterixtimestampcalculator.cpp) `doTimeStampCalculation` computes the wall-clock `Timestamp`.
+[`calculationplan.cpp`](variable/calculationplan.cpp) `dbContent::CalculationPlan`, the design is in `readme_calc_operators.md` in the repo root. A Variable declares its calculation in `calculation`, `inputs` lists the input Variables in operator order. `"mode": "fill_null"` writes only rows where the output is null, the default `"overwrite"` writes all rows.
+
+- `CalculationPlan::create()` reads the variable model on the main thread: it checks the operator, the inputs and their data types, resolves the unit factors from the `UnitManager` (`max`, `add`, `hypot` only) and sorts the calculations of a DBContent by their inputs. An error is logged, the Variable is skipped.
+- `run()` touches buffer columns only. Every operator works on whole columns: the inputs are read once into value vectors through `NullableVector::ensureFullSize()`, `rawData()` and `rawNullFlags()`, NaN for null, the result is written in one loop. A missing input column means all rows null, an operator that then has no result adds no column (`ds_id` excepted).
+- Call sites, each writer once before `DBContentManager::insertData()`: `ASTERIXPostprocessJob::run_impl()` first (ASTERIX and JSON import, the plan is built in `ASTERIXImportTask::run()` once per import run), `ReconstructorTask::writeDataSlice()` for RefTraj, `GPSTrailImportTask::run()`.
+
+| Operator | Variable | DBContent(s) | Inputs | Null rule |
+|---|---|---|---|---|
+| `max` | `X/Y StdDev Max` | CAT010, CAT020, CAT062, RefTraj | `X StdDev`, `Y StdDev` | max of the inputs not null, as DuckDB `greatest` |
+| `lookup` | `X/Y StdDev Max` | CAT021 | `NACp`, `NUCp or NIC`, `MOPS Version` | NACp table, else the NUCp table when MOPS Version is null or 0, else the NIC table, divided by 2.45 |
+| `add` | `Sum Number Contributing Sensors` | CAT062 | `Num Contributing Sensors`, `Num Contributing Sensors Track Number` | null when one input is null |
+| `array_length` | `Num Contributing Receivers` | CAT020 | `Contributing Receivers` | null when not an array |
+| `ds_id` | `DS ID` | all 14 ASTERIX | `SAC`, `SIC` | `(0, 255)` with a warning when SAC or SIC is null |
+| `hypot`, `fill_null` | `Ground Speed` | CAT010, CAT020, CAT062 | `Vx`, `Vy` | m/s to knots by the unit factor, the decoded CAT010 value is kept |
+| `bearing_deg`, `fill_null` | `Track Angle` | CAT010, CAT020, CAT062 | `Vx`, `Vy` | `atan2(vx, vy)` in degrees, [0, 360) |
+
+The `function` operator, `{"op": "function", "name": "timestamp"}`, only documents a hardcoded calculation, the plan skips it: `timestamp` (`Timestamp`), `radar_projection` (CAT001, CAT048 `Latitude*` / `Longitude*`), `adsb_sgv_speed_track` (CAT021 `Ground Speed*` / `Track Angle*`), `artas_tri_record_numbers` (CAT062 `TRI Record Numbers`, written later by the ARTAS association task). The RefTraj writers set `DS ID`, `Ground Speed` and `Track Angle` themselves, these have no `calculation`.
+
+### Hardcoded calculations (not from any single ASTERIX item)
+
+[`asterixpostprocessjob.cpp`](../../task/import/asterix/asterixpostprocessjob.cpp) `run_impl` runs the projection and CAT021 speed and track calculations once the buffer is built; [`asterixtimestampcalculator.cpp`](../../task/import/asterix/asterixtimestampcalculator.cpp) `doTimeStampCalculation` computes the wall-clock `Timestamp`.
 
 | Variable | DBContent(s) | Inputs | Computation |
 |---|---|---|---|
 | `Latitude*` / `Longitude*` | CAT001, CAT048 (origin `calculated`, no decoded position exists) | `Range`, `Azimuth`, `3D Height` (or FFT lookup when missing), sensor coordinate system from `ds_id` | `ProjectionManager::calculateRadarPlotPositions` -> `Projection::polarSlantToWGS84` (RS2G / OGR / ...) |
 | `Latitude*` / `Longitude*` | CAT010, CAT020, CAT062 (the `xy_projection_rs2g` candidate of the selection) | `X`, `Y`, sensor coordinate system from `ds_id` | `ProjectionManager::doXYPositionCalculations` -> `Projection::localXYToWGS84` for the rows the decoded item left null, `Position Source` set to the candidate index |
-| `Ground Speed` | CAT020, CAT062 | `Vx`, `Vy` | `sqrt(vx^2 + vy^2)`, then m/s -> knots |
-| `Track Angle` | CAT020, CAT062 | `Vx`, `Vy` | `atan2(vx, vy)` -> radians -> degrees, normalised to [0, 360) |
 | `Ground Speed*` | CAT021 | `Ground Speed` I021/160, `SGV GSS`, `SGV STP` | the decoded value, else the SGV ground speed, else `0.0` when the SGV stopped bit is set |
 | `Track Angle*` | CAT021 | `Track Angle` I021/160, `SGV HGT`, `SGV HTT`, `SGV HRD`, plus `Latitude*` / `Longitude*` / `Mode C Code` (for declination) | the decoded value, else the SGV ground track: when `HTT`=track and `HRD`=magnetic, add `ProjectionManager::declination(year, lat, lon, alt)`; otherwise pass through |
 | `Time of Day` (the selection) | CAT063 | the selected value, plus first ToD seen in CAT062 and CAT063 | `tod += tod0_cat062 - tod0_cat063` to align CAT063 service messages with the corresponding CAT062 stream |
@@ -275,7 +293,7 @@ An edition variant is not a selection: CAT021 `NUCp or NIC` keeps two mappings, 
 
 ### Filtering and obfuscation
 
-[`asterixpostprocessjob.cpp`](../../task/import/asterix/asterixpostprocessjob.cpp) also runs `doFilters` (drops records by ToD / position rectangle / circular range / Mode C window) and `doObfuscate` (rewrites Mode 3/A, ACAD, ACID with deterministic obfuscated values, drops military-reserved 3/A codes). These do not produce new variables; they remove rows or rewrite values of existing variables. The ACID obfuscation rewrites the column of the `Aircraft Identification` MetaVariable and every decoded candidate of a string selection over it, in CAT062 `Target Identification`, `Aircraft Identification`, `Callsign FPL` and `Callsign Pre-Em FPL`, so the read-time `Aircraft Identification*` is obfuscated too.
+[`asterixpostprocessjob.cpp`](../../task/import/asterix/asterixpostprocessjob.cpp) also runs `doFilters` (drops records by ToD / position rectangle / circular range / Mode C window) and `doObfuscate` (rewrites Mode 3/A, ACAD, ACID with deterministic obfuscated values, drops military-reserved 3/A codes). These do not produce new variables; they remove rows or rewrite values of existing variables. The ACID obfuscation rewrites the column of the `Aircraft Identification` MetaVariable and every decoded candidate of a string selection over it, in CAT062 `Target Identification`, `Aircraft Identification`, `Callsign FPL` and `Callsign Pre-Em FPL`, and the copy in `Aircraft Identification*`.
 
 ## DBContentDataStore
 

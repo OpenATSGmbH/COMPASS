@@ -95,14 +95,12 @@ Variable::Variable(nlohmann::json& config, DBContent* parent,
     registerParameter("origin", &origin_, std::string());
     registerParameter("data_item", &data_item_, std::string());
     registerParameter("inputs", &inputs_, nlohmann::json::array());
+    registerParameter("calculation", &calculation_, nlohmann::json::object());
     registerParameter("selection", &selection_, nlohmann::json::array());
     registerParameter("source_variable", &source_variable_, std::string());
 
     registerParameter("db_column_name", &db_column_name_, std::string());
     registerParameter("is_key", &is_key_, false);
-
-    registerParameter("db_expression", &db_expression_, std::string());
-    registerParameter("db_expression_variables", &db_expression_variables_, nlohmann::json::object());
 
     registerParameter("data_type_str", &data_type_str_, std::string());
     registerParameter("representation_str", &representation_str_, std::string());
@@ -111,8 +109,7 @@ Variable::Variable(nlohmann::json& config, DBContent* parent,
 
     traced_assert_msg(name_.size(), "Name required");
 
-    traced_assert_msg(db_column_name_.size() || db_expression_.size(),
-                      "DB name or expression required");
+    traced_assert_msg(db_column_name_.size(), "DB column name required");
 
     traced_assert_msg(data_type_str_.size(), "Data type required");
     data_type_ = Property::asDataType(data_type_str_);
@@ -126,6 +123,7 @@ Variable::Variable(nlohmann::json& config, DBContent* parent,
                       || origin_ == OriginInternal || origin_ == OriginSelection,
                       ("Unknown origin '" + origin_ + "' of variable '" + name_ + "'").c_str());
     traced_assert_msg(inputs_.is_array(), ("Inputs of variable '" + name_ + "' must be a list").c_str());
+    traced_assert_msg(calculation_.is_object(), ("Calculation of variable '" + name_ + "' must be an object").c_str());
     traced_assert_msg(selection_.is_array(), ("Selection of variable '" + name_ + "' must be a list").c_str());
     traced_assert_msg(origin_ != OriginSelection || selection_.size(),
                       ("Selection variable '" + name_ + "' has no candidates").c_str());
@@ -211,6 +209,11 @@ std::vector<std::string> Variable::inputs() const
 void Variable::inputs(const std::vector<std::string>& inputs)
 {
     inputs_ = inputs;
+}
+
+bool Variable::hasCalculation() const
+{
+    return calculation_.is_object() && calculation_.contains("op");
 }
 
 unsigned int Variable::numSelectionCandidates() const
@@ -1155,19 +1158,7 @@ bool Variable::hasDBContent() const
 
     traced_assert(dbcontent_);
 
-    if (db_expression_.size())
-    {
-        for (auto& var_name : db_expression_variables_)
-        {
-            logdbg << "dbcontent " << dbcontent_->name() << " var " << var_name << " exists " << dbcontent_->hasVariable(var_name);
-
-            traced_assert (dbcontent_->hasVariable(var_name));
-
-            if (dbcontent_->variable(var_name).hasDBContent())
-                return true;
-        }
-    }
-    else if (db_column_name_.size())
+    if (db_column_name_.size())
         return dbcontent_->compass().dbInterface().hasContentIn(dbTableName(), db_column_name_);
 
     return false;
@@ -1176,21 +1167,6 @@ bool Variable::hasDBContent() const
 void Variable::setHasDBContent()
 {
     dbcontent_->compass().dbInterface().setContentIn(dbTableName(), db_column_name_);
-}
-
-std::vector<std::string> Variable::dbExpressionVariables() const
-{
-    return db_expression_variables_.get<std::vector<std::string>>(); ; 
-}
-
-std::string Variable::dbColumnOrExpression() const
-{
-    traced_assert (db_column_name_.size());
-
-    if (db_expression_.size())
-        return db_expression_ + " AS " + db_column_name_;
-    else
-        return db_column_name_;
 }
 
 bool Variable::isKey() const

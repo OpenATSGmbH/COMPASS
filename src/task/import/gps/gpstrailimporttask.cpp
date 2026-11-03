@@ -28,6 +28,7 @@
 #include "dbcontent/dbcontentdataengine.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
+#include "dbcontent/variable/calculationplan.h"
 #include "db_context_manager.h"
 #include "buffer.h"
 #include "util/number.h"
@@ -947,6 +948,9 @@ void GPSTrailImportTask::run()
     connect(&dbcontent_man, &DBContentManager::insertDoneSignal,
             this, &GPSTrailImportTask::insertDoneSlot,
             Qt::ConnectionType(Qt::QueuedConnection | Qt::UniqueConnection));
+
+    // the calculated variables, X/Y StdDev Max
+    dbContent::CalculationPlan::create(dbcontent_man)->run(dbcontent_name, *buffer_);
 
     dbcontent_man.insertData({{dbcontent_name, buffer_}});
 }

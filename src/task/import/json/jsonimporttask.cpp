@@ -21,6 +21,7 @@
 #include "buffer.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/variable/calculationplan.h"
 #include "files.h"
 #include "jobmanager.h"
 #include "jsonimporttaskdialog.h"
@@ -531,7 +532,9 @@ void JSONImportTask::mapJSONDoneSlot()
     ts_calculator_.setProcessingDone();
 
     std::shared_ptr<ASTERIXPostprocessJob> postprocess_job =
-            make_shared<ASTERIXPostprocessJob>(std::move(job_buffers2), compass_);
+            make_shared<ASTERIXPostprocessJob>(std::move(job_buffers2),
+                                               dbContent::CalculationPlan::create(compass_.dbContentManager()),
+                                               compass_);
 
     postprocess_jobs_.push_back(postprocess_job);
 

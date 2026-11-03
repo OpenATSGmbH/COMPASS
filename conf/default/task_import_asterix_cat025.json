@@ -423,24 +423,6 @@
         },
         {
             "class_name": "JSONDataMapping",
-            "instance_name": "JSONDataMappingDSID",
-            "parameters": {
-                "active": true,
-                "append_value": false,
-                "comment": "",
-                "db_content_name": "CAT025",
-                "db_content_variable_name": "DS ID",
-                "dimension": "",
-                "format_data_type": "",
-                "in_array": false,
-                "json_key": "ds_id",
-                "json_value_format": "",
-                "mandatory": false,
-                "unit": ""
-            }
-        },
-        {
-            "class_name": "JSONDataMapping",
             "instance_name": "JSONDataMappingLineID",
             "parameters": {
                 "active": true,

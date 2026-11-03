@@ -18,11 +18,9 @@
 #include "asterixpostprocess.h"
 
 #include "logger.h"
-#include "number.h"
 #include "json.hpp"
 #include "traced_assert.h"
 
-using namespace Utils;
 using namespace nlohmann;
 using namespace std;
 
@@ -44,35 +42,7 @@ void ASTERIXPostProcess::postProcessFlat(unsigned int category, unsigned int lin
     json& lid_arr = d["line_id"];
     lid_arr.get_ref<json::array_t&>().resize(num_records, line_id);
 
-    // compute ds_id from 010.SAC / 010.SIC
-    {
-        const json* sac_arr_ptr = d.contains("010.SAC") ? &d.at("010.SAC") : nullptr;
-        const json* sic_arr_ptr = d.contains("010.SIC") ? &d.at("010.SIC") : nullptr;
-
-        d["ds_id"] = json::array();
-        json& ds_id_arr = d["ds_id"];
-        ds_id_arr.get_ref<json::array_t&>().resize(num_records, nullptr);
-
-        for (size_t i = 0; i < num_records; ++i)
-        {
-            int sac = -1;
-            int sic = -1;
-
-            if (sac_arr_ptr && i < sac_arr_ptr->size() && !(*sac_arr_ptr)[i].is_null())
-                sac = (*sac_arr_ptr)[i].get<int>();
-            if (sic_arr_ptr && i < sic_arr_ptr->size() && !(*sic_arr_ptr)[i].is_null())
-                sic = (*sic_arr_ptr)[i].get<int>();
-
-            if (sac < 0 || sic < 0)
-            {
-                logwrn << "record " << i << " without SAC/SIC, setting 0/255";
-                sac = 0;
-                sic = 255;
-            }
-
-            ds_id_arr[i] = Number::dsIdFrom(sac, sic);
-        }
-    }
+    // ds_id is the calculated variable "DS ID", ds_id operator, see readme_calc_operators.md
 
     // category-specific post-processing
     // (CAT001 truncated time reconstruction is done by jASTERIX in flat mode,

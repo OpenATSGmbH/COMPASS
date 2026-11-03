@@ -71,10 +71,7 @@ string SQLGenerator::getCreateTableStatement(const DBContent& object)
     {
         const auto& v = var_it.second;
 
-        if (!v->dbColumnName().size()) // if only db expression
-            continue;
-
-        if (v->dbExpression().size()) // derived on read via expression, no physical column needed
+        if (!v->dbColumnName().size())
             continue;
 
         column_infos.push_back(DBTableColumnInfo(v->dbColumnName(), v->dataType(), v->isKey()));
@@ -368,9 +365,7 @@ string SQLGenerator::getCountStatement(const string& table)
 
 /**
  */
-// Dead code (no callers). Also unsafe now that expression-backed variables no longer get a
-// physical column: it emits MIN/MAX over dbColumnName() directly, which does not exist for
-// derived variables. Commented out rather than fixed - re-add via dbColumnOrExpression() if needed.
+// Dead code (no callers). Commented out.
 // shared_ptr<DBCommand> SQLGenerator::getTableSelectMinMaxNormalStatement(const DBContent& object)
 // {
 //     logdbg << "start for table " << object.dbTableName();
@@ -889,7 +884,7 @@ shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const DBContent& object,
     for (auto var_it : read_list.getSet())
     {
         Variable* variable = var_it;
-        property_list.addProperty(variable->dbColumnOrExpression(), variable->dataType());
+        property_list.addProperty(variable->dbColumnName(), variable->dataType());
     }
 
     return getSelectCommand(object.dbTableName(), 

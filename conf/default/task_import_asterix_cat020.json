@@ -9,24 +9,6 @@
     "sub_configs": [
         {
             "class_name": "JSONDataMapping",
-            "instance_name": "JSONDataMapping1",
-            "parameters": {
-                "active": true,
-                "append_value": false,
-                "comment": "Type number, value 12870",
-                "db_content_name": "CAT020",
-                "db_content_variable_name": "DS ID",
-                "dimension": "",
-                "format_data_type": "",
-                "in_array": false,
-                "json_key": "ds_id",
-                "json_value_format": "",
-                "mandatory": false,
-                "unit": ""
-            }
-        },
-        {
-            "class_name": "JSONDataMapping",
             "instance_name": "JSONDataMapping10",
             "parameters": {
                 "active": true,

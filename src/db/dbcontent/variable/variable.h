@@ -95,6 +95,10 @@ class Variable : public QObject, public Property, public Configurable
     std::vector<std::string> inputs() const;
     void inputs(const std::vector<std::string>& inputs);
 
+    /// operator of a calculated variable, {"op": "max"}, empty object when none, see readme_calc_operators.md
+    const nlohmann::json& calculation() const { return calculation_; }
+    bool hasCalculation() const;
+
     /// ordered candidate list of a selection variable, see readme_dbcontent.md.
     /// Each candidate is a JSON object with "variable" or "calculation" plus "label",
     /// optional "require_true" and "require_false" lists of boolean variable names
@@ -146,11 +150,6 @@ class Variable : public QObject, public Property, public Configurable
 
     std::string dbTableName() const;
     //std::string dbColumnIdentifier() const;
-
-    const std::string& dbExpression() const { return db_expression_; }
-    std::vector<std::string> dbExpressionVariables() const;
-
-    std::string dbColumnOrExpression() const;
 
     bool isKey() const;
     void isKey(bool value);
@@ -286,14 +285,12 @@ private:
     std::string origin_;
     std::string data_item_;
     nlohmann::json inputs_;
+    nlohmann::json calculation_;
     nlohmann::json selection_;
     std::string source_variable_;
 
     std::string db_column_name_;
     bool is_key_ {false};
-
-    std::string db_expression_;
-    nlohmann::json db_expression_variables_;
 
     //set on a runtime Report Variable only, empty on a configured variable
     std::string report_table_name_;

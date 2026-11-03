@@ -45,6 +45,7 @@
 #include "evaluationmanager.h"
 #include "viewpointgenerator.h"
 #include "projectionmanager.h"
+#include "dbcontent/variable/calculationplan.h"
 #include "projection.h"
 #include "licensemanager.h"
 #include "sectorlayer.h"
@@ -1050,6 +1051,9 @@ void ReconstructorTask::writeDataSlice()
 
         loginf << "references dbcontent slice idx " << writing_slice_->slice_count_;
 
+        // the calculated variables, X/Y StdDev Max
+        dbContent::CalculationPlan::create(dbcontent_man)->run(writing_slice_->reftraj_data_);
+
         dbcontent_man.insertData(writing_slice_->reftraj_data_);
     }
     else if (last_slice_ && last_slice_->has_data_)
@@ -1071,6 +1075,8 @@ void ReconstructorTask::writeDataSlice()
         }
 
         loginf << "references dbcontent (overlap) slice idx " << last_slice_->slice_count_;
+
+        dbContent::CalculationPlan::create(dbcontent_man)->run(last_slice_->reftraj_data_glue_);
 
         dbcontent_man.insertData(last_slice_->reftraj_data_glue_);
     }

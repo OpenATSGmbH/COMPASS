@@ -51,6 +51,11 @@ namespace jASTERIX
 class jASTERIX;
 }
 
+namespace dbContent
+{
+class CalculationPlan;
+}
+
 /**
 */
 struct ASTERIXFileInfo
@@ -206,6 +211,7 @@ protected:
     ASTERIXTimestampCalculator ts_calculator_;
     //std::future<void> ts_calc_future_;
     std::vector<std::shared_ptr<ASTERIXPostprocessJob>>         postprocess_jobs_;
+    std::shared_ptr<const dbContent::CalculationPlan>           calc_plan_; // built in run(), main thread
     std::map<std::string, std::shared_ptr<Buffer>>              accumulated_buffers_;
     std::vector<std::map<std::string, std::shared_ptr<Buffer>>> queued_insert_buffers_;
 

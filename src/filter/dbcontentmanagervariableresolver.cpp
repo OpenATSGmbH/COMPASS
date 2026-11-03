@@ -147,13 +147,6 @@ std::string DBContentManagerVariableResolver::variableDBTableName(
     return resolveVariable(dbcontent_name, var_name, var_dbcontent_name).dbTableName();
 }
 
-std::string DBContentManagerVariableResolver::variableDBExpression(
-    const std::string& dbcontent_name, const std::string& var_name,
-    const std::string& var_dbcontent_name) const
-{
-    return resolveVariable(dbcontent_name, var_name, var_dbcontent_name).dbExpression();
-}
-
 std::string DBContentManagerVariableResolver::variableSourceVariableName(
     const std::string& dbcontent_name, const std::string& var_name,
     const std::string& var_dbcontent_name) const

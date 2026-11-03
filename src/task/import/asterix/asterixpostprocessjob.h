@@ -31,14 +31,22 @@
 class Buffer;
 class COMPASS;
 
+namespace dbContent
+{
+class CalculationPlan;
+}
+
 class ASTERIXPostprocessJob : public Job
 {
 public:
+    /// calc_plan: the calculated variables, built on the main thread, run first in the job
     ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers,
                           ASTERIXImportTaskSettings settings,
+                          std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
                           COMPASS& compass);
 
     ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers,
+                          std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
                           COMPASS& compass);
     // ctor with no checks/overrides/filters for JSON
 
@@ -53,6 +61,7 @@ private:
     std::map<std::string, std::shared_ptr<Buffer>> buffers_;
 
     ASTERIXImportTaskSettings settings_;
+    std::shared_ptr<const dbContent::CalculationPlan> calc_plan_;
     COMPASS& compass_;
 
     static boost::mutex m3a_map_mutex_;
@@ -77,7 +86,7 @@ public:
 
     void doRadarPlotPositionCalculations();
     void doXYPositionCalculations();
-    void doGroundSpeedCalculations();
+    void doCAT021SpeedTrackCalculations();
     void doFilters();
     void doObfuscate();
     void checkARTASHashes();

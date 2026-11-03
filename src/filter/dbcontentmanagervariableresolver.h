@@ -69,9 +69,6 @@ public:
     std::string variableDBTableName(const std::string& dbcontent_name,
                                     const std::string& var_name,
                                     const std::string& var_dbcontent_name) const override;
-    std::string variableDBExpression(const std::string& dbcontent_name,
-                                     const std::string& var_name,
-                                     const std::string& var_dbcontent_name) const override;
     std::string variableSourceVariableName(const std::string& dbcontent_name,
                                            const std::string& var_name,
                                            const std::string& var_dbcontent_name) const override;

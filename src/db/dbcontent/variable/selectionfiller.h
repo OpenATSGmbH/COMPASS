@@ -27,6 +27,14 @@ class DBContentManager;
 namespace dbContent
 {
 
+class Variable;
+
+/// unit conversion factor from the candidate (or input) variable to the selection (or output)
+/// variable: 1 when the units agree or one of them has no unit, false with an error when the
+/// dimensions differ or a unit is unknown. Used by SelectionFiller and CalculationPlan
+bool unitFactor(DBContentManager& dbcont_man, const Variable& candidate, const Variable& selection,
+                double& factor);
+
 /**
  * Fills the selection variables of imported buffers from their candidate lists, see
  * readme_dbcontent.md "Selection variables".
@@ -38,8 +46,7 @@ namespace dbContent
  * latitude and longitude for example. A calculation candidate ends the search for a row, the
  * code running that calculation fills the rows still null and sets their index.
  *
- * A string selection without a column, resolved on read by its db_expression, gets the index
- * only. A candidate of another data type or dimension than the selection is skipped with an
+ * A candidate of another data type or dimension than the selection is skipped with an
  * error. A candidate with another unit of the same dimension is converted on copy, the
  * factor comes from the UnitManager.
  */

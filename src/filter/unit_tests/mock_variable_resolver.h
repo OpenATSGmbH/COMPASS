@@ -199,13 +199,6 @@ public:
         return dbcontent_name;
     }
 
-    std::string variableDBExpression(const std::string& dbcontent_name,
-                                     const std::string& var_name,
-                                     const std::string& var_dbcontent_name) const override
-    {
-        return variableDBColumnName(dbcontent_name, var_name, var_dbcontent_name);
-    }
-
     PropertyDataType variableDataType(const std::string& dbcontent_name,
                                       const std::string& var_name,
                                       const std::string& var_dbcontent_name) const override

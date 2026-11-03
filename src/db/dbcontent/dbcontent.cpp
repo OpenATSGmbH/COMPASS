@@ -301,8 +301,8 @@ void DBContent::readJobDoneSlot()
 
         for (auto var_it : variables)
         {
-            traced_assert(properties.hasProperty(var_it->dbColumnOrExpression()));
-            const Property& property = properties.get(var_it->dbColumnOrExpression());
+            traced_assert(properties.hasProperty(var_it->dbColumnName()));
+            const Property& property = properties.get(var_it->dbColumnName());
             traced_assert(property.dataType() == var_it->dataType());
         }
 

@@ -144,6 +144,12 @@ public:
 
     nlohmann::json asJSON(unsigned int max_size=0);
 
+    /// raw column access for whole-column calculations, see readme_calc_operators.md:
+    /// ensureFullSize() first, then data and null flags have the buffer size, null flag true = null
+    void ensureFullSize();
+    std::vector<T>& rawData() { return data_; }
+    std::vector<bool>& rawNullFlags() { return null_flags_; }
+
 private:
     Property property_;
     Buffer& buffer_;
@@ -467,6 +473,22 @@ bool NullableVector<T>::isNull(unsigned int index) const
 
     // must be set
     return false;
+}
+
+template <class T>
+void NullableVector<T>::ensureFullSize()
+{
+    unsigned int size = buffer_.size_;
+
+    // rows with data but without stored flag are set, rows beyond the data are null, see isNull()
+    if (null_flags_.size() < data_.size())
+        null_flags_.resize(data_.size(), false);
+
+    if (null_flags_.size() < size)
+        null_flags_.resize(size, true);
+
+    if (data_.size() < size)
+        data_.resize(size, T());
 }
 
 template <class T>
