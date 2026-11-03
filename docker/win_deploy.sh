@@ -6,7 +6,7 @@
 #   compass_client.exe, compass_handler.exe, *.dll   executables and runtime libraries
 #   platforms/, styles/, imageformats/, iconengines/  Qt plugins
 #   lib/osgPlugins-<version>/                         OSG/osgEarth plugins
-#   compass/conf, compass/data                        COMPASS configuration and data
+#   compass/conf, compass/data, compass/presets       COMPASS configuration, data, view presets
 #   proj/                                             PROJ data (proj.db)
 #
 # DLLs that nothing imports are removed (win_unused_dlls.py). The remaining imports are
@@ -61,8 +61,8 @@ for plugin_dir in platforms styles imageformats iconengines; do
     fi
 done
 
-# COMPASS configuration and data, licence
-cp -r /src/compass/conf /src/compass/data "$DEPLOY/compass/"
+# COMPASS configuration, data and view presets (as in the AppImage), licence
+cp -r /src/compass/conf /src/compass/data /src/compass/presets "$DEPLOY/compass/"
 cp /src/compass/LICENSE "$DEPLOY/"
 
 # DLLs that nothing imports (e.g. Qt modules COMPASS does not use)
