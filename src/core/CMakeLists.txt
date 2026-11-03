@@ -129,4 +129,10 @@ target_link_libraries(compass_core
         ${OSGEARTH_LIBRARY}
 )
 
+if(WIN32)
+    # Windows system libraries: sockets (boost asio, log4cpp), AcceptEx (boost asio),
+    # random numbers (boost uuid/random)
+    target_link_libraries(compass_core PUBLIC ws2_32 mswsock bcrypt)
+endif()
+
 compass_automoc(compass_core)

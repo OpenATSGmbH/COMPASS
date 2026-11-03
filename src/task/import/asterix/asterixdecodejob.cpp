@@ -99,7 +99,7 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
                                             size_t num_records, 
                                             size_t num_errors)
 {
-    logdbg << "running on cpu " << sched_getcpu();
+    logdbg << "running on cpu " << job::currentCPU();
 
     if (obsolete_)
         return;

@@ -348,7 +348,7 @@ std::pair<double, double> speedVec2SpeedAngle(double vx_mps,
 std::uint64_t recNumAddDBContId (std::uint64_t rec_num_wo_dbcont_id, unsigned int dbcont_id)
 {
     traced_assert(dbcont_id < 256); // 8bit max
-    traced_assert(rec_num_wo_dbcont_id < (1ul << 56)); // 56bit max
+    traced_assert(rec_num_wo_dbcont_id < (std::uint64_t{1} << 56)); // 56bit max
     return rec_num_wo_dbcont_id << 8 | dbcont_id;
 }
 

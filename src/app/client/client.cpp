@@ -952,6 +952,12 @@ void Client::checkAndSetupConfig()
 
             string gdal_path = string(appdir) + "/compass/data/gdal";
             CPLSetConfigOption("GDAL_DATA", gdal_path.c_str());
+
+#ifdef _WIN32
+            // proj.db of the package, on Linux PROJ finds it in the system paths
+            string proj_path = string(appdir) + "/proj";
+            qputenv("PROJ_DATA", proj_path.c_str());
+#endif
         }
 #endif
 

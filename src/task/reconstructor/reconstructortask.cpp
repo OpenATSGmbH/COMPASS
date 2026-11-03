@@ -49,6 +49,7 @@
 #include "projection.h"
 #include "licensemanager.h"
 #include "sectorlayer.h"
+#include "system.h"
 
 #include "task/result/report/report.h"
 #include "task/result/report/section.h"
@@ -67,7 +68,6 @@
 #include <QLabel>
 #include <QElapsedTimer>
 
-#include <malloc.h>
 
 #include <future>
 
@@ -1120,7 +1120,7 @@ void ReconstructorTask::writeDoneSlot()
     }
 
     // release unused memory
-    malloc_trim(0);
+    Utils::System::trimMemory();
 
     // a loaded slice without data may wait for this write to end
     if (!was_last)
@@ -1353,7 +1353,7 @@ void ReconstructorTask::runCancelledSlot()
     last_slice_ = nullptr;
 
     done_ = true;
-    malloc_trim(0); // release unused memory
+    Utils::System::trimMemory(); // release unused memory
 
     msg_box->close();
     delete msg_box;

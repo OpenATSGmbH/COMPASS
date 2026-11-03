@@ -63,7 +63,7 @@ protected:
                                        const std::vector<std::string>& names, bool reset, bool last) override final;
     virtual void clearData_impl() override final;
     virtual void clearIntermediateRedrawData_impl() override final;
-    virtual DrawState redrawData_impl(bool recompute) override final;
+    virtual ViewDrawState redrawData_impl(bool recompute) override final;
     virtual void liveReload_impl() override final;
     virtual bool hasAnnotations_impl() const override final;
 
@@ -96,7 +96,7 @@ protected:
     /// called after updating from the variables
     virtual void postUpdateVariableDataEvent() = 0;
     /// updates the display (e.g. by updating a chart showing the data)
-    virtual DrawState updateVariableDisplay() = 0;
+    virtual ViewDrawState updateVariableDisplay() = 0;
 
     const VariableView* variableView() const { return variable_view_; }
     VariableView* variableView() { return variable_view_; }

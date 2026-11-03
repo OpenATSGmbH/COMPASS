@@ -859,18 +859,18 @@ TEST_CASE("Constraint based placement box index", "[labelplacement]")
         label_placement::constraint::BoxIndex index(use_tree);
         index.build(boxes);
 
-        std::vector<int> near;
+        std::vector<int> near_ids;
         for (size_t i = 0; i < boxes.size(); ++i)
         {
-            index.query(boxes[ i ], near);
+            index.query(boxes[ i ], near_ids);
 
-            REQUIRE(std::is_sorted(near.begin(), near.end()));
+            REQUIRE(std::is_sorted(near_ids.begin(), near_ids.end()));
 
             std::vector<int> expected, found;
             for (size_t j = 0; j < boxes.size(); ++j)
                 if (boxes[ i ].intersects(boxes[ j ]))
                     expected.push_back((int)j);
-            for (int j : near)
+            for (int j : near_ids)
                 if (boxes[ i ].intersects(boxes[ j ]))
                     found.push_back(j);
 
@@ -878,8 +878,8 @@ TEST_CASE("Constraint based placement box index", "[labelplacement]")
         }
 
         //touching boxes are returned as well (superset)
-        index.query(boxes[ 0 ], near);
-        REQUIRE(std::find(near.begin(), near.end(), (int)boxes.size() - 1) != near.end());
+        index.query(boxes[ 0 ], near_ids);
+        REQUIRE(std::find(near_ids.begin(), near_ids.end(), (int)boxes.size() - 1) != near_ids.end());
     }
 
     SECTION("skipped boxes are left out")
@@ -887,12 +887,12 @@ TEST_CASE("Constraint based placement box index", "[labelplacement]")
         label_placement::constraint::BoxIndex index(use_tree);
         index.build(boxes, &skip);
 
-        std::vector<int> near;
+        std::vector<int> near_ids;
         for (size_t i = 0; i < boxes.size(); ++i)
         {
-            index.query(boxes[ i ], near);
+            index.query(boxes[ i ], near_ids);
 
-            for (int j : near)
+            for (int j : near_ids)
                 REQUIRE(!skip[ j ]);
         }
     }

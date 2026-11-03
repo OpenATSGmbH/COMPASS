@@ -31,20 +31,25 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
-#include <dlfcn.h>
-#include <pthread.h>
 #include <thread>
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
-#include <execinfo.h>
-#include <fcntl.h>
 #include <stdlib.h>
-#include <sys/resource.h>
-#include <sys/stat.h>
 #include <limits.h>
 #include <time.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#include <pthread.h>
+#include <execinfo.h>
+#include <fcntl.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
 #include <ucontext.h>
+#endif
 
 using namespace std;
 
@@ -123,6 +128,34 @@ void terminateHandler()
 // ---------------------------------------------------------------------------
 // Signal handlers
 // ---------------------------------------------------------------------------
+
+#ifdef _WIN32
+
+// Windows: unhandled structured exceptions (access violation etc.). First version: exception
+// code, address, breadcrumbs and a stack trace to stderr. The stack trace allocates, so it is
+// a best effort after heap corruption. No crash log file, no register dump yet.
+static LONG WINAPI unhandledExceptionHandler(EXCEPTION_POINTERS* info)
+{
+    using crash_breadcrumbs::writeHex;
+    using crash_breadcrumbs::writeStr;
+
+    const int fd = 2; // stderr
+
+    writeStr(fd, "\nUnhandled exception, code: ");
+    writeHex(fd, info && info->ExceptionRecord ? info->ExceptionRecord->ExceptionCode : 0);
+    writeStr(fd, "\nException address: ");
+    writeHex(fd, info && info->ExceptionRecord
+                 ? reinterpret_cast<unsigned long long>(info->ExceptionRecord->ExceptionAddress) : 0);
+    writeStr(fd, "\n");
+
+    crash_breadcrumbs::dumpTo(fd);
+
+    std::cerr << "\nStacktrace at exception:\n" << boost::stacktrace::stacktrace() << std::endl;
+
+    return EXCEPTION_CONTINUE_SEARCH; // default handling: process terminates
+}
+
+#else
 
 // async-signal-safe crash report for signals where allocation cannot be
 // trusted (e.g. SIGABRT from a glibc heap-corruption check - the allocator
@@ -312,6 +345,8 @@ static void logCoreDumpLimit()
                   << std::endl;
 }
 
+#endif
+
 // ---------------------------------------------------------------------------
 // Main-thread stall watchdog: a heartbeat timer on the main thread bumps an atomic
 // timestamp; a watchdog thread signals the main thread (SIGUSR2) when the heartbeat
@@ -325,10 +360,22 @@ static void logCoreDumpLimit()
 namespace main_thread_stall
 {
 
-static std::atomic<long long> last_beat_ms { 0 };
 static std::atomic<bool>      watchdog_run { false };
-static pthread_t              main_thread;
 static std::thread            watchdog;
+
+#ifdef _WIN32
+
+// the live backtrace of the stalled main thread needs a signal to the main thread,
+// not available on Windows yet
+static void start(QObject*)
+{
+    logwrn << "stall watchdog not supported on Windows";
+}
+
+#else
+
+static std::atomic<long long> last_beat_ms { 0 };
+static pthread_t              main_thread;
 
 static long long nowMs()
 {
@@ -407,6 +454,8 @@ static void start(QObject* heartbeat_parent)
     });
 }
 
+#endif
+
 static void stop()
 {
     watchdog_run = false;
@@ -457,6 +506,10 @@ int main(int argc, char** argv)
         if (crash_log_path[0] != '\0')
             std::cout << "COMPASSClient: crash log path " << crash_log_path << std::endl;
 
+#ifdef _WIN32
+        SetUnhandledExceptionFilter(unhandledExceptionHandler);
+        signal(SIGTERM, signalHandler);      // external term - stack intact
+#else
         logCoreDumpLimit();
         installAlternateSignalStack();
 
@@ -466,6 +519,7 @@ int main(int argc, char** argv)
         installCrashSignalHandler(SIGABRT);  // heap may be corrupted - allocator untrusted
         signal(SIGTERM, signalHandler);      // external term - stack intact
         signal(SIGPIPE, SIG_IGN);           // prevent crash on broken socket
+#endif
         
         const bool is_app_image = Utils::System::appDir() != nullptr;
 

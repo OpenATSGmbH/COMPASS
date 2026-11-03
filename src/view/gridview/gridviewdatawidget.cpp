@@ -192,7 +192,7 @@ void GridViewDataWidget::resetStashDependentData()
 
 /**
 */
-ViewDataWidget::DrawState GridViewDataWidget::updateVariableDisplay() 
+ViewDataWidget::ViewDrawState GridViewDataWidget::updateVariableDisplay() 
 {
     return updateGridChart();
 }
@@ -700,7 +700,7 @@ void GridViewDataWidget::resetZoomSlot()
 
 /**
 */
-ViewDataWidget::DrawState GridViewDataWidget::updateGridChart()
+ViewDataWidget::ViewDrawState GridViewDataWidget::updateGridChart()
 {
     resetGridChart();
     updateRendering();
@@ -896,7 +896,7 @@ void GridViewDataWidget::updateRendering()
 
 /**
 */
-ViewDataWidget::DrawState GridViewDataWidget::updateChart(QtCharts::QChart* chart)
+ViewDataWidget::ViewDrawState GridViewDataWidget::updateChart(QtCharts::QChart* chart)
 {
     bool has_valid_grid_data = grid_layers_.numLayers() > 0 &&
                                !grid_rendering_.isNull() && 
@@ -905,7 +905,7 @@ ViewDataWidget::DrawState GridViewDataWidget::updateChart(QtCharts::QChart* char
     
     bool has_data = has_valid_grid_data && (variablesOk() || view_->showsAnnotation());
 
-    auto draw_state = ViewDataWidget::DrawState::NotDrawn;
+    auto draw_state = ViewDataWidget::ViewDrawState::NotDrawn;
 
     chart->layout()->setContentsMargins(0, 0, 0, 0);
     chart->setBackgroundRoundness(0);
@@ -996,7 +996,7 @@ ViewDataWidget::DrawState GridViewDataWidget::updateChart(QtCharts::QChart* char
 
         createAxes();
 
-        draw_state = ViewDataWidget::DrawState::DrawnContent;
+        draw_state = ViewDataWidget::ViewDrawState::DrawnContent;
     }
     else
     {
@@ -1016,7 +1016,7 @@ ViewDataWidget::DrawState GridViewDataWidget::updateChart(QtCharts::QChart* char
         chart->axes(Qt::Vertical).at(0)->setGridLineVisible(false);
         chart->axes(Qt::Vertical).at(0)->setMinorGridLineVisible(false);
 
-        draw_state = ViewDataWidget::DrawState::Drawn;
+        draw_state = ViewDataWidget::ViewDrawState::Drawn;
     }
 
     chart->update();

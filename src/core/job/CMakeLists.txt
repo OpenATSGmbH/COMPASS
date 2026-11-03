@@ -9,5 +9,6 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/jobdefs.h"
         "${CMAKE_CURRENT_LIST_DIR}/jobmanager.h"
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/jobdefs.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/jobmanager.cpp"
 )

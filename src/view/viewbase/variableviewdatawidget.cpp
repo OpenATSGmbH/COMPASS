@@ -154,7 +154,7 @@ void VariableViewDataWidget::loadingDone_impl()
 
 /**
 */
-ViewDataWidget::DrawState VariableViewDataWidget::redrawData_impl(bool recompute)
+ViewDataWidget::ViewDrawState VariableViewDataWidget::redrawData_impl(bool recompute)
 {
     logdbg << "recompute " << recompute
            << " shows anno " << variable_view_->showsAnnotation();

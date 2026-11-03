@@ -64,9 +64,9 @@
 #include <QTabWidget>
 #include <QTimer>
 
-#include <malloc.h>
 
 #include "duckdbinstance.h"
+#include "system.h"
 
 #include "traced_assert.h"
 
@@ -1537,7 +1537,7 @@ void ViewManager::finishLoadingDone()
     // returning to the system, so the footprint grows with every load. Both halves are
     // needed: malloc_trim covers what COMPASS allocated, duckDBClean what the database
     // read allocated inside DuckDB's own jemalloc
-    malloc_trim(0);
+    Utils::System::trimMemory();
     duckDBClean();
 
     loginf << "end";

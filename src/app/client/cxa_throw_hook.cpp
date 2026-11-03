@@ -36,6 +36,17 @@
 // so the generated code is identical regardless of which branch is compiled.
 // ---------------------------------------------------------------------------
 
+#ifdef _WIN32
+
+// Windows: no hook yet (no dlsym(RTLD_NEXT) to reach the real __cxa_throw), the throw-site
+// stacktrace stays empty
+
+#include "cxa_throw_hook.h"
+
+thread_local boost::stacktrace::stacktrace last_throw_trace;
+
+#else
+
 #include <dlfcn.h>
 
 // forward-declare the capture helper (defined below, after boost includes)
@@ -84,3 +95,5 @@ static void capture_throw_trace()
         in_cxa_throw_hook = false;
     }
 }
+
+#endif

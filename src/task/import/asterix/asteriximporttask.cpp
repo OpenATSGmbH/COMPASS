@@ -69,7 +69,6 @@
 #include <QTimer>
 
 #include <algorithm>
-#include <malloc.h>
 
 using namespace Utils;
 using namespace nlohmann;
@@ -1882,7 +1881,7 @@ void ASTERIXImportTask::checkAllDone()
 
         logRAMUsage("finalize before malloc_trim");
 
-        malloc_trim(0); // release unused memory
+        Utils::System::trimMemory(); // release unused memory
 
         logRAMUsage("finalize after malloc_trim");
 

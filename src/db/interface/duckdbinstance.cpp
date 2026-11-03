@@ -24,7 +24,9 @@
 
 #include <boost/filesystem.hpp>
 
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 
 #include <QString>
 #include <QFile>
@@ -66,6 +68,9 @@ namespace
  */
 void duckDBClean()
 {
+#ifdef _WIN32
+    //the Windows build of DuckDB does not use jemalloc
+#else
     //jemalloc's mallctl, looked up at runtime: the symbol is prefixed and internal to
     //libduckdb, so it may vanish with a DuckDB update - then this is a no-op
     using MallctlFn = int (*)(const char*, void*, size_t*, void*, size_t);
@@ -79,6 +84,7 @@ void duckDBClean()
 
     if (ret != 0)
         logwrn << "purging duckdb allocator arenas failed with " << ret;
+#endif
 }
 
 /**

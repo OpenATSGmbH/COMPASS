@@ -1020,20 +1020,20 @@ namespace constraint
         obstacle_index.build(obstacles);
 
         std::vector<std::vector<int>> neighbours(n), near_obstacles(n);
-        std::vector<int>              near;
+        std::vector<int>              near_ids;
 
         for (size_t i = 0; i < n; ++i)
         {
             if (isExcluded(i))
                 continue;
 
-            reach_index.query(reach[ i ], near);
-            for (int j : near)
+            reach_index.query(reach[ i ], near_ids);
+            for (int j : near_ids)
                 if ((size_t)j != i && reach[ i ].intersects(reach[ j ]))
                     neighbours[ i ].push_back(j);
 
-            obstacle_index.query(reach[ i ], near);
-            for (int o : near)
+            obstacle_index.query(reach[ i ], near_ids);
+            for (int o : near_ids)
                 if (reach[ i ].intersects(obstacles[ o ]))
                     near_obstacles[ i ].push_back(o);
         }
@@ -1160,15 +1160,15 @@ namespace constraint
         BoxIndex index(spatial_index);
         index.build(homes);
 
-        std::vector<int> near;
+        std::vector<int> near_ids;
 
         for (size_t i = 0; i < n; ++i)
         {
             const auto& li = labels[ i ];
 
-            index.query(homes[ i ].adjusted(-gap_x, -gap_y, gap_x, gap_y), near, false); // groups independent of the order
+            index.query(homes[ i ].adjusted(-gap_x, -gap_y, gap_x, gap_y), near_ids, false); // groups independent of the order
 
-            for (int j : near)
+            for (int j : near_ids)
             {
                 const auto& lj = labels[ j ];
 
@@ -1628,7 +1628,7 @@ namespace constraint
         obstacle_index.build(obstacles);
 
         std::vector<QRectF> boxes(n);
-        std::vector<int>    near;
+        std::vector<int>    near_ids;
 
         OrderGraph graph_x(n), graph_y(n);
 
@@ -1671,9 +1671,9 @@ namespace constraint
                 if (excluded[ i ])
                     continue;
 
-                label_index.query(boxes[ i ].adjusted(-gap_x, -gap_y, gap_x, gap_y), near);
+                label_index.query(boxes[ i ].adjusted(-gap_x, -gap_y, gap_x, gap_y), near_ids);
 
-                for (int jj : near)
+                for (int jj : near_ids)
                 {
                     const size_t j = (size_t)jj;
                     if (j <= i)
@@ -1750,9 +1750,9 @@ namespace constraint
                 if (excluded[ i ])
                     continue;
 
-                obstacle_index.query(boxes[ i ].adjusted(-gap_x, -gap_y, gap_x, gap_y), near);
+                obstacle_index.query(boxes[ i ].adjusted(-gap_x, -gap_y, gap_x, gap_y), near_ids);
 
-                for (int oo : near)
+                for (int oo : near_ids)
                 {
                     const size_t o  = (size_t)oo;
                     const auto&  ob = obstacles[ o ];
@@ -1869,9 +1869,9 @@ namespace constraint
             if (excluded[ i ])
                 continue;
 
-            label_index.query(boxes[ i ], near, false); // counts only
+            label_index.query(boxes[ i ], near_ids, false); // counts only
 
-            for (int jj : near)
+            for (int jj : near_ids)
             {
                 const size_t j = (size_t)jj;
                 if (j == i || (j < i && !excluded[ j ])) // pairs of decluttered labels counted once

@@ -20,6 +20,7 @@
 #include "logger.h"
 
 #include <random>
+#include <vector>
 
 #include <boost/optional.hpp>
 
@@ -27,6 +28,11 @@
 
 namespace job
 {
+    /// cpu the calling thread runs on
+    int currentCPU();
+    /// restricts the calling thread to the given cpus, returns false on failure
+    bool setCurrentThreadCPUs(const std::vector<int>& cpus);
+
     enum class ThreadAffinityCondition
     {
         Always = 0, // apply specified affinity mode in any case
@@ -78,27 +84,26 @@ namespace job
         //only set if currently on cpu0? => return if on different cpu
         if (thread_affinity.ta_condition == ThreadAffinityCondition::CPU0)
         {
-            int cpu_cur = sched_getcpu();
+            int cpu_cur = currentCPU();
             if (cpu_cur != 0)
                 return;
         }
 
-        cpu_set_t cpuset;
-        CPU_ZERO(&cpuset);
+        std::vector<int> cpus;
 
         if (thread_affinity.ta_mode == ThreadAffinityMode::NotCPU0)
         {
             //set affinity for all cpus except cpu0
             const int n = QThread::idealThreadCount();
             for (int cpu = 1; cpu < n; ++cpu)
-                CPU_SET(cpu, &cpuset);
+                cpus.push_back(cpu);
         }
         else if (thread_affinity.ta_mode == ThreadAffinityMode::AllCPUs)
         {
             //set affinity for all cpus
             const int n = QThread::idealThreadCount();
             for (int cpu = 0; cpu < n; ++cpu)
-                CPU_SET(cpu, &cpuset);
+                cpus.push_back(cpu);
         }
         else
         {
@@ -146,12 +151,11 @@ namespace job
                 return;
             }
 
-            CPU_SET(cpu, &cpuset);
+            cpus.push_back(cpu);
         }
 
         //set thread affinity
-        pthread_t nativeThread = pthread_self();
-        if (pthread_setaffinity_np(nativeThread, sizeof(cpu_set_t), &cpuset) != 0)
+        if (!setCurrentThreadCPUs(cpus))
         {
             logerr << "failed to set thread affinity";
         }

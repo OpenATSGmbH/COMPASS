@@ -27,13 +27,21 @@
 #include <memory>
 #include <stdexcept>
 #include <array>
-#include <execinfo.h>
 #include <cstdlib>
-#include <cxxabi.h>
 
+#ifdef _WIN32
+#include <malloc.h>
+#include <windows.h>
+#include <psapi.h>
+#include <boost/stacktrace.hpp>
+#else
+#include <execinfo.h>
+#include <malloc.h>
+#include <cxxabi.h>
 #include <pwd.h>
 #include <unistd.h>
 #include <sys/types.h>
+#endif
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <boost/date_time/microsec_time_clock.hpp>
@@ -49,6 +57,14 @@ namespace System
 {
 float getTotalRAMinGB()
 {
+#ifdef _WIN32
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    if (!GlobalMemoryStatusEx(&status))
+        return 0;
+
+    return status.ullTotalPhys / gigabyte;
+#else
     std::string token;
     std::ifstream file("/proc/meminfo");
     while (file >> token)
@@ -70,10 +86,19 @@ float getTotalRAMinGB()
         file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
     return 0;  // nothing found
+#endif
 }
 
 float getFreeRAMinGB()
 {
+#ifdef _WIN32
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    if (!GlobalMemoryStatusEx(&status))
+        return 0;
+
+    return status.ullAvailPhys / gigabyte;
+#else
     //    struct sysinfo info;
     //    sysinfo (&info);
 
@@ -100,10 +125,19 @@ float getFreeRAMinGB()
         file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
     return 0;  // nothing found
+#endif
 }
 
 float getProcessRAMinGB()
 {
+#ifdef _WIN32
+    PROCESS_MEMORY_COUNTERS info;
+    if (!GetProcessMemoryInfo(GetCurrentProcess(), &info, sizeof(info)))
+        return 0;
+
+    // current working set, as VmRSS
+    return info.WorkingSetSize / gigabyte;
+#else
     std::string token;
     std::ifstream file("/proc/self/status");
     while (file >> token)
@@ -124,6 +158,7 @@ float getProcessRAMinGB()
         file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
     return 0;
+#endif
 }
 
 std::string exec(const std::string& cmd)
@@ -151,6 +186,13 @@ std::string exec(const std::string& cmd)
 
 std::string getUserName()
 {
+#ifdef _WIN32
+    char name[256];
+    DWORD size = sizeof(name);
+    if (GetUserNameA(name, &size))
+        return std::string(name);
+    return {};
+#else
     uid_t uid = geteuid ();
     struct passwd *pw = getpwuid (uid);
     if (pw)
@@ -158,6 +200,7 @@ std::string getUserName()
         return std::string(pw->pw_name);
     }
     return {};
+#endif
 }
 
 double secondsSinceMidnightUTC ()
@@ -183,6 +226,9 @@ int tbbCurrentThreadID()
 }
 
 void printBacktrace() {
+#ifdef _WIN32
+    std::cerr << "Stack trace:\n" << boost::stacktrace::stacktrace(0, 25);
+#else
     const int MAX_FRAMES = 25;
     void* buffer[MAX_FRAMES];
     int frames = backtrace(buffer, MAX_FRAMES);
@@ -195,11 +241,41 @@ void printBacktrace() {
     }
 
     free(symbols);
+#endif
+}
+
+void trimMemory()
+{
+#ifdef _WIN32
+    _heapmin();
+#else
+    malloc_trim(0);
+#endif
 }
 
 const char* appDir()
 {
+#ifdef _WIN32
+    // Windows package: the folder of the executable, with the same layout as the AppImage
+    // (compass/conf, compass/data, lib/osgPlugins-*). APPDIR overrides it.
+    if (const char* appdir = getenv("APPDIR"))
+        return appdir;
+
+    static const std::string exe_dir = [] ()
+    {
+        char path[MAX_PATH];
+        DWORD len = GetModuleFileNameA(nullptr, path, MAX_PATH);
+        std::string dir(path, len);
+        for (char& c : dir)
+            if (c == '\\')
+                c = '/';
+        return dir.substr(0, dir.find_last_of('/'));
+    } ();
+
+    return exe_dir.c_str();
+#else
     return getenv("APPDIR");
+#endif
 
     //return nullptr;
 }

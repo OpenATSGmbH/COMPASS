@@ -254,7 +254,7 @@ void ScatterPlotViewDataWidget::releaseChartView()
 
 /**
 */
-ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
+ViewDataWidget::ViewDrawState ScatterPlotViewDataWidget::updateVariableDisplay()
 {
     loginf;
 
@@ -317,7 +317,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateVariableDisplay()
         resetZoomSlot();
     }
 
-    prior_draw_had_content_ = (draw_state == DrawState::DrawnContent);
+    prior_draw_had_content_ = (draw_state == ViewDrawState::DrawnContent);
 
     // Remember which annotation this draw is for (or clear when leaving
     // annotation mode) so the next call can detect a switch.
@@ -932,7 +932,7 @@ void ScatterPlotViewDataWidget::updateChartSlot()
 
 /**
 */
-ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateChart()
+ViewDataWidget::ViewDrawState ScatterPlotViewDataWidget::updateChart()
 {
     logdbg;
 
@@ -983,11 +983,11 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateChart()
 
 /**
 */
-ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::QChart* chart)
+ViewDataWidget::ViewDrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::QChart* chart)
 {
     bool has_data = scatter_series_.numPoints(true) > 0 && (variablesOk() || view_->showsAnnotation());
 
-    DrawState draw_state = DrawState::NotDrawn;
+    ViewDrawState draw_state = ViewDrawState::NotDrawn;
 
     //!take care: this functional may assert if it is called when no series has yet been added to the chart!
     auto createAxes = [ & ] ()
@@ -1193,7 +1193,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
         createAxes();
 
         //content drawn
-        draw_state = DrawState::DrawnContent;
+        draw_state = ViewDrawState::DrawnContent;
     }
     else
     {
@@ -1221,7 +1221,7 @@ ViewDataWidget::DrawState ScatterPlotViewDataWidget::updateDataSeries(QtCharts::
         chart->axes(Qt::Vertical).at(0)->setMinorGridLineVisible(false);
 
         //at least we have drawn something
-        draw_state = DrawState::Drawn;
+        draw_state = ViewDrawState::Drawn;
     }
 
     return draw_state;

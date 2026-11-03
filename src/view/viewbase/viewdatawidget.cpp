@@ -472,8 +472,8 @@ unsigned int ViewDataWidget::loadedDataCount()
  */
 bool ViewDataWidget::isDrawn() const
 {
-    return draw_state_ == DrawState::Drawn || 
-           draw_state_ == DrawState::DrawnContent;
+    return draw_state_ == ViewDrawState::Drawn || 
+           draw_state_ == ViewDrawState::DrawnContent;
 }
 
 /**
@@ -481,7 +481,7 @@ bool ViewDataWidget::isDrawn() const
  */
 bool ViewDataWidget::isContentDrawn() const
 {
-    return draw_state_ == DrawState::DrawnContent;
+    return draw_state_ == ViewDrawState::DrawnContent;
 }
 
 /**
@@ -674,7 +674,7 @@ void ViewDataWidget::clearData()
 
     data_                   = {};
     data_fulfills_read_set_ = true;
-    draw_state_             = DrawState::NotDrawn;
+    draw_state_             = ViewDrawState::NotDrawn;
 
     count_null_.reset();
     count_nan_.reset();
@@ -707,7 +707,7 @@ void ViewDataWidget::clearIntermediateRedrawData()
  * @param notify If set, signals will be emitted before and after the redraw (this is only needed for manual redraws like in ViewLoadStateWidget).
  * @return True if the redraw succeeded.
 */
-ViewDataWidget::DrawState ViewDataWidget::redrawData(bool recompute, bool notify)
+ViewDataWidget::ViewDrawState ViewDataWidget::redrawData(bool recompute, bool notify)
 {
     loginf << "recompute " << recompute << " notify " << notify;
 

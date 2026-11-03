@@ -1398,6 +1398,10 @@ template <>
 void NullableVector<bool>::append(unsigned int index, bool value);
 
 template <>
+void NullableVector<bool>::setFromFormat(unsigned int index, const std::string& format,
+                                         const std::string& value_str, bool debug);
+
+template <>
 nlohmann::json NullableVector<boost::posix_time::ptime>::asJSON(unsigned int max_size);
 
 

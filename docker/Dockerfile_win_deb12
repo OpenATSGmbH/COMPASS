@@ -336,4 +336,13 @@ RUN wget -q https://npcap.com/dist/npcap-sdk-1.15.zip \
   && cp npcap/Lib/x64/wpcap.lib npcap/Lib/x64/Packet.lib /opt/win64/lib/ \
   && rm -rf npcap npcap-sdk-1.15.zip
 
+# CMake 3.28 (as in the Linux build), jASTERIX and COMPASS need 3.28, Debian 12 has 3.25.
+# Installed last, the dependencies above are built with the Debian CMake.
+ENV CMAKE_VERSION=3.28.1
+RUN wget -q https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz \
+  && tar xzf cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz -C /opt \
+  && ln -s /opt/cmake-${CMAKE_VERSION}-linux-x86_64/bin/* /usr/local/bin/ \
+  && rm cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz \
+  && cmake --version
+
 WORKDIR /
