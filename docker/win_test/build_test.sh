@@ -16,9 +16,9 @@ cmake -G Ninja -S "$SRC" -B "$OUT/build" -DCMAKE_TOOLCHAIN_FILE=/opt/mingw_toolc
 cmake --build "$OUT/build"
 cmake --install "$OUT/build"
 
-# runtime of the MinGW toolchain
+# runtime of the MinGW toolchain (libssp: stack protection, needed by TBB)
 cp "$MINGW_GCC_DLL_DIR/libstdc++-6.dll" "$MINGW_GCC_DLL_DIR/libgcc_s_seh-1.dll" \
-   "$MINGW_SYS_DLL_DIR/libwinpthread-1.dll" "$DEPLOY/"
+   "$MINGW_GCC_DLL_DIR/libssp-0.dll" "$MINGW_SYS_DLL_DIR/libwinpthread-1.dll" "$DEPLOY/"
 
 # libraries built in the image
 if [ -d "$WIN64_PREFIX/bin" ]; then

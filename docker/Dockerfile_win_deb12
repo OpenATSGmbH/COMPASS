@@ -1,7 +1,8 @@
 # Windows cross build environment (MinGW-w64) on Debian 12
 #
-# Feasibility test: MinGW GCC 12 with posix thread model, prebuilt Qt 5.15.2 for MinGW,
-# OpenSceneGraph 3.6 and osgEarth 3.8 with their dependencies built from source.
+# MinGW GCC 12 with posix thread model, prebuilt Qt 5.15.2 (with Charts) for MinGW,
+# OpenSceneGraph 3.6, osgEarth 3.8 and the other COMPASS and jASTERIX dependencies
+# built from source (DuckDB and the Npcap SDK as official binaries).
 # All Windows libraries are installed into /opt/win64.
 # The resulting executables run on Windows or in Wine.
 
@@ -28,15 +29,18 @@ RUN apt-get update \
      xz-utils \
      bzip2 \
      sqlite3 \
+     perl \
+     qtbase5-dev-tools \
   && rm -rf /var/lib/apt/lists/*
 
-RUN x86_64-w64-mingw32-g++-posix --version
+RUN x86_64-w64-mingw32-g++-posix --version && /usr/lib/qt5/bin/moc -v
 
 # prebuilt Qt 5.15.2 for MinGW 64 bit (Windows host tools, only libraries and headers are used)
 RUN python3 -m venv /opt/aqt \
   && /opt/aqt/bin/pip install --no-cache-dir aqtinstall \
-  && /opt/aqt/bin/aqt install-qt windows desktop 5.15.2 win64_mingw81 -O /opt/qt \
-  && test -f /opt/qt/5.15.2/mingw81_64/lib/cmake/Qt5Widgets/Qt5WidgetsConfig.cmake
+  && /opt/aqt/bin/aqt install-qt windows desktop 5.15.2 win64_mingw81 -m qtcharts -O /opt/qt \
+  && test -f /opt/qt/5.15.2/mingw81_64/lib/cmake/Qt5Widgets/Qt5WidgetsConfig.cmake \
+  && test -f /opt/qt/5.15.2/mingw81_64/lib/cmake/Qt5Charts/Qt5ChartsConfig.cmake
 
 ENV QT_WIN_DIR=/opt/qt/5.15.2/mingw81_64
 ENV MINGW_GCC_DLL_DIR=/usr/lib/gcc/x86_64-w64-mingw32/12-posix
@@ -184,18 +188,152 @@ RUN git clone --branch osgearth-3.8 --depth 1 --recurse-submodules https://githu
   && cmake --build osgearth-build && cmake --install osgearth-build \
   && rm -rf osgearth-3.8 osgearth-build
 
-# Qt5 host tools (moc, uic, rcc) for the cross build, see qt5_host_tools.cmake
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends qtbase5-dev-tools \
-  && rm -rf /var/lib/apt/lists/* \
-  && /usr/lib/qt5/bin/moc -v
-
+# Qt5 host tools (moc, uic, rcc) for the cross build
 COPY qt5_host_tools.cmake /opt/qt5_host_tools.cmake
 
-# Boost headers, same version as the Linux build (compiled Boost libraries are not built yet)
+### remaining COMPASS and jASTERIX dependencies
+
+# bzip2 (static, for libarchive and Boost.Iostreams)
+RUN wget -q https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz \
+  && tar xzf bzip2-1.0.8.tar.gz \
+  && cd bzip2-1.0.8 \
+  && for f in blocksort huffman crctable randtable compress decompress bzlib; do \
+       x86_64-w64-mingw32-gcc-posix -O2 -D_FILE_OFFSET_BITS=64 -c $f.c || exit 1; done \
+  && x86_64-w64-mingw32-ar rcs libbz2.a *.o \
+  && cp libbz2.a /opt/win64/lib/ && cp bzlib.h /opt/win64/include/ \
+  && cd .. && rm -rf bzip2-1.0.8*
+
+# xz / liblzma (for libarchive)
+RUN wget -q https://github.com/tukaani-project/xz/releases/download/v5.6.3/xz-5.6.3.tar.gz \
+  && tar xzf xz-5.6.3.tar.gz \
+  && cmake ${WIN_CMAKE} -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -S xz-5.6.3 -B xz-build \
+  && cmake --build xz-build && cmake --install xz-build \
+  && rm -rf xz-*
+
+# libarchive (gzip, bzip2, xz, zip)
+RUN wget -q https://github.com/libarchive/libarchive/releases/download/v3.7.7/libarchive-3.7.7.tar.gz \
+  && tar xzf libarchive-3.7.7.tar.gz \
+  && cmake ${WIN_CMAKE} -DENABLE_TEST=OFF -DENABLE_TAR=OFF -DENABLE_CPIO=OFF -DENABLE_CAT=OFF -DENABLE_UNZIP=OFF \
+     -DENABLE_OPENSSL=OFF -DENABLE_MBEDTLS=OFF -DENABLE_NETTLE=OFF -DENABLE_LIBB2=OFF -DENABLE_LZ4=OFF -DENABLE_ZSTD=OFF \
+     -DENABLE_LIBXML2=OFF -DENABLE_EXPAT=OFF -DENABLE_PCREPOSIX=OFF -DENABLE_PCRE2POSIX=OFF -DENABLE_ICONV=OFF \
+     -DENABLE_ACL=OFF -DENABLE_XATTR=OFF -DENABLE_LZMA=ON -DENABLE_BZip2=ON -DENABLE_ZLIB=ON \
+     -DBZIP2_INCLUDE_DIR=/opt/win64/include -DBZIP2_LIBRARY_RELEASE=/opt/win64/lib/libbz2.a \
+     -S libarchive-3.7.7 -B libarchive-build \
+  && cmake --build libarchive-build && cmake --install libarchive-build \
+  && rm -rf libarchive-*
+
+# OpenSSL 3.0 LTS
+RUN wget -q https://github.com/openssl/openssl/releases/download/openssl-3.0.15/openssl-3.0.15.tar.gz \
+  && tar xzf openssl-3.0.15.tar.gz \
+  && cd openssl-3.0.15 \
+  && ./Configure mingw64 shared no-tests --cross-compile-prefix=x86_64-w64-mingw32- --prefix=/opt/win64 --libdir=lib \
+  && make -j$(nproc) && make install_sw \
+  && cd .. && rm -rf openssl-*
+
+# libbacktrace (for boost_stacktrace_backtrace, as in the Alma8 build)
+RUN git clone --depth 1 https://github.com/ianlancetaylor/libbacktrace.git \
+  && cd libbacktrace \
+  && ./configure --host=x86_64-w64-mingw32 --prefix=/opt/win64 --enable-shared=no CC=x86_64-w64-mingw32-gcc-posix \
+  && make -j$(nproc) && make install \
+  && cd .. && rm -rf libbacktrace
+
+# Linux host compiler, needed to build the Boost build engine b2
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends g++ \
+  && rm -rf /var/lib/apt/lists/*
+
+# Boost 1.83, same version as the Linux build
 RUN wget -q -O boost_1_83_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz/download \
   && tar xzf boost_1_83_0.tar.gz \
-  && cp -r boost_1_83_0/boost /opt/win64/include/ \
-  && rm -rf boost_1_83_0*
+  && cd boost_1_83_0 \
+  && ./bootstrap.sh \
+  && echo "using gcc : mingw : x86_64-w64-mingw32-g++-posix ;" > user-config.jam \
+  && ./b2 --user-config=user-config.jam toolset=gcc-mingw target-os=windows threadapi=win32 \
+     address-model=64 architecture=x86 variant=release link=shared runtime-link=shared threading=multi \
+     --layout=system --prefix=/opt/win64 -j$(nproc) \
+     --with-regex --with-program_options --with-filesystem --with-iostreams --with-thread \
+     --with-stacktrace --with-date_time --with-system \
+     -sZLIB_INCLUDE=/opt/win64/include -sZLIB_LIBRARY_PATH=/opt/win64/lib -sZLIB_NAME=zlib \
+     -sBZIP2_INCLUDE=/opt/win64/include -sBZIP2_LIBRARY_PATH=/opt/win64/lib \
+     -sNO_LZMA=1 -sNO_ZSTD=1 -sLIBBACKTRACE_PATH=/opt/win64 \
+     cxxflags="-std=c++17" install \
+  && echo "b2 checks libbacktrace by running a test exe, which fails in a cross build: build the library directly" \
+  && x86_64-w64-mingw32-g++-posix -std=c++17 -O2 -shared \
+     -DBOOST_STACKTRACE_INTERNAL_BUILD_LIBS=1 -DBOOST_STACKTRACE_LINK=1 -DBOOST_STACKTRACE_DYN_LINK=1 \
+     -I/opt/win64/include libs/stacktrace/src/backtrace.cpp -L/opt/win64/lib -lbacktrace \
+     -o /opt/win64/lib/libboost_stacktrace_backtrace.dll -Wl,--out-implib,/opt/win64/lib/libboost_stacktrace_backtrace.dll.a \
+  && cd /opt/win64/lib/cmake \
+  && cp -r boost_stacktrace_basic-1.83.0 boost_stacktrace_backtrace-1.83.0 \
+  && cd boost_stacktrace_backtrace-1.83.0 \
+  && for f in *stacktrace_basic*; do sed -i 's/stacktrace_basic/stacktrace_backtrace/g' "$f"; \
+       mv "$f" "$(echo "$f" | sed 's/stacktrace_basic/stacktrace_backtrace/')"; done \
+  && cd /build && rm -rf boost_1_83_0* \
+  && test -f /opt/win64/lib/libboost_stacktrace_backtrace.dll.a \
+  && cp /opt/win64/lib/libboost_*.dll /opt/win64/bin/
+
+# oneTBB, same version as the Alma8 build
+# MinGW GCC 12 crashes (ICE in seh_emit_stackalloc) with -fstack-clash-protection, which oneTBB
+# always adds for GCC. A compiler launcher removes only this flag, LTO is off for the same reason.
+RUN printf '#!/bin/bash\nargs=()\nfor a in "$@"; do [[ "$a" == -fstack-clash-protection ]] || args+=("$a"); done\nexec "${args[@]}"\n' \
+     > /opt/no_stack_clash_launcher.sh && chmod +x /opt/no_stack_clash_launcher.sh \
+  && git clone --branch v2021.13.0 --depth 1 https://github.com/uxlfoundation/oneTBB.git oneTBB \
+  && cmake ${WIN_CMAKE} -DTBB_TEST=OFF -DTBB_STRICT=OFF -DTBB_EXAMPLES=OFF \
+     -DTBBMALLOC_PROXY_BUILD=OFF -DTBB_ENABLE_IPO=OFF \
+     -DCMAKE_CXX_COMPILER_LAUNCHER=/opt/no_stack_clash_launcher.sh \
+     -DCMAKE_C_STANDARD_LIBRARIES="-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 -lssp" \
+     -DCMAKE_CXX_STANDARD_LIBRARIES="-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 -lssp" \
+     -S oneTBB -B tbb-build \
+  && cmake --build tbb-build && cmake --install tbb-build \
+  && rm -rf oneTBB tbb-build
+
+# log4cpp (static library)
+# log4cpp/config-MinGW32.h defines int64_t as a macro unless LOG4CPP_HAVE_INT64_T is set, which
+# breaks <cstdint>. The same block has the in_addr_t typedef. Users of the headers (COMPASS,
+# jASTERIX) must also define LOG4CPP_HAVE_INT64_T.
+RUN wget -q -O log4cpp-1.1.4.tar.gz "https://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-1.1.4.tar.gz/download" \
+  && tar xzf log4cpp-1.1.4.tar.gz \
+  && cmake ${WIN_CMAKE} -DCMAKE_CXX_FLAGS="-DLOG4CPP_HAVE_INT64_T -Din_addr_t=u_long" -S log4cpp -B log4cpp-build \
+  && cmake --build log4cpp-build && cmake --install log4cpp-build \
+  && rm -rf log4cpp*
+
+# Eigen3 (headers only)
+RUN wget -q https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz \
+  && tar xzf eigen-3.4.0.tar.gz \
+  && cmake ${WIN_CMAKE} -DBUILD_TESTING=OFF -DEIGEN_BUILD_DOC=OFF -DEIGEN_BUILD_PKGCONFIG=OFF -S eigen-3.4.0 -B eigen-build \
+  && cmake --install eigen-build \
+  && rm -rf eigen-*
+
+# GeographicLib 1.52 (1.x API as the Linux distribution packages)
+RUN wget -q -O GeographicLib-1.52.tar.gz https://sourceforge.net/projects/geographiclib/files/distrib/GeographicLib-1.52.tar.gz/download \
+  && tar xzf GeographicLib-1.52.tar.gz \
+  && cmake ${WIN_CMAKE} -DGEOGRAPHICLIB_LIB_TYPE=SHARED -DGEOGRAPHICLIB_DOCUMENTATION=OFF -S GeographicLib-1.52 -B geographiclib-build \
+  && cmake --build geographiclib-build && cmake --install geographiclib-build \
+  && rm -rf GeographicLib-* geographiclib-build
+
+# NemaTode (bump NEMATODE_REV when hpuhr/NemaTode master changes, as in the Linux build)
+ARG NEMATODE_REV=15aad38
+RUN wget -q -O nematode.zip https://github.com/hpuhr/NemaTode/archive/refs/heads/master.zip \
+  && unzip -q nematode.zip \
+  && cmake ${WIN_CMAKE} -S NemaTode-master -B nematode-build \
+  && cmake --build nematode-build && cmake --install nematode-build \
+  && rm -rf nematode.zip NemaTode-master nematode-build \
+  && echo "NemaTode installs its config directly into lib/cmake, find_package searches lib/cmake/<name>*/" \
+  && mkdir -p /opt/win64/lib/cmake/NemaTode \
+  && echo 'include(${CMAKE_CURRENT_LIST_DIR}/../NemaTodeConfig.cmake)' > /opt/win64/lib/cmake/NemaTode/NemaTodeConfig.cmake
+
+# DuckDB 1.5.5 (official Windows DLL, C API), GNU ld links the MSVC import library duckdb.lib directly
+# (gendef does not finish on this DLL)
+RUN wget -q https://github.com/duckdb/duckdb/releases/download/v1.5.5/libduckdb-windows-amd64.zip \
+  && mkdir duckdb && unzip -q libduckdb-windows-amd64.zip -d duckdb \
+  && cp duckdb/duckdb.h /opt/win64/include/ && cp duckdb/duckdb.dll /opt/win64/bin/ \
+  && cp duckdb/duckdb.lib /opt/win64/lib/ \
+  && rm -rf duckdb libduckdb-windows-amd64.zip
+
+# Npcap SDK (libpcap API on Windows), the Npcap driver must be installed on the target machine
+RUN wget -q https://npcap.com/dist/npcap-sdk-1.15.zip \
+  && mkdir npcap && unzip -q npcap-sdk-1.15.zip -d npcap \
+  && cp -r npcap/Include/* /opt/win64/include/ \
+  && cp npcap/Lib/x64/wpcap.lib npcap/Lib/x64/Packet.lib /opt/win64/lib/ \
+  && rm -rf npcap npcap-sdk-1.15.zip
 
 WORKDIR /
