@@ -54,6 +54,7 @@
 
 #include <QMessageBox>
 #include <QApplication>
+#include <QStandardPaths>
 
 #include <osgDB/Registry>
 
@@ -82,7 +83,7 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
 
     std::cout << "APPIMAGE: " << (is_app_image_ ? "yes" : "no") << std::endl;
 
-    pdflatex_found_ = System::exec("which pdflatex").size(); // empty if none
+    pdflatex_found_ = !QStandardPaths::findExecutable("pdflatex").isEmpty(); // searches PATH
 
     simple_config_.reset(new SimpleConfig("config.json"));
 

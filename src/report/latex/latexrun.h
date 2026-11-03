@@ -27,10 +27,11 @@
 namespace latex
 {
     /**
-     * Command running pdflatex on the given document, with its output filtered
-     * down to the warning and error blocks.
+     * Runs pdflatex (found in PATH) on the given document in its folder and returns
+     * the output filtered down to the warning and error blocks. If pdflatex could
+     * not be started, a "Fatal error" message (see hasFatalError).
      */
-    std::string pdfLatexCommand(const std::string& path, const std::string& filename);
+    std::string runPDFLatex(const std::string& path, const std::string& filename);
 
     /**
      * Whether the pdflatex output reports a genuine LaTeX error, meaning no PDF

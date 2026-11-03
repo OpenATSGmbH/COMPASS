@@ -406,7 +406,6 @@ Result ReportExporterLatex::writePDF() const
     traced_assert(latex_doc_);
 
     std::string command_out;
-    std::string command = latex::pdfLatexCommand(latex_doc_->path(), latex_doc_->filename());
 
     loginf << "running pdflatex";
 
@@ -414,7 +413,7 @@ Result ReportExporterLatex::writePDF() const
     {
         auto cb = [ & ] (const AsyncTaskState& state, AsyncTaskProgressWrapper& progress)
         {
-            command_out = Utils::System::exec(command);
+            command_out = latex::runPDFLatex(latex_doc_->path(), latex_doc_->filename());
 
             return Result::succeeded();
         };
@@ -425,7 +424,7 @@ Result ReportExporterLatex::writePDF() const
 
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-    loginf << "cmd '" << command << "'";
+    loginf << "document '" << latex_doc_->path() << "/" << latex_doc_->filename() << "'";
 
     //initial run
     runPDFLatex();

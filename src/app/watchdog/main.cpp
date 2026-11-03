@@ -31,13 +31,18 @@ int main(int argc, char** argv)
 
     // path to client (assumed to be in the same directory)
     QString realAppPath = QCoreApplication::applicationDirPath() + "/compass_client";
+#ifdef _WIN32
+    realAppPath += ".exe";
+#endif
 
     //collect command line args for COMPASS client
     bool has_rt_cmd_port = false;
     QStringList client_args;
-    for (int i = 1; i < argc; ++i) 
+    // QCoreApplication::arguments: correct encoding on all platforms (wide arguments on Windows)
+    const QStringList app_args = QCoreApplication::arguments();
+    for (int i = 1; i < app_args.size(); ++i) 
     {
-        QString arg = QString::fromLocal8Bit(argv[i]);
+        const QString& arg = app_args.at(i);
         if (arg == "--open_rt_cmd_port")
             has_rt_cmd_port = true;
         client_args << arg;
@@ -76,6 +81,12 @@ int main(int argc, char** argv)
         int relay_code = exitCode;
         if (status == QProcess::CrashExit)
         {
+#ifdef _WIN32
+            // Windows: the exit code is the NTSTATUS of the crash (e.g. 0xC0000005 access
+            // violation), never 0 - relay it unchanged
+            QString err = "COMPASS client crashed with code 0x"
+                        + QString::number(static_cast<quint32>(exitCode), 16).toUpper();
+#else
             // Shell convention: signal-death encoded as 128 + signum.
             // Qt's exitCode on CrashExit is often 0 on Unix, which would
             // collide with a clean exit - force the high bit so the
@@ -83,6 +94,7 @@ int main(int argc, char** argv)
             relay_code = 128 + (exitCode > 0 ? exitCode : 6 /* SIGABRT fallback */);
             QString err = "COMPASS client crashed with code " + QString::number(exitCode)
                         + " (relaying " + QString::number(relay_code) + ")";
+#endif
             QTextStream(stderr) << err << "\n";
             if (!has_rt_cmd_port)
                 QMessageBox::critical(QApplication::activeWindow(), "Application Crash", err);

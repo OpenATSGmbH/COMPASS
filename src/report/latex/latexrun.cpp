@@ -16,16 +16,61 @@
  */
 
 #include "latexrun.h"
+#include "logger.h"
+
+#include <QProcess>
+#include <QString>
+#include <QStringList>
 
 namespace latex
 {
 
 /**
+ * Started directly, without a shell (no cd/awk on Windows). The output filter keeps the
+ * blocks from a line with "warning" (any case) or "!" up to the next empty line, as the
+ * former awk filter /warning|!/,/^$/ did.
  */
-std::string pdfLatexCommand(const std::string& path, const std::string& filename)
+std::string runPDFLatex(const std::string& path, const std::string& filename)
 {
-    return "cd \"" + path + "\" && pdflatex --interaction=nonstopmode \"" + filename
-            + "\" | awk 'BEGIN{IGNORECASE = 1}/warning|!/,/^$/;'";
+    QProcess process;
+    process.setWorkingDirectory(QString::fromStdString(path));
+    process.setProcessChannelMode(QProcess::MergedChannels);
+    process.start("pdflatex", { "--interaction=nonstopmode", QString::fromStdString(filename) });
+
+    if (!process.waitForStarted())
+    {
+        // "Fatal error": hasFatalError() fails the export
+        const std::string error = "Fatal error: could not start pdflatex: "
+                                  + process.errorString().toStdString();
+        logerr << error;
+        return error + "\n";
+    }
+
+    process.waitForFinished(-1);
+
+    const QStringList lines = QString::fromLocal8Bit(process.readAll()).split('\n');
+
+    std::string filtered;
+    bool in_block = false;
+
+    for (QString line : lines)
+    {
+        if (line.endsWith('\r'))
+            line.chop(1);
+
+        if (!in_block && (line.contains("warning", Qt::CaseInsensitive) || line.contains('!')))
+            in_block = true;
+
+        if (in_block)
+        {
+            filtered += line.toStdString() + "\n";
+
+            if (line.isEmpty())
+                in_block = false;
+        }
+    }
+
+    return filtered;
 }
 
 /**
