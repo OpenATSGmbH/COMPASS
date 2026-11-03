@@ -27,6 +27,7 @@
 #include <vector>
 
 class Buffer;
+class COMPASS;
 class DBContentManager;
 
 namespace dbContent
@@ -43,7 +44,11 @@ namespace dbContent
  *
  * Every operator works on whole columns: the inputs are read once into plain value vectors,
  * NaN for null, the result is written in one loop into the raw output column.
- * The "function" operator only documents a hardcoded calculation, the plan skips it.
+ *
+ * The "function" operator runs a hardcoded calculation of calculation_functions on the whole
+ * buffer, once per buffer even when it writes several variables. A function may read the
+ * variable model and the managers. "timestamp" and "artas_tri_record_numbers" run elsewhere,
+ * their entries only document them.
  */
 class CalculationPlan
 {
@@ -56,7 +61,8 @@ public:
         BearingDeg,
         ArrayLength,
         DsId,
-        Lookup
+        Lookup,
+        Function
     };
 
     struct LookupCondition
@@ -84,13 +90,15 @@ public:
         bool fill_null {false};                     // write rows with a null output only
         std::vector<LookupBranch> branches;         // lookup only
         double scale {1.0};                         // lookup only
+        std::string function;                       // function only, the name
     };
 
     /// all calculations of all DBContents
     static std::shared_ptr<const CalculationPlan> create(DBContentManager& dbcont_man);
 
-    /// parses op, mode, branches and scale of a calculation into a step with inputs set,
-    /// false with an error text when invalid. Does not check variables or unit factors
+    /// parses op, mode, branches, scale and function name of a calculation into a step with
+    /// inputs set, false with an error text when invalid. Does not check variables, unit factors
+    /// or whether the function exists
     static bool parseStep(const nlohmann::json& calculation, Step& step, std::string& error);
 
     /// appends a step to the run order of a DBContent, for create() and the tests
@@ -98,14 +106,22 @@ public:
     const std::vector<Step>& steps(const std::string& dbcontent_name) const;
 
     void run(std::map<std::string, std::shared_ptr<Buffer>>& buffers) const;
-    void run(const std::string& dbcontent_name, Buffer& buffer) const;
+    void run(const std::string& dbcontent_name, const std::shared_ptr<Buffer>& buffer) const;
+
+    /// true when the plan runs the named function for the DBContent
+    bool runsFunction(const std::string& dbcontent_name, const std::string& function) const;
 
     static bool operatorFromString(const std::string& op_str, Operator& op);
 
     static const std::string OperatorFunction;
+    static const std::string FunctionRadarProjection;
+    static const std::string FunctionADSBSGVSpeedTrack;
+    static const std::string FunctionTimestamp;
+    static const std::string FunctionARTASTRIRecordNumbers;
 
 private:
     std::map<std::string, std::vector<Step>> steps_;
+    COMPASS* compass_ {nullptr}; // set by create(), the functions need it
 };
 
 }

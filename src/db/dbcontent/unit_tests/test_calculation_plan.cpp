@@ -126,7 +126,7 @@ TEST_CASE("CalculationPlan: max ignores nulls", "[dbcontent][calculation]")
     plan.addStep(Content, makeStep(Op::Max, "XY Max", PropertyDataType::DOUBLE, {"X", "Y"}));
 
     auto buffer = makeBuffer({{"X", {1.0, 5.0, {}, {}}}, {"Y", {2.0, 3.0, 4.0, {}}}});
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     checkColumn(*buffer, "XY Max", {2.0, 5.0, 4.0, {}});
 }
@@ -137,7 +137,7 @@ TEST_CASE("CalculationPlan: max with one input column missing", "[dbcontent][cal
     plan.addStep(Content, makeStep(Op::Max, "XY Max", PropertyDataType::DOUBLE, {"X", "Y"}));
 
     auto buffer = makeBuffer({{"X", {1.0, {}}}});
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     checkColumn(*buffer, "XY Max", {1.0, {}});
 }
@@ -149,7 +149,7 @@ TEST_CASE("CalculationPlan: missing inputs add no column", "[dbcontent][calculat
     plan.addStep(Content, makeStep(Op::Add, "Sum", PropertyDataType::DOUBLE, {"A", "B"}));
 
     auto buffer = makeBuffer({{"A", {1.0, 2.0}}, {"Other", {1.0, 2.0}}});
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     CHECK_FALSE(buffer->hasAnyPropertyNamed("XY Max"));
     CHECK_FALSE(buffer->hasAnyPropertyNamed("Sum")); // B missing
@@ -172,7 +172,7 @@ TEST_CASE("CalculationPlan: add is null when one input is null", "[dbcontent][ca
     a.set(1, 4); b.setNull(1);
     a.set(2, 1); // B unset in row 2, shorter column
 
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     REQUIRE(buffer->has<unsigned char>("Sum"));
     auto& sum = buffer->get<unsigned char>("Sum");
@@ -191,7 +191,7 @@ TEST_CASE("CalculationPlan: hypot with unit factor", "[dbcontent][calculation]")
                                    {ms2kt, ms2kt}));
 
     auto buffer = makeBuffer({{"Vx", {3.0, {}}}, {"Vy", {4.0, 1.0}}});
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     checkColumn(*buffer, "Speed", {5.0 * ms2kt, {}});
 }
@@ -202,7 +202,7 @@ TEST_CASE("CalculationPlan: bearing north clockwise", "[dbcontent][calculation]"
     plan.addStep(Content, makeStep(Op::BearingDeg, "Angle", PropertyDataType::DOUBLE, {"Vx", "Vy"}));
 
     auto buffer = makeBuffer({{"Vx", {0.0, 1.0, 0.0, -1.0, {}}}, {"Vy", {1.0, 0.0, -1.0, 0.0, 1.0}}});
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     checkColumn(*buffer, "Angle", {0.0, 90.0, 180.0, 270.0, {}});
 }
@@ -216,7 +216,7 @@ TEST_CASE("CalculationPlan: fill_null keeps set values", "[dbcontent][calculatio
     plan.addStep(Content, step);
 
     auto buffer = makeBuffer({{"Vx", {3.0, 3.0, {}}}, {"Vy", {4.0, 4.0, 1.0}}, {"Speed", {100.0, {}, 7.0}}});
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     checkColumn(*buffer, "Speed", {100.0, 5.0, 7.0});
 }
@@ -227,7 +227,7 @@ TEST_CASE("CalculationPlan: overwrite sets null where the result is null", "[dbc
     plan.addStep(Content, makeStep(Op::Hypot, "Speed", PropertyDataType::DOUBLE, {"Vx", "Vy"}));
 
     auto buffer = makeBuffer({{"Vx", {3.0, {}}}, {"Vy", {4.0, 1.0}}, {"Speed", {100.0, 7.0}}});
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     checkColumn(*buffer, "Speed", {5.0, {}});
 }
@@ -248,7 +248,7 @@ TEST_CASE("CalculationPlan: ds_id with SAC/SIC fallback", "[dbcontent][calculati
     sac.set(0, 50); sic.set(0, 10);
     sac.setNull(1); sic.set(1, 10);
 
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     auto& ds_id = buffer->get<unsigned int>("DS ID");
     CHECK(ds_id.get(0) == 50 * 256 + 10);
@@ -262,7 +262,7 @@ TEST_CASE("CalculationPlan: ds_id without SAC/SIC columns", "[dbcontent][calcula
                                    {PropertyDataType::UCHAR, PropertyDataType::UCHAR}));
 
     auto buffer = makeBuffer({{"Other", {1.0, 2.0}}});
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     auto& ds_id = buffer->get<unsigned int>("DS ID");
     CHECK(ds_id.get(0) == 255);
@@ -285,7 +285,7 @@ TEST_CASE("CalculationPlan: array_length", "[dbcontent][calculation]")
     rus.set(2, json::object());
     rus.set(3, json::array());
 
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     auto& num = buffer->get<unsigned int>("Num");
     CHECK(num.get(0) == 3);
@@ -322,7 +322,7 @@ TEST_CASE("CalculationPlan: lookup branches", "[dbcontent][calculation]")
     auto buffer = makeBuffer({{"NACp", {2.0, 0.0, {}, {}, {}, {}}},
                               {"NUCp", {1.0, 1.0, 1.0, 1.0, 1.0, {}}},
                               {"MOPS", {{}, {}, {}, 0.0, 2.0, {}}}});
-    plan.run(Content, *buffer);
+    plan.run(Content, buffer);
 
     checkColumn(*buffer, "Max", {25.0, {}, 500.0, 500.0, 1000.0, {}});
 }
@@ -345,7 +345,8 @@ TEST_CASE("CalculationPlan: parseStep errors", "[dbcontent][calculation]")
     CHECK_FALSE(parse(R"({"op": "hypot"})", {"A", "B", "C"}));
     CHECK_FALSE(parse(R"({"op": "max", "mode": "sometimes"})", {"A", "B"}));
     CHECK_FALSE(parse(R"({"op": "unknown"})", {"A", "B"}));
-    CHECK_FALSE(parse(R"({"op": "function", "name": "timestamp"})", {"A"}));
+    CHECK(parse(R"({"op": "function", "name": "timestamp"})", {"A"}));
+    CHECK_FALSE(parse(R"({"op": "function"})", {"A"}));
     CHECK_FALSE(parse(R"({"op": "lookup"})", {"A"}));
     CHECK_FALSE(parse(R"({"op": "lookup", "branches": [{"key": "B", "table": {"1": 2}}]})", {"A"}));
     CHECK_FALSE(parse(R"({"op": "lookup", "branches": [{"key": "A", "table": {"x": 2}}]})", {"A"}));
@@ -429,7 +430,19 @@ TEST_CASE("CalculationPlan: conf/default calculations", "[dbcontent][calculation
 
             if (calculation.at("op") == CalculationPlan::OperatorFunction)
             {
-                CHECK(calculation.contains("name"));
+                const std::set<std::string> known {
+                    CalculationPlan::FunctionRadarProjection, CalculationPlan::FunctionADSBSGVSpeedTrack,
+                    CalculationPlan::FunctionTimestamp, CalculationPlan::FunctionARTASTRIRecordNumbers};
+
+                REQUIRE(calculation.contains("name"));
+                CHECK(known.count(calculation.at("name").get<std::string>()));
+
+                for (const auto& input : p.at("inputs"))
+                {
+                    INFO("input '" << input << "'");
+                    CHECK(vars.count(input.get<std::string>()));
+                }
+
                 ++num_function;
                 continue;
             }
@@ -475,7 +488,7 @@ TEST_CASE("CalculationPlan: conf/default calculations", "[dbcontent][calculation
 
             CalculationPlan plan;
             plan.addStep(Content, step);
-            plan.run(Content, *buffer);
+            plan.run(Content, buffer);
 
             ++num_run;
         }

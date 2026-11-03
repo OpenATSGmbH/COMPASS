@@ -86,7 +86,6 @@ public:
 
     void doRadarPlotPositionCalculations();
     void doXYPositionCalculations();
-    void doCAT021SpeedTrackCalculations();
     void doFilters();
     void doObfuscate();
     void checkARTASHashes();

@@ -647,7 +647,8 @@
                 "group": "Position",
                 "inputs": [
                     "Range",
-                    "Azimuth"
+                    "Azimuth",
+                    "DS ID"
                 ],
                 "is_key": false,
                 "name": "Latitude*",
@@ -675,7 +676,8 @@
                 "group": "Position",
                 "inputs": [
                     "Range",
-                    "Azimuth"
+                    "Azimuth",
+                    "DS ID"
                 ],
                 "is_key": false,
                 "name": "Longitude*",

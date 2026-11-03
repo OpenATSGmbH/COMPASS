@@ -21,6 +21,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/reportvariable.h"
         "${CMAKE_CURRENT_LIST_DIR}/selectionfiller.h"
         "${CMAKE_CURRENT_LIST_DIR}/calculationplan.h"
+        "${CMAKE_CURRENT_LIST_DIR}/calculationfunctions.h"
         "${CMAKE_CURRENT_LIST_DIR}/metavariablewidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/metavariabledetailwidget.h"
     PRIVATE
@@ -39,6 +40,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/reportvariable.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/selectionfiller.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/calculationplan.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/calculationfunctions.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/metavariablewidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/metavariabledetailwidget.cpp"
 )

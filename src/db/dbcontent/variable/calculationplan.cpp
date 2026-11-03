@@ -16,10 +16,12 @@
  */
 
 #include "dbcontent/variable/calculationplan.h"
+#include "dbcontent/variable/calculationfunctions.h"
 #include "dbcontent/variable/selectionfiller.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "compass.h"
 #include "buffer.h"
 #include "number.h"
 #include "logger.h"
@@ -38,12 +40,35 @@ using namespace std;
 namespace dbContent
 {
 
-const std::string CalculationPlan::OperatorFunction = "function";
+const std::string CalculationPlan::OperatorFunction              = "function";
+const std::string CalculationPlan::FunctionRadarProjection       = "radar_projection";
+const std::string CalculationPlan::FunctionADSBSGVSpeedTrack     = "adsb_sgv_speed_track";
+const std::string CalculationPlan::FunctionTimestamp             = "timestamp";
+const std::string CalculationPlan::FunctionARTASTRIRecordNumbers = "artas_tri_record_numbers";
 
 namespace
 {
 
 const double NaN = std::numeric_limits<double>::quiet_NaN();
+
+using Function = void (*)(COMPASS&, const std::string&, const std::shared_ptr<Buffer>&);
+
+// the functions the plan runs, by name
+const std::map<std::string, Function>& functions()
+{
+    static const std::map<std::string, Function> functions {
+        {CalculationPlan::FunctionRadarProjection, &calculation_functions::radarProjection},
+        {CalculationPlan::FunctionADSBSGVSpeedTrack, &calculation_functions::adsbSGVSpeedTrack}};
+
+    return functions;
+}
+
+// the functions running elsewhere, their entries only document them
+bool runsElsewhere(const std::string& function)
+{
+    return function == CalculationPlan::FunctionTimestamp
+           || function == CalculationPlan::FunctionARTASTRIRecordNumbers;
+}
 
 bool isNumeric(PropertyDataType data_type)
 {
@@ -523,7 +548,8 @@ bool CalculationPlan::operatorFromString(const std::string& op_str, Operator& op
         {"bearing_deg", Operator::BearingDeg},
         {"array_length", Operator::ArrayLength},
         {"ds_id", Operator::DsId},
-        {"lookup", Operator::Lookup}};
+        {"lookup", Operator::Lookup},
+        {OperatorFunction, Operator::Function}};
 
     auto it = operators.find(op_str);
 
@@ -630,6 +656,16 @@ bool CalculationPlan::parseStep(const nlohmann::json& calculation, Step& step, s
         }
         break;
     }
+    case Operator::Function:
+        if (!calculation.contains("name") || !calculation.at("name").is_string()
+            || calculation.at("name").get<std::string>().empty())
+        {
+            error = "function without name";
+            return false;
+        }
+
+        step.function = calculation.at("name");
+        break;
     }
 
     // inputs of a step built by hand default to factor 1
@@ -642,6 +678,7 @@ bool CalculationPlan::parseStep(const nlohmann::json& calculation, Step& step, s
 std::shared_ptr<const CalculationPlan> CalculationPlan::create(DBContentManager& dbcont_man)
 {
     auto plan = std::make_shared<CalculationPlan>();
+    plan->compass_ = &dbcont_man.compass();
 
     for (auto& dbcont_it : dbcont_man)
     {
@@ -659,9 +696,6 @@ std::shared_ptr<const CalculationPlan> CalculationPlan::create(DBContentManager&
 
             const nlohmann::json& calculation = var.calculation();
 
-            if (calculation.at("op") == OperatorFunction) // documents a hardcoded calculation
-                continue;
-
             Step step;
             step.output      = var.name();
             step.output_type = var.dataType();
@@ -675,7 +709,19 @@ std::shared_ptr<const CalculationPlan> CalculationPlan::create(DBContentManager&
                 continue;
             }
 
-            if (!isNumeric(step.output_type))
+            bool is_function = step.op == Operator::Function;
+
+            if (is_function && runsElsewhere(step.function))
+                continue;
+
+            if (is_function && !functions().count(step.function))
+            {
+                logerr << dbcontent_name << " variable '" << var.name() << "' calculation: unknown function '"
+                       << step.function << "'";
+                continue;
+            }
+
+            if (!is_function && !isNumeric(step.output_type))
             {
                 logerr << dbcontent_name << " variable '" << var.name() << "' calculation: output not numeric";
                 continue;
@@ -697,8 +743,8 @@ std::shared_ptr<const CalculationPlan> CalculationPlan::create(DBContentManager&
                 const Variable& input = dbcontent.variable(input_name);
                 PropertyDataType input_type = input.dataType();
 
-                bool type_ok = step.op == Operator::ArrayLength ? input_type == PropertyDataType::JSON
-                                                                : isNumeric(input_type);
+                bool type_ok = is_function || (step.op == Operator::ArrayLength ? input_type == PropertyDataType::JSON
+                                                                                : isNumeric(input_type));
                 if (!type_ok)
                 {
                     logerr << dbcontent_name << " variable '" << var.name() << "' calculation: input '"
@@ -790,31 +836,56 @@ void CalculationPlan::run(std::map<std::string, std::shared_ptr<Buffer>>& buffer
         if (!buf_it.second || !buf_it.second->size())
             continue;
 
-        run(buf_it.first, *buf_it.second);
+        run(buf_it.first, buf_it.second);
     }
 }
 
-void CalculationPlan::run(const std::string& dbcontent_name, Buffer& buffer) const
+void CalculationPlan::run(const std::string& dbcontent_name, const std::shared_ptr<Buffer>& buffer) const
 {
+    traced_assert(buffer);
+
     auto it = steps_.find(dbcontent_name);
 
     if (it == steps_.end())
         return;
 
-    size_t size = buffer.size();
+    size_t size = buffer->size();
 
     if (!size)
         return;
 
+    std::set<std::string> functions_run; // a function writing several variables runs once
+
     for (const auto& step : it->second)
     {
+        if (step.op == Operator::Function)
+        {
+            if (functions_run.count(step.function))
+                continue;
+
+            functions_run.insert(step.function);
+
+            traced_assert(compass_);
+            functions().at(step.function)(*compass_, dbcontent_name, buffer);
+            continue;
+        }
+
         std::vector<double> results(size, NaN);
 
-        if (!compute(dbcontent_name, step, buffer, results))
+        if (!compute(dbcontent_name, step, *buffer, results))
             continue;
 
-        writeColumn(buffer, step, results);
+        writeColumn(*buffer, step, results);
     }
+}
+
+bool CalculationPlan::runsFunction(const std::string& dbcontent_name, const std::string& function) const
+{
+    for (const auto& step : steps(dbcontent_name))
+        if (step.op == Operator::Function && step.function == function)
+            return true;
+
+    return false;
 }
 
 }

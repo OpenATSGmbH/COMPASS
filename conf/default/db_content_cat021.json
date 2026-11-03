@@ -4954,7 +4954,8 @@
                     "SGV HRD",
                     "Latitude*",
                     "Longitude*",
-                    "Mode C Code"
+                    "Mode C Code",
+                    "Timestamp"
                 ],
                 "is_key": false,
                 "name": "Track Angle*",

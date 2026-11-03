@@ -275,11 +275,14 @@ An edition variant is not a selection: CAT021 `NUCp or NIC` keeps two mappings, 
 | `hypot`, `fill_null` | `Ground Speed` | CAT010, CAT020, CAT062 | `Vx`, `Vy` | m/s to knots by the unit factor, the decoded CAT010 value is kept |
 | `bearing_deg`, `fill_null` | `Track Angle` | CAT010, CAT020, CAT062 | `Vx`, `Vy` | `atan2(vx, vy)` in degrees, [0, 360) |
 
-The `function` operator, `{"op": "function", "name": "timestamp"}`, only documents a hardcoded calculation, the plan skips it: `timestamp` (`Timestamp`), `radar_projection` (CAT001, CAT048 `Latitude*` / `Longitude*`), `adsb_sgv_speed_track` (CAT021 `Ground Speed*` / `Track Angle*`), `artas_tri_record_numbers` (CAT062 `TRI Record Numbers`, written later by the ARTAS association task). The RefTraj writers set `DS ID`, `Ground Speed` and `Track Angle` themselves, these have no `calculation`.
+The `function` operator, `{"op": "function", "name": "radar_projection"}`, runs a hardcoded calculation of [`calculationfunctions.cpp`](variable/calculationfunctions.cpp) on the whole buffer, once per buffer even when it writes several Variables. A function may read the variable model and the managers. `inputs` lists what it reads, the run order follows them:
+
+- run by the plan: `radar_projection` (CAT001, CAT048 `Latitude*` / `Longitude*`, after `DS ID`, `ProjectionManager::doRadarPlotPositionCalculations` for the rows without a position), `adsb_sgv_speed_track` (CAT021 `Ground Speed*` / `Track Angle*`).
+- run elsewhere, the entry only documents them: `timestamp` (`Timestamp`, `ASTERIXTimestampCalculator` before the postprocess job: it keeps the resolved date across buffers and writes the day wrap task log entry on the main thread), `artas_tri_record_numbers` (CAT062 `TRI Record Numbers`, written later by the ARTAS association task into existing rows). The RefTraj writers set `DS ID`, `Ground Speed` and `Track Angle` themselves, these have no `calculation`.
 
 ### Hardcoded calculations (not from any single ASTERIX item)
 
-[`asterixpostprocessjob.cpp`](../../task/import/asterix/asterixpostprocessjob.cpp) `run_impl` runs the projection and CAT021 speed and track calculations once the buffer is built; [`asterixtimestampcalculator.cpp`](../../task/import/asterix/asterixtimestampcalculator.cpp) `doTimeStampCalculation` computes the wall-clock `Timestamp`.
+[`asterixpostprocessjob.cpp`](../../task/import/asterix/asterixpostprocessjob.cpp) `run_impl` runs the X/Y projection and the CAT010 radar projection (the selection gaps, no plan function there) once the buffer is built; [`asterixtimestampcalculator.cpp`](../../task/import/asterix/asterixtimestampcalculator.cpp) `doTimeStampCalculation` computes the wall-clock `Timestamp`.
 
 | Variable | DBContent(s) | Inputs | Computation |
 |---|---|---|---|

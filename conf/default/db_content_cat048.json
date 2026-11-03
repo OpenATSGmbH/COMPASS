@@ -816,7 +816,8 @@
                 "inputs": [
                     "Range",
                     "Azimuth",
-                    "3D Height"
+                    "3D Height",
+                    "DS ID"
                 ],
                 "is_key": false,
                 "name": "Latitude*",
@@ -845,7 +846,8 @@
                 "inputs": [
                     "Range",
                     "Azimuth",
-                    "3D Height"
+                    "3D Height",
+                    "DS ID"
                 ],
                 "is_key": false,
                 "name": "Longitude*",
