@@ -538,7 +538,7 @@ void DataSourcesStatusWidget::dataLoaded()
             return;
         }
 
-        auto& rec_num_vec = buffer->get<unsigned long>(var_rn->name());
+        auto& rec_num_vec = buffer->get<std::uint64_t>(var_rn->name());
         auto& ts_vec      = buffer->get<boost::posix_time::ptime>(var_ts->name());
         auto& ds_id_vec   = buffer->get<unsigned int>(var_ds->name());
         auto& line_vec    = buffer->get<unsigned int>(var_line->name());

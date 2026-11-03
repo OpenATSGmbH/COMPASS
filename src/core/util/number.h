@@ -75,9 +75,9 @@ extern unsigned int dsIdFrom (unsigned int sac, unsigned int sic);
 extern unsigned int sacFromDsId (unsigned int ds_id);
 extern unsigned int sicFromDsId (unsigned int ds_id);
 
-extern unsigned long recNumAddDBContId (unsigned long rec_num_wo_dbcont_id, unsigned int dbcont_id);
-extern unsigned long recNumGetWithoutDBContId (unsigned long rec_num);
-extern unsigned int recNumGetDBContId (unsigned long rec_num);
+extern std::uint64_t recNumAddDBContId (std::uint64_t rec_num_wo_dbcont_id, unsigned int dbcont_id);
+extern std::uint64_t recNumGetWithoutDBContId (std::uint64_t rec_num);
+extern unsigned int recNumGetDBContId (std::uint64_t rec_num);
 
 template <typename T>
  std::tuple<double,double,double,double> getStatistics (const T& values);

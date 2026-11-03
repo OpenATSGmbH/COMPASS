@@ -38,7 +38,7 @@ public:
     virtual unsigned int currentLOD() const = 0;                     // current label level of detail (1-3)
     virtual float labelOpacity() const = 0;                          // 0 = transparent, 1 = opaque
     virtual LabelDirection labelDirection(unsigned int ds_id) = 0;   // label direction of the data source
-    virtual const std::map<unsigned long, unsigned int>& viewPointLabels() const = 0; // view point defined labels: rec_num -> lod
+    virtual const std::map<std::uint64_t, unsigned int>& viewPointLabels() const = 0; // view point defined labels: rec_num -> lod
 };
 
 }

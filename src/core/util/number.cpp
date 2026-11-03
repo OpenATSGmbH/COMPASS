@@ -345,19 +345,19 @@ std::pair<double, double> speedVec2SpeedAngle(double vx_mps,
     return std::make_pair(speed, angle);
 }
 
-unsigned long recNumAddDBContId (unsigned long rec_num_wo_dbcont_id, unsigned int dbcont_id)
+std::uint64_t recNumAddDBContId (std::uint64_t rec_num_wo_dbcont_id, unsigned int dbcont_id)
 {
     traced_assert(dbcont_id < 256); // 8bit max
     traced_assert(rec_num_wo_dbcont_id < (1ul << 56)); // 56bit max
     return rec_num_wo_dbcont_id << 8 | dbcont_id;
 }
 
-unsigned long recNumGetWithoutDBContId (unsigned long rec_num)
+std::uint64_t recNumGetWithoutDBContId (std::uint64_t rec_num)
 {
     return rec_num >> 8;
 }
 
-unsigned int recNumGetDBContId (unsigned long rec_num)
+unsigned int recNumGetDBContId (std::uint64_t rec_num)
 {
     return rec_num & 0xFF; // first byte
 }

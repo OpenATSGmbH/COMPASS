@@ -622,7 +622,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
 
     for (const auto& ds_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
         if (ds_it.second)
-            data_sources[std::stoul(ds_it.first)] = { settings_.line_id_tst_ };
+            data_sources[std::stoull(ds_it.first)] = { settings_.line_id_tst_ };
 
     return data_sources;
 }
@@ -660,7 +660,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
 
     for (auto& ds_it : data_sources_ref_.at(settings_.dbcontent_name_ref_))
     {
-        ds_id = stoul(ds_it.first);
+        ds_id = stoull(ds_it.first);
 
         loginf << "ref ds_id '" << ds_it.first << "' uint " << ds_id;
 
@@ -677,7 +677,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
 
     for (auto& ds_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
     {
-        ds_id = stoul(ds_it.first);
+        ds_id = stoull(ds_it.first);
 
         loginf << "tst ds_id '" << ds_it.first << "' uint " << ds_id;
 
@@ -802,7 +802,7 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesRef()
 
     for (auto& ds_it : data_sources_ref_[settings_.dbcontent_name_ref_])
     {
-        unsigned int ds_id = stoul(ds_it.first);
+        unsigned int ds_id = stoull(ds_it.first);
         traced_assert(ds_man.hasDataSource(ds_id));
 
         if (ds_it.second)
@@ -826,7 +826,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
         if (!ds_it.second)
             continue;
 
-        unsigned int ds_id = stoul(ds_it.first);
+        unsigned int ds_id = stoull(ds_it.first);
         traced_assert(ds_man.hasDataSource(ds_id));
 
         const auto& name = ds_man.dataSource(ds_id)->name();
@@ -900,7 +900,7 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesTst()
 
     for (auto& ds_it : data_sources_tst_[settings_.dbcontent_name_tst_])
     {
-        unsigned int ds_id = stoul(ds_it.first);
+        unsigned int ds_id = stoull(ds_it.first);
         traced_assert(ds_man.hasDataSource(ds_id));
 
         if (ds_it.second)
@@ -924,7 +924,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
         if (!ds_it.second)
             continue;
 
-        unsigned int ds_id = stoul(ds_it.first);
+        unsigned int ds_id = stoull(ds_it.first);
         traced_assert(ds_man.hasDataSource(ds_id));
 
         const auto& name = ds_man.dataSource(ds_id)->name();
@@ -1236,7 +1236,7 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
     unsigned int ds_id;
     for (auto& ds_it : ds_copy)
     {
-        ds_id = stoul(ds_it.first);
+        ds_id = stoull(ds_it.first);
 
         if (!ds_man.hasDataSource(ds_id))
             data_sources_ref_[settings_.dbcontent_name_ref_].erase(ds_it.first);
@@ -1278,7 +1278,7 @@ void EvaluationCalculator::checkTestDataSources(bool update_settings)
     unsigned int ds_id;
     for (auto& ds_it : ds_copy)
     {
-        ds_id = stoul(ds_it.first);
+        ds_id = stoull(ds_it.first);
 
         if (!ds_man.hasDataSource(ds_id))
             data_sources_tst_[settings_.dbcontent_name_tst_].erase(ds_it.first);
@@ -1440,11 +1440,11 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
 
     for (auto& src_it : data_sources_ref_.at(settings_.dbcontent_name_ref_))
         if (src_it.second)
-            data_sources[stoul(src_it.first)].insert(settings_.line_id_ref_);
+            data_sources[stoull(src_it.first)].insert(settings_.line_id_ref_);
 
     for (auto& src_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
         if (src_it.second)
-            data_sources[stoul(src_it.first)].insert(settings_.line_id_tst_);
+            data_sources[stoull(src_it.first)].insert(settings_.line_id_tst_);
 
     data["data_sources"] = data_sources;
 
@@ -2007,7 +2007,7 @@ std::string EvaluationCalculator::suggestReportName() const
 
     auto& ds_man = eval_man_.compass().dbContextManager();
 
-    unsigned int ds_id = stoul(ds_sel);
+    unsigned int ds_id = stoull(ds_sel);
     traced_assert(ds_man.hasDataSource(ds_id));
 
     const auto& ds_name = ds_man.dataSource(ds_id)->name();

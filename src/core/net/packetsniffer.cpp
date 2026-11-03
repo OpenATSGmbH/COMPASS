@@ -265,7 +265,7 @@ void PacketSniffer::digestPCAPPacket(const struct pcap_pkthdr* pkthdr,
 void PacketSniffer::digestPCAPEtherPacket(int ether_type, 
                                           const struct pcap_pkthdr* pkthdr, 
                                           const u_char* packet, 
-                                          unsigned long data_offs,
+                                          std::uint64_t data_offs,
                                           const ReadConfig& read_config)
 {
     const struct ip*      ipHeader;
@@ -815,7 +815,7 @@ Result PacketSniffer::readFile(ReadStyle read_style,
             if (err && std::string(err).find("truncated dump file") != std::string::npos)
             {
                 FILE* fp = pcap_file(pcap_file_);
-                long pos = fp ? ftell(fp) : -1;
+                std::int64_t pos = fp ? ftell(fp) : -1;
                 //long total = fp ? Utils::Files::fileSize(pcap_filename_) : -1;
 
                 logwrn << "truncated dump tail ignored at byte " << pos;
@@ -914,7 +914,7 @@ ResultT<PacketSniffer::Chunk> PacketSniffer::readFileNext(size_t max_packets,
             if (err && std::string(err).find("truncated dump file") != std::string::npos)
             {
                 FILE* fp = pcap_file(pcap_file_);
-                long pos = fp ? ftell(fp) : -1;
+                std::int64_t pos = fp ? ftell(fp) : -1;
 
                 logwrn << "truncated dump tail ignored at byte " << pos;
                 warning = "truncated dump tail ignored";

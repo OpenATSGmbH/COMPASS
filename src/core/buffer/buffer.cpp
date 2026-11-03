@@ -46,8 +46,8 @@ Buffer::~Buffer()
     getArrayListMap<unsigned char>().clear();
     getArrayListMap<int>().clear();
     getArrayListMap<unsigned int>().clear();
-    getArrayListMap<long int>().clear();
-    getArrayListMap<unsigned long int>().clear();
+    getArrayListMap<std::int64_t>().clear();
+    getArrayListMap<std::uint64_t>().clear();
     getArrayListMap<float>().clear();
     getArrayListMap<double>().clear();
     getArrayListMap<string>().clear();
@@ -88,10 +88,10 @@ bool Buffer::hasProperty(const Property& property)
                 traced_assert(getArrayListMap<unsigned int>().count(property.name()));
                 break;
             case PropertyDataType::LONGINT:
-                traced_assert(getArrayListMap<long int>().count(property.name()));
+                traced_assert(getArrayListMap<std::int64_t>().count(property.name()));
                 break;
             case PropertyDataType::ULONGINT:
-                traced_assert(getArrayListMap<unsigned long int>().count(property.name()));
+                traced_assert(getArrayListMap<std::uint64_t>().count(property.name()));
                 break;
             case PropertyDataType::FLOAT:
                 traced_assert(getArrayListMap<float>().count(property.name()));
@@ -165,15 +165,15 @@ void Buffer::addProperty(string id, PropertyDataType type)
                 new NullableVector<unsigned int>(property, *this));
             break;
         case PropertyDataType::LONGINT:
-            traced_assert(getArrayListMap<long int>().count(id) == 0);
-            getArrayListMap<long int>()[id] =
-                shared_ptr<NullableVector<long>>(new NullableVector<long>(property, *this));
+            traced_assert(getArrayListMap<std::int64_t>().count(id) == 0);
+            getArrayListMap<std::int64_t>()[id] =
+                shared_ptr<NullableVector<std::int64_t>>(new NullableVector<std::int64_t>(property, *this));
             break;
         case PropertyDataType::ULONGINT:
-            traced_assert(getArrayListMap<unsigned long int>().count(id) == 0);
-            getArrayListMap<unsigned long int>()[id] =
-                shared_ptr<NullableVector<unsigned long>>(
-                    new NullableVector<unsigned long>(property, *this));
+            traced_assert(getArrayListMap<std::uint64_t>().count(id) == 0);
+            getArrayListMap<std::uint64_t>()[id] =
+                shared_ptr<NullableVector<std::uint64_t>>(
+                    new NullableVector<std::uint64_t>(property, *this));
             break;
         case PropertyDataType::FLOAT:
             traced_assert(getArrayListMap<float>().count(id) == 0);
@@ -250,14 +250,14 @@ void Buffer::deleteProperty(const Property& property)
         traced_assert(!has<unsigned int>(property.name()));
         break;
     case PropertyDataType::LONGINT:
-        traced_assert(has<long int>(property.name()));
-        remove<long int> (property.name());
-        traced_assert(!has<long int>(property.name()));
+        traced_assert(has<std::int64_t>(property.name()));
+        remove<std::int64_t> (property.name());
+        traced_assert(!has<std::int64_t>(property.name()));
         break;
     case PropertyDataType::ULONGINT:
-        traced_assert(has<unsigned long int>(property.name()));
-        remove<unsigned long int> (property.name());
-        traced_assert(!has<unsigned long int>(property.name()));
+        traced_assert(has<std::uint64_t>(property.name()));
+        remove<std::uint64_t> (property.name());
+        traced_assert(!has<std::uint64_t>(property.name()));
         break;
     case PropertyDataType::FLOAT:
         traced_assert(has<float>(property.name()));
@@ -317,10 +317,10 @@ void Buffer::sortByProperty(const Property& property)
         perm = get<unsigned int> (property.name()).sortPermutation();
         break;
     case PropertyDataType::LONGINT:
-        perm = get<long int> (property.name()).sortPermutation();
+        perm = get<std::int64_t> (property.name()).sortPermutation();
         break;
     case PropertyDataType::ULONGINT:
-        perm = get<unsigned long int> (property.name()).sortPermutation();
+        perm = get<std::uint64_t> (property.name()).sortPermutation();
         break;
     case PropertyDataType::FLOAT:
         perm = get<float> (property.name()).sortPermutation();
@@ -369,10 +369,10 @@ void Buffer::sortByProperty(const Property& property)
             get<unsigned int> (prop_it.name()).sortByPermutation(perm);
             break;
         case PropertyDataType::LONGINT:
-            get<long int> (prop_it.name()).sortByPermutation(perm);
+            get<std::int64_t> (prop_it.name()).sortByPermutation(perm);
             break;
         case PropertyDataType::ULONGINT:
-            get<unsigned long int> (prop_it.name()).sortByPermutation(perm);
+            get<std::uint64_t> (prop_it.name()).sortByPermutation(perm);
             break;
         case PropertyDataType::FLOAT:
             get<float> (prop_it.name()).sortByPermutation(perm);
@@ -412,8 +412,8 @@ void Buffer::seizeBuffer(Buffer& org_buffer)
     seizeArrayListMap<unsigned char>(org_buffer);
     seizeArrayListMap<int>(org_buffer);
     seizeArrayListMap<unsigned int>(org_buffer);
-    seizeArrayListMap<long int>(org_buffer);
-    seizeArrayListMap<unsigned long int>(org_buffer);
+    seizeArrayListMap<std::int64_t>(org_buffer);
+    seizeArrayListMap<std::uint64_t>(org_buffer);
     seizeArrayListMap<float>(org_buffer);
     seizeArrayListMap<double>(org_buffer);
 
@@ -455,9 +455,9 @@ void Buffer::shrinkToFit()
         it.second->shrinkToFit();
     for (auto& it : getArrayListMap<unsigned int>())
         it.second->shrinkToFit();
-    for (auto& it : getArrayListMap<long int>())
+    for (auto& it : getArrayListMap<std::int64_t>())
         it.second->shrinkToFit();
-    for (auto& it : getArrayListMap<unsigned long int>())
+    for (auto& it : getArrayListMap<std::uint64_t>())
         it.second->shrinkToFit();
     for (auto& it : getArrayListMap<float>())
         it.second->shrinkToFit();
@@ -485,9 +485,9 @@ void Buffer::cutToSize(size_t size)
         it.second->cutToSize(size);
     for (auto& it : getArrayListMap<unsigned int>())
         it.second->cutToSize(size);
-    for (auto& it : getArrayListMap<long int>())
+    for (auto& it : getArrayListMap<std::int64_t>())
         it.second->cutToSize(size);
-    for (auto& it : getArrayListMap<unsigned long int>())
+    for (auto& it : getArrayListMap<std::uint64_t>())
         it.second->cutToSize(size);
     for (auto& it : getArrayListMap<float>())
         it.second->cutToSize(size);
@@ -519,9 +519,9 @@ void Buffer::cutUpToIndex(size_t index) // everything up to index is removed
             traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned int>())
             traced_assert(it.second->contentSize() <= size_);
-        for (auto& it : getArrayListMap<long int>())
+        for (auto& it : getArrayListMap<std::int64_t>())
             traced_assert(it.second->contentSize() <= size_);
-        for (auto& it : getArrayListMap<unsigned long int>())
+        for (auto& it : getArrayListMap<std::uint64_t>())
             traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<float>())
             traced_assert(it.second->contentSize() <= size_);
@@ -547,9 +547,9 @@ void Buffer::cutUpToIndex(size_t index) // everything up to index is removed
         it.second->cutUpToIndex(index);
     for (auto& it : getArrayListMap<unsigned int>())
         it.second->cutUpToIndex(index);
-    for (auto& it : getArrayListMap<long int>())
+    for (auto& it : getArrayListMap<std::int64_t>())
         it.second->cutUpToIndex(index);
-    for (auto& it : getArrayListMap<unsigned long int>())
+    for (auto& it : getArrayListMap<std::uint64_t>())
         it.second->cutUpToIndex(index);
     for (auto& it : getArrayListMap<float>())
         it.second->cutUpToIndex(index);
@@ -578,9 +578,9 @@ void Buffer::cutUpToIndex(size_t index) // everything up to index is removed
             traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned int>())
             traced_assert(it.second->contentSize() <= size_);
-        for (auto& it : getArrayListMap<long int>())
+        for (auto& it : getArrayListMap<std::int64_t>())
             traced_assert(it.second->contentSize() <= size_);
-        for (auto& it : getArrayListMap<unsigned long int>())
+        for (auto& it : getArrayListMap<std::uint64_t>())
             traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<float>())
             traced_assert(it.second->contentSize() <= size_);
@@ -612,9 +612,9 @@ void Buffer::removeIndexes(const std::vector<unsigned int>& indexes_to_remove)
             traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned int>())
             traced_assert(it.second->contentSize() <= size_);
-        for (auto& it : getArrayListMap<long int>())
+        for (auto& it : getArrayListMap<std::int64_t>())
             traced_assert(it.second->contentSize() <= size_);
-        for (auto& it : getArrayListMap<unsigned long int>())
+        for (auto& it : getArrayListMap<std::uint64_t>())
             traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<float>())
             traced_assert(it.second->contentSize() <= size_);
@@ -642,9 +642,9 @@ void Buffer::removeIndexes(const std::vector<unsigned int>& indexes_to_remove)
             it.second->clearData();
         for (auto& it : getArrayListMap<unsigned int>())
             it.second->clearData();
-        for (auto& it : getArrayListMap<long int>())
+        for (auto& it : getArrayListMap<std::int64_t>())
             it.second->clearData();
-        for (auto& it : getArrayListMap<unsigned long int>())
+        for (auto& it : getArrayListMap<std::uint64_t>())
             it.second->clearData();
         for (auto& it : getArrayListMap<float>())
             it.second->clearData();
@@ -670,9 +670,9 @@ void Buffer::removeIndexes(const std::vector<unsigned int>& indexes_to_remove)
             it.second->removeIndexes(indexes_to_remove);
         for (auto& it : getArrayListMap<unsigned int>())
             it.second->removeIndexes(indexes_to_remove);
-        for (auto& it : getArrayListMap<long int>())
+        for (auto& it : getArrayListMap<std::int64_t>())
             it.second->removeIndexes(indexes_to_remove);
-        for (auto& it : getArrayListMap<unsigned long int>())
+        for (auto& it : getArrayListMap<std::uint64_t>())
             it.second->removeIndexes(indexes_to_remove);
         for (auto& it : getArrayListMap<float>())
             it.second->removeIndexes(indexes_to_remove);
@@ -703,9 +703,9 @@ void Buffer::removeIndexes(const std::vector<unsigned int>& indexes_to_remove)
             traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<unsigned int>())
             traced_assert(it.second->contentSize() <= size_);
-        for (auto& it : getArrayListMap<long int>())
+        for (auto& it : getArrayListMap<std::int64_t>())
             traced_assert(it.second->contentSize() <= size_);
-        for (auto& it : getArrayListMap<unsigned long int>())
+        for (auto& it : getArrayListMap<std::uint64_t>())
             traced_assert(it.second->contentSize() <= size_);
         for (auto& it : getArrayListMap<float>())
             traced_assert(it.second->contentSize() <= size_);
@@ -752,11 +752,11 @@ bool Buffer::isNull(const Property& property, unsigned int index)
             traced_assert(getArrayListMap<unsigned int>().count(property.name()));
             return getArrayListMap<unsigned int>().at(property.name())->isNull(index);
         case PropertyDataType::LONGINT:
-            traced_assert(getArrayListMap<long int>().count(property.name()));
-            return getArrayListMap<long int>().at(property.name())->isNull(index);
+            traced_assert(getArrayListMap<std::int64_t>().count(property.name()));
+            return getArrayListMap<std::int64_t>().at(property.name())->isNull(index);
         case PropertyDataType::ULONGINT:
-            traced_assert(getArrayListMap<unsigned long int>().count(property.name()));
-            return getArrayListMap<unsigned long int>().at(property.name())->isNull(index);
+            traced_assert(getArrayListMap<std::uint64_t>().count(property.name()));
+            return getArrayListMap<std::uint64_t>().at(property.name())->isNull(index);
         case PropertyDataType::FLOAT:
             traced_assert(getArrayListMap<float>().count(property.name()));
             return getArrayListMap<float>().at(property.name())->isNull(index);
@@ -814,13 +814,13 @@ void Buffer::deleteEmptyProperties()
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::LONGINT:
-                traced_assert(getArrayListMap<long int>().count(property.name()));
-                if (getArrayListMap<long int>().at(property.name())->isAlwaysNull())
+                traced_assert(getArrayListMap<std::int64_t>().count(property.name()));
+                if (getArrayListMap<std::int64_t>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::ULONGINT:
-                traced_assert(getArrayListMap<unsigned long int>().count(property.name()));
-                if (getArrayListMap<unsigned long int>().at(property.name())->isAlwaysNull())
+                traced_assert(getArrayListMap<std::uint64_t>().count(property.name()));
+                if (getArrayListMap<std::uint64_t>().at(property.name())->isAlwaysNull())
                     properties_to_delete.push_back(property);
                 break;
             case PropertyDataType::FLOAT:
@@ -884,12 +884,12 @@ void Buffer::deleteEmptyProperties()
                 remove<unsigned int>(property.name());
                 break;
             case PropertyDataType::LONGINT:
-                traced_assert(getArrayListMap<long int>().count(property.name()));
-                remove<long int>(property.name());
+                traced_assert(getArrayListMap<std::int64_t>().count(property.name()));
+                remove<std::int64_t>(property.name());
                 break;
             case PropertyDataType::ULONGINT:
-                traced_assert(getArrayListMap<unsigned long int>().count(property.name()));
-                remove<unsigned long int>(property.name());
+                traced_assert(getArrayListMap<std::uint64_t>().count(property.name()));
+                remove<std::uint64_t>(property.name());
                 break;
             case PropertyDataType::FLOAT:
                 traced_assert(getArrayListMap<float>().count(property.name()));
@@ -939,9 +939,9 @@ nlohmann::json Buffer::asJSON(unsigned int max_size)
         j[it.first] = it.second->asJSON(max_size);
     for (auto& it : getArrayListMap<unsigned int>())
         j[it.first] = it.second->asJSON(max_size);
-    for (auto& it : getArrayListMap<long int>())
+    for (auto& it : getArrayListMap<std::int64_t>())
         j[it.first] = it.second->asJSON(max_size);
-    for (auto& it : getArrayListMap<unsigned long int>())
+    for (auto& it : getArrayListMap<std::uint64_t>())
         j[it.first] = it.second->asJSON(max_size);
     for (auto& it : getArrayListMap<float>())
         j[it.first] = it.second->asJSON(max_size);
@@ -979,10 +979,10 @@ nlohmann::json Buffer::asJSON(std::set<std::string> variable_names, unsigned int
     for (auto& it : getArrayListMap<unsigned int>())
         if (variable_names.count(it.first))
             j[it.first] = it.second->asJSON(max_size);
-    for (auto& it : getArrayListMap<long int>())
+    for (auto& it : getArrayListMap<std::int64_t>())
         if (variable_names.count(it.first))
             j[it.first] = it.second->asJSON(max_size);
-    for (auto& it : getArrayListMap<unsigned long int>())
+    for (auto& it : getArrayListMap<std::uint64_t>())
         if (variable_names.count(it.first))
             j[it.first] = it.second->asJSON(max_size);
     for (auto& it : getArrayListMap<float>())

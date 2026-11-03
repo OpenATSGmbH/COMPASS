@@ -209,7 +209,7 @@ public:
 
     // façade over ViewManager's selection carry-over (kept here so callers in lower
     // layers, e.g. FilterManager, don't need a view dependency)
-    void storeSelectedRecNums(const std::vector<unsigned long>& selected);
+    void storeSelectedRecNums(const std::vector<std::uint64_t>& selected);
 
     bool hasMaxLatency() const;
     boost::posix_time::time_duration maxLatency() const;

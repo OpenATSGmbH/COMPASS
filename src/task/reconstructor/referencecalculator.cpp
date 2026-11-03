@@ -625,7 +625,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                                            refs.measurements);
     }
 
-    std::set<unsigned long> usage_used_recnums;
+    std::set<std::uint64_t> usage_used_recnums;
     for (const auto& usage : refs.measurement_contributions)
         if (usage.interpolated || usage.stopped)
             usage_used_recnums.insert(usage.rec_num);
@@ -1124,7 +1124,7 @@ void ReferenceCalculator::updateReferences()
 
         ref.second.references.clear();
 
-        std::set<unsigned long> rec_nums;
+        std::set<std::uint64_t> rec_nums;
 
         //store target report usages to target
         for (auto& tru_it : ref.second.measurement_contributions)

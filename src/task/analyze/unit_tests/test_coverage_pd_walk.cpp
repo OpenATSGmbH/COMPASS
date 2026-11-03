@@ -104,13 +104,13 @@ WalkResult walk(const RefPeriod& p,
 
 // Splits all pieces of a walk into 1D cells along a straight track, position
 // x(t) in meters, and returns per cell (#EUI, #MUI).
-std::map<long, std::pair<double, double>> cellCounts(const RefPeriod& p,
+std::map<std::int64_t, std::pair<double, double>> cellCounts(const RefPeriod& p,
                                                      const std::vector<ptime>& tst,
                                                      const PDWalkParams& params,
                                                      const std::function<double(double)>& x_of_t,
                                                      double cell_m)
 {
-    std::map<long, std::pair<double, double>> cells;
+    std::map<std::int64_t, std::pair<double, double>> cells;
 
     walkReferencePeriodTimeDifference(
         p, tst, params,
@@ -118,7 +118,7 @@ std::map<long, std::pair<double, double>> cellCounts(const RefPeriod& p,
         {
             samplePiece(b, e, params.sample_step_s, [ & ] (const ptime& t, double frac)
             {
-                const long cell = static_cast<long>(std::floor(x_of_t(offset(t)) / cell_m));
+                const std::int64_t cell = static_cast<std::int64_t>(std::floor(x_of_t(offset(t)) / cell_m));
                 cells[cell].first += expected * frac;
                 if (is_miss)
                     cells[cell].second += expected * frac;

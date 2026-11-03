@@ -223,7 +223,7 @@ private:
     void digestPCAPEtherPacket(int ether_type, 
                                const struct pcap_pkthdr* pkthdr, 
                                const u_char* packet, 
-                               unsigned long data_offs,
+                               std::uint64_t data_offs,
                                const ReadConfig& read_config);
     Signature signatureForPacket(const std::string& src_ip,
                                  unsigned int src_port,

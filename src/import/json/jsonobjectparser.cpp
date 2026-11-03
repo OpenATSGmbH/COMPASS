@@ -370,9 +370,9 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "long " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                traced_assert(buffer.has<long int>(current_var_name));
+                traced_assert(buffer.has<std::int64_t>(current_var_name));
                 mandatory_missing =
-                        map_it->findAndSetValue(tr, buffer.get<long int>(current_var_name), row_cnt);
+                        map_it->findAndSetValue(tr, buffer.get<std::int64_t>(current_var_name), row_cnt);
 
                 break;
             }
@@ -380,9 +380,9 @@ bool JSONObjectParser::parseTargetReport(const nlohmann::json& tr, Buffer& buffe
             {
                 logdbg << "ulong " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                traced_assert(buffer.has<unsigned long>(current_var_name));
+                traced_assert(buffer.has<std::uint64_t>(current_var_name));
                 mandatory_missing = map_it->findAndSetValue(
-                            tr, buffer.get<unsigned long>(current_var_name), row_cnt);
+                            tr, buffer.get<std::uint64_t>(current_var_name), row_cnt);
 
                 break;
             }

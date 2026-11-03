@@ -228,7 +228,7 @@ std::string posInvalidationReasonName(PosInvalidationReason reason);
 struct BaseInfo
 {
     unsigned int buffer_index_ {0};
-    unsigned long record_num_ {0};
+    std::uint64_t record_num_ {0};
     unsigned int dbcont_id_ {0};
     unsigned int ds_id_ {0};
     dbContent::DataSourceType ds_type_{DataSourceType::Other};

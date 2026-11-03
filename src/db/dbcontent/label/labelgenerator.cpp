@@ -528,30 +528,30 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
             }
             else if (data_type == PropertyDataType::LONGINT)
             {
-                traced_assert(buffer->has<long int>(property_name));
-                null = buffer->get<long int>(property_name).isNull(buffer_index);
+                traced_assert(buffer->has<std::int64_t>(property_name));
+                null = buffer->get<std::int64_t>(property_name).isNull(buffer_index);
                 if (!null)
                 {
                     if (use_presentation)
                         value_str = var_it.second->getRepresentationStringFromValue(
-                                    buffer->get<long int>(property_name).getAsString(buffer_index));
+                                    buffer->get<std::int64_t>(property_name).getAsString(buffer_index));
                     else
-                        value_str = buffer->get<long int>(property_name).getAsString(buffer_index);
+                        value_str = buffer->get<std::int64_t>(property_name).getAsString(buffer_index);
                 }
             }
             else if (data_type == PropertyDataType::ULONGINT)
             {
-                traced_assert(buffer->has<unsigned long int>(property_name));
-                null = buffer->get<unsigned long int>(property_name).isNull(buffer_index);
+                traced_assert(buffer->has<std::uint64_t>(property_name));
+                null = buffer->get<std::uint64_t>(property_name).isNull(buffer_index);
                 if (!null)
                 {
                     if (use_presentation)
                         value_str = var_it.second->getRepresentationStringFromValue(
-                                    buffer->get<unsigned long int>(property_name)
+                                    buffer->get<std::uint64_t>(property_name)
                                     .getAsString(buffer_index));
                     else
                         value_str =
-                                buffer->get<unsigned long int>(property_name).getAsString(buffer_index);
+                                buffer->get<std::uint64_t>(property_name).getAsString(buffer_index);
                 }
             }
             else if (data_type == PropertyDataType::FLOAT)
@@ -1741,7 +1741,7 @@ void LabelGenerator::updateFilterValuesFromStrings()
     ++config_generation_; // config possibly set from outside (e.g. preset)
 }
 
-void LabelGenerator::setViewPointLabels(const std::map<unsigned long, unsigned int>& labels)
+void LabelGenerator::setViewPointLabels(const std::map<std::uint64_t, unsigned int>& labels)
 {
     loginf << labels.size() << " label(s)";
 
@@ -2010,11 +2010,11 @@ std::string LabelGenerator::getVariableValue(const std::string& dbcontent_name, 
     }
     case PropertyDataType::LONGINT:
     {
-        if (!buffer->has<long int>(varname))
+        if (!buffer->has<std::int64_t>(varname))
             return "";
         else
         {
-            NullableVector<long int>& values = buffer->get<long int>(varname);
+            NullableVector<std::int64_t>& values = buffer->get<std::int64_t>(varname);
 
             if (values.isNull(index))
                 return "";
@@ -2031,11 +2031,11 @@ std::string LabelGenerator::getVariableValue(const std::string& dbcontent_name, 
     }
     case PropertyDataType::ULONGINT:
     {
-        if (!buffer->has<unsigned long int>(varname))
+        if (!buffer->has<std::uint64_t>(varname))
             return "";
         else
         {
-            NullableVector<unsigned long int>& values = buffer->get<unsigned long int>(varname);
+            NullableVector<std::uint64_t>& values = buffer->get<std::uint64_t>(varname);
 
             if (values.isNull(index))
                 return "";

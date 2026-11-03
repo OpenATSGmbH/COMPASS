@@ -120,10 +120,10 @@ TEST_CASE("calculateMinAngleDifference", "[number]")
 
 TEST_CASE("recNum encoding/decoding", "[number]")
 {
-    unsigned long rec_num = 12345;
+    std::uint64_t rec_num = 12345;
     unsigned int dbcont_id = 42;
 
-    unsigned long encoded = recNumAddDBContId(rec_num, dbcont_id);
+    std::uint64_t encoded = recNumAddDBContId(rec_num, dbcont_id);
     REQUIRE(recNumGetWithoutDBContId(encoded) == rec_num);
     REQUIRE(recNumGetDBContId(encoded) == dbcont_id);
 }

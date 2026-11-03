@@ -139,7 +139,7 @@ void TargetReportAccessor::cacheVectors()
     //general
     meta_timestamp_vec_ = metaVarVector<boost::posix_time::ptime>(dbcontent_vars::meta_var_timestamp_);
     traced_assert(meta_timestamp_vec_);
-    meta_rec_num_vec_   = metaVarVector<unsigned long>(dbcontent_vars::meta_var_rec_num_);
+    meta_rec_num_vec_   = metaVarVector<std::uint64_t>(dbcontent_vars::meta_var_rec_num_);
     traced_assert(meta_rec_num_vec_);
     meta_ds_id_vec_     = metaVarVector<unsigned int>(dbcontent_vars::meta_var_ds_id_);
     traced_assert(meta_ds_id_vec_);
@@ -229,9 +229,9 @@ boost::posix_time::ptime TargetReportAccessor::timestamp(unsigned int index) con
 
 /**
 */
-unsigned long TargetReportAccessor::recordNumber(unsigned int index) const
+std::uint64_t TargetReportAccessor::recordNumber(unsigned int index) const
 {
-    return getNotOptional<unsigned long>(meta_rec_num_vec_, index);
+    return getNotOptional<std::uint64_t>(meta_rec_num_vec_, index);
 }
 
 /**

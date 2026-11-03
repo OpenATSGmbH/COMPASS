@@ -132,9 +132,9 @@ bool readColumn(Buffer& buffer, const std::string& name, PropertyDataType data_t
     case PropertyDataType::UINT:
         return readTyped<unsigned int>(buffer, name, factor, values);
     case PropertyDataType::LONGINT:
-        return readTyped<long>(buffer, name, factor, values);
+        return readTyped<std::int64_t>(buffer, name, factor, values);
     case PropertyDataType::ULONGINT:
-        return readTyped<unsigned long>(buffer, name, factor, values);
+        return readTyped<std::uint64_t>(buffer, name, factor, values);
     case PropertyDataType::FLOAT:
         return readTyped<float>(buffer, name, factor, values);
     case PropertyDataType::DOUBLE:
@@ -206,10 +206,10 @@ void writeColumn(Buffer& buffer, const CalculationPlan::Step& step, const std::v
         writeTyped<unsigned int>(buffer, step.output, step.output_type, step.fill_null, results);
         break;
     case PropertyDataType::LONGINT:
-        writeTyped<long>(buffer, step.output, step.output_type, step.fill_null, results);
+        writeTyped<std::int64_t>(buffer, step.output, step.output_type, step.fill_null, results);
         break;
     case PropertyDataType::ULONGINT:
-        writeTyped<unsigned long>(buffer, step.output, step.output_type, step.fill_null, results);
+        writeTyped<std::uint64_t>(buffer, step.output, step.output_type, step.fill_null, results);
         break;
     case PropertyDataType::FLOAT:
         writeTyped<float>(buffer, step.output, step.output_type, step.fill_null, results);
@@ -455,12 +455,12 @@ bool parseLookupBranch(const nlohmann::json& branch_json, CalculationPlan::Step&
 
     for (auto it = branch_json.at("table").begin(); it != branch_json.at("table").end(); ++it)
     {
-        unsigned long key_value;
+        std::uint64_t key_value;
 
         try
         {
             size_t pos;
-            key_value = std::stoul(it.key(), &pos);
+            key_value = std::stoull(it.key(), &pos);
 
             if (pos != it.key().size())
                 throw std::invalid_argument(it.key());

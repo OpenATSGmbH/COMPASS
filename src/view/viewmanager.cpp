@@ -1337,12 +1337,12 @@ void ViewManager::captureSelection()
         auto& buffer = buf_it.second;
 
         if (!buffer->has<bool>(dbcontent_vars::selected_var_.name())
-            || !buffer->has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()))
+            || !buffer->has<std::uint64_t>(dbcontent_vars::meta_var_rec_num_.name()))
             continue;
 
         NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
-        NullableVector<unsigned long>& rec_num_vec =
-            buffer->get<unsigned long>(dbcontent_vars::meta_var_rec_num_.name());
+        NullableVector<std::uint64_t>& rec_num_vec =
+            buffer->get<std::uint64_t>(dbcontent_vars::meta_var_rec_num_.name());
 
         size_t data_size = selected_vec.contentSize();
         for (unsigned int cnt = 0; cnt < data_size; ++cnt)
@@ -1367,14 +1367,14 @@ void ViewManager::restoreSelectionInto(const std::string& dbcontent_name, Buffer
         return;
 
     if (!buffer.has<bool>(dbcontent_vars::selected_var_.name())
-        || !buffer.has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()))
+        || !buffer.has<std::uint64_t>(dbcontent_vars::meta_var_rec_num_.name()))
         return;
 
     NullableVector<bool>& selected_vec = buffer.get<bool>(dbcontent_vars::selected_var_.name());
-    NullableVector<unsigned long>& rec_num_vec =
-        buffer.get<unsigned long>(dbcontent_vars::meta_var_rec_num_.name());
+    NullableVector<std::uint64_t>& rec_num_vec =
+        buffer.get<std::uint64_t>(dbcontent_vars::meta_var_rec_num_.name());
 
-    std::map<unsigned long, unsigned int> unique_rec_nums =
+    std::map<std::uint64_t, unsigned int> unique_rec_nums =
         rec_num_vec.uniqueValuesWithIndexes(sel_recnums); // value -> index
 
     for (auto& rec_num_it : unique_rec_nums)
@@ -1405,7 +1405,7 @@ void ViewManager::applyCarriedSelection(const std::vector<std::string>& names)
  * Stages an explicit selection (by rec num) for the next load, replacing any current
  * selection. Used by FilterManager / view-point selection.
  */
-void ViewManager::storeSelectedRecNums(const std::vector<unsigned long>& selected)
+void ViewManager::storeSelectedRecNums(const std::vector<std::uint64_t>& selected)
 {
     clearSelectedRecNums(); // replace any current selection
 
@@ -1737,7 +1737,7 @@ void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode
 */
 View* ViewManager::latestView()
 {
-    unsigned long latest = 0;
+    std::uint64_t latest = 0;
     View* latest_view = nullptr;
 
     for (const auto& elem : views_)
@@ -1756,7 +1756,7 @@ View* ViewManager::latestView()
 */
 ViewContainerWidget* ViewManager::latestViewContainer()
 {
-    unsigned long latest = 0;
+    std::uint64_t latest = 0;
     ViewContainerWidget* latest_container = nullptr;
 
     for (const auto& elem : container_widgets_)

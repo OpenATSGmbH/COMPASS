@@ -507,8 +507,8 @@ void ScatterPlotViewDataWidget::correctSeriesDateTime(ScatterSeriesCollection& c
     {
         for (auto& pos : s.second.scatter_series.points)
         {
-            if (x_axis_is_datetime_) pos[ 0 ] = Utils::Time::correctLongQtUTC((long)pos[ 0 ]);
-            if (y_axis_is_datetime_) pos[ 1 ] = Utils::Time::correctLongQtUTC((long)pos[ 1 ]);
+            if (x_axis_is_datetime_) pos[ 0 ] = Utils::Time::correctLongQtUTC((std::int64_t)pos[ 0 ]);
+            if (y_axis_is_datetime_) pos[ 1 ] = Utils::Time::correctLongQtUTC((std::int64_t)pos[ 1 ]);
         }
     }
 

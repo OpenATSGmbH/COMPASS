@@ -193,12 +193,12 @@ public:
         buffer_->get<T>(column).set(row_, value);
     }
 
-    void setRecordNumber(unsigned long rec_num);
+    void setRecordNumber(std::uint64_t rec_num);
     void setUTN(unsigned int utn);
     void setTimestamp(const boost::posix_time::ptime& timestamp);
 
     /// true if a row with this record number was written already
-    bool hasRecordNumber(unsigned long rec_num) const;
+    bool hasRecordNumber(std::uint64_t rec_num) const;
 
     /// closes the row, returns false if it was dropped because its key is taken
     bool nextRow();
@@ -223,5 +223,5 @@ private:
 
     //the key of a record table is its primary key, a duplicate would fail the whole insert
     bool                              keyed_ = false;
-    std::unordered_set<unsigned long> keys_;
+    std::unordered_set<std::uint64_t> keys_;
 };

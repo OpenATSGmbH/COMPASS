@@ -227,7 +227,7 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
 
     bool do_debug_rec_num = false;
     
-    unsigned long rec_num;
+    std::uint64_t rec_num;
     int utn;
     bool is_unreliable_primary_only;
 
@@ -238,7 +238,7 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
     //batch_stats.batch_size_max   = std::max(batch_stats.batch_size_max, batch.rec_nums_.size());
     //batch_stats.batch_size_mean += batch.rec_nums_.size();
 
-    std::vector<unsigned long> unreliable_primary_only_trs;
+    std::vector<std::uint64_t> unreliable_primary_only_trs;
     size_t num_in_slice = 0;
 
     for (auto& rn_it : batch.rec_nums_)
@@ -360,7 +360,7 @@ void ReconstructorAssociatorBase::associateTargetReportBatch(const boost::posix_
 
 void ReconstructorAssociatorBase::associateUnreliablePrimaryOnly(unsigned int ds_id,
                                                                  const boost::posix_time::ptime& ts,
-                                                                 const std::vector<unsigned long>& rec_nums,
+                                                                 const std::vector<std::uint64_t>& rec_nums,
                                                                  bool debug)
 {
     //default: just add to unassociated and retry later on
@@ -377,7 +377,7 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
 {
     loginf << "dbcont_ids " << String::compress(dbcont_ids, ',');
 
-    unsigned long rec_num;
+    std::uint64_t rec_num;
     int utn;
 
     bool do_debug;
@@ -804,7 +804,7 @@ void ReconstructorAssociatorBase::retryAssociateTargetReports()
     if (!unassoc_rec_nums_.size())
         return;
 
-    unsigned long rec_num;
+    std::uint64_t rec_num;
     unsigned int dbcont_id;
     int utn;
 
@@ -867,7 +867,7 @@ void ReconstructorAssociatorBase::retryAssociateTargetReports()
             ++assocated_cnt;
 
             // Erase the element and update the iterator
-            rec_num_it = std::vector<unsigned long>::reverse_iterator(
+            rec_num_it = std::vector<std::uint64_t>::reverse_iterator(
                 unassoc_rec_nums_.erase(std::next(rec_num_it).base()));
         }
         else
@@ -931,14 +931,14 @@ void ReconstructorAssociatorBase::associate(
     postAssociate (tr, utn);
 }
 
-void ReconstructorAssociatorBase::countUnAssociated(const std::vector<unsigned long> &rec_nums)
+void ReconstructorAssociatorBase::countUnAssociated(const std::vector<std::uint64_t> &rec_nums)
 {
     for (auto rn_it : rec_nums)
     {
         if (reconstructor().isCancelled())
             return;
 
-        unsigned long rec_num;
+        std::uint64_t rec_num;
         unsigned int dbcont_id;
 
         rec_num = rn_it;
@@ -1534,9 +1534,9 @@ std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssocia
                               if (do_debug)
                                   loginf << "\ttarget " << target.utn_ << " other " << other.utn_ << " overlap passed";
 
-                              vector<unsigned long> ma_unknown; // record numbers
-                              vector<unsigned long> ma_same;
-                              vector<unsigned long> ma_different;
+                              vector<std::uint64_t> ma_unknown; // record numbers
+                              vector<std::uint64_t> ma_same;
+                              vector<std::uint64_t> ma_different;
 
                               tie (ma_unknown, ma_same, ma_different) = target.compareModeACodes(
                                   other, max_time_diff_, do_debug);
@@ -1557,9 +1557,9 @@ std::vector<ReconstructorAssociatorBase::AssociationOption> ReconstructorAssocia
 
                                   // check mode c codes
 
-                                  vector<unsigned long> mc_unknown;
-                                  vector<unsigned long> mc_same;
-                                  vector<unsigned long> mc_different;
+                                  vector<std::uint64_t> mc_unknown;
+                                  vector<std::uint64_t> mc_same;
+                                  vector<std::uint64_t> mc_different;
 
                                   tie (mc_unknown, mc_same, mc_different) = target.compareModeCCodes(
                                       other, ma_same, max_time_diff_, settings.max_altitude_diff_, do_debug);
@@ -1661,7 +1661,7 @@ void ReconstructorAssociatorBase::scoreUTN(const dbContent::ReconstructorTarget&
 
     traced_assert(stats);
 
-    vector<pair<unsigned long, double>> distance_scores;
+    vector<pair<std::uint64_t, double>> distance_scores;
     double distance_scores_sum{0};
 
     unsigned int pos_not_ok_cnt{0};
@@ -1798,7 +1798,7 @@ const std::map<unsigned int, std::map<unsigned int,
     return assoc_counts_;
 }
 
-const std::vector<unsigned long>& ReconstructorAssociatorBase::unassociatedRecNums() const
+const std::vector<std::uint64_t>& ReconstructorAssociatorBase::unassociatedRecNums() const
 {
     return unassoc_rec_nums_;
 }

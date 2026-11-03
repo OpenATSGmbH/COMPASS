@@ -580,7 +580,7 @@ Result DBInterface::cleanupDBInternal()
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
-    std::function<std::tuple<string, string, string, unsigned long>()> get_db_status = [&]() -> std::tuple<string, string, string, unsigned long>
+    std::function<std::tuple<string, string, string, std::uint64_t>()> get_db_status = [&]() -> std::tuple<string, string, string, std::uint64_t>
     {
         try
         {
@@ -602,7 +602,7 @@ Result DBInterface::cleanupDBInternal()
                 if (buffer->size() > 0)
                 {
                     // Get raw bytes
-                    unsigned long mem_bytes = buffer->get<unsigned long>("mem_bytes").get(0);
+                    std::uint64_t mem_bytes = buffer->get<std::uint64_t>("mem_bytes").get(0);
                     string mem_limit = buffer->get<string>("memory_limit").get(0);
                     string wal_size = buffer->get<string>("wal_size").get(0);
 
@@ -648,7 +648,7 @@ Result DBInterface::cleanupDBInternal()
 
     auto get_db_row_count = [&]()
     {
-        unsigned long row_count = 0;
+        std::uint64_t row_count = 0;
 
         try
         {
@@ -667,7 +667,7 @@ Result DBInterface::cleanupDBInternal()
                 std::shared_ptr<DBResult> result = execute(command);
                 if (result->containsData() && result->buffer() && result->buffer()->size() > 0)
                 {
-                    row_count += result->buffer()->get<unsigned long>("num_rows").get(0);
+                    row_count += result->buffer()->get<std::uint64_t>("num_rows").get(0);
                 }
                 else
                 {
@@ -684,7 +684,7 @@ Result DBInterface::cleanupDBInternal()
     };
 
     string mem_before, limit_before, wal_before;
-    unsigned long mem_bytes_before;
+    std::uint64_t mem_bytes_before;
     std::tie(mem_before, limit_before, wal_before, mem_bytes_before) = get_db_status();
 
     auto db_size_before = get_db_file_size();
@@ -737,10 +737,10 @@ Result DBInterface::cleanupDBInternal()
     boost::posix_time::time_duration time_diff = elapsed_time - start_time;
 
     string mem_after, limit_after, wal_after;
-    unsigned long mem_bytes_after;
+    std::uint64_t mem_bytes_after;
     std::tie(mem_after, limit_after, wal_after, mem_bytes_after) = get_db_status();
 
-    unsigned long total_row_count = get_db_row_count();
+    std::uint64_t total_row_count = get_db_row_count();
     //double kb_per_row = (double)mem_bytes_after / (double)total_row_count / 1000.0;
 
     auto db_size_after = get_db_file_size();
@@ -923,7 +923,7 @@ bool DBInterface::existsPropertiesTable()
 
 /**
  */
-unsigned long DBInterface::getMaxRecordNumber(DBContent& object)
+std::uint64_t DBInterface::getMaxRecordNumber(DBContent& object)
 {
     traced_assert(ready());
     traced_assert(object.existsInDB());
@@ -937,7 +937,7 @@ unsigned long DBInterface::getMaxRecordNumber(DBContent& object)
 
     traced_assert(object.hasVariable(rec_num_var.name()));
 
-    unsigned long max_rn = 0;
+    std::uint64_t max_rn = 0;
 
     {
         #ifdef PROTECT_INSTANCE
@@ -957,9 +957,9 @@ unsigned long DBInterface::getMaxRecordNumber(DBContent& object)
             return 0;
         }
 
-        traced_assert(!buffer->get<unsigned long>(rec_num_var.dbColumnName()).isNull(0));
+        traced_assert(!buffer->get<std::uint64_t>(rec_num_var.dbColumnName()).isNull(0));
 
-        max_rn = buffer->get<unsigned long>(rec_num_var.dbColumnName()).get(0);
+        max_rn = buffer->get<std::uint64_t>(rec_num_var.dbColumnName()).get(0);
     }
 
     return max_rn;
@@ -1014,12 +1014,12 @@ boost::optional<unsigned int> DBInterface::getMaxRefTrackTrackNum()
 
 /**
  */
-boost::optional<unsigned long> DBInterface::getMaxReportContentID()
+boost::optional<std::uint64_t> DBInterface::getMaxReportContentID()
 {
     traced_assert(ready());
 
     if (!existsReportContentsTable())
-        return boost::optional<unsigned long>();
+        return boost::optional<std::uint64_t>();
 
     unsigned int max_tn = 0;
 
@@ -1037,7 +1037,7 @@ boost::optional<unsigned long> DBInterface::getMaxReportContentID()
         traced_assert(buffer->size() <= 1);
 
         if (buffer->size() == 0)
-            return boost::optional<unsigned long>();
+            return boost::optional<std::uint64_t>();
 
         traced_assert(!buffer->get<unsigned int>(ResultReport::SectionContent::DBColumnContentID.name()).isNull(0));
 
@@ -2544,8 +2544,8 @@ ResultT<size_t> DBInterface::tableStorageSize(const std::string& table_name)
 
         const auto& buffer = *result->buffer();
 
-        long num_blocks = buffer.get<long>("num_blocks").isNull(0) ? 0 : buffer.get<long>("num_blocks").get(0);
-        long block_size = buffer.get<long>("block_size").isNull(0) ? 0 : buffer.get<long>("block_size").get(0);
+        std::int64_t num_blocks = buffer.get<std::int64_t>("num_blocks").isNull(0) ? 0 : buffer.get<std::int64_t>("num_blocks").get(0);
+        std::int64_t block_size = buffer.get<std::int64_t>("block_size").isNull(0) ? 0 : buffer.get<std::int64_t>("block_size").get(0);
 
         return ResultT<size_t>::succeeded((size_t)(num_blocks * block_size));
     }
@@ -3174,14 +3174,14 @@ void DBInterface::initDBContentBuffer(DBContent& dbcontent,
     traced_assert(rec_num_var.dataType() == PropertyDataType::ULONGINT);
 
     string rec_num_col_str = rec_num_var.dbColumnName();
-    traced_assert(!buffer->has<unsigned long>(rec_num_col_str));
+    traced_assert(!buffer->has<std::uint64_t>(rec_num_col_str));
 
     buffer->addProperty(rec_num_col_str, PropertyDataType::ULONGINT);
 
     traced_assert(dbcontent_man_.dataEngine().hasMaxRecordNumberWODBContentID());
-    unsigned long max_rec_num = dbcontent_man_.dataEngine().maxRecordNumberWODBContentID();
+    std::uint64_t max_rec_num = dbcontent_man_.dataEngine().maxRecordNumberWODBContentID();
 
-    NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(rec_num_col_str);
+    NullableVector<std::uint64_t>& rec_num_vec = buffer->get<std::uint64_t>(rec_num_col_str);
 
     unsigned int buffer_size = buffer->size();
     unsigned int dbcont_id = dbcontent.id();

@@ -6,6 +6,7 @@ target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_buffer.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_dict_nullable_vector.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_timeconv.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_int64_conversion.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_sector_inside.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_sector_inside_cache.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_sector_points.cpp

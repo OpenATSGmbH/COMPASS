@@ -244,9 +244,9 @@ public:
                                             const PropertyList& properties,
                                             const std::string& filter);
 
-    unsigned long getMaxRecordNumber(DBContent& object);
+    std::uint64_t getMaxRecordNumber(DBContent& object);
     boost::optional<unsigned int> getMaxRefTrackTrackNum(); // none if no RefTraj data
-    boost::optional<unsigned long> getMaxReportContentID();
+    boost::optional<std::uint64_t> getMaxReportContentID();
 
     void startPerformanceMetrics() const;
     db::PerformanceMetrics stopPerformanceMetrics() const;

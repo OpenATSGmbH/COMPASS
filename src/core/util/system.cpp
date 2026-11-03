@@ -55,7 +55,7 @@ float getTotalRAMinGB()
     {
         if (token == "MemTotal:")
         {
-            unsigned long mem;
+            std::uint64_t mem;
 
             if (file >> mem)  // returns in kB
             {
@@ -85,7 +85,7 @@ float getFreeRAMinGB()
     {
         if (token == "MemAvailable:")
         {
-            unsigned long mem;
+            std::uint64_t mem;
 
             if (file >> mem)  // returns in kB
             {
@@ -110,7 +110,7 @@ float getProcessRAMinGB()
     {
         if (token == "VmRSS:")
         {
-            unsigned long mem;
+            std::uint64_t mem;
 
             if (file >> mem)  // returns in kB
             {

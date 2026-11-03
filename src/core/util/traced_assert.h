@@ -31,7 +31,7 @@ namespace compass_assert
     extern void assertion_failed(char const * expr, 
                                  char const * function,
                                  char const * file, 
-                                 long line,
+                                 std::int64_t line,
                                  const boost::stacktrace::stacktrace& stack_trace,
                                  bool expr_is_message);
 }

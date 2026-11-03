@@ -395,7 +395,7 @@ void LabelGeneratorWidget::lodChangedSlot(const QString& text)
     if (lod == "Auto")
         label_generator_.autoLOD(true);
     else
-        label_generator_.fixedLOD(stoul(lod));
+        label_generator_.fixedLOD(stoull(lod));
 }
 
 void LabelGeneratorWidget::declutterLabelsChangedSlot(bool checked)

@@ -268,13 +268,13 @@ void NullableVector<T>::setFromFormat(unsigned int index, const std::string& for
     else if (format == "epoch_tod_ms")
     {
         QDateTime date_time;
-        date_time.setMSecsSinceEpoch(std::stoul(value_str));
+        date_time.setMSecsSinceEpoch(std::stoull(value_str));
         value = Utils::String::timeFromString(date_time.toString("hh:mm:ss.zzz").toStdString());
     }
     else if (format == "epoch_tod_s")
     {
         QDateTime date_time;
-        date_time.setMSecsSinceEpoch(1000 * std::stoul(value_str));
+        date_time.setMSecsSinceEpoch(1000 * std::stoull(value_str));
         value = Utils::String::timeFromString(date_time.toString("hh:mm:ss.zzz").toStdString());
     }
     else if (format == "bool")
@@ -394,13 +394,13 @@ void NullableVector<T>::appendFromFormat(unsigned int index, const std::string& 
     else if (format == "epoch_tod_ms")
     {
         QDateTime date_time;
-        date_time.setMSecsSinceEpoch(std::stoul(value_str));
+        date_time.setMSecsSinceEpoch(std::stoull(value_str));
         value = Utils::String::timeFromString(date_time.toString("hh:mm:ss.zzz").toStdString());
     }
     else if (format == "epoch_tod_s")
     {
         QDateTime date_time;
-        date_time.setMSecsSinceEpoch(1000 * std::stoul(value_str));
+        date_time.setMSecsSinceEpoch(1000 * std::stoull(value_str));
         value = Utils::String::timeFromString(date_time.toString("hh:mm:ss.zzz").toStdString());
     }
     else

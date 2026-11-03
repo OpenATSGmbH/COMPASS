@@ -67,7 +67,7 @@ public:
     /// Internal storage type for each slot: (value + confidence + insert_time)
     struct Entry
     {
-        unsigned long                value_index;
+        std::uint64_t                value_index;
         int                          confidence;
         boost::posix_time::ptime     insert_time;
     };
@@ -89,8 +89,8 @@ public:
     TimedDataSeries(const ptime&                 min_ptime,
                const ptime&                      max_ptime,
                unsigned int                      max_seconds,
-               const std::function<int(unsigned long)>& confidence_func,
-               const std::function<boost::optional<T>(unsigned long)>& value_func)
+               const std::function<int(std::uint64_t)>& confidence_func,
+               const std::function<boost::optional<T>(std::uint64_t)>& value_func)
         : min_ptime_(min_ptime)
         , max_ptime_(max_ptime)
         , max_seconds_(max_seconds)
@@ -151,7 +151,7 @@ public:
      * @param max_seconds  How many seconds around `timestamp` to propagate this value_index.
      */
     void insert(const ptime& timestamp,
-                unsigned long value_index, bool debug=false)
+                std::uint64_t value_index, bool debug=false)
     {
         // Reject if outside the defined range
         traced_assert(timestamp >= min_ptime_ && timestamp <= max_ptime_);
@@ -280,8 +280,8 @@ private:
     unsigned int                  max_seconds_{0};
 
     std::vector<OptionalEntry>    data_;
-    std::function<int(unsigned long)> confidence_func_;
-    std::function<boost::optional<T>(unsigned long)> value_func_;
+    std::function<int(std::uint64_t)> confidence_func_;
+    std::function<boost::optional<T>(std::uint64_t)> value_func_;
 
     /**
      * @brief (Re)initialize the internal data vector based on min_ptime_ and max_ptime_.
@@ -295,7 +295,7 @@ private:
         time_duration span = max_ptime_ - min_ptime_;
         traced_assert(!span.is_negative());
 
-        long total_secs = span.total_seconds() + 1;
+        std::int64_t total_secs = span.total_seconds() + 1;
         data_.clear();
         data_.resize(static_cast<std::size_t>(total_secs), boost::none);
     }
@@ -313,7 +313,7 @@ private:
     {
         time_duration diff = timestamp - min_ptime_;
 
-        long seconds       = diff.total_seconds();
+        std::int64_t seconds       = diff.total_seconds();
         traced_assert(seconds >= 0);
 
         return static_cast<std::size_t>(seconds);

@@ -719,9 +719,9 @@ ProjectionManager::doUpdateRadarPlotPositionCalculations (std::map<std::string, 
 
         // copy record number
 
-        NullableVector<unsigned long>& read_rec_num_vec = read_buffer->get<unsigned long> (rec_num_var_name);
+        NullableVector<std::uint64_t>& read_rec_num_vec = read_buffer->get<std::uint64_t> (rec_num_var_name);
 
-        NullableVector<unsigned long>& update_rec_num_vec = update_buffer->get<unsigned long> (rec_num_var_name);
+        NullableVector<std::uint64_t>& update_rec_num_vec = update_buffer->get<std::uint64_t> (rec_num_var_name);
 
         traced_assert(read_rec_num_vec.isNeverNull());
 

@@ -31,7 +31,7 @@ struct UniqueARTASTrack
 {
     int utn;
     int track_num;
-    std::map<unsigned long, std::pair<std::string, boost::posix_time::ptime>> rec_nums_tris_;  // rec_num -> (tri, timestamp)
+    std::map<std::uint64_t, std::pair<std::string, boost::posix_time::ptime>> rec_nums_tris_;  // rec_num -> (tri, timestamp)
     // std::vector<int> track_nums_;
     boost::posix_time::ptime first_ts_;
     boost::posix_time::ptime last_ts_;
@@ -83,14 +83,14 @@ protected:
     std::map<int, UniqueARTASTrack> finished_tracks_;  // utn -> unique track
 
     // hash -> rec_num, timestamp
-    std::multimap<std::string, std::pair<unsigned long, boost::posix_time::ptime>> sensor_hashes_;
+    std::multimap<std::string, std::pair<std::uint64_t, boost::posix_time::ptime>> sensor_hashes_;
 
 //    std::map<std::string,
 //        std::map<unsigned long,
 //            std::tuple<unsigned int, std::vector<std::pair<std::string, unsigned long>>>>> associations_;
     // dbcontent -> rec_num -> <utn, src rec_nums (dbcontent, rec_num)>
 
-    std::map<unsigned long, std::vector<unsigned long>> cat062_associations_;
+    std::map<std::uint64_t, std::vector<std::uint64_t>> cat062_associations_;
     // cat062 rec_num -> < src rec_nums>
 
     boost::posix_time::ptime first_track_ts_;
@@ -99,7 +99,7 @@ protected:
     size_t ignored_track_updates_cnt_{0};
     size_t acceptable_missing_hashes_cnt_{0};
     size_t missing_hashes_cnt_{0};
-    std::multimap<std::string, std::pair<int, unsigned long>> missing_hashes_;  // hash -> (utn, rec_num)
+    std::multimap<std::string, std::pair<int, std::uint64_t>> missing_hashes_;  // hash -> (utn, rec_num)
     size_t found_hashes_cnt_{0};                                      // dbcont name -> cnt
 
     size_t dubious_associations_cnt_{0};  // counter for all dubious

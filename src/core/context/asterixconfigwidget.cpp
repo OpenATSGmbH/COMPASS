@@ -320,7 +320,7 @@ void ASTERIXConfigWidget::editionChangedSlot(const std::string& cat_str, const s
 {
     loginf << "cat " << cat_str << " edition " << ed_str;
 
-    unsigned int cat = std::stoul(cat_str);
+    unsigned int cat = std::stoull(cat_str);
 
     traced_assert(jasterix_->hasCategory(cat));
 
@@ -334,7 +334,7 @@ void ASTERIXConfigWidget::refEditionChangedSlot(const std::string& cat_str,
 {
     loginf << "cat " << cat_str << " ref '" << ed_str << "'";
 
-    unsigned int cat = std::stoul(cat_str);
+    unsigned int cat = std::stoull(cat_str);
 
     traced_assert(jasterix_->hasCategory(cat));
 
@@ -357,7 +357,7 @@ void ASTERIXConfigWidget::spfEditionChangedSlot(const std::string& cat_str,
 {
     loginf << "cat " << cat_str << " spf '" << ed_str << "'";
 
-    unsigned int cat = std::stoul(cat_str);
+    unsigned int cat = std::stoull(cat_str);
 
     traced_assert(jasterix_->hasCategory(cat));
 

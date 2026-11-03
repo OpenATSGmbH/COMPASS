@@ -198,7 +198,7 @@ unsigned int StreamIdentityCut::cutDetectedTransitions(ReconstructorBase& recons
                     cut_after = false; // the later part is this target's own aircraft
             }
 
-            vector<unsigned long> moved =
+            vector<std::uint64_t> moved =
                 container.targets_.at(utn).removeStreamReports(
                     transition.ds_id_, transition.line_id_, transition.track_number_,
                     transition.transition_time_, cut_after);

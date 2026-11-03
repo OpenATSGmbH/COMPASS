@@ -221,7 +221,7 @@ inline boost::posix_time::ptime HistogramBinT<boost::posix_time::ptime>::midValu
 {
     auto tmin = Utils::Time::toLong(min_value);
     auto tmax = Utils::Time::toLong(max_value);
-    auto mid  = (tmin + tmax) / (long)2;
+    auto mid  = (tmin + tmax) / (std::int64_t)2;
 
     return Utils::Time::fromLong(mid);
 }
@@ -238,7 +238,7 @@ inline bool HistogramBinT<boost::posix_time::ptime>::isInside(const boost::posix
     auto tmax = Utils::Time::toLong(max_value);
     auto t    = Utils::Time::toLong(v);
 
-    return isInRange<long>(tmin, tmax, t, max_included);
+    return isInRange<std::int64_t>(tmin, tmax, t, max_included);
 }
 
 template<>
@@ -916,14 +916,14 @@ inline std::pair<int,int> HistogramT<bool>::estimateTargetBinFromRanges(const bo
  */
 template<>
 template<>
-inline long HistogramT<boost::posix_time::ptime>::convertToInternal<long>(const boost::posix_time::ptime& v) const
+inline std::int64_t HistogramT<boost::posix_time::ptime>::convertToInternal<std::int64_t>(const boost::posix_time::ptime& v) const
 {
-    const long v_l = Utils::Time::toLong(v);
+    const std::int64_t v_l = Utils::Time::toLong(v);
     return v_l;
 }
 template<>
 template<>
-inline boost::posix_time::ptime HistogramT<boost::posix_time::ptime>::convertFromInternal<long>(const long& v) const
+inline boost::posix_time::ptime HistogramT<boost::posix_time::ptime>::convertFromInternal<std::int64_t>(const std::int64_t& v) const
 {
     const auto v_pt = Utils::Time::fromLong(v);
     return v_pt;
@@ -934,7 +934,7 @@ inline bool HistogramT<boost::posix_time::ptime>::createFromRange(size_t n,
                                                                   const boost::posix_time::ptime& max_value)
 {
     //compute using conversion to long
-    return createFromRangeT<long>(n, min_value, max_value);
+    return createFromRangeT<std::int64_t>(n, min_value, max_value);
 }
 
 /**
@@ -972,5 +972,5 @@ template<>
 inline int HistogramT<boost::posix_time::ptime>::binFromValue(const boost::posix_time::ptime& v) const
 {
     //compute using conversion to long
-    return binFromValueT<long>(v);
+    return binFromValueT<std::int64_t>(v);
 }

@@ -170,16 +170,16 @@ bool DuckDBPrepare::bind_uint_impl(size_t idx, unsigned int v)
 
 /**
  */
-bool DuckDBPrepare::bind_long_impl(size_t idx, long v) 
+bool DuckDBPrepare::bind_long_impl(size_t idx, std::int64_t v) 
 { 
-    return bind<long>(idx, v); 
+    return bind<std::int64_t>(idx, v); 
 }
 
 /**
  */
-bool DuckDBPrepare::bind_ulong_impl(size_t idx, unsigned long v) 
+bool DuckDBPrepare::bind_ulong_impl(size_t idx, std::uint64_t v) 
 { 
-    return bind<unsigned long>(idx, v); 
+    return bind<std::uint64_t>(idx, v); 
 }
 
 /**

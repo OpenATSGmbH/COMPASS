@@ -67,12 +67,12 @@ namespace
                     return nlohmann::json(buffer.get<unsigned int>(column.name).get(row));
                 break;
             case PropertyDataType::LONGINT:
-                if (buffer.has<long int>(column.name) && !buffer.get<long int>(column.name).isNull(row))
-                    return nlohmann::json(buffer.get<long int>(column.name).get(row));
+                if (buffer.has<std::int64_t>(column.name) && !buffer.get<std::int64_t>(column.name).isNull(row))
+                    return nlohmann::json(buffer.get<std::int64_t>(column.name).get(row));
                 break;
             case PropertyDataType::ULONGINT:
-                if (buffer.has<unsigned long int>(column.name) && !buffer.get<unsigned long int>(column.name).isNull(row))
-                    return nlohmann::json(buffer.get<unsigned long int>(column.name).get(row));
+                if (buffer.has<std::uint64_t>(column.name) && !buffer.get<std::uint64_t>(column.name).isNull(row))
+                    return nlohmann::json(buffer.get<std::uint64_t>(column.name).get(row));
                 break;
             case PropertyDataType::FLOAT:
                 if (buffer.has<float>(column.name) && !buffer.get<float>(column.name).isNull(row))

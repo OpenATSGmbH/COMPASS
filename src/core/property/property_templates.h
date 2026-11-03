@@ -47,8 +47,8 @@
             SwitchPropertyDataTypeEntry(PropertyDataType::UCHAR    , unsigned char           , uchar    , PTypeFunc) \
             SwitchPropertyDataTypeEntry(PropertyDataType::INT      , int                     , int      , PTypeFunc) \
             SwitchPropertyDataTypeEntry(PropertyDataType::UINT     , unsigned int            , uint     , PTypeFunc) \
-            SwitchPropertyDataTypeEntry(PropertyDataType::LONGINT  , long int                , long     , PTypeFunc) \
-            SwitchPropertyDataTypeEntry(PropertyDataType::ULONGINT , unsigned long int       , ulong    , PTypeFunc) \
+            SwitchPropertyDataTypeEntry(PropertyDataType::LONGINT  , std::int64_t                , long     , PTypeFunc) \
+            SwitchPropertyDataTypeEntry(PropertyDataType::ULONGINT , std::uint64_t       , ulong    , PTypeFunc) \
             SwitchPropertyDataTypeEntry(PropertyDataType::FLOAT    , float                   , float    , PTypeFunc) \
             SwitchPropertyDataTypeEntry(PropertyDataType::DOUBLE   , double                  , double   , PTypeFunc) \
             SwitchPropertyDataTypeEntry(PropertyDataType::STRING   , std::string             , string   , PTypeFunc) \
@@ -69,8 +69,8 @@
             SwitchPropertyDataTypeEntry(PropertyDataType::UCHAR    , unsigned char           , uchar    , PTypeFunc ) \
             SwitchPropertyDataTypeEntry(PropertyDataType::INT      , int                     , int      , PTypeFunc ) \
             SwitchPropertyDataTypeEntry(PropertyDataType::UINT     , unsigned int            , uint     , PTypeFunc ) \
-            SwitchPropertyDataTypeEntry(PropertyDataType::LONGINT  , long int                , long     , PTypeFunc ) \
-            SwitchPropertyDataTypeEntry(PropertyDataType::ULONGINT , unsigned long int       , ulong    , PTypeFunc ) \
+            SwitchPropertyDataTypeEntry(PropertyDataType::LONGINT  , std::int64_t                , long     , PTypeFunc ) \
+            SwitchPropertyDataTypeEntry(PropertyDataType::ULONGINT , std::uint64_t       , ulong    , PTypeFunc ) \
             SwitchPropertyDataTypeEntry(PropertyDataType::FLOAT    , float                   , float    , PTypeFunc ) \
             SwitchPropertyDataTypeEntry(PropertyDataType::DOUBLE   , double                  , double   , PTypeFunc ) \
             SwitchPropertyDataTypeEntry(PropertyDataType::STRING   , std::string             , string   , StringFunc) \
@@ -104,9 +104,9 @@ bool invokeFunctor(PropertyDataType dtype, TFunc& func)
     case PropertyDataType::UINT:
         return func.template operator()<unsigned int, PropertyDataType::UINT>();
     case PropertyDataType::LONGINT:
-        return func.template operator()<long int, PropertyDataType::LONGINT>();
+        return func.template operator()<std::int64_t, PropertyDataType::LONGINT>();
     case PropertyDataType::ULONGINT:
-        return func.template operator()<unsigned long int, PropertyDataType::ULONGINT>();
+        return func.template operator()<std::uint64_t, PropertyDataType::ULONGINT>();
     case PropertyDataType::FLOAT:
         return func.template operator()<float, PropertyDataType::FLOAT>();
     case PropertyDataType::DOUBLE:
@@ -174,7 +174,7 @@ inline T fromDouble(double value)
 template <>
 inline boost::posix_time::ptime fromDouble(double value)
 {
-    return Utils::Time::fromLong(static_cast<unsigned long>(value));
+    return Utils::Time::fromLong(static_cast<std::uint64_t>(value));
 }
 template <>
 inline std::string fromDouble(double value)

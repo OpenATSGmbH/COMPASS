@@ -1160,11 +1160,11 @@ void DBContextManager::loadCountsFromDB()
 
     for (auto& [ds_id_str, dbc_obj] : j.items())
     {
-        unsigned int ds_id = stoul(ds_id_str);
+        unsigned int ds_id = stoull(ds_id_str);
 
         for (auto& [dbc, line_obj] : dbc_obj.items())
             for (auto& [line_str, cnt_val] : line_obj.items())
-                inserted_counts_[ds_id][dbc][stoul(line_str)] = cnt_val.get<unsigned int>();
+                inserted_counts_[ds_id][dbc][stoull(line_str)] = cnt_val.get<unsigned int>();
     }
 
     loginf << "loaded inserted counts from db_info (" << inserted_counts_.size() << " data sources)";
@@ -1324,7 +1324,7 @@ DBContextManager::asterixInfoFromJSON(const nlohmann::json& j)
     for (auto& [ds_id_str, cat_obj] : j.items())
     {
         unsigned int ds_id = 0;
-        try { ds_id = std::stoul(ds_id_str); } catch (...) { continue; }
+        try { ds_id = std::stoull(ds_id_str); } catch (...) { continue; }
         if (!cat_obj.is_object())
             continue;
 
@@ -1333,7 +1333,7 @@ DBContextManager::asterixInfoFromJSON(const nlohmann::json& j)
         for (auto& [cat_str, cat_node] : cat_obj.items())
         {
             unsigned int cat = 0;
-            try { cat = std::stoul(cat_str); } catch (...) { continue; }
+            try { cat = std::stoull(cat_str); } catch (...) { continue; }
             if (!cat_node.is_object())
                 continue;
 

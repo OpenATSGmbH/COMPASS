@@ -57,7 +57,7 @@ void JSONParseJob::run_impl()
                 unsigned int category = 0;
                 try
                 {
-                    category = std::stoul(it.key());
+                    category = std::stoull(it.key());
                 }
                 catch (...)
                 {

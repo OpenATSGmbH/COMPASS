@@ -58,7 +58,7 @@ struct ReferenceCalculatorTargetReferences
 {
     struct DebugEvent
     {
-        unsigned long            rec_num;
+        std::uint64_t            rec_num;
         boost::posix_time::ptime ts;
         std::string              info;
     };
@@ -113,7 +113,7 @@ public:
     typedef ReferenceCalculatorTargetReferences TargetReferences;
 
     typedef std::vector<reconstruction::Measurement>                       Measurements;
-    typedef std::multimap<boost::posix_time::ptime, unsigned long>         TargetReports;
+    typedef std::multimap<boost::posix_time::ptime, std::uint64_t>         TargetReports;
     typedef std::map<unsigned int, std::vector<reconstruction::Reference>> References;
 
     ReferenceCalculator(ReconstructorBase& reconstructor);

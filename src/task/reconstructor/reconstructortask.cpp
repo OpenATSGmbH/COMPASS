@@ -1511,7 +1511,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointNoData(const
     return vp;
 }
 
-std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsigned long utn, const std::string& name_prefix) const
+std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(std::uint64_t utn, const std::string& name_prefix) const
 {
     string name;
 

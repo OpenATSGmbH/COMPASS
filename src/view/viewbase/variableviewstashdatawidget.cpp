@@ -306,10 +306,10 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
 
     // add selected flags & rec_nums
     traced_assert(buffer.has<bool>(dbcontent_vars::selected_var_.name()));
-    traced_assert(buffer.has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()));
+    traced_assert(buffer.has<std::uint64_t>(dbcontent_vars::meta_var_rec_num_.name()));
 
     const NullableVector<bool>&          selected_vec = buffer.get<bool>(dbcontent_vars::selected_var_.name());
-    const NullableVector<unsigned long>& rec_num_vec  = buffer.get<unsigned long>(dbcontent_vars::meta_var_rec_num_.name());
+    const NullableVector<std::uint64_t>& rec_num_vec  = buffer.get<std::uint64_t>(dbcontent_vars::meta_var_rec_num_.name());
 
     for (auto& group_it : grouped_indexes)
     {
@@ -326,7 +326,7 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
             logdbg << "   " << view->variable(i).id() << " " << group_stash.variable_stashes[ i ].values.size();
 
         std::vector<bool>&          selected_data = group_stash.selected_values;
-        std::vector<unsigned long>& rec_num_data  = group_stash.record_numbers;
+        std::vector<std::uint64_t>& rec_num_data  = group_stash.record_numbers;
 
         //auto& x_stash = group_stash.variable_stashes[ 0 ];
 
@@ -489,8 +489,8 @@ boost::optional<std::pair<double, double>> VariableViewStashDataWidget::getVaria
 
     if (correct_datetime && variableIsDateTime(var))
     {
-        b->first  = Utils::Time::correctLongQtUTC((long)b->first );
-        b->second = Utils::Time::correctLongQtUTC((long)b->second);
+        b->first  = Utils::Time::correctLongQtUTC((std::int64_t)b->first );
+        b->second = Utils::Time::correctLongQtUTC((std::int64_t)b->second);
     }
 
     traced_assert(std::isfinite(b->first));
@@ -548,20 +548,20 @@ void VariableViewStashDataWidget::selectData(double x_min,
     {
         if (variableIsDateTime(var_x))
         {
-            x_min = Utils::Time::decorrectLongQtUTC((long)x_min);
-            x_max = Utils::Time::decorrectLongQtUTC((long)x_max);
+            x_min = Utils::Time::decorrectLongQtUTC((std::int64_t)x_min);
+            x_max = Utils::Time::decorrectLongQtUTC((std::int64_t)x_max);
         }
         if (variableIsDateTime(var_y))
         {
-            y_min = Utils::Time::decorrectLongQtUTC((long)y_min);
-            y_max = Utils::Time::decorrectLongQtUTC((long)y_max);
+            y_min = Utils::Time::decorrectLongQtUTC((std::int64_t)y_min);
+            y_max = Utils::Time::decorrectLongQtUTC((std::int64_t)y_max);
         }
     }
     
     unsigned int sel_cnt = 0;
     string group_name;
 
-    map<unsigned int, vector<unsigned long>> selected_rec_nums;
+    map<unsigned int, vector<std::uint64_t>> selected_rec_nums;
 
     // Points the user has hidden in the layer panel are not drawn, so they must
     // not be selectable either. The stored hidden ids are the stash group keys,
@@ -596,7 +596,7 @@ void VariableViewStashDataWidget::selectData(double x_min,
 
         const std::vector<double>&        x_values       = dbc_stash.variable_stashes[ var_x ].values;
         const std::vector<double>&        y_values       = dbc_stash.variable_stashes[ var_y ].values;
-        const std::vector<unsigned long>& rec_num_values = dbc_stash.record_numbers;
+        const std::vector<std::uint64_t>& rec_num_values = dbc_stash.record_numbers;
 
         traced_assert(x_values.size() == y_values.size());
         traced_assert(x_values.size() == rec_num_values.size());
@@ -604,7 +604,7 @@ void VariableViewStashDataWidget::selectData(double x_min,
 
         double x, y;
         bool in_range;
-        unsigned long rec_num;
+        std::uint64_t rec_num;
 
         for (unsigned int cnt=0; cnt < x_values.size(); ++cnt)
         {
@@ -662,11 +662,11 @@ void VariableViewStashDataWidget::selectData(double x_min,
         traced_assert(buffer->has<bool>(dbcontent_vars::selected_var_.name()));
         NullableVector<bool>& selected_vec = buffer->get<bool>(dbcontent_vars::selected_var_.name());
 
-        traced_assert(buffer->has<unsigned long>(dbcontent_vars::meta_var_rec_num_.name()));
-        NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(
+        traced_assert(buffer->has<std::uint64_t>(dbcontent_vars::meta_var_rec_num_.name()));
+        NullableVector<std::uint64_t>& rec_num_vec = buffer->get<std::uint64_t>(
             dbcontent_vars::meta_var_rec_num_.name());
 
-        std::map<boost::optional<unsigned long>, std::vector<unsigned int>> rec_num_indexes =
+        std::map<boost::optional<std::uint64_t>, std::vector<unsigned int>> rec_num_indexes =
             rec_num_vec.distinctValuesWithIndexes(0, rec_num_vec.contentSize());
         // rec_num -> index
 

@@ -72,8 +72,8 @@ public:
     bool bind_uchar(size_t idx, unsigned char v);
     bool bind_int(size_t idx, int v);
     bool bind_uint(size_t idx, unsigned int v);
-    bool bind_long(size_t idx, long v);
-    bool bind_ulong(size_t idx, unsigned long v);
+    bool bind_long(size_t idx, std::int64_t v);
+    bool bind_ulong(size_t idx, std::uint64_t v);
     bool bind_float(size_t idx, float v);
     bool bind_double(size_t idx, double v);
     bool bind_string(size_t idx, const std::string& v);
@@ -107,8 +107,8 @@ protected:
     virtual bool bind_uchar_impl(size_t idx, unsigned char v) = 0;
     virtual bool bind_int_impl(size_t idx, int v) = 0;
     virtual bool bind_uint_impl(size_t idx, unsigned int v) = 0;
-    virtual bool bind_long_impl(size_t idx, long v) = 0;
-    virtual bool bind_ulong_impl(size_t idx, unsigned long v) = 0;
+    virtual bool bind_long_impl(size_t idx, std::int64_t v) = 0;
+    virtual bool bind_ulong_impl(size_t idx, std::uint64_t v) = 0;
     virtual bool bind_float_impl(size_t idx, float v) = 0;
     virtual bool bind_double_impl(size_t idx, double v) = 0;
     virtual bool bind_string_impl(size_t idx, const std::string& v) = 0;
@@ -145,8 +145,8 @@ public:
     bool bind_uchar(size_t idx, unsigned char v) { return db_prepare_->bind_uchar(idx, v); }
     bool bind_int(size_t idx, int v) { return db_prepare_->bind_int(idx, v); }
     bool bind_uint(size_t idx, unsigned int v) { return db_prepare_->bind_uint(idx, v); }
-    bool bind_long(size_t idx, long v) { return db_prepare_->bind_long(idx, v); }
-    bool bind_ulong(size_t idx, unsigned long v) { return db_prepare_->bind_ulong(idx, v); }
+    bool bind_long(size_t idx, std::int64_t v) { return db_prepare_->bind_long(idx, v); }
+    bool bind_ulong(size_t idx, std::uint64_t v) { return db_prepare_->bind_ulong(idx, v); }
     bool bind_float(size_t idx, float v) { return db_prepare_->bind_float(idx, v); }
     bool bind_double(size_t idx, double v) { return db_prepare_->bind_double(idx, v); }
     bool bind_string(size_t idx, const std::string& v) { return db_prepare_->bind_string(idx, v); }

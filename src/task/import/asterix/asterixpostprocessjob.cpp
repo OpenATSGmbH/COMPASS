@@ -934,7 +934,7 @@ void ASTERIXPostprocessJob::loadObfuscationMaps()
         {
             try
             {
-                obfuscate_m3a_map_[static_cast<unsigned int>(std::stoul(kv.key()))]
+                obfuscate_m3a_map_[static_cast<unsigned int>(std::stoull(kv.key()))]
                     = kv.value().get<unsigned int>();
             }
             catch (...) { /* skip malformed entry */ }
@@ -947,7 +947,7 @@ void ASTERIXPostprocessJob::loadObfuscationMaps()
         {
             try
             {
-                obfuscate_acad_map_[static_cast<unsigned int>(std::stoul(kv.key()))]
+                obfuscate_acad_map_[static_cast<unsigned int>(std::stoull(kv.key()))]
                     = kv.value().get<unsigned int>();
             }
             catch (...) {}

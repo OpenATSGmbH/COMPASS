@@ -374,7 +374,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
     {
         auto& selected = data.at(ViewPoint::VP_SELECTED_RECNUMS_KEY);
         traced_assert(selected.is_array());
-        std::vector<unsigned long> vec = selected.get<std::vector<unsigned long>>();
+        std::vector<std::uint64_t> vec = selected.get<std::vector<std::uint64_t>>();
 
         dbcontent_man_.storeSelectedRecNums(vec);
     }

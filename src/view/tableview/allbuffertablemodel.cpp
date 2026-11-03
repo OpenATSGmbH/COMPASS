@@ -123,8 +123,8 @@ std::vector<unsigned int> dispatchTypedSortPerm(
     case PropertyDataType::UCHAR:     return typedSortPerm<unsigned char>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
     case PropertyDataType::INT:       return typedSortPerm<int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
     case PropertyDataType::UINT:      return typedSortPerm<unsigned int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
-    case PropertyDataType::LONGINT:   return typedSortPerm<long int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
-    case PropertyDataType::ULONGINT:  return typedSortPerm<unsigned long int>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::LONGINT:   return typedSortPerm<std::int64_t>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
+    case PropertyDataType::ULONGINT:  return typedSortPerm<std::uint64_t>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
     case PropertyDataType::FLOAT:     return typedSortPerm<float>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
     case PropertyDataType::DOUBLE:    return typedSortPerm<double>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);
     case PropertyDataType::STRING:    return typedSortPerm<std::string>(row_indexes, number_to_dbcont, buffers, dbcont_num_to_var_name, ascending);

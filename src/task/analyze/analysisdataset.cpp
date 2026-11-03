@@ -916,10 +916,10 @@ AnalysisDataset::mappedRefPos(unsigned int utn, ptime timestamp, time_duration d
     return mapping->pos_ref_;
 }
 
-std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>>
+std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>>
 AnalysisDataset::mappedRefRecordNumbers(unsigned int utn, ptime timestamp, time_duration d_max) const
 {
-    std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>> rec_nums;
+    std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>> rec_nums;
 
     auto mapping = refMappingWithin(utn, timestamp, d_max);
     if (!mapping)
@@ -971,7 +971,7 @@ AnalysisDataset::lastReferenceSampleInRange(unsigned int utn, ptime begin, ptime
     return dbContent::TargetReport::DataID(*ub);
 }
 
-boost::optional<unsigned long>
+boost::optional<std::uint64_t>
 AnalysisDataset::testRecordNumberAt(unsigned int utn, ptime timestamp) const
 {
     for (const auto& dbc : tst_dbcontents_present_)

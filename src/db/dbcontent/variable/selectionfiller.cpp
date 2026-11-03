@@ -131,10 +131,10 @@ void makeAccess(Buffer& buffer, PropertyDataType data_type, const std::string& c
         makeTypedAccess<unsigned int>(buffer, candidate_name, selection_name, factor, access);
         break;
     case PropertyDataType::LONGINT:
-        makeTypedAccess<long>(buffer, candidate_name, selection_name, factor, access);
+        makeTypedAccess<std::int64_t>(buffer, candidate_name, selection_name, factor, access);
         break;
     case PropertyDataType::ULONGINT:
-        makeTypedAccess<unsigned long>(buffer, candidate_name, selection_name, factor, access);
+        makeTypedAccess<std::uint64_t>(buffer, candidate_name, selection_name, factor, access);
         break;
     case PropertyDataType::FLOAT:
         makeTypedAccess<float>(buffer, candidate_name, selection_name, factor, access);

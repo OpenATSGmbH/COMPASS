@@ -178,7 +178,7 @@ bool ReportItem::fromJSON(const nlohmann::json& j)
         name_       = j[ FieldName       ];
         properties_ = j[ FieldProperties ];
 
-        unsigned long export_flags = j[ FieldExportFlags ];
+        std::uint64_t export_flags = j[ FieldExportFlags ];
         export_flags_ = ExportFlags(export_flags);
 
         updateID();
