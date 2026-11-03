@@ -45,7 +45,7 @@ target_link_libraries(deps_test
     OpenSSL::Crypto NemaTode::NemaTode ${GeographicLib_LIBRARIES} ${DUCKDB_LIBRARIES}
     Threads::Threads ws2_32 dbghelp)
 
-# pcap only links: wpcap.dll comes with the Npcap driver installation, which Wine does not have
+# pcap only links (pcap.dll of the own libpcap build)
 add_executable(pcap_link_test pcap_main.cpp)
 target_include_directories(pcap_link_test PRIVATE ${PCAP_INCLUDE_DIR})
 target_link_libraries(pcap_link_test ${PCAP_LIBRARY})

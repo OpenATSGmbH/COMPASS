@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Windows build test: links against the Npcap SDK. Runs only where Npcap is installed.
+// Windows build test: links against the own libpcap build (pcap.dll, file reading only).
 
 #include <pcap.h>
 

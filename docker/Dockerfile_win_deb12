@@ -2,7 +2,7 @@
 #
 # MinGW GCC 12 with posix thread model, prebuilt Qt 5.15.2 (with Charts) for MinGW,
 # OpenSceneGraph 3.6, osgEarth 3.8 and the other COMPASS and jASTERIX dependencies
-# built from source (DuckDB and the Npcap SDK as official binaries).
+# built from source (DuckDB as official binary).
 # All Windows libraries are installed into /opt/win64.
 # The resulting executables run on Windows or in Wine.
 
@@ -329,13 +329,6 @@ RUN wget -q https://github.com/duckdb/duckdb/releases/download/v1.5.5/libduckdb-
   && cp duckdb/duckdb.lib /opt/win64/lib/ \
   && rm -rf duckdb libduckdb-windows-amd64.zip
 
-# Npcap SDK (libpcap API on Windows), the Npcap driver must be installed on the target machine
-RUN wget -q https://npcap.com/dist/npcap-sdk-1.15.zip \
-  && mkdir npcap && unzip -q npcap-sdk-1.15.zip -d npcap \
-  && cp -r npcap/Include/* /opt/win64/include/ \
-  && cp npcap/Lib/x64/wpcap.lib npcap/Lib/x64/Packet.lib /opt/win64/lib/ \
-  && rm -rf npcap npcap-sdk-1.15.zip
-
 # CMake 3.28 (as in the Linux build), jASTERIX and COMPASS need 3.28, Debian 12 has 3.25.
 # Installed last, the dependencies above are built with the Debian CMake.
 ENV CMAKE_VERSION=3.28.1
@@ -344,5 +337,19 @@ RUN wget -q https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}
   && ln -s /opt/cmake-${CMAKE_VERSION}-linux-x86_64/bin/* /usr/local/bin/ \
   && rm cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz \
   && cmake --version
+
+# libpcap 1.10.5 for reading PCAP files only (PCAP_TYPE null): COMPASS and jASTERIX do not
+# capture from network interfaces, so no Npcap driver or Npcap DLLs are needed.
+# pcap.dll, no conflict with an installed Npcap wpcap.dll. flex and bison: filter grammar.
+RUN apt-get update && apt-get install -y --no-install-recommends flex bison \
+  && rm -rf /var/lib/apt/lists/* \
+  && wget -q https://www.tcpdump.org/release/libpcap-1.10.5.tar.xz \
+  && tar xf libpcap-1.10.5.tar.xz \
+  && cmake ${WIN_CMAKE} -DPCAP_TYPE=null -DENABLE_REMOTE=OFF -DDISABLE_DPDK=ON \
+     -DDISABLE_RDMA=ON -DDISABLE_DBUS=ON -DDISABLE_BLUETOOTH=ON -DDISABLE_USB=ON \
+     -DBUILD_WITH_LIBNL=OFF -S libpcap-1.10.5 -B libpcap-build \
+  && cmake --build libpcap-build \
+  && cmake --install libpcap-build \
+  && rm -rf libpcap-1.10.5.tar.xz libpcap-1.10.5 libpcap-build
 
 WORKDIR /
