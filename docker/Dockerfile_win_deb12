@@ -1,0 +1,201 @@
+# Windows cross build environment (MinGW-w64) on Debian 12
+#
+# Feasibility test: MinGW GCC 12 with posix thread model, prebuilt Qt 5.15.2 for MinGW,
+# OpenSceneGraph 3.6 and osgEarth 3.8 with their dependencies built from source.
+# All Windows libraries are installed into /opt/win64.
+# The resulting executables run on Windows or in Wine.
+
+FROM debian:12
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+     g++-mingw-w64-x86-64-posix \
+     gcc-mingw-w64-x86-64-posix \
+     mingw-w64-tools \
+     cmake \
+     ninja-build \
+     make \
+     pkg-config \
+     python3 \
+     python3-venv \
+     ca-certificates \
+     p7zip-full \
+     git \
+     wget \
+     unzip \
+     xz-utils \
+     bzip2 \
+     sqlite3 \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN x86_64-w64-mingw32-g++-posix --version
+
+# prebuilt Qt 5.15.2 for MinGW 64 bit (Windows host tools, only libraries and headers are used)
+RUN python3 -m venv /opt/aqt \
+  && /opt/aqt/bin/pip install --no-cache-dir aqtinstall \
+  && /opt/aqt/bin/aqt install-qt windows desktop 5.15.2 win64_mingw81 -O /opt/qt \
+  && test -f /opt/qt/5.15.2/mingw81_64/lib/cmake/Qt5Widgets/Qt5WidgetsConfig.cmake
+
+ENV QT_WIN_DIR=/opt/qt/5.15.2/mingw81_64
+ENV MINGW_GCC_DLL_DIR=/usr/lib/gcc/x86_64-w64-mingw32/12-posix
+ENV MINGW_SYS_DLL_DIR=/usr/x86_64-w64-mingw32/lib
+ENV WIN64_PREFIX=/opt/win64
+
+# only Windows pkg-config files, never the ones of the Linux host
+ENV PKG_CONFIG_LIBDIR=/opt/win64/lib/pkgconfig:/opt/win64/share/pkgconfig
+
+COPY mingw_toolchain.cmake /opt/mingw_toolchain.cmake
+
+ARG WIN_CMAKE="-G Ninja -DCMAKE_TOOLCHAIN_FILE=/opt/mingw_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/win64"
+
+WORKDIR /build
+
+# zlib
+RUN wget -q https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz \
+  && tar xzf zlib-1.3.1.tar.gz \
+  && cmake ${WIN_CMAKE} -S zlib-1.3.1 -B zlib-build \
+  && cmake --build zlib-build && cmake --install zlib-build \
+  && rm -rf zlib-*
+
+# libpng
+RUN wget -q https://download.sourceforge.net/libpng/libpng-1.6.43.tar.xz \
+  && tar xJf libpng-1.6.43.tar.xz \
+  && cmake ${WIN_CMAKE} -DPNG_TESTS=OFF -DPNG_STATIC=OFF -DPNG_EXECUTABLES=OFF -S libpng-1.6.43 -B png-build \
+  && cmake --build png-build && cmake --install png-build \
+  && rm -rf libpng-* png-build
+
+# libjpeg-turbo (no SIMD, avoids nasm)
+RUN wget -q https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.0.3/libjpeg-turbo-3.0.3.tar.gz \
+  && tar xzf libjpeg-turbo-3.0.3.tar.gz \
+  && cmake ${WIN_CMAKE} -DWITH_SIMD=OFF -DENABLE_STATIC=OFF -S libjpeg-turbo-3.0.3 -B jpeg-build \
+  && cmake --build jpeg-build && cmake --install jpeg-build \
+  && rm -rf libjpeg-turbo-* jpeg-build
+
+# freetype
+RUN wget -q https://download.savannah.gnu.org/releases/freetype/freetype-2.13.2.tar.xz \
+  && tar xJf freetype-2.13.2.tar.xz \
+  && cmake ${WIN_CMAKE} -DBUILD_SHARED_LIBS=ON -DFT_DISABLE_HARFBUZZ=ON -DFT_DISABLE_BROTLI=ON \
+     -DFT_DISABLE_BZIP2=ON -DFT_DISABLE_PNG=ON -S freetype-2.13.2 -B freetype-build \
+  && cmake --build freetype-build && cmake --install freetype-build \
+  && rm -rf freetype-*
+
+# sqlite (amalgamation, built as DLL)
+RUN wget -q https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip \
+  && unzip -q sqlite-amalgamation-3460100.zip \
+  && cd sqlite-amalgamation-3460100 \
+  && x86_64-w64-mingw32-gcc-posix -O2 -shared -DSQLITE_ENABLE_RTREE=1 -DSQLITE_ENABLE_COLUMN_METADATA=1 \
+     -DSQLITE_API="__declspec(dllexport)" sqlite3.c -o libsqlite3.dll -Wl,--out-implib,libsqlite3.dll.a \
+  && mkdir -p /opt/win64/bin /opt/win64/lib /opt/win64/include \
+  && cp libsqlite3.dll /opt/win64/bin/ && cp libsqlite3.dll.a /opt/win64/lib/ \
+  && cp sqlite3.h sqlite3ext.h /opt/win64/include/ \
+  && cd .. && rm -rf sqlite-amalgamation-*
+
+# curl (Windows native TLS via Schannel)
+RUN wget -q https://curl.se/download/curl-8.10.1.tar.xz \
+  && tar xJf curl-8.10.1.tar.xz \
+  && cmake ${WIN_CMAKE} -DBUILD_SHARED_LIBS=ON -DBUILD_CURL_EXE=OFF -DBUILD_TESTING=OFF -DCURL_USE_SCHANNEL=ON \
+     -DCURL_USE_OPENSSL=OFF -DCURL_USE_LIBPSL=OFF -DCURL_USE_LIBSSH2=OFF -DUSE_NGHTTP2=OFF -DUSE_LIBIDN2=OFF \
+     -DCURL_ZSTD=OFF -DCURL_BROTLI=OFF -DENABLE_CURL_MANUAL=OFF -DBUILD_LIBCURL_DOCS=OFF -DBUILD_MISC_DOCS=OFF \
+     -S curl-8.10.1 -B curl-build \
+  && cmake --build curl-build && cmake --install curl-build \
+  && rm -rf curl-*
+
+# GEOS
+RUN wget -q https://download.osgeo.org/geos/geos-3.12.2.tar.bz2 \
+  && tar xjf geos-3.12.2.tar.bz2 \
+  && cmake ${WIN_CMAKE} -DBUILD_TESTING=OFF -DBUILD_BENCHMARKS=OFF -DBUILD_DOCUMENTATION=OFF -S geos-3.12.2 -B geos-build \
+  && cmake --build geos-build && cmake --install geos-build \
+  && rm -rf geos-*
+
+# PROJ (proj.db is generated with the host sqlite3)
+RUN wget -q https://download.osgeo.org/proj/proj-9.4.1.tar.gz \
+  && tar xzf proj-9.4.1.tar.gz \
+  && cmake ${WIN_CMAKE} -DBUILD_TESTING=OFF -DBUILD_APPS=OFF -DENABLE_TIFF=OFF -DENABLE_CURL=OFF \
+     -DEXE_SQLITE3=/usr/bin/sqlite3 -DSQLite3_INCLUDE_DIR=/opt/win64/include -DSQLite3_LIBRARY=/opt/win64/lib/libsqlite3.dll.a \
+     -S proj-9.4.1 -B proj-build \
+  && cmake --build proj-build && cmake --install proj-build \
+  && rm -rf proj-*
+
+# GDAL (internal tiff, geotiff, png, jpeg, zlib, json-c, only the listed external libraries)
+RUN wget -q https://github.com/OSGeo/gdal/releases/download/v3.9.3/gdal-3.9.3.tar.gz \
+  && tar xzf gdal-3.9.3.tar.gz \
+  && cmake ${WIN_CMAKE} -DBUILD_TESTING=OFF -DBUILD_APPS=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_JAVA_BINDINGS=OFF \
+     -DBUILD_CSHARP_BINDINGS=OFF -DGDAL_USE_EXTERNAL_LIBS=OFF -DGDAL_USE_SQLITE3=ON -DGDAL_USE_CURL=ON -DGDAL_USE_GEOS=ON \
+     -DSQLite3_INCLUDE_DIR=/opt/win64/include -DSQLite3_LIBRARY=/opt/win64/lib/libsqlite3.dll.a \
+     -S gdal-3.9.3 -B gdal-build \
+  && cmake --build gdal-build && cmake --install gdal-build \
+  && rm -rf gdal-*
+
+# OpenGL core profile headers (needed by OSG with OPENGL_PROFILE=GLCORE on Windows)
+RUN mkdir -p /opt/win64/include/GL /opt/win64/include/KHR \
+  && wget -q -O /opt/win64/include/GL/glcorearb.h https://registry.khronos.org/OpenGL/api/GL/glcorearb.h \
+  && wget -q -O /opt/win64/include/KHR/khrplatform.h https://registry.khronos.org/EGL/api/KHR/khrplatform.h
+
+# OpenSceneGraph 3.6 branch, same GL options as the Linux build
+RUN git clone --branch OpenSceneGraph-3.6 --depth 1 https://github.com/openscenegraph/OpenSceneGraph.git OpenSceneGraph-3.6 \
+  && git -C OpenSceneGraph-3.6 rev-parse HEAD > /opt/win64/osg_commit.txt \
+  && cmake ${WIN_CMAKE} \
+    -DBUILD_SHARED_LIBS=ON \
+    -DCURL_IS_STATIC=OFF \
+    -DCURL_LIBRARY=$(ls /opt/win64/lib/libcurl*.a | head -1) \
+    -DCURL_INCLUDE_DIR=/opt/win64/include \
+    -DGLCORE_ROOT=/opt/win64/include \
+    -DOSG_DETERMINE_WIN_VERSION=OFF \
+    -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0A00 -DGL_COMPRESSED_SRGB_S3TC_DXT1_EXT=0x8C4C -DGL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT=0x8C4D -DGL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT=0x8C4E -DGL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT=0x8C4F" \
+    -DOPENGL_PROFILE=GLCORE \
+    -DOSG_GLU_AVAILABLE=OFF \
+    -DOSG_GL1_AVAILABLE=OFF \
+    -DOSG_GL2_AVAILABLE=OFF \
+    -DOSG_GL3_AVAILABLE=ON \
+    -DOSG_GLES1_AVAILABLE=OFF \
+    -DOSG_GLES2_AVAILABLE=OFF \
+    -DOSG_GL_DISPLAYLISTS_AVAILABLE=OFF \
+    -DOSG_GL_MATRICES_AVAILABLE=OFF \
+    -DOSG_GL_VERTEX_FUNCS_AVAILABLE=OFF \
+    -DOSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE=OFF \
+    -DOSG_GL_FIXED_FUNCTION_AVAILABLE=OFF \
+    -D_OPENTHREADS_ATOMIC_USE_GCC_BUILTINS=0 \
+    -D_OPENTHREADS_ATOMIC_USE_MIPOSPRO_BUILTINS=0 \
+    -D_OPENTHREADS_ATOMIC_USE_SUN=0 \
+    -D_OPENTHREADS_ATOMIC_USE_WIN32_INTERLOCKED=1 \
+    -D_OPENTHREADS_ATOMIC_USE_BSD_ATOMIC=0 \
+    -S OpenSceneGraph-3.6 -B osg-build \
+  && cmake --build osg-build && cmake --install osg-build \
+  && rm -rf OpenSceneGraph-3.6 osg-build
+
+# mixed-case Windows header names used by MSVC code (Linux file systems are case-sensitive)
+RUN cd /usr/x86_64-w64-mingw32/include \
+  && ln -s windows.h Windows.h \
+  && ln -s wininet.h WinInet.h \
+  && ln -s shobjidl.h ShObjIdl.h
+
+# osgEarth 3.8 (tag), the world.tif test image is kept for tests
+RUN git clone --branch osgearth-3.8 --depth 1 --recurse-submodules https://github.com/gwaldron/osgearth.git osgearth-3.8 \
+  && git -C osgearth-3.8 rev-parse HEAD > /opt/win64/osgearth_commit.txt \
+  && mkdir -p /opt/win64/share/osgearth_test_data && cp osgearth-3.8/data/world.tif /opt/win64/share/osgearth_test_data/ \
+  && cmake ${WIN_CMAKE} -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DOSGEARTH_BUILD_DOCS=OFF \
+     -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_LIBDIR=lib \
+     -DCMAKE_CXX_FLAGS="-DWIN32 -D_WIN32_WINNT=0x0A00" -DCMAKE_C_FLAGS="-DWIN32 -D_WIN32_WINNT=0x0A00" \
+     -DCMAKE_CXX_STANDARD_LIBRARIES="-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 -ldbghelp" \
+     -DSQLite3_INCLUDE_DIR=/opt/win64/include -DSQLite3_LIBRARY=/opt/win64/lib/libsqlite3.dll.a \
+     -S osgearth-3.8 -B osgearth-build \
+  && cmake --build osgearth-build && cmake --install osgearth-build \
+  && rm -rf osgearth-3.8 osgearth-build
+
+# Qt5 host tools (moc, uic, rcc) for the cross build, see qt5_host_tools.cmake
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends qtbase5-dev-tools \
+  && rm -rf /var/lib/apt/lists/* \
+  && /usr/lib/qt5/bin/moc -v
+
+COPY qt5_host_tools.cmake /opt/qt5_host_tools.cmake
+
+# Boost headers, same version as the Linux build (compiled Boost libraries are not built yet)
+RUN wget -q -O boost_1_83_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz/download \
+  && tar xzf boost_1_83_0.tar.gz \
+  && cp -r boost_1_83_0/boost /opt/win64/include/ \
+  && rm -rf boost_1_83_0*
+
+WORKDIR /
