@@ -22,6 +22,7 @@
 
 class ConfigurationManager;
 class COMPASS;
+class CompassRoot;
 
 class Client : public QApplication
 {
@@ -44,7 +45,8 @@ public:
 
 private:
     std::unique_ptr<ConfigurationManager> config_manager_;
-    std::unique_ptr<COMPASS> compass_;
+    std::unique_ptr<CompassRoot> root_;
+    COMPASS* compass_ = nullptr; // owned by root_
 
     std::string system_install_path_;
     bool quit_requested_{false};

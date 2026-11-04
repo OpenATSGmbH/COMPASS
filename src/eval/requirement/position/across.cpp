@@ -15,12 +15,12 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/across.h"
-#include "eval/results/position/across.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/position/across.h"
+#include "results/position/across.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "sectorlayer.h"
 #include "projection/transformation.h"
 

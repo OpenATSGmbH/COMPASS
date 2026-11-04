@@ -35,9 +35,9 @@
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 #include "logger.h"
-#include "util/files.h"
+#include "files.h"
 #include "rtcommand_registry.h"
-#include "util/config.h"
+#include "config.h"
 
 #include "mainwindow_commands_file.h"
 #include "mainwindow_commands_import.h"

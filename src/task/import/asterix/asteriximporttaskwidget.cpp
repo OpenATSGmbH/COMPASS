@@ -25,8 +25,8 @@
 #include "db_context_manager.h"
 #include "logger.h"
 #include "dbcontent/selectdialog.h"
-#include "util/timeconv.h"
-#include "util/files.h"
+#include "timeconv.h"
+#include "files.h"
 
 #include <QCheckBox>
 #include <QComboBox>

@@ -15,9 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/base/baseconfigwidget.h"
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/requirement/group.h"
+#include "requirement/base/baseconfigwidget.h"
+#include "requirement/base/baseconfig.h"
+#include "requirement/group.h"
 
 #include "logger.h"
 

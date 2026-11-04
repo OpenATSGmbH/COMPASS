@@ -33,7 +33,7 @@
 #include "excludedtimewindowsfilter.h"
 #include "trackertracknumberfilter.h"
 #include "dbcontent/variable/variableset.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 #include <string>
 #include <vector>

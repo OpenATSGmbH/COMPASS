@@ -22,7 +22,7 @@
 
 #include "global.h"
 
-#include "util/stringconv.h"
+#include "stringconv.h"
 
 #include <QBuffer>
 #include <QImageReader>
@@ -1164,16 +1164,16 @@ QRectF ViewPointGenAnnotations::roi() const
  * ViewPointGenVP
  ********************************************************************************/
 
-const std::string ViewPointGenVP::ViewPointFieldName        = ViewPoint::VP_NAME_KEY;
-const std::string ViewPointGenVP::ViewPointFieldID          = ViewPoint::VP_ID_KEY;
-const std::string ViewPointGenVP::ViewPointFieldType        = ViewPoint::VP_TYPE_KEY;
-const std::string ViewPointGenVP::ViewPointFieldStatus      = ViewPoint::VP_STATUS_KEY;
-const std::string ViewPointGenVP::ViewPointFieldAnnotations = ViewPoint::VP_ANNOTATION_KEY;
-const std::string ViewPointGenVP::ViewPointFieldFilters     = ViewPoint::VP_FILTERS_KEY;
-const std::string ViewPointGenVP::ViewPointFieldPosLat      = ViewPoint::VP_POS_LAT_KEY;
-const std::string ViewPointGenVP::ViewPointFieldPosLon      = ViewPoint::VP_POS_LON_KEY;
-const std::string ViewPointGenVP::ViewPointFieldWinLat      = ViewPoint::VP_POS_WIN_LAT_KEY;
-const std::string ViewPointGenVP::ViewPointFieldWinLon      = ViewPoint::VP_POS_WIN_LON_KEY;
+const std::string ViewPointGenVP::ViewPointFieldName        = ViewPointKeys::VP_NAME_KEY;
+const std::string ViewPointGenVP::ViewPointFieldID          = ViewPointKeys::VP_ID_KEY;
+const std::string ViewPointGenVP::ViewPointFieldType        = ViewPointKeys::VP_TYPE_KEY;
+const std::string ViewPointGenVP::ViewPointFieldStatus      = ViewPointKeys::VP_STATUS_KEY;
+const std::string ViewPointGenVP::ViewPointFieldAnnotations = ViewPointKeys::VP_ANNOTATION_KEY;
+const std::string ViewPointGenVP::ViewPointFieldFilters     = ViewPointKeys::VP_FILTERS_KEY;
+const std::string ViewPointGenVP::ViewPointFieldPosLat      = ViewPointKeys::VP_POS_LAT_KEY;
+const std::string ViewPointGenVP::ViewPointFieldPosLon      = ViewPointKeys::VP_POS_LON_KEY;
+const std::string ViewPointGenVP::ViewPointFieldWinLat      = ViewPointKeys::VP_POS_WIN_LAT_KEY;
+const std::string ViewPointGenVP::ViewPointFieldWinLon      = ViewPointKeys::VP_POS_WIN_LON_KEY;
 
 const std::string ViewPointGenVP::StatusNameOpen   = "open";
 const std::string ViewPointGenVP::StatusNameClosed = "closed";
@@ -1229,7 +1229,7 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
     j[ViewPointFieldStatus] = statusString();
 
     if (description_.size())
-        j[ViewPoint::VP_DESCRIPTION_KEY] = description_;
+        j[ViewPointKeys::VP_DESCRIPTION_KEY] = description_;
 
     if (!roi_.isEmpty())
     {
@@ -1263,9 +1263,9 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
     }
 
     if (no_data_loaded_)
-        j[ViewPoint::VP_DS_TYPES_KEY] = nlohmann::json::array();
+        j[ViewPointKeys::VP_DS_TYPES_KEY] = nlohmann::json::array();
     else if (!ds_types_.empty())
-        j[ViewPoint::VP_DS_TYPES_KEY] = ds_types_;
+        j[ViewPointKeys::VP_DS_TYPES_KEY] = ds_types_;
 }
 
 /**
@@ -1470,7 +1470,7 @@ void ViewPointGenerator::toJSON(nlohmann::json& j,
     nlohmann::json vp_content;
 
     vp_content[ViewPointsFieldContentType] = "view_points";
-    vp_content[ViewPointsFieldVersion    ] = ViewPoint::VP_COLLECTION_CONTENT_VERSION;
+    vp_content[ViewPointsFieldVersion    ] = ViewPointKeys::VP_COLLECTION_CONTENT_VERSION;
 
     nlohmann::json viewpoints = nlohmann::json::array();
 

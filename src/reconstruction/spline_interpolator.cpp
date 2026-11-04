@@ -18,8 +18,8 @@
 #include "spline_interpolator.h"
 #include "kalman_interface.h"
 
-#include "util/number.h"
-#include "util/timeconv.h"
+#include "number.h"
+#include "timeconv.h"
 
 #include "spline.h"
 

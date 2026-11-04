@@ -20,6 +20,7 @@
 #include <QObject>
 
 #include "configurable.h"
+#include "itaskprovider.h"
 #include "taskdefs.h"
 #include "task.h"
 #include "reportdefs.h"
@@ -40,11 +41,9 @@ class ViewPointsImportTask;
 class RadarPlotPositionCalculatorTask;
 class ReconstructorTask;
 class AnalyzeDataSourceTask;
-class MainWindow;
 class TaskResult;
+class TaskResultDB;
 class ViewableDataConfig;
-
-class QMainWindow;
 
 namespace ResultReport
 {
@@ -54,7 +53,7 @@ namespace ResultReport
     class ReportExport;
 }
 
-class TaskManager : public QObject, public Configurable
+class TaskManager : public QObject, public Configurable, public ITaskProvider
 {
     Q_OBJECT
 
@@ -77,7 +76,7 @@ public:
     // TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
     TaskManager(nlohmann::json& config, COMPASS& compass);
 
-    COMPASS& compass() { return compass_; }
+    COMPASS& compass() override { return compass_; }
 
     virtual ~TaskManager();
 
@@ -110,17 +109,17 @@ public:
 
     void beginTaskResultWriting(const std::string& name,
                                 task::TaskResultType type,
-                                bool clear_existing = true);
-    bool hasCurrentResult() const;
-    std::shared_ptr<TaskResult>& currentResult();
-    std::shared_ptr<ResultReport::Report>& currentReport();
+                                bool clear_existing = true) override;
+    bool hasCurrentResult() const override;
+    std::shared_ptr<TaskResult>& currentResult() override;
+    std::shared_ptr<ResultReport::Report>& currentReport() override;
     void endTaskResultWriting(bool store_result,
-                              bool show_dialog = false);
+                              bool show_dialog = false) override;
 
     const std::map<unsigned int, std::shared_ptr<TaskResult>>& results() const;
     std::shared_ptr<TaskResult> result(unsigned int id) const; // get existing result
-    std::shared_ptr<TaskResult> result(const std::string& name) const; // get existing result
-    bool hasResult (const std::string& name) const;
+    std::shared_ptr<TaskResult> result(const std::string& name) const override; // get existing result
+    bool hasResult (const std::string& name) const override;
     bool removeResult(const std::string& name, 
                       bool inform_changes = true);
     ResultT<nlohmann::json> exportResult(const std::string& name, 
@@ -129,24 +128,26 @@ public:
                                          const boost::optional<std::string>& export_dir = boost::optional<std::string>(),
                                          const std::string& section = std::string());
     
-    std::shared_ptr<TaskResult> createResult(unsigned int id, 
-                                             task::TaskResultType type);
+    std::shared_ptr<TaskResult> createResult(unsigned int id,
+                                             task::TaskResultType type) override;
 
-    void resultHeaderChanged(const TaskResult& result);
-    void resultContentChanged(const TaskResult& result);
-    
+    void resultHeaderChanged(const TaskResult& result) override;
+    void resultContentChanged(const TaskResult& result) override;
+
     void setViewableDataConfig(const nlohmann::json::object_t& data,
-                               bool load_blocking = false);
-    void unsetViewableDataConfig();
+                               bool load_blocking = false) override;
+    void unsetViewableDataConfig() override;
 
     std::shared_ptr<ResultReport::SectionContent> loadContent(ResultReport::Section* section,
                                                               unsigned int content_id,
-                                                              bool show_dialog = false) const;
+                                                              bool show_dialog = false) const override;
 
-    ResultT<nlohmann::json> loadResultContent(unsigned int result_id) const;
+    ResultT<nlohmann::json> loadResultContent(unsigned int result_id) const override;
 
-    void storeBackupSection();
-    void restoreBackupSection();
+    void storeBackupSection() override;
+    void restoreBackupSection() override;
+
+    void selectResultID(const std::string& id, bool show_figure) override;
 
     static const bool CleanupDBIfNeeded;
 
@@ -154,7 +155,6 @@ protected:
     virtual void checkSubConfigurables() override;
 
     void addTask(const std::string& class_name, Task* task);
-    MainWindow* getMainWindow();
 
     std::shared_ptr<TaskResult> getOrCreateResult(const std::string& name, 
                                                   task::TaskResultType type);
@@ -185,6 +185,8 @@ protected:
 
     std::map<unsigned int, std::shared_ptr<TaskResult>> results_; // id -> result
     std::shared_ptr<TaskResult> current_result_;
+
+    std::unique_ptr<TaskResultDB> result_db_; // persistence of the results
 
     std::unique_ptr<ResultReport::ReportExport> report_export_;
 

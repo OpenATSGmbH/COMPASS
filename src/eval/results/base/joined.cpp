@@ -15,26 +15,26 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/base/joined.h"
-#include "eval/results/base/single.h"
-#include "eval/results/base/result_t.h"
+#include "results/base/joined.h"
+#include "results/base/single.h"
+#include "results/base/result_t.h"
 
-#include "task/result/report/sectioncontenttable.h"
-#include "task/result/report/section.h"
+#include "report/sectioncontenttable.h"
+#include "report/section.h"
 
-#include "eval/results/evalsectionid.h"
+#include "results/evalsectionid.h"
 
-#include "eval/requirement/base/base.h"
+#include "requirement/base/base.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
-#include "view/points/viewpointgenerator.h"
-#include "view/points/viewpoint.h"
+#include "points/viewpointgenerator.h"
+#include "points/viewpoint.h"
 
-#include "view/gridview/grid2d.h"
-#include "view/gridview/grid2dlayer.h"
-#include "view/gridview/grid2d_defs.h"
+#include "gridview/grid2d.h"
+#include "gridview/grid2dlayer.h"
+#include "gridview/grid2d_defs.h"
 
 #include "compass.h"
 #include "tbbhack.h"

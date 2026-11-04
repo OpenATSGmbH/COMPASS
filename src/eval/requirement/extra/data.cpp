@@ -15,9 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/extra/data.h"
-#include "eval/standard/evaluationstandard.h"
-#include "eval/results/extra/data.h"
+#include "requirement/extra/data.h"
+#include "standard/evaluationstandard.h"
+#include "results/extra/data.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"

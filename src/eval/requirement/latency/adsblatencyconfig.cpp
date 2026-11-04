@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/latency/adsblatencyconfig.h"
-#include "eval/requirement/latency/adsblatencyconfigwidget.h"
-#include "eval/requirement/latency/adsblatency.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/latency/adsblatencyconfig.h"
+#include "requirement/latency/adsblatencyconfigwidget.h"
+#include "requirement/latency/adsblatency.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #include "comparisontype.h"
 

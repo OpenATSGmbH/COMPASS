@@ -39,7 +39,6 @@
 #include "logger.h"
 #include "number.h"
 #include "stringconv.h"
-#include "evaluationmanager.h"
 #include "histogramgenerator.h"
 #include "histogramgeneratorbuffer.h"
 #include "viewasyncprocessor.h"
@@ -68,8 +67,6 @@
 #include <algorithm>
 
 QT_CHARTS_USE_NAMESPACE
-
-using namespace EvaluationRequirementResult;
 using namespace std;
 
 namespace

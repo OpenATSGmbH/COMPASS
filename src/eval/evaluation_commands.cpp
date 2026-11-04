@@ -24,7 +24,6 @@
 #include "evaluationstandard.h"
 #include "requirement/group.h"
 #include "requirement/base/baseconfig.h"
-#include "mainwindow.h"
 #include "compass.h"
 #include "dbcontentmanager.h"
 #include "evaluationtargetfilter.h"

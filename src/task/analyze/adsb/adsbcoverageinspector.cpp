@@ -36,7 +36,7 @@
 #include "dbcontent/target/targetreportchain.h"
 #include "dbcontent/target/targetbase.h"
 
-#include "eval/requirement/detection/detection_pd_helpers.h"
+#include "requirement/detection/detection_pd_helpers.h"
 #include "coveragepdwalk.h"
 
 #include "grid2dlayer.h"

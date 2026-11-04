@@ -16,6 +16,7 @@
  */
 
 #include "client.h"
+#include "compassroot.h"
 
 #include "compass.h"
 #include "crashbreadcrumbs.h"
@@ -32,11 +33,11 @@
 #include "taskmanager.h"
 #include "asteriximporttask.h"
 #include "mainwindow.h"
-#include "util/system.h"
+#include "system.h"
 #include "render.h"
 
 #include "json.hpp"
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include "traced_assert.h"
 
@@ -57,7 +58,7 @@
 #include <QFontDatabase>
 #include <QGLFormat>
 
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
@@ -81,8 +82,6 @@ using namespace std;
 using namespace Utils;
 
 namespace po = boost::program_options;
-
-std::string APP_FILENAME;
 
 namespace
 {
@@ -443,7 +442,8 @@ bool Client::run ()
 
     try
     {
-        compass_ = std::make_unique<COMPASS>(*config_manager_);
+        root_.reset(new CompassRoot(*config_manager_));
+        compass_ = &root_->compass();
 
         applyDarkMode(compass_->darkMode());
 
@@ -456,7 +456,7 @@ bool Client::run ()
             setFont(system_font);
         }
 
-        compass_->init(); //here everything created in compass instance should be available
+        root_->init(); //here everything created in compass instance should be available
 
         compass_->projectionManager().test();
     }
@@ -483,7 +483,7 @@ bool Client::run ()
     if (do_sensor_status_hack_)
         compass_->sensorStatusTimeHack(do_sensor_status_hack_);
 
-    MainWindow& main_window = compass_->mainWindow();
+    MainWindow& main_window = root_->mainWindow();
     main_window.init();
     splash.raise();
 

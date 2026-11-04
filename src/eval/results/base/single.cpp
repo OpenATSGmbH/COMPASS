@@ -15,20 +15,20 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/base/single.h"
-#include "eval/results/base/result_t.h"
-#include "eval/results/base/joined.h"
-#include "eval/results/reporttablecontent.h"
+#include "results/base/single.h"
+#include "results/base/result_t.h"
+#include "results/base/joined.h"
+#include "results/reporttablecontent.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
-#include "task/result/report/sectioncontentfigure.h"
-#include "task/result/report/sectioncontenttext.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
+#include "report/sectioncontentfigure.h"
+#include "report/sectioncontenttext.h"
 
-#include "eval/results/evalsectionid.h"
+#include "results/evalsectionid.h"
 
-#include "eval/requirement/base/base.h"
+#include "requirement/base/base.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
@@ -39,7 +39,7 @@
 
 #include "compass.h"
 #include "dbinterface.h"
-#include "taskmanager.h"
+#include "itaskprovider.h"
 #include "taskresult.h"
 
 #include "sectorlayer.h"
@@ -266,7 +266,7 @@ Single::EvaluationDetails Single::loadDetailsFromReportTable() const
     EvaluationDetails details;
 
     auto& compass      = calculator_.manager().compass();
-    auto& task_manager = compass.taskManager();
+    auto& task_manager = compass.taskProvider();
 
     const std::string& result_name = calculator_.resultName();
 

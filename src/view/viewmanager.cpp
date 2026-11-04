@@ -23,6 +23,7 @@
 #include "logger.h"
 #include "stringconv.h"
 #include "view.h"
+#include "viewwidget.h"
 #include "viewcontainer.h"
 #include "viewcontainerwidget.h"
 #include "viewpoint.h"
@@ -42,9 +43,9 @@
 #include "dbcontent/variable/variable.h"
 #include "viewpointsreportgenerator.h"
 #include "viewpointsreportgeneratordialog.h"
-#include "util/timeconv.h"
-#include "util/number.h"
-#include "util/async.h"
+#include "timeconv.h"
+#include "number.h"
+#include "async.h"
 #include "viewpoint_commands.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
@@ -374,21 +375,21 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
         if (db_interface.existsViewPointsTable() && db_interface.viewPoints().size())
             db_interface.deleteAllViewPoints();
 
-        traced_assert(json_obj.contains(ViewPoint::VP_COLLECTION_ARRAY_KEY));
+        traced_assert(json_obj.contains(ViewPointKeys::VP_COLLECTION_ARRAY_KEY));
         
         //add new ones
-        json& view_points = json_obj.at(ViewPoint::VP_COLLECTION_ARRAY_KEY);
+        json& view_points = json_obj.at(ViewPointKeys::VP_COLLECTION_ARRAY_KEY);
         traced_assert(view_points.size());
 
         unsigned int id;
         for (auto& vp_it : view_points.get<json::array_t>())
         {
-            traced_assert(vp_it.contains(ViewPoint::VP_ID_KEY));
+            traced_assert(vp_it.contains(ViewPointKeys::VP_ID_KEY));
 
-            id = vp_it.at(ViewPoint::VP_ID_KEY);
+            id = vp_it.at(ViewPointKeys::VP_ID_KEY);
 
-            if (!vp_it.contains(ViewPoint::VP_STATUS_KEY))
-                vp_it[ViewPoint::VP_STATUS_KEY] = "open";
+            if (!vp_it.contains(ViewPointKeys::VP_STATUS_KEY))
+                vp_it[ViewPointKeys::VP_STATUS_KEY] = "open";
 
             db_interface.setViewPoint(id, vp_it.dump());
         }
@@ -585,9 +586,9 @@ void ViewManager::doViewPointAfterLoad ()
 
     logdbg << "data '" << data.dump(4) << "'";
 
-    bool vp_contains_timestamp = data.contains(ViewPoint::VP_TIMESTAMP_KEY);
+    bool vp_contains_timestamp = data.contains(ViewPointKeys::VP_TIMESTAMP_KEY);
     boost::posix_time::ptime vp_timestamp;
-    bool vp_contains_time_window = data.contains(ViewPoint::VP_TIME_WIN_KEY);
+    bool vp_contains_time_window = data.contains(ViewPointKeys::VP_TIME_WIN_KEY);
     float vp_time_window;
     boost::posix_time::ptime vp_ts_min, vp_ts_max;
 
@@ -598,16 +599,16 @@ void ViewManager::doViewPointAfterLoad ()
     }
     else
     {
-        traced_assert(data.at(ViewPoint::VP_TIMESTAMP_KEY).is_string());
-        vp_timestamp = Time::fromString(data.at(ViewPoint::VP_TIMESTAMP_KEY));
+        traced_assert(data.at(ViewPointKeys::VP_TIMESTAMP_KEY).is_string());
+        vp_timestamp = Time::fromString(data.at(ViewPointKeys::VP_TIMESTAMP_KEY));
 
         loginf << "time " << Time::toString(vp_timestamp);
     }
 
     if (vp_contains_time_window)
     {
-        traced_assert(data.at(ViewPoint::VP_TIME_WIN_KEY).is_number());
-        vp_time_window = data.at(ViewPoint::VP_TIME_WIN_KEY);
+        traced_assert(data.at(ViewPointKeys::VP_TIME_WIN_KEY).is_number());
+        vp_time_window = data.at(ViewPointKeys::VP_TIME_WIN_KEY);
         vp_ts_min = vp_timestamp - Time::partialSeconds(vp_time_window / 2.0);
         vp_ts_max = vp_timestamp + Time::partialSeconds(vp_time_window / 2.0);
 
@@ -1769,6 +1770,30 @@ ViewContainerWidget* ViewManager::latestViewContainer()
     }
 
     return latest_container;
+}
+
+/**
+*/
+QWidget* ViewManager::viewContainerWidget(const std::string& name)
+{
+    return containerWidget(name);
+}
+
+/**
+*/
+QWidget* ViewManager::latestViewContainerWidget()
+{
+    return latestViewContainer();
+}
+
+/**
+*/
+QWidget* ViewManager::latestViewWidget()
+{
+    auto* view = latestView();
+    if (!view)
+        return nullptr;
+    return view->getCentralWidget()->findChild<ViewWidget*>();
 }
 
 /**

@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/detection/detectionconfig.h"
-#include "eval/requirement/detection/detection.h"
-#include "eval/requirement/detection/detectionconfigwidget.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/detection/detectionconfig.h"
+#include "requirement/detection/detection.h"
+#include "requirement/detection/detectionconfigwidget.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #include "comparisontype.h"
 #include "stringconv.h"

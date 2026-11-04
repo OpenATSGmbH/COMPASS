@@ -21,6 +21,7 @@
 #include "dbcontentmanager.h"
 #include "dbcontentdataengine.h"
 #include "dbcontent/dbcontent.h"
+#include "dbcontent/target/target.h"
 #include "logger.h"
 #include "stringconv.h"
 #include "timeconv.h"
@@ -31,10 +32,10 @@
 #include "reconstructorassociatorbase.h"
 
 #include "taskmanager.h"
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttext.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttext.h"
+#include "report/sectioncontenttable.h"
 
 #include "kalman_chain.h"
 #include "kalman_online_tracker.h"
@@ -1979,15 +1980,15 @@ void ReconstructorBase::doUnassociatedAnalysis()
     //section.addFigure("Avg. Unused Scatterplot", {vp_json});
 
     // slice was already switched
-    vp_json[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(
+    vp_json[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(
         next_slice_begin_ - settings().sliceDuration() - boost::posix_time::milliseconds(1));
-    vp_json[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
+    vp_json[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
         Time::toString(current_slice_begin_ - settings().sliceDuration());
 
-    // vp_json[ViewPoint::VP_FILTERS_KEY]["Record Number"]["Record NumberCondition0"] =
+    // vp_json[ViewPointKeys::VP_FILTERS_KEY]["Record Number"]["Record NumberCondition0"] =
     //     String::compress(associator().unassociatedRecNums(), ',');
 
-    vp_json[ViewPoint::VP_SELECTED_RECNUMS_KEY] = associator().unassociatedRecNums();
+    vp_json[ViewPointKeys::VP_SELECTED_RECNUMS_KEY] = associator().unassociatedRecNums();
 
     table.addRow(row, {vp_json});
 
@@ -2020,7 +2021,60 @@ void ReconstructorBase::saveTargets()
 
     DBContentManager& cont_man = task_.manager().compass().dbContentManager();
 
-    cont_man.createNewTargets(targets_container_.targets_);
+    // summary of the reconstructed targets for the target model
+    std::vector<dbContent::Target> targets;
+    targets.reserve(targets_container_.targets_.size());
+
+    for (auto& tgt_it : targets_container_.targets_)
+    {
+        dbContent::Target tgt (tgt_it.first, nlohmann::json::object());
+
+                //target.useInEval(tgt_it.second.use_in_eval_);
+
+                //if (tgt_it.second.comment_.size())
+                //    target.comment(tgt_it.second.comment_);
+
+        tgt.aircraftAddresses(tgt_it.second.acads_);
+        tgt.aircraftIdentifications(tgt_it.second.acids_);
+        tgt.modeACodes(tgt_it.second.mode_as_);
+
+        if (tgt_it.second.ecat_ && *tgt_it.second.ecat_ != (unsigned int) dbContent::Target::Category::Unknown)
+            tgt.targetCategory(dbContent::Target::fromECAT(tgt_it.second.ecat_));
+
+        if (tgt_it.second.hasTimestamps())
+        {
+            tgt.timeBegin(tgt_it.second.total_timestamp_min_);
+            tgt.timeEnd(tgt_it.second.total_timestamp_max_);
+        }
+
+        if (tgt_it.second.hasModeC())
+            tgt.modeCMinMax(*tgt_it.second.mode_c_min_, *tgt_it.second.mode_c_max_);
+
+        if (tgt_it.second.latitude_min_ && tgt_it.second.latitude_max_
+            && tgt_it.second.longitude_min_ && tgt_it.second.longitude_max_)
+            tgt.setPositionBounds(*tgt_it.second.latitude_min_, *tgt_it.second.latitude_max_,
+                                  *tgt_it.second.longitude_min_, *tgt_it.second.longitude_max_);
+
+                // set counts
+        for (auto& count_it : tgt_it.second.getDBContentCounts())
+            tgt.dbContentCount(count_it.first, count_it.second);
+
+                // set adsb stuff
+        tgt.adsbCount(tgt_it.second.adsb_count_);
+        tgt.adsbMOPSCount(tgt_it.second.adsb_mops_count_);
+
+        // dubious reference detection counts, only written when non-empty
+        tgt.dubiousRefCounts(tgt_it.second.dubious_ref_counts_);
+
+        //if (tgt_it.second.createdFromTentative())
+        //    tgt.comment("Created from tentative");
+        //else if (tgt_it.second.containsPreviouslyTentative())
+        //    tgt.comment("Contains tentative");
+
+        targets.push_back(tgt);
+    }
+
+    cont_man.createNewTargets(targets);
 
     cont_man.saveTargets();
 

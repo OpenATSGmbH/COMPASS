@@ -17,7 +17,7 @@
 
 #include "catch.hpp"
 
-#include "eval/evaluationconstraints.h"
+#include "evaluationconstraints.h"
 
 #include "json.hpp"
 

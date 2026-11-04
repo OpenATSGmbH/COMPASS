@@ -31,7 +31,7 @@
 #include "filterclause.h"
 #include "idbvariableresolver.h"
 #include "global.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "logger.h"
 
 #include <QApplication>

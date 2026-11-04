@@ -23,7 +23,7 @@
 #include "sector_import_utils.h"
 #include "compass.h"
 #include "logger.h"
-#include "util/files.h"
+#include "files.h"
 #include "json.hpp"
 
 #include <boost/program_options.hpp>

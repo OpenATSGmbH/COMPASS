@@ -28,6 +28,7 @@
  */
 DataSourceAnalysisTaskResult::DataSourceAnalysisTaskResult(unsigned int id, TaskManager& task_man)
     : TaskResult(id, task_man)
+    , task_man_(task_man)
 {
     //the data change signals of the evaluation manager apply to the analysis as well
     connect(&task_man.compass().evaluationManager(), &EvaluationManager::resultsNeedUpdate,
@@ -51,7 +52,7 @@ AnalyzeDataSourceTask* DataSourceAnalysisTaskResult::analysisTask() const
     if (!params.contains("ds_type") || !params[ "ds_type" ].is_string())
         return nullptr;
 
-    return taskManager().analyzeDataSourceTask(params[ "ds_type" ].get<std::string>());
+    return task_man_.analyzeDataSourceTask(params[ "ds_type" ].get<std::string>());
 }
 
 /**

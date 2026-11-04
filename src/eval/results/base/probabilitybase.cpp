@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/base/probabilitybase.h"
+#include "results/base/probabilitybase.h"
 #include "number.h"
 
 using namespace Utils;

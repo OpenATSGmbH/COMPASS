@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/positionbaseconfigwidget.h"
+#include "requirement/base/positionbaseconfigwidget.h"
 
 class ComparisonTypeComboBox;
 

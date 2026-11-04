@@ -24,7 +24,7 @@
 #include "files.h"
 #include "logger.h"
 #include "projectionmanager.h"
-#include "util/stringconv.h"
+#include "stringconv.h"
 #include "global.h"
 #include "json.hpp"
 

@@ -5,6 +5,9 @@ target_include_directories(compass_core PUBLIC
 
 target_sources(compass_core
     PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/asterixeditioncombobox.h"
+        "${CMAKE_CURRENT_LIST_DIR}/asterixrefeditioncombobox.h"
+        "${CMAKE_CURRENT_LIST_DIR}/asterixspfeditioncombobox.h"
         "${CMAKE_CURRENT_LIST_DIR}/radar_accuracy_defs.h"
         "${CMAKE_CURRENT_LIST_DIR}/color_provider.h"
         "${CMAKE_CURRENT_LIST_DIR}/colors_edit_widget.h"

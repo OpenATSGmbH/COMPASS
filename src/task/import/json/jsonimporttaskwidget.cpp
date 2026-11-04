@@ -28,7 +28,7 @@
 #include "logger.h"
 #include "dbcontent/selectdialog.h"
 //#include "stringconv.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 #include <QCheckBox>
 #include <QFormLayout>

@@ -15,20 +15,20 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/trackangle/trackangle.h"
+#include "results/trackangle/trackangle.h"
 
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/trackangle/trackangle.h"
+#include "requirement/base/base.h"
+#include "requirement/trackangle/trackangle.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
 
 #include "logger.h"
-#include "util/stringconv.h"
-#include "util/timeconv.h"
-#include "util/number.h"
+#include "stringconv.h"
+#include "timeconv.h"
+#include "number.h"
 #include "viewpoint.h"
 #include "compass.h"
 

@@ -18,7 +18,7 @@
 #include "dbdatasourcewidget.h"
 #include "compass.h"
 #include "db_context_manager.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "logger.h"
 
 #include <QGridLayout>

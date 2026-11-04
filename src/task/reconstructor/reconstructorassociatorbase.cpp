@@ -20,7 +20,7 @@
 #include "logger.h"
 #include "stringconv.h"
 #include "timeconv.h"
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 #include "reconstructortask.h"
 #include "taskmanager.h"
 #include "compass.h"

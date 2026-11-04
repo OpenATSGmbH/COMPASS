@@ -20,7 +20,7 @@
 #include "rtcommand.h"
 #include "rtcommand_wait_condition.h"
 #include "compass.h"
-#include "viewmanager.h"
+#include "iviewprovider.h"
 #include "logger.h"
 
 #include <QSignalSpy>
@@ -54,7 +54,7 @@ namespace
         if (compass.isShutDown())
             return false;
 
-        ViewManager& view_man = compass.viewManager();
+        IViewProvider& view_man = compass.viewProvider();
 
         return view_man.hasPendingViewProcessing() || view_man.isProcessingData();
     }

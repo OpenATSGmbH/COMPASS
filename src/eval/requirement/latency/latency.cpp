@@ -15,12 +15,12 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/latency/latency.h"
-#include "eval/results/latency/latency.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/latency/latency.h"
+#include "results/latency/latency.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "sectorlayer.h"
 
 #include <algorithm>

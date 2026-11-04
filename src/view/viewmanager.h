@@ -18,6 +18,7 @@
 #pragma once
 
 #include "configurable.h"
+#include "iviewprovider.h"
 #include "dbcontent/variable/variableset.h"
 #include "appmode.h"
 #include "viewpresets.h"
@@ -51,7 +52,7 @@ class LiveController;
 
 /**
 */
-class ViewManager : public QObject, public Configurable
+class ViewManager : public QObject, public Configurable, public IViewProvider
 {
     Q_OBJECT
 
@@ -116,7 +117,7 @@ class ViewManager : public QObject, public Configurable
     void init(QTabWidget* main_tab_widget);
     void close();
 
-    void clearDataInViews();
+    void clearDataInViews() override;
 
     // reload the view content: builds the standard view LoadRequest, makes the
     // resulting operation the current source, and runs it through DBContentManager
@@ -128,15 +129,15 @@ class ViewManager : public QObject, public Configurable
 
     // the displayed buffers (the current source's, or empty when nothing is loaded).
     // The accessor lives here, on the owner - not on DBContentManager, which holds no dataset.
-    const std::map<std::string, std::shared_ptr<Buffer>>& currentBuffers() const;
+    const std::map<std::string, std::shared_ptr<Buffer>>& currentBuffers() const override;
 
     // live-session latency, delegated to the live session (the geo view reads it via the
     // DBContentManager façade). The feed + the two controllers stay private, not exposed.
-    bool hasMaxLatency() const;
-    boost::posix_time::time_duration maxLatency() const;
+    bool hasMaxLatency() const override;
+    boost::posix_time::time_duration maxLatency() const override;
 
     // selection carried to the next load (set by FilterManager / view-point selection)
-    void storeSelectedRecNums(const std::vector<unsigned long>& selected);
+    void storeSelectedRecNums(const std::vector<unsigned long>& selected) override;
     void clearSelectedRecNums();
 
     void registerView(View* view);
@@ -159,8 +160,12 @@ class ViewManager : public QObject, public Configurable
     std::map<std::string, View*> getViews() { return views_; }
     View* latestView();
     ViewContainerWidget* latestViewContainer();
-    
-    dbContent::VariableSet getReadSet(const std::string& dbcontent_name);
+
+    QWidget* viewContainerWidget(const std::string& name) override;
+    QWidget* latestViewContainerWidget() override;
+    QWidget* latestViewWidget() override;
+
+    dbContent::VariableSet getReadSet(const std::string& dbcontent_name) override;
 
     //@TODO: needed because of view container widget hack in ui_test_find.h
     //remove if no longer needed!
@@ -189,7 +194,7 @@ class ViewManager : public QObject, public Configurable
     /// would leave current_viewable_ (and the views' current_view_point_)
     /// dangling in doViewPointAfterLoad().
     void setCurrentViewPoint (std::shared_ptr<ViewableDataConfig> viewable,
-                              bool load_blocking = false);
+                              bool load_blocking = false) override;
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
 
@@ -213,12 +218,12 @@ class ViewManager : public QObject, public Configurable
 
     // disables propagation of data to the views. used when loading is performed for processing purposes
 
-    bool isProcessingData() const;
+    bool isProcessingData() const override;
 
     // any view still processing data asynchronously (e.g. geographic view geometry
     // builds). Part of the "busy" condition: gates a second load, closing the
     // database, applying a view point and rendering a report figure.
-    bool hasPendingViewProcessing() const;
+    bool hasPendingViewProcessing() const override;
 
     // suppress the load/view-processing progress dialogs (wait cursor stays),
     // used for the duration of a report export - see LoadController

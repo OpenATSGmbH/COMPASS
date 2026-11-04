@@ -44,7 +44,7 @@
 #include "sectorlayer.h"
 #include "transformation.h"
 
-#include "eval/requirement/detection/detection_pd_helpers.h"
+#include "requirement/detection/detection_pd_helpers.h"
 
 #include "grid2dlayer.h"
 #include "grid2dlayerrenderer.h"

@@ -1,0 +1,595 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
+#include "taskresultswidget.h"
+
+#include "report/sectionid.h"
+
+#include "taskresult.h"
+#include "reportwidget.h"
+#include "files.h"
+#include "logger.h"
+#include "taskmanager.h"
+#include "asynctask.h"
+#include "dialogs.h"
+#include "compass.h"
+#include "dbinterface.h"
+#include "reportdefs.h"
+#include "license/licensemanager.h"
+#include "license/license.h"
+
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QScrollArea>
+#include <QPushButton>
+#include <QSettings>
+#include <QMenu>
+#include <QWidgetAction>
+#include <QComboBox>
+#include <QAbstractItemView>
+#include <QHelpEvent>
+#include "questiondialog.h"
+
+#include <QMessageBox>
+#include <QFileDialog>
+#include <QApplication>
+#include <QProgressDialog>
+
+using namespace Utils;
+
+/**
+ */
+TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
+    : ToolBoxWidget(nullptr), task_man_(task_man)
+{
+    QVBoxLayout* main_layout = new QVBoxLayout();
+
+    QHBoxLayout* top_layout = new QHBoxLayout;
+    main_layout->addLayout(top_layout);
+
+    report_combo_ = new QComboBox;
+    report_combo_->setObjectName("report_combo");
+    report_combo_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    connect(report_combo_, QOverload<const QString &>::of(&QComboBox::currentTextChanged),
+            [ = ] (const QString& text){
+
+                loginf << "report_combo_ currentText '" << text.toStdString() << "'";
+
+                if (!text.size()) // happens on clear
+                    return;
+
+                traced_assert(task_man_.hasResult(text.toStdString()));
+                setReport(text.toStdString());
+            });
+
+    report_combo_->setDisabled(true);
+
+    //creates the report tables tooltips on demand
+    report_combo_->view()->viewport()->installEventFilter(this);
+
+    top_layout->addWidget(report_combo_);
+
+    refresh_result_button_ = new QPushButton();
+    refresh_result_button_->setObjectName("refresh_result_button");
+    refresh_result_button_->setIcon(Files::IconProvider::getIcon("refresh.png"));
+    refresh_result_button_->setEnabled(false);
+    refresh_result_button_->setFlat(true);
+    refresh_result_button_->setToolTip("Refresh Report");
+
+    connect(refresh_result_button_, &QPushButton::pressed, this, &TaskResultsWidget::refreshCurrentResult);
+
+    top_layout->addWidget(refresh_result_button_);
+
+    remove_result_button_ = new QPushButton();
+    remove_result_button_->setObjectName("remove_result_button");
+    remove_result_button_->setIcon(Files::IconProvider::getIcon("delete.png"));
+    remove_result_button_->setEnabled(false);
+    remove_result_button_->setFlat(true);
+    remove_result_button_->setToolTip("Remove Report");
+
+    connect(remove_result_button_, &QPushButton::pressed, this, &TaskResultsWidget::removeCurrentResult);
+
+    top_layout->addWidget(remove_result_button_);
+
+    export_result_button_ = new QPushButton();
+    export_result_button_->setObjectName("export_result_button");
+    export_result_button_->setIcon(Files::IconProvider::getIcon("save.png"));
+    export_result_button_->setEnabled(false);
+    export_result_button_->setFlat(true);
+    export_result_button_->setToolTip("Export Report");
+
+    QMenu* export_menu = new QMenu(export_result_button_);
+    export_menu->setToolTipsVisible(true);
+
+    bool pdflatex_found = task_man_.compass().pdflatexFound();
+    bool pro_license = task_man_.compass().licenseManager().componentEnabled(
+        license::License::Component::ComponentProbIMMReconstructor);
+
+    auto action_export_docx  = export_menu->addAction(
+        pro_license ? "Export as DocX" : "Export as DocX [pro]");
+    auto action_export_json  = export_menu->addAction("Export as JSON");
+    auto action_export_latex = export_menu->addAction("Export as Latex");
+    auto action_export_pdf   = export_menu->addAction("Export as PDF");
+
+    action_export_docx->setEnabled(pro_license);
+    action_export_docx->setToolTip(pro_license ? "" :
+        "Only available with active Professional license");
+
+    action_export_pdf->setEnabled(pdflatex_found);
+    action_export_pdf->setToolTip(pdflatex_found ? "" : "pdflatex not installed");
+
+    connect(action_export_json, &QAction::triggered,
+        [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::JSONFile); });
+    connect(action_export_docx, &QAction::triggered,
+        [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::DOCX); });
+    connect(action_export_latex, &QAction::triggered,
+        [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::Latex); });
+    connect(action_export_pdf, &QAction::triggered,
+        [ this ] () { this->exportCurrentResult(ResultReport::ReportExportMode::LatexPDF); });
+
+    export_result_button_->setMenu(export_menu);
+
+    top_layout->addWidget(export_result_button_);
+
+    QFrame *line = new QFrame;
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+
+    // Add to a layout
+    main_layout->addWidget(line);
+
+    report_widget_ = new ResultReport::ReportWidget(*this);
+
+    main_layout->addWidget(report_widget_);
+
+    report_widget_->setDisabled(true);
+
+    setContentsMargins(0, 0, 0, 0);
+    setLayout(main_layout);
+
+    connect (&task_man, &TaskManager::taskResultsChangedSignal,
+            this, &TaskResultsWidget::updateResultsSlot);
+    connect (&task_man, &TaskManager::taskResultHeaderChangedSignal,
+            this, &TaskResultsWidget::resultHeaderChanged);
+}
+
+/**
+ */
+TaskResultsWidget::~TaskResultsWidget() {}
+
+/**
+ */
+void TaskResultsWidget::setReport(const std::string name)
+{
+    loginf << "name '" << name << "'";
+
+    current_report_name_ = name;
+
+    int name_idx = report_combo_->findText(current_report_name_.c_str());
+
+    loginf << "name_idx " << name_idx;
+
+    if (name_idx < 0)
+    {
+        report_combo_->clear();
+        report_combo_->setDisabled(true);
+
+        current_report_name_ = "";
+
+        report_widget_->clear();
+        report_widget_->setDisabled(true);
+
+        return;
+    }
+
+    if (report_combo_->currentIndex() != name_idx)
+    {
+        report_combo_->blockSignals(true);
+        report_combo_->setCurrentIndex(name_idx);
+        report_combo_->blockSignals(false);
+    }
+
+    report_combo_->setDisabled(false);
+
+    traced_assert(task_man_.hasResult(name));
+    auto result = task_man_.result(name);
+
+    //the content may still have to be read from the database, block the report until it is shown
+    report_widget_->setDisabled(true);
+
+    //status window stays open until the report is displayed, the content read of a big report
+    //takes seconds and the display which follows it is not free either
+    std::unique_ptr<QProgressDialog> status;
+
+    if (!result->contentLoaded())
+    {
+        status.reset(new QProgressDialog("Loading report", QString(), 0, 0,
+                                         Dialogs::statusDialogParent()));
+        status->setWindowTitle("Loading");
+        status->setWindowModality(Qt::ApplicationModal);
+        status->setCancelButton(nullptr);
+        status->setMinimumDuration(0);
+        status->show();
+
+        QApplication::processEvents();
+
+        //read and parse the stored content in a worker thread, runAsync keeps the ui alive
+        auto result_ptr = result.get();
+
+        auto cb = [ result_ptr ] (const AsyncTaskState&, AsyncTaskProgressWrapper&)
+        {
+            result_ptr->ensureContentLoaded();
+            return Result::succeeded();
+        };
+
+        AsyncFuncTask task(cb, "Loading", "Loading report", false);
+        task.runAsync();
+    }
+
+    auto report = result->report();
+
+    report_widget_->setReport(report);
+
+    std::string default_section = ResultReport::SectionID::reportResultOverviewID();
+
+    if (!result->startSection().empty())
+        report_widget_->selectID(result->startSection(), false, {});
+    else if (report->hasSection(default_section))
+        report_widget_->selectID(default_section, false, {});
+
+    report_widget_->setDisabled(false);
+
+    updateResultUI(name);
+
+    //report is displayed now
+    status.reset();
+}
+
+/**
+ */
+void TaskResultsWidget::updateResultsSlot()
+{
+    updateResults();
+}
+
+/**
+ * Creates the report tables tooltip of a result combo item when it is shown first.
+ * The table storage sizes need one DB query per table, which is too slow to do for all results.
+ */
+bool TaskResultsWidget::eventFilter(QObject* obj, QEvent* event)
+{
+    if (event->type() == QEvent::ToolTip && obj == report_combo_->view()->viewport())
+    {
+        auto help_event = static_cast<QHelpEvent*>(event);
+        QModelIndex index = report_combo_->view()->indexAt(help_event->pos());
+
+        if (index.isValid() && !index.data(Qt::ToolTipRole).isValid())
+        {
+            QString tooltip = reportTablesToolTip(index.data(Qt::DisplayRole).toString().toStdString());
+
+            //empty tooltip => stored as well, no new query on the next hover
+            report_combo_->setItemData(index.row(), tooltip, Qt::ToolTipRole);
+        }
+    }
+
+    return ToolBoxWidget::eventFilter(obj, event);
+}
+
+/**
+ */
+QString TaskResultsWidget::reportTablesToolTip(const std::string& name) const
+{
+    if (!task_man_.hasResult(name))
+        return "";
+
+    auto result = task_man_.result(name);
+
+    if (!result->hasReportTables())
+        return "";
+
+    const auto& tables = result->reportTables();
+
+    size_t size_bytes = 0;
+    for (const auto& t : tables)
+    {
+        auto size = task_man_.compass().dbInterface().tableStorageSize(t.tableName(result->id()));
+        if (size.ok())
+            size_bytes += size.result();
+    }
+
+    return QString("%1 Report Table(s), %2 row(s), %3 MB")
+        .arg(tables.size())
+        .arg(result->numReportTableRows())
+        .arg(size_bytes / 1e6, 0, 'f', 1);
+}
+
+/**
+ */
+void TaskResultsWidget::updateResults(const std::string& selected_result)
+{
+    loginf;
+
+    report_combo_->blockSignals(true);
+    report_combo_->clear();
+
+    //new selection specified?
+    if (!selected_result.empty())
+        current_report_name_ = selected_result;
+
+    bool current_found = false;
+    for (auto& res_it : task_man_.results())
+    {
+        loginf << "adding '" << res_it.second->name() << "'";
+
+        //the report tables tooltip is created on demand, see eventFilter()
+        report_combo_->addItem(res_it.second->name().c_str());
+
+        if (current_report_name_ == res_it.second->name())
+            current_found = true;
+    }
+
+    //reset current report if not part of results
+    if (!current_found)
+        current_report_name_ = "";
+
+    //current report not yet set => set to first
+    if (current_report_name_.empty() && !task_man_.results().empty())
+        current_report_name_ = task_man_.results().begin()->second->name();
+
+    loginf << "count " << report_combo_->count();
+
+    if (!report_combo_->count())
+        current_report_name_ = "";
+
+    report_combo_->setEnabled(report_combo_->count() > 0);
+    remove_result_button_->setEnabled(report_combo_->count() > 0);
+    export_result_button_->setEnabled(report_combo_->count() > 0);
+
+    report_combo_->blockSignals(false);
+
+    loginf << "set report";
+    setReport(current_report_name_);
+}
+
+/**
+ */
+void TaskResultsWidget::resultHeaderChanged(const QString& name)
+{
+    updateResultUI(name.toStdString());
+}
+
+/**
+ */
+void TaskResultsWidget::updateResultUI(const std::string& name)
+{
+    if (current_report_name_ != name)
+        return;
+
+    auto result = task_man_.result(name);
+    traced_assert(result);
+
+    bool update_needed = result->updateNeeded();
+    bool locked        = result->isLocked();
+
+    std::string icon_file;
+    QColor      icon_color;
+    QString     icon_tooltip;
+    
+    if (locked)
+    {
+        // result is locked (restricted until full update)
+        icon_file    = "lock.png";
+        icon_color   = ResultReport::Colors::TextRed;
+        icon_tooltip = "Report in read-only mode.\nRefresh to unlock.";
+    }
+    else if(update_needed)
+    {
+        // decision about full or partial update is oblique to the user, both are shown as a needed refresh
+        icon_file    = "refresh.png";
+        icon_color   = ResultReport::Colors::TextOrange;
+        icon_tooltip = "Refresh needed";
+    }
+    else
+    {
+        // otherwise: up-to-date
+        icon_file    = "refresh.png";
+        icon_tooltip = "Up-to-date";
+    }
+
+    refresh_result_button_->setEnabled(update_needed);
+    refresh_result_button_->setIcon(Utils::Files::createIcon(icon_file, icon_color));
+    refresh_result_button_->setToolTip(icon_tooltip);
+
+    QApplication::processEvents();
+}
+
+/**
+ */
+bool TaskResultsWidget::removeResult(const std::string& name)
+{
+    return task_man_.removeResult(name, false);
+}
+
+/**
+ */
+void TaskResultsWidget::removeCurrentResult()
+{
+    int idx = report_combo_->currentIndex();
+    if (idx < 0)
+        return;
+
+    int n         = report_combo_->count();
+    int new_index = idx < n - 1 ? idx + 1 : (idx > 0 ? idx - 1 : -1);
+
+    auto name = report_combo_->currentText().toStdString();
+    traced_assert(task_man_.hasResult(name));
+
+    QString msg = "Do you really want to remove report '" + QString::fromStdString(name) + "'?";
+    if (!QuestionDialog::ask(this, "Remove Report", msg))
+        return;
+
+    auto cb = [ this, name ] (const AsyncTaskState&, AsyncTaskProgressWrapper&) 
+    { 
+        return this->removeResult(name);
+    };
+
+    AsyncFuncTask task(cb, "Remove Report", "Removing report", false);
+    task.runAsyncDialog(true, this);
+
+    std::string selection_name = new_index >= 0 ? report_combo_->itemText(new_index).toStdString() : "";
+
+    updateResults(selection_name);
+}
+
+/**
+ */
+void TaskResultsWidget::exportCurrentResult(ResultReport::ReportExportMode mode)
+{
+    auto name = report_combo_->currentText().toStdString();
+    traced_assert(task_man_.hasResult(name));
+
+    task_man_.exportResult(name, mode);
+}
+
+/**
+ */
+void TaskResultsWidget::refreshCurrentResult()
+{
+    auto name = report_combo_->currentText().toStdString();
+    traced_assert(task_man_.hasResult(name));
+
+    auto res = task_man_.result(name)->update(true);
+    if (!res.ok())
+    {
+        logerr << "failed: " << res.error();
+        QMessageBox::critical(this, "Error", "Refreshing report failed.");
+    }
+}
+
+/**
+ */
+QIcon TaskResultsWidget::toolIcon() const
+{
+    return Utils::Files::IconProvider::getIcon("reports.png");
+}
+
+/**
+ */
+std::string TaskResultsWidget::toolName() const
+{
+    return "Reports";
+}
+
+/**
+ */
+std::string TaskResultsWidget::toolInfo() const
+{
+    return "Reports";
+}
+
+/**
+ */
+std::vector<std::string> TaskResultsWidget::toolLabels() const
+{
+    return { "Reports" };
+}
+
+/**
+ */
+toolbox::ScreenRatio TaskResultsWidget::defaultScreenRatio() const
+{
+    return ToolBoxWidget::defaultScreenRatio();
+}
+
+/**
+ */
+void TaskResultsWidget::addToConfigMenu(QMenu* menu)
+{
+}
+
+/**
+ */
+void TaskResultsWidget::addToToolBar(QToolBar* tool_bar)
+{
+}
+
+/**
+ */
+void TaskResultsWidget::loadingStarted()
+{
+}
+
+/**
+ */
+void TaskResultsWidget::loadingDone()
+{
+}
+
+/**
+ */
+std::string TaskResultsWidget::currentReportName() const
+{
+    return current_report_name_;
+}
+
+/**
+ */
+void TaskResultsWidget::selectID(const std::string id, bool show_figure)
+{
+    report_widget_->selectID(id, show_figure, {});
+}
+
+/**
+ */
+void TaskResultsWidget::storeBackupSection()
+{
+    current_report_name_backup_    = current_report_name_;
+    current_section_name_backup_   = report_widget_ ? report_widget_->currentSectionID() : "";
+    current_section_config_backup_ = report_widget_ ? report_widget_->currentSectionConfig() : nlohmann::json();
+
+    loginf << "backing up section '" << current_section_name_backup_ << "'";
+           //<< " with config: \n" 
+           //<< current_section_config_backup_.dump(4);
+}
+
+/**
+ */
+void TaskResultsWidget::restoreBackupSection()
+{
+    loginf << "trying to restore section";
+
+    if (current_report_name_backup_.empty())
+        return;
+
+    if (current_report_name_backup_ != current_report_name_)
+        setReport(current_report_name_backup_);
+
+    if (current_report_name_backup_ != current_report_name_)
+        return;
+
+    loginf << "restored report '" << current_report_name_backup_ << "'";
+
+    if (current_section_name_backup_.empty())
+        return;
+
+    report_widget_->selectID(current_section_name_backup_, false, current_section_config_backup_);
+    
+    loginf << "restored section '" << current_section_name_backup_ << "'";
+}

@@ -23,7 +23,32 @@ COMPASS is a **monolithic Qt5 desktop application** with a **DuckDB** embedded d
 - **Configuration**: `Configurable` base class - most components inherit from it. Parameters are auto-serialized to/from JSON files in `~/.compass/<version>/`. Read at startup, written at shutdown.
 - **External interfaces**: CLI for batch processing (options executed in order), TCP runtime command interface (`localhost:27960`) for controlling a running instance from Python or other tools.
 
-**Design patterns**: Dependency injection (not singletons) - `COMPASS` is created by `Client` in `main()` and passed by reference through the manager tree (e.g. `task_.manager().compass()`). Managers store a `COMPASS&` and expose it via `compass()` accessors. Only `Logger` and `RTCommandRegistry` are true singletons (via `Singleton` base class). Qt signals/slots throughout GUI, `Configurable` inheritance for JSON persistence, smart pointers (`unique_ptr`/`shared_ptr`).
+**Design patterns**: Dependency injection (not singletons) - the composition root `CompassRoot` (`src/app/compassroot.h`, owned by `Client`) creates `COMPASS` and all managers, wires them and runs the startup and shutdown sequence. `COMPASS` (`src/core/compass.h`) is the access point: it is passed by reference through the manager tree (e.g. `task_.manager().compass()`) and holds pointers to the managers, it does not own them. Managers store a `COMPASS&` and expose it via `compass()` accessors. Only `Logger` and `RTCommandRegistry` are true singletons (via `Singleton` base class). Qt signals/slots throughout GUI, `Configurable` inheritance for JSON persistence, smart pointers (`unique_ptr`/`shared_ptr`).
+
+## Library layering
+
+The code is split into static libraries with acyclic dependencies. Each library is one directory, and a library may only depend on the libraries below it (bottom to top):
+
+| Layer | Library | Directory |
+|---|---|---|
+| 1 | `compass_util` | `src/util/` |
+| 2 | `compass_config` | `src/config/` |
+| 3 | `compass_core` | `src/core/` (incl. `db/`, `gui/`, `latex/`, `context/`, ...) |
+| 4 | `compass_gui` | `src/gui/` |
+| 5 | `compass_filter`, `compass_reconstruction` | `src/filter/`, `src/reconstruction/` |
+| 6 | `compass_view` | `src/view/` |
+| 7 | `compass_result` | `src/result/` |
+| 8 | `compass_eval` | `src/eval/` |
+| 9 | `compass_task` | `src/task/` |
+| 10 | `compass_app`, `compass_client` | `src/app/` |
+
+Rules:
+- **Only downward dependencies**, in includes and in `target_link_libraries`. A library's include paths only reach its own directory and, through its links, the libraries below it, so an upward `#include` does not compile. Never add include paths into other module directories or global include paths into `src/`.
+- **Upward calls** go through an interface in the lower layer, implemented by the upper one and wired in `CompassRoot` (e.g. `IViewProvider`, `IFilterProvider`, `IEvalProvider` in core, `ITaskProvider` in result, reached via `COMPASS::viewProvider()` etc.). Upward notifications are signals, connected in `CompassRoot`.
+- **Directory = library.** Code that belongs to another library is moved there (`git mv`), never compiled into a target from another directory or referenced with `../` paths in CMake.
+- **Includes are relative to the library's include directories** (e.g. `"report/section.h"`, `"dbcontent/dbcontentmanager.h"`), not to `src/`.
+- **Check:** `python3 scripts/check_layering.py --build-dir build` checks the headers each compiled file actually includes and the CMake link and include paths (without `--build-dir` it analyzes the include lines). It is run manually (not part of the build or CI), e.g. after larger refactorings; the allowlist `scripts/layering_allowlist.txt` is empty and may not grow.
+- **Exceptions:** host sites that use `experimental_src/` (geo view, ProbIMM, Kalman interfaces) are known host ↔ experimental cycles, resolved by the plugin plan (`readme_plugins.md`). Background and history: `readme_dependencies.md`.
 
 ## Build
 
@@ -37,7 +62,7 @@ Build output goes to `build/bin/` (executables) and `build/lib/` (libraries).
 **C++ standard**: The project uses **C++17** (`-std=c++17`). The AppImage is built inside a Debian 10 Docker container (see `docker/Dockerfile_deb10`) using GCC 8.3. C++17 features such as structured bindings (`auto [x, y] = ...`), `std::optional`, `std::variant`, `if constexpr`, `std::string_view`, and `std::any` are available and may be used freely.
 
 **Targets:**
-- `compass` - main library
+- `compass_util` ... `compass_task`, `compass_app` - the libraries, see Library layering
 - `compass_client` - GUI application
 - `compass_handler` - watchdog process
 - `compass_tests` - unit tests
@@ -57,48 +82,48 @@ When adding tests, add new `test_<topic>.cpp` files in the appropriate module's 
 ## Project structure
 
 ```
-src/                    Main source code
-  app/                  Application executables
-    client/             GUI application (Client, MainWindow, main.cpp)
-    watchdog/           Watchdog process (compass_handler)
-  config/               Configuration framework (Configurable, ConfigurationManager)
-  core/                 Core libraries
+src/                    Main source code, one directory per library (see Library layering)
+  util/                 compass_util: utilities (logger.h, singleton.h, files, strings, time, global.h)
+  config/               compass_config: configuration framework (Configurable, ConfigurationManager)
+  core/                 compass_core
+    compass.h           COMPASS access point (managers, provider interfaces, app state)
+    i*provider.h        Interfaces for upward calls (view, filter, eval), implemented by upper managers
     buffer/             Core data container (Buffer, NullableVector<T>)
-    compass.h           Main COMPASS class (owns all managers)
-    job/                Async job management (JobManager)
+    db/                 Database layer
+      dbcontent/        Database content types, variables, targets, labels
+      interface/        Database backend (DuckDB)
+    context/            DB context, data source and sector context
+    gui/                Generic widgets used by core (dialogs, popup menu, range edit, ...)
+    job/                Async job management (JobManager, async tasks)
+    latex/              LaTeX document generation
     net/                Networking
     projection/         Geographic projections (OGR, RS2G, geo)
     rtcommand/          Runtime command interface
     sector/             Airspace sector definitions
     source/             Data source management
     unit/               Physical unit management
-    util/               Utilities (logger.h, singleton.h, files, strings, time)
     unit_tests/         Core unit tests (buffer, projection, number)
-  db/                   Database layer
-    dbcontent/          Database content types, variables, targets, labels
-    interface/          Database backend (DuckDB)
-  eval/                 Evaluation framework
-    requirement/        Requirement definitions (detection, position, speed, ...)
-    results/            Evaluation results and reports
-  filter/               Data filtering system
-    unit_tests/         Filter unit tests
-  gui/                  Shared GUI widgets and helpers
-    unit_tests/         GUI unit tests
-  import/               Data import
-    asterix/            ASTERIX data format parsing and import
-    fft/                FFT import
-    json/               JSON import
-  reconstruction/       Trajectory reconstruction (simple reconstructor, associator)
-  report/               Report generation
-  task/                 Task system (import, reconstruction, calc)
-  unit_tests/           Test main (CATCH_CONFIG_MAIN) and top-level test CMakeLists
-  view/                 View system
+  gui/                  compass_gui: shared GUI widgets and helpers
+  filter/               compass_filter: data filtering system
+  reconstruction/       compass_reconstruction: trajectory reconstruction (simple reconstructor, associator)
+  view/                 compass_view: view system
     viewbase/           Base view classes
     gridview/           2D grid visualization
     histogramview/      Histogram visualization
-    points/             View points and reports
+    points/             View points (report/: view points LaTeX report)
     scatterplotview/    Scatter plot visualization
     tableview/          Text table visualization
+  result/               compass_result: task results (TaskResult, TaskResultDB), report model and exporters
+  eval/                 compass_eval: evaluation framework
+    requirement/        Requirement definitions (detection, position, speed, ...)
+    results/            Evaluation results
+  task/                 compass_task: task system (TaskManager, import, reconstruction, analysis, calc)
+    import/             Import tasks and parsing (asterix/, json/, gps/, view_points/)
+  app/                  compass_app, compass_client, compass_handler
+    compassroot.h       Composition root: creates COMPASS and the managers, wiring, startup/shutdown
+    client/             GUI application (Client, MainWindow, main.cpp)
+    watchdog/           Watchdog process (compass_handler)
+  unit_tests/           Test main (CATCH_CONFIG_MAIN) and top-level test CMakeLists
 experimental_src/       Experimental features (separate git repo)
   reconstruction/       Advanced reconstruction (Kalman, JPDA, ProbIMM)
   view/geographicview/  OSG/osgEarth geographic view
@@ -123,8 +148,8 @@ doc/                    Documentation and user manual (LaTeX)
 - **Qt slots:** suffixed with `Slot`: `databaseOpenedSlot()`
 
 ### Patterns
-- **COMPASS access:** `COMPASS` is not a singleton - it is created by `Client` in `main()` and passed by reference. Access via parent chain, e.g. `task_.manager().compass().dataSourceManager()`. Managers store `COMPASS&` and expose `compass()`.
-- **True singletons:** Only `Logger::getInstance()` and `RTCommandRegistry::instance()` (both inherit from `Singleton` base class in `src/core/util/singleton.h`).
+- **COMPASS access:** `COMPASS` is not a singleton - it is created by `CompassRoot` and passed by reference. Access via parent chain, e.g. `task_.manager().compass().dataSourceManager()`. Managers store `COMPASS&` and expose `compass()`. Code in a lower layer uses only the managers of its own or lower layers, and the provider interfaces (`viewProvider()`, `filterProvider()`, `evalProvider()`, `taskProvider()`) for the upper ones.
+- **True singletons:** Only `Logger::getInstance()` and `RTCommandRegistry::instance()` (both inherit from `Singleton` base class in `src/util/singleton.h`).
 - **Configurable base class:** most components inherit from `Configurable` for JSON-based config persistence
 - **Qt signals/slots** throughout the GUI layer; `Q_OBJECT` macro required
 - **Smart pointers:** prefer `std::unique_ptr` and `std::shared_ptr`

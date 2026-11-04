@@ -17,7 +17,7 @@
 
 #include "catch.hpp"
 
-#include "eval/requirement/detection/detection_pd_helpers.h"
+#include "requirement/detection/detection_pd_helpers.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 

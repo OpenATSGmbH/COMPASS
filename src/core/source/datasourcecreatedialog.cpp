@@ -20,7 +20,7 @@
 #include "dstypeselectioncombobox.h"
 #include "logger.h"
 #include "textfielddoublevalidator.h"
-#include "util/number.h"
+#include "number.h"
 
 #include <QLineEdit>
 #include <QPushButton>

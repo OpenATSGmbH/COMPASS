@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/comparisontype.h"
+#include "requirement/base/comparisontype.h"
 
 #include <QComboBox>
 

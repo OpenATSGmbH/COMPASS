@@ -31,8 +31,8 @@
 #include "dbcontent/variable/calculationplan.h"
 #include "db_context_manager.h"
 #include "buffer.h"
-#include "util/number.h"
-#include "util/timeconv.h"
+#include "number.h"
+#include "timeconv.h"
 #include "projection/transformation.h"
 
 #include <iostream>

@@ -19,9 +19,9 @@
 
 #include "dbcontent/target/targetreportchain.h"
 #include "evaluationdata.h"
-#include "util/timeconv.h"
-#include "eval/requirement/base/comparisontype.h"
-#include "eval/requirement/base/targetselection.h"
+#include "timeconv.h"
+#include "requirement/base/comparisontype.h"
+#include "requirement/base/targetselection.h"
 #include "evaluationdefs.h"
 
 #include "boost/optional.hpp"

@@ -23,23 +23,23 @@
 #include "evaluationstandard.h"
 #include "evaluationtaskresult.h"
 
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/group.h"
+#include "requirement/base/baseconfig.h"
+#include "requirement/base/base.h"
 
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
 
-#include "eval/results/evalsectionid.h"
+#include "results/evalsectionid.h"
 
 #include "dbcontentmanager.h"
 #include "dbinterface.h"
 
-#include "taskmanager.h"
+#include "itaskprovider.h"
 #include "taskresult.h"
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #include "compass.h"
 #include "logger.h"
@@ -54,7 +54,7 @@
 #include <QLabel>
 #include <QMessageBox>
 
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
@@ -142,7 +142,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
     //create the report now, its id names the report tables written during the evaluation
     {
-        auto& task_manager = calculator_.manager().compass().taskManager();
+        auto& task_manager = calculator_.manager().compass().taskProvider();
         if (!task_manager.hasCurrentResult())
             task_manager.beginTaskResultWriting(result_name_, task::TaskResultType::Evaluation);
     }
@@ -440,7 +440,7 @@ void EvaluationResultsGenerator::writeReportTable(const std::vector<std::shared_
     if (results.empty())
         return;
 
-    auto& task_manager = calculator_.manager().compass().taskManager();
+    auto& task_manager = calculator_.manager().compass().taskProvider();
     if (!task_manager.hasCurrentResult())
     {
         logerr << "no current report, table skipped";
@@ -500,7 +500,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     dlg.setAttribute(Qt::WA_ShowWithoutActivating, true);
     dlg.show();
 
-    auto& task_manager = calculator_.manager().compass().taskManager();
+    auto& task_manager = calculator_.manager().compass().taskProvider();
 
     //the evaluation creates the report at its start, a report update on usage changes creates it here
     if (!task_manager.hasCurrentResult())

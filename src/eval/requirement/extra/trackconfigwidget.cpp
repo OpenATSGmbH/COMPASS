@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/extra/trackconfigwidget.h"
-#include "eval/requirement/extra/trackconfig.h"
+#include "requirement/extra/trackconfigwidget.h"
+#include "requirement/extra/trackconfig.h"
 //#include "textfielddoublevalidator.h"
 #include "logger.h"
 

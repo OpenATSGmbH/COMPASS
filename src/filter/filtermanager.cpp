@@ -25,7 +25,8 @@
 #include "db_context_manager.h"
 #include "filtermanagerwidget.h"
 #include "logger.h"
-#include "viewpoint.h"
+#include "viewabledataconfig.h"
+#include "viewpointkeys.h"
 #include "utnfilter.h"
 #include "adsbqualityfilter.h"
 #include "acadfilter.h"
@@ -353,9 +354,9 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
     auto& ctx_man = compass_.dbContextManager();
 
     // add all data source types that need loading
-    if (data.contains(ViewPoint::VP_DS_TYPES_KEY)) // the listed ones should be loaded
+    if (data.contains(ViewPointKeys::VP_DS_TYPES_KEY)) // the listed ones should be loaded
     {
-        const json& data_source_types  = data.at(ViewPoint::VP_DS_TYPES_KEY);
+        const json& data_source_types  = data.at(ViewPointKeys::VP_DS_TYPES_KEY);
 
         std::set<std::string> ds_types = data_source_types.get<std::set<std::string>>();
 
@@ -370,9 +371,9 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
         ctx_man.setLoadDSTypes(true);
     }
 
-    if (data.contains(ViewPoint::VP_SELECTED_RECNUMS_KEY))
+    if (data.contains(ViewPointKeys::VP_SELECTED_RECNUMS_KEY))
     {
-        auto& selected = data.at(ViewPoint::VP_SELECTED_RECNUMS_KEY);
+        auto& selected = data.at(ViewPointKeys::VP_SELECTED_RECNUMS_KEY);
         traced_assert(selected.is_array());
         std::vector<unsigned long> vec = selected.get<std::vector<unsigned long>>();
 
@@ -380,9 +381,9 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
     }
 
     // add all data sources that need loading
-    if (data.contains(ViewPoint::VP_DS_KEY)) // the listed ones should be loaded
+    if (data.contains(ViewPointKeys::VP_DS_KEY)) // the listed ones should be loaded
     {
-        const json& data_sources  = data.at(ViewPoint::VP_DS_KEY);
+        const json& data_sources  = data.at(ViewPointKeys::VP_DS_KEY);
 
         std::map<unsigned int, std::set<unsigned int>> ds_ids
                 = data_sources.get<std::map<unsigned int, std::set<unsigned int>>>(); // ds_id + line strs
@@ -400,13 +401,13 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
     }
 
     // add filters
-    use_filters_ = data.contains(ViewPoint::VP_FILTERS_KEY);
+    use_filters_ = data.contains(ViewPointKeys::VP_FILTERS_KEY);
 
     disableAllFilters();
 
-    if (data.contains(ViewPoint::VP_FILTERS_KEY))
+    if (data.contains(ViewPointKeys::VP_FILTERS_KEY))
     {
-        const json& filters = data.at(ViewPoint::VP_FILTERS_KEY);
+        const json& filters = data.at(ViewPointKeys::VP_FILTERS_KEY);
 
         logdbg << "filter data '" << filters.dump(4) << "'";
 
@@ -447,16 +448,16 @@ void FilterManager::setConfigInViewPoint (nlohmann::json& data)
     auto& ctx_man = compass_.dbContextManager();
 
     if (ctx_man.dsTypeFiltered()) // ds types filters active
-        data[ViewPoint::VP_DS_TYPES_KEY] = ctx_man.wantedDSTypes(); // add all data sources that need loading
+        data[ViewPointKeys::VP_DS_TYPES_KEY] = ctx_man.wantedDSTypes(); // add all data sources that need loading
 
     if (ctx_man.loadDataSourcesFiltered()) // ds filters active
-        data[ViewPoint::VP_DS_KEY] = ctx_man.getLoadDataSources(); // add all data sources that need loading
+        data[ViewPointKeys::VP_DS_KEY] = ctx_man.getLoadDataSources(); // add all data sources that need loading
 
     // add filters
     if (use_filters_)
     {
-        data[ViewPoint::VP_FILTERS_KEY] = json::object();
-        json& filters = data.at(ViewPoint::VP_FILTERS_KEY);
+        data[ViewPointKeys::VP_FILTERS_KEY] = json::object();
+        json& filters = data.at(ViewPointKeys::VP_FILTERS_KEY);
 
         for (auto& fil_it : filters_)
         {

@@ -21,12 +21,12 @@
 
 #include "evaluationstandard.h"
 #include "evaluationdialog.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/results/base/base.h"
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
+#include "requirement/base/baseconfig.h"
+#include "results/base/base.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
 
 #include "compass.h"
 #include "dbinterface.h"
@@ -46,7 +46,7 @@
 //#include "viewabledataconfig.h"
 #include "viewmanager.h"
 #include "stringconv.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "global.h"
 #include "viewpoint.h"
 #include "projectionmanager.h"
@@ -1451,7 +1451,7 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
     // restrict to the evaluated sector layers, with their exclusion sectors and altitude limits
     if (!used_sector_layers_.empty())
     {
-        auto& sectors_filter = data[ViewPoint::VP_FILTERS_KEY][SectorsFilter::FilterName];
+        auto& sectors_filter = data[ViewPointKeys::VP_FILTERS_KEY][SectorsFilter::FilterName];
 
         sectors_filter[SectorsFilter::ViewPointKeyLayers]   = used_sector_layers_;
         sectors_filter[SectorsFilter::ViewPointKeyUseDelta] = true;
@@ -1460,50 +1460,50 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
 
     // if (settings_.use_adsb_filter_)
     // {
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v1"] = settings_.use_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v2"] = settings_.use_v2_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_v1"] = settings_.use_v1_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_v2"] = settings_.use_v2_;
 
     //     // nucp
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nucp"] = settings_.use_min_nucp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nucp"] = settings_.min_nucp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nucp"] = settings_.use_max_nucp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nucp"] = settings_.max_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nucp"] = settings_.use_min_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_nucp"] = settings_.min_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nucp"] = settings_.use_max_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_nucp"] = settings_.max_nucp_;
 
     //     // nic
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nic"] = settings_.use_min_nic_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nic"] = settings_.min_nic_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nic"] = settings_.use_max_nic_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nic"] = settings_.max_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nic"] = settings_.use_min_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_nic"] = settings_.min_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nic"] = settings_.use_max_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_nic"] = settings_.max_nic_;
 
     //     // nacp
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nacp"] = settings_.use_min_nacp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nacp"] = settings_.min_nacp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nacp"] = settings_.use_max_nacp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nacp"] = settings_.max_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nacp"] = settings_.use_min_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_nacp"] = settings_.min_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nacp"] = settings_.use_max_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_nacp"] = settings_.max_nacp_;
 
     //     // sil v1
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v1"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v1"] =
     //         settings_.use_min_sil_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v1"] = settings_.min_sil_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v1"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v1"] = settings_.min_sil_v1_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v1"] =
     //         settings_.use_max_sil_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v1"] = settings_.max_sil_v1_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v1"] = settings_.max_sil_v1_;
 
     //     // sil v2
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v2"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v2"] =
     //         settings_.use_min_sil_v2_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v2"] = settings_.min_sil_v2_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v2"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v2"] = settings_.min_sil_v2_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v2"] =
     //         settings_.use_max_sil_v2_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v2"] = settings_.max_sil_v2_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v2"] = settings_.max_sil_v2_;
     // }
 
     if (eval_man_.use_timestamp_filter_)
     {
-        data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
+        data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
             Time::toString(eval_man_.load_timestamp_begin_);
-        data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] =
+        data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] =
             Time::toString(eval_man_.load_timestamp_end_);
     }
 
@@ -1526,7 +1526,7 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableNoDataConfig () co
 std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForUTN (unsigned int utn) const
 {
     nlohmann::json::object_t data = getBaseViewableDataConfig();
-    data[ViewPoint::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     return std::unique_ptr<nlohmann::json::object_t>{new nlohmann::json::object_t(move(data))};
 }
@@ -1557,7 +1557,7 @@ void EvaluationCalculator::showUTN (unsigned int utn)
     loginf << "utn " << utn;
 
     nlohmann::json data = getBaseViewableDataConfig();
-    data[ViewPoint::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     loginf << "showing";
     eval_man_.setViewableDataConfig(data);
@@ -1568,7 +1568,7 @@ void EvaluationCalculator::showUTN (unsigned int utn)
 void EvaluationCalculator::showFullUTN (unsigned int utn)
 {
     nlohmann::json::object_t data;
-    data[ViewPoint::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     eval_man_.setViewableDataConfig(data);
 }
@@ -1591,21 +1591,21 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
     //    },
 
     // TODO_TIMESTAMP
-    data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(time_end);
-    data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(time_begin);
+    data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(time_end);
+    data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(time_begin);
 
     //    "Aircraft Address": {
     //    "Aircraft Address Values": "FEFE10"
     //    },
     if (target.aircraftAddresses().size())
-        data[ViewPoint::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] = target.aircraftAddressesStr()+",NULL";
+        data[ViewPointKeys::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] = target.aircraftAddressesStr()+",NULL";
 
     //    "Mode 3/A Code": {
     //    "Mode 3/A Code Values": "7000"
     //    }
 
     if (target.modeACodes().size())
-        data[ViewPoint::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] = target.modeACodesStr()+",NULL";
+        data[ViewPointKeys::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] = target.modeACodesStr()+",NULL";
 
     //    VP_FILTERS_KEY: {
     //    "Barometric Altitude": {
@@ -1621,9 +1621,9 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
         float alt_max = target.modeCMax();
         alt_max += 300;
 
-        data[ViewPoint::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = alt_max;
-        data[ViewPoint::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = alt_min;
-        data[ViewPoint::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
+        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = alt_max;
+        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = alt_min;
+        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
     }
 
     //    "Position": {
@@ -1640,10 +1640,10 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
         double lon_eps = (target.longitudeMax() - target.longitudeMin()) / 10.0; // 10%
         lon_eps = min(lon_eps, 0.1); // 10% or 0.1 at max
 
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(target.latitudeMax()+lat_eps);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(target.latitudeMin()-lat_eps);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(target.longitudeMax()+lon_eps);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(target.longitudeMin()-lon_eps);
+        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(target.latitudeMax()+lat_eps);
+        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(target.latitudeMin()-lat_eps);
+        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(target.longitudeMax()+lon_eps);
+        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(target.longitudeMin()-lon_eps);
     }
 
     eval_man_.setViewableDataConfig(data);

@@ -23,7 +23,7 @@
 #include "measurement.h"
 #include "timeconv.h"
 
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include <boost/thread/mutex.hpp>
 #include <boost/optional/optional_io.hpp>

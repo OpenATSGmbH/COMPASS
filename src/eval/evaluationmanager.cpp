@@ -19,11 +19,15 @@
 #include "dialogs.h"
 #include "evaluationstandard.h"
 #include "evaluationdialog.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/evaluation_commands.h"
+#include "requirement/group.h"
+#include "requirement/base/baseconfig.h"
+#include "evaluation_commands.h"
 #include "evaluationsettings.h"
 #include "evaluationtargetfilter.h"
+#include "evaluationtargetfilterdialog.h"
+#include "evaluationtimestampconditionsdialog.h"
+#include "evaluationtargetexcludedtimewindowsdialog.h"
+#include "evaluationtargetexcludedrequirementsdialog.h"
 #include "evaluationtaskresult.h"
 
 #include "sectorlayer.h"
@@ -41,7 +45,7 @@
 #include "db_context_manager.h"
 #include "filtermanager.h"
 #include "viewmanager.h"
-#include "taskmanager.h"
+#include "itaskprovider.h"
 
 #include "buffer.h"
 #include "dbfilter.h"
@@ -166,10 +170,7 @@ void EvaluationManager::init()
     connect (dbc_manager.targetModel(), &dbContent::TargetModel::targetsDeletedSignal,
             this, &EvaluationManager::lockResultsSlot);
 
-    auto& task_manager = compass_.taskManager();
-
-    connect (&task_manager, &TaskManager::taskRadarPlotPositionsDoneSignal, 
-             this, &EvaluationManager::lockResultsSlot);
+    // TaskManager::taskRadarPlotPositionsDoneSignal is connected to lockResultsSlot by the composition root
 }
 
 /**
@@ -260,7 +261,7 @@ Result EvaluationManager::evaluate(bool show_dialog,
     traced_assert(calculator_local->evaluated());
 
     //store calculator to task result
-    auto& task_man = compass_.taskManager();
+    auto& task_man = compass_.taskProvider();
 
     traced_assert(task_man.hasResult(calculator_local->resultName()));
 
@@ -457,7 +458,7 @@ bool EvaluationManager::needsAdditionalVariables() const
 
 /**
  */
-void EvaluationManager::addVariables (const std::string dbcontent_name, dbContent::VariableSet& read_set)
+void EvaluationManager::addVariables (const std::string& dbcontent_name, dbContent::VariableSet& read_set)
 {
     loginf << "dbcontent_name " << dbcontent_name;
 
@@ -918,5 +919,74 @@ const EvaluationStandard& EvaluationManager::currentStandard() const
 {
     traced_assert(calculator_);
     return calculator_->currentStandard();
+}
+
+/**
+ */
+std::set<std::string> EvaluationManager::currentRequirementNames() const
+{
+    return currentStandard().getAllRequirementNames();
+}
+
+/**
+ * Sets the use flags of the given targets according to the evaluation target filter.
+ */
+void EvaluationManager::applyTargetFilter(dbContent::TargetCache& target_data)
+{
+    targetFilter().setUse(target_data);
+}
+
+/**
+ */
+void EvaluationManager::editTargetFilter(dbContent::TargetModel& model, QWidget* parent)
+{
+    EvaluationTargetFilterDialog dialog (targetFilter(), model, parent);
+    dialog.exec();
+}
+
+/**
+ * Edits the global timestamp conditions and saves them if something changed.
+ */
+bool EvaluationManager::editTimestampConditions(QWidget* parent)
+{
+    EvaluationTimestampConditionsDialog dialog (*this, parent);
+    dialog.exec();
+
+    if (!dialog.somethingChangedFlag())
+        return false;
+
+    saveTimeConstraints();
+
+    return true;
+}
+
+/**
+ */
+bool EvaluationManager::editExcludedTimeWindows(const std::string& utns,
+                                                Utils::TimeWindowCollection& time_windows,
+                                                QWidget* parent)
+{
+    EvaluationTargetExcludedTimeWindowsDialog dialog(dbcontent_man_, utns, time_windows, parent);
+
+    return dialog.exec() != QDialog::Rejected;
+}
+
+/**
+ */
+bool EvaluationManager::editExcludedRequirements(const std::string& utns,
+                                                 std::set<std::string>& selected_requirements,
+                                                 const std::set<std::string>& all_requirements,
+                                                 std::string& comment,
+                                                 QWidget* parent)
+{
+    EvaluationTargetExcludedRequirementsDialog dialog(utns, selected_requirements, all_requirements, comment, parent);
+
+    if (dialog.exec() == QDialog::Rejected)
+        return false;
+
+    selected_requirements = dialog.selectedRequirements();
+    comment               = dialog.comment();
+
+    return true;
 }
 

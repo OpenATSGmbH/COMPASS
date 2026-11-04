@@ -15,12 +15,12 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/base/base.h"
+#include "requirement/base/base.h"
 #include "evaluationdata.h"
 #include "stringconv.h"
 #include "number.h"
 #include "compass.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 using namespace std;
 using namespace Utils;

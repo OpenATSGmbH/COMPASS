@@ -18,6 +18,7 @@
 #pragma once
 
 #include "configurable.h"
+#include "ifilterprovider.h"
 #include "appmode.h"
 #include "dbfilter.h"
 #include "dbcontentmanagervariableresolver.h"
@@ -44,7 +45,7 @@ class VariableSet;
 
 }
 
-class FilterManager : public QObject, public Configurable
+class FilterManager : public QObject, public Configurable, public IFilterProvider
 {
     Q_OBJECT
 signals:
@@ -70,14 +71,14 @@ public:
     FilterManager(nlohmann::json& config, COMPASS& compass);
     virtual ~FilterManager();
 
-    bool useFilters() const;
+    bool useFilters() const override;
     void useFilters(bool useFilters);
 
     std::string getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set);
 
     // combined WHERE fragment for all active view filters applying to a DBContent, with the
     // referenced vars as required_vars. Replaces getSQLCondition (no read-set side effect).
-    FilterClause viewClause(const std::string& dbcontent_name);
+    FilterClause viewClause(const std::string& dbcontent_name) override;
 
     unsigned int getNumFilters();
     DBFilter* getFilter(unsigned int index);
@@ -100,7 +101,7 @@ public:
     void setConfigInViewPoint (nlohmann::json& data);
     void disableAllFilters ();
 
-    void filterBuffers(std::map<std::string, std::shared_ptr<Buffer>>& data);
+    void filterBuffers(std::map<std::string, std::shared_ptr<Buffer>>& data) override;
 
     void resetToStartupConfiguration();
 

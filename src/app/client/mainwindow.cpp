@@ -66,9 +66,9 @@
 #include "reconstructortask.h"
 #include "reconstructortaskdialog.h"
 #include "analyzedatasourcetask.h"
-#include "util/async.h"
-#include "util/system.h"
-#include "util/stringconv.h"
+#include "async.h"
+#include "system.h"
+#include "stringconv.h"
 
 #include "logwidget.h"
 

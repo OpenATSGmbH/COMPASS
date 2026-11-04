@@ -30,7 +30,7 @@ class COMPASS;
 #include <QMutex>
 #include <QThread>
 
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include <list>
 #include <memory>

@@ -15,16 +15,16 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/generic/generic.h"
-#include "eval/standard/evaluationstandard.h"
-#include "eval/results/generic/generic.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/generic/generic.h"
+#include "standard/evaluationstandard.h"
+#include "results/generic/generic.h"
+#include "standard/evaluationstandard.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 using namespace std;
 using namespace Utils;

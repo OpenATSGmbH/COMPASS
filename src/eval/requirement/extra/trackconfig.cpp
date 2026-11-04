@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/extra/trackconfig.h"
-#include "eval/requirement/extra/track.h"
-#include "eval/requirement/extra/trackconfigwidget.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/extra/trackconfig.h"
+#include "requirement/extra/track.h"
+#include "requirement/extra/trackconfigwidget.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #include "stringconv.h"
 

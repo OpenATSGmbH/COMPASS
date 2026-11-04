@@ -27,8 +27,8 @@
 #include "viewpoint.h"
 
 #include "asteriximporttask.h"
-#include "util/timeconv.h"
-#include "util/async.h"
+#include "timeconv.h"
+#include "async.h"
 
 #include <fstream>
 
@@ -182,22 +182,22 @@ void ViewPointsImportTask::run()
     QApplication::restoreOverrideCursor();
 
     // datasets
-    if (current_data_.contains(ViewPoint::VP_CONTEXT_KEY))
+    if (current_data_.contains(ViewPointKeys::VP_CONTEXT_KEY))
     {
-        json& context = current_data_.at(ViewPoint::VP_CONTEXT_KEY);
+        json& context = current_data_.at(ViewPointKeys::VP_CONTEXT_KEY);
 
-        if (context.contains(ViewPoint::VP_CONTEXT_DATASETS_KEY))
+        if (context.contains(ViewPointKeys::VP_CONTEXT_DATASETS_KEY))
         {
             manager().compass().logInfo("ViewPoints Import") << "importing datasets";
 
-            for (auto& ds_it : context.at(ViewPoint::VP_CONTEXT_DATASETS_KEY).get<json::array_t>())
+            for (auto& ds_it : context.at(ViewPointKeys::VP_CONTEXT_DATASETS_KEY).get<json::array_t>())
             {
 //                std::string name;
 
 //                if (ds_it.contains("name"))
 //                    name = ds_it.at("name");
 
-                std::string filename = ds_it.at(ViewPoint::VP_CONTEXT_DATASET_FILENAME_KEY);
+                std::string filename = ds_it.at(ViewPointKeys::VP_CONTEXT_DATASET_FILENAME_KEY);
 
                 loginf << "importing dataset file '" << filename << "'";
 

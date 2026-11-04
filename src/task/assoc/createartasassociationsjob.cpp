@@ -26,8 +26,8 @@
 #include "dbcontent/variable/variable.h"
 //#include "dbcontent/variable/metavariable.h"
 #include "stringconv.h"
-#include "util/timeconv.h"
-#include "util/number.h"
+#include "timeconv.h"
+#include "number.h"
 
 #include "json.hpp"
 

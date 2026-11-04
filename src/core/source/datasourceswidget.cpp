@@ -23,7 +23,7 @@
 #include "dbcontentdeletedbjob.h"
 
 #include "compass.h"
-#include "viewmanager.h"
+#include "iviewprovider.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "jobmanager.h"
@@ -1922,7 +1922,7 @@ void DataSourcesWidget::runDeleteDialog(std::function<void(DeleteDataDialog&)> p
         return;
 
     // clear loaded dataset
-    ctx_man_.compass().viewManager().clearDataInViews();
+    ctx_man_.compass().viewProvider().clearDataInViews();
 
     // show blocking wait dialog
     delete_wait_dialog_ = new QMessageBox(this);

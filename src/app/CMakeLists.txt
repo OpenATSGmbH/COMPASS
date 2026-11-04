@@ -15,8 +15,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/client/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/watchdog/CMakeLists.txt")
 
 target_sources(compass_app
+    PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/compassroot.h"
     PRIVATE
-        "${CMAKE_CURRENT_LIST_DIR}/compass.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/compassroot.cpp"
 )
 
 target_include_directories(compass_app PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
@@ -31,7 +33,7 @@ target_link_libraries(compass_app
         compass_task
         compass_eval
         compass_view
-        compass_report
+        compass_result
         Qt5::Widgets
         Qt5::Core
         Qt5::OpenGL

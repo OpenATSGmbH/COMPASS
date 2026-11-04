@@ -26,6 +26,7 @@
 
 #include <QObject>
 
+#include <functional>
 #include <memory>
 #include <map>
 #include <vector>
@@ -37,7 +38,11 @@ class TaskManager;
 class ViewManager;
 class SimpleConfig;
 class EvaluationManager;
-class MainWindow;
+class IMainWindow;
+class IViewProvider;
+class IFilterProvider;
+class IEvalProvider;
+class ITaskProvider;
 class LicenseManager;
 class ConfigJSON;
 class ConfigurationManager;
@@ -59,6 +64,12 @@ namespace rtcommand
     class RTCommandRunner;
 }
 
+/**
+ * Access point to the managers of the application.
+ * - the managers are created, owned and wired by the composition root (CompassRoot);
+ *   COMPASS holds pointers to them and stays their configuration parent
+ * - database lifecycle, application mode and global settings
+ */
 class COMPASS : public QObject, public Configurable
 {
     Q_OBJECT
@@ -66,17 +77,61 @@ class COMPASS : public QObject, public Configurable
 signals:
     void databaseOpenedSignal();
     void databaseClosedSignal();
+    // emitted right before appModeSwitchSignal, for steps that must run before all its slots
+    void appModeAboutToSwitchSignal (AppMode app_mode_previous, AppMode app_mode_current);
     void appModeSwitchSignal (AppMode app_mode_previous, AppMode app_mode_current);
     void liveOverloadChangedSignal(bool overloaded);
     void colorModeChangedSignal(unsigned int mode);
     void darkModeChangedSignal(bool dark);
 
+    // relayed from ViewManager, for code below the view layer
+    void viewDataDistributedSignal(bool reset);
+    void viewLoadingDoneSignal();
+
 public:
+    /**
+     * Pointers to the managers, owned and set by the composition root (CompassRoot).
+     */
+    struct Managers
+    {
+        DBInterface*                db_interface       = nullptr;
+        DBContentManager*           dbcontent_manager  = nullptr;
+        FilterManager*              filter_manager     = nullptr;
+        TaskManager*                task_manager       = nullptr;
+        ViewManager*                view_manager       = nullptr;
+        EvaluationManager*          eval_manager       = nullptr;
+        context::DBContextManager*  context_manager    = nullptr;
+        LicenseManager*             license_manager    = nullptr;
+        JobManager*                 job_manager        = nullptr;
+        UnitManager*                unit_manager       = nullptr;
+        ProjectionManager*          projection_manager = nullptr;
+        RTCommandManager*           rt_cmd_manager     = nullptr;
+        rtcommand::RTCommandRunner* rt_cmd_runner      = nullptr;
+
+        // the same managers, as seen by code below their layer
+        IViewProvider*              view_provider      = nullptr;
+        IFilterProvider*            filter_provider    = nullptr;
+        IEvalProvider*              eval_provider      = nullptr;
+        ITaskProvider*              task_provider      = nullptr;
+    };
+
     explicit COMPASS(ConfigurationManager& config_manager);
     virtual ~COMPASS();
 
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
     std::string getPath() const override final;
+
+    // composition root interface
+    void registerManagerCreator(const std::string& class_name,
+                                const std::string& instance_id,
+                                const std::function<void(nlohmann::json&)>& create);
+    void createManagers();
+
+    Managers& managers() { return managers_; }
+
+    void setMainWindow(IMainWindow* main_window);
+    void setLiveImportBacklogSizeFunc(const std::function<unsigned int()>& func);
+    void setShutdownSequence(const std::function<void()>& sequence);
 
     bool openDBFile(const std::string& filename);
     bool createNewDBFile(const std::string& filename);
@@ -108,6 +163,12 @@ public:
     RTCommandManager& rtCommandManager();
     ConfigurationManager& configManager() { return config_manager_; }
 
+    // view, filter, evaluation and task manager for code below their layer
+    IViewProvider& viewProvider();
+    IFilterProvider& filterProvider();
+    IEvalProvider& evalProvider();
+    ITaskProvider& taskProvider();
+
     const DBInterface& dbInterface() const;
     const DBContentManager& dbContentManager() const;
     const FilterManager& filterManager() const;
@@ -123,16 +184,14 @@ public:
     const RTCommandManager& rtCommandManager() const;
     const ConfigurationManager& configManager() const { return config_manager_; }
 
-    void init();
     void shutdown();
 
     void setAppState(AppState state);
 
-    MainWindow& mainWindow();
+    IMainWindow& mainWindow();
 
     // View lookup facades - allow rtcommand helpers to navigate the view
-    // tree without including viewmanager.h (which would pull view-layer
-    // Q_OBJECT headers into core).
+    // tree without depending on the view layer (answered by IViewProvider)
     QWidget* viewContainerWidget(const std::string& name);
     QWidget* latestViewContainerWidget();
     QWidget* latestViewWidget();
@@ -286,21 +345,8 @@ protected:
     bool disable_native_dialogs_ {false};
 
     std::unique_ptr<SimpleConfig> simple_config_;
-    std::unique_ptr<DBInterface> db_interface_;
-    std::unique_ptr<DBContentManager> dbcontent_manager_;
-    std::unique_ptr<FilterManager> filter_manager_;
-    std::unique_ptr<TaskManager> task_manager_;
-    std::unique_ptr<ViewManager> view_manager_;
-    std::unique_ptr<EvaluationManager> eval_manager_;
-    std::unique_ptr<context::DBContextManager> context_manager_;
-    std::unique_ptr<LicenseManager> license_manager_;
-    std::unique_ptr<JobManager> job_manager_;
-    std::unique_ptr<UnitManager> unit_manager_;
-    std::unique_ptr<ProjectionManager> projection_manager_;
-    std::unique_ptr<RTCommandManager> rt_cmd_manager_;
-    std::unique_ptr<IDBVariableResolver> var_resolver_;
 
-    std::unique_ptr<rtcommand::RTCommandRunner> rt_cmd_runner_;
+    Managers managers_; // owned by the composition root
 
     LogStore log_store_;
 
@@ -314,9 +360,23 @@ protected:
 
     bool db_export_in_progress_ {false};
 
-    MainWindow* main_window_ {nullptr};
-
     nlohmann::json unspecific_acids_;
 
     bool sensor_status_time_hack_{false};
+
+    IMainWindow* main_window_ = nullptr; // owned by the composition root
+
+    std::function<unsigned int()> live_import_backlog_size_func_; // ASTERIX packets in processing
+    std::function<void()>         shutdown_sequence_;             // ordered shutdown of all managers
+
+    struct ManagerCreator
+    {
+        std::string                          class_name;
+        std::string                          instance_id;
+        std::function<void(nlohmann::json&)> create;
+        bool                                 created = false;
+    };
+
+    std::vector<ManagerCreator> manager_creators_; // sub-configurable managers, in creation order
+    bool                        managers_created_ = false;
 };

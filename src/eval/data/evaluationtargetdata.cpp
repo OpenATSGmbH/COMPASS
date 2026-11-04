@@ -19,7 +19,7 @@
 #include "evaluationtarget.h"
 #include "evaluationdefs.h"
 
-#include "task/result/report/reportdefs.h"
+#include "report/reportdefs.h"
 
 #include "logger.h"
 #include "stringconv.h"
@@ -28,8 +28,8 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "evaluationmanager.h"
 #include "evaluationcalculator.h"
-#include "eval/standard/evaluationstandard.h"
-#include "util/timeconv.h"
+#include "standard/evaluationstandard.h"
+#include "timeconv.h"
 #include "sector/airspace.h"
 #include "sectorlayer.h"
 #include "evalsectionid.h"

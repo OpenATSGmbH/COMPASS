@@ -28,7 +28,6 @@
 //#include "gpsimportcsvtask.h"
 #include "reconstructortask.h"
 #include "analyzedatasourcetask.h"
-#include "mainwindow.h"
 #include "viewabledataconfig.h"
 #include "viewmanager.h"
 #include "dbinterface.h"
@@ -40,8 +39,10 @@
 #include "asteriximporttaskwidget.h"
 
 #include "taskresult.h"
+#include "taskresultdb.h"
 #include "taskresultswidget.h"
 
+#include "section.h"
 #include "reportexport.h"
 #include "reportexportdialog.h"
 
@@ -52,7 +53,6 @@
 
 #include <QCoreApplication>
 #include <QApplication>
-#include <QMainWindow>
 #include <QThread>
 #include <QProgressDialog>
 #include <QMessageBox>
@@ -72,6 +72,8 @@ TaskManager::TaskManager(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass), compass_(compass)
 {
     setObjectName("TaskManager");
+
+    result_db_.reset(new TaskResultDB(compass_.dbInterface(), *this));
 
     createSubConfigurables();
 }
@@ -175,7 +177,7 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
     else if (class_name == "ReportExport")
     {
         traced_assert(!report_export_);
-        report_export_.reset(new ResultReport::ReportExport(child_json, this));
+        report_export_.reset(new ResultReport::ReportExport(child_json, this, *this));
         traced_assert(report_export_);
     }
     else
@@ -548,7 +550,7 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 
         auto cb = [ this, result_ptr, cleanup_db ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
         {
-            return compass_.dbInterface().saveResult(*result_ptr, cleanup_db);
+            return result_db_->saveResult(*result_ptr, cleanup_db);
         };
 
         AsyncFuncTask task(cb, "Save Result", "Saving result", false);
@@ -578,7 +580,7 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 void TaskManager::resultHeaderChanged(const TaskResult& result)
 {
     //update result header upon change
-    auto res = compass_.dbInterface().updateResultHeader(result);
+    auto res = result_db_->updateResultHeader(result);
     traced_assert(res.ok());
 
     emit taskResultHeaderChangedSignal(QString::fromStdString(result.name()));
@@ -589,26 +591,8 @@ void TaskManager::resultHeaderChanged(const TaskResult& result)
 void TaskManager::resultContentChanged(const TaskResult& result)
 {
     //update result content upon change
-    auto res = compass_.dbInterface().updateResultContent(result);
+    auto res = result_db_->updateResultContent(result);
     traced_assert(res.ok());
-}
-
-/**
- */
-MainWindow* TaskManager::getMainWindow()
-{
-    for(QWidget* pWidget : QApplication::topLevelWidgets())
-    {
-        QMainWindow* qt_main_window = qobject_cast<QMainWindow*>(pWidget);
-
-        if (qt_main_window)
-        {
-            MainWindow* main_window = dynamic_cast<MainWindow*>(qt_main_window);
-            traced_assert(main_window);
-            return main_window;
-        }
-    }
-    return nullptr;
 }
 
 /**
@@ -702,7 +686,7 @@ bool TaskManager::removeResult(const std::string& name,
     const auto& result = results_.at(id.value());
     traced_assert(result);
 
-    auto res = compass_.dbInterface().deleteResult(*result, CleanupDBIfNeeded);
+    auto res = result_db_->deleteResult(*result, CleanupDBIfNeeded);
     if (!res.ok())
         return false;
 
@@ -746,6 +730,10 @@ ResultT<nlohmann::json> TaskManager::exportResult(const std::string& name,
  */
 void TaskManager::databaseOpenedSlot()
 {
+    //determine maximum report content id
+    auto max_id = result_db_->getMaxReportContentID();
+    ResultReport::Section::setCurrentContentID(max_id.has_value() ? max_id.value() + 1 : 0);
+
     loadResults();
 }
 
@@ -789,7 +777,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
 
         auto cb = [ this, result_ptr, section, content_id ] (const AsyncTaskState&, AsyncTaskProgressWrapper&) 
         { 
-            *result_ptr = compass_.dbInterface().loadContent(section, content_id);
+            *result_ptr = result_db_->loadContent(section, content_id);
             return true;
         };
 
@@ -799,7 +787,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
     else
     {
         //directly run
-        result = compass_.dbInterface().loadContent(section, content_id);
+        result = result_db_->loadContent(section, content_id);
     }
 
     if (!result.ok())
@@ -821,7 +809,7 @@ ResultT<nlohmann::json> TaskManager::loadResultContent(unsigned int result_id) c
     //already running in a worker thread, e.g. the report loading task of TaskResultsWidget?
     //then read directly, a dialog and widget calls are only allowed in the main thread
     if (QThread::currentThread() != QCoreApplication::instance()->thread())
-        return compass_.dbInterface().loadResultContent(result_id);
+        return result_db_->loadResultContent(result_id);
 
     ResultT<nlohmann::json> result;
 
@@ -832,7 +820,7 @@ ResultT<nlohmann::json> TaskManager::loadResultContent(unsigned int result_id) c
 
     auto cb = [ this, result_ptr, result_id ] (const AsyncTaskState&, AsyncTaskProgressWrapper&)
     {
-        *result_ptr = compass_.dbInterface().loadResultContent(result_id);
+        *result_ptr = result_db_->loadResultContent(result_id);
         return Result::succeeded();
     };
 
@@ -853,7 +841,7 @@ void TaskManager::loadResults()
 
     results_.clear();
     
-    auto res = compass_.dbInterface().loadResults();
+    auto res = result_db_->loadResults();
     if (!res.ok())
     {
         logerr << "could not load stored results: " << res.error();
@@ -936,5 +924,12 @@ void TaskManager::restoreBackupSection()
 {
     if (widget_)
         widget_->restoreBackupSection();
+}
+
+/**
+ */
+void TaskManager::selectResultID(const std::string& id, bool show_figure)
+{
+    widget()->selectID(id, show_figure);
 }
 

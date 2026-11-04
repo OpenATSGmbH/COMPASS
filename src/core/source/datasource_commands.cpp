@@ -26,7 +26,7 @@
 #include "compass.h"
 #include "logger.h"
 #include "traced_assert.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "json.hpp"
 
 #include <boost/program_options.hpp>

@@ -15,13 +15,13 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/base/intervalbase.h"
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/intervalbase.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/results/evaluationdetail.h"
+#include "results/evaluationdetail.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/base/intervalbase.h"
+#include "requirement/base/base.h"
+#include "requirement/base/intervalbase.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"

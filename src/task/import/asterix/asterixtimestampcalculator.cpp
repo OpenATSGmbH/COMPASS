@@ -21,8 +21,8 @@
 #include "dbcontentmanager.h"
 #include "dbcontent.h"
 #include "metavariable.h"
-#include "util/stringconv.h"
-#include "util/timeconv.h"
+#include "stringconv.h"
+#include "timeconv.h"
 #include "logger.h"
 
 using namespace std;

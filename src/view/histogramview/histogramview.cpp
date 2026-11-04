@@ -29,7 +29,6 @@
 #include "histogramviewwidget.h"
 #include "logger.h"
 #include "latexvisitor.h"
-#include "evaluationmanager.h"
 #include "viewpointgenerator.h"
 
 using namespace dbContent;

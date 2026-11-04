@@ -41,7 +41,7 @@
 #include "number.h"
 #include "dbinterface.h"
 #include "metavariable.h"
-#include "util/async.h"
+#include "async.h"
 #include "evaluationmanager.h"
 #include "viewpointgenerator.h"
 #include "projectionmanager.h"
@@ -50,9 +50,9 @@
 #include "licensemanager.h"
 #include "sectorlayer.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "probimmreconstructor.h"

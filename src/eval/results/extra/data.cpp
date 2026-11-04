@@ -15,18 +15,18 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/extra/data.h"
+#include "results/extra/data.h"
 
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/extra/data.h"
+#include "requirement/base/base.h"
+#include "requirement/extra/data.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
 
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "viewpoint.h"
 
 #include "traced_assert.h"

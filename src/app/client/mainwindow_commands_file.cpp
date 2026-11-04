@@ -19,7 +19,7 @@
 #include "mainwindow.h"
 #include "compass.h"
 #include "logger.h"
-#include "util/files.h"
+#include "files.h"
 #include "traced_assert.h"
 
 #include <boost/program_options.hpp>

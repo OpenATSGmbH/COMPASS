@@ -15,20 +15,20 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/generic/genericconfig.h"
-#include "eval/requirement/generic/genericconfigwidget.h"
-#include "eval/requirement/generic/generic.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/generic/genericconfig.h"
+#include "requirement/generic/genericconfigwidget.h"
+#include "requirement/generic/generic.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
-#include "eval/requirement/mom/momcorrect.h"
-#include "eval/requirement/status/coastingcorrect.h"
-#include "eval/requirement/mode_c/rocdcorrect.h"
-#include "eval/requirement/speed/accelerationcorrect.h"
+#include "requirement/mom/momcorrect.h"
+#include "requirement/status/coastingcorrect.h"
+#include "requirement/mode_c/rocdcorrect.h"
+#include "requirement/speed/accelerationcorrect.h"
 
 using namespace std;
 

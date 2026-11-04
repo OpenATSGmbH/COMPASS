@@ -16,7 +16,7 @@
  */
 
 #include "evaluationtimestampconditionsdialog.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "timewindowcollectionwidget.h"
 #include "evaluationmanager.h"
 #include "compass.h"

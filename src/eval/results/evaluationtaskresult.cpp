@@ -19,16 +19,15 @@
 #include "evaluationcalculator.h"
 #include "evaluationmanager.h"
 #include "evalsectionid.h"
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
-#include "eval/results/reporttablecontent.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
+#include "results/reporttablecontent.h"
 
-#include "task/result/report/sectioncontentfigure.h"
-#include "task/result/report/sectioncontenttable.h"
-#include "task/result/report/section.h"
-#include "task/taskdefs.h"
-#include "taskmanager.h"
-#include "radarplotpositioncalculatortask.h"
+#include "report/sectioncontentfigure.h"
+#include "report/sectioncontenttable.h"
+#include "report/section.h"
+#include "taskdefs.h"
+#include "itaskprovider.h"
 
 #include "compass.h"
 #include "dbinterface.h"
@@ -55,7 +54,7 @@ const std::string EvaluationTaskResult::FieldTargetInfo = "info";
 /**
  */
 EvaluationTaskResult::EvaluationTaskResult(unsigned int id,
-                                           TaskManager& task_man,
+                                           ITaskProvider& task_man,
                                            COMPASS& compass)
 :   TaskResult(id, task_man)
 ,   compass_(compass)
@@ -381,15 +380,15 @@ std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetView
 
         if (positions.valid())
         {
-            (*viewable)[ ViewPoint::VP_POS_LAT_KEY     ] = positions.event->first;
-            (*viewable)[ ViewPoint::VP_POS_LON_KEY     ] = positions.event->second;
-            (*viewable)[ ViewPoint::VP_POS_WIN_LAT_KEY ] = zoom;
-            (*viewable)[ ViewPoint::VP_POS_WIN_LON_KEY ] = zoom;
+            (*viewable)[ ViewPointKeys::VP_POS_LAT_KEY     ] = positions.event->first;
+            (*viewable)[ ViewPointKeys::VP_POS_LON_KEY     ] = positions.event->second;
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LAT_KEY ] = zoom;
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LON_KEY ] = zoom;
         }
 
         auto timestamp = ReportTableContent::rowTimestamp(buffer, highlight_row.value());
         if (timestamp.has_value())
-            (*viewable)[ ViewPoint::VP_TIMESTAMP_KEY ] = Utils::Time::toString(timestamp.value());
+            (*viewable)[ ViewPointKeys::VP_TIMESTAMP_KEY ] = Utils::Time::toString(timestamp.value());
     }
     else
     {
@@ -397,17 +396,17 @@ std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetView
 
         if (!bounds.isEmpty() && !bounds.isNull())
         {
-            (*viewable)[ ViewPoint::VP_POS_LAT_KEY ] = bounds.center().x();
-            (*viewable)[ ViewPoint::VP_POS_LON_KEY ] = bounds.center().y();
+            (*viewable)[ ViewPointKeys::VP_POS_LAT_KEY ] = bounds.center().x();
+            (*viewable)[ ViewPointKeys::VP_POS_LON_KEY ] = bounds.center().y();
 
-            (*viewable)[ ViewPoint::VP_POS_WIN_LAT_KEY ] = std::max(bounds.width() , zoom);
-            (*viewable)[ ViewPoint::VP_POS_WIN_LON_KEY ] = std::max(bounds.height(), zoom);
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LAT_KEY ] = std::max(bounds.width() , zoom);
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LON_KEY ] = std::max(bounds.height(), zoom);
         }
     }
 
     //root annotation of the requirement, the same id the result objects use
-    (*viewable)[ ViewPoint::VP_ANNOTATION_KEY ] = nlohmann::json::array();
-    auto& annotations = (*viewable)[ ViewPoint::VP_ANNOTATION_KEY ];
+    (*viewable)[ ViewPointKeys::VP_ANNOTATION_KEY ] = nlohmann::json::array();
+    auto& annotations = (*viewable)[ ViewPointKeys::VP_ANNOTATION_KEY ];
 
     ViewPointGenAnnotation root_annotation("Evaluation:" + info.id.req_name + ":UTN" + std::to_string(info.utn));
 

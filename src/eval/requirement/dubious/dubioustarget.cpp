@@ -16,15 +16,15 @@
  */
 
 
-#include "eval/requirement/dubious/dubioustarget.h"
+#include "requirement/dubious/dubioustarget.h"
 
-#include "eval/results/dubious/dubioustarget.h"
+#include "results/dubious/dubioustarget.h"
 
 #include "evaluationmanager.h"
 
-#include "util/stringconv.h"
-#include "util/timeconv.h"
-#include "util/number.h"
+#include "stringconv.h"
+#include "timeconv.h"
+#include "number.h"
 #include "global.h"
 
 #include <cmath>

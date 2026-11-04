@@ -24,7 +24,7 @@
 #include "dbcontentmanager.h"
 
 #include "compass.h"
-#include "viewmanager.h"
+#include "iviewprovider.h"
 
 #include "timeconv.h"
 #include "number.h"
@@ -219,7 +219,7 @@ DataSourcesStatusWidget::DataSourcesStatusWidget(context::DBContextManager& ctx_
 
     showLastUpdates(ctx_man.sensorConfig().sensor_status_show_last_updates);
 
-    connect(&dbcontent_man_.compass().viewManager(), &ViewManager::dataDistributedSignal,
+    connect(&dbcontent_man_.compass(), &COMPASS::viewDataDistributedSignal,
             this, &DataSourcesStatusWidget::dataLoaded, Qt::QueuedConnection);
 }
 
@@ -493,7 +493,7 @@ void DataSourcesStatusWidget::dataLoaded()
     initSensorStatesForParse();
 
     //determine new sensor status from data
-    auto data = dbcontent_man_.compass().viewManager().currentBuffers();
+    auto data = dbcontent_man_.compass().viewProvider().currentBuffers();
     auto it = data.find(DBCType);
 
     if (it != data.end() && it->second->size() > 0)

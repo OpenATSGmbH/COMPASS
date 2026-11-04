@@ -18,12 +18,13 @@
 #pragma once
 
 #include "configurable.h"
+#include "ievalprovider.h"
 #include "evaluationdata.h"
 #include "evaluationresultsgenerator.h"
 #include "evaluationcalculator.h"
 #include "viewabledataconfig.h"
 #include "result.h"
-#include "util/timewindow.h"
+#include "timewindow.h"
 
 #include <QObject>
 
@@ -47,7 +48,7 @@ class QWidget;
 
 /**
  */
-class EvaluationManager : public QObject, public Configurable
+class EvaluationManager : public QObject, public Configurable, public IEvalProvider
 {
     Q_OBJECT
 
@@ -86,8 +87,8 @@ public:
     Result evaluate(bool show_dialog, const std::string& custom_result_name = "");
 
     //data loading
-    bool needsAdditionalVariables() const;
-    void addVariables(const std::string dbcontent_name, dbContent::VariableSet& read_set);
+    bool needsAdditionalVariables() const override;
+    void addVariables(const std::string& dbcontent_name, dbContent::VariableSet& read_set) override;
 
     //viewables
     void setViewableDataConfig (const nlohmann::json::object_t& data);
@@ -103,15 +104,30 @@ public:
     Utils::TimeWindowCollection& excludedTimeWindows(); // needs to be saved externally
     void saveTimeConstraints();
 
-    bool useTimestampFilter() const;
+    bool useTimestampFilter() const override;
     void useTimestampFilter(bool value);
     std::string timestampFilterStr() const;
 
     bool removeDisabledUTNData() const { return remove_disabled_utn_data_; } // not load disabled utn for performance hack
 
     //standards
-    bool hasCurrentStandard() const;
+    bool hasCurrentStandard() const override;
     const EvaluationStandard& currentStandard() const;
+    std::set<std::string> currentRequirementNames() const override;
+
+    //target list
+    void applyTargetFilter(dbContent::TargetCache& target_data) override;
+
+    void editTargetFilter(dbContent::TargetModel& model, QWidget* parent) override;
+    bool editTimestampConditions(QWidget* parent) override;
+    bool editExcludedTimeWindows(const std::string& utns,
+                                 Utils::TimeWindowCollection& time_windows,
+                                 QWidget* parent) override;
+    bool editExcludedRequirements(const std::string& utns,
+                                  std::set<std::string>& selected_requirements,
+                                  const std::set<std::string>& all_requirements,
+                                  std::string& comment,
+                                  QWidget* parent) override;
 
     //other stuff
     EvaluationTargetFilter& targetFilter() const;

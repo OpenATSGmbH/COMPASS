@@ -17,13 +17,13 @@
 
 #include "intervalbaseconfig.h"
 
-#include "eval/requirement/group.h"
+#include "requirement/group.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
-#include "util/stringconv.h"
+#include "stringconv.h"
 
 namespace EvaluationRequirement 
 {

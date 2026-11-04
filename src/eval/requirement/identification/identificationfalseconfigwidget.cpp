@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/identification/identificationfalseconfigwidget.h"
-#include "eval/requirement/identification/falseconfig.h"
+#include "requirement/identification/identificationfalseconfigwidget.h"
+#include "requirement/identification/falseconfig.h"
 //#include "textfielddoublevalidator.h"
 #include "logger.h"
 

@@ -20,7 +20,7 @@
 #include "taskresult.h"
 #include "evaluationtarget.h"
 #include "evaluationdefs.h"
-#include "eval/results/base/single.h"
+#include "results/base/single.h"
 
 #include <memory>
 
@@ -39,7 +39,7 @@ class EvaluationTaskResult : public QObject, public TaskResult
 {
 public:
     EvaluationTaskResult(unsigned int id,
-                         TaskManager& task_man,
+                         ITaskProvider& task_man,
                          COMPASS& compass);
     virtual ~EvaluationTaskResult();
 

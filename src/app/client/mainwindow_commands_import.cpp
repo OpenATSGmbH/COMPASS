@@ -26,9 +26,9 @@
 #include "gpstrailimporttask.h"
 #include "viewpointsimporttask.h"
 #include "logger.h"
-#include "util/files.h"
-#include "util/stringconv.h"
-#include "util/timeconv.h"
+#include "files.h"
+#include "stringconv.h"
+#include "timeconv.h"
 #include "dbinterface.h"
 
 #include <boost/program_options.hpp>
@@ -1021,12 +1021,15 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
 
     if (use_db_in_mem)
     {
+        MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
+        traced_assert(main_window);
+
         //close current db
         if (db_opened)
-            compass_->mainWindow().closeDBSlot();
+            main_window->closeDBSlot();
 
         //create in-memory db for live mode
-        compass_->mainWindow().createInMemoryDB(current_db_filename);
+        main_window->createInMemoryDB(current_db_filename);
     }
 
     ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();

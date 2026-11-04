@@ -23,7 +23,7 @@
 #include "viewpointgenerator.h"
 
 #include "compass.h"
-#include "evaluationmanager.h"
+#include "viewabledataconfig.h"
 
 #include "logger.h"
 

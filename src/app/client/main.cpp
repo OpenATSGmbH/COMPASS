@@ -20,7 +20,7 @@
 #include "cxa_throw_hook.h"
 #include "logger.h"
 #include "msghandler.h"
-#include "util/system.h"
+#include "system.h"
 
 #include <QThread>
 #include <QTimer>

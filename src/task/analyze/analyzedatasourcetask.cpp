@@ -42,7 +42,7 @@
 #endif
 
 #include "compass.h"
-#include "mainwindow.h"
+#include "imainwindow.h"
 #include "taskmanager.h"
 #include "evaluationmanager.h"
 #include "evaluationconstraints.h"

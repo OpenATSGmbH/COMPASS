@@ -19,7 +19,7 @@
 #include "rtcommand.h"
 
 #include "compass.h"
-#include "util/stringconv.h"
+#include "stringconv.h"
 #include "test/ui_test_find.h"
 #include "global.h"
 

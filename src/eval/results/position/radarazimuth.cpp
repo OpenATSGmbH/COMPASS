@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/position/radarazimuth.h"
+#include "results/position/radarazimuth.h"
 #include "stringconv.h"
 
 #include "logger.h"

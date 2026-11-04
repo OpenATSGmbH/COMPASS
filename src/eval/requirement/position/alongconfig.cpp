@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/alongconfig.h"
-#include "eval/requirement/position/alongconfigwidget.h"
-#include "eval/requirement/position/along.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/positionbase.h"
+#include "requirement/position/alongconfig.h"
+#include "requirement/position/alongconfigwidget.h"
+#include "requirement/position/along.h"
+#include "requirement/group.h"
+#include "requirement/base/positionbase.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 using namespace std;
 
