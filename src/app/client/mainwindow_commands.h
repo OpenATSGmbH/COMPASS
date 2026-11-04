@@ -22,9 +22,12 @@
 #include "rtcommand_macros.h"
 #include "reportdefs.h"
 
+class CompassRoot;
+
 namespace main_window
 {
-extern void init_commands();
+extern void init_commands(CompassRoot& root);
+extern CompassRoot& root(); // composition root, for the managers of the upper layers
 
 // import_data_sources_file
 struct RTCommandImportDataSourcesFile : public rtcommand::RTCommand

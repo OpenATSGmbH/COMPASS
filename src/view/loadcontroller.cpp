@@ -34,8 +34,10 @@
 
 /**
  */
-LoadController::LoadController(COMPASS& compass, QObject* parent)
-    : QObject(parent), compass_(compass)
+LoadController::LoadController(COMPASS& compass,
+                               ViewManager& view_manager,
+                               QObject* parent)
+    : QObject(parent), compass_(compass), view_manager_(view_manager)
 {
 }
 
@@ -207,7 +209,7 @@ void LoadController::advanceViewPhase()
  */
 void LoadController::opFinishedSlot()
 {
-    if (op_ && compass_.viewManager().currentSource().get() != op_)
+    if (op_ && view_manager_.currentSource().get() != op_)
         end(/*drain=*/false);
 }
 

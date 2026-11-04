@@ -237,7 +237,7 @@ std::vector<std::string> DataSourceInspectorBase::missingOptionalVariableNotes(c
 
 ReportTableWriter& DataSourceInspectorBase::tableWriter() const
 {
-    auto& result = task_.compass().taskManager().currentResult();
+    auto& result = task_.manager().currentResult();
     traced_assert(result);
 
     return result->tableWriter();

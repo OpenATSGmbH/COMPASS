@@ -557,7 +557,7 @@ bool Client::run ()
         if (import_view_points_filename_.size())
             rt_man.addCommandFromConsole("import_view_points " + import_view_points_filename_);
 
-        TaskManager& task_man = compass_->taskManager();
+        TaskManager& task_man = root_->taskManager();
 
         if (asterix_decoder_cfg.size())
             task_man.asterixImporterTask().asterixDecoderConfig(asterix_decoder_cfg);

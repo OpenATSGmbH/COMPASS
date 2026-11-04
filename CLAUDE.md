@@ -23,7 +23,7 @@ COMPASS is a **monolithic Qt5 desktop application** with a **DuckDB** embedded d
 - **Configuration**: `Configurable` base class - most components inherit from it. Parameters are auto-serialized to/from JSON files in `~/.compass/<version>/`. Read at startup, written at shutdown.
 - **External interfaces**: CLI for batch processing (options executed in order), TCP runtime command interface (`localhost:27960`) for controlling a running instance from Python or other tools.
 
-**Design patterns**: Dependency injection (not singletons) - the composition root `CompassRoot` (`src/app/compassroot.h`, owned by `Client`) creates `COMPASS` and all managers, wires them and runs the startup and shutdown sequence. `COMPASS` (`src/core/compass.h`) is the access point: it is passed by reference through the manager tree (e.g. `task_.manager().compass()`) and holds pointers to the managers, it does not own them. Managers store a `COMPASS&` and expose it via `compass()` accessors. Only `Logger` and `RTCommandRegistry` are true singletons (via `Singleton` base class). Qt signals/slots throughout GUI, `Configurable` inheritance for JSON persistence, smart pointers (`unique_ptr`/`shared_ptr`).
+**Design patterns**: Dependency injection (not singletons) - the composition root `CompassRoot` (`src/app/compassroot.h`, owned by `Client`) creates `COMPASS` and all managers, wires them and runs the startup and shutdown sequence. `COMPASS` (`src/core/compass.h`) is the access point: it is passed by reference through the manager tree (e.g. `task_.manager().compass()`) and holds pointers to the core managers and the provider interfaces of the upper ones, it does not own them. Managers store a `COMPASS&` and expose it via `compass()` accessors. Only `Logger` and `RTCommandRegistry` are true singletons (via `Singleton` base class). Qt signals/slots throughout GUI, `Configurable` inheritance for JSON persistence, smart pointers (`unique_ptr`/`shared_ptr`).
 
 ## Library layering
 
@@ -148,7 +148,8 @@ doc/                    Documentation and user manual (LaTeX)
 - **Qt slots:** suffixed with `Slot`: `databaseOpenedSlot()`
 
 ### Patterns
-- **COMPASS access:** `COMPASS` is not a singleton - it is created by `CompassRoot` and passed by reference. Access via parent chain, e.g. `task_.manager().compass().dataSourceManager()`. Managers store `COMPASS&` and expose `compass()`. Code in a lower layer uses only the managers of its own or lower layers, and the provider interfaces (`viewProvider()`, `filterProvider()`, `evalProvider()`, `taskProvider()`) for the upper ones.
+- **COMPASS access:** `COMPASS` is not a singleton - it is created by `CompassRoot` and passed by reference. Access via parent chain, e.g. `task_.manager().compass().dbContentManager()`. Managers store `COMPASS&` and expose `compass()`. `COMPASS` offers only the core managers and the provider interfaces (`viewProvider()`, `filterProvider()`, `evalProvider()`, `taskProvider()`) for code below the upper layers.
+- **Upper managers** (`FilterManager`, `ViewManager`, `EvaluationManager`, `TaskManager`) are reached through their own library's parent chain (`view_->viewManager()`, `task().manager()`). Their peers are set by `CompassRoot` via `setManagers(...)` and exposed as accessors (e.g. `task().manager().viewManager()`). The app layer uses `CompassRoot`'s accessors (`MainWindow::root_`, `main_window::root()`).
 - **True singletons:** Only `Logger::getInstance()` and `RTCommandRegistry::instance()` (both inherit from `Singleton` base class in `src/util/singleton.h`).
 - **Configurable base class:** most components inherit from `Configurable` for JSON-based config persistence
 - **Qt signals/slots** throughout the GUI layer; `Q_OBJECT` macro required

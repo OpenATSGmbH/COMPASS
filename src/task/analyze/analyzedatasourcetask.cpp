@@ -114,7 +114,7 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     // The runtime-command registry is process-global; initialize it once from
     // the primary (MLAT) instance to avoid a double registration.
     if (ds_type_ == "MLAT")
-        init_analyze_commands(compass());
+        init_analyze_commands(manager());
 }
 
 AnalyzeDataSourceTask::~AnalyzeDataSourceTask() = default;
@@ -923,7 +923,7 @@ void AnalyzeDataSourceTask::run()
     loginf << "running with ds_type " << ds_type_
            << " selected " << selectedDataSourceIDs().size() << " data sources";
 
-    auto& tm = compass().taskManager();
+    auto& tm = manager();
 
     const std::string window_title = "Analyze " + ds_type_ + " Data Source";
     const std::string result_name  = reportName();
@@ -1086,7 +1086,7 @@ void AnalyzeDataSourceTask::run()
     if (use_eval_exclusions_)
     {
         eval_exclusions = std::make_shared<EvaluationConstraints>();
-        eval_exclusions->update(compass().evaluationManager());
+        eval_exclusions->update(manager().evaluationManager());
 
         auto& excl_section = overview.addSubSection(EvaluationConstraints::ExcludedDataSectionHeading);
         eval_exclusions->addReportSection(excl_section, nullptr, false);

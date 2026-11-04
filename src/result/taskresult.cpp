@@ -1026,7 +1026,7 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
     std::vector<std::pair<QImage, std::string>> renderings;
 
     DBContentManager& dbcont_man = task_manager_.compass().dbContentManager();
-    ViewManager&      view_man   = task_manager_.compass().viewManager();
+    ViewManager&      view_man   = task_manager_.viewManager();
 
     QCoreApplication::processEvents();
 

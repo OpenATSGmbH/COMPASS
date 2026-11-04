@@ -22,8 +22,8 @@
 
 #include <memory>
 
-class COMPASS;
-extern void init_view_point_commands(COMPASS& compass);
+class ViewManager;
+extern void init_view_point_commands(ViewManager& view_manager);
 
 // set_view_point "{\"id\": 1,\"name\": \"All\",\"status\": \"open\",\"type\": \"Saved\"}"
 // set_view_point "{\"id\": 2,\"name\": \"None\",\"status\": \"open\",\"type\": \"Saved\", \"data_source_types\": [], \"annotations\" : [{\"name\":\"fred1\"},{\"name\":\"fred2\"}]}"

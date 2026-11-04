@@ -31,6 +31,9 @@
 #include <boost/optional.hpp>
 
 class COMPASS;
+class ViewManager;
+class EvaluationManager;
+class FilterManager;
 class TaskResultsWidget;
 class CreateARTASAssociationsTask;
 class JSONImportTask;
@@ -77,6 +80,15 @@ public:
     TaskManager(nlohmann::json& config, COMPASS& compass);
 
     COMPASS& compass() override { return compass_; }
+
+    // peers, set by the composition root
+    void setManagers(ViewManager& view_manager,
+                     EvaluationManager& eval_manager,
+                     FilterManager& filter_manager);
+
+    ViewManager& viewManager() override;
+    EvaluationManager& evaluationManager();
+    FilterManager& filterManager();
 
     virtual ~TaskManager();
 
@@ -165,6 +177,11 @@ protected:
     boost::optional<unsigned int> findResult(const std::string& name) const;
 
     COMPASS& compass_;
+
+    // peers, set by the composition root
+    ViewManager*       view_manager_   = nullptr;
+    EvaluationManager* eval_manager_   = nullptr;
+    FilterManager*     filter_manager_ = nullptr;
 
     // tasks
     std::unique_ptr<ASTERIXImportTask> asterix_importer_task_;

@@ -1,6 +1,6 @@
 # Resolving the circular dependencies between the COMPASS libraries
 
-*Design document / plan. Status: Workstreams A–D implemented (2026-11-03), E and F (2026-11-04), no include violations left in `src/` (from 270), the allowlist is empty. G (structural guards, 2026-11-04): link graph and include paths follow the layering, an upward include is a compile error. Written 2026-11-03 against the then-current code (line numbers refer to that state).*
+*Design document / plan. Status: Workstreams A–D implemented (2026-11-03), E and F (2026-11-04), no include violations left in `src/` (from 270), the allowlist is empty. G (structural guards, 2026-11-04): link graph and include paths follow the layering, an upward include is a compile error. H (2026-11-04): `COMPASS` offers only the core managers and the provider interfaces. I (sub-layers inside core): planned. Written 2026-11-03 against the then-current code (line numbers refer to that state).*
 
 ## Context
 
@@ -278,10 +278,47 @@ Decided:
   - Not changed: `experimental_src/analysis` stays compiled into `compass_task` (separate closed-source repository; as an own library it would be a host ↔ experimental cycle, which is the plugin plan's scope). `src/core/gui` (part of core) and `src/gui` (`compass_gui`) are already consistent.
 - **G7: rules where they are read.** [CLAUDE.md](CLAUDE.md) gets the layer order, the pattern for upward calls (interface in the lower layer, implementation in the upper one, wiring in `CompassRoot`), "move files, no cross-directory CMake references" and the layering check; its outdated parts (`COMPASS` owning the managers, `src/report/`) are corrected.
 
-### Future improvements (not planned)
+### H: `COMPASS` without the upper managers (~1.5–2.5 wk) — implemented
 
-- **Cycles inside `compass_core`.** 16 of its 22 subdirectories form one include cycle group (e.g. `db/dbcontent ↔ db/interface`, `db/dbcontent ↔ db/job`, `core/context ↔ core/source`, `compass.h`/`compass.cpp` as hub). The check cannot see cycles inside a library. Options: sub-rules in the check for the parts of core that are already acyclic; later a split (e.g. db as own library), once db no longer depends on `compass.h` and the context.
-- **`COMPASS` as service locator for upper layers.** Core's API still names the upper managers (`viewManager()` 109 uses in 34 files, `taskManager()` 100/28, `evaluationManager()` 17/8, `filterManager()` 16/12). After G lower layers cannot use them, but the easiest path in the code still leads to any manager. Option: `COMPASS` offers only core managers and the provider interfaces, upper managers get their peers injected by `CompassRoot`.
+Formerly future improvement "`COMPASS` as service locator for upper layers" (decided 2026-11-04 to implement). Core's API still names the upper managers: `viewManager()`, `taskManager()`, `evaluationManager()`, `filterManager()`, about 150 calls on `COMPASS` (about 35 in `experimental_src`). After G lower layers cannot use them, but the easiest path in the code still leads to any manager.
+
+Goal: `COMPASS` offers only the core managers and the provider interfaces. Each upper manager declares the peers it uses.
+
+Decided:
+
+- **Peers by one setter per manager.** The managers are created in the order of the existing configuration file, so a peer created later cannot be passed to a constructor. `CompassRoot` calls `setManagers(...)` (references to all peers of that manager) right after `createManagers()`, before anything else runs:
+  - `ViewManager::setManagers(FilterManager&)`;
+  - `EvaluationManager::setManagers(ViewManager&, FilterManager&)`;
+  - `TaskManager::setManagers(ViewManager&, EvaluationManager&, FilterManager&)`.
+  
+  Manager-to-manager connections in constructors that relied on the config order (`ViewManager` → `FilterManager` view point signals) move to `CompassRoot::connectManagers()`.
+- **Code inside a library** reaches its own manager through the parent chain (`view_->viewManager()`, `task().manager()`), and the peers through its manager (`manager().viewManager()`).
+- **`compass_result`** reaches the views through `ITaskProvider::viewManager()` (new, view is below result).
+- **Runtime command modules** with a static `COMPASS*` (`evaluation_commands`, `analyze_commands`, `viewpoint_commands`, `geographicview_commands`) get a static pointer to their manager instead, set in their `init_*_commands()`.
+- **App layer** (`MainWindow`, `Client`, `mainwindow_commands*`) reaches the managers via `CompassRoot` and its manager accessors. The composition root lives in the app layer, so this locator is only available at the top.
+- **`experimental_src`:** the geo view uses `View::viewManager()` and its peer `filterManager()`; ProbIMM uses `task().manager()`; `TestLab` gets the task and view manager from `TestLabCollection::appendTestLabs()`. The geo view's check for ARTAS associations (`GeometryItemGroupLayer::canShowAssociations()`, an upward call to `CreateARTASAssociationsTask::wasRun()`) reads the DB property through a new `DBContentManager::artasAssociationsCreated()` in core, which `wasRun()` uses too.
+- **Removed:** `COMPASS::viewManager()`, `taskManager()`, `evaluationManager()`, `filterManager()` (incl. const) and the four fields in `COMPASS::Managers`.
+
+As implemented (2026-11-04):
+
+- `setManagers(...)` is called at the start of `CompassRoot::startManagers()`. The accessors (`viewManager()`, `evaluationManager()`, `filterManager()`) assert that it ran. The peers are not reset during shutdown; the shutdown order is unchanged.
+- `LoadController` gets the `ViewManager&` in its constructor, `EvaluationTaskResult` the `EvaluationManager&` (created by `TaskManager::createResult()`).
+- App layer: `MainWindow(CompassRoot&)`, `main_window::init_commands(CompassRoot&)` with `main_window::root()` for the runtime commands, `Client` via its `root_`.
+- `CreateARTASAssociationsTask::DONE_PROPERTY_NAME` is replaced by `DBContentManager::ARTASAssociationsCreatedProperty` (same value `artas_associations_created`), so the key exists only once.
+- Verified: build, `compass_tests` (697 cases), smoke test (create DB, quit), `check_layering.py --build-dir build` 0 violations.
+
+### I: Sub-layers inside `compass_core` (~3–5 wk) — planned
+
+Formerly future improvement "Cycles inside `compass_core`" (decided 2026-11-04 to implement). 16 of its 22 subdirectories form one include cycle group (e.g. `db/dbcontent ↔ db/interface`, `db/dbcontent ↔ db/job`, `core/context ↔ core/source`, `compass.h`/`compass.cpp` as hub). The check cannot see cycles inside a library, and neither can the compiler.
+
+Decided:
+
+- **Guard: sub-layers in the check.** `compass_core` stays one library. `check_layering.py` gets sub-layers for core and checks them like the libraries (exact and text mode). No CMake restructuring; a split into libraries stays possible later.
+- **App state out of `COMPASS`.** The application state and global settings (DB opened, app mode/state, dark mode, color mode, expert mode, UI styles, live overload, ...) move into a small object low in core. `COMPASS` keeps registering the config parameters, bound to that object's fields, so the config files stay identical.
+- **Direct dependencies instead of `compass_.x()`.** Core subsystems get the managers they use (`DBInterface&`, `DBContentManager&`, `DBContextManager&`, `JobManager&`, the provider interfaces, ...) passed in by `CompassRoot`, instead of reaching them through `compass.h`.
+- **Mutual pairs** are resolved one by one as in D/E (move files, small interfaces, signals): `db/dbcontent ↔ db/interface`, `db/dbcontent ↔ db/job`, `context ↔ source`, `db/dbcontent ↔ context`, `db/dbcontent ↔ source`, `rtcommand ↔ test`, plus the single upward edges (`net → source`, `projection → context`, `gui → test`, `job → gui`, `latex → license`).
+
+The exact sub-layer order is fixed when I starts, from the code after H.
 
 ## Verification
 

@@ -196,7 +196,7 @@ void LiveController::reloadWindow(const QString& title)
 
     // live-prime window as a per-content clause via the shared toolkit (timestamp >= min);
     // resolver is a long-lived filter member, the clause runs synchronously inside load() below
-    IDBVariableResolver* resolver = &compass_.filterManager().variableResolver();
+    IDBVariableResolver* resolver = &view_manager_.filterManager().variableResolver();
     long min_ts_long = Time::toLong(min_ts);
 
     LoadRequest req;

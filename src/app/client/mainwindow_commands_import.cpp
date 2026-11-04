@@ -17,6 +17,8 @@
 
 #include "mainwindow_commands_import.h"
 #include "mainwindow.h"
+#include "mainwindow_commands.h"
+#include "compassroot.h"
 #include "compass.h"
 #include "taskmanager.h"
 #include "viewpointsimporttask.h"
@@ -80,7 +82,7 @@ bool RTCommandImportViewPointsFile::run_impl()
         setResultMessage("Wrong application mode "+compass_->appModeStr());
         return false;
     }
-    ViewPointsImportTask& vp_import_task = compass_->taskManager().viewPointsImportTask();
+    ViewPointsImportTask& vp_import_task = root().taskManager().viewPointsImportTask();
 
     vp_import_task.importFilename(filename_);
 
@@ -225,7 +227,7 @@ bool RTCommandImportASTERIXFile::run_impl()
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
     unsigned int file_line {0};
 
     if (!config_.empty())
@@ -300,7 +302,7 @@ bool RTCommandImportASTERIXFile::run_impl()
 
 bool RTCommandImportASTERIXFile::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -437,7 +439,7 @@ bool RTCommandImportASTERIXFiles::run_impl()
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
 
     unsigned int file_line {0};
 
@@ -526,7 +528,7 @@ bool RTCommandImportASTERIXFiles::run_impl()
 
 bool RTCommandImportASTERIXFiles::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -649,7 +651,7 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
     unsigned int file_line {0};
 
     if (!config_.empty())
@@ -716,7 +718,7 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
 
 bool RTCommandImportASTERIXPCAPFile::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -831,7 +833,7 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
 
     unsigned int file_line {0};
 
@@ -905,7 +907,7 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
 
 bool RTCommandImportASTERIXPCAPFiles::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -1032,7 +1034,7 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
         main_window->createInMemoryDB(current_db_filename);
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
 
     if (!config_.empty())
     {
@@ -1210,7 +1212,7 @@ bool RTCommandImportASTERIXNetworkStop::run_impl()
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
 
     if (!import_task.isRunning() || !import_task.source().isNetworkType())
     {
@@ -1258,7 +1260,7 @@ bool RTCommandImportASTERIXNetworkPause::run_impl()
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
 
     if (!import_task.isRunning() || !import_task.source().isNetworkType())
     {
@@ -1296,7 +1298,7 @@ bool RTCommandImportASTERIXNetworkResume::run_impl()
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
 
     if (!import_task.isRunning() || !import_task.source().isNetworkType())
     {
@@ -1353,7 +1355,7 @@ bool RTCommandImportJSONFile::run_impl()
         return false;
     }
 
-    JSONImportTask& import_task = compass_->taskManager().jsonImporterTask();
+    JSONImportTask& import_task = root().taskManager().jsonImporterTask();
 
     import_task.importFilename(filename_);
 
@@ -1424,7 +1426,7 @@ bool RTCommandImportGPSTrail::run_impl()
         return false;
     }
 
-    GPSTrailImportTask& import_task = compass_->taskManager().gpsTrailImportTask();
+    GPSTrailImportTask& import_task = root().taskManager().gpsTrailImportTask();
 
     //deactivate extra information
     import_task.useTodOffset(false);

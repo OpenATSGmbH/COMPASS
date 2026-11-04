@@ -95,13 +95,39 @@ EvaluationManager::EvaluationManager(nlohmann::json& config,
     , dbcontent_man_(compass.dbContentManager())
 {
     createSubConfigurables();
-    init_evaluation_commands(compass_);
+    init_evaluation_commands(*this);
 }
 
 /**
  */
 EvaluationManager::~EvaluationManager()
 {
+}
+
+/**
+ * Sets the peer managers, called by the composition root right after all managers were created.
+ */
+void EvaluationManager::setManagers(ViewManager& view_manager,
+                                    FilterManager& filter_manager)
+{
+    view_manager_   = &view_manager;
+    filter_manager_ = &filter_manager;
+}
+
+/**
+ */
+ViewManager& EvaluationManager::viewManager()
+{
+    traced_assert(view_manager_);
+    return *view_manager_;
+}
+
+/**
+ */
+FilterManager& EvaluationManager::filterManager()
+{
+    traced_assert(filter_manager_);
+    return *filter_manager_;
 }
 
 /**
@@ -589,7 +615,7 @@ void EvaluationManager::setViewableDataConfig (const nlohmann::json::object_t& d
 {
     viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 
-    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_);
+    viewManager().setCurrentViewPoint(viewable_data_cfg_);
 }
 
 /**
@@ -597,7 +623,7 @@ void EvaluationManager::setViewableDataConfig (const nlohmann::json::object_t& d
 void EvaluationManager::resetViewableDataConfig(bool reset_view_point)
 {
     if (reset_view_point)
-        compass_.viewManager().unsetCurrentViewPoint();
+        viewManager().unsetCurrentViewPoint();
 
     viewable_data_cfg_.reset();
 }
@@ -775,7 +801,7 @@ const std::vector<boost::posix_time::ptime>& EvaluationManager::statusCycles(
 std::string EvaluationManager::loadFilterClause(const std::string& dbcontent_name,
                                                 const EvaluationCalculator& calculator)
 {
-    IDBVariableResolver& resolver = compass_.filterManager().variableResolver();
+    IDBVariableResolver& resolver = filterManager().variableResolver();
 
     std::vector<FilterClause> parts;
 

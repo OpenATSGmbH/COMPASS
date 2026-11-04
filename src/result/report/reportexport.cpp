@@ -111,12 +111,12 @@ ResultT<nlohmann::json> ReportExport::exportReport(TaskResult& result,
     // figure rendering triggers a load + view processing cycle per figure - suppress
     // the resulting progress dialogs for the export's duration (the modal export
     // dialog covers the busy state, and the popups steal OS focus)
-    compass().viewManager().setLoadDialogsSuppressed(true);
+    task_manager_.viewManager().setLoadDialogsSuppressed(true);
 
     //export using exporter
     auto res = exporter->exportReport(result, section);
 
-    compass().viewManager().setLoadDialogsSuppressed(false);
+    task_manager_.viewManager().setLoadDialogsSuppressed(false);
 
     return res;
 }

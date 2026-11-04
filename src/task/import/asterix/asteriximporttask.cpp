@@ -1551,7 +1551,7 @@ void ASTERIXImportTask::checkDataReceivedSlot()
         && (microsec_clock::local_time() - last_live_update_time_).total_seconds() > 5)
     {
         loginf << "forcing live update";
-        QMetaObject::invokeMethod(&compass_.viewManager(), "forceLiveUpdate", Qt::QueuedConnection);
+        QMetaObject::invokeMethod(&manager().viewManager(), "forceLiveUpdate", Qt::QueuedConnection);
         last_live_update_time_ = microsec_clock::local_time();
     }
 }
@@ -1912,7 +1912,7 @@ void ASTERIXImportTask::checkAllDone()
         {
             beginResultReport();
             buildResultReport(boost::posix_time::microsec_clock::local_time());
-            compass_.taskManager().endTaskResultWriting(true, allow_user_interactions_);
+            manager().endTaskResultWriting(true, allow_user_interactions_);
         }
 
         // Persist the obfuscation maps so the next import (this run or the
@@ -2084,7 +2084,7 @@ void ASTERIXImportTask::beginResultReport()
     // Single, persistent task result accumulating across all ASTERIX imports
     // into the open DB. Pass clear_existing=false so prior imports' content
     // is not wiped on each call. Network imports share the same result.
-    compass_.taskManager().beginTaskResultWriting(
+    manager().beginTaskResultWriting(
         "ASTERIX Import", task::TaskResultType::Generic, /*clear_existing=*/false);
 }
 
@@ -2096,7 +2096,7 @@ void ASTERIXImportTask::beginResultReport()
  */
 void ASTERIXImportTask::buildResultReport(const boost::posix_time::ptime& end_time)
 {
-    auto& tm = compass_.taskManager();
+    auto& tm = manager();
     auto report = tm.currentReport();
     if (!report)
         return;

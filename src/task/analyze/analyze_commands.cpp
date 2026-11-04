@@ -29,11 +29,11 @@
 
 REGISTER_RTCOMMAND(RTCommandGetAnalyzeInspectors)
 
-static COMPASS* s_compass = nullptr;
+static TaskManager* s_task_manager = nullptr;
 
-void init_analyze_commands(COMPASS& compass)
+void init_analyze_commands(TaskManager& task_manager)
 {
-    s_compass = &compass;
+    s_task_manager = &task_manager;
     RTCommandGetAnalyzeInspectors::init();
 }
 
@@ -45,7 +45,7 @@ RTCommandGetAnalyzeInspectors::RTCommandGetAnalyzeInspectors()
 
 bool RTCommandGetAnalyzeInspectors::run_impl()
 {
-    if (!s_compass)
+    if (!s_task_manager)
     {
         setResultMessage("COMPASS not initialized");
         return false;
@@ -57,7 +57,7 @@ bool RTCommandGetAnalyzeInspectors::run_impl()
         return false;
     }
 
-    AnalyzeDataSourceTask* task_ptr = s_compass->taskManager().analyzeDataSourceTask(ds_type_);
+    AnalyzeDataSourceTask* task_ptr = s_task_manager->analyzeDataSourceTask(ds_type_);
     if (!task_ptr)
     {
         setResultMessage("Unknown DSType '" + ds_type_ + "' (expected MLAT, ADSB or SMR)");
@@ -77,7 +77,7 @@ bool RTCommandGetAnalyzeInspectors::run_impl()
 
 bool RTCommandGetAnalyzeInspectors::checkResult_impl()
 {
-    AnalyzeDataSourceTask* task_ptr = s_compass->taskManager().analyzeDataSourceTask(ds_type_);
+    AnalyzeDataSourceTask* task_ptr = s_task_manager->analyzeDataSourceTask(ds_type_);
     if (!task_ptr)
     {
         setResultMessage("Unknown DSType '" + ds_type_ + "'");

@@ -19,6 +19,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/reportvariable.h"
 #include "mainwindow.h"
+#include "compassroot.h"
 #include "compass.h"
 #include "db_context_manager.h"
 #include "taskmanager.h"
@@ -96,8 +97,20 @@ REGISTER_RTCOMMAND(main_window::RTCommandClientInfo)
 namespace main_window
 {
 
-void init_commands()
+static CompassRoot* s_root = nullptr;
+
+/**
+ */
+CompassRoot& root()
 {
+    traced_assert(s_root);
+    return *s_root;
+}
+
+void init_commands(CompassRoot& root)
+{
+    s_root = &root;
+
     // file
     main_window::RTCommandOpenDB::init();
     main_window::RTCommandOpenRecentDB::init();
@@ -308,7 +321,7 @@ bool RTCommandCalculateRadarPlotPositions::run_impl()
         return false;
     }
 
-    RadarPlotPositionCalculatorTask& task = compass_->taskManager().radarPlotPositionCalculatorTask();
+    RadarPlotPositionCalculatorTask& task = root().taskManager().radarPlotPositionCalculatorTask();
 
     if(!task.canRun())
     {
@@ -344,7 +357,7 @@ bool RTCommandCalculateARTASAssociations::run_impl()
         return false;
     }
 
-    CreateARTASAssociationsTask& task = compass_->taskManager().createArtasAssociationsTask();
+    CreateARTASAssociationsTask& task = root().taskManager().createArtasAssociationsTask();
 
     if(!task.canRun())
     {
@@ -361,7 +374,7 @@ bool RTCommandCalculateARTASAssociations::run_impl()
 
 bool RTCommandCalculateARTASAssociations::checkResult_impl()
 {
-    const auto& stats = compass_->taskManager().createArtasAssociationsTask().resultStats();
+    const auto& stats = root().taskManager().createArtasAssociationsTask().resultStats();
 
     nlohmann::json reply;
 
@@ -405,7 +418,7 @@ bool RTCommandReconstructReferences::run_impl()
         return false;
     }
 
-    ReconstructorTask& task = compass_->taskManager().reconstructReferencesTask();
+    ReconstructorTask& task = root().taskManager().reconstructReferencesTask();
 
     if (!config_.empty())
     {
@@ -497,7 +510,7 @@ bool RTCommandAnalyzeDataSource::run_impl()
         return false;
     }
 
-    AnalyzeDataSourceTask* task_ptr = compass_->taskManager().analyzeDataSourceTask(ds_type_);
+    AnalyzeDataSourceTask* task_ptr = root().taskManager().analyzeDataSourceTask(ds_type_);
     if (!task_ptr)
     {
         setResultMessage("Unknown DSType '" + ds_type_ + "' (expected MLAT, ADSB or SMR)");
@@ -632,7 +645,7 @@ bool RTCommandExportViewPointsReport::run_impl()
 
     //main_window->showViewPointsTab();
 
-    ViewPointsReportGenerator& gen = compass_->viewManager().viewPointsGenerator();
+    ViewPointsReportGenerator& gen = root().viewManager().viewPointsGenerator();
 
     ViewPointsReportGeneratorDialog& dialog = gen.dialog();
     // batch export: pure progress display, do not steal os focus from other applications
@@ -692,7 +705,7 @@ bool RTCommandExportReport::run_impl()
         return false;
     }
 
-    auto& task_manager = compass_->taskManager();
+    auto& task_manager = root().taskManager();
 
     if (!task_manager.hasResult(result_name_))
     {
@@ -764,7 +777,7 @@ bool RTCommandGetExistingReports::run_impl()
         return false;
     }
 
-    auto& task_manager = compass_->taskManager();
+    auto& task_manager = root().taskManager();
 
     std::vector<std::string> results;
     nlohmann::json           details = nlohmann::json::array();
@@ -850,7 +863,7 @@ bool RTCommandGetReport::run_impl()
         return false;
     }
 
-    auto& task_manager = compass_->taskManager();
+    auto& task_manager = root().taskManager();
 
     if (!task_manager.hasResult(result_name))
     {

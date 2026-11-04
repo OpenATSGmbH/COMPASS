@@ -82,6 +82,8 @@ signals:
     void dataDeletedSignal(); // emitted after data has been deleted and counts adjusted
 
 public:
+    static const std::string ARTASAssociationsCreatedProperty; // DB property, "1" once ARTAS associations were created
+
     DBContentManager(nlohmann::json& config, COMPASS& compass);
     virtual ~DBContentManager();
 
@@ -153,6 +155,7 @@ public:
     DBContentManagerWidget* widget();
 
     bool hasAssociations() const;
+    bool artasAssociationsCreated();
     void setAssociationsIdentifier(const std::string& assoc_id);
     std::string associationsID() const;
     void clearAssociationsIdentifier();

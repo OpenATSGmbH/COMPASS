@@ -33,6 +33,7 @@
 #include <set>
 
 class COMPASS;
+class FilterManager;
 class Buffer;
 class DBContentDataSet;
 class LiveDataFeed;
@@ -113,6 +114,10 @@ class ViewManager : public QObject, public Configurable, public IViewProvider
     virtual ~ViewManager();
 
     COMPASS& compass() { return compass_; }
+
+    // peers, set by the composition root
+    void setManagers(FilterManager& filter_manager) { filter_manager_ = &filter_manager; }
+    FilterManager& filterManager();
 
     void init(QTabWidget* main_tab_widget);
     void close();
@@ -294,6 +299,8 @@ protected:
     void restoreSelectionInto(const std::string& dbcontent_name, Buffer& buffer);
 
     COMPASS& compass_;
+
+    FilterManager* filter_manager_ = nullptr; // peer, set by the composition root
 
     ViewPointsWidget* view_points_widget_{nullptr};
 

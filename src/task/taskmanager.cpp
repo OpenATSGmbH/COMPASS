@@ -86,6 +86,42 @@ TaskManager::~TaskManager()
 }
 
 /**
+ * Sets the peer managers, called by the composition root right after all managers were created.
+ */
+void TaskManager::setManagers(ViewManager& view_manager,
+                              EvaluationManager& eval_manager,
+                              FilterManager& filter_manager)
+{
+    view_manager_   = &view_manager;
+    eval_manager_   = &eval_manager;
+    filter_manager_ = &filter_manager;
+}
+
+/**
+ */
+ViewManager& TaskManager::viewManager()
+{
+    traced_assert(view_manager_);
+    return *view_manager_;
+}
+
+/**
+ */
+EvaluationManager& TaskManager::evaluationManager()
+{
+    traced_assert(eval_manager_);
+    return *eval_manager_;
+}
+
+/**
+ */
+FilterManager& TaskManager::filterManager()
+{
+    traced_assert(filter_manager_);
+    return *filter_manager_;
+}
+
+/**
  */
 void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
 {
@@ -455,7 +491,7 @@ std::shared_ptr<TaskResult> TaskManager::createResult(unsigned int id,
     }
     else if (type == task::TaskResultType::Evaluation)
     {
-        result.reset(new EvaluationTaskResult(id, *this, compass_));
+        result.reset(new EvaluationTaskResult(id, *this, compass_, evaluationManager()));
     }
     else if (type == task::TaskResultType::DataSourceAnalysis)
     {
@@ -751,14 +787,14 @@ void TaskManager::setViewableDataConfig(const nlohmann::json::object_t& data,
 {
     viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 
-    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_, load_blocking);
+    viewManager().setCurrentViewPoint(viewable_data_cfg_, load_blocking);
 }
 
 /**
  */
 void TaskManager::unsetViewableDataConfig()
 {
-    compass_.viewManager().unsetCurrentViewPoint();
+    viewManager().unsetCurrentViewPoint();
     viewable_data_cfg_.reset();
 }
 

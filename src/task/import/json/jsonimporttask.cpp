@@ -434,7 +434,7 @@ void JSONImportTask::parseJSONDoneSlot()
 
         json_map_job = std::make_shared<JSONMappingJob>(
                     std::move(json_objects), keys, file_line_id_,
-                    compass_.taskManager().asterixImporterTask().schema()->parsers());
+                    manager().asterixImporterTask().schema()->parsers());
 
         //loginf << "UGA2";
     }

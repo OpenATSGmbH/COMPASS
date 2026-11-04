@@ -188,7 +188,7 @@ void ViewLoadStateWidget::updateState()
         return;
 
     //ask widget for special states
-    bool needs_reload =  view_widget_->getView()->viewManager().compass().viewManager().reloadNeeded();
+    bool needs_reload =  view_widget_->getView()->viewManager().reloadNeeded();
     bool needs_redraw =  view_widget_->getView()->updateNeeded();
     bool needs_data   = !view_widget_->getViewDataWidget()->hasData();
 

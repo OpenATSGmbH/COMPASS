@@ -31,6 +31,8 @@
 #include "json_fwd.hpp"
 
 class COMPASS;
+class ViewManager;
+class FilterManager;
 class EvaluationStandard;
 class DBContent;
 class DBContentManager;
@@ -138,6 +140,13 @@ public:
     COMPASS& compass() { return compass_; }
     DBContentManager& dbContentManager() { return dbcontent_man_; }
 
+    // peers, set by the composition root
+    void setManagers(ViewManager& view_manager,
+                     FilterManager& filter_manager);
+
+    ViewManager& viewManager();
+    FilterManager& filterManager();
+
 protected:
     friend class EvaluationCalculator;
 
@@ -167,6 +176,10 @@ private:
 
     COMPASS& compass_;
     DBContentManager& dbcontent_man_;
+
+    // peers, set by the composition root
+    ViewManager*   view_manager_   = nullptr;
+    FilterManager* filter_manager_ = nullptr;
 
     bool initialized_ {false};
 

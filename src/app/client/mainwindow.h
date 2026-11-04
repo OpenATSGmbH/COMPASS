@@ -42,6 +42,7 @@ class MainLoadWidget;
 class ToolBox;
 
 class COMPASS;
+class CompassRoot;
 
 class MainWindow : public QMainWindow, public IMainWindow
 {
@@ -110,7 +111,7 @@ public slots:
     void updateMenuEnabledState();
 
 public:
-    explicit MainWindow(COMPASS& compass);
+    explicit MainWindow(CompassRoot& root);
     virtual ~MainWindow();
 
     void init();
@@ -211,7 +212,8 @@ protected:
 private:
     void showCommandShell();
 
-    COMPASS& compass_;
+    CompassRoot& root_; // managers of the upper layers
+    COMPASS&     compass_;
 
     unsigned int tool_ds_;
     unsigned int tool_sstatus_;

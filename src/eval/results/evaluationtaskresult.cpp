@@ -55,13 +55,15 @@ const std::string EvaluationTaskResult::FieldTargetInfo = "info";
  */
 EvaluationTaskResult::EvaluationTaskResult(unsigned int id,
                                            ITaskProvider& task_man,
-                                           COMPASS& compass)
+                                           COMPASS& compass,
+                                           EvaluationManager& eval_man)
 :   TaskResult(id, task_man)
 ,   compass_(compass)
+,   eval_man_(eval_man)
 {
     //connected here and not during init or finalization: a result whose content is not read yet
     //must still follow the update and lock state of the evaluation manager
-    connect(&compass_.evaluationManager(), &EvaluationManager::resultsNeedUpdate,
+    connect(&eval_man_, &EvaluationManager::resultsNeedUpdate,
             this, &EvaluationTaskResult::informUpdateEvalResult);
 }
 
@@ -133,7 +135,7 @@ Result EvaluationTaskResult::createCalculator()
     loginf << "creating calculator for result '" << name() << "' with config: " << config_.dump();
 
     //clone calculator from config
-    auto res = EvaluationCalculator::clone(compass_.evaluationManager(),
+    auto res = EvaluationCalculator::clone(eval_man_,
                                               compass_.dbContentManager(),
                                               config_);
     if (!res.ok())

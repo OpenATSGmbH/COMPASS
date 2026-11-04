@@ -19,9 +19,9 @@
 
 #include "rtcommand/rtcommand.h"
 
-class COMPASS;
+class TaskManager;
 
-extern void init_analyze_commands(COMPASS& compass);
+extern void init_analyze_commands(TaskManager& task_manager);
 
 /**
  * get_analyze_inspectors

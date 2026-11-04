@@ -159,8 +159,6 @@ public:
 
     Error checkError() const;
 
-    static const std::string DONE_PROPERTY_NAME;
-
 protected:
     Settings settings_;
 

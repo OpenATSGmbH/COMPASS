@@ -63,6 +63,7 @@ using namespace std;
 using namespace Utils;
 using namespace dbContent;
 
+const std::string DBContentManager::ARTASAssociationsCreatedProperty = "artas_associations_created";
 
 DBContentManager::DBContentManager(nlohmann::json& config, COMPASS& compass)
     : Configurable(config, &compass), compass_(compass)
@@ -575,6 +576,17 @@ void DBContentManager::dbContentEditDialogOKSlot()
 bool DBContentManager::hasAssociations() const
 {
     return has_associations_;
+}
+
+/**
+ * True if the ARTAS associations were created and saved in the database.
+ */
+bool DBContentManager::artasAssociationsCreated()
+{
+    auto& db_interface = compass_.dbInterface();
+
+    return db_interface.hasProperty(ARTASAssociationsCreatedProperty) &&
+           db_interface.getProperty(ARTASAssociationsCreatedProperty) == "1";
 }
 
 /**

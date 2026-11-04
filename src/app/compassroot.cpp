@@ -73,7 +73,7 @@ CompassRoot::CompassRoot(ConfigurationManager& config_manager)
 
     startManagers();
 
-    compass_->setLiveImportBacklogSizeFunc([ this ] () { return compass_->taskManager().asterixImporterTask().numPacketsInProcessing(); });
+    compass_->setLiveImportBacklogSizeFunc([ this ] () { return task_manager_->asterixImporterTask().numPacketsInProcessing(); });
     compass_->setShutdownSequence([ this ] () { shutdown(); });
 
     connectManagers();
@@ -112,13 +112,45 @@ COMPASS& CompassRoot::compass()
 }
 
 /**
+ */
+FilterManager& CompassRoot::filterManager()
+{
+    traced_assert(filter_manager_);
+    return *filter_manager_;
+}
+
+/**
+ */
+ViewManager& CompassRoot::viewManager()
+{
+    traced_assert(view_manager_);
+    return *view_manager_;
+}
+
+/**
+ */
+EvaluationManager& CompassRoot::evaluationManager()
+{
+    traced_assert(eval_manager_);
+    return *eval_manager_;
+}
+
+/**
+ */
+TaskManager& CompassRoot::taskManager()
+{
+    traced_assert(task_manager_);
+    return *task_manager_;
+}
+
+/**
  * Creates the main window on first use.
  */
 MainWindow& CompassRoot::mainWindow()
 {
     if (!main_window_)
     {
-        main_window_ = new MainWindow(*compass_);
+        main_window_ = new MainWindow(*this);
 
         QObject::connect(view_manager_.get(), &ViewManager::loadingStartedSignal,
                          main_window_, &MainWindow::loadingStarted);
@@ -163,7 +195,6 @@ void CompassRoot::registerManagerCreators()
     {
         traced_assert(!filter_manager_);
         filter_manager_.reset(new FilterManager(config, *compass_));
-        compass_->managers().filter_manager  = filter_manager_.get();
         compass_->managers().filter_provider = filter_manager_.get();
     };
 
@@ -171,7 +202,6 @@ void CompassRoot::registerManagerCreators()
     {
         traced_assert(!task_manager_);
         task_manager_.reset(new TaskManager(config, *compass_));
-        compass_->managers().task_manager  = task_manager_.get();
         compass_->managers().task_provider = task_manager_.get();
     };
 
@@ -179,7 +209,6 @@ void CompassRoot::registerManagerCreators()
     {
         traced_assert(!view_manager_);
         view_manager_.reset(new ViewManager(config, *compass_));
-        compass_->managers().view_manager  = view_manager_.get();
         compass_->managers().view_provider = view_manager_.get();
     };
 
@@ -187,7 +216,6 @@ void CompassRoot::registerManagerCreators()
     {
         traced_assert(!eval_manager_);
         eval_manager_.reset(new EvaluationManager(config, *compass_));
-        compass_->managers().eval_manager  = eval_manager_.get();
         compass_->managers().eval_provider = eval_manager_.get();
     };
 
@@ -233,11 +261,17 @@ void CompassRoot::registerManagerCreators()
 }
 
 /**
- * Starts the job and command threads and creates the managers that are no sub-configurables.
+ * Sets the peers of the upper managers, starts the job and command threads and creates the
+ * managers that are no sub-configurables.
  */
 void CompassRoot::startManagers()
 {
     COMPASS::Managers& managers = compass_->managers();
+
+    // peers - set after creation, since the creation order follows the configuration
+    view_manager_->setManagers(*filter_manager_);
+    eval_manager_->setManagers(*view_manager_, *filter_manager_);
+    task_manager_->setManagers(*view_manager_, *eval_manager_, *filter_manager_);
 
     // wire up variable resolver for projection manager (breaks core→db dep)
     var_resolver_.reset(new DBContentManagerVariableResolver(*dbcontent_manager_));
@@ -374,7 +408,6 @@ void CompassRoot::shutdown()
     traced_assert(task_manager_);
     task_manager_->shutdown();
     managers.task_provider = nullptr;
-    managers.task_manager  = nullptr;
     task_manager_ = nullptr;
 
     // A job still in flight keeps using the managers reset below. The live delete job is
@@ -391,7 +424,6 @@ void CompassRoot::shutdown()
     traced_assert(view_manager_);
     view_manager_->close();
     managers.view_provider = nullptr;
-    managers.view_manager  = nullptr;
     view_manager_ = nullptr;
 
     managers.context_manager = nullptr;
@@ -406,7 +438,6 @@ void CompassRoot::shutdown()
     traced_assert(eval_manager_);
     eval_manager_->close();
     managers.eval_provider = nullptr;
-    managers.eval_manager  = nullptr;
     eval_manager_ = nullptr;
 
 #if USE_EXPERIMENTAL_SOURCE == true
@@ -417,7 +448,6 @@ void CompassRoot::shutdown()
 
     traced_assert(filter_manager_);
     managers.filter_provider = nullptr;
-    managers.filter_manager  = nullptr;
     filter_manager_ = nullptr;
 
     if (db_interface_->ready())

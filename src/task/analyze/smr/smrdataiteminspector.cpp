@@ -173,7 +173,7 @@ void SMRDataItemInspector::writeReport(ResultReport::Section& root)
     std::shared_ptr<jASTERIX::jASTERIX> jasterix;
     try
     {
-        jasterix = compass.taskManager().asterixImporterTask().jASTERIX();
+        jasterix = task_.manager().asterixImporterTask().jASTERIX();
     }
     catch (...) { /* helper handles a null pointer gracefully */ }
 

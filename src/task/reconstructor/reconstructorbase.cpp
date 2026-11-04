@@ -1705,7 +1705,7 @@ void ReconstructorBase::doReconstructionStatistics()
 
     auto getTable = [ & ] ()
     {
-        auto& section = task_.manager().compass().taskManager().currentReport()->getSection("Reconstruction Statistics");
+        auto& section = task_.manager().currentReport()->getSection("Reconstruction Statistics");
         if (!section.hasTable("Reconstruction Statistics"))
             section.addTable("Reconstruction Statistics", 4, {"", "", "Value", "Value [%]"}, false);
 
@@ -1912,7 +1912,7 @@ void ReconstructorBase::doUnassociatedAnalysis()
     Grid2D grid;
     grid.create(roi, grid2d::GridResolution().setCellCount(num_cells_x, num_cells_y));
 
-    auto& section = task_.manager().compass().taskManager().currentReport()->getSection(
+    auto& section = task_.manager().currentReport()->getSection(
         "Association:Unassociated");
 
     for (auto rec_num : associator().unassociatedRecNums())

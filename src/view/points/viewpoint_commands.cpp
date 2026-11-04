@@ -65,11 +65,11 @@ namespace
     }
 }
 
-static COMPASS* s_compass = nullptr;
+static ViewManager* s_view_manager = nullptr;
 
-void init_view_point_commands(COMPASS& compass)
+void init_view_point_commands(ViewManager& view_manager)
 {
-    s_compass = &compass;
+    s_view_manager = &view_manager;
     RTCommandSetViewPoint::init();
 }
 
@@ -88,19 +88,19 @@ bool RTCommandSetViewPoint::run_impl()
 {
     loginf << "vp_json_str_ '" << vp_json_str_ << "'";
 
-    if (!s_compass->dbOpened())
+    if (!s_view_manager->compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (s_compass->appMode() != AppMode::Offline) // to be sure
+    if (s_view_manager->compass().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+s_compass->appModeStr());
+        setResultMessage("Wrong application mode "+s_view_manager->compass().appModeStr());
         return false;
     }
 
-    s_compass->viewManager().clearDataInViews();
+    s_view_manager->clearDataInViews();
 
     try
     {
@@ -123,7 +123,7 @@ bool RTCommandSetViewPoint::run_impl()
         viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(
             vp_json_parsed.get<nlohmann::json::object_t>());
 
-        s_compass->viewManager().setCurrentViewPoint(viewable_data_cfg_);
+        s_view_manager->setCurrentViewPoint(viewable_data_cfg_);
     }
     catch (exception& e)
     {

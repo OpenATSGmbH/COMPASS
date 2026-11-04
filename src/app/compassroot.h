@@ -62,6 +62,12 @@ public:
     COMPASS& compass();
     MainWindow& mainWindow();
 
+    // managers of the upper layers, for the app layer (COMPASS only offers the core managers)
+    FilterManager& filterManager();
+    ViewManager& viewManager();
+    EvaluationManager& evaluationManager();
+    TaskManager& taskManager();
+
 private:
     void registerManagerCreators();
     void startManagers();

@@ -544,9 +544,9 @@ namespace
     */
     boost::optional<ExportGeoViewConfig> getExportGeoViewConfig(QWidget* parent,
                                                                 const std::string& default_name,
-                                                                COMPASS& compass)
+                                                                ViewManager& view_manager)
     {
-        auto geo_views = compass.viewManager().viewsOfType<GeographicView>();
+        auto geo_views = view_manager.viewsOfType<GeographicView>();
 
         QDialog dlg(parent);
         dlg.setWindowTitle("Export to GeographicView");
@@ -639,7 +639,7 @@ void GridViewConfigWidget::exportToGeographicView()
 
     std::string name = exportName();
 
-    auto export_config = getExportGeoViewConfig(this, name, view_->compass());
+    auto export_config = getExportGeoViewConfig(this, name, view_->viewManager());
     if (!export_config.has_value())
         return;
 

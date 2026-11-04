@@ -175,7 +175,7 @@ void ViewPointsImportTask::run()
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-    manager().compass().viewManager().loadViewPoints(current_data_);
+    manager().viewManager().loadViewPoints(current_data_);
 
     manager().compass().logInfo("ViewPoints Import") << "imported";
 

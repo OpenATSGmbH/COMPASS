@@ -210,10 +210,6 @@ COMPASS::~COMPASS()
     // the composition root destroys all managers before COMPASS (they are sub-configurables)
     traced_assert(!managers_.db_interface);
     traced_assert(!managers_.dbcontent_manager);
-    traced_assert(!managers_.filter_manager);
-    traced_assert(!managers_.task_manager);
-    traced_assert(!managers_.view_manager);
-    traced_assert(!managers_.eval_manager);
     traced_assert(!managers_.context_manager);
     traced_assert(!managers_.license_manager);
     traced_assert(!managers_.job_manager);
@@ -685,24 +681,6 @@ DBContentManager& COMPASS::dbContentManager()
     return *managers_.dbcontent_manager;
 }
 
-FilterManager& COMPASS::filterManager()
-{
-    traced_assert(managers_.filter_manager);
-    return *managers_.filter_manager;
-}
-
-TaskManager& COMPASS::taskManager()
-{
-    traced_assert(managers_.task_manager);
-    return *managers_.task_manager;
-}
-
-ViewManager& COMPASS::viewManager()
-{
-    traced_assert(managers_.view_manager);
-    return *managers_.view_manager;
-}
-
 QWidget* COMPASS::viewContainerWidget(const std::string& name)
 {
     return viewProvider().viewContainerWidget(name);
@@ -722,12 +700,6 @@ SimpleConfig& COMPASS::config()
 {
     traced_assert(simple_config_);
     return *simple_config_;
-}
-
-EvaluationManager& COMPASS::evaluationManager()
-{
-    traced_assert(managers_.eval_manager);
-    return *managers_.eval_manager;
 }
 
 context::DBContextManager& COMPASS::dbContextManager()
@@ -831,34 +803,10 @@ const DBContentManager& COMPASS::dbContentManager() const
     return *managers_.dbcontent_manager;
 }
 
-const FilterManager& COMPASS::filterManager() const
-{
-    traced_assert(managers_.filter_manager);
-    return *managers_.filter_manager;
-}
-
-const TaskManager& COMPASS::taskManager() const
-{
-    traced_assert(managers_.task_manager);
-    return *managers_.task_manager;
-}
-
-const ViewManager& COMPASS::viewManager() const
-{
-    traced_assert(managers_.view_manager);
-    return *managers_.view_manager;
-}
-
 const SimpleConfig& COMPASS::config() const
 {
     traced_assert(simple_config_);
     return *simple_config_;
-}
-
-const EvaluationManager& COMPASS::evaluationManager() const
-{
-    traced_assert(managers_.eval_manager);
-    return *managers_.eval_manager;
 }
 
 const rtcommand::RTCommandRunner& COMPASS::rtCmdRunner() const

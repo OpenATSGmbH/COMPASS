@@ -31,7 +31,7 @@ DataSourceAnalysisTaskResult::DataSourceAnalysisTaskResult(unsigned int id, Task
     , task_man_(task_man)
 {
     //the data change signals of the evaluation manager apply to the analysis as well
-    connect(&task_man.compass().evaluationManager(), &EvaluationManager::resultsNeedUpdate,
+    connect(&task_man.evaluationManager(), &EvaluationManager::resultsNeedUpdate,
             this, &DataSourceAnalysisTaskResult::informUpdateAnalysisResult);
 }
 

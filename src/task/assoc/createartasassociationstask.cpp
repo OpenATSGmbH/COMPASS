@@ -49,8 +49,6 @@ using namespace std;
 using namespace Utils;
 using namespace dbContent;
 
-const std::string CreateARTASAssociationsTask::DONE_PROPERTY_NAME = "artas_associations_created"; // really needed
-
 CreateARTASAssociationsTask::CreateARTASAssociationsTask(nlohmann::json& config,
                                                          TaskManager* parent)
     : Task(*parent),
@@ -256,7 +254,7 @@ void CreateARTASAssociationsTask::run()
         traced_assert(ds_found);
 
         // CAT062 datasource/line constraint via the shared clause toolkit (ds_id/line_id IN)
-        IDBVariableResolver& resolver = manager().compass().filterManager().variableResolver();
+        IDBVariableResolver& resolver = manager().filterManager().variableResolver();
 
         // stored ids, not display representations: ds_id must not be resolved as a data source
         // name, and line_id is stored 0-based while its representation is "L1".."L4"
@@ -292,8 +290,7 @@ const CreateARTASAssociationsTask::ResultStats& CreateARTASAssociationsTask::res
 
 bool CreateARTASAssociationsTask::wasRun()
 {
-    return manager().compass().dbInterface().hasProperty(DONE_PROPERTY_NAME)
-             && manager().compass().dbInterface().getProperty(DONE_PROPERTY_NAME) == "1";
+    return manager().compass().dbContentManager().artasAssociationsCreated();
 }
 
 void CreateARTASAssociationsTask::loadingDoneSlot()
@@ -372,7 +369,7 @@ void CreateARTASAssociationsTask::createDoneSlot()
 
     if (save_associations_)
     {
-        manager().compass().dbInterface().setProperty(DONE_PROPERTY_NAME, "1");
+        manager().compass().dbInterface().setProperty(DBContentManager::ARTASAssociationsCreatedProperty, "1");
 
         manager().compass().dbInterface().saveProperties();
 

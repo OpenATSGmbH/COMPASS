@@ -33,11 +33,7 @@
 
 class DBInterface;
 class DBContentManager;
-class FilterManager;
-class TaskManager;
-class ViewManager;
 class SimpleConfig;
-class EvaluationManager;
 class IMainWindow;
 class IViewProvider;
 class IFilterProvider;
@@ -96,10 +92,6 @@ public:
     {
         DBInterface*                db_interface       = nullptr;
         DBContentManager*           dbcontent_manager  = nullptr;
-        FilterManager*              filter_manager     = nullptr;
-        TaskManager*                task_manager       = nullptr;
-        ViewManager*                view_manager       = nullptr;
-        EvaluationManager*          eval_manager       = nullptr;
         context::DBContextManager*  context_manager    = nullptr;
         LicenseManager*             license_manager    = nullptr;
         JobManager*                 job_manager        = nullptr;
@@ -108,7 +100,7 @@ public:
         RTCommandManager*           rt_cmd_manager     = nullptr;
         rtcommand::RTCommandRunner* rt_cmd_runner      = nullptr;
 
-        // the same managers, as seen by code below their layer
+        // the managers of the upper layers, as seen by code below their layer
         IViewProvider*              view_provider      = nullptr;
         IFilterProvider*            filter_provider    = nullptr;
         IEvalProvider*              eval_provider      = nullptr;
@@ -146,11 +138,7 @@ public:
 
     DBInterface& dbInterface();
     DBContentManager& dbContentManager();
-    FilterManager& filterManager();
-    TaskManager& taskManager();
-    ViewManager& viewManager();
     SimpleConfig& config();
-    EvaluationManager& evaluationManager();
     rtcommand::RTCommandRunner& rtCmdRunner();
     context::DBContextManager& dbContextManager();
     bool hasActiveContext() const;
@@ -164,6 +152,7 @@ public:
     ConfigurationManager& configManager() { return config_manager_; }
 
     // view, filter, evaluation and task manager for code below their layer
+    // (the upper layers get them from their own manager, the app layer from CompassRoot)
     IViewProvider& viewProvider();
     IFilterProvider& filterProvider();
     IEvalProvider& evalProvider();
@@ -171,11 +160,7 @@ public:
 
     const DBInterface& dbInterface() const;
     const DBContentManager& dbContentManager() const;
-    const FilterManager& filterManager() const;
-    const TaskManager& taskManager() const;
-    const ViewManager& viewManager() const;
     const SimpleConfig& config() const;
-    const EvaluationManager& evaluationManager() const;
     const rtcommand::RTCommandRunner& rtCmdRunner() const;
     const LicenseManager& licenseManager() const;
     const JobManager& jobManager() const;

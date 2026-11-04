@@ -26,6 +26,7 @@
 #include <string>
 
 class COMPASS;
+class ViewManager;
 class TaskResult;
 
 namespace ResultReport
@@ -45,6 +46,7 @@ public:
     virtual ~ITaskProvider() = default;
 
     virtual COMPASS& compass() = 0;
+    virtual ViewManager& viewManager() = 0; // views for figure rendering and export
 
     // result writing
     virtual void beginTaskResultWriting(const std::string& name,

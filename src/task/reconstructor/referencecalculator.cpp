@@ -1294,7 +1294,7 @@ void ReferenceCalculator::createAnnotations()
 
     if (num_targets > 0)
     {
-        auto& report           = reconstructor_.task().manager().compass().taskManager().currentReport();
+        auto& report           = reconstructor_.task().manager().currentReport();
         auto& section_ref_calc = report->getSection("Reference Calculation");
 
         std::vector<std::string> headings = { "UTN" };

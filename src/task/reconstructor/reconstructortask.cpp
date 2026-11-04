@@ -457,7 +457,7 @@ void ReconstructorTask::run()
     manager().compass().dbContentManager().clearAssociationsIdentifier();
     manager().compass().dbInterface().startPerformanceMetrics();
 
-    manager().compass().taskManager().beginTaskResultWriting(
+    manager().beginTaskResultWriting(
         "Reconstruct References "+String::lineStrFrom(currentReconstructor()->settings().ds_line),
          task::TaskResultType::Generic);
 
@@ -472,7 +472,7 @@ void ReconstructorTask::run()
     run_start_time_ = boost::posix_time::microsec_clock::local_time();
     run_start_time_after_del_ = {};
 
-    auto& section = manager().compass().taskManager().currentReport()->getSection("Overview");
+    auto& section = manager().currentReport()->getSection("Overview");
     section.addTable("Info", 3, {"Name", "Value", "Comment"}, false);
 
     auto& table = section.getTable("Info");
@@ -504,9 +504,9 @@ void ReconstructorTask::run()
 
     updateProgressSlot("Deleting Previous References", false);
 
-    manager().compass().viewManager().clearDataInViews();
+    manager().viewManager().clearDataInViews();
 
-    manager().compass().evaluationManager().clearData(); // in case there are previous results
+    manager().evaluationManager().clearData(); // in case there are previous results
 
     delcalcref_future_ = std::async(std::launch::async, [&] {
         {
@@ -732,7 +732,7 @@ std::string ReconstructorTask::loadFilterClause(
     const std::string& dbcontent_name, bool has_bbox,
     double lat_min, double lat_max, double long_min, double long_max)
 {
-    IDBVariableResolver& resolver   = manager().compass().filterManager().variableResolver();
+    IDBVariableResolver& resolver   = manager().filterManager().variableResolver();
     DBContentManager& dbcontent_man = manager().compass().dbContentManager();
 
     std::vector<FilterClause> parts;
@@ -1190,7 +1190,7 @@ void ReconstructorTask::endReconstruction()
                                                  << " after " << String::timeStringFromDouble(time_elapsed_s, false);
 
     // report: info
-    auto& section = manager().compass().taskManager().currentReport()->getSection("Overview");
+    auto& section = manager().currentReport()->getSection("Overview");
 
     {
         auto& table = section.getTable("Info");
@@ -1248,7 +1248,7 @@ void ReconstructorTask::endReconstruction()
     if (!skip_reference_data_writing_)
         manager().compass().dbContentManager().setAssociationsIdentifier("All");
 
-    manager().compass().taskManager().endTaskResultWriting(true, true);
+    manager().endTaskResultWriting(true, true);
 
     //cleanup db after reconstruction
     manager().compass().dbInterface().cleanupDB(true);
@@ -1358,7 +1358,7 @@ void ReconstructorTask::runCancelledSlot()
     msg_box->close();
     delete msg_box;
 
-    manager().compass().taskManager().endTaskResultWriting(false);
+    manager().endTaskResultWriting(false);
 
     emit doneSignal();
 }
@@ -1538,7 +1538,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
 // {
 //     loginf;
 
-//     manager().compass().viewManager().clearViewPoints();
+//     manager().viewManager().clearViewPoints();
 
 //     std::vector <nlohmann::json> view_points;
 
@@ -1550,7 +1550,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
 //         view_points.emplace_back(j);
 //     }
 
-//     manager().compass().viewManager().addViewPoints(view_points);
+//     manager().viewManager().addViewPoints(view_points);
 
 //     debug_viewpoints_.clear();
 // }

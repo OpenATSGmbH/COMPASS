@@ -100,20 +100,28 @@ ViewManager::ViewManager(nlohmann::json& config, COMPASS& compass)
 
     qRegisterMetaType<ViewPoint*>("ViewPoint*");
 
-    init_view_point_commands(compass_);
+    init_view_point_commands(*this);
 
 #if USE_EXPERIMENTAL_SOURCE == true
-    init_geographic_view_commands();
+    init_geographic_view_commands(*this);
 #endif
 
     registerParameter("automatic_reload", &config_.automatic_reload, Config().automatic_reload);
     registerParameter("automatic_redraw", &config_.automatic_redraw, Config().automatic_redraw);
 
-    load_controller_.reset(new LoadController(compass_));
+    load_controller_.reset(new LoadController(compass_, *this));
     live_controller_.reset(new LiveController(compass_, *this));
 
     connect(live_controller_.get(), &LiveController::overloadCheckedSignal,
             this, &ViewManager::liveOverloadCheckedSignal);
+}
+
+/**
+ */
+FilterManager& ViewManager::filterManager()
+{
+    traced_assert(filter_manager_);
+    return *filter_manager_;
 }
 
 /**
@@ -140,7 +148,7 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
     traced_assert(view_points_widget_);
 
-    FilterManager& filter_man = compass_.filterManager();
+    FilterManager& filter_man = filterManager();
 
     connect (this, &ViewManager::showViewPointSignal, &filter_man, &FilterManager::showViewPointSlot);
     connect (this, &ViewManager::unshowViewPointSignal, &filter_man, &FilterManager::unshowViewPointSlot);

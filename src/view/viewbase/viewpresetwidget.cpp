@@ -263,7 +263,7 @@ void ViewPresetEditDialog::updateMetaData()
 */
 bool ViewPresetEditDialog::checkName()
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
 
     if (name_edit_->text().isEmpty())
     {
@@ -315,7 +315,7 @@ bool ViewPresetEditDialog::applyCreate()
     updateMetaData();
 
     //create new preset
-    bool ok = view_->viewManager().compass().viewManager().viewPresets().createPreset(preset_new_, view_);
+    bool ok = view_->viewManager().viewPresets().createPreset(preset_new_, view_);
 
     QApplication::restoreOverrideCursor();
 
@@ -338,7 +338,7 @@ bool ViewPresetEditDialog::applyEdit()
     updateMetaData();
 
     //edit existing preset with new metadata
-    bool ok = view_->viewManager().compass().viewManager().viewPresets().updatePreset(preset_->key(), 
+    bool ok = view_->viewManager().viewPresets().updatePreset(preset_->key(), 
                                                                            ViewPresets::UpdateMode::MetaData,
                                                                            &preset_new_,
                                                                            view_);
@@ -370,7 +370,7 @@ bool ViewPresetEditDialog::applyCopy()
     updateMetaData();
 
     //copy preset
-    bool ok = view_->viewManager().compass().viewManager().viewPresets().copyPreset(preset_->key(), 
+    bool ok = view_->viewManager().viewPresets().copyPreset(preset_->key(), 
                                                                          preset_new_.name,
                                                                          preset_new_.metadata,
                                                                          view_);
@@ -645,7 +645,7 @@ void ViewPresetItemWidget::createUI()
 */
 void ViewPresetItemWidget::updateContents(const ViewPresets::Key& key)
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
     traced_assert(presets.hasPreset(key));
 
     key_    = key;
@@ -760,7 +760,7 @@ void ViewPresetItemWidget::copyButtonPressed()
 */
 void ViewPresetItemWidget::saveButtonPressed()
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
     traced_assert(presets.hasPreset(key_));
 
     const auto& p = presets.presets().at(key_);
@@ -853,7 +853,7 @@ ViewPresetItemListWidget::ViewPresetItemListWidget(View* view,
     createUI();
     updateContents();
 
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
 
     //react on preset changes globally
     connect(&presets, &ViewPresets::presetAdded  , this, &ViewPresetItemListWidget::updateItem);
@@ -978,7 +978,7 @@ void ViewPresetItemListWidget::clear()
 */
 void ViewPresetItemListWidget::editPreset(ViewPresets::Key key)
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
     traced_assert(presets.hasPreset(key));
 
     auto& p = presets.presets().at(key);
@@ -997,7 +997,7 @@ void ViewPresetItemListWidget::editPreset(ViewPresets::Key key)
 */
 void ViewPresetItemListWidget::removePreset(ViewPresets::Key key)
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
     traced_assert(presets.hasPreset(key));
 
     const auto& p = presets.presets().at(key);
@@ -1018,7 +1018,7 @@ void ViewPresetItemListWidget::removePreset(ViewPresets::Key key)
 */
 void ViewPresetItemListWidget::copyPreset(ViewPresets::Key key)
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
     traced_assert(presets.hasPreset(key));
 
     //copy preset
@@ -1076,7 +1076,7 @@ void ViewPresetItemListWidget::refill()
     //clear items
     clear();
 
-    const auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    const auto& presets = view_->viewManager().viewPresets();
 
     //get preset keys for stored view type
     auto keys = presets.keysFor(view_);
@@ -1261,7 +1261,7 @@ void ViewPresetWidget::presetApplied(ViewPresets::Key key)
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
     //apply preset
-    const auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    const auto& presets = view_->viewManager().viewPresets();
     const auto& preset  = presets.presets().at(key);
 
     std::string error_msg;
@@ -1300,7 +1300,7 @@ nlohmann::json ViewPresetWidget::viewInfoJSON() const
     //add general information
     nlohmann::json preset_infos = nlohmann::json::array();
 
-    const auto& presets = view_->viewManager().compass().viewManager().viewPresets().presets();
+    const auto& presets = view_->viewManager().viewPresets().presets();
 
     for (const auto& p : presets)
     {
