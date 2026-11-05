@@ -233,7 +233,10 @@ bool injectUIEvent(QWidget* parent,
         if (params.size() > 1)
             return false;
 
-        QStringList path_to_item = params.size() == 1 ? params[ 0 ].split("|") : QStringList();
+        //"contextmenu()" gives one empty parameter: no item path
+        QStringList path_to_item;
+        if (params.size() == 1 && !params[ 0 ].trimmed().isEmpty())
+            path_to_item = params[ 0 ].split("|");
 
         return injectContextMenuEvent(w.second, "", path_to_item, delay);
     }

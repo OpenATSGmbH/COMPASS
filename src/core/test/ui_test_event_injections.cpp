@@ -1418,11 +1418,21 @@ bool injectCheckBoxEvent(QWidget* root,
     if (obj.second->isChecked() == on)
         return true;
 
-    //toggle check state
-    if (!injectClickEvent(obj.second, "", 2, 2, Qt::LeftButton, delay))
+    //toggle check state with a click on the indicator, as a user does. the
+    //indicator position depends on the style (e.g. not at the corner on Windows)
+    QStyleOptionButton opt;
+    opt.initFrom(obj.second);
+    opt.text     = obj.second->text();
+    opt.icon     = obj.second->icon();
+    opt.iconSize = obj.second->iconSize();
+
+    QRect indicator = obj.second->style()->subElementRect(QStyle::SE_CheckBoxIndicator, &opt, obj.second);
+    QPoint click_pos = indicator.isValid() ? indicator.center() : QPoint(2, 2);
+
+    if (!injectClickEvent(obj.second, "", click_pos.x(), click_pos.y(), Qt::LeftButton, delay))
         return false;
 
-    //style sheets may exclude the corner from the clickable area - retry at
+    //style sheets may exclude the indicator from the clickable area - retry at
     //the widget center
     if (obj.second->isChecked() != on &&
         !injectClickEvent(obj.second, "", -1, -1, Qt::LeftButton, delay))

@@ -122,11 +122,20 @@ RUN wget -q https://download.osgeo.org/proj/proj-9.4.1.tar.gz \
   && cmake --build proj-build && cmake --install proj-build \
   && rm -rf proj-*
 
+# Expat (GDAL needs it to read KML and GML, e.g. for the sector import)
+RUN wget -q https://github.com/libexpat/libexpat/releases/download/R_2_6_3/expat-2.6.3.tar.xz \
+  && tar xJf expat-2.6.3.tar.xz \
+  && cmake ${WIN_CMAKE} -DEXPAT_BUILD_TOOLS=OFF -DEXPAT_BUILD_EXAMPLES=OFF -DEXPAT_BUILD_TESTS=OFF \
+     -DEXPAT_BUILD_DOCS=OFF -DEXPAT_SHARED_LIBS=ON -S expat-2.6.3 -B expat-build \
+  && cmake --build expat-build && cmake --install expat-build \
+  && rm -rf expat-*
+
 # GDAL (internal tiff, geotiff, png, jpeg, zlib, json-c, only the listed external libraries)
 RUN wget -q https://github.com/OSGeo/gdal/releases/download/v3.9.3/gdal-3.9.3.tar.gz \
   && tar xzf gdal-3.9.3.tar.gz \
   && cmake ${WIN_CMAKE} -DBUILD_TESTING=OFF -DBUILD_APPS=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_JAVA_BINDINGS=OFF \
      -DBUILD_CSHARP_BINDINGS=OFF -DGDAL_USE_EXTERNAL_LIBS=OFF -DGDAL_USE_SQLITE3=ON -DGDAL_USE_CURL=ON -DGDAL_USE_GEOS=ON \
+     -DGDAL_USE_EXPAT=ON \
      -DSQLite3_INCLUDE_DIR=/opt/win64/include -DSQLite3_LIBRARY=/opt/win64/lib/libsqlite3.dll.a \
      -S gdal-3.9.3 -B gdal-build \
   && cmake --build gdal-build && cmake --install gdal-build \
