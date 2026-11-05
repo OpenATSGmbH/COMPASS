@@ -147,8 +147,10 @@ void init_commands(CompassRoot& root)
     main_window::RTCommandReconfigure::init();
     main_window::RTCommandClientInfo::init();
 
-    context_cmd::init_context_commands();
-    dbContent::init_data_source_commands();
+    context_cmd::init_context_commands(root.compass().dbContextManager());
+    dbContent::init_data_source_commands(root.compass().dbContextManager(),
+                                         root.compass().dbContentManager(),
+                                         root.sensorStatusTracker());
 }
 
 // import ds

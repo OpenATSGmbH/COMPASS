@@ -16,7 +16,6 @@
  */
 
 #include "dbcontent/dbcontent.h"
-#include "compass.h"
 #include "buffer.h"
 #include "buffer_utils.h"
 #include "dbcontentreaddbjob.h"
@@ -41,7 +40,6 @@ using namespace dbContent;
 
 DBContent::DBContent(nlohmann::json& config, DBContentManager* parent)
     : Configurable(config, parent)
-    , compass_(parent->compass())
     , dbcont_manager_(*parent)
 {
     registerParameter("name", &name_, std::string("Undefined"));
@@ -257,12 +255,12 @@ void DBContent::loadInternal(dbContent::VariableSet& read_set, std::string custo
     traced_assert(!read_job_);
 
     read_job_ = make_shared<DBContentReadDBJob>(
-                compass_.dbInterface(), *this, read_set, custom_filter_clause);
+                dbcont_manager_.contentDB(), *this, read_set, custom_filter_clause);
 
     connect(read_job_.get(), &DBContentReadDBJob::doneSignal,
             this, &DBContent::readJobDoneSlot, Qt::QueuedConnection);
 
-    compass_.jobManager().addDBJob(read_job_);
+    dbcont_manager_.jobManager().addDBJob(read_job_);
 }
 
 /**
@@ -386,7 +384,7 @@ bool DBContent::updateDataSourcesBeforeInsert (shared_ptr<Buffer>& buffer)
 
     traced_assert(buffer->has<boost::posix_time::ptime>(timestamp_col_str));
 
-    auto& ctx_man = compass_.dbContextManager();
+    auto& ctx_man = dbcont_manager_.dbContextManager();
 
     NullableVector<unsigned int>& datasource_vec = buffer->get<unsigned int>(datasource_col_str);
     NullableVector<unsigned int>& line_vec = buffer->get<unsigned int>(line_col_str);
@@ -481,14 +479,14 @@ void DBContent::updateData(Variable& key_var, shared_ptr<Buffer> buffer)
     buffer_utils::transformVariables(*buffer, list, false);
 
     update_job_ =
-            make_shared<UpdateBufferDBJob>(compass_.dbInterface(), *this, key_var, buffer);
+            make_shared<UpdateBufferDBJob>(dbcont_manager_.dbInterface(), *this, key_var, buffer);
 
     connect(update_job_.get(), &UpdateBufferDBJob::doneSignal, this, &DBContent::updateDoneSlot,
             Qt::QueuedConnection);
     connect(update_job_.get(), &UpdateBufferDBJob::updateProgressSignal, this,
             &DBContent::updateProgressSlot, Qt::QueuedConnection);
 
-    compass_.jobManager().addDBJob(update_job_);
+    dbcont_manager_.jobManager().addDBJob(update_job_);
 }
 
 /**
@@ -502,14 +500,14 @@ void DBContent::deleteDBContentData(bool cleanup_db)
 
     traced_assert(!delete_job_);
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(dbcont_manager_.contentDB());
     delete_job_->setSpecificDBContent(name_);
     delete_job_->cleanupDB(cleanup_db);
 
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContent::deleteJobDoneSlot,
             Qt::QueuedConnection);
 
-    compass_.jobManager().addDBJob(delete_job_);
+    dbcont_manager_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -523,7 +521,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, bool cle
 
     traced_assert(!delete_job_);
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(dbcont_manager_.contentDB());
     delete_job_->setSpecificDBContent(name_);
     delete_job_->setSpecificSacSic(sac, sic);
     delete_job_->cleanupDB(cleanup_db);
@@ -531,7 +529,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, bool cle
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContent::deleteJobDoneSlot,
             Qt::QueuedConnection);
 
-    compass_.jobManager().addDBJob(delete_job_);
+    dbcont_manager_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -546,7 +544,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, unsigned
 
     traced_assert(!delete_job_);
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(compass_.dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(dbcont_manager_.contentDB());
     delete_job_->setSpecificDBContent(name_);
     delete_job_->setSpecificSacSic(sac, sic);
     delete_job_->setSpecificLineId(line_id);
@@ -555,7 +553,7 @@ void DBContent::deleteDBContentData(unsigned int sac, unsigned int sic, unsigned
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal, this, &DBContent::deleteJobDoneSlot,
             Qt::QueuedConnection);
 
-    compass_.jobManager().addDBJob(delete_job_);
+    dbcont_manager_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -584,8 +582,8 @@ void DBContent::deleteJobDoneSlot()
 
     delete_job_ = nullptr;
 
-    compass_.dbContextManager().writeContextToDB();
-    emit compass_.dbContextManager().dataSourcesChangedSignal();
+    dbcont_manager_.dbContextManager().writeContextToDB();
+    emit dbcont_manager_.dbContextManager().dataSourcesChangedSignal();
 
     // remove from inserted count
     //compass_.dataSourceManager().clearInsertedCounts(name_);
@@ -594,7 +592,7 @@ void DBContent::deleteJobDoneSlot()
     // remove from targets count
     //dbcont_manager_.removeDBContentFromTargets(name_);
 
-    count_ = compass_.dbInterface().count(db_table_name_);
+    count_ = dbcont_manager_.dbInterface().count(db_table_name_);
 }
 
 /**
@@ -608,7 +606,7 @@ void DBContent::databaseOpenedSlot()
     is_loadable_ = existsInDB();
 
     if (is_loadable_)
-        count_ = compass_.dbInterface().count(db_table_name_);
+        count_ = dbcont_manager_.dbInterface().count(db_table_name_);
 
     logdbg << name_ << ": table " << db_table_name_
            << " count " << count_;
@@ -648,14 +646,14 @@ size_t DBContent::count() { return count_; }
 void DBContent::refreshCount()
 {
     if (existsInDB())
-        count_ = compass_.dbInterface().count(db_table_name_);
+        count_ = dbcont_manager_.dbInterface().count(db_table_name_);
 }
 
 /**
  */
 bool DBContent::existsInDB() const
 {
-    return compass_.dbInterface().existsTable(db_table_name_);
+    return dbcont_manager_.dbInterface().existsTable(db_table_name_);
 }
 
 /**

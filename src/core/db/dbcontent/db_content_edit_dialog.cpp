@@ -16,7 +16,7 @@
  */
 
 #include "dbcontent/db_content_edit_dialog.h"
-#include "compass.h"
+#include "appstate.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/metavariable.h"
@@ -62,7 +62,7 @@ namespace
 DBContentEditDialog::DBContentEditDialog(DBContentManager& dbcont_man, QWidget* parent)
     : QDialog(parent), dbcont_man_(dbcont_man)
 {
-    if (dbcont_man_.compass().expertMode())
+    if (dbcont_man_.appState().expertMode())
         setWindowTitle("DBContent");
     else
         setWindowTitle("Show DBContent");

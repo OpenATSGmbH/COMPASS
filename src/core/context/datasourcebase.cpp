@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "source/datasourcebase.h"
-#include "source/datasourceremoteunit.h"
+#include "datasourcebase.h"
+#include "datasourceremoteunit.h"
 
 #include "global.h"
 #include "logger.h"

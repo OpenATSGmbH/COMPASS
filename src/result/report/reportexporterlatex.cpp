@@ -76,7 +76,7 @@ Result ReportExporterLatex::initExport_impl(TaskResult& result)
 
     std::string report_fn = boost::filesystem::path(exportFilename()).stem().string() + ".tex";
 
-    latex_doc_.reset(new LatexDocument(compass(), exportResourceDir(), report_fn));
+    latex_doc_.reset(new LatexDocument(exportResourceDir(), report_fn, compass().licenseeString(true)));
 
     latex_doc_->title(result.name() + " Report");
 

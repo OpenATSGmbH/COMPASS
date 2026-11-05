@@ -29,9 +29,9 @@
 #include "number.h"
 #include "timeconv.h"
 #include "buffer_utils.h"
-#include "compass.h"
 #include "jobmanager.h"
 #include "dbinterface.h"
+#include "dbcontentdb.h"
 #include "db_context_manager.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
@@ -93,7 +93,7 @@ void DBContentDataEngine::load(std::shared_ptr<LoadOperation> op)
     const LoadSpec& spec = op->spec();
 
     if (spec.measure_db_performance_)
-        dbcont_man_.compass().dbInterface().startPerformanceMetrics();
+        dbcont_man_.dbInterface().startPerformanceMetrics();
 
     set<string> targets = resolveTargetSet(spec);
 
@@ -218,7 +218,7 @@ void DBContentDataEngine::finish()
 
     if (op->spec().measure_db_performance_)
     {
-        DBInterface& db_interface = dbcont_man_.compass().dbInterface();
+        DBInterface& db_interface = dbcont_man_.dbInterface();
         if (db_interface.hasActivePerformanceMetrics())
             loginf << db_interface.stopPerformanceMetrics().asString();
     }
@@ -257,14 +257,14 @@ void DBContentDataEngine::deleteData(const nlohmann::json& delete_info)
 
     delete_info_ = delete_info;
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(dbcont_man_.compass().dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(dbcont_man_.contentDB());
     delete_job_->setDeleteInfo(delete_info_);
     delete_job_->cleanupDB(true);
 
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal,
             this, &DBContentDataEngine::finishDeletingSlot, Qt::QueuedConnection);
 
-    dbcont_man_.compass().jobManager().addDBJob(delete_job_);
+    dbcont_man_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -274,13 +274,13 @@ void DBContentDataEngine::deleteOlderThan(boost::posix_time::ptime before_timest
 {
     traced_assert(!delete_job_); // caller checks hasActiveDeleteJob()
 
-    delete_job_ = make_shared<DBContentDeleteDBJob>(dbcont_man_.compass().dbInterface());
+    delete_job_ = make_shared<DBContentDeleteDBJob>(dbcont_man_.contentDB());
     delete_job_->setBeforeTimestamp(before_timestamp);
 
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal,
             this, &DBContentDataEngine::deleteJobDoneSlot, Qt::QueuedConnection);
 
-    dbcont_man_.compass().jobManager().addDBJob(delete_job_);
+    dbcont_man_.jobManager().addDBJob(delete_job_);
 }
 
 /**
@@ -289,7 +289,7 @@ void DBContentDataEngine::finishDeletingSlot()
 {
     traced_assert(delete_job_);
 
-    dbcont_man_.compass().dbContextManager().applyDeleteInfo(delete_info_);
+    dbcont_man_.dbContextManager().applyDeleteInfo(delete_info_);
 
     delete_job_  = nullptr;
     delete_info_ = nlohmann::json{};
@@ -310,7 +310,7 @@ void DBContentDataEngine::deleteJobDoneSlot()
  */
 unsigned long DBContentDataEngine::queryMaxRecordNumberWODBContentID() const
 {
-    traced_assert(dbcont_man_.compass().dbInterface().ready());
+    traced_assert(dbcont_man_.dbInterface().ready());
 
     unsigned long result = 0;
 
@@ -318,7 +318,7 @@ unsigned long DBContentDataEngine::queryMaxRecordNumberWODBContentID() const
     {
         if (obj_it.second->existsInDB())
         {
-            unsigned long with_id = dbcont_man_.compass().dbInterface().getMaxRecordNumber(*obj_it.second);
+            unsigned long with_id = dbcont_man_.contentDB().getMaxRecordNumber(*obj_it.second);
             result = std::max(Utils::Number::recNumGetWithoutDBContId(with_id), result);
         }
     }
@@ -330,8 +330,8 @@ unsigned long DBContentDataEngine::queryMaxRecordNumberWODBContentID() const
  */
 boost::optional<unsigned int> DBContentDataEngine::queryMaxRefTrajTrackNum() const
 {
-    traced_assert(dbcont_man_.compass().dbInterface().ready());
-    return dbcont_man_.compass().dbInterface().getMaxRefTrackTrackNum();
+    traced_assert(dbcont_man_.dbInterface().ready());
+    return dbcont_man_.contentDB().getMaxRefTrackTrackNum();
 }
 
 /**
@@ -434,7 +434,7 @@ void DBContentDataEngine::clearMaxNumbers()
  */
 void DBContentDataEngine::loadMinMaxInfo()
 {
-    auto& db_interface = dbcont_man_.compass().dbInterface();
+    auto& db_interface = dbcont_man_.dbInterface();
 
     if (db_interface.hasProperty(PROP_TIMESTAMP_MIN_NAME))
     {
@@ -531,9 +531,9 @@ void DBContentDataEngine::updateInsertMinMax(const std::map<std::string, std::sh
 
         if (hasMinMaxTimestamp())
         {
-            dbcont_man_.compass().dbInterface().setProperty(PROP_TIMESTAMP_MIN_NAME,
+            dbcont_man_.dbInterface().setProperty(PROP_TIMESTAMP_MIN_NAME,
                                                         to_string(Utils::Time::toLong(*timestamp_min_)));
-            dbcont_man_.compass().dbInterface().setProperty(PROP_TIMESTAMP_MAX_NAME,
+            dbcont_man_.dbInterface().setProperty(PROP_TIMESTAMP_MAX_NAME,
                                                         to_string(Utils::Time::toLong(*timestamp_max_)));
         }
 
@@ -579,11 +579,11 @@ void DBContentDataEngine::updateInsertMinMax(const std::map<std::string, std::sh
 
                 if (has_min_max)
                 {
-                    dbcont_man_.compass().dbInterface().setProperty(PROP_LATITUDE_MIN_NAME, to_string(*latitude_min_));
-                    dbcont_man_.compass().dbInterface().setProperty(PROP_LATITUDE_MAX_NAME, to_string(*latitude_max_));
+                    dbcont_man_.dbInterface().setProperty(PROP_LATITUDE_MIN_NAME, to_string(*latitude_min_));
+                    dbcont_man_.dbInterface().setProperty(PROP_LATITUDE_MAX_NAME, to_string(*latitude_max_));
 
-                    dbcont_man_.compass().dbInterface().setProperty(PROP_LONGITUDE_MIN_NAME, to_string(*longitude_min_));
-                    dbcont_man_.compass().dbInterface().setProperty(PROP_LONGITUDE_MAX_NAME, to_string(*longitude_max_));
+                    dbcont_man_.dbInterface().setProperty(PROP_LONGITUDE_MIN_NAME, to_string(*longitude_min_));
+                    dbcont_man_.dbInterface().setProperty(PROP_LONGITUDE_MAX_NAME, to_string(*longitude_max_));
                 }
             }
         }
@@ -619,8 +619,8 @@ void DBContentDataEngine::setMinMaxTimestamp(boost::posix_time::ptime min, boost
     timestamp_min_ = min;
     timestamp_max_ = max;
 
-    dbcont_man_.compass().dbInterface().setProperty(PROP_TIMESTAMP_MIN_NAME, to_string(Utils::Time::toLong(*timestamp_min_)));
-    dbcont_man_.compass().dbInterface().setProperty(PROP_TIMESTAMP_MAX_NAME, to_string(Utils::Time::toLong(*timestamp_max_)));
+    dbcont_man_.dbInterface().setProperty(PROP_TIMESTAMP_MIN_NAME, to_string(Utils::Time::toLong(*timestamp_min_)));
+    dbcont_man_.dbInterface().setProperty(PROP_TIMESTAMP_MAX_NAME, to_string(Utils::Time::toLong(*timestamp_max_)));
 }
 
 /**
@@ -646,8 +646,8 @@ void DBContentDataEngine::setMinMaxLatitude(double min, double max)
     latitude_min_ = min;
     latitude_max_ = max;
 
-    dbcont_man_.compass().dbInterface().setProperty(PROP_LATITUDE_MIN_NAME, to_string(*latitude_min_));
-    dbcont_man_.compass().dbInterface().setProperty(PROP_LATITUDE_MAX_NAME, to_string(*latitude_max_));
+    dbcont_man_.dbInterface().setProperty(PROP_LATITUDE_MIN_NAME, to_string(*latitude_min_));
+    dbcont_man_.dbInterface().setProperty(PROP_LATITUDE_MAX_NAME, to_string(*latitude_max_));
 }
 
 /**
@@ -665,8 +665,8 @@ void DBContentDataEngine::setMinMaxLongitude(double min, double max)
     longitude_min_ = min;
     longitude_max_ = max;
 
-    dbcont_man_.compass().dbInterface().setProperty(PROP_LONGITUDE_MIN_NAME, to_string(*longitude_min_));
-    dbcont_man_.compass().dbInterface().setProperty(PROP_LONGITUDE_MAX_NAME, to_string(*longitude_max_));
+    dbcont_man_.dbInterface().setProperty(PROP_LONGITUDE_MIN_NAME, to_string(*longitude_min_));
+    dbcont_man_.dbInterface().setProperty(PROP_LONGITUDE_MAX_NAME, to_string(*longitude_max_));
 }
 
 /**
@@ -683,7 +683,7 @@ std::pair<double, double> DBContentDataEngine::minMaxLongitude() const
  */
 std::set<std::string> DBContentDataEngine::resolveTargetSet(const LoadSpec& spec) const
 {
-    auto& ctx_man = dbcont_man_.compass().dbContextManager();
+    auto& ctx_man = dbcont_man_.dbContextManager();
 
     std::set<std::string> targets;
 
@@ -723,8 +723,8 @@ std::string DBContentDataEngine::composeWhereClause(const std::string& name, con
     parts.push_back(dataSourceClause(name, spec));
 
     // view filters
-    if (spec.apply_view_filters_ && dbcont_man_.compass().filterProvider().useFilters())
-        parts.push_back(dbcont_man_.compass().filterProvider().viewClause(name));
+    if (spec.apply_view_filters_ && dbcont_man_.filterProvider().useFilters())
+        parts.push_back(dbcont_man_.filterProvider().viewClause(name));
 
     // issuer-supplied ad-hoc clause
     if (spec.custom_filter_clause_)
@@ -756,7 +756,7 @@ FilterClause DBContentDataEngine::dataSourceClause(const std::string& name, cons
     if (spec.datasrc_selection_) // per-op selection wins over the DBContext one
         selection = spec.datasrc_selection_;
     else if (spec.apply_datasrc_filters_)
-        selection = dbcont_man_.compass().dbContextManager().loadingSelection(name);
+        selection = dbcont_man_.dbContextManager().loadingSelection(name);
 
     if (!selection)          // unconstrained -> no clause
         return clause;
@@ -828,17 +828,17 @@ void DBContentDataEngine::insert(std::map<std::string, std::shared_ptr<Buffer>> 
     for (auto& buf_it : insert_data_)
         ds_added_any |= dbcont_man_.dbContent(buf_it.first).updateDataSourcesBeforeInsert(buf_it.second);
 
-    auto& ctx_man = dbcont_man_.compass().dbContextManager();
+    auto& ctx_man = dbcont_man_.dbContextManager();
     if (ds_added_any)
         emit ctx_man.dataSourcesChangedSignal();
     emit ctx_man.countsChangedSignal();
 
-    insert_job_ = make_shared<DBContentInsertDBJob>(dbcont_man_.compass().dbInterface(), dbcont_man_, insert_data_, false);
+    insert_job_ = make_shared<DBContentInsertDBJob>(dbcont_man_.contentDB(), dbcont_man_, insert_data_, false);
 
     connect(insert_job_.get(), &DBContentInsertDBJob::doneSignal,
             this, &DBContentDataEngine::finishInsertingSlot, Qt::QueuedConnection);
 
-    dbcont_man_.compass().jobManager().addDBJob(insert_job_);
+    dbcont_man_.jobManager().addDBJob(insert_job_);
 }
 
 /**

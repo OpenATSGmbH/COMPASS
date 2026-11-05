@@ -18,7 +18,6 @@
 #include "dbcontent/label/labeldswidget.h"
 #include "db_context_manager.h"
 #include "dbcontentmanager.h"
-#include "compass.h"
 #include "dbcontent/label/labelgenerator.h"
 #include "logger.h"
 #include "files.h"
@@ -59,9 +58,9 @@ LabelDSWidget::LabelDSWidget(LabelGenerator& label_generator, QWidget* parent, Q
 
     setLayout(main_layout);
 
-    connect(&label_generator_.dbContentManager().compass().dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
+    connect(&label_generator_.dbContentManager().dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
             this, &LabelDSWidget::updateListSlot); // update if data sources changed
-    connect(&label_generator_.dbContentManager().compass().dbContextManager(), &context::DBContextManager::dataSourcesChangedSignal,
+    connect(&label_generator_.dbContentManager().dbContextManager(), &context::DBContextManager::dataSourcesChangedSignal,
             this, &LabelDSWidget::updateListSlot);
 
     connect(&label_generator, &LabelGenerator::labelLinesChangedSignal,
@@ -81,7 +80,7 @@ void LabelDSWidget::updateListSlot()
 {
     logdbg;
 
-    auto& ctx_man = label_generator_.dbContentManager().compass().dbContextManager();
+    auto& ctx_man = label_generator_.dbContentManager().dbContextManager();
 
     if (!ctx_man.hasActiveContext())
         return;
@@ -186,7 +185,7 @@ void LabelDSWidget::changeLineSlot()
 
     loginf << "ds_id " << ds_id;
 
-    auto& ctx_man = label_generator_.dbContentManager().compass().dbContextManager();
+    auto& ctx_man = label_generator_.dbContentManager().dbContextManager();
     traced_assert(ctx_man.hasDataSource(ds_id));
 
     QMenu menu;

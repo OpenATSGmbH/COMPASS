@@ -16,8 +16,7 @@
  */
 
 #include "targetmodel.h"
-#include "compass.h"
-#include "dbinterface.h"
+#include "dbcontentdb.h"
 #include "dbcontentmanager.h"
 #include "ievalprovider.h"
 #include "logger.h"
@@ -107,7 +106,7 @@ QVariant TargetModel::data(const QModelIndex& index, int role) const
         {
             if (!target.useInEval())
                 return QBrush(Qt::lightGray);
-            if (dbcont_manager_.compass().evalProvider().useTimestampFilter()
+            if (dbcont_manager_.evalProvider().useTimestampFilter()
                     || target.evalExcludedTimeWindows().size()
                     || target.evalExcludedRequirements().size())
                 return QBrush(very_light_gray);
@@ -140,7 +139,7 @@ QVariant TargetModel::data(const QModelIndex& index, int role) const
         {
             if (index.column() == ColUseInEval)  // selected special case
             {
-                return Utils::Files::IconProvider::getIcon(TargetModel::iconForTarget(target, dbcont_manager_.compass().evalProvider()));
+                return Utils::Files::IconProvider::getIcon(TargetModel::iconForTarget(target, dbcont_manager_.evalProvider()));
             }
             else
                 return QVariant();
@@ -167,7 +166,7 @@ QVariant TargetModel::data(const QModelIndex& index, int role) const
                 QString eval_value;
                 if (!target.useInEval())
                     eval_value = "No";
-                else if (dbcont_manager_.compass().evalProvider().useTimestampFilter()
+                else if (dbcont_manager_.evalProvider().useTimestampFilter()
                            || target.evalExcludedTimeWindows().size()
                            || target.evalExcludedRequirements().size())
                     eval_value = "Partial";
@@ -564,7 +563,7 @@ void TargetModel::setUseByFilter ()
 {
     loginf;
 
-    dbcont_manager_.compass().evalProvider().applyTargetFilter(target_data_);
+    dbcont_manager_.evalProvider().applyTargetFilter(target_data_);
 
     updateEvalUseColumn();
     emit targetEvalUsageChangedSignal();
@@ -585,7 +584,7 @@ void TargetModel::deleteAllTargets()
 {
     clear();
 
-    dbcont_manager_.compass().dbInterface().clearTargetsTable();
+    dbcont_manager_.contentDB().clearTargetsTable();
 
     emit targetsDeletedSignal();
 }
@@ -767,7 +766,7 @@ void TargetModel::loadFromDB()
 
     beginResetModel();
 
-    for (auto& target : dbcont_manager_.compass().dbInterface().loadTargets())
+    for (auto& target : dbcont_manager_.contentDB().loadTargets())
     {
         target_data_.push_back({target->utn_, target->info()});
     }
@@ -791,7 +790,7 @@ void TargetModel::saveToDB()
     for (auto& target : target_data_)
         targets_info[target.utn_] = target.info();
 
-    dbcont_manager_.compass().dbInterface().saveTargets(targets_info);
+    dbcont_manager_.contentDB().saveTargets(targets_info);
 }
 
 /**
@@ -808,7 +807,7 @@ void TargetModel::updateToDB(unsigned int utn)
 
     targets_info[tr_tag_it->utn_] = tr_tag_it->info();
 
-    dbcont_manager_.compass().dbInterface().updateTargets(targets_info);
+    dbcont_manager_.contentDB().updateTargets(targets_info);
 }
 
 /**
@@ -826,7 +825,7 @@ void TargetModel::updateToDB(std::set<unsigned int> utns)
         targets_info[tgt.utn_] = tgt.info();
     }
 
-    dbcont_manager_.compass().dbInterface().updateTargets(targets_info);
+    dbcont_manager_.contentDB().updateTargets(targets_info);
 }
 
 /**

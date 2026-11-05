@@ -28,6 +28,8 @@ class COMPASS;
 namespace rtcommand
 {
 
+class IRTCommandHost;
+
 struct RTCommand;
 class  RTCommandChain;
 class  RTCommandRunnerStash;
@@ -42,7 +44,9 @@ class RTCommandRunner
 public:
     typedef std::vector<RTCommandResult> Results;
 
-    explicit RTCommandRunner(COMPASS& compass);
+    // compass is only handed to the commands (for the commands of the libraries above core)
+    RTCommandRunner(IRTCommandHost& host,
+                    COMPASS& compass);
     virtual ~RTCommandRunner();
 
     std::future<Results> runCommand(std::unique_ptr<RTCommand>&& cmd);

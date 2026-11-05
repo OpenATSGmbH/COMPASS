@@ -765,7 +765,7 @@ bool Client::run ()
         rt_man.startCommandProcessing();
 
         // finally => set compass as running
-        compass_->setAppState(AppState::Running);
+        compass_->setAppPhase(AppPhase::Running);
 
         return true;
     }

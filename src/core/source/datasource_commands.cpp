@@ -21,9 +21,8 @@
 #include "db_context_manager.h"
 #include "dbcontentmanager.h"
 #include "dbinterface.h"
-#include "datasourcesstatustoolwidget.h"
-#include "datasourcesstatuswidget.h"
-#include "compass.h"
+#include "sensorstatustracker.h"
+#include "appstate.h"
 #include "logger.h"
 #include "traced_assert.h"
 #include "timeconv.h"
@@ -42,8 +41,18 @@ using namespace std;
 namespace dbContent
 {
 
-void init_data_source_commands()
+static context::DBContextManager* s_ctx_man               = nullptr;
+static DBContentManager*          s_dbcont_man            = nullptr;
+static SensorStatusTracker*       s_sensor_status_tracker = nullptr;
+
+void init_data_source_commands(context::DBContextManager& ctx_man,
+                               DBContentManager& dbcont_man,
+                               SensorStatusTracker& sensor_status_tracker)
 {
+    s_ctx_man    = &ctx_man;
+    s_dbcont_man = &dbcont_man;
+    s_sensor_status_tracker = &sensor_status_tracker;
+
     dbContent::RTCommandGetDataSources::init();
     dbContent::RTCommandGetDataSourceCounts::init();
     dbContent::RTCommandGetSensorStatus::init();
@@ -61,7 +70,7 @@ RTCommandGetDataSources::RTCommandGetDataSources()
 
 bool RTCommandGetDataSources::run_impl()
 {
-    if (!compass_->dbContextManager().hasActiveContext())
+    if (!s_ctx_man->hasActiveContext())
     {
         setResultMessage("No active context");
         return false;
@@ -72,7 +81,7 @@ bool RTCommandGetDataSources::run_impl()
 
 bool RTCommandGetDataSources::checkResult_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     nlohmann::json j = nlohmann::json::array();
     for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
@@ -92,7 +101,7 @@ RTCommandGetDataSourceCounts::RTCommandGetDataSourceCounts()
 
 bool RTCommandGetDataSourceCounts::run_impl()
 {
-    if (!compass_->dbContextManager().hasActiveContext())
+    if (!s_ctx_man->hasActiveContext())
     {
         setResultMessage("No active context");
         return false;
@@ -103,7 +112,7 @@ bool RTCommandGetDataSourceCounts::run_impl()
 
 bool RTCommandGetDataSourceCounts::checkResult_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     // inserted_counts_ is ds_id -> dbcontent -> line_id -> count.
     // Serialize keyed by string ds_id / line_id so the JSON object form is stable.
@@ -138,7 +147,7 @@ RTCommandGetSensorStatus::RTCommandGetSensorStatus()
 
 bool RTCommandGetSensorStatus::run_impl()
 {
-    if (!compass_->dbContextManager().hasActiveContext())
+    if (!s_ctx_man->hasActiveContext())
     {
         setResultMessage("No active context");
         return false;
@@ -149,24 +158,21 @@ bool RTCommandGetSensorStatus::run_impl()
 
 bool RTCommandGetSensorStatus::checkResult_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
-    // the tool widget is created lazily and keeps its state updated off the
-    // distributed data, independent of the tool being open in the GUI
-    auto* tool_widget = ctx_man.statusWidget();
-    traced_assert(tool_widget);
-
-    const auto* status_widget = tool_widget->statusWidget();
-    traced_assert(status_widget);
+    // the tracker keeps the sensor status updated off the distributed data,
+    // independent of the Sensor Status tool being open in the GUI
+    traced_assert(s_sensor_status_tracker);
+    const auto& status_tracker = *s_sensor_status_tracker;
 
     nlohmann::json reply = nlohmann::json::object();
 
-    bool has_tracker = status_widget->hasActiveTracker();
+    bool has_tracker = status_tracker.hasActiveTracker();
     reply["has_active_tracker"] = has_tracker;
 
     if (has_tracker)
     {
-        const auto& tracker = status_widget->activeTracker().value();
+        const auto& tracker = status_tracker.activeTracker().value();
 
         nlohmann::json tracker_json;
         tracker_json["ds_id"]   = tracker.first;
@@ -180,9 +186,9 @@ bool RTCommandGetSensorStatus::checkResult_impl()
 
     // per data source status as shown in the tool, keyed by string ds id.
     // sources without a state obtained from the active tracker report "Fresh"
-    const DataSourcesStatusWidget::SensorStateMap* states = nullptr;
-    if (status_widget->hasActiveTrackerStates())
-        states = &status_widget->activeTrackerStates().states;
+    const SensorStatusTracker::SensorStateMap* states = nullptr;
+    if (status_tracker.hasActiveTrackerStates())
+        states = &status_tracker.activeTrackerStates().states;
 
     nlohmann::json sensors = nlohmann::json::object();
 
@@ -233,7 +239,7 @@ bool RTCommandSetDataSources::run_impl()
 {
     loginf << "ds_json_str_ '" << ds_json_str_ << "'";
 
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -304,7 +310,7 @@ bool RTCommandDeleteData::run_impl()
 {
     loginf << "delete_info_str_ '" << delete_info_str_ << "'";
 
-    if (!compass_->dbOpened())
+    if (!s_ctx_man->appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
@@ -329,13 +335,13 @@ bool RTCommandDeleteData::run_impl()
 
     // RT commands bypass UI modality; refuse while a delete is in flight (e.g. a live
     // session's per-tick DB bound) rather than overlapping on the single delete slot
-    if (compass_->dbContentManager().hasActiveDeleteJob())
+    if (s_dbcont_man->hasActiveDeleteJob())
     {
         setResultMessage("Delete already in progress");
         return false;
     }
 
-    compass_->dbContentManager().deleteData(delete_info_);
+    s_dbcont_man->deleteData(delete_info_);
 
     return true;
 }

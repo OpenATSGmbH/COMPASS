@@ -17,19 +17,18 @@
 
 #include "dbcontentreaddbjob.h"
 #include "buffer.h"
-#include "dbinterface.h"
 #include "dbcontentmanager.h"
+#include "dbcontent/dbcontentdb.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "logger.h"
-#include "compass.h"
 
 using namespace dbContent;
 
-DBContentReadDBJob::DBContentReadDBJob(DBInterface& db_interface, DBContent& dbcontent, VariableSet read_list,
+DBContentReadDBJob::DBContentReadDBJob(DBContentDB& content_db, DBContent& dbcontent, VariableSet read_list,
                            std::string custom_filter_clause)
     : Job("DBContentReadDBJob"),
-      db_interface_(db_interface),
+      content_db_(content_db),
       dbcontent_(dbcontent),
       read_list_(read_list),
       custom_filter_clause_(custom_filter_clause)
@@ -37,11 +36,11 @@ DBContentReadDBJob::DBContentReadDBJob(DBInterface& db_interface, DBContent& dbc
     traced_assert(dbcontent_.existsInDB());
 
     use_order_ = true; // always order
-    traced_assert(dbcontent_.compass().dbContentManager().metaCanGetVariable(
+    traced_assert(dbcontent_.dbContentManager().metaCanGetVariable(
                 dbcontent_.name(), dbcontent_vars::meta_var_timestamp_));
 
     // always order by timestamp
-    order_variable_ = &dbcontent_.compass().dbContentManager().metaGetVariable(
+    order_variable_ = &dbcontent_.dbContentManager().metaGetVariable(
                 dbcontent_.name(), dbcontent_vars::meta_var_timestamp_);
 }
 
@@ -61,7 +60,7 @@ void DBContentReadDBJob::run_impl()
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
 
-    db_interface_.prepareRead(dbcontent_, read_list_, custom_filter_clause_,
+    content_db_.prepareRead(dbcontent_, read_list_, custom_filter_clause_,
                               use_order_, order_variable_);
 
     unsigned int cnt = 0;
@@ -73,7 +72,7 @@ void DBContentReadDBJob::run_impl()
     while (!obsolete_)
     {
         std::shared_ptr<Buffer> buffer;
-        std::tie (buffer, last_buffer) = db_interface_.readDataChunk(dbcontent_);
+        std::tie (buffer, last_buffer) = content_db_.readDataChunk(dbcontent_);
         traced_assert(buffer);
 
         cnt++;
@@ -113,7 +112,7 @@ void DBContentReadDBJob::run_impl()
         cached_buffer_->shrinkToFit();
 
     logdbg << "start" << dbcontent_.name() << ": finalizing statement";
-    db_interface_.finalizeReadStatement(dbcontent_);
+    content_db_.finalizeReadStatement(dbcontent_);
 
     stop_time_ = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::time_duration diff = stop_time_ - start_time_;

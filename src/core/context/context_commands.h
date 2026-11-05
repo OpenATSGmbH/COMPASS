@@ -20,10 +20,15 @@
 #include "rtcommand.h"
 #include "rtcommand_macros.h"
 
+namespace context
+{
+    class DBContextManager;
+}
+
 namespace context_cmd
 {
 
-extern void init_context_commands();
+extern void init_context_commands(context::DBContextManager& ctx_man);
 
 // create_context <name>
 struct RTCommandCreateContext : public rtcommand::RTCommand

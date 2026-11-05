@@ -17,7 +17,6 @@
 
 #include "licensemanager.h"
 
-#include "compass.h"
 #include "files.h"
 #include "logger.h"
 
@@ -30,9 +29,8 @@ const std::string LicenseManager::LicenseFileName = "licenses.json";
 
 /**
 */
-LicenseManager::LicenseManager(nlohmann::json& config, COMPASS& compass)
-    : Configurable(config, &compass),
-      compass_(compass)
+LicenseManager::LicenseManager(nlohmann::json& config, Configurable& parent)
+    : Configurable(config, &parent)
 {
     readLicenses();
 

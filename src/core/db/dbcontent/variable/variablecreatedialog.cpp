@@ -16,7 +16,8 @@
  */
 
 #include "dbcontent/variable/variablecreatedialog.h"
-#include "compass.h"
+#include "appstate.h"
+#include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variabledatatypecombobox.h"
 #include "stringrepresentationcombobox.h"
@@ -82,7 +83,7 @@ VariableCreateDialog::VariableCreateDialog(DBContent& object, const std::string 
     type_combo_ = new dbContent::VariableDataTypeComboBox(data_type_, data_type_str_);
     form_layout->addRow("Data Type", type_combo_);
 
-    unit_sel_ = new UnitSelectionWidget(object_.compass().unitManager(), dimension_, unit_);
+    unit_sel_ = new UnitSelectionWidget(object_.dbContentManager().unitManager(), dimension_, unit_);
     form_layout->addRow("Unit", unit_sel_);
 
     representation_box_ = new StringRepresentationComboBox(representation_, representation_str_);
@@ -252,7 +253,7 @@ void VariableCreateDialog::checkSettings()
     if (name_ok_)
         name_edit_->setStyleSheet("");
     else
-        name_edit_->setStyleSheet(object_.compass().lineEditInvalidStyle());
+        name_edit_->setStyleSheet(object_.dbContentManager().appState().lineEditInvalidStyle());
 
     name_edit_->setToolTip(name_quicktip.c_str());
 
@@ -284,7 +285,7 @@ void VariableCreateDialog::checkSettings()
     if (db_column_name_ok_)
         db_column_edit_->setStyleSheet("");
     else
-        db_column_edit_->setStyleSheet(object_.compass().lineEditInvalidStyle());
+        db_column_edit_->setStyleSheet(object_.dbContentManager().appState().lineEditInvalidStyle());
 
     db_column_edit_->setToolTip(db_column_quicktip.c_str());
 

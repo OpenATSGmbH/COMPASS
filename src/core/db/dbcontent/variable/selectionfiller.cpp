@@ -19,7 +19,6 @@
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
-#include "compass.h"
 #include "unitmanager.h"
 #include "dimension.h"
 #include "buffer.h"
@@ -213,7 +212,7 @@ bool unitFactor(DBContentManager& dbcont_man, const Variable& candidate, const V
     if (cand_unit == sel_unit)
         return true;
 
-    UnitManager& unit_man = dbcont_man.compass().unitManager();
+    UnitManager& unit_man = dbcont_man.unitManager();
 
     if (!unit_man.hasDimension(sel_dim) || !unit_man.dimension(sel_dim).hasUnit(cand_unit)
         || !unit_man.dimension(sel_dim).hasUnit(sel_unit))

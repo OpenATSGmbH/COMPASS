@@ -27,7 +27,6 @@
 #include <vector>
 
 class Buffer;
-class COMPASS;
 class DBContentManager;
 
 namespace dbContent
@@ -121,7 +120,7 @@ public:
 
 private:
     std::map<std::string, std::vector<Step>> steps_;
-    COMPASS* compass_ {nullptr}; // set by create(), the functions need it
+    DBContentManager* dbcont_man_ {nullptr}; // set by create(), the functions need it
 };
 
 }

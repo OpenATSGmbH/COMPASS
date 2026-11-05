@@ -16,12 +16,11 @@
  */
 
 #include "datasourcesstatustoolwidget.h"
-#include "compass.h"
+#include "datasourcesstatuswidget.h"
+#include "sensorstatustracker.h"
 #include "db_context_manager.h"
 #include "data_source.h"
 #include "datasourcebase.h"
-#include "datasourcesstatuswidget.h"
-#include "dbcontentmanager.h"
 
 #include "stringconv.h"
 #include "number.h"
@@ -44,8 +43,10 @@ const int DataSourcesStatusToolWidget::DefaultStretchEvents      = 1;
 
 /**
  */
-DataSourcesStatusToolWidget::DataSourcesStatusToolWidget(context::DBContextManager& ctx_man)
+DataSourcesStatusToolWidget::DataSourcesStatusToolWidget(context::DBContextManager& ctx_man,
+                                                         SensorStatusTracker& tracker)
 : ctx_man_(ctx_man)
+, tracker_(tracker)
 {
     createUI();
     updateTrackerSelection();
@@ -98,9 +99,7 @@ void DataSourcesStatusToolWidget::createUI()
     status_layout->setSpacing(1);
     ds_status_widget->setLayout(status_layout);
 
-    auto& dbc_man = ctx_man_.compass().dbContentManager();
-
-    ds_widget_ = new DataSourcesStatusWidget(ctx_man_, dbc_man);
+    ds_widget_ = new DataSourcesStatusWidget(ctx_man_, tracker_);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
     ds_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -156,11 +155,12 @@ void DataSourcesStatusToolWidget::createUI()
     connect(line_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &DataSourcesStatusToolWidget::updateActiveTracker);
     
-    connect(ds_widget_, &DataSourcesStatusWidget::activeTrackerChanged,
+    // after the connections of ds_widget_, so the status tree is updated first (as before)
+    connect(&tracker_, &SensorStatusTracker::activeTrackerChanged,
             this, &DataSourcesStatusToolWidget::onActiveTrackerChanged);
-    connect(ds_widget_, &DataSourcesStatusWidget::eventsAdded,
+    connect(&tracker_, &SensorStatusTracker::eventsAdded,
             this, &DataSourcesStatusToolWidget::addNewestEvents);
-    connect(ds_widget_, &DataSourcesStatusWidget::refreshed,
+    connect(&tracker_, &SensorStatusTracker::refreshed,
             this, &DataSourcesStatusToolWidget::updateInfos);
     
     connect(&ctx_man_, &context::DBContextManager::activeContextChangedSignal,
@@ -343,7 +343,7 @@ void DataSourcesStatusToolWidget::updateTrackerSelection()
     if (tracker_lines == current_tracker_lines_)
         return;
 
-    auto active_tracker = ds_widget_->activeTracker();
+    auto active_tracker = tracker_.activeTracker();
 
     tracker_combo_->blockSignals(true);
     tracker_combo_->clear();
@@ -373,7 +373,7 @@ void DataSourcesStatusToolWidget::updateTrackerSelection()
  */
 void DataSourcesStatusToolWidget::updateLineSelection(const ActiveTrackerLines& tracker_lines)
 {
-    auto active_tracker = ds_widget_->activeTracker();
+    auto active_tracker = tracker_.activeTracker();
 
     line_combo_->blockSignals(true);
     line_combo_->clear();
@@ -410,12 +410,12 @@ void DataSourcesStatusToolWidget::updateActiveTracker()
         unsigned int line_id = line_combo_->currentData().toUInt();
 
         //set to selected tracker + line => might trigger content update
-        ds_widget_->setActiveTracker(ds_id, line_id);
+        tracker_.setActiveTracker(ds_id, line_id);
     }
     else
     {
         //unset tracker => might trigger content update
-        ds_widget_->unsetActiveTracker();
+        tracker_.unsetActiveTracker();
     }
 }
 
@@ -471,7 +471,7 @@ void DataSourcesStatusToolWidget::updateEventBox()
 {
     event_box_->clear();
 
-    for (const auto& evt : ds_widget_->currentEventQueue().queue())
+    for (const auto& evt : tracker_.currentEventQueue().queue())
         addEventToTextEdit(event_box_, evt, ctx_man_);
 }
 
@@ -479,7 +479,7 @@ void DataSourcesStatusToolWidget::updateEventBox()
  */
 void DataSourcesStatusToolWidget::addNewestEvents()
 {
-    for (const auto& evt : ds_widget_->currentEventQueue().consumeNewEvents())
+    for (const auto& evt : tracker_.currentEventQueue().consumeNewEvents())
         addEventToTextEdit(event_box_, *evt, ctx_man_);
 }
 
@@ -487,15 +487,15 @@ void DataSourcesStatusToolWidget::addNewestEvents()
  */
 void DataSourcesStatusToolWidget::updateInfos()
 {
-    auto refresh_ts = ds_widget_->lastRefresh();
+    auto refresh_ts = tracker_.lastRefresh();
     std::string refresh_txt = refresh_ts.is_not_a_date_time() ? "-" : Utils::Time::toTimeString(refresh_ts, false);
 
     info_refreshed_label_->setText(QString::fromStdString(refresh_txt));
 
     std::string update_recv_txt = "-";
-    if (ds_widget_->hasActiveTrackerStates())
+    if (tracker_.hasActiveTrackerStates())
     {
-        const auto& states = ds_widget_->activeTrackerStates();
+        const auto& states = tracker_.activeTrackerStates();
         update_recv_txt = states.last_update_ts.is_not_a_date_time() ? "-" : Utils::Time::toTimeString(states.last_update_ts, false);
     }
 

@@ -1,6 +1,6 @@
 # Resolving the circular dependencies between the COMPASS libraries
 
-*Design document / plan. Status: Workstreams A–D implemented (2026-11-03), E and F (2026-11-04), no include violations left in `src/` (from 270), the allowlist is empty. G (structural guards, 2026-11-04): link graph and include paths follow the layering, an upward include is a compile error. H (2026-11-04): `COMPASS` offers only the core managers and the provider interfaces. I (sub-layers inside core): planned. Written 2026-11-03 against the then-current code (line numbers refer to that state).*
+*Design document / plan. Status: Workstreams A–D implemented (2026-11-03), E and F (2026-11-04), no include violations left in `src/` (from 270), the allowlist is empty. G (structural guards, 2026-11-04): link graph and include paths follow the layering, an upward include is a compile error. H (2026-11-04): `COMPASS` offers only the core managers and the provider interfaces. I (sub-layers inside core, 2026-11-05): implemented, 0 sub-layer violations, the core allowlist is empty. Written 2026-11-03 against the then-current code (line numbers refer to that state).*
 
 ## Context
 
@@ -307,7 +307,7 @@ As implemented (2026-11-04):
 - `CreateARTASAssociationsTask::DONE_PROPERTY_NAME` is replaced by `DBContentManager::ARTASAssociationsCreatedProperty` (same value `artas_associations_created`), so the key exists only once.
 - Verified: build, `compass_tests` (697 cases), smoke test (create DB, quit), `check_layering.py --build-dir build` 0 violations.
 
-### I: Sub-layers inside `compass_core` (~3–5 wk) — planned
+### I: Sub-layers inside `compass_core` (~3–5 wk) — implemented (2026-11-05)
 
 Formerly future improvement "Cycles inside `compass_core`" (decided 2026-11-04 to implement). 16 of its 22 subdirectories form one include cycle group (e.g. `db/dbcontent ↔ db/interface`, `db/dbcontent ↔ db/job`, `core/context ↔ core/source`, `compass.h`/`compass.cpp` as hub). The check cannot see cycles inside a library, and neither can the compiler.
 
@@ -318,7 +318,46 @@ Decided:
 - **Direct dependencies instead of `compass_.x()`.** Core subsystems get the managers they use (`DBInterface&`, `DBContentManager&`, `DBContextManager&`, `JobManager&`, the provider interfaces, ...) passed in by `CompassRoot`, instead of reaching them through `compass.h`.
 - **Mutual pairs** are resolved one by one as in D/E (move files, small interfaces, signals): `db/dbcontent ↔ db/interface`, `db/dbcontent ↔ db/job`, `context ↔ source`, `db/dbcontent ↔ context`, `db/dbcontent ↔ source`, `rtcommand ↔ test`, plus the single upward edges (`net → source`, `projection → context`, `gui → test`, `job → gui`, `latex → license`).
 
-The exact sub-layer order is fixed when I starts, from the code after H.
+- **No widgets cached in non-UI classes** (decided 2026-11-04, rule for the future too): widgets and dialogs are created by their UI host and read or modify the data on demand when shown. State that has to live on without the widget belongs in a model class.
+
+Sub-layers (bottom to top, `CORE_LAYERS` in `check_layering.py`):
+
+| Sub-layer | Contents |
+|---|---|
+| `base` | `base/`, `buffer/`, `property/`, `latex/`, `net/`, `db/command/`, files at the core root (`appmode.h`, `viewpointkeys.*`, `imainwindow.h`) |
+| `rtcommand` | `rtcommand/`, `test/` (UI test injection, part of the runtime commands) |
+| `gui` | `gui/` (generic widgets incl. `ToolBoxWidget`) |
+| `services` | `job/`, `unit/`, `sector/`, `license/` |
+| `dbinterface` | `db/interface/` |
+| `context` | `context/` (DB context, data source model incl. `DataSourceBase`, `RadarBiasInfo`, data source edit widgets) |
+| `projection` | `projection/` (uses the data sources of the context) |
+| `dbcontent` | `db/dbcontent/`, `db/job/`, `db/util/`, `db/` root, the provider interfaces `i*provider.h` (they use DB content types) |
+| `ui` | `source/` (data source tools, sensor status) |
+| `root` | `compass.h`/`compass.cpp` |
+
+Steps:
+
+- **I.1 (implemented):** sub-layer check in both modes. Known violations are listed as sub-layer pairs in `scripts/layering_core_allowlist.txt` (16 pairs at the start), which may only shrink and is empty at the end of I. Pairs are used instead of file pairs, since text and exact mode see different files (exact mode also sees transitive headers); a pair that no longer occurs is only reported as a hint.
+- **I.2 (implemented):** the single edges.
+  - `DataSourceLineInfo` → `net/`; `DataSourceBase`, `DataSourceRemoteUnit`, `RadarBiasInfo`, `DataSourceEditWidget`, `DataSourceCreateDialog`, `DSTypeSelectionComboBox` → `context/`; `ToolBoxWidget`, `toolboxdefs.h` → `gui/` (`git mv`).
+  - `LatexDocument` gets the footer text (licensee) from its caller instead of `COMPASS`.
+  - `ColorsEditWidget`/`DBContextEditDialog` get the names of the DBContents with target reports from `MainWindow` instead of reading `DBContentManager`.
+  - `DBContextManager` no longer owns the data source tool widgets: `MainWindow` creates `DataSourcesToolWidget` and `DataSourcesStatusToolWidget` (owned by the tool box). The sensor status tracking (tracker and sensor states, event queues, active tracker line, CAT063 parsing on data distribution) moved out of `DataSourcesStatusWidget` into the new `SensorStatusTracker` (`src/core/source`), owned by `CompassRoot` (created after, destroyed before `DBContextManager`). The status widgets show and modify it; `get_sensor_status` reads it.
+  - Remaining pairs: 9 (`* -> root` from `compass.h`, `dbinterface -> dbcontent`, `rtcommand -> dbcontent`).
+- **I.3 (implemented):** app state and direct dependencies instead of `compass.h`, decided 2026-11-04/05:
+  - **`AppState`** (`src/core/appstate.{h,cpp}`, sub-layer `base`): phase, app mode, DB opened/in memory, expert mode, user interactions, live overload, and the persisted `Settings` (dark/color mode, last path, disable flags, live and overload parameters, sizes, font scale, unspecific ACIDs) with their signals. Owned by `COMPASS`, which registers the settings as its config parameters (same names and defaults, config files unchanged), forwards its former functions in one line each and relays the signals. The enum `AppState` became `AppPhase` (`COMPASS::appPhase()`/`setAppPhase()`).
+  - **Core managers** take `Configurable` as parent instead of `COMPASS` and get their dependencies directly: `LicenseManager`, `JobManager`, `UnitManager` none; `ProjectionManager::setManagers(DBContextManager&)`; `DBContextManager(AppState&, DBInterface&)`; `DBContentManager(config, parent, AppState&)` plus `setManagers(DBInterface&, DBContextManager&, JobManager&, UnitManager&, ProjectionManager&, IViewProvider&, IFilterProvider&, IEvalProvider&)`; `RTCommandManager(config, parent, AppState&)` plus `setManagers(RTCommandRunner&)`. All `setManagers()` calls are in `CompassRoot::startManagers()`. `compass()` was removed from `ProjectionManager`, `DBContextManager`, `DBContentManager` and `DBContent` (only used inside core).
+  - **Code inside the sub-layers** reaches its managers through them (e.g. `dbcont_man.dbInterface()`, `ctx_man.appState()`); widgets get the managers from their creator (`DataSourcesToolWidget`, `DataSourcesWidget`, `DataSourcesUseWidget`, `DeleteDataDialog` take `DBContentManager&`). The calculation functions take `DBContentManager&`. Command modules in core (`context_commands`, `dbcontent_commands`, `datasource_commands`) use static manager pointers set in their `init_*()`.
+  - **View notifications** for code below view are signals connected in `CompassRoot`: `DBContentManager::viewLoadingDoneSignal` (relay of `ViewManager::loadingDoneSignal`), `SensorStatusTracker::dataDistributedSlot` (queued, from `COMPASS::viewDataDistributedSignal`).
+  - **Runtime commands:** `rtcommand::IRTCommandHost` (`rtcommand_host.h`), implemented by `COMPASS`: object lookup roots (view containers, latest view, configuration tree via `findConfigurable()`), `viewsBusy()`, `appState()`. Runner, stash, wait conditions and `getCommandReceiver()` use it; `RTCommand::host_` next to `compass_` (the latter only for the commands above core).
+  - Remaining pairs: 3, all from `DBInterface` (I.4).
+- **I.4 (implemented):** `dbinterface -> dbcontent` and `dbinterface -> root`, decided 2026-11-05:
+  - **`DBContentDB`** (`src/core/db/dbcontent/dbcontentdb.{h,cpp}`, sub-layer `dbcontent`), owned by `DBContentManager` (created in `setManagers()`, `dbcont_man.contentDB()`), built on the generic `DBInterface` API like `TaskResultDB` in E. It holds the former DB content functions with the same names: `createTable(DBContent)` (incl. the meta variable indices), `insertDBContent` (record numbers), `prepareRead`/`readDataChunk`/`finalizeReadStatement` (incl. the report table join clause), `deleteBefore`/`deleteAll`/`deleteContent`, `clearAssociations`, `getMaxRecordNumber`, `getMaxRefTrackTrackNum`, the targets table (exists/create/clear/load/save/update) and the unused `getADSBInfoCommand`. The DB content jobs (read, insert, delete) take `DBContentDB&`.
+  - **Targets table** is created by `DBContentManager::databaseOpenedSlot()` before `loadTargets()` (as `TaskManager` with its result tables), no longer by `DBInterface` on open.
+  - **New generic `DBInterface` functions:** `createTable(table, column_infos, indices)`, `insertBuffers(table -> buffer)` (the multi-threaded insert), `prepareRead(table, properties, filter, use_order, order_column, join_clause)`/`readDataChunk()`/`finalizeReadStatement()`, `setColumnNull()`, `replaceRow()`, `getMaxULongValue()`, `liveCleanupIfDue()`; `dbInstance()` got its missing definition. `getMaxUIntValue()` returns none for a NULL max (asserted before). `select()` and `deleteRows()` take the instance lock like the other functions.
+  - **`SQLGenerator`, `DBConnection`, `DBInstance`** no longer know `DBContentManager`; the DB content and targets statements were removed from `SQLGenerator` (`replaceStatement()` is public).
+  - **`DBInterface(config, parent, AppState&, LogStore&, app_version)`**, created by `CompassRoot`; `compass()` and `dbContentManager()` were removed.
+  - Remaining pairs: 0, the core allowlist is empty.
 
 ## Verification
 

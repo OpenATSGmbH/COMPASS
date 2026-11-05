@@ -21,7 +21,6 @@
 #include "rtcommand_wait_condition.h"
 #include "rtcommand_runner_stash.h"
 #include "rtcommand_response.h"
-#include "compass.h"
 
 #include "logger.h"
 
@@ -35,8 +34,9 @@ namespace rtcommand
 
 /**
  */
-RTCommandRunner::RTCommandRunner(COMPASS& compass)
-    :   stash_(new RTCommandRunnerStash(compass))
+RTCommandRunner::RTCommandRunner(IRTCommandHost& host,
+                                 COMPASS& compass)
+    :   stash_(new RTCommandRunnerStash(host, compass))
 {
 }
 

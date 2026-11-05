@@ -20,7 +20,6 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "idbvariableresolver.h"
 #include "projectionmanager.h"
-#include "compass.h"
 #include "buffer.h"
 #include "global.h"
 #include "logger.h"
@@ -38,15 +37,14 @@ namespace dbContent
 namespace calculation_functions
 {
 
-void radarProjection(COMPASS& compass, const std::string& dbcontent_name, const std::shared_ptr<Buffer>& buffer)
+void radarProjection(DBContentManager& dbcont_man, const std::string& dbcontent_name, const std::shared_ptr<Buffer>& buffer)
 {
-    compass.projectionManager().doRadarPlotPositionCalculations({{dbcontent_name, buffer}});
+    dbcont_man.projectionManager().doRadarPlotPositionCalculations({{dbcontent_name, buffer}});
 }
 
-void adsbSGVSpeedTrack(COMPASS& compass, const std::string& dbcontent_name, const std::shared_ptr<Buffer>& buffer)
+void adsbSGVSpeedTrack(DBContentManager& dbcont_man, const std::string& dbcontent_name, const std::shared_ptr<Buffer>& buffer)
 {
-    DBContentManager& dbcont_man = compass.dbContentManager();
-    ProjectionManager& proj_man = compass.projectionManager();
+    ProjectionManager& proj_man = dbcont_man.projectionManager();
 
     string speed_var_name;
     string track_angle_var_name;

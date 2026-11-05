@@ -19,7 +19,6 @@
 #include "targetlistwidget.h"
 #include "targetmodel.h"
 
-#include "compass.h"
 #include "ievalprovider.h"
 #include "dbcontentmanager.h"
 #include "dbcontentdataengine.h"
@@ -288,7 +287,7 @@ void TargetListWidget::evalFilterSlot()
 {
     loginf;
 
-    dbcont_manager_.compass().evalProvider().editTargetFilter(model_, this);
+    dbcont_manager_.evalProvider().editTargetFilter(model_, this);
 }
 
 void TargetListWidget::clearAllCommentsSlot()
@@ -321,7 +320,7 @@ void TargetListWidget::evalEditGlobalExcludeTimeWindowsSlot()
     loginf;
 
     // saves the conditions if changed
-    if (dbcont_manager_.compass().evalProvider().editTimestampConditions(this))
+    if (dbcont_manager_.evalProvider().editTimestampConditions(this))
     {
         emit model_.targetEvalFullChangeSignal();
 
@@ -353,7 +352,7 @@ void TargetListWidget::customContextMenuSlot(const QPoint& p)
 
 void TargetListWidget::showSurroundingDataSlot ()
 {
-    auto& dbcont_man = dbcont_manager_.compass().dbContentManager();
+    auto& dbcont_man = dbcont_manager_;
 
     std::set<unsigned int> selected_utns = selectedUTNs();
 
@@ -412,7 +411,7 @@ void TargetListWidget::createTargetEvalMenu(QMenu& menu,
 {
     bool  target_ok        = model_.existsTarget(target.utn_);
     auto  target_ptr       = &target;
-    auto& eval_man         = dbcont_manager_.compass().evalProvider();
+    auto& eval_man         = dbcont_manager_.evalProvider();
     auto  all_requirements = eval_man.hasCurrentStandard() ? eval_man.currentRequirementNames() : std::set<std::string>();
     bool  has_requirement  = all_requirements.count(req_name) > 0;
     bool  has_timewin      = !target.timeBegin().is_not_a_date_time() &&
@@ -480,7 +479,7 @@ void TargetListWidget::evalExcludeTimeWindowsTarget(const std::set<unsigned int>
 {
     loginf;
 
-    auto& dbcont_man = dbcont_manager_.compass().dbContentManager();
+    auto& dbcont_man = dbcont_manager_;
 
     Utils::TimeWindowCollection filtered_time_windows;
 
@@ -508,7 +507,7 @@ void TargetListWidget::evalExcludeTimeWindowsTarget(const std::set<unsigned int>
         }
     }
 
-    if (!dbcont_manager_.compass().evalProvider().editExcludedTimeWindows(String::compress(utns, ','),
+    if (!dbcont_manager_.evalProvider().editExcludedTimeWindows(String::compress(utns, ','),
                                                                           filtered_time_windows, this))
         return;
 
@@ -523,8 +522,8 @@ void TargetListWidget::evalExcludeRequirementsTarget(const std::set<unsigned int
 {
     loginf;
 
-    auto& dbcont_man = dbcont_manager_.compass().dbContentManager();
-    auto& eval_man = dbcont_manager_.compass().evalProvider();
+    auto& dbcont_man = dbcont_manager_;
+    auto& eval_man = dbcont_manager_.evalProvider();
 
     if (!eval_man.hasCurrentStandard())
     {
@@ -601,7 +600,7 @@ void TargetListWidget::evalExcludeRequirementTarget(const Target& target,
 
 void TargetListWidget::evalExcludeAllRequirementsTarget(const Target& target)
 {
-    auto all_requirements = dbcont_manager_.compass().evalProvider().currentRequirementNames();
+    auto all_requirements = dbcont_manager_.evalProvider().currentRequirementNames();
 
     evalExcludeRequirementsTarget({ target.utn_ }, &all_requirements);
 }
@@ -669,7 +668,7 @@ void TargetListWidget::selectionChanged(const QItemSelection& selected, const QI
     loginf << "utns " << String::compress(selected_utns,',');
 
     // to restore focus after loading
-    connect(&dbcont_manager_.compass(), &COMPASS::viewLoadingDoneSignal,
+    connect(&dbcont_manager_, &DBContentManager::viewLoadingDoneSignal,
             this, &TargetListWidget::loadingDoneSlot);
 
     dbcont_manager_.showUTNs(selected_utns);
@@ -677,7 +676,7 @@ void TargetListWidget::selectionChanged(const QItemSelection& selected, const QI
 
 void TargetListWidget::loadingDoneSlot()
 {
-    disconnect(&dbcont_manager_.compass(), &COMPASS::viewLoadingDoneSignal, this,
+    disconnect(&dbcont_manager_, &DBContentManager::viewLoadingDoneSignal, this,
                &TargetListWidget::loadingDoneSlot);
 
     table_view_->setFocus();

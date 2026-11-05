@@ -20,9 +20,8 @@
 #include "files.h"
 #include "stringconv.h"
 #include "latexsection.h"
-#include "compass.h"
-#include "licensemanager.h"
 #include "reportcolors.h"
+#include "traced_assert.h"
 
 #include <QDateTime>
 
@@ -45,12 +44,14 @@ namespace
     }
 }
 
-LatexDocument::LatexDocument(COMPASS& compass, const std::string& path, const std::string& filename)
-    : compass_(compass), path_(path), filename_(filename)
+LatexDocument::LatexDocument(const std::string& path,
+                             const std::string& filename,
+                             const std::string& footer_left)
+    : path_(path), filename_(filename)
 {
     loginf << "path '" << path_ << "' filename '" << filename_ << "'";
 
-    footer_left_  = compass_.licenseeString(true);
+    footer_left_  = footer_left;
     footer_right_ = getLogoImage(0.5);
 }
 

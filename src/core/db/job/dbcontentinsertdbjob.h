@@ -26,7 +26,7 @@
 #include <string>
 
 class Buffer;
-class DBInterface;
+class DBContentDB;
 class DBContentManager;
 class DBTable;
 
@@ -43,7 +43,7 @@ signals:
     void insertProgressSignal(float percent);
 
 public:
-    DBContentInsertDBJob(DBInterface& db_interface, 
+    DBContentInsertDBJob(DBContentDB& content_db,
                          DBContentManager& db_content_man,
                          std::map<std::string, std::shared_ptr<Buffer>>& buffers,
                          bool emit_change = true);
@@ -62,7 +62,7 @@ public:
 protected:
     virtual void run_impl();
 
-    DBInterface&      db_interface_;
+    DBContentDB&      content_db_;
     DBContentManager& db_content_man_;
 
     std::map<std::string, std::shared_ptr<Buffer>> buffers_;

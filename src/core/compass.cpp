@@ -55,20 +55,24 @@ using namespace std;
 using namespace nlohmann;
 using namespace Utils;
 
-const bool COMPASS::is_app_image_ = {Utils::System::appDir() != nullptr};
-
 COMPASS::COMPASS(ConfigurationManager& config_manager)
     : Configurable(config_manager.getRootConfigJSON("COMPASS", "COMPASS0").json(), nullptr),
       config_manager_(config_manager),
-      log_store_(!is_app_image_)
+      log_store_(!AppState::isAppImage())
 {
     config_manager_.registerJsonRootConfigurable(*this);
     msghandler::MessageHandler::init(log_store_);
     logdbg;
 
-    std::cout << "APPIMAGE: " << (is_app_image_ ? "yes" : "no") << std::endl;
+    std::cout << "APPIMAGE: " << (AppState::isAppImage() ? "yes" : "no") << std::endl;
 
-    pdflatex_found_ = System::exec("which pdflatex").size(); // empty if none
+    // relay the app state signals for the libraries above core (connected first => run before
+    // the slots connected to AppState directly)
+    connect(&app_state_, &AppState::appModeAboutToSwitchSignal, this, &COMPASS::appModeAboutToSwitchSignal);
+    connect(&app_state_, &AppState::appModeSwitchSignal, this, &COMPASS::appModeSwitchSignal);
+    connect(&app_state_, &AppState::liveOverloadChangedSignal, this, &COMPASS::liveOverloadChangedSignal);
+    connect(&app_state_, &AppState::colorModeChangedSignal, this, &COMPASS::colorModeChangedSignal);
+    connect(&app_state_, &AppState::darkModeChangedSignal, this, &COMPASS::darkModeChangedSignal);
 
     simple_config_.reset(new SimpleConfig("config.json"));
 
@@ -85,53 +89,56 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
     }
     db_file_list_ = cleaned_file_list;
 
-    registerParameter("dark_mode", &dark_mode_, false);
+    // settings of the app state, as config parameters of COMPASS
+    auto& settings = app_state_.settings();
 
-    registerParameter("color_mode", &color_mode_, 0u);
+    registerParameter("dark_mode", &settings.dark_mode, false);
 
-    registerParameter("last_path", &last_path_, {});
+    registerParameter("color_mode", &settings.color_mode, 0u);
 
-    if (!Files::directoryExists(last_path_))
-        last_path_ = QDir::homePath().toStdString();
+    registerParameter("last_path", &settings.last_path, {});
 
-    registerParameter("disable_live_to_offline_switch", &disable_live_to_offline_switch_, false);
-    registerParameter("disable_menu_config_save", &disable_menu_config_save_, false);
+    if (!Files::directoryExists(settings.last_path))
+        settings.last_path = QDir::homePath().toStdString();
 
-    registerParameter("disable_geographicview_rotate", &disable_geographicview_rotate_, false);
+    registerParameter("disable_live_to_offline_switch", &settings.disable_live_to_offline_switch, false);
+    registerParameter("disable_menu_config_save", &settings.disable_menu_config_save, false);
 
-    registerParameter("disable_add_remove_views", &disable_add_remove_views_, false);
+    registerParameter("disable_geographicview_rotate", &settings.disable_geographicview_rotate, false);
 
-    registerParameter("max_live_data_age_cache", &max_live_data_age_cache_, 5u);
-    registerParameter("max_live_data_age_db", &max_live_data_age_db_, 60u);
+    registerParameter("disable_add_remove_views", &settings.disable_add_remove_views, false);
 
-    registerParameter("live_overload_max_packets", &live_overload_max_packets_, 4u);
-    registerParameter("live_overload_max_latency_s", &live_overload_max_latency_s_, -1.0);
-    registerParameter("live_overload_show_debug_info", &live_overload_show_debug_info_, false);
+    registerParameter("max_live_data_age_cache", &settings.max_live_data_age_cache, 5u);
+    registerParameter("max_live_data_age_db", &settings.max_live_data_age_db, 60u);
 
-    registerParameter("auto_live_running_resume_ask_time", &auto_live_running_resume_ask_time_, 60u);
-    registerParameter("auto_live_running_resume_ask_wait_time", &auto_live_running_resume_ask_wait_time_, 1u);
+    registerParameter("live_overload_max_packets", &settings.live_overload_max_packets, 4u);
+    registerParameter("live_overload_max_latency_s", &settings.live_overload_max_latency_s, -1.0);
+    registerParameter("live_overload_show_debug_info", &settings.live_overload_show_debug_info, false);
 
-    registerParameter("disable_confirm_reset_views", &disable_confirm_reset_views_, false);
+    registerParameter("auto_live_running_resume_ask_time", &settings.auto_live_running_resume_ask_time, 60u);
+    registerParameter("auto_live_running_resume_ask_wait_time", &settings.auto_live_running_resume_ask_wait_time, 1u);
 
-    registerParameter("min_app_width", &min_app_width_, min_app_width_);
-    if (min_app_width_ > 1600)
-        min_app_width_ = 1600;
-    
-    registerParameter("min_app_height", &min_app_height_, min_app_height_);
-    if (min_app_height_ > 800)
-        min_app_height_ = 800;
+    registerParameter("disable_confirm_reset_views", &settings.disable_confirm_reset_views, false);
 
-    registerParameter("app_font_scale", &app_font_scale_, app_font_scale_);
+    registerParameter("min_app_width", &settings.min_app_width, settings.min_app_width);
+    if (settings.min_app_width > 1600)
+        settings.min_app_width = 1600;
 
-    registerParameter("disable_native_dialogs", &disable_native_dialogs_, disable_native_dialogs_);
+    registerParameter("min_app_height", &settings.min_app_height, settings.min_app_height);
+    if (settings.min_app_height > 800)
+        settings.min_app_height = 800;
+
+    registerParameter("app_font_scale", &settings.app_font_scale, settings.app_font_scale);
+
+    registerParameter("disable_native_dialogs", &settings.disable_native_dialogs, settings.disable_native_dialogs);
 
 
-    registerParameter("unspecific_acids", &unspecific_acids_, {"00000000","????????","        "});
+    registerParameter("unspecific_acids", &settings.unspecific_acids, {"00000000","????????","        "});
     //registerParameter("unspecific_mode_3as", &unspecific_mode_3as_, {});
 
-    traced_assert(auto_live_running_resume_ask_time_ > 0);
-    traced_assert(auto_live_running_resume_ask_wait_time_ > 0);
-    traced_assert(auto_live_running_resume_ask_time_ > auto_live_running_resume_ask_wait_time_);
+    traced_assert(settings.auto_live_running_resume_ask_time > 0);
+    traced_assert(settings.auto_live_running_resume_ask_wait_time > 0);
+    traced_assert(settings.auto_live_running_resume_ask_time > settings.auto_live_running_resume_ask_wait_time);
 
     logdbg << "end";
 }
@@ -171,7 +178,7 @@ void COMPASS::createManagers()
 
     rtcommand::RTCommandHelp::init();
 
-    appMode(app_mode_);
+    appMode(app_state_.appMode());
 }
 
 /**
@@ -199,7 +206,7 @@ COMPASS::~COMPASS()
 {
     logdbg;
 
-    if (app_state_ != AppState::Shutdown)
+    if (!app_state_.isShutDown())
     {
         logerr << "not shut down";
         shutdown();
@@ -223,13 +230,6 @@ COMPASS::~COMPASS()
     traced_assert(!managers_.task_provider);
 
     logdbg << "end";
-}
-
-void COMPASS::setAppState(AppState state)
-{
-    app_state_ = state;
-
-    //notify someone about changed app state?
 }
 
 std::string COMPASS::getPath() const
@@ -291,58 +291,11 @@ LogStore& COMPASS::logStore()
     return log_store_;
 }
 
-bool COMPASS::sensorStatusTimeHack() const
-{
-    return sensor_status_time_hack_;
-}
-void COMPASS::sensorStatusTimeHack(bool value)
-{
-    loginf << "value " << value;
-
-    sensor_status_time_hack_ = value;
-}
-
-bool COMPASS::disableNativeDialogs() const
-{
-    return disable_native_dialogs_;
-}
-
-float COMPASS::appFontScale() const
-{
-    return app_font_scale_;
-}
-
-bool COMPASS::isUnspecificACID(const std::string& acid) const
-{
-    // whitespace-only identifications carry no information
-    if (Utils::String::trim(acid).empty())
-        return true;
-
-    // compare against the raw configured forms (e.g. "00000000", "????????")
-    for (const auto& it : unspecific_acids_)
-    {
-        if (it.is_string() && it.get<std::string>() == acid)
-            return true;
-    }
-
-    return false;
-}
-
-unsigned int COMPASS::minAppHeight() const
-{
-    return min_app_height_;
-}
-
-unsigned int COMPASS::minAppWidth() const
-{
-    return min_app_width_;
-}
-
 bool COMPASS::openDBFile(const std::string& filename)
 {
     loginf << "opening file '" << filename << "'";
 
-    traced_assert(!db_opened_);
+    traced_assert(!app_state_.dbOpened());
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
@@ -368,7 +321,7 @@ Result COMPASS::openDBFileInternal(const std::string& filename)
         return Result::failed("Database already open");
 
     last_db_filename_ = filename;
-    db_inmem_ = false;
+    app_state_.dbInMem(false);
 
     Result res = Result::succeeded();
 
@@ -377,7 +330,7 @@ Result COMPASS::openDBFileInternal(const std::string& filename)
         managers_.db_interface->openDBFile(filename, false);
         traced_assert(managers_.db_interface->ready());
 
-        db_opened_ = true;
+        app_state_.dbOpened(true);
 
         log_store_.setLogCallbacks(
             [this](unsigned int id, const nlohmann::json& j) { managers_.db_interface->saveTaskLogInfo(id, j); },
@@ -388,7 +341,7 @@ Result COMPASS::openDBFileInternal(const std::string& filename)
     {
         res = Result::failed(e.what());
 
-        db_opened_ = false;
+        app_state_.dbOpened(false);
     }
 
     return res;
@@ -398,7 +351,7 @@ bool COMPASS::createNewDBFile(const std::string& filename)
 {
     loginf << "creating new file '" << filename << "'";
 
-    traced_assert(!db_opened_);
+    traced_assert(!app_state_.dbOpened());
 
     auto result = createNewDBFileInternal(filename);
 
@@ -429,7 +382,7 @@ Result COMPASS::createNewDBFileInternal(const std::string& filename)
     }
 
     last_db_filename_ = filename;
-    db_inmem_ = false;
+    app_state_.dbInMem(false);
 
     Result res = Result::succeeded();
 
@@ -438,7 +391,7 @@ Result COMPASS::createNewDBFileInternal(const std::string& filename)
         managers_.db_interface->openDBFile(filename, true);
         traced_assert(managers_.db_interface->ready());
 
-        db_opened_ = true;
+        app_state_.dbOpened(true);
 
         log_store_.setLogCallbacks(
             [this](unsigned int id, const nlohmann::json& j) { managers_.db_interface->saveTaskLogInfo(id, j); },
@@ -449,7 +402,7 @@ Result COMPASS::createNewDBFileInternal(const std::string& filename)
     {
         res = Result::failed(e.what());
 
-        db_opened_ = false;
+        app_state_.dbOpened(false);
     }
 
     return res;
@@ -459,7 +412,7 @@ bool COMPASS::createInMemDBFile(const std::string& future_filename)
 {
     loginf << "future filename '" << future_filename << "'";
 
-    traced_assert(!db_opened_);
+    traced_assert(!app_state_.dbOpened());
 
     auto result = createInMemDBFileInternal(future_filename);
 
@@ -478,7 +431,7 @@ Result COMPASS::createInMemDBFileInternal(const std::string& future_filename)
 
     inmem_future_filename_ = future_filename;
     last_db_filename_ = DBInstance::InMemFilename;
-    db_inmem_ = true;
+    app_state_.dbInMem(true);
 
     Result res = Result::succeeded();
 
@@ -487,7 +440,7 @@ Result COMPASS::createInMemDBFileInternal(const std::string& future_filename)
         managers_.db_interface->openDBInMemory();
         traced_assert(managers_.db_interface->ready());
 
-        db_opened_ = true;
+        app_state_.dbOpened(true);
 
         log_store_.setLogCallbacks(
             [this](unsigned int id, const nlohmann::json& j) { managers_.db_interface->saveTaskLogInfo(id, j); },
@@ -498,7 +451,7 @@ Result COMPASS::createInMemDBFileInternal(const std::string& future_filename)
     {
         res = Result::failed(e.what());
 
-        db_opened_ = false;
+        app_state_.dbOpened(false);
     }
 
     return res;
@@ -567,8 +520,8 @@ bool COMPASS::exportDBFile(const std::string& filename)
 {
     loginf << "exporting as file '" << filename << "'";
 
-    traced_assert(db_opened_);
-    traced_assert(!db_export_in_progress_);
+    traced_assert(app_state_.dbOpened());
+    traced_assert(!app_state_.dbExportInProgress());
 
     QMessageBox* msg_box = new QMessageBox(Dialogs::statusDialogParent());
 
@@ -599,12 +552,12 @@ Result COMPASS::exportDBFileInternal(const std::string& filename)
 {
     traced_assert(managers_.db_interface);
 
-    if (!db_opened_)
+    if (!app_state_.dbOpened())
         return Result::failed("No database opened");
-    if (db_export_in_progress_)
+    if (app_state_.dbExportInProgress())
         return Result::failed("Export already in progress");
     
-    db_export_in_progress_ = true;
+    app_state_.dbExportInProgress(true);
 
     Result res = Result::succeeded();
 
@@ -617,7 +570,7 @@ Result COMPASS::exportDBFileInternal(const std::string& filename)
         res = Result::failed(ex.what());
     }
 
-    db_export_in_progress_ = false;
+    app_state_.dbExportInProgress(false);
 
     return res;
 }
@@ -626,7 +579,7 @@ bool COMPASS::closeDB()
 {
     loginf << "closing db file '" << last_db_filename_ << "'";
 
-    traced_assert(db_opened_);
+    traced_assert(app_state_.dbOpened());
 
     auto result = closeDBInternal();
 
@@ -638,7 +591,7 @@ bool COMPASS::closeDB()
 
 Result COMPASS::closeDBInternal()
 {
-    if (!db_opened_)
+    if (!app_state_.dbOpened())
         return Result::failed("No database opened");
 
     Result res = Result::succeeded();
@@ -655,8 +608,8 @@ Result COMPASS::closeDBInternal()
         managers_.db_interface->closeDB();
         traced_assert(!managers_.db_interface->ready());
 
-        db_opened_ = false;
-        db_inmem_ = false;
+        app_state_.dbOpened(false);
+        app_state_.dbInMem(false);
 
         emit databaseClosedSignal();
         log_store_.setLogCallbacks({}, {});
@@ -694,6 +647,30 @@ QWidget* COMPASS::latestViewContainerWidget()
 QWidget* COMPASS::latestViewWidget()
 {
     return viewProvider().latestViewWidget();
+}
+
+/**
+ * Finds a configurable below COMPASS (the root configurable) by its path.
+ */
+std::pair<rtcommand::FindObjectErrCode, Configurable*> COMPASS::findConfigurable(const std::string& path)
+{
+    return findSubConfigurablePath(path);
+}
+
+/**
+ * True while a view dispatch is in flight or view processing is pending, so runtime commands
+ * are deferred to the event loop instead of waiting here (see RTCommandRunnerStash).
+ * Notice: a shutdown tears the views down anyway, and its event loop is going away -
+ * deferring against it would leave the runner thread retrying forever.
+ */
+bool COMPASS::viewsBusy()
+{
+    if (isShutDown())
+        return false;
+
+    IViewProvider& view_man = viewProvider();
+
+    return view_man.hasPendingViewProcessing() || view_man.isProcessingData();
 }
 
 SimpleConfig& COMPASS::config()
@@ -847,17 +824,17 @@ const RTCommandManager& COMPASS::rtCommandManager() const
 
 bool COMPASS::dbOpened()
 {
-    return db_opened_;
+    return app_state_.dbOpened();
 }
 
 bool COMPASS::dbInMem() const
 {
-    return db_inmem_;
+    return app_state_.dbInMem();
 }
 
 bool COMPASS::canCreateDBFileFromMemory() const
 {
-    return db_opened_ && db_inmem_ && managers_.db_interface && managers_.db_interface->canCreateDBFileFromMemory() && !inmem_future_filename_.empty();
+    return app_state_.dbOpened() && app_state_.dbInMem() && managers_.db_interface && managers_.db_interface->canCreateDBFileFromMemory() && !inmem_future_filename_.empty();
 }
 
 /**
@@ -867,13 +844,13 @@ void COMPASS::shutdown()
 {
     loginf << "shutdown";
 
-    if (app_state_ == AppState::Shutdown)
+    if (app_state_.isShutDown())
     {
         logerr << "already shut down";
         return;
     }
 
-    app_state_ = AppState::Shutdown;
+    app_state_.phase(AppPhase::Shutdown);
 
     traced_assert(shutdown_sequence_);
     shutdown_sequence_();
@@ -887,51 +864,6 @@ IMainWindow& COMPASS::mainWindow()
 {
     traced_assert(main_window_);
     return *main_window_;
-}
-
-std::string COMPASS::lastUsedPath()
-{
-    loginf << "return '" << last_path_ << "'";
-    return last_path_;
-}
-
-void COMPASS::lastUsedPath(const std::string& last_path)
-{
-    loginf << "set '" << last_path << "'";
-    last_path_ = last_path;
-}
-
-bool COMPASS::darkMode() const
-{
-    return dark_mode_;
-}
-
-void COMPASS::darkMode(bool value)
-{
-    if (dark_mode_ == value)
-        return;
-
-    dark_mode_ = value;
-    emit darkModeChangedSignal(dark_mode_);
-}
-
-void COMPASS::colorMode(unsigned int value)
-{
-    if (color_mode_ == value)
-        return;
-
-    color_mode_ = value;
-    emit colorModeChangedSignal(color_mode_);
-}
-
-const char* COMPASS::lineEditInvalidStyle()
-{
-    if (dark_mode_)
-        return "QLineEdit { background: rgb(255, 50, 50); selection-background-color:"
-                          " rgb(255, 100, 100); }";
-    else
-        return "QLineEdit { background: rgb(255, 100, 100); selection-background-color:"
-                          " rgb(255, 200, 200); }";
 }
 
 LogStream COMPASS::logInfo(const std::string& component,
@@ -952,147 +884,12 @@ LogStream COMPASS::logError(const std::string& component,
     return log_store_.logError(component, error_code, json_blob);
 }
 
-bool COMPASS::disableConfirmResetViews() const
-{
-    return disable_confirm_reset_views_;
-}
-
-unsigned int COMPASS::autoLiveRunningResumeAskWaitTime() const
-{
-    return auto_live_running_resume_ask_wait_time_;
-}
-
-unsigned int COMPASS::autoLiveRunningResumeAskTime() const
-{
-    return auto_live_running_resume_ask_time_;
-}
-
-bool COMPASS::dbExportInProgress() const
-{
-    return db_export_in_progress_;
-}
-
-bool COMPASS::disableAddRemoveViews() const
-{
-    return disable_add_remove_views_;
-}
-
-bool COMPASS::disableGeographicViewRotate() const
-{
-    return disable_geographicview_rotate_;
-}
-
-bool COMPASS::disableMenuConfigSave() const
-{
-    return disable_menu_config_save_;
-}
-
-bool COMPASS::pdflatexFound() const
-{
-    return pdflatex_found_;
-}
-
-bool COMPASS::disableLiveToOfflineSwitch() const
-{
-    return disable_live_to_offline_switch_;
-}
-
-bool COMPASS::isShutDown() const
-{
-    return (app_state_ == AppState::Shutdown);
-}
-
-bool COMPASS::isRunning() const
-{
-    return (app_state_ == AppState::Running);
-}
-
-bool COMPASS::expertMode() const
-{
-    return expert_mode_;
-}
-
-void COMPASS::expertMode(bool expert_mode)
-{
-    loginf << "setting expert mode " << expert_mode;
-
-    expert_mode_ = expert_mode;
-}
-
-AppMode COMPASS::appMode() const
-{
-    return app_mode_;
-}
-
-void COMPASS::appMode(const AppMode& app_mode)
-{
-    if (app_mode_ != app_mode)
-    {
-        AppMode last_app_mode = app_mode_;
-
-        app_mode_ = app_mode;
-
-        loginf << "app_mode_current " << toString(app_mode_)
-               << " previous " << toString(last_app_mode);
-
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
-        // Live entry / pause / resume / exit all reduce to the same two steps: switch
-        // ASTERIX ingestion (importer first, so no trailing inserts land after a pause),
-        // then flip the display. Within a live session ViewManager keeps the LiveDataFeed as
-        // the current source across running+paused, so pause = freeze and resume = unfreeze;
-        // no reload or cache prime is needed - the feed already holds the data.
-        // The importer is connected to appModeAboutToSwitchSignal => it runs before all
-        // slots of appModeSwitchSignal.
-        emit appModeAboutToSwitchSignal(last_app_mode, app_mode_);
-        emit appModeSwitchSignal(last_app_mode, app_mode_);
-
-        QApplication::restoreOverrideCursor();
-    }
-}
-
-/**
- */
-void COMPASS::liveOverloaded(bool overloaded)
-{
-    if (live_overloaded_ == overloaded)
-        return;
-
-    live_overloaded_ = overloaded;
-
-    loginf << "live overload " << (overloaded ? "detected" : "cleared");
-
-    emit liveOverloadChangedSignal(overloaded);
-}
-
 /**
  */
 unsigned int COMPASS::liveImportBacklogSize() const
 {
     traced_assert(live_import_backlog_size_func_);
     return live_import_backlog_size_func_();
-}
-
-std::string COMPASS::appModeStr() const
-{
-    if (!appModes2Strings().count(app_mode_))
-    {
-        std::cout << "COMPASS: appModeStr: unkown type " << (unsigned int) app_mode_ << std::endl;
-        logerr << "unkown type " << (unsigned int) app_mode_;
-    }
-
-    traced_assert(appModes2Strings().count(app_mode_) > 0);
-    return appModes2Strings().at(app_mode_);
-}
-
-const std::map<AppMode, std::string>& COMPASS::appModes2Strings()
-{
-    static const auto* map = new std::map<AppMode, std::string>
-    {{AppMode::Offline, "Offline Mode"},
-        {AppMode::LiveRunning, "Live Mode: Running"},
-        {AppMode::LivePaused, "Live Mode: Paused"}};
-
-    return *map;
 }
 
 std::string COMPASS::lastDbFilename() const

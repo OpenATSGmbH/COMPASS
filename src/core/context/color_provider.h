@@ -25,10 +25,10 @@
 #include <string>
 #include <vector>
 
-class COMPASS;
-
 namespace context
 {
+
+class DBContextManager;
 
 /**
  * Color generation / resolution helper for the DBContext color system.
@@ -130,7 +130,7 @@ QColor resolveSeriesColor(const std::string& ds_type,
                           const std::string& ds_name,
                           int line_index,
                           const std::string& dbcontent_name,
-                          COMPASS& compass,
+                          DBContextManager& ctx_man,
                           std::function<QColor(const std::string&)> hashed_fallback = {});
 
 } // namespace context

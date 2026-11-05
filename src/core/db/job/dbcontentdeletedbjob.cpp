@@ -17,18 +17,18 @@
 
 #include "dbcontentdeletedbjob.h"
 #include "dbinterface.h"
+#include "dbcontent/dbcontentdb.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "logger.h"
-#include "compass.h"
 #include "number.h"
 #include "timeconv.h"
 
 using namespace std;
 using namespace Utils;
 
-DBContentDeleteDBJob::DBContentDeleteDBJob(DBInterface& db_interface)
-    : Job("DBContentDeleteDBJob"), db_interface_(db_interface)
+DBContentDeleteDBJob::DBContentDeleteDBJob(DBContentDB& content_db)
+    : Job("DBContentDeleteDBJob"), content_db_(content_db)
 
 {
 }
@@ -109,7 +109,7 @@ void DBContentDeleteDBJob::run_impl()
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
-    DBContentManager& dbcont_man = db_interface_.dbContentManager();
+    DBContentManager& dbcont_man = content_db_.dbContentManager();
 
     if (use_before_timestamp_)
     {
@@ -119,7 +119,7 @@ void DBContentDeleteDBJob::run_impl()
                 continue;
 
             logdbg << "deleting dbcontent for " << dbcont_it.first;
-            db_interface_.deleteBefore(*dbcont_it.second, before_timestamp_);
+            content_db_.deleteBefore(*dbcont_it.second, before_timestamp_);
         }
     }
     else if (use_specific_dbcontent_)
@@ -131,7 +131,7 @@ void DBContentDeleteDBJob::run_impl()
             traced_assert(dbcont_man.existsDBContent(specific_dbcontent_));
             traced_assert(use_specific_sac_sic_);
 
-            db_interface_.deleteContent(dbcont_man.dbContent(specific_dbcontent_),
+            content_db_.deleteContent(dbcont_man.dbContent(specific_dbcontent_),
                                         specific_sac_, specific_sic_, specific_line_id_);
         }
         else if (use_specific_sac_sic_)
@@ -140,14 +140,14 @@ void DBContentDeleteDBJob::run_impl()
                    << " for specific sac/sic";
             traced_assert(dbcont_man.existsDBContent(specific_dbcontent_));
 
-            db_interface_.deleteContent(dbcont_man.dbContent(specific_dbcontent_),
+            content_db_.deleteContent(dbcont_man.dbContent(specific_dbcontent_),
                                         specific_sac_, specific_sic_);
         }
         else // all
         {
             loginf << "deleting all dbcontent for " << specific_dbcontent_;
             traced_assert(dbcont_man.existsDBContent(specific_dbcontent_));
-            db_interface_.deleteAll(dbcont_man.dbContent(specific_dbcontent_));
+            content_db_.deleteAll(dbcont_man.dbContent(specific_dbcontent_));
         }
     }
     else if (!delete_info_.empty())
@@ -184,7 +184,7 @@ void DBContentDeleteDBJob::run_impl()
                 if (!entry.contains("data_sources"))
                 {
                     loginf << "deleting all data for " << dbcontent_name;
-                    db_interface_.deleteAll(dbcontent);
+                    content_db_.deleteAll(dbcontent);
                 }
                 else
                 {
@@ -199,7 +199,7 @@ void DBContentDeleteDBJob::run_impl()
                         {
                             loginf << "deleting " << dbcontent_name
                                    << " for ds_id " << ds_id;
-                            db_interface_.deleteContent(dbcontent, sac, sic);
+                            content_db_.deleteContent(dbcontent, sac, sic);
                         }
                         else
                         {
@@ -208,7 +208,7 @@ void DBContentDeleteDBJob::run_impl()
                                 loginf << "deleting " << dbcontent_name
                                        << " for ds_id " << ds_id
                                        << " line " << line_id;
-                                db_interface_.deleteContent(dbcontent, sac, sic, line_id);
+                                content_db_.deleteContent(dbcontent, sac, sic, line_id);
                             }
                         }
                     }
@@ -221,7 +221,7 @@ void DBContentDeleteDBJob::run_impl()
 
     //cleanup db after delete?
     if (cleanup_db_)
-        db_interface_.cleanupDB();
+        content_db_.dbInterface().cleanupDB();
 
     boost::posix_time::time_duration diff = boost::posix_time::microsec_clock::local_time() - start_time;
 

@@ -23,14 +23,14 @@
 
 class Buffer;
 class DBContent;
-class DBInterface;
+class DBContentDB;
 
 class DBContentReadDBJob : public Job
 {
     Q_OBJECT
 
 public:
-    DBContentReadDBJob(DBInterface& db_interface, DBContent& dbcontent, dbContent::VariableSet read_list,
+    DBContentReadDBJob(DBContentDB& content_db, DBContent& dbcontent, dbContent::VariableSet read_list,
                        std::string custom_filter_clause);
     virtual ~DBContentReadDBJob();
 
@@ -45,7 +45,7 @@ public:
 protected:
     virtual void run_impl();
 
-    DBInterface& db_interface_;
+    DBContentDB& content_db_;
     DBContent& dbcontent_;
     dbContent::VariableSet read_list_;
     std::string custom_filter_clause_;

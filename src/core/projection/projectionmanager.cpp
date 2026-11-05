@@ -22,7 +22,6 @@
 #include "rs2gprojection.h"
 #include "idbvariableresolver.h"
 #include "db_context_manager.h"
-#include "compass.h"
 #include "files.h"
 #include "number.h"
 
@@ -42,9 +41,8 @@ const string ProjectionManager::RS2G_NAME = "RS2G";
 //const string ProjectionManager::OGR_NAME = "OGR";
 //const string ProjectionManager::GEO_NAME = "Geo";
 
-ProjectionManager::ProjectionManager(nlohmann::json& config, COMPASS* parent)
+ProjectionManager::ProjectionManager(nlohmann::json& config, Configurable* parent)
     : Configurable(config, parent),
-      compass_(*parent),
       mag_model_("wmm2020", HOME_DATA_DIRECTORY + "wmm") // WMM model (World Magnetic Model)
 {
     loginf;
@@ -101,6 +99,14 @@ ProjectionManager::~ProjectionManager()
         GDALClose(dataset_);
 
     egm96_band_ = nullptr;
+}
+
+/**
+ */
+context::DBContextManager& ProjectionManager::dbContextManager()
+{
+    traced_assert(ctx_man_);
+    return *ctx_man_;
 }
 
 void ProjectionManager::generateSubConfigurable(nlohmann::json& child_json)
@@ -172,7 +178,7 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
     // do radar position projection
 
     auto& var_resolver = varResolver();
-    auto& ctx_man = compass_.dbContextManager();
+    auto& ctx_man = dbContextManager();
 
     unsigned int ds_id;
     double azimuth_deg;

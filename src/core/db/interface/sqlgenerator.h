@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include "dbcontent/variable/variableset.h"
 #include "dbtableinfo.h"
 #include "dbdefs.h"
 
@@ -31,18 +30,16 @@
 class Buffer;
 class DBCommand;
 class DBCommandList;
-class DBContent;
-class DBContentManager;
 
 /**
+ * Generic SQL statements, the DB content specific ones are built by DBContentDB.
  */
 class SQLGenerator
 {
 public:
-    SQLGenerator(const db::SQLConfig& config, DBContentManager& dbcont_man);
+    SQLGenerator(const db::SQLConfig& config);
     virtual ~SQLGenerator();
 
-    std::string getCreateTableStatement(const DBContent& object);
     std::string getCreateTableStatement(const std::string& table_name,
                                         const std::vector<DBTableColumnInfo>& column_infos, 
                                         const std::vector<db::Index>& indices = std::vector<db::Index>());
@@ -64,27 +61,13 @@ public:
                                        const std::string& key_col_name,
                                        const nlohmann::json& key_col_value);
 
-    std::shared_ptr<DBCommand> getSelectCommand(const DBContent& object, 
-                                                dbContent::VariableSet read_list, 
+    std::shared_ptr<DBCommand> getSelectCommand(const std::string& table_name,
+                                                const PropertyList& properties,
                                                 const std::string& filter,
-                                                bool use_order = false, 
-                                                dbContent::Variable* order_variable = nullptr);
-    std::shared_ptr<DBCommand> getSelectCommand(const std::string& table_name, 
-                                                const PropertyList& properties, 
-                                                const std::string& filter,
-                                                bool use_order = false, 
+                                                bool use_order = false,
                                                 const std::string& order_variable = "",
                                                 const std::string& join_clause = "");
 
-    /// LEFT JOIN subqueries of the Report Tables the read set references, one per table,
-    /// empty if the read set holds no Report Variable. See readme_dynamic_dbcontent.md 4.4
-    std::string getReportTableJoinClause(const DBContent& object,
-                                         const dbContent::VariableSet& read_list) const;
-
-    std::shared_ptr<DBCommand> getDeleteCommand(const DBContent& dbcontent, boost::posix_time::ptime before_timestamp);
-    std::shared_ptr<DBCommand> getDeleteCommand(const DBContent& dbcontent);
-    std::shared_ptr<DBCommand> getDeleteCommand(const DBContent& dbcontent, unsigned int sac, unsigned int sic);
-    std::shared_ptr<DBCommand> getDeleteCommand(const DBContent& dbcontent, unsigned int sac, unsigned int sic, unsigned int line_id);
     std::shared_ptr<DBCommand> getDeleteCommand(const std::string& table_name, const std::string& filter);
 
     //std::shared_ptr<DBCommand> getDistinctDataSourcesSelectCommand(DBContent& object);
@@ -92,7 +75,6 @@ public:
                                                       const std::string& col_name);
     std::shared_ptr<DBCommand> getMaxULongIntValueCommand(const std::string& table_name,
                                                           const std::string& col_name);
-    std::shared_ptr<DBCommand> getADSBInfoCommand(DBContent& adsb_obj);
 
 //    std::string getCreateAssociationTableStatement(const std::string& table_name);
 //    std::shared_ptr<DBCommand> getSelectAssociationsCommand(const std::string& table_name);
@@ -103,12 +85,12 @@ public:
     std::string getTablePropertiesCreateStatement();
     std::string getTableSectorsCreateStatement();
     std::string getTableViewPointsCreateStatement();
-    std::string getTableTargetsCreateStatement();
     std::string getTableTaskLogCreateStatement();
 
     std::string getDeleteStatement (const std::string& table, const std::string& filter);
 
-    std::string getInsertTargetStatement(unsigned int utn, const std::string& info);
+    std::string replaceStatement(const std::string& table,
+                                 const std::vector<std::string>& values) const;
 
     std::string getInsertPropertyStatement(const std::string& id, const std::string& value);
     std::string getSelectPropertyStatement(const std::string& id);
@@ -131,7 +113,6 @@ public:
     std::string getReplaceSectorStatement(const unsigned int id, const std::string& name,
                                           const std::string& layer_name, const std::string& json);
     std::string getSelectAllSectorsStatement();
-    std::string getSelectAllTargetsStatement();
     std::string getSelectAllTaslLogMessagesStatement();
 
     // db_context table
@@ -154,11 +135,7 @@ public:
 private:
     std::string placeholder(int index = 1) const;
 
-    std::string replaceStatement(const std::string& table, 
-                                 const std::vector<std::string>& values) const;
-
     db::SQLConfig config_;
-    DBContentManager& dbcont_man_;
 
     //    std::string subTablesWhereClause(const DBTable& table,
     //                                     const std::vector<std::string>& used_tables);

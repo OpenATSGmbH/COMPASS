@@ -34,10 +34,7 @@
 #include "dbtableinfo.h"
 #include "logger.h"
 #include "property.h"
-#include "dbcontent.h"
 #include "property_templates.h"
-#include "compass.h"
-#include "dbcontentmanager.h"
 
 #include "timeconv.h"
 
@@ -49,8 +46,8 @@
 
 /**
  */
-DuckDBConnection::DuckDBConnection(DBContentManager& dbcont_man, DuckDBInstance* instance, bool verbose)
-:   DBConnection(dbcont_man, instance, verbose)
+DuckDBConnection::DuckDBConnection(DuckDBInstance* instance, bool verbose)
+:   DBConnection(instance, verbose)
 {
     //loginf;
 }

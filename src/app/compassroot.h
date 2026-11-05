@@ -33,6 +33,7 @@ class UnitManager;
 class ProjectionManager;
 class RTCommandManager;
 class IDBVariableResolver;
+class SensorStatusTracker;
 class MainWindow;
 
 namespace context
@@ -68,6 +69,8 @@ public:
     EvaluationManager& evaluationManager();
     TaskManager& taskManager();
 
+    SensorStatusTracker& sensorStatusTracker();
+
 private:
     void registerManagerCreators();
     void startManagers();
@@ -93,6 +96,7 @@ private:
     std::unique_ptr<IDBVariableResolver>        var_resolver_;    // DBContent variables for the projection manager
     std::unique_ptr<rtcommand::RTCommandRunner> rt_cmd_runner_;
     std::unique_ptr<context::DBContextManager>  context_manager_;
+    std::unique_ptr<SensorStatusTracker>        sensor_status_tracker_; // sensor status of the trackers (live)
 
     MainWindow* main_window_ = nullptr;
 };

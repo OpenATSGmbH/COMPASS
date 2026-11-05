@@ -21,7 +21,7 @@
 #include <string>
 
 class Buffer;
-class COMPASS;
+class DBContentManager;
 
 namespace dbContent
 {
@@ -36,11 +36,11 @@ namespace calculation_functions
 
 /// "radar_projection": "Latitude*" and "Longitude*" of CAT001 and CAT048 from range, azimuth and
 /// the sensor position, rows with a position stay, see ProjectionManager::doRadarPlotPositionCalculations
-void radarProjection(COMPASS& compass, const std::string& dbcontent_name, const std::shared_ptr<Buffer>& buffer);
+void radarProjection(DBContentManager& dbcont_man, const std::string& dbcontent_name, const std::shared_ptr<Buffer>& buffer);
 
 /// "adsb_sgv_speed_track": "Ground Speed*" and "Track Angle*" of CAT021, filled from the decoded
 /// I021/160 values first, then from the SGV fields of the REF for surface targets
-void adsbSGVSpeedTrack(COMPASS& compass, const std::string& dbcontent_name, const std::shared_ptr<Buffer>& buffer);
+void adsbSGVSpeedTrack(DBContentManager& dbcont_man, const std::string& dbcontent_name, const std::shared_ptr<Buffer>& buffer);
 
 }
 

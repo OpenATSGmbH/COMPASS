@@ -22,7 +22,7 @@
 #include "deletedatadialog.h"
 #include "dbcontentdeletedbjob.h"
 
-#include "compass.h"
+#include "appstate.h"
 #include "iviewprovider.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -113,15 +113,13 @@ QColor commonChildEffectiveColor(const QTreeWidgetItem* item)
 /// (used when count rows are hidden). Returns invalid when nothing matches
 /// or when the matching dbcontents disagree.
 QColor commonInsertedDBContentColor(context::DBContextManager& ctx_man,
+                                    DBContentManager& dbcont_man,
                                     unsigned int ds_id,
                                     const std::string& ds_type,
                                     const std::string& ds_name)
 {
     if (!ctx_man.hasActiveContext())
         return QColor();
-
-    auto& compass = ctx_man.compass();
-    auto& dbcont_man = compass.dbContentManager();
 
     QColor common;
     for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
@@ -133,7 +131,7 @@ QColor commonInsertedDBContentColor(context::DBContextManager& ctx_man,
             continue;
 
         QColor c = context::resolveSeriesColor(
-            ds_type, ds_name, /*line_index=*/0, dbc_name, compass);
+            ds_type, ds_name, /*line_index=*/0, dbc_name, ctx_man);
         if (!c.isValid())
             continue;
         if (!common.isValid())
@@ -297,13 +295,13 @@ QColor DataSourceTypeItem::effectiveColor() const
     if (!ctx_man.hasActiveContext())
         return QColor();
 
-    const unsigned int mode = ctx_man.compass().colorMode();
+    const unsigned int mode = ctx_man.appState().colorMode();
 
     // DSType mode: identity-derived. Works even when count rows are hidden
     // (no children to aggregate from).
     if (mode == 0)
     {
-        QColor c = context::resolveSeriesColor(ds_type_, "", 0, "", ctx_man.compass());
+        QColor c = context::resolveSeriesColor(ds_type_, "", 0, "", ctx_man);
         logdbg << "ds_type '" << ds_type_ << "' mode 0 (direct) -> "
                << c.name().toStdString() << " valid " << c.isValid();
         return c;
@@ -326,10 +324,10 @@ QColor DataSourceTypeItem::effectiveColor() const
 
         QColor c;
         if (mode == 1 /* DBContent */)
-            c = commonInsertedDBContentColor(ctx_man, ds.id(), ds.dsType(), ds.name());
+            c = commonInsertedDBContentColor(ctx_man, widget_->dbContentManager(), ds.id(), ds.dsType(), ds.name());
         else /* DataSource */
             c = context::resolveSeriesColor(
-                ds.dsType(), ds.name(), /*line_index=*/0, /*dbcontent=*/"", ctx_man.compass());
+                ds.dsType(), ds.name(), /*line_index=*/0, /*dbcontent=*/"", ctx_man);
 
         if (!c.isValid())
             continue;
@@ -434,7 +432,7 @@ QColor DataSourceItem::effectiveColor() const
     if (!ds)
         return QColor();
 
-    const unsigned int mode = ctx_man.compass().colorMode();
+    const unsigned int mode = ctx_man.appState().colorMode();
 
     // DataSourceLine: line buttons render line shades, no leaf icon.
     if (mode == 3)
@@ -445,7 +443,7 @@ QColor DataSourceItem::effectiveColor() const
     // Works even when count rows are hidden in the UI.
     if (mode == 1)
     {
-        QColor c = commonInsertedDBContentColor(ctx_man, ds_id_, ds->dsType(), ds->name());
+        QColor c = commonInsertedDBContentColor(ctx_man, widget_->dbContentManager(), ds_id_, ds->dsType(), ds->name());
         logdbg << "ds '" << ds->name() << "' mode 1 (data-driven) -> "
                << c.name().toStdString() << " valid " << c.isValid();
         return c;
@@ -454,7 +452,7 @@ QColor DataSourceItem::effectiveColor() const
     // DSType / DataSource modes: identity-derived (no aggregation needed,
     // works even when count rows are hidden).
     QColor c = context::resolveSeriesColor(
-        ds->dsType(), ds->name(), /*line_index=*/0, /*dbcontent=*/"", ctx_man.compass());
+        ds->dsType(), ds->name(), /*line_index=*/0, /*dbcontent=*/"", ctx_man);
     logdbg << "ds '" << ds->name() << "' type '" << ds->dsType() << "' mode " << mode
            << " (direct) -> " << c.name().toStdString() << " valid " << c.isValid();
     return c;
@@ -557,7 +555,7 @@ QColor DataSourceCountItem::effectiveColor() const
 
     // Non-target DBContents (status/service messages, etc.) never contribute
     // an icon color; they are also ignored by the parent's propagation rule.
-    auto& dbcont_man = ctx_man.compass().dbContentManager();
+    auto& dbcont_man = widget_->dbContentManager();
     if (!dbcont_man.existsDBContent(dbc_name_) ||
         !dbcont_man.dbContent(dbc_name_).containsTargetReports())
         return QColor();
@@ -569,16 +567,16 @@ QColor DataSourceCountItem::effectiveColor() const
     // DataSourceLine: leaf stays blank - the four line shades are rendered on
     // the per-line buttons of the parent DataSourceItem, which remain the
     // single source of truth for line color in this widget.
-    if (ctx_man.compass().colorMode() == 3 /* DataSourceLine */)
+    if (ctx_man.appState().colorMode() == 3 /* DataSourceLine */)
         return QColor();
 
     // Match the views' layer panels exactly: same palette -> default ->
     // hashed fallback chain (see color_provider.cpp resolveSeriesColor).
     // line_index is unused for DSType / DBContent / DataSource modes.
     QColor c = context::resolveSeriesColor(
-        ds->dsType(), ds->name(), /*line_index=*/0, dbc_name_, ctx_man.compass());
+        ds->dsType(), ds->name(), /*line_index=*/0, dbc_name_, ctx_man);
     logdbg << "count ds '" << ds->name() << "' dbc '" << dbc_name_
-           << "' mode " << ctx_man.compass().colorMode()
+           << "' mode " << ctx_man.appState().colorMode()
            << " -> " << c.name().toStdString() << " valid " << c.isValid();
     return c;
 }
@@ -621,7 +619,7 @@ DataSourceLineButton::DataSourceLineButton(DataSourcesWidget* widget,
     setCheckable(true);
 
     // initial style - updateContent() will re-apply once init() has set ds_id_
-    bool dark_mode = widget_->ctxManager().compass().darkMode();
+    bool dark_mode = widget_->ctxManager().appState().darkMode();
 
     if (dark_mode)
     {
@@ -678,10 +676,10 @@ void DataSourceLineButton::updateContent()
 
     auto& ctx_man = widget_->ctxManager();
 
-    AppMode app_mode = ctx_man.compass().appMode();
+    AppMode app_mode = ctx_man.appState().appMode();
 
     bool live_mode = app_mode == AppMode::LivePaused || app_mode == AppMode::LiveRunning;
-    bool dark_mode = ctx_man.compass().darkMode();
+    bool dark_mode = ctx_man.appState().darkMode();
 
     auto apply_stylesheet = [this](const QString& css)
     {
@@ -777,7 +775,7 @@ void DataSourceLineButton::updateContent()
 
     // Border: Color Mode DataSource+Line paints a solid line-colored border, otherwise a
     // 3D outset (white in dark mode) on the pressed/checked states.
-    unsigned int color_mode = ctx_man.compass().colorMode();
+    unsigned int color_mode = ctx_man.appState().colorMode();
     const auto* ds = dataSource();
 
     QString base_border;  // solid border for color mode; empty otherwise
@@ -822,12 +820,14 @@ const int DataSourcesWidget::LineButtonSize = 20;
 
 /**
  */
-DataSourcesWidget::DataSourcesWidget(bool can_show_counts, context::DBContextManager& ctx_man)
-:   can_show_counts_(can_show_counts), ctx_man_(ctx_man)
+DataSourcesWidget::DataSourcesWidget(bool can_show_counts,
+                                     context::DBContextManager& ctx_man,
+                                     DBContentManager& dbcont_man)
+:   can_show_counts_(can_show_counts), ctx_man_(ctx_man), dbcont_man_(dbcont_man)
 {
     createUI();
 
-    connect(&ctx_man_.compass(), &COMPASS::darkModeChangedSignal,
+    connect(&ctx_man_.appState(), &AppState::darkModeChangedSignal,
             this, [this](bool) { updateContent(true); });
 }
 
@@ -1138,7 +1138,7 @@ int DataSourcesWidget::generateDataSource(DataSourceItem* item,
     else
     {
         // counts shown => build dbcontent count map from context manager
-        auto& dbcont_man = ctx_man_.compass().dbContentManager();
+        auto& dbcont_man = dbcont_man_;
         std::map<std::string, unsigned int> count_map;
         for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
         {
@@ -1366,14 +1366,14 @@ bool DataSourcesWidget::getUseDSLine(unsigned int ds_id, unsigned int ds_line) c
  */
 void DataSourcesWidget::setShowCounts(bool show) const
 {
-    ctx_man_.compass().dbContentManager().showDataCounts(show);
+    dbcont_man_.showDataCounts(show);
 }
 
 /**
  */
 bool DataSourcesWidget::getShowCounts() const
 {
-    return ctx_man_.compass().dbContentManager().showDataCounts();
+    return dbcont_man_.showDataCounts();
 }
 
 /**
@@ -1567,7 +1567,7 @@ void DataSourcesWidget::expandSubtree(QTreeWidgetItem* item, bool expand)
 void DataSourcesWidget::showContextMenuSlot(const QPoint& pos)
 {
     // No database open → nothing to act on; suppress the context menu entirely.
-    if (!ctx_man_.compass().dbOpened())
+    if (!ctx_man_.appState().dbOpened())
         return;
 
     QTreeWidgetItem* raw   = tree_widget_->itemAt(pos);
@@ -1892,7 +1892,7 @@ void DataSourcesWidget::runDeleteDialog(std::function<void(DeleteDataDialog&)> p
         return;
     }
 
-    DeleteDataDialog dlg(ctx_man_, this);
+    DeleteDataDialog dlg(ctx_man_, dbcont_man_, this);
 
     if (preselect)
         preselect(dlg);
@@ -1922,7 +1922,7 @@ void DataSourcesWidget::runDeleteDialog(std::function<void(DeleteDataDialog&)> p
         return;
 
     // clear loaded dataset
-    ctx_man_.compass().viewProvider().clearDataInViews();
+    dbcont_man_.viewProvider().clearDataInViews();
 
     // show blocking wait dialog
     delete_wait_dialog_ = new QMessageBox(this);
@@ -1935,14 +1935,14 @@ void DataSourcesWidget::runDeleteDialog(std::function<void(DeleteDataDialog&)> p
     delete_wait_dialog_->show();
 
     // create and run delete job
-    delete_job_ = std::make_shared<DBContentDeleteDBJob>(ctx_man_.compass().dbInterface());
+    delete_job_ = std::make_shared<DBContentDeleteDBJob>(dbcont_man_.contentDB());
     delete_job_->setDeleteInfo(delete_info);
     delete_job_->cleanupDB(true);
 
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal,
             this, &DataSourcesWidget::deleteJobDoneSlot, Qt::QueuedConnection);
 
-    ctx_man_.compass().jobManager().addDBJob(delete_job_);
+    dbcont_man_.jobManager().addDBJob(delete_job_);
 }
 
 /**

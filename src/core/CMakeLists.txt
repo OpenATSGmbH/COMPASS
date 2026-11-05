@@ -22,6 +22,7 @@ target_sources(compass_core
     PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}/compass.h"
     "${CMAKE_CURRENT_LIST_DIR}/appmode.h"
+    "${CMAKE_CURRENT_LIST_DIR}/appstate.h"
     "${CMAKE_CURRENT_LIST_DIR}/imainwindow.h"
     "${CMAKE_CURRENT_LIST_DIR}/iviewprovider.h"
     "${CMAKE_CURRENT_LIST_DIR}/ifilterprovider.h"
@@ -29,6 +30,7 @@ target_sources(compass_core
     "${CMAKE_CURRENT_LIST_DIR}/viewpointkeys.h"
     PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/compass.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/appstate.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/viewpointkeys.cpp"
 )
 

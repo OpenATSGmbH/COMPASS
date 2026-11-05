@@ -21,7 +21,7 @@
 #include "db_context.h"
 #include "db_context_serializer.h"
 #include "sector_import_utils.h"
-#include "compass.h"
+#include "appstate.h"
 #include "logger.h"
 #include "files.h"
 #include "json.hpp"
@@ -47,8 +47,12 @@ REGISTER_RTCOMMAND(context_cmd::RTCommandExportDataSourcesJSON)
 namespace context_cmd
 {
 
-void init_context_commands()
+static context::DBContextManager* s_ctx_man = nullptr;
+
+void init_context_commands(context::DBContextManager& ctx_man)
 {
+    s_ctx_man = &ctx_man;
+
     RTCommandCreateContext::init();
     RTCommandSetContext::init();
     RTCommandDeleteContext::init();
@@ -76,7 +80,7 @@ rtcommand::IsValid RTCommandCreateContext::valid() const
 
 bool RTCommandCreateContext::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     try
     {
@@ -124,7 +128,7 @@ rtcommand::IsValid RTCommandSetContext::valid() const
 
 bool RTCommandSetContext::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     if (!ctx_man.hasContext(name_))
     {
@@ -132,7 +136,7 @@ bool RTCommandSetContext::run_impl()
         return false;
     }
 
-    if (compass_->dbOpened() && ctx_man.hasInsertedData())
+    if (s_ctx_man->appState().dbOpened() && ctx_man.hasInsertedData())
     {
         setResultMessage("Cannot switch context while a database with imported data is open");
         return false;
@@ -170,7 +174,7 @@ rtcommand::IsValid RTCommandDeleteContext::valid() const
 
 bool RTCommandDeleteContext::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     if (!ctx_man.hasContext(name_))
     {
@@ -212,7 +216,7 @@ void RTCommandDeleteContext::assignVariables_impl(const VariablesMap& variables)
 
 bool RTCommandListContexts::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     nlohmann::json j;
     j["contexts"] = nlohmann::json::array();
@@ -233,7 +237,7 @@ bool RTCommandListContexts::run_impl()
 
 bool RTCommandGetContextInfo::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -267,7 +271,7 @@ rtcommand::IsValid RTCommandGetContext::valid() const
 
 bool RTCommandGetContext::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     if (!ctx_man.hasContext(name_))
     {
@@ -307,7 +311,7 @@ rtcommand::IsValid RTCommandImportFFTsJSON::valid() const
 
 bool RTCommandImportFFTsJSON::run_impl()
 {
-    if (!compass_->dbContextManager().hasActiveContext())
+    if (!s_ctx_man->hasActiveContext())
     {
         setResultMessage("No active context");
         return false;
@@ -315,7 +319,7 @@ bool RTCommandImportFFTsJSON::run_impl()
 
     try
     {
-        compass_->dbContextManager().importFFTs(filename_);
+        s_ctx_man->importFFTs(filename_);
     }
     catch (const exception& e)
     {
@@ -355,7 +359,7 @@ bool RTCommandImportContext::run_impl()
 {
     try
     {
-        string name = compass_->dbContextManager().importContextZip(filename_);
+        string name = s_ctx_man->importContextZip(filename_);
 
         nlohmann::json reply;
         reply["name"] = name;
@@ -389,7 +393,7 @@ void RTCommandImportContext::assignVariables_impl(const VariablesMap& variables)
 
 bool RTCommandDeleteAllSectors::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -416,7 +420,7 @@ bool RTCommandDeleteAllSectors::run_impl()
 
 bool RTCommandDeleteAllFFTs::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -451,7 +455,7 @@ rtcommand::IsValid RTCommandImportSectorsGDAL::valid() const
 
 bool RTCommandImportSectorsGDAL::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -541,7 +545,7 @@ rtcommand::IsValid RTCommandExportSectorsJSON::valid() const
 
 bool RTCommandExportSectorsJSON::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -587,7 +591,7 @@ rtcommand::IsValid RTCommandExportDataSourcesJSON::valid() const
 
 bool RTCommandExportDataSourcesJSON::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = *s_ctx_man;
 
     if (!ctx_man.hasActiveContext())
     {

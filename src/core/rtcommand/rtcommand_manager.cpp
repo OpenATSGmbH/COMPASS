@@ -23,7 +23,7 @@
 #include "rtcommand.h"
 #include "rtcommand_result.h"
 #include "rtcommand_response.h"
-#include "compass.h"
+#include "appstate.h"
 
 #include "logger.h"
 
@@ -45,9 +45,11 @@ RTCommandManager::CommandId RTCommandManager::command_count_ = 0;
 
 const std::string RTCommandManager::PingName = "ping";
 
-RTCommandManager::RTCommandManager(nlohmann::json& config, COMPASS* parent)
+RTCommandManager::RTCommandManager(nlohmann::json& config,
+                                   Configurable* parent,
+                                   AppState& app_state)
     : Configurable(config, parent),
-      compass_(*parent),
+      app_state_(app_state),
       io_context_(std::make_unique<boost::asio::io_context>())
 {
     logdbg;
@@ -128,7 +130,8 @@ void RTCommandManager::run()
             {
                 loginf << "issuing command";
 
-                rtcommand::RTCommandRunner& cmd_runner = compass_.rtCmdRunner();
+                traced_assert(runner_);
+                rtcommand::RTCommandRunner& cmd_runner = *runner_;
 
                 std::future<std::vector<rtcommand::RTCommandResult>> current_result;
 
@@ -295,7 +298,7 @@ rtcommand::IssueInfo RTCommandManager::addCommand(const std::string& cmd_str, So
     }
 
     //commands from the server are only added when app is properly running
-    if (source == Source::Server && compass_.appState() != AppState::Running)
+    if (source == Source::Server && app_state_.phase() != AppPhase::Running)
     {
         rtcommand::IssueInfo info;
         info.issued        = false;

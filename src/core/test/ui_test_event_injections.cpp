@@ -21,7 +21,6 @@
 #include "rtcommand_defs.h"
 
 #include "logger.h"
-#include "compass.h"
 
 #include <QApplication>
 #include <QMainWindow>

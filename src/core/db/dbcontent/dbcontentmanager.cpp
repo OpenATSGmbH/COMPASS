@@ -16,9 +16,10 @@
  */
 
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontentdb.h"
 #include "viewabledataconfig.h"
 #include "buffer_utils.h"
-#include "compass.h"
+#include "appstate.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanagerwidget.h"
@@ -65,8 +66,10 @@ using namespace dbContent;
 
 const std::string DBContentManager::ARTASAssociationsCreatedProperty = "artas_associations_created";
 
-DBContentManager::DBContentManager(nlohmann::json& config, COMPASS& compass)
-    : Configurable(config, &compass), compass_(compass)
+DBContentManager::DBContentManager(nlohmann::json& config,
+                                   Configurable& parent,
+                                   AppState& app_state)
+    : Configurable(config, &parent), app_state_(app_state)
 {
     registerParameter("show_data_counts", &show_data_counts_, false);
     registerParameter("variable_selection_by_group", &variable_selection_by_group_, false);
@@ -92,7 +95,7 @@ DBContentManager::DBContentManager(nlohmann::json& config, COMPASS& compass)
     // for signal about new data
     qRegisterMetaType<std::map<std::string, std::shared_ptr<Buffer>>>("std::map<std::string, std::shared_ptr<Buffer>>");
 
-    dbContent::init_dbcontent_commands();
+    dbContent::init_dbcontent_commands(*this);
 
     traced_assert(!target_model_);
     target_model_.reset(new dbContent::TargetModel(*this));
@@ -125,6 +128,102 @@ DBContentManager::~DBContentManager()
     widget_ = nullptr;
 
     logdbg << "done";
+}
+
+/**
+ * Sets the peer managers, called by the composition root right after all managers were created.
+ */
+void DBContentManager::setManagers(DBInterface& db_interface,
+                                   context::DBContextManager& ctx_man,
+                                   JobManager& job_manager,
+                                   UnitManager& unit_manager,
+                                   ProjectionManager& projection_manager,
+                                   IViewProvider& view_provider,
+                                   IFilterProvider& filter_provider,
+                                   IEvalProvider& eval_provider)
+{
+    db_interface_       = &db_interface;
+    ctx_man_            = &ctx_man;
+    job_manager_        = &job_manager;
+    unit_manager_       = &unit_manager;
+    projection_manager_ = &projection_manager;
+    view_provider_      = &view_provider;
+    filter_provider_    = &filter_provider;
+    eval_provider_      = &eval_provider;
+
+    content_db_.reset(new DBContentDB(db_interface, *this));
+}
+
+/**
+ */
+DBInterface& DBContentManager::dbInterface()
+{
+    traced_assert(db_interface_);
+    return *db_interface_;
+}
+
+/**
+ */
+DBContentDB& DBContentManager::contentDB()
+{
+    traced_assert(content_db_);
+    return *content_db_;
+}
+
+/**
+ */
+context::DBContextManager& DBContentManager::dbContextManager()
+{
+    traced_assert(ctx_man_);
+    return *ctx_man_;
+}
+
+/**
+ */
+JobManager& DBContentManager::jobManager()
+{
+    traced_assert(job_manager_);
+    return *job_manager_;
+}
+
+/**
+ */
+UnitManager& DBContentManager::unitManager()
+{
+    traced_assert(unit_manager_);
+    return *unit_manager_;
+}
+
+/**
+ */
+ProjectionManager& DBContentManager::projectionManager()
+{
+    traced_assert(projection_manager_);
+    return *projection_manager_;
+}
+
+/**
+ */
+IViewProvider& DBContentManager::viewProvider()
+{
+    traced_assert(view_provider_);
+    return *view_provider_;
+}
+
+/**
+ */
+IFilterProvider& DBContentManager::filterProvider()
+{
+    traced_assert(filter_provider_);
+    return *filter_provider_;
+}
+
+/**
+ */
+IEvalProvider& DBContentManager::evalProvider()
+{
+    traced_assert(eval_provider_);
+    return *eval_provider_;
 }
 
 /**
@@ -225,7 +324,7 @@ void DBContentManager::waitUntilEngineIdle()
     // displayed buffers - the callers of this wait (DB close, view point apply,
     // report figure rendering) must also wait that out
     Utils::Async::pumpUntil(
-        [this] { return !compass_.viewProvider().hasPendingViewProcessing(); });
+        [this] { return !viewProvider().hasPendingViewProcessing(); });
 }
 
 /**
@@ -244,7 +343,7 @@ void DBContentManager::deleteData(const nlohmann::json& delete_info)
     traced_assert(!hasActiveDeleteJob()); // caller checks hasActiveDeleteJob()
 
     // wipe the display before the DB delete (a view concern kept out of the engine)
-    compass_.viewProvider().clearDataInViews();
+    viewProvider().clearDataInViews();
 
     data_engine_->deleteData(delete_info);
 }
@@ -488,8 +587,8 @@ DBContentManagerWidget* DBContentManager::widget()
  */
 VariableSet DBContentManager::getReadSet(const std::string& dbcontent_name)
 {
-    IEvalProvider& eval_man = compass_.evalProvider();
-    IViewProvider& view_man = compass_.viewProvider();
+    IEvalProvider& eval_man = evalProvider();
+    IViewProvider& view_man = viewProvider();
 
     VariableSet read_set = view_man.getReadSet(dbcontent_name);
 
@@ -511,11 +610,14 @@ void DBContentManager::databaseOpenedSlot()
 {
     loginf;
 
+    if (!contentDB().existsTargetsTable())
+        contentDB().createTargetsTable();
+
     data_engine_->loadMaxRecordNumberWODBContentID();
     data_engine_->loadMaxRefTrajTrackNum();
     data_engine_->loadMinMaxInfo();
 
-    DBInterface& db_interface = compass_.dbInterface();
+    DBInterface& db_interface = dbInterface();
 
     if (db_interface.hasProperty("associations_generated"))
     {
@@ -583,7 +685,7 @@ bool DBContentManager::hasAssociations() const
  */
 bool DBContentManager::artasAssociationsCreated()
 {
-    auto& db_interface = compass_.dbInterface();
+    auto& db_interface = dbInterface();
 
     return db_interface.hasProperty(ARTASAssociationsCreatedProperty) &&
            db_interface.getProperty(ARTASAssociationsCreatedProperty) == "1";
@@ -593,7 +695,7 @@ bool DBContentManager::artasAssociationsCreated()
  */
 void DBContentManager::setAssociationsIdentifier(const std::string& assoc_id)
 {
-    auto& dbinterface = compass_.dbInterface();
+    auto& dbinterface = dbInterface();
 
     dbinterface.setProperty("associations_generated", "1");
     dbinterface.setProperty("associations_id", assoc_id);
@@ -618,7 +720,7 @@ void DBContentManager::clearAssociationsIdentifier()
     has_associations_ = false;
     associations_id_ = "";
 
-    auto& dbinterface = compass_.dbInterface();
+    auto& dbinterface = dbInterface();
 
     if (dbinterface.hasProperty("associations_generated"))
         dbinterface.removeProperty("associations_generated");
@@ -944,24 +1046,26 @@ void DBContentManager::setViewableDataConfig (const nlohmann::json::object_t& da
 
     viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 
-    compass_.viewProvider().setCurrentViewPoint(viewable_data_cfg_);
+    viewProvider().setCurrentViewPoint(viewable_data_cfg_);
 }
 
 void DBContentManager::storeSelectedRecNums(const std::vector<unsigned long>& selected)
 {
     // selection carry-over lives in ViewManager; this is a thin façade for lower layers
-    compass_.viewProvider().storeSelectedRecNums(selected);
+    viewProvider().storeSelectedRecNums(selected);
 }
 
 bool DBContentManager::hasMaxLatency() const
 {
     // the live session (owned by ViewManager) owns the latency; the manager only forwards it
-    return compass_.viewProvider().hasMaxLatency();
+    traced_assert(view_provider_);
+    return view_provider_->hasMaxLatency();
 }
 
 boost::posix_time::time_duration DBContentManager::maxLatency() const
 {
-    return compass_.viewProvider().maxLatency();
+    traced_assert(view_provider_);
+    return view_provider_->maxLatency();
 }
 
 /**
@@ -1298,7 +1402,7 @@ void DBContentManager::showUTNs (std::set<unsigned int> utns)
     }
     else
     {
-        compass_.viewProvider().clearDataInViews();
+        viewProvider().clearDataInViews();
     }
 }
 

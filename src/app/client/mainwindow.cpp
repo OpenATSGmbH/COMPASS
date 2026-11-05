@@ -26,6 +26,7 @@
 #include "db_context_delete_dialog.h"
 #include "db_context_edit_dialog.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentdataengine.h"
 #include "dbcontent/target/targetlistwidget.h"
 #include "datasourcestoolwidget.h"
@@ -208,10 +209,14 @@ void MainWindow::createUI()
     tool_box_ = new ToolBox(this);
     tool_box_->setObjectName("toolbox");
     
-    tool_ds_      = tool_box_->addTool(compass_.dbContextManager().loadWidget()); // 0
+    // data source tools: created here, owned by the tool box (qt)
+    auto ds_tool      = new DataSourcesToolWidget(compass_.dbContextManager(), compass_.dbContentManager());
+    auto sstatus_tool = new DataSourcesStatusToolWidget(compass_.dbContextManager(), root_.sensorStatusTracker());
+
+    tool_ds_      = tool_box_->addTool(ds_tool); // 0
     tool_filters_ = tool_box_->addTool(root_.filterManager().widget()); // 1
     tool_targets_ = tool_box_->addTool(compass_.dbContentManager().targetListWidget()); // 2
-    tool_sstatus_ = tool_box_->addTool(compass_.dbContextManager().statusWidget()); // 3
+    tool_sstatus_ = tool_box_->addTool(sstatus_tool); // 3
     tool_reports_ = tool_box_->addTool(root_.taskManager().widget()); // 4
     tool_vp_      = tool_box_->addTool(root_.viewManager().viewPointsWidget()); // 5
     tool_log_     = tool_box_->addTool(new LogWidget(compass_.logStore())); // 6
@@ -1511,7 +1516,13 @@ void MainWindow::createContextMenu()
     context_edit_action_->setToolTip("Edit the current context");
     connect(context_edit_action_, &QAction::triggered, this, [this]()
     {
-        context::DBContextEditDialog dialog(compass_.dbContextManager(), this);
+        // DBContents shown in the colors palette
+        std::vector<std::string> dbcontent_names;
+        for (const auto& [ name, dbcontent ] : compass_.dbContentManager())
+            if (dbcontent && dbcontent->containsTargetReports())
+                dbcontent_names.push_back(name);
+
+        context::DBContextEditDialog dialog(compass_.dbContextManager(), dbcontent_names, this);
         dialog.exec();
     });
     context_menu_->addAction(context_edit_action_);
@@ -1676,7 +1687,7 @@ void MainWindow::showCommandShell()
 
 void MainWindow::manageLicensesSlot()
 {
-    LicenseManagerDialog dlg(compass_, this);
+    LicenseManagerDialog dlg(compass_.licenseManager(), this);
     dlg.resize(1000, 600);
     dlg.exec();
 }

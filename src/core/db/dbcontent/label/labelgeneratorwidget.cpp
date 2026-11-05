@@ -20,7 +20,7 @@
 #include "dbcontent/label/labeldswidget.h"
 #include "dbcontentmanager.h"
 #include "dbcontent.h"
-#include "compass.h"
+#include "appstate.h"
 #include "logger.h"
 #include "files.h"
 #include "gui/rangeedit.h"
@@ -116,7 +116,7 @@ LabelGeneratorWidget::LabelGeneratorWidget(LabelGenerator& label_generator)
     declutter_layout->addWidget(declutter_box);
 
     // placement method (development only)
-    if (!COMPASS::isAppImage())
+    if (!AppState::isAppImage())
     {
         QComboBox* placement_box = new QComboBox();
         placement_box->addItem("Force Simple"    , (int)label_placement::Method::ForceBasedSimple);

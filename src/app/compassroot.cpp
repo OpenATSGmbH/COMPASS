@@ -30,6 +30,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontentmanagervariableresolver.h"
 #include "db_context_manager.h"
+#include "sensorstatustracker.h"
 #include "licensemanager.h"
 #include "jobmanager.h"
 #include "unitmanager.h"
@@ -39,6 +40,7 @@
 #include "async.h"
 
 #include "logmodel.h"
+#include "config.h"
 #include "logger.h"
 #include "traced_assert.h"
 
@@ -144,6 +146,14 @@ TaskManager& CompassRoot::taskManager()
 }
 
 /**
+ */
+SensorStatusTracker& CompassRoot::sensorStatusTracker()
+{
+    traced_assert(sensor_status_tracker_);
+    return *sensor_status_tracker_;
+}
+
+/**
  * Creates the main window on first use.
  */
 MainWindow& CompassRoot::mainWindow()
@@ -180,14 +190,18 @@ void CompassRoot::registerManagerCreators()
     auto createDBInterface = [ this ] (nlohmann::json& config)
     {
         traced_assert(!db_interface_);
-        db_interface_.reset(new DBInterface(config, *compass_));
+        db_interface_.reset(new DBInterface(config,
+                                            *compass_,
+                                            compass_->appState(),
+                                            compass_->logStore(),
+                                            compass_->config().getString("version")));
         compass_->managers().db_interface = db_interface_.get();
     };
 
     auto createDBContentManager = [ this ] (nlohmann::json& config)
     {
         traced_assert(!dbcontent_manager_);
-        dbcontent_manager_.reset(new DBContentManager(config, *compass_));
+        dbcontent_manager_.reset(new DBContentManager(config, *compass_, compass_->appState()));
         compass_->managers().dbcontent_manager = dbcontent_manager_.get();
     };
 
@@ -243,7 +257,7 @@ void CompassRoot::registerManagerCreators()
     auto createRTCommandManager = [ this ] (nlohmann::json& config)
     {
         traced_assert(!rt_cmd_manager_);
-        rt_cmd_manager_.reset(new RTCommandManager(config, compass_.get()));
+        rt_cmd_manager_.reset(new RTCommandManager(config, compass_.get(), compass_->appState()));
         compass_->managers().rt_cmd_manager = rt_cmd_manager_.get();
     };
 
@@ -280,12 +294,26 @@ void CompassRoot::startManagers()
     job_manager_->start();
     rt_cmd_manager_->start();
 
-    rt_cmd_runner_.reset(new rtcommand::RTCommandRunner(*compass_));
+    rt_cmd_runner_.reset(new rtcommand::RTCommandRunner(*compass_, *compass_));
     managers.rt_cmd_runner = rt_cmd_runner_.get();
+    rt_cmd_manager_->setManagers(*rt_cmd_runner_);
 
     // DBContextManager - not a Configurable, created directly
-    context_manager_.reset(new context::DBContextManager(*compass_));
+    context_manager_.reset(new context::DBContextManager(compass_->appState(), *db_interface_));
     managers.context_manager = context_manager_.get();
+
+    projection_manager_->setManagers(*context_manager_);
+
+    dbcontent_manager_->setManagers(*db_interface_,
+                                    *context_manager_,
+                                    *job_manager_,
+                                    *unit_manager_,
+                                    *projection_manager_,
+                                    *view_manager_,
+                                    *filter_manager_,
+                                    *eval_manager_);
+
+    sensor_status_tracker_.reset(new SensorStatusTracker(*context_manager_, *dbcontent_manager_));
 }
 
 /**
@@ -387,6 +415,12 @@ void CompassRoot::connectManagers()
                      compass, &COMPASS::viewDataDistributedSignal);
     QObject::connect(view_manager_.get(), &ViewManager::loadingDoneSignal,
                      compass, &COMPASS::viewLoadingDoneSignal);
+    QObject::connect(view_manager_.get(), &ViewManager::loadingDoneSignal,
+                     dbcontent_manager_.get(), &DBContentManager::viewLoadingDoneSignal);
+
+    // sensor status from the data distributed to the views
+    QObject::connect(compass, &COMPASS::viewDataDistributedSignal,
+                     sensor_status_tracker_.get(), &SensorStatusTracker::dataDistributedSlot, Qt::QueuedConnection);
 }
 
 /**
@@ -425,6 +459,8 @@ void CompassRoot::shutdown()
     view_manager_->close();
     managers.view_provider = nullptr;
     view_manager_ = nullptr;
+
+    sensor_status_tracker_ = nullptr;
 
     managers.context_manager = nullptr;
     context_manager_ = nullptr;

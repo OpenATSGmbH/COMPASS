@@ -71,6 +71,7 @@ SimpleReconstructorWidget::SimpleReconstructorWidget(SimpleReconstructor& recons
 
     use_widget_.reset(new DataSourcesUseWidget(
         reconstructor_.task().manager().compass().dbContextManager(),
+        reconstructor_.task().manager().compass().dbContentManager(),
         get_use_dstype_func, set_use_dstype_func,
         get_use_ds_func, set_use_ds_func,
         get_use_ds_line_func, set_use_ds_line_func));

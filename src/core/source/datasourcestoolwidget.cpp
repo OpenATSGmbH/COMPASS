@@ -16,7 +16,7 @@
  */
 
 #include "datasourcestoolwidget.h"
-#include "compass.h"
+#include "appstate.h"
 #include "color_provider.h"
 #include "db_context_manager.h"
 #include "datasourceswidget.h"
@@ -37,8 +37,10 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
 
-DataSourcesToolWidget::DataSourcesToolWidget(context::DBContextManager& ctx_man)
+DataSourcesToolWidget::DataSourcesToolWidget(context::DBContextManager& ctx_man,
+                                             DBContentManager& dbcont_man)
 : ctx_man_(ctx_man)
+, dbcont_man_(dbcont_man)
 {
     createUI();
 }
@@ -56,7 +58,7 @@ void DataSourcesToolWidget::createUI()
     QVBoxLayout* main_layout = new QVBoxLayout();
     setLayout(main_layout);
 
-    ds_widget_ = new DataSourcesWidget(true, ctx_man_);
+    ds_widget_ = new DataSourcesWidget(true, ctx_man_, dbcont_man_);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
     // Flight-Deck panel doesn't use row selection - silence the blue
     // highlight and current-item marker.
@@ -72,7 +74,7 @@ void DataSourcesToolWidget::createUI()
     connect(&ctx_man_, &context::DBContextManager::loadingSelectionChangedSignal,
             this, [this] { logdbg << "loadingSelectionChangedSignal received"; updateContent(false); });
 
-    auto& dbcont_man = ctx_man_.compass().dbContentManager();
+    auto& dbcont_man = dbcont_man_;
 
     connect(&dbcont_man, &DBContentManager::associationStatusChangedSignal,
             this, [this] { logdbg << "associationStatusChangedSignal received"; updateAdditionalInfo(); });
@@ -98,7 +100,7 @@ void DataSourcesToolWidget::createUI()
             color_mode_combo_->addItem(QString::fromStdString(context::ColorProvider::modeName(mode)),
                                        (unsigned int)mode);
 
-        unsigned int current = ctx_man_.compass().colorMode();
+        unsigned int current = ctx_man_.appState().colorMode();
         int current_idx = color_mode_combo_->findData(current);
         if (current_idx < 0) current_idx = 0;
         color_mode_combo_->setCurrentIndex(current_idx);
@@ -215,7 +217,7 @@ void DataSourcesToolWidget::updateContent(bool recreate_required)
  */
 void DataSourcesToolWidget::updateAdditionalInfo()
 {
-    DBContentManager& dbcont_man = ctx_man_.compass().dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     traced_assert(ts_min_label_);
     traced_assert(ts_max_label_);
@@ -247,7 +249,7 @@ void DataSourcesToolWidget::colorModeChangedSlot(int index)
     const unsigned int mode = color_mode_combo_->itemData(index).toUInt();
     loginf << "color mode " << mode;
 
-    ctx_man_.compass().colorMode(mode);
+    ctx_man_.appState().colorMode(mode);
     if (ds_widget_)
         ds_widget_->updateContent();
 }

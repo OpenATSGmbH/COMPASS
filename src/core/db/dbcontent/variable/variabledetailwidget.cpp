@@ -16,7 +16,7 @@
  */
 
 #include "dbcontent/variable/variabledetailwidget.h"
-#include "compass.h"
+#include "appstate.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
@@ -79,7 +79,7 @@ VariableDetailWidget::VariableDetailWidget(DBContentManager& dbcont_man, QWidget
     type_combo_ = new VariableDataTypeComboBox(g_dummy_type, g_dummy_type_str);
     form_layout->addRow("Data Type", type_combo_);
 
-    unit_sel_ = new UnitSelectionWidget(dbcont_man_.compass().unitManager(),
+    unit_sel_ = new UnitSelectionWidget(dbcont_man_.unitManager(),
                                         g_dummy_dimension, g_dummy_unit);
     form_layout->addRow("Unit", unit_sel_);
 
@@ -100,7 +100,7 @@ VariableDetailWidget::VariableDetailWidget(DBContentManager& dbcont_man, QWidget
 
 void VariableDetailWidget::show(Variable& variable)
 {
-    bool expert_mode = dbcont_man_.compass().expertMode();
+    bool expert_mode = dbcont_man_.appState().expertMode();
 
     has_current_entry_ = true;
     variable_ = &variable;
@@ -198,13 +198,13 @@ void VariableDetailWidget::nameChangedSlot(const QString& name)
 
     if (!new_name.size())
     {
-        name_edit_->setStyleSheet(dbcont_man_.compass().lineEditInvalidStyle());
+        name_edit_->setStyleSheet(dbcont_man_.appState().lineEditInvalidStyle());
         return;
     }
 
     if (variable_->object().hasVariable(new_name))
     {
-        name_edit_->setStyleSheet(dbcont_man_.compass().lineEditInvalidStyle());
+        name_edit_->setStyleSheet(dbcont_man_.appState().lineEditInvalidStyle());
         name_edit_->setToolTip(("Variable name '" + new_name + "' already in use").c_str());
         return;
     }
@@ -251,13 +251,13 @@ void VariableDetailWidget::dbColumnChangedSlot(const QString& name)
 
     if (!new_name.size())
     {
-        db_column_edit_->setStyleSheet(dbcont_man_.compass().lineEditInvalidStyle());
+        db_column_edit_->setStyleSheet(dbcont_man_.appState().lineEditInvalidStyle());
         return;
     }
 
     if (variable_->object().hasVariableDBColumnName(new_name))
     {
-        db_column_edit_->setStyleSheet(dbcont_man_.compass().lineEditInvalidStyle());
+        db_column_edit_->setStyleSheet(dbcont_man_.appState().lineEditInvalidStyle());
         db_column_edit_->setToolTip(("Variable DB Column name '" + new_name + "' already in use").c_str());
         return;
     }

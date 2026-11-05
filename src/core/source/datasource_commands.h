@@ -20,11 +20,21 @@
 
 #include "rtcommand/rtcommand.h"
 
+class SensorStatusTracker;
+class DBContentManager;
+
+namespace context
+{
+    class DBContextManager;
+}
+
 namespace dbContent
 {
 
 
-extern void init_data_source_commands();
+extern void init_data_source_commands(context::DBContextManager& ctx_man,
+                                      DBContentManager& dbcont_man,
+                                      SensorStatusTracker& sensor_status_tracker);
 
 
 // get_data_sources

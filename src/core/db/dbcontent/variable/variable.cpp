@@ -16,7 +16,7 @@
  */
 
 #include "dbcontent/variable/variable.h"
-#include "compass.h"
+#include "dbcontent/dbcontentmanager.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "db_context_manager.h"
@@ -840,7 +840,7 @@ std::string Variable::getValueStringFromRepresentation(
     }
     else if (representation_ == Variable::Representation::DATA_SRC_NAME)
     {
-        auto& ctx_man = dbcontent_->compass().dbContextManager();
+        auto& ctx_man = dbcontent_->dbContentManager().dbContextManager();
 
         if (ctx_man.hasDataSource(representation_str))
             return std::to_string(ctx_man.getDataSourceId(representation_str));
@@ -1159,14 +1159,14 @@ bool Variable::hasDBContent() const
     traced_assert(dbcontent_);
 
     if (db_column_name_.size())
-        return dbcontent_->compass().dbInterface().hasContentIn(dbTableName(), db_column_name_);
+        return dbcontent_->dbContentManager().dbInterface().hasContentIn(dbTableName(), db_column_name_);
 
     return false;
 }
 
 void Variable::setHasDBContent()
 {
-    dbcontent_->compass().dbInterface().setContentIn(dbTableName(), db_column_name_);
+    dbcontent_->dbContentManager().dbInterface().setContentIn(dbTableName(), db_column_name_);
 }
 
 bool Variable::isKey() const
@@ -1183,7 +1183,7 @@ std::string Variable::getDataSourcesAsString(const std::string& value) const
 {
     traced_assert(dbcontent_);
 
-    auto& ctx_man = dbcontent_->compass().dbContextManager();
+    auto& ctx_man = dbcontent_->dbContentManager().dbContextManager();
 
     unsigned int ds_id = stoi(value);
 

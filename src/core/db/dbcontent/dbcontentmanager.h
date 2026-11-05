@@ -32,7 +32,15 @@
 #include <memory>
 #include <set>
 
-class COMPASS;
+class AppState;
+class DBInterface;
+class DBContentDB;
+class JobManager;
+class UnitManager;
+class ProjectionManager;
+class IViewProvider;
+class IFilterProvider;
+class IEvalProvider;
 class DBContent;
 class DBContentManagerWidget;
 class DBSchemaManager;
@@ -43,6 +51,11 @@ class DBContentDataSet;
 class LoadOperation;
 class LiveDataFeed;
 class ViewableDataConfig;
+
+namespace context
+{
+    class DBContextManager;
+}
 
 namespace dbContent
 {
@@ -81,14 +94,39 @@ signals:
     void insertDoneSignal(); // emitted when an insert has finished
     void dataDeletedSignal(); // emitted after data has been deleted and counts adjusted
 
+    // relayed from ViewManager by the composition root, for code below the view layer
+    void viewLoadingDoneSignal();
+
 public:
     static const std::string ARTASAssociationsCreatedProperty; // DB property, "1" once ARTAS associations were created
 
-    DBContentManager(nlohmann::json& config, COMPASS& compass);
+    DBContentManager(nlohmann::json& config,
+                     Configurable& parent,
+                     AppState& app_state);
     virtual ~DBContentManager();
 
-    COMPASS& compass() { return compass_; }
-    const COMPASS& compass() const { return compass_; }
+    AppState& appState() { return app_state_; }
+    const AppState& appState() const { return app_state_; }
+
+    // peers, set by the composition root after all managers were created
+    void setManagers(DBInterface& db_interface,
+                     context::DBContextManager& ctx_man,
+                     JobManager& job_manager,
+                     UnitManager& unit_manager,
+                     ProjectionManager& projection_manager,
+                     IViewProvider& view_provider,
+                     IFilterProvider& filter_provider,
+                     IEvalProvider& eval_provider);
+
+    DBInterface& dbInterface();
+    DBContentDB& contentDB(); // DB content specific database access
+    context::DBContextManager& dbContextManager();
+    JobManager& jobManager();
+    UnitManager& unitManager();
+    ProjectionManager& projectionManager();
+    IViewProvider& viewProvider();
+    IFilterProvider& filterProvider();
+    IEvalProvider& evalProvider();
 
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
@@ -237,7 +275,19 @@ public:
 protected:
     void setViewableDataConfig (const nlohmann::json::object_t& data);
 
-    COMPASS& compass_;
+    AppState& app_state_;
+
+    // peers, set by the composition root
+    DBInterface*               db_interface_       = nullptr;
+    context::DBContextManager* ctx_man_            = nullptr;
+    JobManager*                job_manager_        = nullptr;
+    UnitManager*               unit_manager_       = nullptr;
+    ProjectionManager*         projection_manager_ = nullptr;
+    IViewProvider*             view_provider_      = nullptr;
+    IFilterProvider*           filter_provider_    = nullptr;
+    IEvalProvider*             eval_provider_      = nullptr;
+
+    std::unique_ptr<DBContentDB> content_db_; // created in setManagers()
 
     std::unique_ptr<dbContent::TargetModel> target_model_;
     dbContent::TargetListWidget* target_list_widget_{nullptr}; // deleted by qt

@@ -19,12 +19,12 @@
 #include "dbcontent/variable/reportvariable.h"
 #include "rtcommand/rtcommand_macros.h"
 #include "rtcommand_registry.h"
-#include "compass.h"
+#include "appstate.h"
 #include "dbcontentmanager.h"
 #include "dbcontentdataengine.h"
 #include "loadoperation.h"
 #include "dbcontent.h"
-#include "compass.h"
+#include "appstate.h"
 #include "metavariable.h"
 
 #include <boost/program_options.hpp>
@@ -43,8 +43,12 @@ namespace dbContent
  * RTCommandGetData
  ***************************************************************************************/
 
-void init_dbcontent_commands()
+static DBContentManager* s_dbcont_man = nullptr;
+
+void init_dbcontent_commands(DBContentManager& dbcont_man)
 {
+    s_dbcont_man = &dbcont_man;
+
     dbContent::RTCommandGetData::init();
     dbContent::RTCommandGetUTNs::init();
     dbContent::RTCommandGetTarget::init();
@@ -64,7 +68,7 @@ RTCommandGetData::RTCommandGetData()
  */
 dbContent::Variable* RTCommandGetData::resolveVariable(const std::string& name) const
 {
-    DBContentManager& dbcont_man = compass_->dbContentManager();
+    DBContentManager& dbcont_man = *s_dbcont_man;
 
     if (!dbcont_man.existsDBContent(dbcontent_name_))
         return nullptr;
@@ -85,19 +89,19 @@ bool RTCommandGetData::run_impl()
 {
     loginf;
 
-    if (!compass_->dbOpened())
+    if (!s_dbcont_man->appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (s_dbcont_man->appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+s_dbcont_man->appState().appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = compass_->dbContentManager();
+    DBContentManager& dbcontent_man = *s_dbcont_man;
 
     // RT commands bypass UI modality; refuse to start while a load runs so we
     // never nest inside the outer load's event pump
@@ -129,7 +133,7 @@ bool RTCommandGetData::run_impl()
     std::string custom_clause;
     if (utn_.has_value())
     {
-        dbContent::Variable& var = compass_->dbContentManager().metaVariable(
+        dbContent::Variable& var = s_dbcont_man->metaVariable(
             dbcontent_vars::meta_var_utn_.name()).getFor(dbcontent_name_);
 
         custom_clause = var.dbColumnName() + " IN (" + std::to_string(utn_.value()) + ")";
@@ -193,7 +197,7 @@ dbContent::VariableSet RTCommandGetData::getReadSetFor() const
 {
     VariableSet read_set;
 
-    DBContentManager& dbcont_man = compass_->dbContentManager();
+    DBContentManager& dbcont_man = *s_dbcont_man;
 
     // ds id
     traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, dbcontent_vars::meta_var_ds_id_));
@@ -261,19 +265,19 @@ RTCommandGetUTNs::RTCommandGetUTNs()
 
 bool RTCommandGetUTNs::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!s_dbcont_man->appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (s_dbcont_man->appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+s_dbcont_man->appState().appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = compass_->dbContentManager();
+    DBContentManager& dbcontent_man = *s_dbcont_man;
 
     if (!dbcontent_man.hasAssociations() || !dbcontent_man.hasTargetsInfo())
     {
@@ -286,7 +290,7 @@ bool RTCommandGetUTNs::run_impl()
 
 bool RTCommandGetUTNs::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = compass_->dbContentManager();
+    DBContentManager& dbcontent_man = *s_dbcont_man;
 
     if (no_desc_)
         setJSONReply(dbcontent_man.utnsAsJSON());
@@ -323,19 +327,19 @@ RTCommandGetTarget::RTCommandGetTarget()
 
 bool RTCommandGetTarget::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!s_dbcont_man->appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (s_dbcont_man->appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+s_dbcont_man->appState().appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = compass_->dbContentManager();
+    DBContentManager& dbcontent_man = *s_dbcont_man;
 
     if (!dbcontent_man.hasAssociations() || !dbcontent_man.hasTargetsInfo())
     {
@@ -348,7 +352,7 @@ bool RTCommandGetTarget::run_impl()
 
 bool RTCommandGetTarget::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = compass_->dbContentManager();
+    DBContentManager& dbcontent_man = *s_dbcont_man;
 
     setJSONReply(dbcontent_man.targetInfoAsJSON(utn_));
 
@@ -384,19 +388,19 @@ RTCommandGetTargetStats::RTCommandGetTargetStats()
 
 bool RTCommandGetTargetStats::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!s_dbcont_man->appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (s_dbcont_man->appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+s_dbcont_man->appState().appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = compass_->dbContentManager();
+    DBContentManager& dbcontent_man = *s_dbcont_man;
 
     if (!dbcontent_man.hasAssociations() || !dbcontent_man.hasTargetsInfo())
     {
@@ -409,7 +413,7 @@ bool RTCommandGetTargetStats::run_impl()
 
 bool RTCommandGetTargetStats::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = compass_->dbContentManager();
+    DBContentManager& dbcontent_man = *s_dbcont_man;
 
     setJSONReply(dbcontent_man.targetStatsAsJSON());
 

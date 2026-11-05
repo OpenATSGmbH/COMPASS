@@ -18,7 +18,7 @@
 #include "dbcontentinsertdbjob.h"
 
 #include "buffer.h"
-#include "dbinterface.h"
+#include "dbcontent/dbcontentdb.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 
@@ -33,12 +33,12 @@ using namespace Utils::String;
 
 /**
  */
-DBContentInsertDBJob::DBContentInsertDBJob(DBInterface& db_interface, 
+DBContentInsertDBJob::DBContentInsertDBJob(DBContentDB& content_db,
                                            DBContentManager& db_content_man,
                                            std::map<std::string, std::shared_ptr<Buffer>>& buffers,
                                            bool emit_change)
 :   Job            ("DBContentInsertDBJob")
-,   db_interface_  (db_interface)
+,   content_db_    (content_db)
 ,   db_content_man_(db_content_man)
 ,   buffers_       (buffers)
 ,   emit_change_   (emit_change)
@@ -71,7 +71,7 @@ void DBContentInsertDBJob::run_impl()
     for (auto& buf_it : buffers_)
         buffer_cnt += buf_it.second->size();
 
-    db_interface_.insertDBContent(buffers_);
+    content_db_.insertDBContent(buffers_);
 
     loading_stop_time = boost::posix_time::microsec_clock::local_time();
 

@@ -21,7 +21,6 @@
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
-#include "compass.h"
 #include "buffer.h"
 #include "number.h"
 #include "logger.h"
@@ -51,7 +50,7 @@ namespace
 
 const double NaN = std::numeric_limits<double>::quiet_NaN();
 
-using Function = void (*)(COMPASS&, const std::string&, const std::shared_ptr<Buffer>&);
+using Function = void (*)(DBContentManager&, const std::string&, const std::shared_ptr<Buffer>&);
 
 // the functions the plan runs, by name
 const std::map<std::string, Function>& functions()
@@ -678,7 +677,7 @@ bool CalculationPlan::parseStep(const nlohmann::json& calculation, Step& step, s
 std::shared_ptr<const CalculationPlan> CalculationPlan::create(DBContentManager& dbcont_man)
 {
     auto plan = std::make_shared<CalculationPlan>();
-    plan->compass_ = &dbcont_man.compass();
+    plan->dbcont_man_ = &dbcont_man;
 
     for (auto& dbcont_it : dbcont_man)
     {
@@ -865,8 +864,8 @@ void CalculationPlan::run(const std::string& dbcontent_name, const std::shared_p
 
             functions_run.insert(step.function);
 
-            traced_assert(compass_);
-            functions().at(step.function)(*compass_, dbcontent_name, buffer);
+            traced_assert(dbcont_man_);
+            functions().at(step.function)(*dbcont_man_, dbcontent_name, buffer);
             continue;
         }
 

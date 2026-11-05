@@ -20,6 +20,8 @@
 #include "configurable.h"
 #include "json_fwd.hpp"
 #include "appmode.h"
+#include "appstate.h"
+#include "rtcommand_host.h"
 #include "result.h"
 #include "logmodel.h"
 #include "message.h"
@@ -65,14 +67,17 @@ namespace rtcommand
  * - the managers are created, owned and wired by the composition root (CompassRoot);
  *   COMPASS holds pointers to them and stays their configuration parent
  * - database lifecycle, application mode and global settings
+ * - host of the runtime command execution (rtcommand::IRTCommandHost)
  */
-class COMPASS : public QObject, public Configurable
+class COMPASS : public QObject, public Configurable, public rtcommand::IRTCommandHost
 {
     Q_OBJECT
 
 signals:
     void databaseOpenedSignal();
     void databaseClosedSignal();
+
+    // relayed from AppState, for the libraries above core
     // emitted right before appModeSwitchSignal, for steps that must run before all its slots
     void appModeAboutToSwitchSignal (AppMode app_mode_previous, AppMode app_mode_current);
     void appModeSwitchSignal (AppMode app_mode_previous, AppMode app_mode_current);
@@ -171,18 +176,28 @@ public:
 
     void shutdown();
 
-    void setAppState(AppState state);
+    // state and global settings of the application, for core
+    // (the functions below forward to it, for the libraries above core)
+    AppState& appState() override { return app_state_; }
+    const AppState& appState() const { return app_state_; }
+
+    void setAppPhase(AppPhase phase) { app_state_.phase(phase); }
+    AppPhase appPhase() const { return app_state_.phase(); }
 
     IMainWindow& mainWindow();
 
     // View lookup facades - allow rtcommand helpers to navigate the view
     // tree without depending on the view layer (answered by IViewProvider)
-    QWidget* viewContainerWidget(const std::string& name);
-    QWidget* latestViewContainerWidget();
-    QWidget* latestViewWidget();
+    QWidget* viewContainerWidget(const std::string& name) override;
+    QWidget* latestViewContainerWidget() override;
+    QWidget* latestViewWidget() override;
 
-    std::string lastUsedPath();
-    void lastUsedPath(const std::string& last_path);
+    // runtime command host
+    std::pair<rtcommand::FindObjectErrCode, Configurable*> findConfigurable(const std::string& path) override;
+    bool viewsBusy() override;
+
+    std::string lastUsedPath() { return app_state_.lastUsedPath(); }
+    void lastUsedPath(const std::string& last_path) { app_state_.lastUsedPath(last_path); }
 
     std::string versionString(bool open_ats = true, 
                               bool license_type = true) const;
@@ -193,63 +208,61 @@ public:
     void clearDBFileList();
     void addDBFileToList(const std::string filename);
 
-    AppMode appMode() const;
-    void appMode(const AppMode& app_mode);
-    std::string appModeStr() const;
+    AppMode appMode() const { return app_state_.appMode(); }
+    void appMode(const AppMode& app_mode) { app_state_.appMode(app_mode); }
+    std::string appModeStr() const { return app_state_.appModeStr(); }
 
-    AppState appState() const { return app_state_; }
+    static bool isAppImage() { return AppState::isAppImage(); }
 
-    static bool isAppImage() { return is_app_image_; }
+    static const std::map<AppMode, std::string>& appModes2Strings() { return AppState::appModes2Strings(); }
 
-    static const std::map<AppMode, std::string>& appModes2Strings();
-
-    bool expertMode() const;
-    void expertMode(bool expert_mode);
+    bool expertMode() const { return app_state_.expertMode(); }
+    void expertMode(bool expert_mode) { app_state_.expertMode(expert_mode); }
 
     // false while automated processing (CLI / runtime commands) runs - code must not open
     // modal GUI dialogs when this is false, but resolve non-interactively instead
-    bool allowUserInteractions() const { return allow_user_interactions_; }
-    void allowUserInteractions(bool value) { allow_user_interactions_ = value; }
+    bool allowUserInteractions() const { return app_state_.allowUserInteractions(); }
+    void allowUserInteractions(bool value) { app_state_.allowUserInteractions(value); }
 
-    bool isShutDown() const;
-    bool isRunning() const;
+    bool isShutDown() const { return app_state_.isShutDown(); }
+    bool isRunning() const { return app_state_.isRunning(); }
 
-    bool pdflatexFound() const;
+    bool pdflatexFound() const { return app_state_.pdflatexFound(); }
 
-    bool disableLiveToOfflineSwitch() const;
-    bool disableMenuConfigSave() const;
-    bool disableGeographicViewRotate() const;
-    bool disableAddRemoveViews() const;
-    bool dbExportInProgress() const;
+    bool disableLiveToOfflineSwitch() const { return app_state_.settings().disable_live_to_offline_switch; }
+    bool disableMenuConfigSave() const { return app_state_.settings().disable_menu_config_save; }
+    bool disableGeographicViewRotate() const { return app_state_.settings().disable_geographicview_rotate; }
+    bool disableAddRemoveViews() const { return app_state_.settings().disable_add_remove_views; }
+    bool dbExportInProgress() const { return app_state_.dbExportInProgress(); }
 
-    unsigned int autoLiveRunningResumeAskTime() const; // min
-    unsigned int autoLiveRunningResumeAskWaitTime() const; // min
-    bool disableConfirmResetViews() const;
+    unsigned int autoLiveRunningResumeAskTime() const { return app_state_.settings().auto_live_running_resume_ask_time; } // min
+    unsigned int autoLiveRunningResumeAskWaitTime() const { return app_state_.settings().auto_live_running_resume_ask_wait_time; } // min
+    bool disableConfirmResetViews() const { return app_state_.settings().disable_confirm_reset_views; }
 
-    unsigned int maxLiveDataAgeCache() const { return max_live_data_age_cache_; }
-    unsigned int maxLiveDataAgeDb() const { return max_live_data_age_db_; }
+    unsigned int maxLiveDataAgeCache() const { return app_state_.settings().max_live_data_age_cache; }
+    unsigned int maxLiveDataAgeDb() const { return app_state_.settings().max_live_data_age_db; }
 
     // live overload: while set, live ticks are held (the views keep the last distributed data)
-    bool liveOverloaded() const { return live_overloaded_; }
-    void liveOverloaded(bool overloaded);
+    bool liveOverloaded() const { return app_state_.liveOverloaded(); }
+    void liveOverloaded(bool overloaded) { app_state_.liveOverloaded(overloaded); }
 
     unsigned int liveImportBacklogSize() const; // ASTERIX packets in processing
-    unsigned int liveOverloadMaxPackets() const { return live_overload_max_packets_; }
-    double liveOverloadMaxLatency() const { return live_overload_max_latency_s_; }
-    bool liveOverloadShowDebugInfo() const { return live_overload_show_debug_info_; }
+    unsigned int liveOverloadMaxPackets() const { return app_state_.settings().live_overload_max_packets; }
+    double liveOverloadMaxLatency() const { return app_state_.settings().live_overload_max_latency_s; }
+    bool liveOverloadShowDebugInfo() const { return app_state_.settings().live_overload_show_debug_info; }
 
     // debug: force a live overload (runtime only, not persisted; no UI, set from code)
-    bool liveOverloadForced() const { return live_overload_forced_; }
-    void liveOverloadForced(bool forced) { live_overload_forced_ = forced; }
+    bool liveOverloadForced() const { return app_state_.liveOverloadForced(); }
+    void liveOverloadForced(bool forced) { app_state_.liveOverloadForced(forced); }
 
-    bool darkMode() const;
-    void darkMode(bool value);
+    bool darkMode() const { return app_state_.darkMode(); }
+    void darkMode(bool value) { app_state_.darkMode(value); }
 
     /// Color mode used by the Data Sources panel: 0=DSType, 1=DBContent, 2=DataSource, 3=DataSourceLine
-    unsigned int colorMode() const { return color_mode_; }
-    void colorMode(unsigned int value);
+    unsigned int colorMode() const { return app_state_.colorMode(); }
+    void colorMode(unsigned int value) { app_state_.colorMode(value); }
 
-    const char* lineEditInvalidStyle();
+    const char* lineEditInvalidStyle() { return app_state_.lineEditInvalidStyle(); }
 
     LogStream logInfo(const std::string& component,
                       boost::optional<unsigned int> error_code={}, 
@@ -261,21 +274,21 @@ public:
                        boost::optional<unsigned int> error_code={}, 
                        nlohmann::json json_blob={});
 
-    unsigned int minAppWidth() const;
+    unsigned int minAppWidth() const { return app_state_.settings().min_app_width; }
 
-    unsigned int minAppHeight() const;
+    unsigned int minAppHeight() const { return app_state_.settings().min_app_height; }
 
-    float appFontScale() const;
+    float appFontScale() const { return app_state_.settings().app_font_scale; }
 
-    bool disableNativeDialogs() const;
+    bool disableNativeDialogs() const { return app_state_.settings().disable_native_dialogs; }
 
     LogStore& logStore();
 
-    const nlohmann::json& unspecificACIDs() const { return unspecific_acids_; }
-    bool isUnspecificACID(const std::string& acid) const;
+    const nlohmann::json& unspecificACIDs() const { return app_state_.settings().unspecific_acids; }
+    bool isUnspecificACID(const std::string& acid) const { return app_state_.isUnspecificACID(acid); }
 
-    bool sensorStatusTimeHack() const;
-    void sensorStatusTimeHack(bool value);
+    bool sensorStatusTimeHack() const { return app_state_.sensorStatusTimeHack(); }
+    void sensorStatusTimeHack(bool value) { app_state_.sensorStatusTimeHack(value); }
 
 protected:
     Result openDBFileInternal(const std::string& filename);
@@ -289,45 +302,7 @@ protected:
 
     ConfigurationManager& config_manager_;
 
-    bool db_opened_{false};
-    bool db_inmem_{false};
-    bool expert_mode_ {false};
-    bool allow_user_interactions_ {true};
-    bool pdflatex_found_ {false};
-
-    bool dark_mode_ {false};
-
-    unsigned int color_mode_ {0}; // 0=DSType, 1=DBContent, 2=DataSource, 3=DataSourceLine
-
-    AppMode app_mode_ {AppMode::Offline};
-    AppState app_state_ = AppState::Starting;
-
-    bool disable_live_to_offline_switch_ {false};
-    bool disable_menu_config_save_ {false};
-    bool disable_geographicview_rotate_ {false};
-    bool disable_add_remove_views_ {false};
-    bool disable_confirm_reset_views_ {false};
-
-    static const bool is_app_image_;
-
-    unsigned int max_live_data_age_cache_ {5};
-    unsigned int max_live_data_age_db_ {60};
-
-    bool         live_overloaded_            {false};
-    unsigned int live_overload_max_packets_  {4};    // import backlog above which live ticks are held
-    double       live_overload_max_latency_s_{-1.0}; // latency in seconds above which live ticks are held (<= 0 = off)
-    bool         live_overload_show_debug_info_{false}; // show backlog/latency in the geographic view (debug)
-    bool         live_overload_forced_       {false};   // debug: live ticks held until switched off (not persisted)
-
-    unsigned int auto_live_running_resume_ask_time_ {60}; // minutes
-    unsigned int auto_live_running_resume_ask_wait_time_ {1}; // minutes
-
-    unsigned int min_app_width_ {1600};
-    unsigned int min_app_height_ {800};
-
-    float app_font_scale_{1.0};
-
-    bool disable_native_dialogs_ {false};
+    AppState app_state_; // its settings are config parameters of COMPASS
 
     std::unique_ptr<SimpleConfig> simple_config_;
 
@@ -340,14 +315,6 @@ protected:
     std::string last_db_filename_;
     std::string inmem_future_filename_;
     nlohmann::json db_file_list_;
-
-    std::string last_path_;
-
-    bool db_export_in_progress_ {false};
-
-    nlohmann::json unspecific_acids_;
-
-    bool sensor_status_time_hack_{false};
 
     IMainWindow* main_window_ = nullptr; // owned by the composition root
 

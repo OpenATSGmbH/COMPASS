@@ -16,7 +16,7 @@
  */
 
 #include "dbcontent/label/labelgenerator.h"
-#include "compass.h"
+#include "appstate.h"
 #include "iviewprovider.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
@@ -72,7 +72,7 @@ void LabelGenerator::classifyIdentification(const std::string& raw_acid,
     string value = raw_acid;
     value.erase(std::remove(value.begin(), value.end(), ' '), value.end());
 
-    if (dbcont_manager_.compass().isUnspecificACID(raw_acid))
+    if (dbcont_manager_.appState().isUnspecificACID(raw_acid))
     {
         if (fallback_id.empty())
             fallback_id = value;
@@ -613,7 +613,7 @@ std::vector<std::string> LabelGenerator::getFullTexts(const std::string& dbconte
                         }
                         value_str = var_it.second->getAsJSONRepresentationString(
                             buffer->get<nlohmann::json>(property_name).getRef(buffer_index),
-                            &dbcont_manager_.compass().dbContextManager(),
+                            &dbcont_manager_.dbContextManager(),
                             row_ds_id);
                     }
                     else
@@ -770,7 +770,7 @@ void LabelGenerator::removeLabelDSID(unsigned int ds_id)
 
 void LabelGenerator::labelAllDSIDs()
 {
-    auto& ctx_man = dbcont_manager_.compass().dbContextManager();
+    auto& ctx_man = dbcont_manager_.dbContextManager();
 
     if (!ctx_man.hasActiveContext())
         return;
@@ -1396,7 +1396,7 @@ unsigned int LabelGenerator::labelLine (unsigned int ds_id) // returns 0...3
     }
     else
     {
-        auto& ctx_man = dbcont_manager_.compass().dbContextManager();
+        auto& ctx_man = dbcont_manager_.dbContextManager();
         traced_assert(ctx_man.hasDataSource(ds_id));
 
         line = 0;
@@ -1453,7 +1453,7 @@ void LabelGenerator::updateAvailableLabelLines()
     unsigned int ds_id;
     unsigned int line_id;
 
-    auto& ctx_man = dbcont_manager_.compass().dbContextManager();
+    auto& ctx_man = dbcont_manager_.dbContextManager();
 
     bool something_changed {false};
 
@@ -1600,7 +1600,7 @@ void LabelGenerator::addVariables (const std::string& dbcontent_name, dbContent:
 bool LabelGenerator::labelVariablesLoaded()
 {
     // same buffers as used for label text generation
-    std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.compass().viewProvider().currentBuffers();
+    std::map<std::string, std::shared_ptr<Buffer>> buffers = dbcont_manager_.viewProvider().currentBuffers();
 
     for (auto& buf_it : buffers)
     {
@@ -2139,7 +2139,7 @@ std::string LabelGenerator::getVariableValue(const std::string& dbcontent_name, 
                 }
                 value = var.getAsJSONRepresentationString(
                     values.getRef(index),
-                    &dbcont_manager_.compass().dbContextManager(),
+                    &dbcont_manager_.dbContextManager(),
                     row_ds_id);
             }
             else

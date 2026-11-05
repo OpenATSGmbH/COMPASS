@@ -21,14 +21,14 @@
 #include "json.hpp"
 #include "job.h"
 
-class DBInterface;
+class DBContentDB;
 
 class DBContentDeleteDBJob : public Job
 {
     Q_OBJECT
 
 public:
-    DBContentDeleteDBJob(DBInterface& db_interface);
+    DBContentDeleteDBJob(DBContentDB& content_db);
 
     virtual ~DBContentDeleteDBJob();
 
@@ -47,7 +47,7 @@ public:
 protected:
     virtual void run_impl();
 
-    DBInterface& db_interface_;
+    DBContentDB& content_db_;
 
     bool use_before_timestamp_ {false};
     boost::posix_time::ptime before_timestamp_;

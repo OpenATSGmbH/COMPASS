@@ -20,9 +20,6 @@
 #include "idbvariableresolver.h"
 #include "buffer.h"
 #include "dbcommand.h"
-#include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/variable/variable.h"
 #include "logger.h"
 #include "logmodel.h"
 #include "property.h"
@@ -36,13 +33,11 @@
 
 using namespace Utils;
 using namespace std;
-using namespace dbContent;
 
 /**
  */
-SQLGenerator::SQLGenerator(const db::SQLConfig& config, DBContentManager& dbcont_man)
-:   config_(config),
-    dbcont_man_(dbcont_man)
+SQLGenerator::SQLGenerator(const db::SQLConfig& config)
+:   config_(config)
 {
 }
 
@@ -55,42 +50,6 @@ SQLGenerator::~SQLGenerator() = default;
 std::string SQLGenerator::placeholder(int index) const
 {
     return (config_.placeholder == db::SQLPlaceholder::AtVar ? "@VAR" + std::to_string(index) : "?");
-}
-
-/**
- */
-string SQLGenerator::getCreateTableStatement(const DBContent& object)
-{
-    //collect needed columns
-    std::vector<DBTableColumnInfo> column_infos;
-    for (auto& var_it : object.variables())
-    {
-        const auto& v = var_it.second;
-
-        if (!v->dbColumnName().size())
-            continue;
-
-        column_infos.push_back(DBTableColumnInfo(v->dbColumnName(), v->dataType(), v->isKey()));
-    }
-
-    //enable indexing on some metavars?
-    std::vector<db::Index> indices;
-    if (config_.indexing)
-    {
-        indices.emplace_back("TIMESTAMP_INDEX_" + object.name(), 
-                             dbcont_man_.metaGetVariable(object.name(), dbcontent_vars::meta_var_timestamp_).dbColumnName());
-        indices.emplace_back("DS_ID_INDEX_" + object.name(), 
-                             dbcont_man_.metaGetVariable(object.name(), dbcontent_vars::meta_var_ds_id_).dbColumnName());
-        indices.emplace_back("LINE_ID_INDEX_" + object.name(), 
-                             dbcont_man_.metaGetVariable(object.name(), dbcontent_vars::meta_var_line_id_).dbColumnName());
-        if (dbcont_man_.metaCanGetVariable(object.name(), dbcontent_vars::meta_var_utn_))
-        {
-            indices.emplace_back("UTN_INDEX_" + object.name(), 
-                                 dbcont_man_.metaGetVariable(object.name(), dbcontent_vars::meta_var_utn_).dbColumnName());
-        }
-    }
-
-    return getCreateTableStatement(object.dbTableName(), column_infos, indices);
 }
 
 /**
@@ -194,56 +153,6 @@ std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const std::string& tab
 
 /**
  */
-std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(
-        const DBContent& dbcontent, boost::posix_time::ptime before_timestamp)
-{
-    stringstream ss;
-    ss << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_timestamp_).dbColumnName();
-    ss << " < " << Time::toLong(before_timestamp);
-
-    return getDeleteCommand(dbcontent.dbTableName(), ss.str());
-}
-
-/**
- */
-std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const DBContent& dbcontent)
-{
-    return getDeleteCommand(dbcontent.dbTableName(), "");
-}
-
-/**
- */
-std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const DBContent& dbcontent, 
-                                                          unsigned int sac,
-                                                          unsigned int sic)
-{
-    stringstream ss;
-    ss << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_sac_id_).dbColumnName() << " = " << sac
-       << " AND "
-       << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_sic_id_).dbColumnName() << " = " << sic;
-
-    return getDeleteCommand(dbcontent.dbTableName(), ss.str());
-}
-
-/**
- */
-std::shared_ptr<DBCommand> SQLGenerator::getDeleteCommand(const DBContent& dbcontent, 
-                                                          unsigned int sac,
-                                                          unsigned int sic,
-                                                          unsigned int line_id)
-{
-    stringstream ss;
-    ss << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_sac_id_).dbColumnName() << " = " << sac
-       << " AND "
-       << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_sic_id_).dbColumnName() << " = " << sic
-       << " AND "
-       << dbcont_man_.metaGetVariable(dbcontent.name(), dbcontent_vars::meta_var_line_id_).dbColumnName() << " = " << line_id;
-
-       return getDeleteCommand(dbcontent.dbTableName(), ss.str());
-}
-
-/**
- */
 std::shared_ptr<DBCommand> SQLGenerator::getMaxUIntValueCommand(const std::string& table_name,
                                                                 const std::string& col_name)
 {
@@ -283,37 +192,6 @@ std::shared_ptr<DBCommand> SQLGenerator::getMaxULongIntValueCommand(const std::s
     ss << ") FROM ";
 
     ss << table_name << ";";
-
-    command->set(ss.str());
-    command->list(list);
-
-    return command;
-}
-
-/**
- */
-shared_ptr<DBCommand> SQLGenerator::getADSBInfoCommand(DBContent& adsb_obj)
-{
-
-    PropertyList list;
-    list.addProperty("TARGET_ADDR", PropertyDataType::INT);
-    list.addProperty("MOPS_VERSION", PropertyDataType::INT);
-    list.addProperty("MIN_NUCP_NIC", PropertyDataType::CHAR);
-    list.addProperty("MAX_NUCP_NIC", PropertyDataType::CHAR);
-    list.addProperty("MIN_NACP", PropertyDataType::CHAR);
-    list.addProperty("MAX_NACP", PropertyDataType::CHAR);
-
-    shared_ptr<DBCommand> command = make_shared<DBCommand>(DBCommand());
-
-    stringstream ss;
-
-    ss << "SELECT TARGET_ADDR, MOPS_VERSION, MIN(NUCP_NIC), MAX(NUCP_NIC), MIN(NAC_P), MAX(NAC_P)";
-
-    ss << " FROM ";
-
-    ss << adsb_obj.dbTableName();
-
-    ss << " group by TARGET_ADDR;";
 
     command->set(ss.str());
     command->list(list);
@@ -433,13 +311,6 @@ std::string SQLGenerator::replaceStatement(const std::string& table,
 
 /**
  */
-std::string SQLGenerator::getInsertTargetStatement(unsigned int utn, const std::string& info)
-{
-    return replaceStatement(TABLE_NAME_TARGETS, { to_string(utn), info });
-}
-
-/**
- */
 string SQLGenerator::getInsertPropertyStatement(const string& id,
                                                 const string& value)
 {
@@ -508,15 +379,6 @@ string SQLGenerator::getSelectAllSectorsStatement()
 {
     stringstream ss;
     ss << "SELECT id, name, layer_name, json FROM " << TABLE_NAME_SECTORS << ";";
-    return ss.str();
-}
-
-/**
- */
-string SQLGenerator::getSelectAllTargetsStatement()
-{
-    stringstream ss;
-    ss << "SELECT utn, json FROM " << TABLE_NAME_TARGETS << ";";
     return ss.str();
 }
 
@@ -612,13 +474,6 @@ string SQLGenerator::getTableViewPointsCreateStatement()
        << "(id INT, json TEXT, PRIMARY KEY (id));";
     
     return ss.str();
-}
-
-/**
- */
-std::string SQLGenerator::getTableTargetsCreateStatement()
-{
-    return getCreateTableStatement(TABLE_NAME_TARGETS, dbContent::Target::DBPropertyList, 0);
 }
 
 std::string SQLGenerator::getTableTaskLogCreateStatement()
@@ -844,103 +699,8 @@ std::string SQLGenerator::getUpdateCellStatement(const std::string& table_name,
 
 /**
  */
-shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const DBContent& object, 
-                                                     VariableSet read_list, 
-                                                     const string& filter,
-                                                     bool use_order, 
-                                                     Variable* order_variable)
-{
-    logdbg << "dbcont " << object.name() << " read list size " << read_list.getSize();
-    traced_assert(read_list.getSize() != 0);
-
-    //collect needed properties
-    PropertyList property_list;
-    for (auto var_it : read_list.getSet())
-    {
-        Variable* variable = var_it;
-        property_list.addProperty(variable->dbColumnName(), variable->dataType());
-    }
-
-    return getSelectCommand(object.dbTableName(), 
-                            property_list, 
-                            filter, 
-                            use_order, 
-                            order_variable ? order_variable->dbColumnName() : "",
-                            getReportTableJoinClause(object, read_list));
-}
-
-/**
- * The Report Variables of the read set are read through one LEFT JOIN subquery per Report Table,
- * keyed on the record number. Every subquery column is aliased, so the main table columns stay
- * unqualified in the SELECT list, the WHERE clause and the ORDER BY. A record without a row in
- * the table gets null, which the Views treat like a missing value.
- */
-std::string SQLGenerator::getReportTableJoinClause(const DBContent& object,
-                                                   const VariableSet& read_list) const
-{
-    // join alias -> (table name, key alias, column aliases in read set order)
-    struct Join
-    {
-        std::string                                      table_name;
-        std::vector<std::pair<std::string, std::string>> columns; // column name, alias
-    };
-
-    std::map<std::string, Join> joins;
-    std::vector<std::string>    join_order;
-
-    for (const Variable* var : read_list.getSet())
-    {
-        if (!var || !var->isReportVariable())
-            continue;
-
-        const std::string& alias = var->reportJoinAlias();
-
-        if (!joins.count(alias))
-        {
-            joins[ alias ].table_name = var->reportTableName();
-            join_order.push_back(alias);
-        }
-
-        joins[ alias ].columns.emplace_back(var->reportColumnName(), var->dbColumnName());
-    }
-
-    if (joins.empty())
-        return "";
-
-    //the record number column of the host data content
-    if (!dbcont_man_.metaCanGetVariable(object.name(), dbcontent_vars::meta_var_rec_num_))
-    {
-        logerr << "dbcontent '" << object.name() << "' has no record number, report tables skipped";
-        return "";
-    }
-
-    const std::string rec_num_column =
-        dbcont_man_.metaGetVariable(object.name(), dbcontent_vars::meta_var_rec_num_).dbColumnName();
-
-    std::stringstream ss;
-
-    for (const auto& alias : join_order)
-    {
-        const auto& join = joins.at(alias);
-
-        const std::string key_alias = alias + "__" + ReportTableDefinition::KeyColumnName;
-
-        ss << " LEFT JOIN (SELECT \"" << ReportTableDefinition::KeyColumnName << "\" AS " << key_alias;
-
-        for (const auto& column : join.columns)
-            ss << ", \"" << column.first << "\" AS " << column.second;
-
-        ss << " FROM \"" << join.table_name << "\") AS " << alias
-           << " ON " << alias << "." << key_alias << " = " << rec_num_column;
-    }
-
-    return ss.str();
-}
-
-/**
- */
-std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& table_name, 
-                                                          const PropertyList& properties, 
+std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& table_name,
+                                                          const PropertyList& properties,
                                                           const std::string& filter,
                                                           bool use_order, 
                                                           const std::string& order_variable,
@@ -970,7 +730,7 @@ std::shared_ptr<DBCommand> SQLGenerator::getSelectCommand(const std::string& tab
     
     ss << " FROM " << table_name;
 
-    // the Report Table joins, see getReportTableJoinClause()
+    // the Report Table joins, see DBContentDB::reportTableJoinClause()
     if (!join_clause.empty())
         ss << join_clause;
 

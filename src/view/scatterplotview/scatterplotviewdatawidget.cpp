@@ -585,7 +585,7 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
                 layer_id.ds_name = name;
 
             QColor line_color = context::resolveSeriesColor(
-                layer_id.ds_type, layer_id.ds_name, layer_id.line_index, layer_id.dbcontent, view_->compass(),
+                layer_id.ds_type, layer_id.ds_name, layer_id.line_index, layer_id.dbcontent, view_->compass().dbContextManager(),
                 [this](const std::string& key) { return colorForGroupName(key); });
 
             scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx, dbc_null_count);

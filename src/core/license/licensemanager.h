@@ -30,15 +30,13 @@
 
 #include "json_fwd.hpp"
 
-class COMPASS;
-
 /**
 */
 class LicenseManager : public QObject, public Configurable
 {
     Q_OBJECT
 public:
-    LicenseManager(nlohmann::json& config, COMPASS& compass);
+    LicenseManager(nlohmann::json& config, Configurable& parent);
     virtual ~LicenseManager();
 
     bool readLicenses();
@@ -71,8 +69,6 @@ private:
     boost::optional<std::string> activeLicenseID() const;
 
     static std::string licenseFilePath();
-
-    COMPASS& compass_;
 
     std::map<std::string, license::License> licenses_;
 };

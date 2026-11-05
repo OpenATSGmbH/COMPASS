@@ -20,7 +20,7 @@
 #include "dbcontent.h"
 #include "buffer.h"
 #include "buffer_utils.h"
-#include "compass.h"
+#include "appstate.h"
 #include "ifilterprovider.h"
 #include "db_context_manager.h"
 #include "dbcontent/variable/variable.h"
@@ -184,7 +184,7 @@ void LiveDataFeed::transformInserted(BufferMap& inserted)
 void LiveDataFeed::dropOutdatedBatches()
 {
     boost::posix_time::ptime min_ts =
-        Time::currentUTCTime() - boost::posix_time::minutes(dbcont_man_.compass().maxLiveDataAgeCache());
+        Time::currentUTCTime() - boost::posix_time::minutes(dbcont_man_.appState().settings().max_live_data_age_cache);
 
     size_t num_dropped = 0;
 
@@ -259,8 +259,8 @@ void LiveDataFeed::processTick()
     cutCachedData();
     filterDataSources();
 
-    if (dbcont_man_.compass().filterProvider().useFilters())
-        dbcont_man_.compass().filterProvider().filterBuffers(buffers_);
+    if (dbcont_man_.filterProvider().useFilters())
+        dbcont_man_.filterProvider().filterBuffers(buffers_);
 
     invalidateIndex();
 
@@ -352,7 +352,7 @@ void LiveDataFeed::addStagedToCache()
 void LiveDataFeed::cutCachedData()
 {
     boost::posix_time::ptime min_ts =
-        Time::currentUTCTime() - boost::posix_time::minutes(dbcont_man_.compass().maxLiveDataAgeCache());
+        Time::currentUTCTime() - boost::posix_time::minutes(dbcont_man_.appState().settings().max_live_data_age_cache);
 
     for (auto& buf_it : buffers_)
     {
@@ -396,7 +396,7 @@ void LiveDataFeed::cutCachedData()
  */
 void LiveDataFeed::filterDataSources()
 {
-    auto& ctx_man = dbcont_man_.compass().dbContextManager();
+    auto& ctx_man = dbcont_man_.dbContextManager();
 
     unsigned int num_buffers = buffers_.size();
 

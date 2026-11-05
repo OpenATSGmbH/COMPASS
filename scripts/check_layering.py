@@ -17,6 +17,10 @@ there and on any allowlist entry that no longer occurs, so the list can only shr
 CMake check (always): target_link_libraries and target_include_directories of the host libraries
 must not point to the same or a higher layer, and no global include_directories may point into src/.
 
+Core sub-layer check (both modes): inside compass_core, each file is mapped to a sub-layer (CORE_LAYERS)
+and may only include headers of its own or lower sub-layers. Known violations are listed as sub-layer pairs
+in layering_core_allowlist.txt, which may only shrink.
+
 Includes into experimental_src/ are not checked; they belong to the plugin plan and are only reported.
 
 Usage:
@@ -29,6 +33,9 @@ Usage:
                                                          .svg/.png/.pdf rendered with Graphviz 'dot')
     python3 scripts/check_layering.py --graph deps.svg --graph-reduced
                                                          same, without edges implied by other paths
+    python3 scripts/check_layering.py --core-details     list the files behind each core sub-layer violation
+    python3 scripts/check_layering.py --write-core-allowlist
+                                                         replace the core allowlist with the current pairs
 """
 
 import argparse
@@ -98,6 +105,48 @@ EXPERIMENTAL_TARGETS = {
     "compass_geo_view", "compass_rtcmd_ext", "compass_test_lab",
 }
 
+# sub-layers inside compass_core, bottom to top; a core file may only depend on its own or lower sub-layers
+CORE_LAYERS = [
+    "base",         # data containers, properties, LaTeX, networking, interfaces and keys at the core root
+    "rtcommand",    # runtime command framework incl. UI test injection
+    "gui",          # generic widgets
+    "services",     # jobs, units, sectors, license
+    "dbinterface",  # generic database access
+    "context",      # DB context, data sources
+    "projection",   # projections (coordinate systems of the data sources)
+    "dbcontent",    # DB content, variables, targets, DB jobs
+    "ui",           # data source and context widgets and dialogs
+    "root",         # COMPASS
+]
+
+# directory below src/core -> sub-layer, first match wins; files directly in src/core are 'base',
+# except compass.h/.cpp ('root') and the provider interfaces ('dbcontent', they use DB content types)
+CORE_RULES = [
+    ("db/interface/", "dbinterface"),
+    ("db/dbcontent/", "dbcontent"),
+    ("db/job/",       "dbcontent"),
+    ("db/command/",   "base"),
+    ("db/",           "dbcontent"),  # incl. db/util (Parquet export of DB content)
+    ("base/",         "base"),
+    ("buffer/",       "base"),
+    ("property/",     "base"),
+    ("latex/",        "base"),
+    ("net/",          "base"),
+    ("config/",       "base"),
+    ("rtcommand/",    "rtcommand"),
+    ("test/",         "rtcommand"),
+    ("gui/",          "gui"),
+    ("job/",          "services"),
+    ("unit/",         "services"),
+    ("sector/",       "services"),
+    ("license/",      "services"),
+    ("projection/",   "projection"),
+    ("context/",      "context"),
+    ("source/",       "ui"),
+]
+CORE_ROOT_FILES = ("compass.h", "compass.cpp")
+CORE_LIST       = os.path.join(REPO_ROOT, "scripts", "layering_core_allowlist.txt")
+
 # files not checked
 EXCLUDE_RULES = [
     "*/unit_tests/*",
@@ -134,6 +183,41 @@ def library_of(rel_path):
 def is_upward(from_lib, to_lib):
     """A dependency of from_lib on to_lib breaks the layering."""
     return to_lib != from_lib and LAYER_OF[to_lib] >= LAYER_OF[from_lib]
+
+
+def core_layer_of(rel_path):
+    """Sub-layer of a compass_core file, None for files outside src/core or unmapped ones."""
+    prefix = SOURCE_DIR + "/core/"
+    if not rel_path.startswith(prefix):
+        return None
+
+    sub = rel_path[len(prefix):]
+    if "/" not in sub:
+        if sub in CORE_ROOT_FILES:
+            return "root"
+        if fnmatch.fnmatch(sub, "i*provider.h"):
+            return "dbcontent"
+        return "base"
+
+    for dir_prefix, layer in CORE_RULES:
+        if sub.startswith(dir_prefix):
+            return layer
+
+    return None
+
+
+def core_violation(path, header):
+    """(from sub-layer, to sub-layer) if the core file path depends upward on the core header, else None."""
+    from_layer = core_layer_of(path)
+    to_layer   = core_layer_of(header)
+
+    if from_layer is None or to_layer is None:
+        return None
+
+    if CORE_LAYERS.index(to_layer) > CORE_LAYERS.index(from_layer):
+        return ("core/" + from_layer, "core/" + to_layer)
+
+    return None
 
 
 def collect_sources(root, top_dir, extensions=SOURCE_EXT):
@@ -173,19 +257,22 @@ def resolve(include, including_file, header_index):
 
 
 def scan_text(root):
-    """Text mode. Return (edges, violations, experimental) for the current tree.
+    """Text mode. Return (edges, violations, experimental, core_violations) for the current tree.
 
-    edges:        (from_lib, to_lib) -> set of including files
-    violations:   set of (including file, included header) pairs breaking the layering
-    experimental: set of (including file, included header) pairs resolving into experimental_src/
+    edges:           (from_lib, to_lib) -> set of including files
+    violations:      set of (including file, included header) pairs breaking the layering
+    experimental:    set of (including file, included header) pairs resolving into experimental_src/
+    core_violations: (from sub-layer, to sub-layer) -> set of (including file, included header)
+                     pairs breaking the sub-layering of compass_core
     """
     sources          = collect_sources(root, SOURCE_DIR)
     header_index     = index_headers(sources)
     experiment_index = index_headers(collect_sources(root, EXPERIMENT_DIR))
 
-    edges        = collections.defaultdict(set)
-    violations   = set()
-    experimental = set()
+    edges           = collections.defaultdict(set)
+    violations      = set()
+    experimental    = set()
+    core_violations = collections.defaultdict(set)
 
     for path in sources:
         if is_excluded(path):
@@ -217,6 +304,9 @@ def scan_text(root):
 
                 to_lib = to_libs.pop()
                 if to_lib == from_lib:
+                    core_pair = core_violation(path, candidates[0]) if len(candidates) == 1 else None
+                    if core_pair:
+                        core_violations[core_pair].add((path, candidates[0]))
                     continue
 
                 edges[(from_lib, to_lib)].add(path)
@@ -224,7 +314,7 @@ def scan_text(root):
                 if is_upward(from_lib, to_lib):
                     violations.add((path, candidates[0]))
 
-    return edges, violations, experimental
+    return edges, violations, experimental, core_violations
 
 
 def repo_relative(path, root):
@@ -300,11 +390,13 @@ def read_make_deps(build_dir):
 
 
 def scan_build(root, build_dir):
-    """Exact mode. Return (violations, edges, experimental) from the build directory.
+    """Exact mode. Return (violations, edges, experimental, core_violations) from the build directory.
 
-    violations:   set of (compiled file, included header) pairs breaking the layering
-    edges:        (from_lib, to_lib) -> set of compiled files using headers of to_lib (also transitively)
-    experimental: from_lib -> set of compiled files using headers from experimental_src/
+    violations:      set of (compiled file, included header) pairs breaking the layering
+    edges:           (from_lib, to_lib) -> set of compiled files using headers of to_lib (also transitively)
+    experimental:    from_lib -> set of compiled files using headers from experimental_src/
+    core_violations: (from sub-layer, to sub-layer) -> set of (compiled file, included header) pairs
+                     breaking the sub-layering of compass_core (also transitively)
     """
     if os.path.exists(os.path.join(build_dir, "build.ninja")):
         deps = read_ninja_deps(build_dir)
@@ -314,9 +406,10 @@ def scan_build(root, build_dir):
     if not deps:
         sys.exit("no dependency information found in '{}' (build it first)".format(build_dir))
 
-    violations   = set()
-    edges        = collections.defaultdict(set)
-    experimental = collections.defaultdict(set)
+    violations      = set()
+    edges           = collections.defaultdict(set)
+    experimental    = collections.defaultdict(set)
+    core_violations = collections.defaultdict(set)
 
     for obj, items in deps.items():
         match = OBJECT_RE.search(obj.replace("\\", "/"))
@@ -340,7 +433,13 @@ def scan_build(root, build_dir):
                 continue
 
             to_lib = library_of(header)
-            if to_lib is None or to_lib == from_lib:
+            if to_lib is None:
+                continue
+
+            if to_lib == from_lib:
+                core_pair = core_violation(source, header)
+                if core_pair:
+                    core_violations[core_pair].add((source, header))
                 continue
 
             edges[(from_lib, to_lib)].add(source)
@@ -348,7 +447,7 @@ def scan_build(root, build_dir):
             if is_upward(from_lib, to_lib):
                 violations.add((source, header))
 
-    return violations, edges, experimental
+    return violations, edges, experimental, core_violations
 
 
 def cmake_blocks(root):
@@ -424,11 +523,20 @@ def read_allowlist(path):
     return entries
 
 
-def write_allowlist(path, violations):
+ALLOWLIST_HEADER = (
+    "# Known violations of the target layering (readme_dependencies.md).\n"
+    "# Generated by scripts/check_layering.py --write-allowlist. This list may only shrink.\n"
+    "# Format: <including file> -> <included header>\n\n")
+
+CORE_ALLOWLIST_HEADER = (
+    "# Known violations of the sub-layering inside compass_core (readme_dependencies.md, workstream I).\n"
+    "# Generated by scripts/check_layering.py --write-core-allowlist. This list may only shrink.\n"
+    "# Format: <from sub-layer> -> <to sub-layer>; covers text and exact mode (exact also sees transitive headers).\n\n")
+
+
+def write_allowlist(path, violations, header=ALLOWLIST_HEADER):
     with open(path, "w") as fh:
-        fh.write("# Known violations of the target layering (readme_dependencies.md).\n")
-        fh.write("# Generated by scripts/check_layering.py --write-allowlist. This list may only shrink.\n")
-        fh.write("# Format: <including file> -> <included header>\n\n")
+        fh.write(header)
 
         for entry in sorted(violations):
             fh.write(format_entry(entry) + "\n")
@@ -545,19 +653,24 @@ def main():
                         help="write the library dependency graph of the current mode (.dot, .svg, .png or .pdf)")
     parser.add_argument("--graph-reduced", action="store_true",
                         help="with --graph: omit edges implied by other paths (transitive reduction)")
+    parser.add_argument("--core-allowlist", default=CORE_LIST, help="allowlist of compass_core sub-layer pairs")
+    parser.add_argument("--write-core-allowlist", action="store_true",
+                        help="replace the core allowlist with the current sub-layer violations")
+    parser.add_argument("--core-details", action="store_true",
+                        help="list the files behind each compass_core sub-layer violation")
     args = parser.parse_args()
 
     if args.graph_reduced and not args.graph:
         parser.error("--graph-reduced needs --graph FILE")
 
     if args.build_dir:
-        violations, edges, experimental_by_lib = scan_build(REPO_ROOT, os.path.abspath(args.build_dir))
+        violations, edges, experimental_by_lib, core_violations = scan_build(REPO_ROOT, os.path.abspath(args.build_dir))
         from_lib_of  = lambda path: library_of(path) if path.startswith(SOURCE_DIR + "/") else "generated"
         experimental = None
         mode         = "exact ({})".format(args.build_dir)
         graph_title  = "COMPASS library dependencies, exact mode: compiled files using headers of the library (incl. transitive)"
     else:
-        edges, violations, experimental = scan_text(REPO_ROOT)
+        edges, violations, experimental, core_violations = scan_text(REPO_ROOT)
         experimental_by_lib = collections.defaultdict(set)
         for path, _ in experimental:
             experimental_by_lib[library_of(path)].add(path)
@@ -578,7 +691,7 @@ def main():
     if args.matrix or args.experimental:
         text_edges, text_experimental = edges, experimental
         if experimental is None:
-            text_edges, _, text_experimental = scan_text(REPO_ROOT)
+            text_edges, _, text_experimental, _ = scan_text(REPO_ROOT)
 
         if args.matrix:
             print_matrix(text_edges)
@@ -595,10 +708,20 @@ def main():
         print("wrote {} entries to {}".format(len(violations), os.path.relpath(args.allowlist, REPO_ROOT)))
         return 0
 
+    if args.write_core_allowlist:
+        write_allowlist(args.core_allowlist, set(core_violations.keys()), CORE_ALLOWLIST_HEADER)
+        print("wrote {} entries to {}".format(len(core_violations), os.path.relpath(args.core_allowlist, REPO_ROOT)))
+        return 0
+
     allowed = read_allowlist(args.allowlist)
     new     = violations - allowed
     stale   = allowed - violations
     cmake   = check_cmake(REPO_ROOT)
+
+    core_pairs   = set(core_violations.keys())
+    core_allowed = read_allowlist(args.core_allowlist)
+    core_new     = core_pairs - core_allowed
+    core_stale   = core_allowed - core_pairs # a hint only: text and exact mode see different pairs
 
     if experimental is None:
         num_objects       = len(set().union(*experimental_by_lib.values())) if experimental_by_lib else 0
@@ -610,6 +733,15 @@ def main():
     print("include violations: {} ({} allowlisted), {}".format(len(violations), len(violations & allowed), experimental_info))
     print_summary(violations, from_lib_of)
     print("cmake violations: {}".format(len(cmake)))
+
+    num_core = sum(len(files) for files in core_violations.values())
+    print("core sub-layer violations: {} in {} sub-layer pairs ({} pairs allowlisted)".format(
+        num_core, len(core_pairs), len(core_pairs & core_allowed)))
+    for pair, entries in sorted(core_violations.items(), key=lambda kv: -len(kv[1])):
+        print("  {:22s} -> {:22s} {:4d} files".format(pair[0], pair[1], len({src for src, _ in entries})))
+        if args.core_details:
+            for entry in sorted(entries):
+                print("      " + format_entry(entry))
 
     if new:
         print("\nnew include violations (not in the allowlist):")
@@ -626,7 +758,17 @@ def main():
         for path, message in cmake:
             print("  {}: {}".format(path, message))
 
-    return 1 if new or stale or cmake else 0
+    if core_new:
+        print("\nnew core sub-layer violations (not in the core allowlist, see --core-details):")
+        for entry in sorted(core_new):
+            print("  " + format_entry(entry))
+
+    if core_stale:
+        print("\ncore allowlist entries that do not occur in this mode (remove them if neither mode reports them):")
+        for entry in sorted(core_stale):
+            print("  " + format_entry(entry))
+
+    return 1 if new or stale or cmake or core_new else 0
 
 
 if __name__ == "__main__":

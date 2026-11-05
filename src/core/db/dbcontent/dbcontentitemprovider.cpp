@@ -23,7 +23,6 @@
 #include "targetreportaccessor.h"
 #include "targetreportdefs.h"
 
-#include "compass.h"
 #include "db_context_manager.h"
 
 #include "stringconv.h"
@@ -47,7 +46,7 @@ const std::string DBContentItemProvider::DsTypeOther = "Other";
 DBContentItemProvider::DBContentItemProvider(DBContentManager& dbc_manager,
                                              Grouping grouping)
 :   dbcont_man_      (dbc_manager)
-,   context_manager_ (dbcont_man_.compass().dbContextManager())
+,   context_manager_ (dbcont_man_.dbContextManager())
 ,   grouping_        (grouping)
 {
 }

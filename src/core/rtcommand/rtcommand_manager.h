@@ -47,7 +47,12 @@ namespace rtcommand
 namespace boost { namespace asio { class io_context; } }
 
 class TCPServer;
-class COMPASS;
+class AppState;
+
+namespace rtcommand
+{
+    class RTCommandRunner;
+}
 
 /**
  * Class for listening for and processing string commands at runtime,
@@ -77,7 +82,9 @@ public:
 
     static bool open_port_;
 
-    RTCommandManager(nlohmann::json& config, COMPASS* parent);
+    RTCommandManager(nlohmann::json& config,
+                     Configurable* parent,
+                     AppState& app_state);
     virtual ~RTCommandManager();
 
     void startCommandProcessing(); // only process command after start has been called
@@ -87,6 +94,9 @@ public:
     void shutdown();
 
     static const int ShutdownTimeoutSecs = 10;
+
+    // peers, set by the composition root (the runner is created after this manager)
+    void setManagers(rtcommand::RTCommandRunner& runner) { runner_ = &runner; }
 
     rtcommand::IssueInfo addCommand(const std::string& cmd_str, CommandId* id = nullptr);
     void addCommandFromConsole(const std::string& cmd_str); // throws on failure
@@ -99,7 +109,8 @@ signals:
     void shellCommandProcessed(const QString& msg, const QString& data, bool is_error);
 
 protected:
-    COMPASS& compass_;
+    AppState&                   app_state_;
+    rtcommand::RTCommandRunner* runner_ = nullptr; // peer, set by the composition root
 
     volatile bool started_ {false};
     volatile bool stop_requested_ {false};

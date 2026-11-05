@@ -22,7 +22,8 @@
 #include "rtcommand_helpers.h"
 #include "stringconv.h"
 #include "ui_test_find.h"
-#include "compass.h"
+#include "appstate.h"
+#include "traced_assert.h"
 
 #include "logger.h"
 
@@ -355,20 +356,20 @@ namespace rtcommand
         // (restored on any exit, including exceptions)
         struct InteractionGuard
         {
-            COMPASS* compass;
-            bool     previous;
-            InteractionGuard(COMPASS* c)
-            :   compass(c), previous(c ? c->allowUserInteractions() : true)
+            AppState* app_state;
+            bool      previous;
+            InteractionGuard(AppState* s)
+            :   app_state(s), previous(s ? s->allowUserInteractions() : true)
             {
-                if (compass)
-                    compass->allowUserInteractions(false);
+                if (app_state)
+                    app_state->allowUserInteractions(false);
             }
             ~InteractionGuard()
             {
-                if (compass)
-                    compass->allowUserInteractions(previous);
+                if (app_state)
+                    app_state->allowUserInteractions(previous);
             }
-        } interaction_guard(compass_);
+        } interaction_guard(host_ ? &host_->appState() : nullptr);
 
         try
         {

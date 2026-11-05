@@ -17,8 +17,7 @@
 
 #include "dbcontent/dbcontentmanagerwidget.h"
 
-//#include "compass.h"
-#include "configuration.h"
+//#include "configuration.h"
 //#include "configurationmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"

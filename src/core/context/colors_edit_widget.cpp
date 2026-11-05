@@ -18,13 +18,12 @@
 #include "colors_edit_widget.h"
 
 #include "color_provider.h"
-#include "compass.h"
 #include "data_source.h"
 #include "db_context.h"
 #include "db_context_manager.h"
-#include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
 #include "logger.h"
+
+#include <algorithm>
 
 #include <QColorDialog>
 #include <QGridLayout>
@@ -40,12 +39,16 @@ namespace context
 {
 
 ColorsEditWidget::ColorsEditWidget(DBContextManager& manager,
+                                   const std::vector<std::string>& dbcontent_names,
                                    std::function<void()> on_changed,
                                    QWidget* parent)
     : QWidget(parent)
     , manager_(manager)
+    , dbcontent_names_(dbcontent_names)
     , on_changed_(std::move(on_changed))
 {
+    std::sort(dbcontent_names_.begin(), dbcontent_names_.end());
+
     buildUI();
     refresh();
 }
@@ -274,19 +277,9 @@ void ColorsEditWidget::refresh()
     clearGrid(dbcontent_grid_);
     dbcontent_buttons_.clear();
 
-    std::vector<std::string> dbc_names;
-    auto& dbcont_man = manager_.compass().dbContentManager();
-    for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
-    {
-        if (it->second && it->second->containsTargetReports())
-            dbc_names.push_back(it->first);
-    }
-
-    std::sort(dbc_names.begin(), dbc_names.end());
-
     {
         int row_idx = 0;
-        for (const auto& name : dbc_names)
+        for (const auto& name : dbcontent_names_)
         {
             auto* name_lbl = new QLabel(QString::fromStdString(name));
             dbcontent_grid_->addWidget(name_lbl, row_idx, 0, Qt::AlignLeft | Qt::AlignVCenter);

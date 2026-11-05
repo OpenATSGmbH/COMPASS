@@ -16,7 +16,7 @@
  */
 
 #include "dbcontent/variable/metavariabledetailwidget.h"
-#include "compass.h"
+#include "appstate.h"
 #include "dbcontent/variable/metavariable.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableselectionwidget.h"
@@ -84,7 +84,7 @@ MetaVariableDetailWidget::MetaVariableDetailWidget(DBContentManager& dbcont_man,
 
 void MetaVariableDetailWidget::show (MetaVariable& meta_var)
 {
-    bool expert_mode = dbcont_man_.compass().expertMode();
+    bool expert_mode = dbcont_man_.appState().expertMode();
 
     loginf << "var '" << meta_var.name() << "' expert_mode " << expert_mode;
 

@@ -48,6 +48,7 @@ Rules:
 - **Directory = library.** Code that belongs to another library is moved there (`git mv`), never compiled into a target from another directory or referenced with `../` paths in CMake.
 - **Includes are relative to the library's include directories** (e.g. `"report/section.h"`, `"dbcontent/dbcontentmanager.h"`), not to `src/`.
 - **Check:** `python3 scripts/check_layering.py --build-dir build` checks the headers each compiled file actually includes and the CMake link and include paths (without `--build-dir` it analyzes the include lines). It is run manually (not part of the build or CI), e.g. after larger refactorings; the allowlist `scripts/layering_allowlist.txt` is empty and may not grow.
+- **Sub-layers inside `compass_core`** (bottom to top): `base` → `rtcommand` (incl. `test/`) → `gui` → `services` (job, unit, sector, license) → `dbinterface` → `context` → `projection` → `dbcontent` (incl. `db/job`, `i*provider.h`) → `ui` (`source/`) → `root` (`compass.h`). The check verifies them too; the allowlist `scripts/layering_core_allowlist.txt` is empty and may not grow (workstream I in `readme_dependencies.md`). `DBInterface` is generic database access; DB content specific access (DB content tables, targets table) goes through `DBContentDB` (`dbcont_man.contentDB()`).
 - **Exceptions:** host sites that use `experimental_src/` (geo view, ProbIMM, Kalman interfaces) are known host ↔ experimental cycles, resolved by the plugin plan (`readme_plugins.md`). Background and history: `readme_dependencies.md`.
 
 ## Build
@@ -149,10 +150,12 @@ doc/                    Documentation and user manual (LaTeX)
 
 ### Patterns
 - **COMPASS access:** `COMPASS` is not a singleton - it is created by `CompassRoot` and passed by reference. Access via parent chain, e.g. `task_.manager().compass().dbContentManager()`. Managers store `COMPASS&` and expose `compass()`. `COMPASS` offers only the core managers and the provider interfaces (`viewProvider()`, `filterProvider()`, `evalProvider()`, `taskProvider()`) for code below the upper layers.
+- **Inside `compass_core`** only `compass.h`/`compass.cpp` use `COMPASS`. Core managers take `Configurable` as parent and get their dependencies directly (`AppState&`, peers via `setManagers(...)` from `CompassRoot`, e.g. `dbcont_man.dbInterface()`, `ctx_man.appState()`). App state and global settings live in `AppState` (`src/core/appstate.h`); `COMPASS` forwards them for the libraries above core. Runtime command execution reaches the application through `rtcommand::IRTCommandHost` (implemented by `COMPASS`).
 - **Upper managers** (`FilterManager`, `ViewManager`, `EvaluationManager`, `TaskManager`) are reached through their own library's parent chain (`view_->viewManager()`, `task().manager()`). Their peers are set by `CompassRoot` via `setManagers(...)` and exposed as accessors (e.g. `task().manager().viewManager()`). The app layer uses `CompassRoot`'s accessors (`MainWindow::root_`, `main_window::root()`).
 - **True singletons:** Only `Logger::getInstance()` and `RTCommandRegistry::instance()` (both inherit from `Singleton` base class in `src/util/singleton.h`).
 - **Configurable base class:** most components inherit from `Configurable` for JSON-based config persistence
 - **Qt signals/slots** throughout the GUI layer; `Q_OBJECT` macro required
+- **No widgets or dialogs cached in non-UI classes:** a widget or dialog is created by its UI host (e.g. `MainWindow`, a parent widget) and reads or modifies the data on demand when shown. State that must live on without the widget belongs in a model class (e.g. `SensorStatusTracker` for the Sensor Status tool).
 - **Smart pointers:** prefer `std::unique_ptr` and `std::shared_ptr`
 - **Buffer/NullableVector<T>:** columnar data storage - the central data structure for surveillance records. Supports bool, char, uchar, int, uint, long, ulong, float, double, string, json, ptime.
 - **PropertyList / PropertyDataType:** type-safe schema for Buffer columns

@@ -26,13 +26,6 @@
 
 #include "duckdbinstance.h"
 
-#include "dbcontent/dbcontent.h"
-#include "dbcontent/dbcontentmanager.h"
-#include "dbcontent/dbcontentdataengine.h"
-#include "dbcontent/variable/variable.h"
-#include "dbcontent/variable/metavariable.h"
-#include "dbcontent/target/target.h"
-
 #include "sector.h"
 #include "sectorlayer.h"
 #include "sectorinsidecache.h"
@@ -41,7 +34,8 @@
 
 #include "viewpointkeys.h"
 
-#include "compass.h"
+#include "appstate.h"
+#include "logmodel.h"
 #include "buffer.h"
 #include "config.h"
 #include "files.h"
@@ -70,7 +64,6 @@
 
 using namespace Utils;
 using namespace std;
-using namespace dbContent;
 
 const string PROP_TIMESTAMP_MIN_NAME {"timestamp_min"};
 const string PROP_TIMESTAMP_MAX_NAME {"timestamp_max"};
@@ -88,10 +81,15 @@ const size_t DBInterface::TableBulkUpdateMinRows = 50;
 // DBInterface::DBInterface(string class_name, string instance_name, COMPASS* compass)
 //     : Configurable(class_name, instance_name, compass), ...
 
-DBInterface::DBInterface(nlohmann::json& config, COMPASS& compass)
-    : Configurable(config, &compass)
-    , compass_(compass)
-    , dbcontent_man_(compass.dbContentManager())
+DBInterface::DBInterface(nlohmann::json& config,
+                         Configurable& parent,
+                         AppState& app_state,
+                         LogStore& log_store,
+                         const std::string& app_version)
+    : Configurable(config, &parent)
+    , app_state_(app_state)
+    , log_store_(log_store)
+    , app_version_(app_version)
     , insert_mt_(true)
 {
     registerParameter("log_verbose", &log_verbose_, log_verbose_);
@@ -134,7 +132,7 @@ DBInterface::~DBInterface()
 SQLGenerator DBInterface::sqlGenerator() const
 {
     traced_assert(db_instance_);
-    return SQLGenerator(db_instance_->sqlConfiguration(), dbcontent_man_);
+    return SQLGenerator(db_instance_->sqlConfiguration());
 }
 
 /**
@@ -206,7 +204,7 @@ void DBInterface::openDBFile(const std::string& filename, bool overwrite)
     loginf << "new_file " << new_file;
 
     if (new_file)
-        compass_.logInfo("DBInterface") << "database '" << filename << "' created";
+        log_store_.logInfo("DBInterface", {}, {}) << "database '" << filename << "' created";
 }
 
 /**
@@ -264,7 +262,7 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
             createPropertiesTable();
             properties_loaded_ = true;
 
-            setProperty("APP_VERSION", compass_.config().getString("version"));
+            setProperty("APP_VERSION", app_version_);
             saveProperties();
 
             traced_assert(!existsSectorsTable());
@@ -277,11 +275,11 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
 
             //check db version against app version
             if (!hasProperty("APP_VERSION")
-                    || getProperty("APP_VERSION") != compass_.config().getString("version"))
+                    || getProperty("APP_VERSION") != app_version_)
             {
                 string reason = hasProperty("APP_VERSION") ?
                             "DB from Version " + getProperty("APP_VERSION") + ", current "
-                            + compass_.config().getString("version") : "DB from Version older than 0.7.0";
+                            + app_version_ : "DB from Version older than 0.7.0";
 
                 properties_loaded_ = false;
                 properties_.clear();
@@ -294,8 +292,7 @@ void DBInterface::openDBFileInternal(const std::string& filename, bool overwrite
             traced_assert(existsSectorsTable());
         }
 
-        if (!existsTargetsTable())
-            createTargetsTable();
+        // the targets table is created by DBContentDB when the database was opened
 
         if (!existsTaskLogTable())
             createTaskLogTable();
@@ -581,7 +578,7 @@ Result DBInterface::cleanupDBInternal()
 
     auto db_size_before = get_db_file_size();
 
-    if (compass_.appMode() == AppMode::LiveRunning)
+    if (app_state_.appMode() == AppMode::LiveRunning)
     {
         if (db_instance_->dbInMem())
         {
@@ -736,8 +733,16 @@ void DBInterface::updateTableInfo()
 
 /**
  */
+const DBInstance& DBInterface::dbInstance() const
+{
+    traced_assert(db_instance_);
+    return *db_instance_;
+}
+
+/**
+ */
 const std::map<std::string, DBTableInfo>& DBInterface::tableInfo() const
-{ 
+{
     traced_assert(ready());
 
     //@TODO: needs protection?
@@ -749,36 +754,6 @@ const std::map<std::string, DBTableInfo>& DBInterface::tableInfo() const
 bool DBInterface::existsTable(const string& table_name) const
 {
     return tableInfo().count(table_name) == 1;
-}
-
-/**
- */
-void DBInterface::createTable(const DBContent& object)
-{
-    loginf << "obj " << object.name();
-
-    traced_assert(ready());
-
-    if (existsTable(object.dbTableName()))
-    {
-        logerr << "table " << object.dbTableName() << " already exists";
-        return;
-    }
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        string statement = sqlGenerator().getCreateTableStatement(object);
-
-        execute(statement);
-        updateTableInfo();
-    }
-
-    loginf << "checking " << object.dbTableName();
-
-    traced_assert(existsTable(object.dbTableName()));
 }
 
 /**
@@ -814,98 +789,7 @@ bool DBInterface::existsPropertiesTable()
 }
 
 /**
- */
-unsigned long DBInterface::getMaxRecordNumber(DBContent& object)
-{
-    traced_assert(ready());
-    traced_assert(object.existsInDB());
-
-    traced_assert(dbcontent_man_.existsMetaVariable(dbcontent_vars::meta_var_rec_num_.name()));
-    traced_assert(dbcontent_man_.metaVariable(
-                dbcontent_vars::meta_var_rec_num_.name()).existsIn(object.name()));
-
-    Variable& rec_num_var = dbcontent_man_.metaVariable(
-                dbcontent_vars::meta_var_rec_num_.name()).getFor(object.name());
-
-    traced_assert(object.hasVariable(rec_num_var.name()));
-
-    unsigned long max_rn = 0;
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        shared_ptr<DBCommand> command = sqlGenerator().getMaxULongIntValueCommand(object.dbTableName(),
-                                                                                  rec_num_var.dbColumnName());
-        shared_ptr<DBResult> result = execute(*command);
-        traced_assert(result->containsData());
-
-        shared_ptr<Buffer> buffer = result->buffer();
-
-        if (!buffer->size())
-        {
-            logwrn << "no max record number found";
-            return 0;
-        }
-
-        traced_assert(!buffer->get<unsigned long>(rec_num_var.dbColumnName()).isNull(0));
-
-        max_rn = buffer->get<unsigned long>(rec_num_var.dbColumnName()).get(0);
-    }
-
-    return max_rn;
-}
-
-/**
- */
-boost::optional<unsigned int> DBInterface::getMaxRefTrackTrackNum()
-{
-    traced_assert(ready());
-
-    DBContent& reftraj_content = dbcontent_man_.dbContent("RefTraj");
-
-    if(!reftraj_content.existsInDB())
-        return {};
-
-    traced_assert(dbcontent_man_.existsMetaVariable(dbcontent_vars::meta_var_track_num_.name()));
-    traced_assert(dbcontent_man_.metaVariable(
-                dbcontent_vars::meta_var_track_num_.name()).existsIn("RefTraj"));
-
-    Variable& track_num_var = dbcontent_man_.metaVariable(
-                dbcontent_vars::meta_var_track_num_.name()).getFor("RefTraj");
-
-    traced_assert(reftraj_content.hasVariable(track_num_var.name()));
-
-    unsigned int max_tn = 0;
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        shared_ptr<DBCommand> command = sqlGenerator().getMaxUIntValueCommand(reftraj_content.dbTableName(),
-                                                                            track_num_var.dbColumnName());
-        shared_ptr<DBResult> result = execute(*command);
-        traced_assert(result->containsData());
-
-        shared_ptr<Buffer> buffer = result->buffer();
-
-        // empty table: no row, or a row with a NULL max
-        if (!buffer->size() || buffer->get<unsigned int>(track_num_var.dbColumnName()).isNull(0))
-        {
-            logwrn << "no max track number found";
-            return {};
-        }
-
-        max_tn = buffer->get<unsigned int>(track_num_var.dbColumnName()).get(0);
-    }
-
-    return max_tn;
-}
-
-/**
- * Maximum value of an unsigned int column, none if the table is empty.
+ * Maximum value of an unsigned int column, none if the table is empty (no row, or a row with a NULL max).
  */
 boost::optional<unsigned long> DBInterface::getMaxUIntValue(const std::string& table_name,
                                                             const std::string& col_name)
@@ -926,15 +810,43 @@ boost::optional<unsigned long> DBInterface::getMaxUIntValue(const std::string& t
         shared_ptr<Buffer> buffer = result->buffer();
         traced_assert(buffer->size() <= 1);
 
-        if (buffer->size() == 0)
+        if (buffer->size() == 0 || buffer->get<unsigned int>(col_name).isNull(0))
             return boost::optional<unsigned long>();
-
-        traced_assert(!buffer->get<unsigned int>(col_name).isNull(0));
 
         max_tn = buffer->get<unsigned int>(col_name).get(0);
     }
 
     return max_tn;
+}
+
+/**
+ * Maximum value of an unsigned long column, none if the table is empty (no row, or a row with a NULL max).
+ */
+boost::optional<unsigned long> DBInterface::getMaxULongValue(const std::string& table_name,
+                                                             const std::string& col_name)
+{
+    traced_assert(ready());
+
+    unsigned long max_value = 0;
+
+    {
+        #ifdef PROTECT_INSTANCE
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        #endif
+
+        shared_ptr<DBCommand> command = sqlGenerator().getMaxULongIntValueCommand(table_name, col_name);
+        shared_ptr<DBResult> result = execute(*command);
+        traced_assert(result->containsData());
+
+        shared_ptr<Buffer> buffer = result->buffer();
+
+        if (!buffer->size() || buffer->get<unsigned long>(col_name).isNull(0))
+            return boost::optional<unsigned long>();
+
+        max_value = buffer->get<unsigned long>(col_name).get(0);
+    }
+
+    return max_value;
 }
 
 //std::map<unsigned int, std::tuple<std::set<unsigned int>, std::tuple<bool, unsigned int, unsigned int>,
@@ -1552,184 +1464,6 @@ void DBInterface::deleteAllSectors()
     clearTableContent(TABLE_NAME_SECTORS);
 }
 
-/**
- */
-bool DBInterface::existsTargetsTable()
-{
-    return existsTable(TABLE_NAME_TARGETS);
-}
-
-/**
- */
-void DBInterface::createTargetsTable()
-{
-    loginf;
-
-    traced_assert(ready());
-    traced_assert(!existsTargetsTable());
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        auto sql = sqlGenerator().getTableTargetsCreateStatement();
-
-        loginf << "sql '" << sql << "'";
-
-        execute(sql);
-        updateTableInfo();
-    }
-}
-
-/**
- */
-void DBInterface::clearTargetsTable()
-{
-    clearTableContent(TABLE_NAME_TARGETS);
-}
-
-/**
- */
-std::vector<std::unique_ptr<dbContent::Target>> DBInterface::loadTargets()
-{
-    loginf;
-
-    traced_assert(ready());
-
-    std::vector<std::unique_ptr<dbContent::Target>> targets;
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        DBCommand command;
-        command.set(sqlGenerator().getSelectAllTargetsStatement());
-
-        PropertyList list;
-        list.addProperty("utn", PropertyDataType::UINT);
-        list.addProperty("json", PropertyDataType::STRING);
-        command.list(list);
-
-        shared_ptr<DBResult> result = execute(command);
-        traced_assert(!result->hasError());
-        traced_assert(result->containsData());
-
-        shared_ptr<Buffer> buffer = result->buffer();
-
-        traced_assert(buffer);
-        traced_assert(buffer->has<unsigned int>("utn"));
-        traced_assert(buffer->has<string>("json"));
-
-        NullableVector<unsigned int>& utn_vec = buffer->get<unsigned int>("utn");
-        NullableVector<string>& json_vec = buffer->get<string>("json");
-
-        unsigned int utn;
-        string json_str;
-
-        std::set<unsigned int> existing_utns;
-
-        for (size_t cnt = 0; cnt < buffer->size(); ++cnt)
-        {
-            traced_assert(!utn_vec.isNull(cnt));
-            traced_assert(!json_vec.isNull(cnt));
-
-            utn = utn_vec.get(cnt);
-            json_str = json_vec.get(cnt);
-
-            traced_assert(!existing_utns.count(utn));
-            existing_utns.insert(utn);
-
-            //shared_ptr<dbContent::Target> target = make_shared<dbContent::Target>(utn, nlohmann::json::parse(json_str));
-
-            targets.emplace_back(new dbContent::Target(utn, nlohmann::json::parse(json_str)));
-
-            //        loginf << "loaded target " << utn << " json '"
-            //               << json_str << "'";
-        }
-    }
-
-    return targets;
-}
-
-/**
- */
-void DBInterface::saveTargets(const std::map<unsigned int, nlohmann::json>& targets_info)
-{
-    logdbg;
-
-    traced_assert(ready());
-
-    clearTargetsTable();
-
-    {
-        //storing all targets at once via a buffer is faster
-        std::shared_ptr<Buffer> buffer(new Buffer(dbContent::Target::DBPropertyList));
-
-        auto& id_vec   = buffer->get<unsigned int>(dbContent::Target::DBColumnID.name());
-        auto& info_vec = buffer->get<nlohmann::json>(dbContent::Target::DBColumnInfo.name());
-
-        size_t idx = 0;
-        for (auto& tgt_it : targets_info)
-        {
-            id_vec.set(idx, tgt_it.first);
-            info_vec.set(idx, tgt_it.second);
-            ++idx;
-        }
-
-        insertBuffer(TABLE_NAME_TARGETS, buffer);
-    }
-
-    logdbg << "done";
-}
-
-/**
- */
-void DBInterface::updateTargets(const std::map<unsigned int, nlohmann::json>& targets_info)
-{
-    loginf << "updating " << targets_info.size() << " utn(s)";
-
-    traced_assert(ready());
-
-    if (targets_info.size() > TableBulkUpdateMinRows)
-    {
-        //updating many targets at once via a buffer is faster
-        std::shared_ptr<Buffer> buffer(new Buffer(dbContent::Target::DBPropertyList));
-
-        auto& id_vec   = buffer->get<unsigned int>(dbContent::Target::DBColumnID.name());
-        auto& info_vec = buffer->get<nlohmann::json>(dbContent::Target::DBColumnInfo.name());
-
-        size_t idx = 0;
-        for (auto& tgt_it : targets_info)
-        {
-            id_vec.set(idx, tgt_it.first);
-            info_vec.set(idx, tgt_it.second);
-            ++idx;
-        }
-
-        updateBuffer(TABLE_NAME_TARGETS, Target::DBColumnID.name(), buffer);
-    }
-    else
-    {
-        //run individual update for each target
-        for (auto& tgt_it : targets_info)
-        {
-            #ifdef PROTECT_INSTANCE
-            boost::mutex::scoped_lock locker(instance_mutex_);
-            #endif
-
-            string str = sqlGenerator().getInsertTargetStatement(tgt_it.first, tgt_it.second.dump());
-
-            // uses replace with utn as unique key
-            execute(str);
-        }
-    }
-
-    loginf << "done";
-}
-
-
 bool DBInterface::existsTaskLogTable()
 {
     return existsTable(TABLE_NAME_TASK_LOG);
@@ -2079,8 +1813,9 @@ void DBInterface::removeDBInfo(const std::string& name)
 }
 
 /**
+ * Sets all values of a column to NULL.
  */
-void DBInterface::clearAssociations(const DBContent& dbcontent)
+void DBInterface::setColumnNull(const std::string& table_name, const std::string& col_name)
 {
     traced_assert(ready());
 
@@ -2089,10 +1824,23 @@ void DBInterface::clearAssociations(const DBContent& dbcontent)
         boost::mutex::scoped_lock locker(instance_mutex_);
         #endif
 
-        string str = sqlGenerator().getSetNullStatement(dbcontent.dbTableName(),
-                                                        dbcontent.variable("UTN").dbColumnName());      
-        // uses replace with utn as unique key
-        execute(str);
+        execute(sqlGenerator().getSetNullStatement(table_name, col_name));
+    }
+}
+
+/**
+ * Inserts a row or replaces the row with the same key, values in column order.
+ */
+void DBInterface::replaceRow(const std::string& table_name, const std::vector<std::string>& values)
+{
+    traced_assert(ready());
+
+    {
+        #ifdef PROTECT_INSTANCE
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        #endif
+
+        execute(sqlGenerator().replaceStatement(table_name, values));
     }
 }
 
@@ -2117,10 +1865,34 @@ void DBInterface::createTable(const std::string& table_name,
 }
 
 /**
+ * Creates a table with the given columns and indices.
+ */
+void DBInterface::createTable(const std::string& table_name,
+                              const std::vector<DBTableColumnInfo>& column_infos,
+                              const std::vector<db::Index>& indices)
+{
+    traced_assert(ready());
+    traced_assert(!existsTable(table_name));
+
+    {
+        #ifdef PROTECT_INSTANCE
+        boost::mutex::scoped_lock locker(instance_mutex_);
+        #endif
+
+        execute(sqlGenerator().getCreateTableStatement(table_name, column_infos, indices));
+        updateTableInfo();
+    }
+}
+
+/**
  * Deletes the rows of a table matching the given filter (empty = all rows).
  */
 Result DBInterface::deleteRows(const std::string& table_name, const std::string& filter)
 {
+    #ifdef PROTECT_INSTANCE
+    boost::mutex::scoped_lock locker(instance_mutex_);
+    #endif
+
     auto cmd = sqlGenerator().getDeleteCommand(table_name, filter);
     auto res = execute(*cmd);
     if (res->hasError())
@@ -2327,57 +2099,6 @@ ResultT<size_t> DBInterface::tableStorageSize(const std::string& table_name)
 
 /**
  */
-void DBInterface::initDBContentBuffer(DBContent& dbcontent, 
-                                      std::shared_ptr<Buffer> buffer)
-{
-    // create record numbers & and store new max rec num
-    traced_assert(dbcontent.hasVariable(dbcontent_vars::meta_var_rec_num_.name()));
-
-    Variable& rec_num_var = dbcontent.variable(dbcontent_vars::meta_var_rec_num_.name());
-    traced_assert(rec_num_var.dataType() == PropertyDataType::ULONGINT);
-
-    string rec_num_col_str = rec_num_var.dbColumnName();
-    traced_assert(!buffer->has<unsigned long>(rec_num_col_str));
-
-    buffer->addProperty(rec_num_col_str, PropertyDataType::ULONGINT);
-
-    traced_assert(dbcontent_man_.dataEngine().hasMaxRecordNumberWODBContentID());
-    unsigned long max_rec_num = dbcontent_man_.dataEngine().maxRecordNumberWODBContentID();
-
-    NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(rec_num_col_str);
-
-    unsigned int buffer_size = buffer->size();
-    unsigned int dbcont_id = dbcontent.id();
-
-    for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
-    {
-        ++max_rec_num;
-        rec_num_vec.set(cnt, Number::recNumAddDBContId(max_rec_num, dbcont_id));
-    }
-
-    dbcontent_man_.dataEngine().maxRecordNumberWODBContentID(max_rec_num);
-}
-
-/**
- */
-void DBInterface::insertDBContent(DBContent& dbcontent, std::shared_ptr<Buffer> buffer)
-{
-    logdbg << "dbcont " << dbcontent.name() << " buffer size " << buffer->size();
-
-    traced_assert(ready());
-    traced_assert(buffer);
-    traced_assert(!cleanup_in_progress_);
-
-    // create table if required
-    if (!existsTable(dbcontent.dbTableName()))
-        createTable(dbcontent);
-
-    initDBContentBuffer(dbcontent, buffer);
-    insertBuffer(dbcontent.dbTableName(), buffer);
-}
-
-/**
- */
 void DBInterface::insertBuffer(const string& table_name, 
                                shared_ptr<Buffer> buffer)
 {
@@ -2416,9 +2137,9 @@ void DBInterface::insertBufferInternal(const string& table_name,
 }
 
 /**
- * Inserts multiple dbcontent buffers at once, possibly utilizing parallelization.
+ * Inserts multiple buffers (table name -> buffer) at once, possibly utilizing parallelization.
  */
-void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Buffer>>& buffers)
+void DBInterface::insertBuffers(const std::map<std::string, std::shared_ptr<Buffer>>& buffers)
 {
     traced_assert(ready());
     traced_assert (!cleanup_in_progress_);
@@ -2439,8 +2160,6 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
     logdbg << "inserting " << buffers.size() << " object(s) " 
            << (exec_mt ? "multi-threaded" : "single-threaded") 
            << " min_size " << (buffers.size() ? min_size : 0) << " max_size " << (buffers.size() ? max_size : 0);
-
-    auto& dbc_manager = dbcontent_man_;
 
     struct Job
     {
@@ -2472,19 +2191,11 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
     for (auto& it : buffers)
     {
         traced_assert(it.second);
-
-        auto& dbcontent = dbc_manager.dbContent(it.first);
-
-        //create table if needed
-        if (!existsTable(dbcontent.dbTableName()))
-            createTable(dbcontent);
-
-        //init buffer
-        initDBContentBuffer(dbcontent, it.second);
+        traced_assert(existsTable(it.first));
 
         if (chunk_size < 1 || !exec_mt)
         {
-            insert_jobs.push_back(Job(idx++, dbcontent.dbTableName(), it.second, {}, {}));
+            insert_jobs.push_back(Job(idx++, it.first, it.second, {}, {}));
         }
         else
         {
@@ -2496,7 +2207,7 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
 
                 traced_assert(idx_start < idx_end);
 
-                insert_jobs.push_back(Job(idx++, dbcontent.dbTableName(), it.second, idx_start, idx_end - 1));
+                insert_jobs.push_back(Job(idx++, it.first, it.second, idx_start, idx_end - 1));
             }
         }
     }
@@ -2525,7 +2236,7 @@ void DBInterface::insertDBContent(const std::map<std::string, std::shared_ptr<Bu
                 {
                     logerr << "creating mt connection failed: " << mt_connections[i].error();
                     throw runtime_error(
-                        "DBInterface: insertDBContent: creating mt connection failed: " +
+                        "DBInterface: insertBuffers: creating mt connection failed: " +
                         mt_connections[i].error());
                 }
             }
@@ -2607,20 +2318,21 @@ void DBInterface::updateBuffer(const std::string& table_name,
 }
 
 /**
+ * Starts a chunked read of the given columns, see readDataChunk().
  */
-void DBInterface::prepareRead(const DBContent& dbcontent, 
-                              VariableSet read_list, 
-                              string custom_filter_clause,
-                              bool use_order, 
-                              Variable* order_variable)
+void DBInterface::prepareRead(const std::string& table_name,
+                              const PropertyList& properties,
+                              const std::string& filter,
+                              bool use_order,
+                              const std::string& order_column,
+                              const std::string& join_clause)
 {
-    logdbg << "dbcont_name " << dbcontent.name();
+    logdbg << "table " << table_name;
 
     traced_assert(ready());
-    traced_assert(dbcontent.existsInDB());
 
     shared_ptr<DBCommand> read = sqlGenerator().getSelectCommand(
-        dbcontent, read_list, custom_filter_clause, use_order, order_variable);
+        table_name, properties, filter, use_order, order_column, join_clause);
 
     loginf << "sql '" << read->get() << "'";
 
@@ -2636,14 +2348,14 @@ void DBInterface::prepareRead(const DBContent& dbcontent,
     
     if (!res.ok())
     {
-        logerr << "preparing read for dbcontent '" << dbcontent.name() << "' command '" << read->get() << "' failed: " << res.error();
-        throw runtime_error("DBInterface: prepareRead: preparing read for dbcontent '" + dbcontent.name() + "' command '" + read->get() + "'failed: " + res.error());
+        logerr << "preparing read for table '" << table_name << "' command '" << read->get() << "' failed: " << res.error();
+        throw runtime_error("DBInterface: prepareRead: preparing read for table '" + table_name + "' command '" + read->get() + "'failed: " + res.error());
     }
 }
 
 /**
  */
-std::pair<std::shared_ptr<Buffer>, bool> DBInterface::readDataChunk(const DBContent& dbcontbject)
+std::pair<std::shared_ptr<Buffer>, bool> DBInterface::readDataChunk()
 {
     // locked by prepareRead
     traced_assert(ready());
@@ -2679,8 +2391,6 @@ std::pair<std::shared_ptr<Buffer>, bool> DBInterface::readDataChunk(const DBCont
 
     shared_ptr<Buffer> buffer = result->buffer();
 
-    buffer->dbContentName(dbcontbject.name());
-
     traced_assert(buffer);
 
     return {buffer, last_one};
@@ -2688,7 +2398,7 @@ std::pair<std::shared_ptr<Buffer>, bool> DBInterface::readDataChunk(const DBCont
 
 /**
  */
-void DBInterface::finalizeReadStatement(const DBContent& dbcontbject)
+void DBInterface::finalizeReadStatement()
 {
     traced_assert(ready());
 
@@ -2702,21 +2412,12 @@ void DBInterface::finalizeReadStatement(const DBContent& dbcontbject)
 }
 
 /**
+ * Runs the database cleanup if live_cleanup_time_min passed since the first call or the last cleanup.
  */
-void DBInterface::deleteBefore(const DBContent& dbcontent, 
-                               boost::posix_time::ptime before_timestamp)
+void DBInterface::liveCleanupIfDue()
 {
     traced_assert(ready());
     traced_assert(!cleanup_in_progress_);
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        std::shared_ptr<DBCommand> command = sqlGenerator().getDeleteCommand(dbcontent, before_timestamp);
-        execute(*command.get());
-    }
 
     if (last_live_cleanup_time_.is_not_a_date_time())
         last_live_cleanup_time_ = boost::posix_time::microsec_clock::local_time();
@@ -2725,62 +2426,6 @@ void DBInterface::deleteBefore(const DBContent& dbcontent,
     {
         loginf << "live cleanup time reached, doing cleanup";
         cleanupDBInternal();
-    }
-}
-
-/**
- */
-void DBInterface::deleteAll(const DBContent& dbcontent)
-{
-    traced_assert(ready());
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        std::shared_ptr<DBCommand> command = sqlGenerator().getDeleteCommand(dbcontent);
-        execute(*command.get());
-    }
-}
-
-/**
- */
-void DBInterface::deleteContent(const DBContent& dbcontent, 
-                                unsigned int sac, 
-                                unsigned int sic)
-{
-    loginf << "dbcontent " << dbcontent.name() << " sac/sic " << sac << "/" << sic;
-
-    traced_assert(ready());
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        std::shared_ptr<DBCommand> command = sqlGenerator().getDeleteCommand(dbcontent, sac, sic);
-
-        execute(*command.get());
-    }
-}
-
-/**
- */
-void DBInterface::deleteContent(const DBContent& dbcontent, unsigned int sac, unsigned int sic, unsigned int line_id)
-{
-    loginf << "dbcontent " << dbcontent.name() << " sac/sic " << sac << "/" << sic << " line " << line_id;
-
-    traced_assert(ready());
-
-    {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
-
-        std::shared_ptr<DBCommand> command = sqlGenerator().getDeleteCommand(dbcontent, sac, sic, line_id);
-
-        execute(*command.get());
     }
 }
 
@@ -2808,6 +2453,10 @@ ResultT<std::shared_ptr<Buffer>> DBInterface::select(const std::string& table_na
 {
     if (!existsTable(table_name))
         return ResultT<std::shared_ptr<Buffer>>::failed("Table does not exist");
+
+    #ifdef PROTECT_INSTANCE
+    boost::mutex::scoped_lock locker(instance_mutex_);
+    #endif
 
     std::shared_ptr<Buffer> buffer;
 

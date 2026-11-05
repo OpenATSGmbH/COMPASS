@@ -29,7 +29,6 @@
 #include <string>
 #include <vector>
 
-class COMPASS;
 class PropertyList;
 
 class DBContentWidget;
@@ -194,7 +193,7 @@ public:
     bool containsStatusContent() const;
     bool isReferenceContent() const;
 
-    COMPASS& compass() { return compass_; }
+    DBContentManager& dbContentManager() { return dbcont_manager_; }
 
 private:
     friend class DBContentManager;
@@ -206,7 +205,6 @@ private:
 protected:
     void checkStaticVariable(const Property& property);
 
-    COMPASS&          compass_;
     DBContentManager& dbcont_manager_;
 
     std::string  name_;

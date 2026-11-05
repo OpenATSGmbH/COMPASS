@@ -19,7 +19,6 @@
 
 #include "dbcontent/variable/metavariable.h"
 
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"

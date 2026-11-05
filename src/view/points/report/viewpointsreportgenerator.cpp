@@ -120,7 +120,7 @@ void ViewPointsReportGenerator::run ()
 
     try
     {
-        LatexDocument doc (view_manager_.compass(), report_path_, report_filename_);
+        LatexDocument doc (report_path_, report_filename_, view_manager_.compass().licenseeString(true));
         doc.title("View Points Report");
 
         if (author_.size())

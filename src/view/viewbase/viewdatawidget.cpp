@@ -258,7 +258,7 @@ ViewDataWidget::LayerSnapshots ViewDataWidget::snapshotsFromAggregates(const Lay
 
     for (const auto& [ key, agg ] : aggregates)
     {
-        const QColor color = context::resolveSeriesColor(agg.ds_type, agg.ds_name, agg.line_index, agg.dbcontent, compass);
+        const QColor color = context::resolveSeriesColor(agg.ds_type, agg.ds_name, agg.line_index, agg.dbcontent, compass.dbContextManager());
 
         layers.push_back(std::make_unique<ViewLayerSnapshot>(key, agg, agg.count, 0, color));
     }

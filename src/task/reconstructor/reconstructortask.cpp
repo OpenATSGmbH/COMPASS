@@ -24,6 +24,7 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/dbcontentdb.h"
 #include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variableset.h"
 #include "filtermanager.h"
@@ -574,7 +575,7 @@ void ReconstructorTask::deleteTargetsDoneSlot()
                                                   Q_ARG(const QString&, "Deleting Previous Associations"),
                                                   Q_ARG(bool, false));
 
-                        manager().compass().dbInterface().clearAssociations(*dbcont_it.second);
+                        manager().compass().dbContentManager().contentDB().clearAssociations(*dbcont_it.second);
                     }
                 }
 

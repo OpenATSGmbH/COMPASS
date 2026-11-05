@@ -18,7 +18,6 @@
 #pragma once
 
 #include "configurable.h"
-#include "dbcontent/variable/variableset.h"
 #include "dbdefs.h"
 #include "result.h"
 
@@ -37,10 +36,12 @@ class DBInstance;
 class DBConnection;
 class DBResult;
 class DBTableInfo;
+class DBTableColumnInfo;
 class DBCommand;
 class SQLGenerator;
 
-class COMPASS;
+class AppState;
+class LogStore;
 
 class Buffer;
 class BufferWriter;
@@ -49,17 +50,8 @@ class Sector;
 class SectorLayer;
 class SectorInsideCache;
 class Result;
-class DBContent;
 
 class PropertyList;
-
-class DBContentManager;
-
-namespace dbContent
-{
-    class Variable;
-    class Target;
-}
 
 class QWidget;
 class QProgressDialog;
@@ -80,13 +72,19 @@ extern const std::string PROP_LONGITUDE_MIN_NAME;
 extern const std::string PROP_LONGITUDE_MAX_NAME;
 
 /**
+ * Generic database access (tables, buffers, properties, default tables).
+ * The DB content specific access is built on top of it by DBContentDB.
  */
 class DBInterface : public QObject, public Configurable
 {
     Q_OBJECT
 
 public:
-    DBInterface(nlohmann::json& config, COMPASS& compass);
+    DBInterface(nlohmann::json& config,
+                Configurable& parent,
+                AppState& app_state,
+                LogStore& log_store,
+                const std::string& app_version);
     virtual ~DBInterface();
 
     bool logVerbose() const;
@@ -114,26 +112,24 @@ public:
     SectorInsideCache& sectorInsideCache();
     std::shared_ptr<SectorInsideCache> sectorInsideCachePtr() const { return sector_inside_cache_; }
 
-    // insert data and create associated data sources
-    void insertDBContent(DBContent& dbcontent, std::shared_ptr<Buffer> buffer);
-    void insertDBContent(const std::map<std::string, std::shared_ptr<Buffer>>& buffers);
     void insertBuffer(const std::string& table_name, std::shared_ptr<Buffer> buffer);
-    
+    void insertBuffers(const std::map<std::string, std::shared_ptr<Buffer>>& buffers); // table name -> buffer
+
     void updateBuffer(const std::string& table_name, const std::string& key_col, std::shared_ptr<Buffer> buffer,
                       const boost::optional<size_t>& idx_from = boost::none,
                       const boost::optional<size_t>& idx_to = boost::none);  // no indexes means full buffer
 
-    void prepareRead(const DBContent& dbcontent, dbContent::VariableSet read_list,
-                     std::string custom_filter_clause,
-                     bool use_order = false, dbContent::Variable* order_variable = nullptr);
+    // chunked read of one select statement
+    void prepareRead(const std::string& table_name,
+                     const PropertyList& properties,
+                     const std::string& filter,
+                     bool use_order = false,
+                     const std::string& order_column = "",
+                     const std::string& join_clause = "");
+    std::pair<std::shared_ptr<Buffer>, bool> readDataChunk(); // last one flag
+    void finalizeReadStatement();
 
-    std::pair<std::shared_ptr<Buffer>, bool> readDataChunk(const DBContent& dbcontent); // last one flag
-    void finalizeReadStatement(const DBContent& dbcontent);
-
-    void deleteBefore(const DBContent& dbcontent, boost::posix_time::ptime before_timestamp);
-    void deleteAll(const DBContent& dbcontent);
-    void deleteContent(const DBContent& dbcontent, unsigned int sac, unsigned int sic);
-    void deleteContent(const DBContent& dbcontent, unsigned int sac, unsigned int sic, unsigned int line_id);
+    void liveCleanupIfDue(); // cleanup after live deletions, at most every live_cleanup_time_min
 
     size_t count(const std::string& table);
 
@@ -150,7 +146,6 @@ public:
     void saveProperties();
 
     bool existsTable(const std::string& table_name) const;
-    void createTable(const DBContent& object);
     void removeTable(const std::string& table_name);
 
     bool areColumnsNull (const std::string& table_name, const std::vector<std::string> columns);
@@ -169,14 +164,6 @@ public:
     void saveSector(std::shared_ptr<Sector> sector); // write to db and add
     void deleteSector(std::shared_ptr<Sector> sector);
     void deleteAllSectors();
-
-    bool existsTargetsTable();
-    void createTargetsTable();
-    void clearTargetsTable();
-    std::vector<std::unique_ptr<dbContent::Target>> loadTargets();
-
-    void saveTargets(const std::map<unsigned int, nlohmann::json>& targets_info);
-    void updateTargets(const std::map<unsigned int, nlohmann::json>& targets_info);
 
     bool existsTaskLogTable();
     void createTaskLogTable();
@@ -199,13 +186,16 @@ public:
     bool hasDBInfo(const std::string& name);
     void removeDBInfo(const std::string& name);
 
-    void clearAssociations(const DBContent& dbcontent);
-
     // generic table operations, e.g. for the task result tables (see TaskResultDB)
     void createTable(const std::string& table_name,
                      const PropertyList& properties,
                      int primary_key = -1);
+    void createTable(const std::string& table_name,
+                     const std::vector<DBTableColumnInfo>& column_infos,
+                     const std::vector<db::Index>& indices);
     Result deleteRows(const std::string& table_name, const std::string& filter);
+    void setColumnNull(const std::string& table_name, const std::string& col_name);
+    void replaceRow(const std::string& table_name, const std::vector<std::string>& values); // insert or replace by key
     Result updateCell(const std::string& table_name,
                       const std::string& col_name,
                       const nlohmann::json& col_value,
@@ -229,10 +219,10 @@ public:
                                             const PropertyList& properties,
                                             const std::string& filter);
 
-    unsigned long getMaxRecordNumber(DBContent& object);
-    boost::optional<unsigned int> getMaxRefTrackTrackNum(); // none if no RefTraj data
     boost::optional<unsigned long> getMaxUIntValue(const std::string& table_name,
-                                                   const std::string& col_name);
+                                                   const std::string& col_name);  // none if empty or null
+    boost::optional<unsigned long> getMaxULongValue(const std::string& table_name,
+                                                    const std::string& col_name); // none if empty or null
 
     void startPerformanceMetrics() const;
     db::PerformanceMetrics stopPerformanceMetrics() const;
@@ -255,16 +245,14 @@ public:
     unsigned int numThreads() const { return num_threads_; }
     bool preserveInsertOrder() const { return preserve_insert_order_; }
 
-    COMPASS& compass() { return compass_; }
-    DBContentManager& dbContentManager() { return dbcontent_man_; }
-
 protected:
     void insertBufferInternal(const std::string& table_name, std::shared_ptr<Buffer> buffer);
     void saveTaskLogInfoInternal(unsigned int msg_id, const nlohmann::json& info);
     void waitForPendingTaskLogWrites();
 
-    COMPASS& compass_;
-    DBContentManager& dbcontent_man_;
+    AppState&   app_state_;
+    LogStore&   log_store_;
+    std::string app_version_; // checked against the APP_VERSION property of a database
 
     bool log_verbose_ {false};
 
@@ -284,9 +272,6 @@ protected:
     void reset();
 
     void recreateConcurrentConnections();
-
-    void initDBContentBuffer(DBContent& dbcontent, 
-                             std::shared_ptr<Buffer> buffer);
 
     SQLGenerator sqlGenerator() const;
     
