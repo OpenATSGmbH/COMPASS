@@ -17,7 +17,6 @@
 
 #include "simpleassociator.h"
 #include "simplereconstructor.h"
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "measurement.h"

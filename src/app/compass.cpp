@@ -31,6 +31,7 @@
 #include "rtcommand_runner.h"
 #include "rtcommand_manager.h"
 #include "rtcommand.h"
+#include "rtcommand_registry.h"
 #include "timeconv.h"
 #include "db_context_manager.h"
 #include "async.h"
@@ -76,7 +77,10 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
 
     simple_config_.reset(new SimpleConfig("config.json"));
 
-    registerParameter("last_db_filename", &last_db_filename_, std::string());
+    if (simple_config_->existsId("version"))
+        app_state_.appVersion(simple_config_->getString("version"));
+
+    registerParameter("last_db_filename", &app_state_.settings().last_db_filename, std::string());
     registerParameter("db_file_list", &db_file_list_, json::array());
 
     vector<string> cleaned_file_list;
@@ -176,9 +180,9 @@ void COMPASS::createManagers()
 
     qRegisterMetaType<AppMode>("AppMode");
 
-    rtcommand::RTCommandHelp::init();
+    rtcommand::init_basic_commands(rtcommand::RTCommandRegistry::instance());
 
-    appMode(app_state_.appMode());
+    app_state_.appMode(app_state_.appMode());
 }
 
 /**
@@ -186,13 +190,6 @@ void COMPASS::createManagers()
 void COMPASS::setMainWindow(IMainWindow* main_window)
 {
     main_window_ = main_window;
-}
-
-/**
- */
-void COMPASS::setLiveImportBacklogSizeFunc(const std::function<unsigned int()>& func)
-{
-    live_import_backlog_size_func_ = func;
 }
 
 /**
@@ -219,15 +216,9 @@ COMPASS::~COMPASS()
     traced_assert(!managers_.dbcontent_manager);
     traced_assert(!managers_.context_manager);
     traced_assert(!managers_.license_manager);
-    traced_assert(!managers_.job_manager);
-    traced_assert(!managers_.unit_manager);
     traced_assert(!managers_.projection_manager);
     traced_assert(!managers_.rt_cmd_manager);
-    traced_assert(!managers_.rt_cmd_runner);
     traced_assert(!managers_.view_provider);
-    traced_assert(!managers_.filter_provider);
-    traced_assert(!managers_.eval_provider);
-    traced_assert(!managers_.task_provider);
 
     logdbg << "end";
 }
@@ -301,7 +292,7 @@ bool COMPASS::openDBFile(const std::string& filename)
 
     auto result = openDBFileInternal(filename);
 
-    lastUsedPath(Files::getDirectoryFromPath(filename));
+    app_state_.lastUsedPath(Files::getDirectoryFromPath(filename));
 
     QApplication::restoreOverrideCursor();
 
@@ -320,7 +311,7 @@ Result COMPASS::openDBFileInternal(const std::string& filename)
     if (dbOpened())
         return Result::failed("Database already open");
 
-    last_db_filename_ = filename;
+    app_state_.settings().last_db_filename = filename;
     app_state_.dbInMem(false);
 
     Result res = Result::succeeded();
@@ -355,7 +346,7 @@ bool COMPASS::createNewDBFile(const std::string& filename)
 
     auto result = createNewDBFileInternal(filename);
 
-    lastUsedPath(Files::getDirectoryFromPath(filename));
+    app_state_.lastUsedPath(Files::getDirectoryFromPath(filename));
 
     if (!result.ok())
     {
@@ -375,13 +366,13 @@ Result COMPASS::createNewDBFileInternal(const std::string& filename)
 
     if (dbOpened())
     {
-        logError("COMPASS") << "Database '" << filename
+        log_store_.logError("COMPASS") << "Database '" << filename
                             << "' creation failed: Database already open";
 
         return Result::failed("Database already open");
     }
 
-    last_db_filename_ = filename;
+    app_state_.settings().last_db_filename = filename;
     app_state_.dbInMem(false);
 
     Result res = Result::succeeded();
@@ -430,7 +421,7 @@ Result COMPASS::createInMemDBFileInternal(const std::string& future_filename)
         return Result::failed("Database already open");
 
     inmem_future_filename_ = future_filename;
-    last_db_filename_ = DBInstance::InMemFilename;
+    app_state_.settings().last_db_filename = DBInstance::InMemFilename;
     app_state_.dbInMem(true);
 
     Result res = Result::succeeded();
@@ -485,7 +476,7 @@ bool COMPASS::createNewDBFileFromMemory()
     if (!result.ok())
         QMessageBox::critical(QApplication::activeWindow(), "Error", QString::fromStdString(result.error()));
     else
-        addDBFileToList(last_db_filename_);
+        addDBFileToList(app_state_.settings().last_db_filename);
     
     return result.ok();
 }
@@ -537,7 +528,7 @@ bool COMPASS::exportDBFile(const std::string& filename)
 
     auto result = exportDBFileInternal(filename);
 
-    lastUsedPath(Files::getDirectoryFromPath(filename));
+    app_state_.lastUsedPath(Files::getDirectoryFromPath(filename));
     
     msg_box->close();
     delete msg_box;
@@ -577,7 +568,7 @@ Result COMPASS::exportDBFileInternal(const std::string& filename)
 
 bool COMPASS::closeDB()
 {
-    loginf << "closing db file '" << last_db_filename_ << "'";
+    loginf << "closing db file '" << app_state_.settings().last_db_filename << "'";
 
     traced_assert(app_state_.dbOpened());
 
@@ -665,7 +656,7 @@ std::pair<rtcommand::FindObjectErrCode, Configurable*> COMPASS::findConfigurable
  */
 bool COMPASS::viewsBusy()
 {
-    if (isShutDown())
+    if (app_state_.isShutDown())
         return false;
 
     IViewProvider& view_man = viewProvider();
@@ -706,24 +697,6 @@ LicenseManager& COMPASS::licenseManager()
     return *managers_.license_manager;
 }
 
-rtcommand::RTCommandRunner& COMPASS::rtCmdRunner()
-{
-    traced_assert(managers_.rt_cmd_runner);
-    return *managers_.rt_cmd_runner;
-}
-
-JobManager& COMPASS::jobManager()
-{
-    traced_assert(managers_.job_manager);
-    return *managers_.job_manager;
-}
-
-UnitManager& COMPASS::unitManager()
-{
-    traced_assert(managers_.unit_manager);
-    return *managers_.unit_manager;
-}
-
 ProjectionManager& COMPASS::projectionManager()
 {
     traced_assert(managers_.projection_manager);
@@ -744,30 +717,6 @@ IViewProvider& COMPASS::viewProvider()
     return *managers_.view_provider;
 }
 
-/**
- */
-IFilterProvider& COMPASS::filterProvider()
-{
-    traced_assert(managers_.filter_provider);
-    return *managers_.filter_provider;
-}
-
-/**
- */
-IEvalProvider& COMPASS::evalProvider()
-{
-    traced_assert(managers_.eval_provider);
-    return *managers_.eval_provider;
-}
-
-/**
- */
-ITaskProvider& COMPASS::taskProvider()
-{
-    traced_assert(managers_.task_provider);
-    return *managers_.task_provider;
-}
-
 const DBInterface& COMPASS::dbInterface() const
 {
     traced_assert(managers_.db_interface);
@@ -786,28 +735,10 @@ const SimpleConfig& COMPASS::config() const
     return *simple_config_;
 }
 
-const rtcommand::RTCommandRunner& COMPASS::rtCmdRunner() const
-{
-    traced_assert(managers_.rt_cmd_runner);
-    return *managers_.rt_cmd_runner;
-}
-
 const LicenseManager& COMPASS::licenseManager() const
 {
     traced_assert(managers_.license_manager);
     return *managers_.license_manager;
-}
-
-const JobManager& COMPASS::jobManager() const
-{
-    traced_assert(managers_.job_manager);
-    return *managers_.job_manager;
-}
-
-const UnitManager& COMPASS::unitManager() const
-{
-    traced_assert(managers_.unit_manager);
-    return *managers_.unit_manager;
 }
 
 const ProjectionManager& COMPASS::projectionManager() const
@@ -866,37 +797,6 @@ IMainWindow& COMPASS::mainWindow()
     return *main_window_;
 }
 
-LogStream COMPASS::logInfo(const std::string& component,
-                           boost::optional<unsigned int> error_code, nlohmann::json json_blob) 
-{
-    return log_store_.logInfo(component, error_code, json_blob);
-}
-
-LogStream COMPASS::logWarn(const std::string& component,
-                           boost::optional<unsigned int> error_code, nlohmann::json json_blob) 
-{
-    return log_store_.logWarn(component, error_code, json_blob);
-}
-
-LogStream COMPASS::logError(const std::string& component,
-                            boost::optional<unsigned int> error_code, nlohmann::json json_blob) 
-{
-    return log_store_.logError(component, error_code, json_blob);
-}
-
-/**
- */
-unsigned int COMPASS::liveImportBacklogSize() const
-{
-    traced_assert(live_import_backlog_size_func_);
-    return live_import_backlog_size_func_();
-}
-
-std::string COMPASS::lastDbFilename() const
-{
-    return last_db_filename_;
-}
-
 std::vector<std::string> COMPASS::dbFileList() const
 {
     return db_file_list_.get<std::vector<string>>();
@@ -921,43 +821,6 @@ void COMPASS::addDBFileToList(const std::string filename)
 
         db_file_list_ = tmp_list;
     }
-}
-
-std::string COMPASS::versionString(bool open_ats, 
-                                   bool license_type) const
-{
-    traced_assert(simple_config_->existsId("version"));
-    std::string version = simple_config_->getString("version");
-
-    std::string version_str;
-    if (open_ats) 
-        version_str += "OpenATS ";
-
-    version_str += "COMPASS v" + version;
-
-    if (license_type)
-    {
-        const auto& license_manager = *managers_.license_manager;
-        auto vl = license_manager.activeLicense();
-
-        if (vl)
-            version_str += " " + license::License::typeToString(vl->type);
-        else
-            version_str += " " + license::License::typeToString(license::License::Type::Free);
-    }
-
-    return version_str;
-}
-
-std::string COMPASS::licenseeString(bool licensed_to) const
-{
-    const auto& license_manager = *managers_.license_manager;
-    auto vl = license_manager.activeLicense();
-
-    if (!vl)
-        return "";
-
-    return (licensed_to ? "Licensed to " : "") + vl->licensee;
 }
 
 

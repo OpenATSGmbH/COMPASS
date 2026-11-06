@@ -30,7 +30,6 @@
 #include "timeconv.h"
 #include "number.h"
 #include "viewpoint.h"
-#include "compass.h"
 
 #include "traced_assert.h"
 #include <algorithm>

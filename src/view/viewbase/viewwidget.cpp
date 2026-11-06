@@ -25,7 +25,6 @@
 #include "viewpresetwidget.h"
 #include "viewinfowidget.h"
 #include "files.h"
-#include "compass.h"
 #include "ui_test_common.h"
 #include "dbcontentmanager.h"
 #include "dbcontent.h"

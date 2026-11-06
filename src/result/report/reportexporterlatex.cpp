@@ -17,7 +17,6 @@
 
 #include "report/reportexporterlatex.h"
 #include "report/reportexport.h"
-#include "compass.h"
 
 #include "report/section.h"
 #include "report/sectioncontent.h"
@@ -32,7 +31,8 @@
 #include "latextable.h"
 #include "latexrun.h"
 
-#include "compass.h"
+#include "appstate.h"
+#include "licensemanager.h"
 #include "files.h"
 #include "stringconv.h"
 #include "system.h"
@@ -71,12 +71,12 @@ ReportExporterLatex::~ReportExporterLatex()
  */
 Result ReportExporterLatex::initExport_impl(TaskResult& result)
 {
-    if (write_pdf_ && !compass().pdflatexFound())
+    if (write_pdf_ && !appState().pdflatexFound())
         return Result::failed("Cannot generate PDF: pdflatex not installed");
 
     std::string report_fn = boost::filesystem::path(exportFilename()).stem().string() + ".tex";
 
-    latex_doc_.reset(new LatexDocument(exportResourceDir(), report_fn, compass().licenseeString(true)));
+    latex_doc_.reset(new LatexDocument(exportResourceDir(), report_fn, licenseManager().licenseeString(true)));
 
     latex_doc_->title(result.name() + " Report");
 

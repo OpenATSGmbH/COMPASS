@@ -22,7 +22,6 @@
 #include "json_tools.h"
 //#include "stringconv.h"
 #include "files.h"
-#include "compass.h"
 #include "dbinterface.h"
 #include "viewpointswidget.h"
 #include "logger.h"
@@ -61,9 +60,9 @@ void ViewPointsTableModel::loadViewPoints()
     beginResetModel();
 
     // load view points
-    if (view_manager_.compass().dbInterface().existsViewPointsTable())
+    if (view_manager_.dbInterface().existsViewPointsTable())
     {
-        for (const auto& vp_it : view_manager_.compass().dbInterface().viewPoints())
+        for (const auto& vp_it : view_manager_.dbInterface().viewPoints())
         {
             //assert (!view_points_.count(vp_it.first));
             traced_assert(!hasViewPoint(vp_it.first));
@@ -487,7 +486,7 @@ void ViewPointsTableModel::deleteAllViewPoints ()
     beginRemoveRows(QModelIndex(), 0, view_points_.size()-1); // TODO
 
     view_points_.clear();
-    view_manager_.compass().dbInterface().deleteAllViewPoints();
+    view_manager_.dbInterface().deleteAllViewPoints();
 
     endRemoveRows();
 }

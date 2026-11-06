@@ -18,7 +18,6 @@
 #include "loadcontroller.h"
 #include "dialogs.h"
 #include "viewmanager.h"
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
 #include "dbcontent/dbcontentdataset.h"
@@ -34,10 +33,9 @@
 
 /**
  */
-LoadController::LoadController(COMPASS& compass,
-                               ViewManager& view_manager,
+LoadController::LoadController(ViewManager& view_manager,
                                QObject* parent)
-    : QObject(parent), compass_(compass), view_manager_(view_manager)
+    : QObject(parent), view_manager_(view_manager)
 {
 }
 
@@ -60,7 +58,7 @@ void LoadController::begin(const LoadOperation& op)
 
     value_      = 0.0;
     load_total_ = static_cast<unsigned int>(
-        compass_.dbContentManager().dataEngine().resolveTargetSet(op.spec()).size());
+        view_manager_.dbContentManager().dataEngine().resolveTargetSet(op.spec()).size());
     view_total_ = 0;
 
     // advance the load phase directly off the op (un-guarded, once per content) - not via
@@ -368,5 +366,5 @@ void LoadController::deleteStaleDialogs()
  */
 void LoadController::canceledSlot()
 {
-    compass_.dbContentManager().dataEngine().cancelLoad();
+    view_manager_.dbContentManager().dataEngine().cancelLoad();
 }

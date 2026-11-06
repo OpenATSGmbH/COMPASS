@@ -18,7 +18,6 @@
 #include "requirement/position/radarazimuth.h"
 #include "results/position/radarazimuth.h"
 #include "standard/evaluationstandard.h"
-#include "compass.h"
 #include "evaluationmanager.h"
 #include "logger.h"
 #include "number.h"
@@ -108,7 +107,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
 
     // prepare coordinate systems
 
-    ProjectionManager& proj_man = calculator_.manager().compass().projectionManager();
+    ProjectionManager& proj_man = calculator_.manager().projectionManager();
 
     Projection& projection = proj_man.currentProjection();
     traced_assert(projection.coordinateSystemsAdded());

@@ -16,9 +16,9 @@
  */
 
 #include "jsonobjectparser.h"
+#include "taskmanager.h"
 #include "jsonparsingschema.h"
 
-#include "compass.h"
 #include "buffer.h"
 #include "configuration.h"
 #include "dbcontent/dbcontent.h"
@@ -34,8 +34,8 @@ using namespace std;
 using namespace nlohmann;
 using namespace Utils;
 
-JSONObjectParser::JSONObjectParser(nlohmann::json& config, JSONParsingSchema* parent, COMPASS& compass)
-    : Configurable(config, parent), compass_(compass)
+JSONObjectParser::JSONObjectParser(nlohmann::json& config, JSONParsingSchema* parent, TaskManager& task_man)
+    : Configurable(config, parent), task_man_(task_man)
 {
     registerParameter("name", &name_, std::string());
     registerParameter("active", &active_, true);
@@ -68,7 +68,7 @@ void JSONObjectParser::generateSubConfigurable(nlohmann::json& child_json)
 
     if (class_name == "JSONDataMapping")
     {
-        auto* mapping = new JSONDataMapping(child_json, this, compass_);
+        auto* mapping = new JSONDataMapping(child_json, this, task_man_);
         data_mappings_.emplace_back(mapping);
     }
     else
@@ -113,7 +113,7 @@ void JSONObjectParser::initialize()
 {
     traced_assert(!dbcontent_);
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = task_man_.dbContentManager();
 
     if (!dbcont_man.existsDBContent(db_content_name_))
         logwrn << "dbcontbject '" << db_content_name_

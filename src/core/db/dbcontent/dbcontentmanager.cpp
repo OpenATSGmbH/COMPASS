@@ -45,6 +45,7 @@
 #include "loadoperation.h"
 #include "livedatafeed.h"
 #include "dbcontent_commands.h"
+#include "rtcommand_registry.h"
 #include "viewpointkeys.h"
 #include "dbcontentinsertdbjob.h"
 #include "timeconv.h"
@@ -95,7 +96,7 @@ DBContentManager::DBContentManager(nlohmann::json& config,
     // for signal about new data
     qRegisterMetaType<std::map<std::string, std::shared_ptr<Buffer>>>("std::map<std::string, std::shared_ptr<Buffer>>");
 
-    dbContent::init_dbcontent_commands(*this);
+    dbContent::init_dbcontent_commands(rtcommand::RTCommandRegistry::instance(), *this);
 
     traced_assert(!target_model_);
     target_model_.reset(new dbContent::TargetModel(*this));
@@ -152,6 +153,21 @@ void DBContentManager::setManagers(DBInterface& db_interface,
     eval_provider_      = &eval_provider;
 
     content_db_.reset(new DBContentDB(db_interface, *this));
+}
+
+/**
+ */
+bool DBContentManager::checkWired() const
+{
+    return db_interface_       &&
+           ctx_man_            &&
+           job_manager_        &&
+           unit_manager_       &&
+           projection_manager_ &&
+           view_provider_      &&
+           filter_provider_    &&
+           eval_provider_      &&
+           content_db_;
 }
 
 /**

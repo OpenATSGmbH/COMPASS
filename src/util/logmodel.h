@@ -87,11 +87,11 @@ public:
     virtual ~LogStore() = default;
 
     LogStream logInfo(const std::string& component,
-                      boost::optional<unsigned int> error_code, nlohmann::json json_blob);
+                      boost::optional<unsigned int> error_code = {}, nlohmann::json json_blob = {});
     LogStream logWarn(const std::string& component,
-                      boost::optional<unsigned int> error_code, nlohmann::json json_blob);
+                      boost::optional<unsigned int> error_code = {}, nlohmann::json json_blob = {});
     LogStream logError(const std::string& component,
-                       boost::optional<unsigned int> error_code, nlohmann::json json_blob);
+                       boost::optional<unsigned int> error_code = {}, nlohmann::json json_blob = {});
 
     void addLogMessage(const std::string& message, LogStreamType type, const std::string& component,
                        boost::optional<unsigned int> error_code, nlohmann::json json_blob);

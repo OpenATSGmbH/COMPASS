@@ -23,7 +23,7 @@
 #include <memory>
 
 class ViewManager;
-extern void init_view_point_commands(ViewManager& view_manager);
+extern void init_view_point_commands(rtcommand::RTCommandRegistry& registry, ViewManager& view_manager);
 
 // set_view_point "{\"id\": 1,\"name\": \"All\",\"status\": \"open\",\"type\": \"Saved\"}"
 // set_view_point "{\"id\": 2,\"name\": \"None\",\"status\": \"open\",\"type\": \"Saved\", \"data_source_types\": [], \"annotations\" : [{\"name\":\"fred1\"},{\"name\":\"fred2\"}]}"
@@ -36,11 +36,14 @@ public:
     /// same instance for checkResult_impl() to read.
     std::shared_ptr<ViewableDataConfig> viewable_data_cfg_;
 
-    RTCommandSetViewPoint();
+    explicit RTCommandSetViewPoint(ViewManager& view_manager);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    ViewManager& view_manager_;
 
     DECLARE_RTCOMMAND(set_view_point, "sets defined view point")
     DECLARE_RTCOMMAND_OPTIONS

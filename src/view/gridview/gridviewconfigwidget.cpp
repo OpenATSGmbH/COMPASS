@@ -16,6 +16,7 @@
  */
 
 #include "gridviewconfigwidget.h"
+#include "appstate.h"
 #include "gridviewwidget.h"
 #include "gridviewdatawidget.h"
 #include "gridview.h"
@@ -29,7 +30,6 @@
 
 #include "global.h"
 
-#include "compass.h"
 #include "viewmanager.h"
 #include "viewpointgenerator.h"
 #include "geotiff.h"
@@ -206,7 +206,7 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
     // the compass icon. The label tracks the current color mode so the
     // default expansion depth (which follows the color mode) is discoverable.
     {
-        config_layout->addWidget(new ColorModeLabel(view_->compass(), this));
+        config_layout->addWidget(new ColorModeLabel(view_->viewManager().appState(), this));
 
         layer_panel_ = createLayerPanel({ ViewLayerPanelWidget::nullCountColumn() }, view_->canShowAnnotations());
 
@@ -334,7 +334,7 @@ void GridViewConfigWidget::updateExport()
 
         traced_assert(var_sel_x && var_sel_y);
 
-        auto& dbc_man = view_->compass().dbContentManager();
+        auto& dbc_man = view_->viewManager().dbContentManager();
 
         const auto& metavar_lon = dbc_man.metaVariable(dbcontent_vars::meta_var_longitude_.name());
         const auto& metavar_lat = dbc_man.metaVariable(dbcontent_vars::meta_var_latitude_.name());
@@ -675,7 +675,7 @@ void GridViewConfigWidget::exportToGeoTiff()
         return;
     }
 
-    std::string fn_default = view_->compass().lastUsedPath() + "/" + exportName() + ".tif";
+    std::string fn_default = view_->viewManager().appState().lastUsedPath() + "/" + exportName() + ".tif";
 
     auto fn = QFileDialog::getSaveFileName(this, "Export to GeoTIFF", QString::fromStdString(fn_default), "*.tif");
     if (fn.isEmpty())

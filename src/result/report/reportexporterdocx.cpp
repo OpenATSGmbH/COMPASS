@@ -17,7 +17,6 @@
 
 #include "report/reportexporterdocx.h"
 #include "report/reportexport.h"
-#include "compass.h"
 
 #include "report/section.h"
 #include "report/sectioncontent.h"
@@ -31,7 +30,7 @@
 #include "docximage.h"
 #include "docxtable.h"
 
-#include "compass.h"
+#include "licensemanager.h"
 #include "files.h"
 #include "stringconv.h"
 #include "logger.h"
@@ -79,7 +78,7 @@ Result ReportExporterDocx::initExport_impl(TaskResult& result)
         docx_doc_->abstract(s.abstract);
 
     // footer: licensee (left), page number (center), logo (right)
-    auto licensee = compass().licenseeString(true);
+    auto licensee = licenseManager().licenseeString(true);
     if (!licensee.empty())
         docx_doc_->footerLeft(licensee);
 

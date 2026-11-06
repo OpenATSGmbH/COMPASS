@@ -22,7 +22,6 @@
 #include "report/reportexporterdocx.h"
 
 #include "itaskprovider.h"
-#include "compass.h"
 #include "viewmanager.h"
 
 #include "system.h"
@@ -84,9 +83,16 @@ ReportExport::~ReportExport()
 {
 }
 
-COMPASS& ReportExport::compass() const
+AppState& ReportExport::appState() const
 {
-    return task_manager_.compass();
+    return task_manager_.appState();
+}
+
+/**
+ */
+LicenseManager& ReportExport::licenseManager() const
+{
+    return task_manager_.licenseManager();
 }
 
 /**

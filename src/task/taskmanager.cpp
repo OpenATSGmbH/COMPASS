@@ -18,7 +18,6 @@
 #include "taskmanager.h"
 #include "taskresultswidget.h"
 
-#include "compass.h"
 #include "dialogs.h"
 #include "createartasassociationstask.h"
 #include "jsonimporttask.h"
@@ -68,12 +67,21 @@ const bool TaskManager::CleanupDBIfNeeded = true;
 // TaskManager::TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass)
 //     : Configurable(class_name, instance_name, compass, "task.json") ...
 
-TaskManager::TaskManager(nlohmann::json& config, COMPASS& compass)
-    : Configurable(config, &compass), compass_(compass)
+TaskManager::TaskManager(nlohmann::json& config,
+                         Configurable& parent,
+                         AppState& app_state,
+                         LogStore& log_store,
+                         DBInterface& db_interface,
+                         DBContentManager& dbcont_man)
+    : Configurable(config, &parent),
+      app_state_(app_state),
+      log_store_(log_store),
+      db_interface_(db_interface),
+      dbcont_man_(dbcont_man)
 {
     setObjectName("TaskManager");
 
-    result_db_.reset(new TaskResultDB(compass_.dbInterface(), *this));
+    result_db_.reset(new TaskResultDB(db_interface_, *this));
 
     createSubConfigurables();
 }
@@ -86,15 +94,88 @@ TaskManager::~TaskManager()
 }
 
 /**
- * Sets the peer managers, called by the composition root right after all managers were created.
+ * Sets the peer managers, called by the composition root after all managers and the DB context manager were created.
  */
 void TaskManager::setManagers(ViewManager& view_manager,
                               EvaluationManager& eval_manager,
-                              FilterManager& filter_manager)
+                              FilterManager& filter_manager,
+                              context::DBContextManager& ctx_man,
+                              JobManager& job_manager,
+                              UnitManager& unit_manager,
+                              ProjectionManager& proj_man,
+                              LicenseManager& license_manager)
 {
-    view_manager_   = &view_manager;
-    eval_manager_   = &eval_manager;
-    filter_manager_ = &filter_manager;
+    view_manager_    = &view_manager;
+    eval_manager_    = &eval_manager;
+    filter_manager_  = &filter_manager;
+    ctx_man_         = &ctx_man;
+    job_manager_     = &job_manager;
+    unit_manager_    = &unit_manager;
+    proj_man_        = &proj_man;
+    license_manager_ = &license_manager;
+}
+
+/**
+ * Notice: the main window is set later and not checked.
+ */
+bool TaskManager::checkWired() const
+{
+    return view_manager_    &&
+           eval_manager_    &&
+           filter_manager_  &&
+           ctx_man_         &&
+           job_manager_     &&
+           unit_manager_    &&
+           proj_man_        &&
+           license_manager_;
+}
+
+/**
+ */
+LicenseManager& TaskManager::licenseManager()
+{
+    traced_assert(license_manager_);
+    return *license_manager_;
+}
+
+/**
+ */
+context::DBContextManager& TaskManager::dbContextManager()
+{
+    traced_assert(ctx_man_);
+    return *ctx_man_;
+}
+
+/**
+ */
+JobManager& TaskManager::jobManager()
+{
+    traced_assert(job_manager_);
+    return *job_manager_;
+}
+
+/**
+ */
+UnitManager& TaskManager::unitManager()
+{
+    traced_assert(unit_manager_);
+    return *unit_manager_;
+}
+
+/**
+ */
+ProjectionManager& TaskManager::projectionManager()
+{
+    traced_assert(proj_man_);
+    return *proj_man_;
+}
+
+/**
+ */
+IMainWindow& TaskManager::mainWindow()
+{
+    traced_assert(main_window_);
+    return *main_window_;
 }
 
 /**
@@ -165,7 +246,7 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
     else if (class_name == "RadarPlotPositionCalculatorTask")
     {
         traced_assert(!radar_plot_position_calculator_task_);
-        radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(child_json, this, compass_));
+        radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(child_json, this));
         traced_assert(radar_plot_position_calculator_task_);
         addTask(class_name, radar_plot_position_calculator_task_.get());
 
@@ -491,7 +572,7 @@ std::shared_ptr<TaskResult> TaskManager::createResult(unsigned int id,
     }
     else if (type == task::TaskResultType::Evaluation)
     {
-        result.reset(new EvaluationTaskResult(id, *this, compass_, evaluationManager()));
+        result.reset(new EvaluationTaskResult(id, *this, evaluationManager()));
     }
     else if (type == task::TaskResultType::DataSourceAnalysis)
     {
@@ -897,7 +978,7 @@ void TaskManager::loadResults()
         referenced_tables.insert(names.begin(), names.end());
     }
 
-    auto num_orphans = compass_.dbInterface().removeOrphanReportTables(referenced_tables);
+    auto num_orphans = db_interface_.removeOrphanReportTables(referenced_tables);
     if (num_orphans)
         loginf << "Dropped " << num_orphans << " orphan report table(s)";
 
@@ -943,7 +1024,7 @@ void TaskManager::updateReportContents()
         contents.push_back(std::move(content));
     }
 
-    compass_.dbContentManager().setReportContents(std::move(contents));
+    dbcont_man_.setReportContents(std::move(contents));
 }
 
 /**

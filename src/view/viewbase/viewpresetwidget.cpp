@@ -16,7 +16,6 @@
  */
 
 #include "viewpresetwidget.h"
-#include "compass.h"
 #include "viewmanager.h"
 #include "view.h"
 #include "files.h"

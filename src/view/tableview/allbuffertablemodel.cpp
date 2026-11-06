@@ -16,10 +16,10 @@
  */
 
 #include "allbuffertablemodel.h"
+#include "viewmanager.h"
 #include "allbuffertablewidget.h"
 #include "allbuffercsvexportjob.h"
 #include "buffer.h"
-#include "compass.h"
 #include "data_source.h"
 #include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
@@ -302,7 +302,7 @@ bool AllBufferTableModel::resolveVariable(unsigned int data_col,
     std::string variable_dbcontent_name, variable_name;
     std::tie(variable_dbcontent_name, variable_name) = data_source_.getSet()->variableDefinition(data_col);
 
-    DBContentManager& manager = view_.compass().dbContentManager();
+    DBContentManager& manager = view_.viewManager().dbContentManager();
 
     // Meta, Report or data content variable, null if the content has none of it
     dbContent::Variable* var = manager.resolveVariableFor(variable_dbcontent_name, variable_name, dbcontent_name);
@@ -380,7 +380,7 @@ QVariant AllBufferTableModel::dataColumnDisplayName(unsigned int data_col) const
     traced_assert(data_col < data_source_.getSet()->getSize());
 
     auto definition = data_source_.getSet()->variableDefinition(data_col); // content name, variable name
-    DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
 
     if (definition.first == META_OBJECT_NAME)
     {
@@ -402,7 +402,7 @@ QVariant AllBufferTableModel::dataColumnTooltip(unsigned int data_col) const
     traced_assert(data_col < data_source_.getSet()->getSize());
 
     auto definition = data_source_.getSet()->variableDefinition(data_col); // content name, variable name
-    DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
 
     if (definition.first == META_OBJECT_NAME)
     {
@@ -479,8 +479,8 @@ AllBufferTableModel::PrepareInput AllBufferTableModel::makePrepareInput(
     if (!for_load)
         input.allowed_layer_ids = allowed_layer_ids_;
 
-    DBContentManager& dbcont_man = view_.compass().dbContentManager();
-    auto& ctx_mgr = view_.compass().dbContextManager();
+    DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
+    auto& ctx_mgr = view_.viewManager().dbContextManager();
 
     for (const auto& buf_it : input.buffers)
     {
@@ -963,7 +963,7 @@ void AllBufferTableModel::saveAsCSV(const std::string& file_name)
     connect(export_job, &AllBufferCSVExportJob::doneSignal, this,
             &AllBufferTableModel::exportJobDoneSlot, Qt::QueuedConnection);
 
-    view_.compass().jobManager().addBlockingJob(export_job_);
+    view_.viewManager().jobManager().addBlockingJob(export_job_);
 }
 
 std::vector<std::pair<int,int>> AllBufferTableModel::getSelectedRows()

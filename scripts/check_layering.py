@@ -21,7 +21,12 @@ Core sub-layer check (both modes): inside compass_core, each file is mapped to a
 and may only include headers of its own or lower sub-layers. Known violations are listed as sub-layer pairs
 in layering_core_allowlist.txt, which may only shrink.
 
-Includes into experimental_src/ are not checked; they belong to the plugin plan and are only reported.
+COMPASS rule (both modes, workstream J): only the app level (src/app/, experimental_src/rtcommand/ and
+experimental_src/test/) may include compass.h. Known other uses are listed in layering_compass_allowlist.txt,
+which may only shrink.
+
+Apart from the COMPASS rule, includes into experimental_src/ are not checked; they belong to the plugin plan
+and are only reported.
 
 Usage:
     python3 scripts/check_layering.py                    text mode, check against the allowlist
@@ -36,6 +41,8 @@ Usage:
     python3 scripts/check_layering.py --core-details     list the files behind each core sub-layer violation
     python3 scripts/check_layering.py --write-core-allowlist
                                                          replace the core allowlist with the current pairs
+    python3 scripts/check_layering.py --write-compass-allowlist
+                                                         replace the COMPASS allowlist with the current uses
 """
 
 import argparse
@@ -116,11 +123,10 @@ CORE_LAYERS = [
     "projection",   # projections (coordinate systems of the data sources)
     "dbcontent",    # DB content, variables, targets, DB jobs
     "ui",           # data source and context widgets and dialogs
-    "root",         # COMPASS
 ]
 
 # directory below src/core -> sub-layer, first match wins; files directly in src/core are 'base',
-# except compass.h/.cpp ('root') and the provider interfaces ('dbcontent', they use DB content types)
+# except the provider interfaces ('dbcontent', they use DB content types)
 CORE_RULES = [
     ("db/interface/", "dbinterface"),
     ("db/dbcontent/", "dbcontent"),
@@ -144,8 +150,14 @@ CORE_RULES = [
     ("context/",      "context"),
     ("source/",       "ui"),
 ]
-CORE_ROOT_FILES = ("compass.h", "compass.cpp")
 CORE_LIST       = os.path.join(REPO_ROOT, "scripts", "layering_core_allowlist.txt")
+
+# COMPASS rule (workstream J): only the app level may include compass.h (it lives in src/app since J.6,
+# so a lower src/ library including it is an upward include too); experimental_src is checked too
+COMPASS_HEADER       = SOURCE_DIR + "/app/compass.h"
+COMPASS_ALLOWED_LIBS = ("app",)
+COMPASS_ALLOWED_DIRS = ("experimental_src/rtcommand/", "experimental_src/test/") # app level: extra commands, test lab
+COMPASS_LIST         = os.path.join(REPO_ROOT, "scripts", "layering_compass_allowlist.txt")
 
 # files not checked
 EXCLUDE_RULES = [
@@ -193,8 +205,6 @@ def core_layer_of(rel_path):
 
     sub = rel_path[len(prefix):]
     if "/" not in sub:
-        if sub in CORE_ROOT_FILES:
-            return "root"
         if fnmatch.fnmatch(sub, "i*provider.h"):
             return "dbcontent"
         return "base"
@@ -218,6 +228,21 @@ def core_violation(path, header):
         return ("core/" + from_layer, "core/" + to_layer)
 
     return None
+
+
+def compass_use(path, header, from_lib):
+    """(file, compass.h) if the file uses COMPASS against the COMPASS rule, else None.
+    from_lib is the library of the file, None for experimental_src files."""
+    if header != COMPASS_HEADER:
+        return None
+
+    if from_lib in COMPASS_ALLOWED_LIBS:
+        return None
+
+    if path.startswith(COMPASS_ALLOWED_DIRS):
+        return None
+
+    return (path, COMPASS_HEADER)
 
 
 def collect_sources(root, top_dir, extensions=SOURCE_EXT):
@@ -257,22 +282,42 @@ def resolve(include, including_file, header_index):
 
 
 def scan_text(root):
-    """Text mode. Return (edges, violations, experimental, core_violations) for the current tree.
+    """Text mode. Return (edges, violations, experimental, core_violations, compass_uses) for the current tree.
 
     edges:           (from_lib, to_lib) -> set of including files
     violations:      set of (including file, included header) pairs breaking the layering
     experimental:    set of (including file, included header) pairs resolving into experimental_src/
     core_violations: (from sub-layer, to sub-layer) -> set of (including file, included header)
                      pairs breaking the sub-layering of compass_core
+    compass_uses:    set of (including file, compass.h) pairs breaking the COMPASS rule (incl. experimental_src)
     """
-    sources          = collect_sources(root, SOURCE_DIR)
-    header_index     = index_headers(sources)
-    experiment_index = index_headers(collect_sources(root, EXPERIMENT_DIR))
+    sources            = collect_sources(root, SOURCE_DIR)
+    header_index       = index_headers(sources)
+    experiment_sources = collect_sources(root, EXPERIMENT_DIR)
+    experiment_index   = index_headers(experiment_sources)
 
     edges           = collections.defaultdict(set)
     violations      = set()
     experimental    = set()
     core_violations = collections.defaultdict(set)
+    compass_uses    = set()
+
+    # experimental_src: only the COMPASS rule
+    for path in experiment_sources:
+        if is_excluded(path):
+            continue
+
+        with open(os.path.join(root, path), errors="ignore") as fh:
+            for line in fh:
+                match = INCLUDE_RE.match(line)
+                if not match:
+                    continue
+
+                candidates = resolve(match.group(1), path, header_index)
+                if len(candidates) == 1:
+                    use = compass_use(path, candidates[0], None)
+                    if use:
+                        compass_uses.add(use)
 
     for path in sources:
         if is_excluded(path):
@@ -296,6 +341,11 @@ def scan_text(root):
                         experimental.add((path, include))
                     continue
 
+                if len(candidates) == 1:
+                    use = compass_use(path, candidates[0], from_lib)
+                    if use:
+                        compass_uses.add(use)
+
                 to_libs = {library_of(c) for c in candidates} - {None}
 
                 # ambiguous across libraries => cannot attribute, skip
@@ -314,7 +364,7 @@ def scan_text(root):
                 if is_upward(from_lib, to_lib):
                     violations.add((path, candidates[0]))
 
-    return edges, violations, experimental, core_violations
+    return edges, violations, experimental, core_violations, compass_uses
 
 
 def repo_relative(path, root):
@@ -390,13 +440,16 @@ def read_make_deps(build_dir):
 
 
 def scan_build(root, build_dir):
-    """Exact mode. Return (violations, edges, experimental, core_violations) from the build directory.
+    """Exact mode. Return (violations, edges, experimental, core_violations, compass_uses) from the build directory.
 
     violations:      set of (compiled file, included header) pairs breaking the layering
     edges:           (from_lib, to_lib) -> set of compiled files using headers of to_lib (also transitively)
     experimental:    from_lib -> set of compiled files using headers from experimental_src/
     core_violations: (from sub-layer, to sub-layer) -> set of (compiled file, included header) pairs
                      breaking the sub-layering of compass_core (also transitively)
+    compass_uses:    set of (compiled file, compass.h) pairs breaking the COMPASS rule (also transitively,
+                     incl. the experimental_src targets)
+    compiled:        set of compiled source files (an allowlist entry of a file not compiled is not stale)
     """
     if os.path.exists(os.path.join(build_dir, "build.ninja")):
         deps = read_ninja_deps(build_dir)
@@ -410,10 +463,29 @@ def scan_build(root, build_dir):
     edges           = collections.defaultdict(set)
     experimental    = collections.defaultdict(set)
     core_violations = collections.defaultdict(set)
+    compass_uses    = set()
+    compiled        = set()
 
     for obj, items in deps.items():
         match = OBJECT_RE.search(obj.replace("\\", "/"))
-        if not match or match.group(1) not in TARGET_LIBRARIES:
+        if not match:
+            continue
+
+        # experimental_src targets: only the COMPASS rule
+        if match.group(1) in EXPERIMENTAL_TARGETS:
+            source = repo_relative(items[0], root) if items else None
+            if source is None or is_excluded(source):
+                continue
+
+            compiled.add(source)
+
+            for item in items[1:]:
+                use = compass_use(source, repo_relative(item, root), None)
+                if use:
+                    compass_uses.add(use)
+            continue
+
+        if match.group(1) not in TARGET_LIBRARIES:
             continue
 
         from_lib = TARGET_LIBRARIES[match.group(1)]
@@ -423,6 +495,8 @@ def scan_build(root, build_dir):
         elif is_excluded(source):
             continue
 
+        compiled.add(source)
+
         for item in items[1:]:
             header = repo_relative(item, root)
             if header is None or is_excluded(header):
@@ -431,6 +505,10 @@ def scan_build(root, build_dir):
             if header.startswith(EXPERIMENT_DIR + "/"):
                 experimental[from_lib].add(source)
                 continue
+
+            use = compass_use(source, header, from_lib)
+            if use:
+                compass_uses.add(use)
 
             to_lib = library_of(header)
             if to_lib is None:
@@ -447,7 +525,7 @@ def scan_build(root, build_dir):
             if is_upward(from_lib, to_lib):
                 violations.add((source, header))
 
-    return violations, edges, experimental, core_violations
+    return violations, edges, experimental, core_violations, compass_uses, compiled
 
 
 def cmake_blocks(root):
@@ -532,6 +610,12 @@ CORE_ALLOWLIST_HEADER = (
     "# Known violations of the sub-layering inside compass_core (readme_dependencies.md, workstream I).\n"
     "# Generated by scripts/check_layering.py --write-core-allowlist. This list may only shrink.\n"
     "# Format: <from sub-layer> -> <to sub-layer>; covers text and exact mode (exact also sees transitive headers).\n\n")
+
+COMPASS_ALLOWLIST_HEADER = (
+    "# Known uses of COMPASS outside the app level (readme_dependencies.md, workstream J): files outside src/app/\n"
+    "# (incl. experimental_src/, except its app-level rtcommand/ and test/) that include compass.h.\n"
+    "# Generated by scripts/check_layering.py --write-compass-allowlist. This list may only shrink.\n"
+    "# Format: <including file> -> src/app/compass.h\n\n")
 
 
 def write_allowlist(path, violations, header=ALLOWLIST_HEADER):
@@ -658,19 +742,25 @@ def main():
                         help="replace the core allowlist with the current sub-layer violations")
     parser.add_argument("--core-details", action="store_true",
                         help="list the files behind each compass_core sub-layer violation")
+    parser.add_argument("--compass-allowlist", default=COMPASS_LIST,
+                        help="allowlist of files outside the app level that include compass.h")
+    parser.add_argument("--write-compass-allowlist", action="store_true",
+                        help="replace the COMPASS allowlist with the current uses")
     args = parser.parse_args()
 
     if args.graph_reduced and not args.graph:
         parser.error("--graph-reduced needs --graph FILE")
 
     if args.build_dir:
-        violations, edges, experimental_by_lib, core_violations = scan_build(REPO_ROOT, os.path.abspath(args.build_dir))
+        violations, edges, experimental_by_lib, core_violations, compass_uses, compiled = scan_build(
+            REPO_ROOT, os.path.abspath(args.build_dir))
         from_lib_of  = lambda path: library_of(path) if path.startswith(SOURCE_DIR + "/") else "generated"
         experimental = None
         mode         = "exact ({})".format(args.build_dir)
         graph_title  = "COMPASS library dependencies, exact mode: compiled files using headers of the library (incl. transitive)"
     else:
-        edges, violations, experimental, core_violations = scan_text(REPO_ROOT)
+        edges, violations, experimental, core_violations, compass_uses = scan_text(REPO_ROOT)
+        compiled = None
         experimental_by_lib = collections.defaultdict(set)
         for path, _ in experimental:
             experimental_by_lib[library_of(path)].add(path)
@@ -691,7 +781,7 @@ def main():
     if args.matrix or args.experimental:
         text_edges, text_experimental = edges, experimental
         if experimental is None:
-            text_edges, _, text_experimental, _ = scan_text(REPO_ROOT)
+            text_edges, _, text_experimental, _, _ = scan_text(REPO_ROOT)
 
         if args.matrix:
             print_matrix(text_edges)
@@ -713,6 +803,11 @@ def main():
         print("wrote {} entries to {}".format(len(core_violations), os.path.relpath(args.core_allowlist, REPO_ROOT)))
         return 0
 
+    if args.write_compass_allowlist:
+        write_allowlist(args.compass_allowlist, compass_uses, COMPASS_ALLOWLIST_HEADER)
+        print("wrote {} entries to {}".format(len(compass_uses), os.path.relpath(args.compass_allowlist, REPO_ROOT)))
+        return 0
+
     allowed = read_allowlist(args.allowlist)
     new     = violations - allowed
     stale   = allowed - violations
@@ -722,6 +817,11 @@ def main():
     core_allowed = read_allowlist(args.core_allowlist)
     core_new     = core_pairs - core_allowed
     core_stale   = core_allowed - core_pairs # a hint only: text and exact mode see different pairs
+
+    compass_allowed = read_allowlist(args.compass_allowlist)
+    compass_new     = compass_uses - compass_allowed
+    compass_stale   = {entry for entry in compass_allowed - compass_uses # exact mode: only compiled files
+                       if compiled is None or entry[0] in compiled}
 
     if experimental is None:
         num_objects       = len(set().union(*experimental_by_lib.values())) if experimental_by_lib else 0
@@ -742,6 +842,11 @@ def main():
         if args.core_details:
             for entry in sorted(entries):
                 print("      " + format_entry(entry))
+
+    compass_by_dir = collections.Counter(library_of(src) or EXPERIMENT_DIR for src, _ in compass_uses)
+    print("COMPASS uses outside the app level: {} files ({} allowlisted){}".format(
+        len(compass_uses), len(compass_uses & compass_allowed),
+        ", " + ", ".join("{} {}".format(d, n) for d, n in sorted(compass_by_dir.items())) if compass_uses else ""))
 
     if new:
         print("\nnew include violations (not in the allowlist):")
@@ -768,7 +873,17 @@ def main():
         for entry in sorted(core_stale):
             print("  " + format_entry(entry))
 
-    return 1 if new or stale or cmake or core_new else 0
+    if compass_new:
+        print("\nnew COMPASS uses outside the app level (include compass.h only at app level):")
+        for entry in sorted(compass_new):
+            print("  " + format_entry(entry))
+
+    if compass_stale:
+        print("\nCOMPASS allowlist entries that no longer occur (remove them, e.g. with --write-compass-allowlist):")
+        for entry in sorted(compass_stale):
+            print("  " + format_entry(entry))
+
+    return 1 if new or stale or cmake or core_new or compass_new or compass_stale else 0
 
 
 if __name__ == "__main__":

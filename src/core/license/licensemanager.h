@@ -43,6 +43,10 @@ public:
     bool writeLicenses() const;
 
     const license::License* activeLicense() const;
+    std::string licenseeString(bool licensed_to = true) const; // licensee of the active license, empty if none
+    std::string versionString(const std::string& app_version,
+                              bool open_ats = true,
+                              bool license_type = true) const; // e.g. "OpenATS COMPASS v1.1.0 Free"
     const license::License* activeLicenseForComponent(license::License::Component c) const;
     bool componentEnabled(license::License::Component c) const;
     

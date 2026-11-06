@@ -33,7 +33,6 @@
 
 #include "buffer.h"
 
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"

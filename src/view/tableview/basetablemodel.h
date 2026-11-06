@@ -23,8 +23,13 @@
 #include <string>
 #include <vector>
 
-class COMPASS;
+class DBContentManager;
 class TableView;
+
+namespace context
+{
+    class DBContextManager;
+}
 class Buffer;
 class TableViewDataSource;
 class BaseBufferTableWidget;
@@ -68,7 +73,8 @@ class BaseBufferTableModel : public QAbstractTableModel
                                          dbContent::Variable& var,
                                          Buffer& buffer,
                                          unsigned int buffer_idx,
-                                         COMPASS& compass);
+                                         DBContentManager& dbcont_man,
+                                         context::DBContextManager& ctx_man);
 
   protected:
     struct RowData

@@ -58,102 +58,70 @@ using namespace std;
 using namespace Utils;
 
 //file
-REGISTER_RTCOMMAND(main_window::RTCommandOpenDB)
-REGISTER_RTCOMMAND(main_window::RTCommandOpenRecentDB)
-REGISTER_RTCOMMAND(main_window::RTCommandCreateDB)
-REGISTER_RTCOMMAND(main_window::RTCommandCloseDB)
-REGISTER_RTCOMMAND(main_window::RTCommandQuit)
 
 //import
-REGISTER_RTCOMMAND(main_window::RTCommandImportViewPointsFile)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXFile)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXFiles)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXPCAPFile)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXPCAPFiles)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkStart)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkStop)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkPause)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkResume)
-REGISTER_RTCOMMAND(main_window::RTCommandImportJSONFile)
-REGISTER_RTCOMMAND(main_window::RTCommandImportGPSTrail)
-
-REGISTER_RTCOMMAND(main_window::RTCommandImportDataSourcesFile)
-REGISTER_RTCOMMAND(main_window::RTCommandDeleteAllDataSources)
-REGISTER_RTCOMMAND(main_window::RTCommandImportSectorsJSON)
-REGISTER_RTCOMMAND(main_window::RTCommandCalculateRadarPlotPositions)
-REGISTER_RTCOMMAND(main_window::RTCommandCalculateARTASAssociations)
-REGISTER_RTCOMMAND(main_window::RTCommandReconstructReferences)
-REGISTER_RTCOMMAND(main_window::RTCommandAnalyzeDataSource)
-REGISTER_RTCOMMAND(main_window::RTCommandLoadData)
-REGISTER_RTCOMMAND(main_window::RTCommandExportViewPointsReport)
-REGISTER_RTCOMMAND(main_window::RTCommandExportReport)
-REGISTER_RTCOMMAND(main_window::RTCommandGetExistingReports)
-REGISTER_RTCOMMAND(main_window::RTCommandGetReport)
-
-REGISTER_RTCOMMAND(main_window::RTCommandGetEvents)
-REGISTER_RTCOMMAND(main_window::RTCommandReconfigure)
-REGISTER_RTCOMMAND(main_window::RTCommandClientInfo)
 
 namespace main_window
 {
 
-static CompassRoot* s_root = nullptr;
-
 /**
  */
-CompassRoot& root()
+void init_commands(rtcommand::RTCommandRegistry& registry,
+                   CompassRoot& root)
 {
-    traced_assert(s_root);
-    return *s_root;
-}
-
-void init_commands(CompassRoot& root)
-{
-    s_root = &root;
-
     // file
-    main_window::RTCommandOpenDB::init();
-    main_window::RTCommandOpenRecentDB::init();
-    main_window::RTCommandCreateDB::init();
-    main_window::RTCommandImportDataSourcesFile::init();
-    main_window::RTCommandDeleteAllDataSources::init();
-    main_window::RTCommandCloseDB::init();
-    main_window::RTCommandQuit::init();
+    registry.registerCommand<main_window::RTCommandOpenDB>(root);
+    registry.registerCommand<main_window::RTCommandOpenRecentDB>(root);
+    registry.registerCommand<main_window::RTCommandCreateDB>(root);
+    registry.registerCommand<main_window::RTCommandImportDataSourcesFile>(root);
+    registry.registerCommand<main_window::RTCommandDeleteAllDataSources>(root);
+    registry.registerCommand<main_window::RTCommandCloseDB>(root);
+    registry.registerCommand<main_window::RTCommandQuit>();
 
     // import
-    main_window::RTCommandImportViewPointsFile::init();
-    main_window::RTCommandImportASTERIXFile::init();
-    main_window::RTCommandImportASTERIXFiles::init();
-    main_window::RTCommandImportASTERIXPCAPFile::init();
-    main_window::RTCommandImportASTERIXPCAPFiles::init();
-    main_window::RTCommandImportASTERIXNetworkStart::init();
-    main_window::RTCommandImportASTERIXNetworkStop::init();
-    main_window::RTCommandImportASTERIXNetworkPause::init();
-    main_window::RTCommandImportASTERIXNetworkResume::init();
+    registry.registerCommand<main_window::RTCommandImportViewPointsFile>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXFile>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXFiles>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXPCAPFile>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXPCAPFiles>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXNetworkStart>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXNetworkStop>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXNetworkPause>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXNetworkResume>(root);
 
-    main_window::RTCommandImportJSONFile::init();
-    main_window::RTCommandImportGPSTrail::init();
-    main_window::RTCommandImportSectorsJSON::init();
-    main_window::RTCommandCalculateRadarPlotPositions::init();
-    main_window::RTCommandReconstructReferences::init();
-    main_window::RTCommandAnalyzeDataSource::init();
-    main_window::RTCommandLoadData::init();
-    main_window::RTCommandExportViewPointsReport::init();
-    main_window::RTCommandExportReport::init();
-    main_window::RTCommandGetExistingReports::init();
-    main_window::RTCommandGetReport::init();
+    registry.registerCommand<main_window::RTCommandImportJSONFile>(root);
+    registry.registerCommand<main_window::RTCommandImportGPSTrail>(root);
+    registry.registerCommand<main_window::RTCommandImportSectorsJSON>(root);
+    registry.registerCommand<main_window::RTCommandCalculateRadarPlotPositions>(root);
+    registry.registerCommand<main_window::RTCommandCalculateARTASAssociations>(root);
+    registry.registerCommand<main_window::RTCommandReconstructReferences>(root);
+    registry.registerCommand<main_window::RTCommandAnalyzeDataSource>(root);
+    registry.registerCommand<main_window::RTCommandLoadData>(root);
+    registry.registerCommand<main_window::RTCommandExportViewPointsReport>(root);
+    registry.registerCommand<main_window::RTCommandExportReport>(root);
+    registry.registerCommand<main_window::RTCommandGetExistingReports>(root);
+    registry.registerCommand<main_window::RTCommandGetReport>(root);
 
-    main_window::RTCommandGetEvents::init();
-    main_window::RTCommandReconfigure::init();
-    main_window::RTCommandClientInfo::init();
+    registry.registerCommand<main_window::RTCommandGetEvents>();
+    registry.registerCommand<main_window::RTCommandReconfigure>(root);
+    registry.registerCommand<main_window::RTCommandClientInfo>(root);
 
-    context_cmd::init_context_commands(root.compass().dbContextManager());
-    dbContent::init_data_source_commands(root.compass().dbContextManager(),
+    context_cmd::init_context_commands(registry, root.compass().dbContextManager());
+    dbContent::init_data_source_commands(registry,
+                                         root.compass().dbContextManager(),
                                          root.compass().dbContentManager(),
                                          root.sensorStatusTracker());
 }
 
 // import ds
+
+/**
+ */
+RTCommandImportDataSourcesFile::RTCommandImportDataSourcesFile(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
 
 rtcommand::IsValid  RTCommandImportDataSourcesFile::valid() const
 {
@@ -177,19 +145,19 @@ bool RTCommandImportDataSourcesFile::run_impl()
         return false;
     }
 
-//    if (!compass_->dbOpened())
+//    if (!root_.compass().dbOpened())
 //    {
 //        setResultMessage("Database not opened");
 //        return false;
 //    }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    compass_->dbContextManager().importSensors(filename_);
+    root_.compass().dbContextManager().importSensors(filename_);
 
     return true;
 }
@@ -210,29 +178,45 @@ void RTCommandImportDataSourcesFile::assignVariables_impl(const VariablesMap& va
 
 // delete_all_data_sources
 
+/**
+ */
+RTCommandDeleteAllDataSources::RTCommandDeleteAllDataSources(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 bool RTCommandDeleteAllDataSources::run_impl()
 {
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
     // the open database's data references its data sources
-    if (compass_->dbOpened() && compass_->dbContextManager().hasInsertedData())
+    if (root_.compass().dbOpened() && root_.compass().dbContextManager().hasInsertedData())
     {
         setResultMessage("Cannot delete data sources while a database with imported data is open");
         return false;
     }
 
     // clear all data sources from active context
-    if (compass_->dbContextManager().hasActiveContext())
-        compass_->dbContextManager().deleteAllDataSources();
+    if (root_.compass().dbContextManager().hasActiveContext())
+        root_.compass().dbContextManager().deleteAllDataSources();
 
     return true;
 }
 
 // import sectors json
+/**
+ */
+RTCommandImportSectorsJSON::RTCommandImportSectorsJSON(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 rtcommand::IsValid  RTCommandImportSectorsJSON::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(!filename_.size(), "Filename empty")
@@ -257,7 +241,7 @@ bool RTCommandImportSectorsJSON::run_impl()
 
     try
     {
-        compass_->dbContextManager().importSectors(filename_);
+        root_.compass().dbContextManager().importSectors(filename_);
     }
     catch(const std::exception& e)
     {
@@ -272,8 +256,8 @@ bool RTCommandImportSectorsJSON::run_impl()
 
     size_t num_sectors = 0;
 
-    traced_assert(compass_->dbContextManager().sectorsLoaded());
-    const auto& sector_layers = compass_->dbContextManager().sectorLayers();
+    traced_assert(root_.compass().dbContextManager().sectorsLoaded());
+    const auto& sector_layers = root_.compass().dbContextManager().sectorLayers();
 
     for (const auto& sl : sector_layers)
         num_sectors += sl->size();
@@ -303,27 +287,28 @@ void RTCommandImportSectorsJSON::assignVariables_impl(const VariablesMap& variab
 }
 
 // calc radar plot pos
-RTCommandCalculateRadarPlotPositions::RTCommandCalculateRadarPlotPositions()
+RTCommandCalculateRadarPlotPositions::RTCommandCalculateRadarPlotPositions(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.radarplotpositioncalculatortask.doneSignal", -1); // think about max duration
 }
 
 bool RTCommandCalculateRadarPlotPositions::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    RadarPlotPositionCalculatorTask& task = root().taskManager().radarPlotPositionCalculatorTask();
+    RadarPlotPositionCalculatorTask& task = root_.taskManager().radarPlotPositionCalculatorTask();
 
     if(!task.canRun())
     {
@@ -339,27 +324,28 @@ bool RTCommandCalculateRadarPlotPositions::run_impl()
 }
 
 // associate ARTAS target reports
-RTCommandCalculateARTASAssociations::RTCommandCalculateARTASAssociations()
+RTCommandCalculateARTASAssociations::RTCommandCalculateARTASAssociations(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.createartasassociationstask.doneSignal", -1); // think about max duration
 }
 
 bool RTCommandCalculateARTASAssociations::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    CreateARTASAssociationsTask& task = root().taskManager().createArtasAssociationsTask();
+    CreateARTASAssociationsTask& task = root_.taskManager().createArtasAssociationsTask();
 
     if(!task.canRun())
     {
@@ -376,7 +362,7 @@ bool RTCommandCalculateARTASAssociations::run_impl()
 
 bool RTCommandCalculateARTASAssociations::checkResult_impl()
 {
-    const auto& stats = root().taskManager().createArtasAssociationsTask().resultStats();
+    const auto& stats = root_.taskManager().createArtasAssociationsTask().resultStats();
 
     nlohmann::json reply;
 
@@ -400,27 +386,28 @@ bool RTCommandCalculateARTASAssociations::checkResult_impl()
 }
 
 // calc ref
-RTCommandReconstructReferences::RTCommandReconstructReferences()
+RTCommandReconstructReferences::RTCommandReconstructReferences(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.reconstructortask.doneSignal", -1); // think about max duration
 }
 
 bool RTCommandReconstructReferences::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ReconstructorTask& task = root().taskManager().reconstructReferencesTask();
+    ReconstructorTask& task = root_.taskManager().reconstructReferencesTask();
 
     if (!config_.empty())
     {
@@ -434,7 +421,7 @@ bool RTCommandReconstructReferences::run_impl()
 
     if (!disabled_sensors_.empty())
     {
-        auto& ctx_man = compass_->dbContextManager();
+        auto& ctx_man = root_.compass().dbContextManager();
 
         std::vector<std::string> sensors_to_disable = Utils::String::split(disabled_sensors_, ';');
         for (const auto& sensor_name : sensors_to_disable)
@@ -486,23 +473,24 @@ void RTCommandReconstructReferences::assignVariables_impl(const VariablesMap& va
 }
 
 // analyze data source
-RTCommandAnalyzeDataSource::RTCommandAnalyzeDataSource()
+RTCommandAnalyzeDataSource::RTCommandAnalyzeDataSource(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.analyzedatasourcetask.doneSignal", -1);
 }
 
 bool RTCommandAnalyzeDataSource::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline)
+    if (root_.compass().appState().appMode() != AppMode::Offline)
     {
-        setResultMessage("Wrong application mode " + compass_->appModeStr());
+        setResultMessage("Wrong application mode " + root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -512,7 +500,7 @@ bool RTCommandAnalyzeDataSource::run_impl()
         return false;
     }
 
-    AnalyzeDataSourceTask* task_ptr = root().taskManager().analyzeDataSourceTask(ds_type_);
+    AnalyzeDataSourceTask* task_ptr = root_.taskManager().analyzeDataSourceTask(ds_type_);
     if (!task_ptr)
     {
         setResultMessage("Unknown DSType '" + ds_type_ + "' (expected MLAT, ADSB or SMR)");
@@ -585,23 +573,24 @@ void RTCommandAnalyzeDataSource::assignVariables_impl(const VariablesMap& variab
 }
 
 // load data
-RTCommandLoadData::RTCommandLoadData()
+RTCommandLoadData::RTCommandLoadData(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("mainwindow.dataLoaded", -1); // think about max duration
 }
 
 bool RTCommandLoadData::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -615,6 +604,14 @@ bool RTCommandLoadData::run_impl()
 }
 
 // export vp report
+/**
+ */
+RTCommandExportViewPointsReport::RTCommandExportViewPointsReport(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 rtcommand::IsValid  RTCommandExportViewPointsReport::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(!filename_.size(), "Filename empty")
@@ -630,15 +627,15 @@ bool RTCommandExportViewPointsReport::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -647,7 +644,7 @@ bool RTCommandExportViewPointsReport::run_impl()
 
     //main_window->showViewPointsTab();
 
-    ViewPointsReportGenerator& gen = root().viewManager().viewPointsGenerator();
+    ViewPointsReportGenerator& gen = root_.viewManager().viewPointsGenerator();
 
     ViewPointsReportGeneratorDialog& dialog = gen.dialog();
     // batch export: pure progress display, do not steal os focus from other applications
@@ -679,6 +676,14 @@ void RTCommandExportViewPointsReport::assignVariables_impl(const VariablesMap& v
 }
 
 // export evaluation report
+/**
+ */
+RTCommandExportReport::RTCommandExportReport(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 rtcommand::IsValid  RTCommandExportReport::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(!result_name_.size(), "Report name empty")
@@ -695,19 +700,19 @@ bool RTCommandExportReport::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    auto& task_manager = root().taskManager();
+    auto& task_manager = root_.taskManager();
 
     if (!task_manager.hasResult(result_name_))
     {
@@ -758,8 +763,9 @@ void RTCommandExportReport::assignVariables_impl(const VariablesMap& variables)
 
 /**
 */
-RTCommandGetExistingReports::RTCommandGetExistingReports()
+RTCommandGetExistingReports::RTCommandGetExistingReports(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
 }
 
@@ -767,24 +773,24 @@ RTCommandGetExistingReports::RTCommandGetExistingReports()
 */
 bool RTCommandGetExistingReports::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    auto& task_manager = root().taskManager();
+    auto& task_manager = root_.taskManager();
 
     std::vector<std::string> results;
     nlohmann::json           details = nlohmann::json::array();
 
-    auto& dbcont_man = compass_->dbContentManager();
+    auto& dbcont_man = root_.compass().dbContentManager();
 
     for (const auto& r : task_manager.results())
     {
@@ -837,8 +843,9 @@ bool RTCommandGetExistingReports::run_impl()
 
 /**
 */
-RTCommandGetReport::RTCommandGetReport()
+RTCommandGetReport::RTCommandGetReport(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
 }
 
@@ -853,19 +860,19 @@ rtcommand::IsValid RTCommandGetReport::valid() const
 */
 bool RTCommandGetReport::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    auto& task_manager = root().taskManager();
+    auto& task_manager = root_.taskManager();
 
     if (!task_manager.hasResult(result_name))
     {
@@ -959,6 +966,14 @@ bool RTCommandGetEvents::run_impl()
 
 // reconfigure
 
+/**
+ */
+RTCommandReconfigure::RTCommandReconfigure(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 rtcommand::IsValid RTCommandReconfigure::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(path.empty(), "Path empty")
@@ -987,11 +1002,11 @@ void RTCommandReconfigure::assignVariables_impl(const VariablesMap& variables)
 bool RTCommandReconfigure::run_impl()
 {
     //try to find configurable by path
-    auto find_result = compass_->findSubConfigurablePath(path);
+    auto find_result = root_.compass().findSubConfigurablePath(path);
     if (find_result.first != rtcommand::FindObjectErrCode::NoError)
     {
         //not found by path => try to find configurable by name
-        find_result = compass_->findSubConfigurableName(path);
+        find_result = root_.compass().findSubConfigurableName(path);
 
         //not found
         if (find_result.first != rtcommand::FindObjectErrCode::NoError)
@@ -1080,13 +1095,21 @@ bool RTCommandReconfigure::run_impl()
 
 // client_info
 
+/**
+ */
+RTCommandClientInfo::RTCommandClientInfo(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 bool RTCommandClientInfo::run_impl()
 {
     nlohmann::json info;
 
-    info[ "appimage" ] = compass_->isAppImage();
-    info[ "version"  ] = compass_->config().getString("version");
-    info[ "appmode"  ] = compass_->appModeStr();
+    info[ "appimage" ] = AppState::isAppImage();
+    info[ "version"  ] = root_.compass().config().getString("version");
+    info[ "appmode"  ] = root_.compass().appState().appModeStr();
 
     setJSONReply(info);
 

@@ -17,6 +17,7 @@
 
 
 #include "taskresultswidget.h"
+#include "appstate.h"
 
 #include "report/sectionid.h"
 
@@ -27,7 +28,6 @@
 #include "taskmanager.h"
 #include "asynctask.h"
 #include "dialogs.h"
-#include "compass.h"
 #include "dbinterface.h"
 #include "reportdefs.h"
 #include "license/licensemanager.h"
@@ -118,8 +118,8 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     QMenu* export_menu = new QMenu(export_result_button_);
     export_menu->setToolTipsVisible(true);
 
-    bool pdflatex_found = task_man_.compass().pdflatexFound();
-    bool pro_license = task_man_.compass().licenseManager().componentEnabled(
+    bool pdflatex_found = task_man_.appState().pdflatexFound();
+    bool pro_license = task_man_.licenseManager().componentEnabled(
         license::License::Component::ComponentProbIMMReconstructor);
 
     auto action_export_docx  = export_menu->addAction(
@@ -309,7 +309,7 @@ QString TaskResultsWidget::reportTablesToolTip(const std::string& name) const
     size_t size_bytes = 0;
     for (const auto& t : tables)
     {
-        auto size = task_man_.compass().dbInterface().tableStorageSize(t.tableName(result->id()));
+        auto size = task_man_.dbInterface().tableStorageSize(t.tableName(result->id()));
         if (size.ok())
             size_bytes += size.result();
     }

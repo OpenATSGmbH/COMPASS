@@ -23,7 +23,7 @@
 #include "configurable.h"
 #include "jsonobjectparser.h"
 
-class COMPASS;
+class TaskManager;
 class JSONImportTask;
 
 class JSONParsingSchema : public Configurable
@@ -32,10 +32,10 @@ class JSONParsingSchema : public Configurable
 
   public:
     /// @brief Constructor backed by a json reference
-    JSONParsingSchema(nlohmann::json& config, JSONImportTask* parent, COMPASS& compass);
+    JSONParsingSchema(nlohmann::json& config, JSONImportTask* parent, TaskManager& task_man);
     JSONParsingSchema() = delete;
 
-    COMPASS& compass() { return compass_; }
+    TaskManager& taskManager() { return task_man_; }
 
     JSONObjectParserIterator begin() { return parsers_.begin(); }
     JSONObjectParserIterator end() { return parsers_.end(); }
@@ -53,7 +53,7 @@ class JSONParsingSchema : public Configurable
     void updateMappings();
 
   private:
-    COMPASS& compass_;
+    TaskManager& task_man_;
     std::string name_;
     std::map<std::string, std::unique_ptr<JSONObjectParser>> parsers_;
 

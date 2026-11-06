@@ -29,10 +29,6 @@
 
 #include <boost/program_options.hpp>
 
-REGISTER_RTCOMMAND(dbContent::RTCommandGetData)
-REGISTER_RTCOMMAND(dbContent::RTCommandGetUTNs)
-REGISTER_RTCOMMAND(dbContent::RTCommandGetTarget)
-REGISTER_RTCOMMAND(dbContent::RTCommandGetTargetStats)
 
 using namespace std;
 
@@ -43,20 +39,19 @@ namespace dbContent
  * RTCommandGetData
  ***************************************************************************************/
 
-static DBContentManager* s_dbcont_man = nullptr;
 
-void init_dbcontent_commands(DBContentManager& dbcont_man)
+void init_dbcontent_commands(rtcommand::RTCommandRegistry& registry,
+                             DBContentManager& dbcont_man)
 {
-    s_dbcont_man = &dbcont_man;
-
-    dbContent::RTCommandGetData::init();
-    dbContent::RTCommandGetUTNs::init();
-    dbContent::RTCommandGetTarget::init();
-    dbContent::RTCommandGetTargetStats::init();
+    registry.registerCommand<dbContent::RTCommandGetData>(dbcont_man);
+    registry.registerCommand<dbContent::RTCommandGetUTNs>(dbcont_man);
+    registry.registerCommand<dbContent::RTCommandGetTarget>(dbcont_man);
+    registry.registerCommand<dbContent::RTCommandGetTargetStats>(dbcont_man);
 }
 
-RTCommandGetData::RTCommandGetData()
+RTCommandGetData::RTCommandGetData(DBContentManager& dbcont_man)
     : rtcommand::RTCommand()
+    , dbcont_man_(dbcont_man)
 {
     // run_impl loads synchronously (op->wait()); no signal wait needed
 }
@@ -68,7 +63,7 @@ RTCommandGetData::RTCommandGetData()
  */
 dbContent::Variable* RTCommandGetData::resolveVariable(const std::string& name) const
 {
-    DBContentManager& dbcont_man = *s_dbcont_man;
+    DBContentManager& dbcont_man = dbcont_man_;
 
     if (!dbcont_man.existsDBContent(dbcontent_name_))
         return nullptr;
@@ -89,19 +84,19 @@ bool RTCommandGetData::run_impl()
 {
     loginf;
 
-    if (!s_dbcont_man->appState().dbOpened())
+    if (!dbcont_man_.appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (s_dbcont_man->appState().appMode() != AppMode::Offline) // to be sure
+    if (dbcont_man_.appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+s_dbcont_man->appState().appModeStr());
+        setResultMessage("Wrong application mode "+dbcont_man_.appState().appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = *s_dbcont_man;
+    DBContentManager& dbcontent_man = dbcont_man_;
 
     // RT commands bypass UI modality; refuse to start while a load runs so we
     // never nest inside the outer load's event pump
@@ -133,7 +128,7 @@ bool RTCommandGetData::run_impl()
     std::string custom_clause;
     if (utn_.has_value())
     {
-        dbContent::Variable& var = s_dbcont_man->metaVariable(
+        dbContent::Variable& var = dbcont_man_.metaVariable(
             dbcontent_vars::meta_var_utn_.name()).getFor(dbcontent_name_);
 
         custom_clause = var.dbColumnName() + " IN (" + std::to_string(utn_.value()) + ")";
@@ -197,7 +192,7 @@ dbContent::VariableSet RTCommandGetData::getReadSetFor() const
 {
     VariableSet read_set;
 
-    DBContentManager& dbcont_man = *s_dbcont_man;
+    DBContentManager& dbcont_man = dbcont_man_;
 
     // ds id
     traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name_, dbcontent_vars::meta_var_ds_id_));
@@ -257,27 +252,28 @@ void RTCommandGetData::assignVariables_impl(const VariablesMap &vars)
  * RTCommandGetUTNs
  ***************************************************************************************/
 
-RTCommandGetUTNs::RTCommandGetUTNs()
+RTCommandGetUTNs::RTCommandGetUTNs(DBContentManager& dbcont_man)
     : rtcommand::RTCommand()
+    , dbcont_man_(dbcont_man)
 {
     condition.setDelay(10);
 }
 
 bool RTCommandGetUTNs::run_impl()
 {
-    if (!s_dbcont_man->appState().dbOpened())
+    if (!dbcont_man_.appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (s_dbcont_man->appState().appMode() != AppMode::Offline) // to be sure
+    if (dbcont_man_.appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+s_dbcont_man->appState().appModeStr());
+        setResultMessage("Wrong application mode "+dbcont_man_.appState().appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = *s_dbcont_man;
+    DBContentManager& dbcontent_man = dbcont_man_;
 
     if (!dbcontent_man.hasAssociations() || !dbcontent_man.hasTargetsInfo())
     {
@@ -290,7 +286,7 @@ bool RTCommandGetUTNs::run_impl()
 
 bool RTCommandGetUTNs::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = *s_dbcont_man;
+    DBContentManager& dbcontent_man = dbcont_man_;
 
     if (no_desc_)
         setJSONReply(dbcontent_man.utnsAsJSON());
@@ -320,26 +316,27 @@ void RTCommandGetUTNs::assignVariables_impl(const VariablesMap &vars)
  * RTCommandGetTarget
  ***************************************************************************************/
 
-RTCommandGetTarget::RTCommandGetTarget()
+RTCommandGetTarget::RTCommandGetTarget(DBContentManager& dbcont_man)
     : rtcommand::RTCommand()
+    , dbcont_man_(dbcont_man)
 {
 }
 
 bool RTCommandGetTarget::run_impl()
 {
-    if (!s_dbcont_man->appState().dbOpened())
+    if (!dbcont_man_.appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (s_dbcont_man->appState().appMode() != AppMode::Offline) // to be sure
+    if (dbcont_man_.appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+s_dbcont_man->appState().appModeStr());
+        setResultMessage("Wrong application mode "+dbcont_man_.appState().appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = *s_dbcont_man;
+    DBContentManager& dbcontent_man = dbcont_man_;
 
     if (!dbcontent_man.hasAssociations() || !dbcontent_man.hasTargetsInfo())
     {
@@ -352,7 +349,7 @@ bool RTCommandGetTarget::run_impl()
 
 bool RTCommandGetTarget::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = *s_dbcont_man;
+    DBContentManager& dbcontent_man = dbcont_man_;
 
     setJSONReply(dbcontent_man.targetInfoAsJSON(utn_));
 
@@ -381,26 +378,27 @@ void RTCommandGetTarget::assignVariables_impl(const VariablesMap &vars)
  * RTCommandGetTargetStats
  ***************************************************************************************/
 
-RTCommandGetTargetStats::RTCommandGetTargetStats()
+RTCommandGetTargetStats::RTCommandGetTargetStats(DBContentManager& dbcont_man)
     : rtcommand::RTCommand()
+    , dbcont_man_(dbcont_man)
 {
 }
 
 bool RTCommandGetTargetStats::run_impl()
 {
-    if (!s_dbcont_man->appState().dbOpened())
+    if (!dbcont_man_.appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (s_dbcont_man->appState().appMode() != AppMode::Offline) // to be sure
+    if (dbcont_man_.appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+s_dbcont_man->appState().appModeStr());
+        setResultMessage("Wrong application mode "+dbcont_man_.appState().appModeStr());
         return false;
     }
 
-    DBContentManager& dbcontent_man = *s_dbcont_man;
+    DBContentManager& dbcontent_man = dbcont_man_;
 
     if (!dbcontent_man.hasAssociations() || !dbcontent_man.hasTargetsInfo())
     {
@@ -413,7 +411,7 @@ bool RTCommandGetTargetStats::run_impl()
 
 bool RTCommandGetTargetStats::checkResult_impl()
 {
-    DBContentManager& dbcontent_man = *s_dbcont_man;
+    DBContentManager& dbcontent_man = dbcont_man_;
 
     setJSONReply(dbcontent_man.targetStatsAsJSON());
 

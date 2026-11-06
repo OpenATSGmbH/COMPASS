@@ -38,14 +38,19 @@
 #include <QWindow>
 #include <QDialog>
 
-REGISTER_RTCOMMAND(rtcommand::RTCommandEmpty)
-REGISTER_RTCOMMAND(rtcommand::RTCommandRoundTrip)
-REGISTER_RTCOMMAND(rtcommand::RTCommandHelp)
-
 using namespace Utils;
 
 namespace rtcommand
 {
+
+/**
+ */
+void init_basic_commands(RTCommandRegistry& registry)
+{
+    registry.registerCommand<RTCommandEmpty>();
+    registry.registerCommand<RTCommandRoundTrip>();
+    registry.registerCommand<RTCommandHelp>();
+}
 
     /***************************************************************************************
      * RTCommandWaitCondition

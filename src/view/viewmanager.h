@@ -19,6 +19,7 @@
 
 #include "configurable.h"
 #include "iviewprovider.h"
+#include "imanager.h"
 #include "dbcontent/variable/variableset.h"
 #include "appmode.h"
 #include "viewpresets.h"
@@ -28,13 +29,24 @@
 #include "boost/date_time/posix_time/ptime.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 
+#include <functional>
 #include <memory>
 #include <vector>
 #include <set>
 
-class COMPASS;
+class AppState;
 class FilterManager;
+class DBInterface;
+class DBContentManager;
+class JobManager;
+class LicenseManager;
+class IMainWindow;
 class Buffer;
+
+namespace context
+{
+    class DBContextManager;
+}
 class DBContentDataSet;
 class LiveDataFeed;
 struct LoadRequest;
@@ -53,7 +65,7 @@ class LiveController;
 
 /**
 */
-class ViewManager : public QObject, public Configurable, public IViewProvider
+class ViewManager : public QObject, public Configurable, public IViewProvider, public IManager
 {
     Q_OBJECT
 
@@ -72,6 +84,8 @@ class ViewManager : public QObject, public Configurable, public IViewProvider
     void reloadStateChanged();
     void automaticUpdatesChanged();
     void presetEdited(ViewPresets::EditAction ea);
+    void databaseOpenedSignal(); // relay at the end of databaseOpenedSlot, for the view widgets
+    void databaseClosedSignal(); // relay at the end of databaseClosedSlot, for the view widgets
     // live overload check of a tick attempt, forwarded from the live session (see LiveController)
     void liveOverloadCheckedSignal(unsigned int packets,
                                    double latency_s,
@@ -110,14 +124,33 @@ class ViewManager : public QObject, public Configurable, public IViewProvider
         bool automatic_redraw = true;
     };
 
-    ViewManager(nlohmann::json& config, COMPASS& compass);
+    ViewManager(nlohmann::json& config,
+                Configurable& parent,
+                AppState& app_state,
+                DBContentManager& dbcont_man);
     virtual ~ViewManager();
 
-    COMPASS& compass() { return compass_; }
+    AppState& appState() { return app_state_; }
+    DBContentManager& dbContentManager() { return dbcont_man_; }
 
     // peers, set by the composition root
-    void setManagers(FilterManager& filter_manager) { filter_manager_ = &filter_manager; }
+    void setManagers(FilterManager& filter_manager,
+                     DBInterface& db_interface,
+                     context::DBContextManager& ctx_man,
+                     JobManager& job_manager,
+                     LicenseManager& license_manager);
+    bool checkWired() const override; // without the main window, set later
+    void setMainWindow(IMainWindow& main_window) { main_window_ = &main_window; }
+    void setLiveImportBacklogSizeFunc(const std::function<unsigned int()>& func) { live_import_backlog_size_func_ = func; }
+
     FilterManager& filterManager();
+    DBInterface& dbInterface();
+    context::DBContextManager& dbContextManager();
+    JobManager& jobManager();
+    LicenseManager& licenseManager();
+    IMainWindow& mainWindow();
+
+    unsigned int liveImportBacklogSize() const; // ASTERIX packets in processing
 
     void init(QTabWidget* main_tab_widget);
     void close();
@@ -298,9 +331,18 @@ protected:
     void applyCarriedSelection(const std::vector<std::string>& names);
     void restoreSelectionInto(const std::string& dbcontent_name, Buffer& buffer);
 
-    COMPASS& compass_;
+    AppState&         app_state_;
+    DBContentManager& dbcont_man_;
 
-    FilterManager* filter_manager_ = nullptr; // peer, set by the composition root
+    // peers, set by the composition root
+    FilterManager*             filter_manager_  = nullptr;
+    DBInterface*               db_interface_    = nullptr;
+    context::DBContextManager* ctx_man_         = nullptr;
+    JobManager*                job_manager_     = nullptr;
+    LicenseManager*            license_manager_ = nullptr;
+    IMainWindow*               main_window_     = nullptr;
+
+    std::function<unsigned int()> live_import_backlog_size_func_; // ASTERIX packets in processing, set by the root
 
     ViewPointsWidget* view_points_widget_{nullptr};
 

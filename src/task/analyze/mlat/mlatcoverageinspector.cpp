@@ -23,7 +23,6 @@
 #include "targetreport3dgrid.h"
 #include "movementui.h"
 
-#include "compass.h"
 #include "logger.h"
 #include "number.h"
 #include "section.h"

@@ -20,7 +20,6 @@
 #include "asterixreporthelpers.h"
 #include "asteriximporttask.h"
 
-#include "compass.h"
 #include "db_context_manager.h"
 #include "data_source.h"
 #include "logger.h"
@@ -153,8 +152,7 @@ void SMRDataItemInspector::writeReport(ResultReport::Section& root)
             "with count 0 (red)."});
     }
 
-    auto& compass = task_.compass();
-    auto& ctx     = compass.dbContextManager();
+    auto& ctx = task_.manager().dbContextManager();
     const auto& info_map = ctx.asterixInfo();
 
     auto& settings = static_cast<SMRDataItemInspectorSettings&>(settings_);

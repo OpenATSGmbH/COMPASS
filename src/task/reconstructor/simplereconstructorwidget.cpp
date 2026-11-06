@@ -17,6 +17,7 @@
 
 
 #include "simplereconstructorwidget.h"
+#include "appstate.h"
 
 #include "simplereconstructor.h"
 #include "reconstructormainwidget.h"
@@ -27,7 +28,6 @@
 #include "reconstructortask.h"
 #include "reconstructortaskanalysiswidget.h"
 #include "reconstructortaskclassificationwidget.h"
-#include "compass.h"
 #include "taskmanager.h"
 #include "db_context_manager.h"
 
@@ -70,8 +70,8 @@ SimpleReconstructorWidget::SimpleReconstructorWidget(SimpleReconstructor& recons
     { return reconstructor_.task().useDataSourceLine(ds_id, line_id, value); };
 
     use_widget_.reset(new DataSourcesUseWidget(
-        reconstructor_.task().manager().compass().dbContextManager(),
-        reconstructor_.task().manager().compass().dbContentManager(),
+        reconstructor_.task().manager().dbContextManager(),
+        reconstructor_.task().manager().dbContentManager(),
         get_use_dstype_func, set_use_dstype_func,
         get_use_ds_func, set_use_ds_func,
         get_use_ds_line_func, set_use_ds_line_func));
@@ -94,7 +94,7 @@ SimpleReconstructorWidget::SimpleReconstructorWidget(SimpleReconstructor& recons
 
     debug_widget_.reset(new ReconstructorTaskAnalysisWidget(reconstructor_.task(), false));
 
-    if (!COMPASS::isAppImage() || reconstructor_.task().manager().compass().expertMode())
+    if (!AppState::isAppImage() || reconstructor_.task().manager().appState().expertMode())
         tab_widget->addTab(debug_widget_.get(), "Analysis");
 
     update();

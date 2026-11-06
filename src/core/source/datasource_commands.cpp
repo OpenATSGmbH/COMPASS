@@ -30,47 +30,37 @@
 
 #include <boost/program_options.hpp>
 
-REGISTER_RTCOMMAND(dbContent::RTCommandGetDataSources)
-REGISTER_RTCOMMAND(dbContent::RTCommandGetDataSourceCounts)
-REGISTER_RTCOMMAND(dbContent::RTCommandGetSensorStatus)
-REGISTER_RTCOMMAND(dbContent::RTCommandSetDataSources)
-REGISTER_RTCOMMAND(dbContent::RTCommandDeleteData)
 
 using namespace std;
 
 namespace dbContent
 {
 
-static context::DBContextManager* s_ctx_man               = nullptr;
-static DBContentManager*          s_dbcont_man            = nullptr;
-static SensorStatusTracker*       s_sensor_status_tracker = nullptr;
 
-void init_data_source_commands(context::DBContextManager& ctx_man,
+void init_data_source_commands(rtcommand::RTCommandRegistry& registry,
+                               context::DBContextManager& ctx_man,
                                DBContentManager& dbcont_man,
                                SensorStatusTracker& sensor_status_tracker)
 {
-    s_ctx_man    = &ctx_man;
-    s_dbcont_man = &dbcont_man;
-    s_sensor_status_tracker = &sensor_status_tracker;
-
-    dbContent::RTCommandGetDataSources::init();
-    dbContent::RTCommandGetDataSourceCounts::init();
-    dbContent::RTCommandGetSensorStatus::init();
-    dbContent::RTCommandSetDataSources::init();
-    dbContent::RTCommandDeleteData::init();
+    registry.registerCommand<dbContent::RTCommandGetDataSources>(ctx_man);
+    registry.registerCommand<dbContent::RTCommandGetDataSourceCounts>(ctx_man);
+    registry.registerCommand<dbContent::RTCommandGetSensorStatus>(ctx_man, sensor_status_tracker);
+    registry.registerCommand<dbContent::RTCommandSetDataSources>(ctx_man);
+    registry.registerCommand<dbContent::RTCommandDeleteData>(ctx_man, dbcont_man);
 }
 
 // get
 
-RTCommandGetDataSources::RTCommandGetDataSources()
+RTCommandGetDataSources::RTCommandGetDataSources(context::DBContextManager& ctx_man)
     : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
 {
     condition.setDelay(10);
 }
 
 bool RTCommandGetDataSources::run_impl()
 {
-    if (!s_ctx_man->hasActiveContext())
+    if (!ctx_man_.hasActiveContext())
     {
         setResultMessage("No active context");
         return false;
@@ -81,7 +71,7 @@ bool RTCommandGetDataSources::run_impl()
 
 bool RTCommandGetDataSources::checkResult_impl()
 {
-    auto& ctx_man = *s_ctx_man;
+    auto& ctx_man = ctx_man_;
 
     nlohmann::json j = nlohmann::json::array();
     for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
@@ -93,15 +83,16 @@ bool RTCommandGetDataSources::checkResult_impl()
 
 // get_data_source_counts
 
-RTCommandGetDataSourceCounts::RTCommandGetDataSourceCounts()
+RTCommandGetDataSourceCounts::RTCommandGetDataSourceCounts(context::DBContextManager& ctx_man)
     : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
 {
     condition.setDelay(10);
 }
 
 bool RTCommandGetDataSourceCounts::run_impl()
 {
-    if (!s_ctx_man->hasActiveContext())
+    if (!ctx_man_.hasActiveContext())
     {
         setResultMessage("No active context");
         return false;
@@ -112,7 +103,7 @@ bool RTCommandGetDataSourceCounts::run_impl()
 
 bool RTCommandGetDataSourceCounts::checkResult_impl()
 {
-    auto& ctx_man = *s_ctx_man;
+    auto& ctx_man = ctx_man_;
 
     // inserted_counts_ is ds_id -> dbcontent -> line_id -> count.
     // Serialize keyed by string ds_id / line_id so the JSON object form is stable.
@@ -139,15 +130,17 @@ bool RTCommandGetDataSourceCounts::checkResult_impl()
 
 // sensor status
 
-RTCommandGetSensorStatus::RTCommandGetSensorStatus()
+RTCommandGetSensorStatus::RTCommandGetSensorStatus(context::DBContextManager& ctx_man, SensorStatusTracker& sensor_status_tracker)
     : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+    , sensor_status_tracker_(sensor_status_tracker)
 {
     condition.setDelay(10);
 }
 
 bool RTCommandGetSensorStatus::run_impl()
 {
-    if (!s_ctx_man->hasActiveContext())
+    if (!ctx_man_.hasActiveContext())
     {
         setResultMessage("No active context");
         return false;
@@ -158,12 +151,11 @@ bool RTCommandGetSensorStatus::run_impl()
 
 bool RTCommandGetSensorStatus::checkResult_impl()
 {
-    auto& ctx_man = *s_ctx_man;
+    auto& ctx_man = ctx_man_;
 
     // the tracker keeps the sensor status updated off the distributed data,
     // independent of the Sensor Status tool being open in the GUI
-    traced_assert(s_sensor_status_tracker);
-    const auto& status_tracker = *s_sensor_status_tracker;
+    const auto& status_tracker = sensor_status_tracker_;
 
     nlohmann::json reply = nlohmann::json::object();
 
@@ -228,8 +220,9 @@ bool RTCommandGetSensorStatus::checkResult_impl()
 
 // set
 
-RTCommandSetDataSources::RTCommandSetDataSources()
+RTCommandSetDataSources::RTCommandSetDataSources(context::DBContextManager& ctx_man)
     : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
 {
     condition.setDelay(10);
 }
@@ -239,7 +232,7 @@ bool RTCommandSetDataSources::run_impl()
 {
     loginf << "ds_json_str_ '" << ds_json_str_ << "'";
 
-    auto& ctx_man = *s_ctx_man;
+    auto& ctx_man = ctx_man_;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -300,8 +293,10 @@ void RTCommandSetDataSources::assignVariables_impl(const VariablesMap &vars)
 
 // delete_data
 
-RTCommandDeleteData::RTCommandDeleteData()
+RTCommandDeleteData::RTCommandDeleteData(context::DBContextManager& ctx_man, DBContentManager& dbcont_man)
     : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+    , dbcont_man_(dbcont_man)
 {
     condition.setSignal("compass.dbcontentmanager.dataDeletedSignal()", -1);
 }
@@ -310,7 +305,7 @@ bool RTCommandDeleteData::run_impl()
 {
     loginf << "delete_info_str_ '" << delete_info_str_ << "'";
 
-    if (!s_ctx_man->appState().dbOpened())
+    if (!ctx_man_.appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
@@ -335,13 +330,13 @@ bool RTCommandDeleteData::run_impl()
 
     // RT commands bypass UI modality; refuse while a delete is in flight (e.g. a live
     // session's per-tick DB bound) rather than overlapping on the single delete slot
-    if (s_dbcont_man->hasActiveDeleteJob())
+    if (dbcont_man_.hasActiveDeleteJob())
     {
         setResultMessage("Delete already in progress");
         return false;
     }
 
-    s_dbcont_man->deleteData(delete_info_);
+    dbcont_man_.deleteData(delete_info_);
 
     return true;
 }

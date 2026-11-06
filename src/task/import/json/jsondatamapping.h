@@ -31,7 +31,7 @@ class Variable;
 
 }
 
-class COMPASS;
+class TaskManager;
 class JSONObjectParser;
 
 class JSONDataMapping : public Configurable
@@ -39,7 +39,7 @@ class JSONDataMapping : public Configurable
   public:
     // uses Configurable* because JSONDataMapping has multiple parent types
     // (JSONObjectParser and ASTERIXJSONParser) with no common base other than Configurable
-    JSONDataMapping(nlohmann::json& config, Configurable* parent, COMPASS& compass);
+    JSONDataMapping(nlohmann::json& config, Configurable* parent, TaskManager& task_man);
     //JSONDataMapping() = default;
     //JSONDataMapping(JSONDataMapping&& other) { *this = std::move(other); }
 
@@ -117,7 +117,7 @@ class JSONDataMapping : public Configurable
     void check();
 
   private:
-    COMPASS& compass_;
+    TaskManager& task_man_;
     bool initialized_{false};
 
     bool active_{false};

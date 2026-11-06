@@ -31,9 +31,9 @@ class ViewableDataConfig;
 class QWidget;
 
 /**
- * The view functions that code below the view layer uses, via COMPASS::viewProvider().
- * Implemented by ViewManager. Its dataDistributedSignal and loadingDoneSignal are relayed
- * by COMPASS (viewDataDistributedSignal, viewLoadingDoneSignal).
+ * The view functions that code below the view layer uses (injected via setManagers(...), e.g.
+ * DBContentManager::viewProvider()). Implemented by ViewManager; its signals are connected to
+ * the lower layers by CompassRoot.
  */
 class IViewProvider
 {

@@ -16,11 +16,12 @@
  */
 
 #include "asteriximporttaskwidget.h"
+#include "appstate.h"
+#include "taskmanager.h"
 #include "asterixconfigwidget.h"
 #include "asterixframingcombobox.h"
 #include "asteriximportdatasourceswidget.h"
 #include "asteriximporttask.h"
-#include "compass.h"
 #include "asterixoverridewidget.h"
 #include "db_context_manager.h"
 #include "logger.h"
@@ -195,7 +196,7 @@ void ASTERIXImportTaskWidget::addDecoderTab()
 
     // ASTERIX category config (editions from DBContext, decode flags from import task)
     config_widget_ = new ASTERIXConfigWidget(
-        task_.compass().dbContextManager(),
+        task_.manager().dbContextManager(),
         [this](unsigned int cat) { return task_.decodeCategory(cat); },
         [this](unsigned int cat, bool decode) { task_.decodeCategory(cat, decode); },
         this);
@@ -258,12 +259,12 @@ void ASTERIXImportTaskWidget::addMappingsTab()
 
     add_object_parser_button_ = new QPushButton("Add");
     connect(add_object_parser_button_, SIGNAL(clicked()), this, SLOT(addParserSlot()));
-    add_object_parser_button_->setEnabled(task_.compass().expertMode());
+    add_object_parser_button_->setEnabled(task_.manager().appState().expertMode());
     parser_manage_layout->addWidget(add_object_parser_button_);
 
     delete_object_parser_button_ = new QPushButton("Remove");
     connect(delete_object_parser_button_, SIGNAL(clicked()), this, SLOT(removeObjectParserSlot()));
-    delete_object_parser_button_->setEnabled(task_.compass().expertMode());
+    delete_object_parser_button_->setEnabled(task_.manager().appState().expertMode());
     parser_manage_layout->addWidget(delete_object_parser_button_);
 
     parsers_layout->addLayout(parser_manage_layout);
@@ -297,7 +298,7 @@ void ASTERIXImportTaskWidget::addParserSlot()
         return;
     }
 
-    dbContent::SelectDBContentDialog dialog(task_.compass().dbContentManager());
+    dbContent::SelectDBContentDialog dialog(task_.manager().dbContentManager());
 
     int ret = dialog.exec();
 

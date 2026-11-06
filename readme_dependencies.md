@@ -1,6 +1,6 @@
 # Resolving the circular dependencies between the COMPASS libraries
 
-*Design document / plan. Status: Workstreams A–D implemented (2026-11-03), E and F (2026-11-04), no include violations left in `src/` (from 270), the allowlist is empty. G (structural guards, 2026-11-04): link graph and include paths follow the layering, an upward include is a compile error. H (2026-11-04): `COMPASS` offers only the core managers and the provider interfaces. I (sub-layers inside core, 2026-11-05): implemented, 0 sub-layer violations, the core allowlist is empty. Written 2026-11-03 against the then-current code (line numbers refer to that state).*
+*Design document / plan. Status: Workstreams A–D implemented (2026-11-03), E and F (2026-11-04), no include violations left in `src/` (from 270), the allowlist is empty. G (structural guards, 2026-11-04): link graph and include paths follow the layering, an upward include is a compile error. H (2026-11-04): `COMPASS` offers only the core managers and the provider interfaces. I (sub-layers inside core, 2026-11-05): implemented, 0 sub-layer violations, the core allowlist is empty. J (direct dependencies above core): implemented (2026-11-06), the COMPASS allowlist is empty, `COMPASS` has no forwards and lives in `src/app`. K (initialization and command wiring): K.1 (wiring check via `IManager`) and K.3 (runtime commands registered with their managers) implemented 2026-11-06, K.2 planned. J and K added 2026-11-05. Written 2026-11-03 against the then-current code (line numbers refer to that state).*
 
 ## Context
 
@@ -333,7 +333,7 @@ Sub-layers (bottom to top, `CORE_LAYERS` in `check_layering.py`):
 | `projection` | `projection/` (uses the data sources of the context) |
 | `dbcontent` | `db/dbcontent/`, `db/job/`, `db/util/`, `db/` root, the provider interfaces `i*provider.h` (they use DB content types) |
 | `ui` | `source/` (data source tools, sensor status) |
-| `root` | `compass.h`/`compass.cpp` |
+| `root` | `compass.h`/`compass.cpp` (removed with J.6: `COMPASS` moved to `src/app`) |
 
 Steps:
 
@@ -358,6 +358,75 @@ Steps:
   - **`SQLGenerator`, `DBConnection`, `DBInstance`** no longer know `DBContentManager`; the DB content and targets statements were removed from `SQLGenerator` (`replaceStatement()` is public).
   - **`DBInterface(config, parent, AppState&, LogStore&, app_version)`**, created by `CompassRoot`; `compass()` and `dbContentManager()` were removed.
   - Remaining pairs: 0, the core allowlist is empty.
+
+### J: Direct dependencies above core (~4–6 wk) — implemented 2026-11-06
+
+Added 2026-11-05 after I. Inside core, only `compass.h`/`compass.cpp` use `COMPASS`; above core it is still a service locator: classes reach their dependencies through `task_.manager().compass().dbContentManager()` and similar chains, so what a class depends on is not visible in its interface.
+
+Measured (2026-11-05, uses of `compass()`/`compass_`/`COMPASS&`):
+
+| Library | Uses | Files |
+|---|---|---|
+| `compass_filter` | 9 | 3 |
+| `compass_result` | 13 | 9 |
+| `compass_eval` | 60 | 13 |
+| `compass_view` | 154 | 46 |
+| `compass_task` | 325 | 60 |
+| `compass_app` | 270 | 10 (composition root, allowed) |
+
+Most used members: `dbContentManager` (133), `dbContextManager` (126), `appMode` (33), `dbInterface` (29), `lastUsedPath` (26), `logInfo` (24), then `projectionManager`, `jobManager`, `lineEditInvalidStyle`, `expertMode`, `licenseManager`, a few DB operations (open/export, last DB filename) and UI flags.
+
+Steps:
+
+- **J.1 Guard:** `check_layering.py` rule that `compass.h` may only be included by `src/app/` (and `compass.cpp`), both modes, known violations in an allowlist of files that may only shrink (same mechanism as the core sub-layers).
+- **J.2 Upper managers get their core peers directly:** `ViewManager`, `EvaluationManager`, `TaskManager` and `FilterManager` receive the core managers they use plus `AppState&` and `LogStore&` (via `setManagers(...)`, or the constructor after K.2).
+- **J.3 Children through their parent manager**, as in I.3: `task().manager().dbContentManager()` instead of `task().manager().compass().dbContentManager()`; widgets get the managers from their creator. One library at a time, smallest first: filter, result, eval, view, task.
+- **J.4 App-level operations behind an interface in core:** e.g. `IDBSession` (open/create/close/export DB, last DB filename), implemented by `COMPASS`, for the tasks that open or export databases. `IMainWindow` already exists.
+- **J.5 Remove the `COMPASS` forwards** (`appMode()`, `darkMode()`, `lastUsedPath()`, `logInfo()`, ...) once nothing above core uses them.
+- **J.6 End state:** `COMPASS` is an app-level facade (DB session, app state ownership, config parameter registration) and moves to `src/app` or merges into `CompassRoot`. An include of `compass.h` from view, eval or task is then a compile error, and the J.1 allowlist is empty.
+
+Decided (2026-11-05, at the start of J):
+
+- **Guard (J.1):** including `compass.h` is allowed only in `src/app/` and `core/compass.cpp`; known violators are listed in `scripts/layering_compass_allowlist.txt` (`<file> -> src/core/compass.h`), both modes, may only shrink. Only `.cpp` files include `compass.h` (no header does), so text and exact mode see the same files.
+- **No DB session interface (J.4):** no library above core opens or closes databases through `COMPASS`; they only read `lastDbFilename` (3 uses), `versionString` (1), `licenseeString` (3) and `mainWindow` (4). `lastDbFilename` and the app version go into `AppState`, `licenseeString()`/`versionString()` move to `LicenseManager` (version from `AppState`), `mainWindow` is reached as `IMainWindow&` passed to the upper managers.
+- **Wiring (J.2):** the existing `setManagers(...)` of the upper managers are extended (`FilterManager` gets one); K.2 later turns them into constructor arguments.
+- **`experimental_src` is part of J** (49 files include `compass.h`): migrated after the `src/` libraries and covered by the J.1 guard, so J.6 is not blocked by it.
+
+Decided 2026-11-06: the test lab counts as app level; `COMPASS` moves to `src/app` (J.6 option A, not merged into `CompassRoot`: smaller, no startup/shutdown change, no overlap with K).
+
+Progress:
+
+- **J.1 (implemented 2026-11-05):** COMPASS rule in `check_layering.py` (text and exact mode, incl. the `experimental_src` sources and targets), allowlist `scripts/layering_compass_allowlist.txt` generated in text mode (text mode also sees files that are not compiled, e.g. `gpsimportcsvtaskwidget.cpp`; in exact mode an entry is only stale if its file is compiled). Start: 173 files (eval 17, experimental_src 47, filter 3, result 7, task 52, view 47).
+- **filter (implemented 2026-11-05):** `FilterManager(config, parent, DBContentManager&)` (the variable resolver needs it from construction on; `DBContentManager` is always created first, the sub-configs are created in class name order) plus `setManagers(DBContextManager&, DBInterface&)`, called in `CompassRoot::startManagers()`; `compass()` removed, `dbInterface()` added (`SectorsFilter`). 170 files left.
+- **result (implemented 2026-11-05):** `ITaskProvider::compass()` replaced by `appState()`, `dbInterface()`, `dbContentManager()`, `licenseManager()` (implemented by `TaskManager`, for now via its `COMPASS`); `ReportExport`/`ReportExporter::compass()` replaced by `appState()`/`licenseManager()`. J.4 parts: `last_db_filename` is an `AppState` setting (same config parameter of `COMPASS`, `AppState::lastDbFilename()`), `LicenseManager::licenseeString()` (`COMPASS::licenseeString()` forwards). Verified with report exports (DocX, LaTeX). 163 files left.
+- **eval (implemented 2026-11-05):** `EvaluationManager(config, parent, AppState&, DBContentManager&)` (both used from construction on, `DBContentManager` is created first) plus `setManagers(ViewManager&, FilterManager&, DBInterface&, DBContextManager&, ProjectionManager&, ITaskProvider&)`, called after the `DBContextManager` was created; accessors `appState()`, `dbInterface()`, `dbContextManager()`, `projectionManager()`, `taskProvider()`, `compass()` removed. `EvaluationTaskResult` no longer takes `COMPASS&`. The evaluation commands use `appState()`. 146 files left (task 52, view 47, experimental_src 47).
+- **view (implemented 2026-11-05):** `ViewManager(config, parent, AppState&, DBContentManager&)` (the live feed needs it from construction on) plus `setManagers(FilterManager&, DBInterface&, DBContextManager&, JobManager&, LicenseManager&)`, `setMainWindow(IMainWindow&)` and `setLiveImportBacklogSizeFunc(...)` (moved from `COMPASS`, whose setter, accessor and member were removed), all set by `CompassRoot`. `LoadController`/`LiveController` take only the `ViewManager`. Views reach everything through `viewManager()` (`appState()`, the managers); `makeScanInput()`, `getSpecialRepresentation()`, `ColorModeLabel` and `followColorMode()` take the managers or `AppState&` they use. Decided 2026-11-05: `ViewManager::databaseOpenedSignal`/`databaseClosedSignal` (relays at the end of its slots) replace the `COMPASS` signals for `ViewPointsWidget`; the app mode switch of the view manager is connected in `CompassRoot::mainWindow()` right before the main window is created, same position as before (it connected in `ViewManager::init()`, called from the main window). J.4 parts: `AppState::appVersion()`, `LicenseManager::versionString(app_version, ...)` (`COMPASS` forwards). `ViewManager::compass()`/`View::compass()` stay (`COMPASS*` set by `CompassRoot::setCompass()`) until `experimental_src` is migrated. Verified with open DB + load data. 99 files left (task 52, experimental_src 47).
+- **task (implemented 2026-11-06):** `TaskManager(config, parent, AppState&, LogStore&, DBInterface&, DBContentManager&)` (result persistence and the tasks use DB interface and DB content from construction on, both are created first) plus `setManagers(ViewManager&, EvaluationManager&, FilterManager&, DBContextManager&, JobManager&, UnitManager&, ProjectionManager&, LicenseManager&)`, now called after the `DBContextManager` was created, and `setMainWindow(IMainWindow&)` from `CompassRoot::mainWindow()`; accessors for all of them plus `logStore()`. Tasks reach everything through `manager()`. Decided 2026-11-06: `LogStore::logInfo/logWarn/logError` got `= {}` defaults (no forwarders), config-time objects (`JSONParsingSchema`, `JSONObjectParser`, `JSONDataMapping`) take `TaskManager&` (`ASTERIXJSONParser` uses its task's `manager()`), run-time objects take the concrete managers (`ASTERIXPostprocessJob(DBContentManager&, ProjectionManager&)`, `ASTERIXTimestampCalculator::calculate(AppState&, DBContentManager&, LogStore&)`, `AnalysisDataset(DBContentManager&, DBContextManager&)`). The stored `COMPASS&` of the import tasks and the radar plot position task were removed. `TaskManager::compass()` (set by `CompassRoot::setCompass()`) and `AnalyzeDataSourceTask::compass()` stay until `experimental_src` is migrated. Verified with create DB, data sources and ASTERIX import, radar plot positions, reconstruction and ADS-B analysis. `src/` is free of `compass.h` above core, 47 files left (all experimental_src).
+- **experimental_src (implemented 2026-11-06):** decided 2026-11-06: `experimental_src/rtcommand/` (extra commands, DB session operations, already include `mainwindow.h`) and `experimental_src/test/` (test lab) count as app level (`COMPASS_ALLOWED_DIRS` in `check_layering.py`), which resolves the open test lab question. Geo view: everything through `viewManager()` (`View::viewManager()` is now `const`, as `View::compass() const` was); `GeometryStyleFactory::compass()`/`GeometryStylePreset::compass()` replaced by `viewManager()`; settings and version via `appState()` and `LicenseManager::versionString(app_version)`. Signals as in the src views: `GeographicViewConfigWidget` uses `ViewManager::databaseOpenedSignal`/`databaseClosedSignal`, `GeographicView` (live overload) and `GeometryStyleFactory` (color mode) connect to `AppState` directly (they were the only subscribers of these COMPASS relays). Reconstruction and analysis use `task().manager()`. Then removed: `ViewManager::compass()`/`setCompass()`, `View::compass()`, `TaskManager::compass()`/`setCompass()`, `AnalyzeDataSourceTask::compass()`. The COMPASS allowlist is empty.
+- **J.5 (implemented 2026-11-06):** decided 2026-11-06: all forwards removed, not only the unused ones. `COMPASS` lost the app state forwards (`appMode()`, `appModeStr()`, `lastUsedPath()`, `expertMode()`, `darkMode()`, the settings getters, `setAppPhase()`, ...), `logInfo/logWarn/logError()`, `versionString()`, `licenseeString()` and `lastDbFilename()`. The app level calls `compass.appState()` (`settings()` for the persisted settings, `AppState::isAppImage()`), `logStore()` and `licenseManager()` directly (bulk rewrite of 118 lines in `src/app`, `experimental_src/rtcommand`, `experimental_src/test`). `COMPASS` keeps its own functions: DB session (open/create/close/export, `dbOpened()`, `dbInMem()`), DB file list, managers, provider interfaces, `IRTCommandHost`, signals, `appState()`, `logStore()`, `mainWindow()`.
+- **J.6 (implemented 2026-11-06, option A):** `compass.h`/`compass.cpp` moved to `src/app` (`git mv`, `compass_app`, added to its manual MOC list); the `root` core sub-layer was removed from `check_layering.py`, the COMPASS rule now points to `src/app/compass.h` (only `app` and the app-level `experimental_src` dirs may include it; a lower `src/` library cannot reach the header). Core's runtime command code no longer names `COMPASS` (decided 2026-11-06: through the host): `RTCommand::compass_` and the `COMPASS&` parameters of `RTCommandRunner`/`RTCommandRunnerStash` were removed; the app-level commands get `COMPASS` via `compassHost(host_)` (`src/app/compass.h`, `dynamic_cast` of the `IRTCommandHost`, which is `COMPASS`), bulk rewrite of 116 lines in `mainwindow_commands*.cpp` and `extra_commands.cpp`. `compass_rtcmd_ext` and `compass_test_lab` link `compass_app` (static link order, they use `COMPASS`). Config files and runtime command object paths are unchanged (`COMPASS` stays the root configurable). Cleanups (2026-11-06, at the user's request): the view relay signals of `COMPASS` were removed (`viewLoadingDoneSignal` had no subscriber, `SensorStatusTracker::dataDistributedSlot` connects to `ViewManager::dataDistributedSignal` directly, queued as before, same connection position); the unused `Managers` entries (`job_manager`, `unit_manager`, `rt_cmd_runner`, `filter_provider`, `eval_provider`, `task_provider`) and their accessors (`jobManager()`, `unitManager()`, `rtCmdRunner()`, `filterProvider()`, `evalProvider()`, `taskProvider()`) were removed; `viewProvider()` stays for the view lookups of the runtime command host.
+
+### K: Initialization and runtime command wiring (~1.5–2.5 wk) — K.1 and K.3 implemented (2026-11-06), K.2 planned
+
+Added 2026-11-05 after I. Two remaining weak spots of the wiring:
+
+- **Two-phase initialization:** `CompassRoot` creates the managers through the config creator callbacks in config order, so peers do not exist at construction time; they are set afterwards via `setManagers(...)` (`DBContentManager`, `ProjectionManager`, `RTCommandManager`, `ViewManager`, `EvaluationManager`, `TaskManager`) and the accessors only assert. `DBContentDB` is created in `DBContentManager::setManagers()` for the same reason.
+- **Static manager pointers in the command modules:** `s_dbcont_man`, `s_ctx_man`, `s_sensor_status_tracker` (core), `s_view_manager`, `s_eval_manager`, `s_task_manager`, `s_root`, set in the `init_*_commands(...)` functions. They exist because `REGISTER_RTCOMMAND` registers a creator `[] () { return new Class; }` at static initialization, when no manager exists.
+
+Steps:
+
+- **K.1 Wiring check (small):** each manager with peers gets a `checkWired()` (all peers set), called at the end of `CompassRoot::startManagers()`, so missing wiring fails at startup instead of on first use.
+- **K.2 Fixed creation order with constructor injection:** `CompassRoot` creates the managers itself in dependency order and takes each manager's sub-configuration from `COMPASS` instead of the creator callbacks (config files unchanged). Downward peers become constructor references. Only the genuine upward edges stay late-bound (`DBContentManager` → view/filter/eval providers, which need DB content in turn); they are set in one place, e.g. a small providers struct filled after the upper managers were created.
+- **K.3 Runtime commands registered with their dependencies:** the `init_*_commands(...)` functions register the commands themselves, the creators capture the managers (`[ &dbcont_man ] () { return new Cmd(dbcont_man); }`) and the commands take them in their constructor. The static pointers and the static-initialization registration (`REGISTER_RTCOMMAND`) go away; the set of available commands follows from what was set up. Not chosen: a typed manager lookup on `IRTCommandHost` (would be a service locator again, see J).
+
+Progress:
+
+- **K.1 (implemented 2026-11-06):** decided 2026-11-06: an interface base `IManager` (`src/core/imanager.h`, core sub-layer `base`, no state) with `bool checkWired() const` (true if all late-set peers are present; no asserts inside). Implemented by the seven managers with late-set peers: `ProjectionManager` (context manager, variable resolver), `RTCommandManager` (runner), `DBContentManager` (peers, providers, `DBContentDB`), `FilterManager`, `ViewManager`, `EvaluationManager`, `TaskManager`. `CompassRoot::startManagers()` checks all of them at its end, logs the name of an unwired manager and asserts there. Not checked: the main window (`setMainWindow()` on view and task manager) and the live import backlog function, both set later. Assessment 2026-11-06: K is not required for the plugin plan; K.3 overlaps the plugin plan's RT command registration (registries, two-phase registration). The creation order of K.2 is the same as before the rework (configured managers alphabetically by class name, missing ones in the fallback order), now guarded by the creator asserts and K.1.
+- **K.3 (implemented 2026-11-06, at the user's request):** `RTCommandRegistry` got `registerCommand<Cmd>(deps...)` (creator capturing the managers, asserts a single registration), `clear()` (called at the start of `CompassRoot::shutdown()`, the creators reference the managers) and a mutex (registration now runs in the main thread at startup while the command threads may already create commands; `availableCommands()` returns a copy). All 74 commands take their managers in the constructor and are registered by the `init_*_commands(registry, managers...)` function of their module (`init_basic_commands` for empty/round_trip/help, `initUITestCommands`, context, data source, DB content, view points, eval, analysis, app (`CompassRoot&`), geo view, extra (`CompassRoot&`)); the call sites stay where they were (same availability over time), they pass `RTCommandRegistry::instance()`. Removed: the 12 static manager pointers, `REGISTER_RTCOMMAND`, `init()`/`is_registered_` in `DECLARE_RTCOMMAND`, `main_window::root()`, `compassHost()` and the two "COMPASS not initialized" checks. Bulk migration with fixed rules (`k3_migrate.py`), `calculate_artas_tr_usage` (registered by macro but without `init()` call) migrated by hand. Behaviour difference: `init_extra_commands()` is only called outside the AppImage; with static registration the extra commands (`cleanup_db`, `db_info`, `create_mem_db`, `create_db_from_mem`, `get_task_log`) were registered in the AppImage anyway, now they are not. Verified: 74 commands registered (`help`), one command per module over the command port, CLI sequence.
+
+Order: K.1 any time (cheap); K.2 and K.3 together, since both change the startup in `CompassRoot`; J independent of K, but J.2 profits from K.2 (constructor instead of `setManagers`).
+
+Open: the late-binding mechanism for the upward providers (K.2); whether the command help (`RTCommandRegistry` listing) must work before the managers exist (K.3).
 
 ## Verification
 
@@ -394,8 +463,12 @@ For one senior developer who knows this codebase, working with Claude Code.
 | F: small leftovers | 3 d | 1 wk |
 | G: structural guards | 1 wk | 1.5 wk |
 | **Total** | **~7.5 wk** | **~11.5 wk** |
+| J: direct dependencies above core (planned) | 4 wk | 6 wk |
+| K: initialization and command wiring (planned) | 1.5 wk | 2.5 wk |
 
 ## Open decisions
 
 - **Directory of `compass_result` (E):** decided, [src/result/](src/result/).
 - **Task result persistence (E):** implemented (`TaskResultDB`), decided to move the result-specific part of `DBInterface`/`SQLGenerator` into `compass_result`, on top of the generic `DBInterface` API.
+- **J:** decided: guard, no DB session interface, extended `setManagers`, `experimental_src` included (see J). Open: `COMPASS` to `src/app` or merged into `CompassRoot`; test lab as app level.
+- **K:** late binding of the upward providers; command help before the managers exist.

@@ -17,7 +17,6 @@
 
 #include "reconstructorbase.h"
 #include "reconstructortask.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
 #include "dbcontentdataengine.h"
 #include "dbcontent/dbcontent.h"
@@ -572,7 +571,7 @@ ReconstructorBase::ReconstructorBase(nlohmann::json& config,
     ,   task_(task)
     ,   chain_predictors_(new reconstruction::KalmanChainPredictors)
 {
-    accessor_ = make_shared<dbContent::DBContentAccessor>(task_.manager().compass().dbContentManager());
+    accessor_ = make_shared<dbContent::DBContentAccessor>(task_.manager().dbContentManager());
 
     // reference computation
     {
@@ -757,11 +756,11 @@ bool ReconstructorBase::isVehicleACAD(unsigned int value)
 std::pair<boost::posix_time::ptime, boost::posix_time::ptime> ReconstructorBase::timeFrame() const
 {
     //get full data time range (should)
-    if (!task_.manager().compass().dbContentManager().dataEngine().hasMinMaxTimestamp())
+    if (!task_.manager().dbContentManager().dataEngine().hasMinMaxTimestamp())
         return std::pair<boost::posix_time::ptime, boost::posix_time::ptime>();
 
     boost::posix_time::ptime data_t0, data_t1;
-    std::tie(data_t0, data_t1) = task_.manager().compass().dbContentManager().dataEngine().minMaxTimestamp();
+    std::tie(data_t0, data_t1) = task_.manager().dbContentManager().dataEngine().minMaxTimestamp();
 
     if (data_t0 >= data_t1)
         return std::pair<boost::posix_time::ptime, boost::posix_time::ptime>();
@@ -975,8 +974,8 @@ void ReconstructorBase::processSlice()
     {
         const auto& counts = assocCounts();
 
-        auto& ctx_man = task_.manager().compass().dbContextManager();
-        DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
+        auto& ctx_man = task_.manager().dbContextManager();
+        DBContentManager& dbcont_man = task_.manager().dbContentManager();
 
         for (auto& ds_it : counts)
         {
@@ -1105,7 +1104,7 @@ void ReconstructorBase::createTargetReports()
 
     dbContent::targetReport::ReconstructorInfo info;
 
-    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().dbContentManager();
 
     accessors_.clear();
 
@@ -1116,7 +1115,7 @@ void ReconstructorBase::createTargetReports()
     std::set<unsigned int> unused_ds_ids = task_.unusedDSIDs();
     std::map<unsigned int, std::set<unsigned int>> unused_lines = task_.unusedDSIDLines();
 
-    auto& ctx_man = task_.manager().compass().dbContextManager();
+    auto& ctx_man = task_.manager().dbContextManager();
 
     std::set<unsigned int> ground_only_ds_ids = ctx_man.groundOnlyDataSources();
 
@@ -1130,7 +1129,7 @@ void ReconstructorBase::createTargetReports()
 
     if (task_.useSectorsExtend())
     {
-        auto& ctx = task_.manager().compass().dbContextManager();
+        auto& ctx = task_.manager().dbContextManager();
 
         for (auto& sect_it : task_.usedSectors())
         {
@@ -1350,7 +1349,7 @@ void ReconstructorBase::createTargetReportBatches()
 {
     loginf << "begin";
 
-    dbContent::DBContentStatusInfo status_info(task_.manager().compass().dbContentManager());
+    dbContent::DBContentStatusInfo status_info(task_.manager().dbContentManager());
 
     status_info.process(accessor_->buffers());
 
@@ -1359,7 +1358,7 @@ void ReconstructorBase::createTargetReportBatches()
 
     std::vector<std::string> data_source_type_order {"RefTraj", "ADSB", "Tracker", "MLAT", "Radar", "Other"};
 
-    auto& ctx_man2 = task_.manager().compass().dbContextManager();
+    auto& ctx_man2 = task_.manager().dbContextManager();
 
     size_t num_truncated_noinfo = 0;
     size_t num_truncated_oor    = 0;
@@ -1533,7 +1532,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
 {
     logdbg;
 
-    DBContentManager& dbcontent_man = task_.manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = task_.manager().dbContentManager();
 
     // write association info to buffers
 
@@ -1663,7 +1662,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
                 << " ts min " << Time::toString(ts_vec.get(0))
                 << " max " << Time::toString(ts_vec.get(ts_vec.contentSize()-1));
 
-            auto& ctx_man3 = task_.manager().compass().dbContextManager();
+            auto& ctx_man3 = task_.manager().dbContextManager();
 
             unsigned int ds_id = Number::dsIdFrom(settings().ds_sac, settings().ds_sic);
 
@@ -1880,7 +1879,7 @@ void ReconstructorBase::doReconstructionStatistics()
 
 void ReconstructorBase::doUnassociatedAnalysis()
 {
-    auto& dbcont_man = task_.manager().compass().dbContentManager();
+    auto& dbcont_man = task_.manager().dbContentManager();
 
     traced_assert(dbcont_man.dataEngine().hasMinMaxPosition());
 
@@ -2019,7 +2018,7 @@ void ReconstructorBase::saveTargets()
 
     processing_ = true;
 
-    DBContentManager& cont_man = task_.manager().compass().dbContentManager();
+    DBContentManager& cont_man = task_.manager().dbContentManager();
 
     // summary of the reconstructed targets for the target model
     std::vector<dbContent::Target> targets;

@@ -19,6 +19,7 @@
 
 #include "configurable.h"
 #include "ievalprovider.h"
+#include "imanager.h"
 #include "evaluationdata.h"
 #include "evaluationresultsgenerator.h"
 #include "evaluationcalculator.h"
@@ -30,12 +31,20 @@
 
 #include "json_fwd.hpp"
 
-class COMPASS;
+class AppState;
 class ViewManager;
 class FilterManager;
 class EvaluationStandard;
 class DBContent;
 class DBContentManager;
+class DBInterface;
+class ProjectionManager;
+class ITaskProvider;
+
+namespace context
+{
+    class DBContextManager;
+}
 class LoadOperation;
 class SectorLayer;
 struct EvaluationSettings;
@@ -50,7 +59,7 @@ class QWidget;
 
 /**
  */
-class EvaluationManager : public QObject, public Configurable, public IEvalProvider
+class EvaluationManager : public QObject, public Configurable, public IEvalProvider, public IManager
 {
     Q_OBJECT
 
@@ -75,7 +84,10 @@ public slots:
     void lockResultsSlot();
 
 public:
-    EvaluationManager(nlohmann::json& config, COMPASS& compass);
+    EvaluationManager(nlohmann::json& config,
+                      Configurable& parent,
+                      AppState& app_state,
+                      DBContentManager& dbcont_man);
     virtual ~EvaluationManager();
 
     const EvaluationCalculator* calculator() const { return calculator_.get(); }
@@ -137,15 +149,24 @@ public:
 
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
-    COMPASS& compass() { return compass_; }
+    AppState& appState() { return app_state_; }
     DBContentManager& dbContentManager() { return dbcontent_man_; }
 
     // peers, set by the composition root
     void setManagers(ViewManager& view_manager,
-                     FilterManager& filter_manager);
+                     FilterManager& filter_manager,
+                     DBInterface& db_interface,
+                     context::DBContextManager& ctx_man,
+                     ProjectionManager& projection_manager,
+                     ITaskProvider& task_provider);
+    bool checkWired() const override;
 
     ViewManager& viewManager();
     FilterManager& filterManager();
+    DBInterface& dbInterface();
+    context::DBContextManager& dbContextManager();
+    ProjectionManager& projectionManager();
+    ITaskProvider& taskProvider();
 
 protected:
     friend class EvaluationCalculator;
@@ -174,12 +195,16 @@ private:
     // isolated batch load of the start-of-update-cycle messages of the test data sources
     void loadStatusCycles(const EvaluationCalculator& calculator);
 
-    COMPASS& compass_;
+    AppState&         app_state_;
     DBContentManager& dbcontent_man_;
 
     // peers, set by the composition root
-    ViewManager*   view_manager_   = nullptr;
-    FilterManager* filter_manager_ = nullptr;
+    ViewManager*               view_manager_       = nullptr;
+    FilterManager*             filter_manager_     = nullptr;
+    DBInterface*               db_interface_       = nullptr;
+    context::DBContextManager* ctx_man_            = nullptr;
+    ProjectionManager*         projection_manager_ = nullptr;
+    ITaskProvider*             task_provider_      = nullptr;
 
     bool initialized_ {false};
 

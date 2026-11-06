@@ -16,9 +16,10 @@
  */
 
 #include "asterixjsonparser.h"
+#include "appstate.h"
+#include "taskmanager.h"
 #include "asterixjsonparsingschema.h"
 
-#include "compass.h"
 #include "buffer.h"
 #include "configuration.h"
 #include "dbcontent/dbcontent.h"
@@ -42,11 +43,9 @@ using namespace nlohmann;
 using namespace Utils;
 
 
-ASTERIXJSONParser::ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& task,
-                                     COMPASS& compass, ASTERIXJSONParsingSchema* parent)
+ASTERIXJSONParser::ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& task, ASTERIXJSONParsingSchema* parent)
     : Configurable(config, parent),
-      task_(task),
-      compass_(compass)
+      task_(task)
 {
     registerParameter("name", &name_, std::string());
     registerParameter("category", &category_, 0u);
@@ -75,7 +74,7 @@ void ASTERIXJSONParser::generateSubConfigurable(nlohmann::json& child_json)
 
     if (class_name == "JSONDataMapping")
     {
-        auto* mapping = new JSONDataMapping(child_json, this, compass_);
+        auto* mapping = new JSONDataMapping(child_json, this, task_.manager());
         mapping->mandatory(false);
         data_mappings_.emplace_back(mapping);
 
@@ -83,6 +82,13 @@ void ASTERIXJSONParser::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
         throw std::runtime_error("ASTERIXJSONParser: generateSubConfigurable: unknown class_name " + class_name);
+}
+
+/**
+ */
+TaskManager& ASTERIXJSONParser::taskManager()
+{
+    return task_.manager();
 }
 
 void ASTERIXJSONParser::doMappingChecks()
@@ -274,7 +280,7 @@ const std::vector<std::string>& ASTERIXJSONParser::notAddedJSONKeys() const
 DBContent& ASTERIXJSONParser::dbContent() const
 {
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().dbContentManager();
 
     if (!dbcont_man.existsDBContent(db_content_name_))
         throw runtime_error ("ASTERIXJSONParser: dbObject: dbcontbject '" + db_content_name_+ "' does not exist");
@@ -997,7 +1003,7 @@ Qt::ItemFlags ASTERIXJSONParser::flags(const QModelIndex& index) const
 {
     if (!expert_mode_init_)
     {
-        expert_mode_ = compass_.expertMode();
+        expert_mode_ = task_.manager().appState().expertMode();
         expert_mode_init_ = true;
     }
 

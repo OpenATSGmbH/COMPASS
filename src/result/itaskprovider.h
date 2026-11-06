@@ -25,7 +25,10 @@
 #include <memory>
 #include <string>
 
-class COMPASS;
+class AppState;
+class DBInterface;
+class DBContentManager;
+class LicenseManager;
 class ViewManager;
 class TaskResult;
 
@@ -45,7 +48,11 @@ class ITaskProvider
 public:
     virtual ~ITaskProvider() = default;
 
-    virtual COMPASS& compass() = 0;
+    // managers the results and reports use
+    virtual AppState& appState() = 0;
+    virtual DBInterface& dbInterface() = 0;
+    virtual DBContentManager& dbContentManager() = 0;
+    virtual LicenseManager& licenseManager() = 0;
     virtual ViewManager& viewManager() = 0; // views for figure rendering and export
 
     // result writing

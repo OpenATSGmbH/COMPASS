@@ -38,7 +38,6 @@
 #include "stringconv.h"
 #include "json_tools.h"
 #include "files.h"
-#include "compass.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "ViewerWidget.h"

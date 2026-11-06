@@ -21,6 +21,7 @@
 
 #include "configurable.h"
 #include "itaskprovider.h"
+#include "imanager.h"
 #include "taskdefs.h"
 #include "task.h"
 #include "reportdefs.h"
@@ -30,7 +31,15 @@
 
 #include <boost/optional.hpp>
 
-class COMPASS;
+class AppState;
+class LogStore;
+class DBInterface;
+class DBContentManager;
+class LicenseManager;
+class JobManager;
+class UnitManager;
+class ProjectionManager;
+class IMainWindow;
 class ViewManager;
 class EvaluationManager;
 class FilterManager;
@@ -48,6 +57,11 @@ class TaskResult;
 class TaskResultDB;
 class ViewableDataConfig;
 
+namespace context
+{
+    class DBContextManager;
+}
+
 namespace ResultReport
 {
     class Report;
@@ -56,7 +70,7 @@ namespace ResultReport
     class ReportExport;
 }
 
-class TaskManager : public QObject, public Configurable, public ITaskProvider
+class TaskManager : public QObject, public Configurable, public ITaskProvider, public IManager
 {
     Q_OBJECT
 
@@ -77,18 +91,39 @@ public slots:
 
 public:
     // TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
-    TaskManager(nlohmann::json& config, COMPASS& compass);
+    TaskManager(nlohmann::json& config,
+                Configurable& parent,
+                AppState& app_state,
+                LogStore& log_store,
+                DBInterface& db_interface,
+                DBContentManager& dbcont_man);
 
-    COMPASS& compass() override { return compass_; }
+    AppState& appState() override { return app_state_; }
+    LogStore& logStore() { return log_store_; }
+    DBInterface& dbInterface() override { return db_interface_; }
+    DBContentManager& dbContentManager() override { return dbcont_man_; }
+    LicenseManager& licenseManager() override;
 
     // peers, set by the composition root
     void setManagers(ViewManager& view_manager,
                      EvaluationManager& eval_manager,
-                     FilterManager& filter_manager);
+                     FilterManager& filter_manager,
+                     context::DBContextManager& ctx_man,
+                     JobManager& job_manager,
+                     UnitManager& unit_manager,
+                     ProjectionManager& proj_man,
+                     LicenseManager& license_manager);
+    bool checkWired() const override; // without the main window, set later
+    void setMainWindow(IMainWindow& main_window) { main_window_ = &main_window; }
 
     ViewManager& viewManager() override;
     EvaluationManager& evaluationManager();
     FilterManager& filterManager();
+    context::DBContextManager& dbContextManager();
+    JobManager& jobManager();
+    UnitManager& unitManager();
+    ProjectionManager& projectionManager();
+    IMainWindow& mainWindow();
 
     virtual ~TaskManager();
 
@@ -176,12 +211,21 @@ protected:
     void updateReportContents();
     boost::optional<unsigned int> findResult(const std::string& name) const;
 
-    COMPASS& compass_;
+    AppState&         app_state_;
+    LogStore&         log_store_;
+    DBInterface&      db_interface_;
+    DBContentManager& dbcont_man_;
 
     // peers, set by the composition root
-    ViewManager*       view_manager_   = nullptr;
-    EvaluationManager* eval_manager_   = nullptr;
-    FilterManager*     filter_manager_ = nullptr;
+    ViewManager*               view_manager_    = nullptr;
+    EvaluationManager*         eval_manager_    = nullptr;
+    FilterManager*             filter_manager_  = nullptr;
+    context::DBContextManager* ctx_man_         = nullptr;
+    JobManager*                job_manager_     = nullptr;
+    UnitManager*               unit_manager_    = nullptr;
+    ProjectionManager*         proj_man_        = nullptr;
+    LicenseManager*            license_manager_ = nullptr;
+    IMainWindow*               main_window_     = nullptr;
 
     // tasks
     std::unique_ptr<ASTERIXImportTask> asterix_importer_task_;

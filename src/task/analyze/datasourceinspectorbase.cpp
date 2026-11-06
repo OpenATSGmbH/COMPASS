@@ -20,7 +20,6 @@
 #include "analysisdataset.h"
 #include "inspectorsettingsbase.h"
 #include "dbcontent/target/targetreportchain.h"
-#include "compass.h"
 #include "db_context_manager.h"
 #include "taskmanager.h"
 #include "taskresult.h"
@@ -88,7 +87,7 @@ bool DataSourceInspectorBase::prerequisitesMet(std::string& reason_out) const
         return false;
     }
 
-    auto& ctx = task_.compass().dbContextManager();
+    auto& ctx = task_.manager().dbContextManager();
 
     const auto tst_dbcontents = testDBContentNames();
     if (!tst_dbcontents.empty()

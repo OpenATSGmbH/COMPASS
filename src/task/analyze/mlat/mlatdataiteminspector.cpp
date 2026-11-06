@@ -20,7 +20,6 @@
 #include "asterixreporthelpers.h"
 #include "asteriximporttask.h"
 
-#include "compass.h"
 #include "db_context_manager.h"
 #include "data_source.h"
 #include "logger.h"
@@ -86,8 +85,7 @@ void MLATDataItemInspector::writeReport(ResultReport::Section& root)
             "to the data sources selected for this analysis.");
     }
 
-    auto& compass = task_.compass();
-    auto& ctx     = compass.dbContextManager();
+    auto& ctx = task_.manager().dbContextManager();
     const auto& info_map = ctx.asterixInfo();
 
     auto& settings = static_cast<MLATDataItemInspectorSettings&>(settings_);

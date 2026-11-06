@@ -19,6 +19,7 @@
 
 #include "configurable.h"
 #include "ifilterprovider.h"
+#include "imanager.h"
 #include "appmode.h"
 #include "dbfilter.h"
 #include "dbcontentmanagervariableresolver.h"
@@ -31,8 +32,8 @@
 #include <memory>
 
 class DataSourcesFilter;
-class COMPASS;
 class DBContentManager;
+class DBInterface;
 namespace context { class DBContextManager; }
 class FilterManagerWidget;
 class ViewableDataConfig;
@@ -45,7 +46,7 @@ class VariableSet;
 
 }
 
-class FilterManager : public QObject, public Configurable, public IFilterProvider
+class FilterManager : public QObject, public Configurable, public IFilterProvider, public IManager
 {
     Q_OBJECT
 signals:
@@ -68,8 +69,15 @@ public slots:
 
 public:
     // FilterManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
-    FilterManager(nlohmann::json& config, COMPASS& compass);
+    FilterManager(nlohmann::json& config,
+                  Configurable& parent,
+                  DBContentManager& dbcont_man);
     virtual ~FilterManager();
+
+    // peers, set by the composition root after all managers were created
+    void setManagers(context::DBContextManager& ctx_man,
+                     DBInterface& db_interface);
+    bool checkWired() const override;
 
     bool useFilters() const override;
     void useFilters(bool useFilters);
@@ -105,16 +113,19 @@ public:
 
     void resetToStartupConfiguration();
 
-    COMPASS& compass() { return compass_; }
     DBContentManager& dbContentManager() { return dbcontent_man_; }
     context::DBContextManager& dbContextManager();
+    DBInterface& dbInterface();
 
     IDBVariableResolver& variableResolver() { return var_resolver_; }
 
 protected:
-    COMPASS& compass_;
-    DBContentManager& dbcontent_man_;
+    DBContentManager&                dbcontent_man_;
     DBContentManagerVariableResolver var_resolver_;
+
+    // peers, set by the composition root
+    context::DBContextManager* ctx_man_      = nullptr;
+    DBInterface*               db_interface_ = nullptr;
 
     // database id, resets if changed
     std::string db_id_;

@@ -103,6 +103,13 @@ ProjectionManager::~ProjectionManager()
 
 /**
  */
+bool ProjectionManager::checkWired() const
+{
+    return ctx_man_ && var_resolver_;
+}
+
+/**
+ */
 context::DBContextManager& ProjectionManager::dbContextManager()
 {
     traced_assert(ctx_man_);

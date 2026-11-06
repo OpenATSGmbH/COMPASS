@@ -44,8 +44,9 @@ namespace main_window
 
 // import vp
 
-RTCommandImportViewPointsFile::RTCommandImportViewPointsFile()
+RTCommandImportViewPointsFile::RTCommandImportViewPointsFile(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
 }
 
@@ -71,18 +72,18 @@ bool RTCommandImportViewPointsFile::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
-    ViewPointsImportTask& vp_import_task = root().taskManager().viewPointsImportTask();
+    ViewPointsImportTask& vp_import_task = root_.taskManager().viewPointsImportTask();
 
     vp_import_task.importFilename(filename_);
 
@@ -147,8 +148,9 @@ namespace helpers
     }
 }
 
-RTCommandImportASTERIXFile::RTCommandImportASTERIXFile()
+RTCommandImportASTERIXFile::RTCommandImportASTERIXFile(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.asteriximporttask.doneSignal", -1); // think about max duration
 }
@@ -215,19 +217,19 @@ bool RTCommandImportASTERIXFile::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
     unsigned int file_line {0};
 
     if (!config_.empty())
@@ -302,7 +304,7 @@ bool RTCommandImportASTERIXFile::run_impl()
 
 bool RTCommandImportASTERIXFile::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -354,8 +356,9 @@ void RTCommandImportASTERIXFile::assignVariables_impl(const VariablesMap& variab
 
 // import asterix files
 
-RTCommandImportASTERIXFiles::RTCommandImportASTERIXFiles()
+RTCommandImportASTERIXFiles::RTCommandImportASTERIXFiles(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.asteriximporttask.doneSignal", -1); // think about max duration
 }
@@ -427,19 +430,19 @@ bool RTCommandImportASTERIXFiles::run_impl()
         }
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     unsigned int file_line {0};
 
@@ -528,7 +531,7 @@ bool RTCommandImportASTERIXFiles::run_impl()
 
 bool RTCommandImportASTERIXFiles::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -589,8 +592,9 @@ void RTCommandImportASTERIXFiles::assignVariables_impl(const VariablesMap& varia
 
 // import asterix pcap file
 
-RTCommandImportASTERIXPCAPFile::RTCommandImportASTERIXPCAPFile()
+RTCommandImportASTERIXPCAPFile::RTCommandImportASTERIXPCAPFile(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.asteriximporttask.doneSignal", -1); // think about max duration
 }
@@ -639,19 +643,19 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
     unsigned int file_line {0};
 
     if (!config_.empty())
@@ -718,7 +722,7 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
 
 bool RTCommandImportASTERIXPCAPFile::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -766,8 +770,9 @@ void RTCommandImportASTERIXPCAPFile::assignVariables_impl(const VariablesMap& va
 
 // import asterix files
 
-RTCommandImportASTERIXPCAPFiles::RTCommandImportASTERIXPCAPFiles()
+RTCommandImportASTERIXPCAPFiles::RTCommandImportASTERIXPCAPFiles(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.asteriximporttask.doneSignal", -1); // think about max duration
 }
@@ -821,19 +826,19 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
         }
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     unsigned int file_line {0};
 
@@ -907,7 +912,7 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
 
 bool RTCommandImportASTERIXPCAPFiles::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -964,8 +969,9 @@ void RTCommandImportASTERIXPCAPFiles::assignVariables_impl(const VariablesMap& v
 
 // import asterix network
 
-RTCommandImportASTERIXNetworkStart::RTCommandImportASTERIXNetworkStart()
+RTCommandImportASTERIXNetworkStart::RTCommandImportASTERIXNetworkStart(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setDelay(500); // think about max duration
 }
@@ -1007,19 +1013,19 @@ rtcommand::IsValid  RTCommandImportASTERIXNetworkStart::valid() const
 
 bool RTCommandImportASTERIXNetworkStart::run_impl()
 {
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    bool db_opened = compass_->dbOpened();
+    bool db_opened = root_.compass().dbOpened();
     assert (db_opened);
-    bool db_inmem  = compass_->dbInMem();
+    bool db_inmem  = root_.compass().dbInMem();
 
-    std::string current_db_filename = (db_opened && !db_inmem) ? compass_->lastDbFilename() : "";
+    std::string current_db_filename = (db_opened && !db_inmem) ? root_.compass().appState().lastDbFilename() : "";
 
-    bool use_db_in_mem = compass_->dbInterface().useLiveInMemDB();
+    bool use_db_in_mem = root_.compass().dbInterface().useLiveInMemDB();
 
     if (use_db_in_mem)
     {
@@ -1034,7 +1040,7 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
         main_window->createInMemoryDB(current_db_filename);
     }
 
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (!config_.empty())
     {
@@ -1192,27 +1198,28 @@ void RTCommandImportASTERIXNetworkStart::assignVariables_impl(const VariablesMap
 
 // import asterix network stop
 
-RTCommandImportASTERIXNetworkStop::RTCommandImportASTERIXNetworkStop()
+RTCommandImportASTERIXNetworkStop::RTCommandImportASTERIXNetworkStop(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setDelay(500); // think about max duration
 }
 
 bool RTCommandImportASTERIXNetworkStop::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() == AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() == AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (!import_task.isRunning() || !import_task.source().isNetworkType())
     {
@@ -1239,8 +1246,9 @@ bool RTCommandImportASTERIXNetworkStop::run_impl()
 
 // import asterix network pause
 
-RTCommandImportASTERIXNetworkPause::RTCommandImportASTERIXNetworkPause()
+RTCommandImportASTERIXNetworkPause::RTCommandImportASTERIXNetworkPause(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     // the pause loads the paused display from the database, done when the main window reports it
     condition.setSignal("mainwindow.dataLoaded", -1);
@@ -1248,19 +1256,19 @@ RTCommandImportASTERIXNetworkPause::RTCommandImportASTERIXNetworkPause()
 
 bool RTCommandImportASTERIXNetworkPause::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::LiveRunning)
+    if (root_.compass().appState().appMode() != AppMode::LiveRunning)
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (!import_task.isRunning() || !import_task.source().isNetworkType())
     {
@@ -1278,27 +1286,28 @@ bool RTCommandImportASTERIXNetworkPause::run_impl()
 
 // import asterix network resume
 
-RTCommandImportASTERIXNetworkResume::RTCommandImportASTERIXNetworkResume()
+RTCommandImportASTERIXNetworkResume::RTCommandImportASTERIXNetworkResume(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setDelay(500); // the live window is shown synchronously, same as the stop
 }
 
 bool RTCommandImportASTERIXNetworkResume::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::LivePaused)
+    if (root_.compass().appState().appMode() != AppMode::LivePaused)
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = root().taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (!import_task.isRunning() || !import_task.source().isNetworkType())
     {
@@ -1315,8 +1324,9 @@ bool RTCommandImportASTERIXNetworkResume::run_impl()
 }
 
 // import json
-RTCommandImportJSONFile::RTCommandImportJSONFile()
+RTCommandImportJSONFile::RTCommandImportJSONFile(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.jsonimporttask.doneSignal", -1);  // think about max duration
 }
@@ -1343,19 +1353,19 @@ bool RTCommandImportJSONFile::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    JSONImportTask& import_task = root().taskManager().jsonImporterTask();
+    JSONImportTask& import_task = root_.taskManager().jsonImporterTask();
 
     import_task.importFilename(filename_);
 
@@ -1386,8 +1396,9 @@ void RTCommandImportJSONFile::assignVariables_impl(const VariablesMap& variables
     }
 
 // import gps trail
-RTCommandImportGPSTrail::RTCommandImportGPSTrail()
+RTCommandImportGPSTrail::RTCommandImportGPSTrail(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.gpstrailimporttask.doneSignal", -1); // think about max duration
 }
@@ -1414,19 +1425,19 @@ bool RTCommandImportGPSTrail::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    GPSTrailImportTask& import_task = root().taskManager().gpsTrailImportTask();
+    GPSTrailImportTask& import_task = root_.taskManager().gpsTrailImportTask();
 
     //deactivate extra information
     import_task.useTodOffset(false);

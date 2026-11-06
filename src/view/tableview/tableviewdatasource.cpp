@@ -16,9 +16,9 @@
  */
 
 #include "tableviewdatasource.h"
+#include "viewmanager.h"
 #include "tableview.h"
 #include "viewabledataconfig.h"
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "logger.h"
@@ -68,7 +68,7 @@ void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
     {
         traced_assert(!set_);
 
-        set_.reset(new VariableOrderedSet(child_json, view_.compass().dbContentManager(), this));
+        set_.reset(new VariableOrderedSet(child_json, view_.viewManager().dbContentManager(), this));
 
         connect(set_.get(), &VariableOrderedSet::setChangedSignal, this,
                 &TableViewDataSource::setChangedSignal, Qt::UniqueConnection);
@@ -86,7 +86,7 @@ void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
 
 void TableViewDataSource::checkSubConfigurables()
 {
-    //DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    //DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
 
     if (!set_)
     {
@@ -248,7 +248,7 @@ bool TableViewDataSource::addTemporaryVariable (const std::string& dbcontent_nam
     loginf << "dbcontent_name '" << dbcontent_name
            << "' var_name '" << var_name << "'";
 
-    DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
     
     traced_assert(set_);
     if (dbcontent_name == META_OBJECT_NAME)
@@ -288,7 +288,7 @@ void TableViewDataSource::removeTemporaryVariable (const std::string& dbcontent_
 //    traced_assert(el != temporary_added_variables_.end());
 //    temporary_added_variables_.erase(el);
 
-    DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {
@@ -311,7 +311,7 @@ void TableViewDataSource::removeTemporaryVariable (const std::string& dbcontent_
 
 void TableViewDataSource::addDefaultVariables (VariableOrderedSet& set)
 {
-    DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
 
     // Timestamp
     if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_timestamp_.name()))

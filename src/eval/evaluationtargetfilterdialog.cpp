@@ -16,7 +16,6 @@
  */
 
 #include "evaluationtargetfilterdialog.h"
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "evaluationtargetfilter.h"

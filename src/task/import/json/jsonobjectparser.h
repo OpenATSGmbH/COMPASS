@@ -30,7 +30,7 @@
 #include <string>
 
 class Buffer;
-class COMPASS;
+class TaskManager;
 class DBContent;
 class JSONParsingSchema;
 
@@ -47,10 +47,10 @@ class JSONObjectParser : public Configurable
 
   public:
     /// @brief Constructor backed by a json reference
-    JSONObjectParser(nlohmann::json& config, JSONParsingSchema* parent, COMPASS& compass);
+    JSONObjectParser(nlohmann::json& config, JSONParsingSchema* parent, TaskManager& task_man);
     JSONObjectParser() = delete;
 
-    COMPASS& compass() { return compass_; }
+    TaskManager& taskManager() { return task_man_; }
 
     DBContent& dbContent() const;
 
@@ -103,7 +103,7 @@ class JSONObjectParser : public Configurable
     void active(bool value);
 
 private:
-    COMPASS& compass_;
+    TaskManager& task_man_;
     std::string name_;
     bool active_ {true};
 

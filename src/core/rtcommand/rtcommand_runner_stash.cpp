@@ -29,13 +29,9 @@ namespace rtcommand
 {
 
 /**
- * Notice: compass is only handed to the commands (RTCommand::compass_), for the commands of
- * the libraries above core.
 */
-RTCommandRunnerStash::RTCommandRunnerStash(IRTCommandHost& host,
-                                           COMPASS& compass)
-:   host_   (host)
-,   compass_(compass)
+RTCommandRunnerStash::RTCommandRunnerStash(IRTCommandHost& host)
+:   host_(host)
 {
 }
 
@@ -96,8 +92,7 @@ int RTCommandRunnerStash::executeCommand(RTCommandMetaTypeWrapper wrapper) const
     if (host_.viewsBusy())
         return static_cast<int>(ExecResult::Deferred);
 
-    wrapper.command->compass_ = &compass_;
-    wrapper.command->host_    = &host_;
+    wrapper.command->host_ = &host_;
 
     return static_cast<int>(wrapper.command->run() ? ExecResult::Succeeded
                                                    : ExecResult::Failed);
@@ -121,8 +116,7 @@ void RTCommandRunnerStash::executeCommandAsync(RTCommandMetaTypeWrapper wrapper)
         return;
     }
 
-    wrapper.command->compass_ = &compass_;
-    wrapper.command->host_    = &host_;
+    wrapper.command->host_ = &host_;
 
     //the runner does not track state for async commands, since execution
     //happens after the command reply has already been sent
@@ -138,8 +132,7 @@ bool RTCommandRunnerStash::postCheckCommand(RTCommandMetaTypeWrapper wrapper) co
     if (!wrapper.command)
         return false;
 
-    wrapper.command->compass_ = &compass_;
-    wrapper.command->host_    = &host_;
+    wrapper.command->host_ = &host_;
     return wrapper.command->checkResult();
 }
 

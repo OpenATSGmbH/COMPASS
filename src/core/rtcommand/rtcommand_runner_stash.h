@@ -21,8 +21,6 @@
 
 #include <QObject>
 
-class COMPASS;
-
 class QSignalSpy;
 
 namespace rtcommand
@@ -71,8 +69,7 @@ class RTCommandRunnerStash : public QObject
 {
     Q_OBJECT
 public:
-    RTCommandRunnerStash(IRTCommandHost& host,
-                         COMPASS& compass);
+    explicit RTCommandRunnerStash(IRTCommandHost& host);
     virtual ~RTCommandRunnerStash();
 
 private slots:
@@ -90,7 +87,6 @@ private:
     friend class RTCommandRunner;
 
     IRTCommandHost& host_;
-    COMPASS&        compass_; // only handed to the commands
     std::unique_ptr<QSignalSpy> spy_;
 };
 

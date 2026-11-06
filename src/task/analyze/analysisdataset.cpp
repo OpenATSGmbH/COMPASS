@@ -19,7 +19,6 @@
 #include "evaluationconstraints.h"
 
 #include "buffer.h"
-#include "compass.h"
 #include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentaccessor.h"
@@ -72,10 +71,11 @@ const std::vector<ptime>& emptyCycles()
 }
 }
 
-AnalysisDataset::AnalysisDataset(COMPASS& compass)
-    : compass_(compass)
+AnalysisDataset::AnalysisDataset(DBContentManager& dbcont_man, context::DBContextManager& ctx_man)
+    : dbcont_man_(dbcont_man),
+      ctx_man_(ctx_man)
 {
-    accessor_ = std::make_shared<dbContent::DBContentAccessor>(compass.dbContentManager());
+    accessor_ = std::make_shared<dbContent::DBContentAccessor>(dbcont_man_);
 }
 
 AnalysisDataset::~AnalysisDataset() = default;
@@ -84,7 +84,7 @@ void AnalysisDataset::loadStatusCycles()
 {
     status_cycles_.clear();
 
-    auto& dbcontent_man = compass_.dbContentManager();
+    auto& dbcontent_man = dbcont_man_;
 
     const std::string status_content = "CAT019";
 
@@ -142,7 +142,7 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
         return false;
     }
 
-    auto& dbcontent_man = compass_.dbContentManager();
+    auto& dbcontent_man = dbcont_man_;
 
     if (!dbcontent_man.hasAssociations())
     {
@@ -151,7 +151,7 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
         return false;
     }
 
-    auto& ctx_man = compass_.dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (ref_ds_ids.empty())
     {
@@ -239,7 +239,7 @@ dbContent::VariableSet AnalysisDataset::buildReadSet(const std::string& name) co
 {
     using namespace dbcontent_vars;
 
-    auto& m = compass_.dbContentManager();
+    auto& m = dbcont_man_;
     dbContent::VariableSet rs;
 
     auto addMeta = [&](const auto& mv) {
@@ -334,7 +334,7 @@ bool AnalysisDataset::targetGroundOnly(unsigned int utn) const
         return it->second;
 
     bool ground_only = false;
-    auto& dbcont_man = compass_.dbContentManager();
+    auto& dbcont_man = dbcont_man_;
     if (dbcont_man.existsTarget(utn))
     {
         auto cat = dbcont_man.emitterCategory(utn);
@@ -787,7 +787,7 @@ boost::optional<bool> AnalysisDataset::testVariableHasValues(const std::string& 
     if (!accessor_ || !accessor_->has(dbcontent_name))
         return boost::none;
 
-    auto& m = compass_.dbContentManager();
+    auto& m = dbcont_man_;
 
     if (meta ? !m.metaCanGetVariable(dbcontent_name, property)
              : !m.canGetVariable(dbcontent_name, property))

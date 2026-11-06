@@ -25,7 +25,6 @@
 
 #include "taskresult.h"
 
-#include "compass.h"
 #include "files.h"
 #include "global.h"
 
@@ -69,9 +68,16 @@ ReportExporter::ReportExporter(const ReportExport* report_export,
     traced_assert(report_export_);
 }
 
-COMPASS& ReportExporter::compass() const
+AppState& ReportExporter::appState() const
 {
-    return report_export_->compass();
+    return report_export_->appState();
+}
+
+/**
+ */
+LicenseManager& ReportExporter::licenseManager() const
+{
+    return report_export_->licenseManager();
 }
 
 /**

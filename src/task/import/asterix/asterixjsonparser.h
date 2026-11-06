@@ -17,8 +17,6 @@
 
 #pragma once
 
-class COMPASS;
-
 #include "configurable.h"
 #include "dbcontent/variable/variableset.h"
 #include "jsondatamapping.h"
@@ -37,6 +35,7 @@ class DBContent;
 class Buffer;
 class ASTERIXImportTask;
 class ASTERIXJSONParsingSchema;
+class TaskManager;
 
 class ASTERIXJSONParser : public QAbstractItemModel, public Configurable
 {
@@ -55,10 +54,9 @@ public:
     };
 
     /// @brief Constructor backed by a json reference
-    ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& task,
-                      COMPASS& compass, ASTERIXJSONParsingSchema* parent);
+    ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& task, ASTERIXJSONParsingSchema* parent);
 
-    COMPASS& compass() { return compass_; }
+    TaskManager& taskManager();
 
     DBContent& dbContent() const;
 
@@ -135,7 +133,6 @@ public:
 
 private:
     ASTERIXImportTask& task_;
-    COMPASS& compass_;
     std::string name_;
     unsigned int category_;
 

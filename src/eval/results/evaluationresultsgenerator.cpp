@@ -34,6 +34,7 @@
 
 #include "dbcontentmanager.h"
 #include "dbinterface.h"
+#include "appstate.h"
 
 #include "itaskprovider.h"
 #include "taskresult.h"
@@ -41,7 +42,6 @@
 #include "report/section.h"
 #include "report/sectioncontenttable.h"
 
-#include "compass.h"
 #include "logger.h"
 #include "stringconv.h"
 #include "global.h"
@@ -142,7 +142,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
     //create the report now, its id names the report tables written during the evaluation
     {
-        auto& task_manager = calculator_.manager().compass().taskProvider();
+        auto& task_manager = calculator_.manager().taskProvider();
         if (!task_manager.hasCurrentResult())
             task_manager.beginTaskResultWriting(result_name_, task::TaskResultType::Evaluation);
     }
@@ -440,7 +440,7 @@ void EvaluationResultsGenerator::writeReportTable(const std::vector<std::shared_
     if (results.empty())
         return;
 
-    auto& task_manager = calculator_.manager().compass().taskProvider();
+    auto& task_manager = calculator_.manager().taskProvider();
     if (!task_manager.hasCurrentResult())
     {
         logerr << "no current report, table skipped";
@@ -500,7 +500,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     dlg.setAttribute(Qt::WA_ShowWithoutActivating, true);
     dlg.show();
 
-    auto& task_manager = calculator_.manager().compass().taskProvider();
+    auto& task_manager = calculator_.manager().taskProvider();
 
     //the evaluation creates the report at its start, a report update on usage changes creates it here
     if (!task_manager.hasCurrentResult())
@@ -531,7 +531,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 
     gen_table.addRow({"Application", "Application Filename", APP_FILENAME});
     gen_table.addRow({"Application Version", "Application Version", VERSION});
-    gen_table.addRow({"DB", "Database Name", calculator_.manager().compass().lastDbFilename()});
+    gen_table.addRow({"DB", "Database Name", calculator_.manager().appState().lastDbFilename()});
 
     traced_assert(calculator_.hasCurrentStandard());
     gen_table.addRow({"Standard", "Standard name", calculator_.currentStandardName()});

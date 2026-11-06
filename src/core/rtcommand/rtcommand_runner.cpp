@@ -34,9 +34,8 @@ namespace rtcommand
 
 /**
  */
-RTCommandRunner::RTCommandRunner(IRTCommandHost& host,
-                                 COMPASS& compass)
-    :   stash_(new RTCommandRunnerStash(host, compass))
+RTCommandRunner::RTCommandRunner(IRTCommandHost& host)
+    :   stash_(new RTCommandRunnerStash(host))
 {
 }
 

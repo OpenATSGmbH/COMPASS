@@ -16,8 +16,8 @@
  */
 
 #include "jsonimporttaskwidget.h"
+#include "taskmanager.h"
 
-#include "compass.h"
 //#include "dbcontent/dbcontent.h"
 //#include "dbcontent/dbcontentcombobox.h"
 //#include "dbcontent/dbcontentmanager.h"
@@ -346,7 +346,7 @@ void JSONImportTaskWidget::addObjectParserSlot()
         return;
     }
 
-    dbContent::SelectDBContentDialog dialog(task_.compass().dbContentManager());
+    dbContent::SelectDBContentDialog dialog(task_.manager().dbContentManager());
 
     int ret = dialog.exec();
 

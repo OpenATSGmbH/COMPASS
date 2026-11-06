@@ -17,8 +17,6 @@
 
 #pragma once
 
-class COMPASS;
-
 #include "rtcommand_result.h"
 
 #include <memory>
@@ -44,9 +42,7 @@ class RTCommandRunner
 public:
     typedef std::vector<RTCommandResult> Results;
 
-    // compass is only handed to the commands (for the commands of the libraries above core)
-    RTCommandRunner(IRTCommandHost& host,
-                    COMPASS& compass);
+    explicit RTCommandRunner(IRTCommandHost& host);
     virtual ~RTCommandRunner();
 
     std::future<Results> runCommand(std::unique_ptr<RTCommand>&& cmd);

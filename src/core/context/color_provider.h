@@ -49,7 +49,7 @@ class DBContextManager;
 class ColorProvider
 {
 public:
-    /// values as stored by COMPASS::colorMode()
+    /// values as stored by AppState::colorMode()
     enum class Mode
     {
         DSType,

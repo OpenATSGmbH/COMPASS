@@ -445,14 +445,14 @@ bool Client::run ()
         root_.reset(new CompassRoot(*config_manager_));
         compass_ = &root_->compass();
 
-        applyDarkMode(compass_->darkMode());
+        applyDarkMode(compass_->appState().darkMode());
 
         // make system your application font (applies to all widgets)
         if (Utils::System::appDir() != nullptr)
         {
             QFont system_font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
 
-            system_font.setPointSizeF(system_font.pointSizeF() * compass_->appFontScale());
+            system_font.setPointSizeF(system_font.pointSizeF() * compass_->appState().settings().app_font_scale);
             setFont(system_font);
         }
 
@@ -478,10 +478,10 @@ bool Client::run ()
     loginf << "created COMPASS instance";
 
     if (expert_mode_)
-        compass_->expertMode(true);
+        compass_->appState().expertMode(true);
 
     if (do_sensor_status_hack_)
-        compass_->sensorStatusTimeHack(do_sensor_status_hack_);
+        compass_->appState().sensorStatusTimeHack(do_sensor_status_hack_);
 
     MainWindow& main_window = root_->mainWindow();
     main_window.init();
@@ -746,7 +746,7 @@ bool Client::run ()
 
         if (export_report_name_.size())
         {
-            if (export_report_mode_ == "PDF" && !compass_->pdflatexFound())
+            if (export_report_mode_ == "PDF" && !compass_->appState().pdflatexFound())
                 throw runtime_error("Cannot export as PDF: pdflatex not installed");
 
             string cmd = "export_report --report '"+export_report_name_+"'";
@@ -765,7 +765,7 @@ bool Client::run ()
         rt_man.startCommandProcessing();
 
         // finally => set compass as running
-        compass_->setAppPhase(AppPhase::Running);
+        compass_->appState().phase(AppPhase::Running);
 
         return true;
     }

@@ -37,6 +37,7 @@
 #include "projectionmanager.h"
 #include "rtcommand_manager.h"
 #include "rtcommand_runner.h"
+#include "rtcommand_registry.h"
 #include "async.h"
 
 #include "logmodel.h"
@@ -75,7 +76,7 @@ CompassRoot::CompassRoot(ConfigurationManager& config_manager)
 
     startManagers();
 
-    compass_->setLiveImportBacklogSizeFunc([ this ] () { return task_manager_->asterixImporterTask().numPacketsInProcessing(); });
+    view_manager_->setLiveImportBacklogSizeFunc([ this ] () { return task_manager_->asterixImporterTask().numPacketsInProcessing(); });
     compass_->setShutdownSequence([ this ] () { shutdown(); });
 
     connectManagers();
@@ -86,7 +87,7 @@ CompassRoot::CompassRoot(ConfigurationManager& config_manager)
  */
 CompassRoot::~CompassRoot()
 {
-    if (!compass_->isShutDown())
+    if (!compass_->appState().isShutDown())
     {
         logerr << "not shut down";
         compass_->shutdown();
@@ -160,6 +161,11 @@ MainWindow& CompassRoot::mainWindow()
 {
     if (!main_window_)
     {
+        // app mode: the view manager switches after the filter and DB content managers (connectManagers)
+        // and before the main window (its own connection), as when it connected in ViewManager::init()
+        QObject::connect(compass_.get(), &COMPASS::appModeSwitchSignal,
+                         view_manager_.get(), &ViewManager::appModeSwitchSlot);
+
         main_window_ = new MainWindow(*this);
 
         QObject::connect(view_manager_.get(), &ViewManager::loadingStartedSignal,
@@ -168,6 +174,8 @@ MainWindow& CompassRoot::mainWindow()
                          main_window_, &MainWindow::loadingDone);
 
         compass_->setMainWindow(main_window_);
+        view_manager_->setMainWindow(*main_window_);
+        task_manager_->setMainWindow(*main_window_);
     }
 
     traced_assert(main_window_);
@@ -208,43 +216,48 @@ void CompassRoot::registerManagerCreators()
     auto createFilterManager = [ this ] (nlohmann::json& config)
     {
         traced_assert(!filter_manager_);
-        filter_manager_.reset(new FilterManager(config, *compass_));
-        compass_->managers().filter_provider = filter_manager_.get();
+        traced_assert(dbcontent_manager_); // used by the filters' variable resolver from construction on
+        filter_manager_.reset(new FilterManager(config, *compass_, *dbcontent_manager_));
     };
 
     auto createTaskManager = [ this ] (nlohmann::json& config)
     {
         traced_assert(!task_manager_);
-        task_manager_.reset(new TaskManager(config, *compass_));
-        compass_->managers().task_provider = task_manager_.get();
+        traced_assert(db_interface_);      // used from construction on (result persistence)
+        traced_assert(dbcontent_manager_); // used from construction on (tasks)
+        task_manager_.reset(new TaskManager(config,
+                                            *compass_,
+                                            compass_->appState(),
+                                            compass_->logStore(),
+                                            *db_interface_,
+                                            *dbcontent_manager_));
     };
 
     auto createViewManager = [ this ] (nlohmann::json& config)
     {
         traced_assert(!view_manager_);
-        view_manager_.reset(new ViewManager(config, *compass_));
+        traced_assert(dbcontent_manager_); // used from construction on (live feed)
+        view_manager_.reset(new ViewManager(config, *compass_, compass_->appState(), *dbcontent_manager_));
         compass_->managers().view_provider = view_manager_.get();
     };
 
     auto createEvaluationManager = [ this ] (nlohmann::json& config)
     {
         traced_assert(!eval_manager_);
-        eval_manager_.reset(new EvaluationManager(config, *compass_));
-        compass_->managers().eval_provider = eval_manager_.get();
+        traced_assert(dbcontent_manager_); // used from construction on
+        eval_manager_.reset(new EvaluationManager(config, *compass_, compass_->appState(), *dbcontent_manager_));
     };
 
     auto createJobManager = [ this ] (nlohmann::json& config)
     {
         traced_assert(!job_manager_);
         job_manager_.reset(new JobManager(config, compass_.get()));
-        compass_->managers().job_manager = job_manager_.get();
     };
 
     auto createUnitManager = [ this ] (nlohmann::json& config)
     {
         traced_assert(!unit_manager_);
         unit_manager_.reset(new UnitManager(config, compass_.get()));
-        compass_->managers().unit_manager = unit_manager_.get();
     };
 
     auto createProjectionManager = [ this ] (nlohmann::json& config)
@@ -282,11 +295,6 @@ void CompassRoot::startManagers()
 {
     COMPASS::Managers& managers = compass_->managers();
 
-    // peers - set after creation, since the creation order follows the configuration
-    view_manager_->setManagers(*filter_manager_);
-    eval_manager_->setManagers(*view_manager_, *filter_manager_);
-    task_manager_->setManagers(*view_manager_, *eval_manager_, *filter_manager_);
-
     // wire up variable resolver for projection manager (breaks core→db dep)
     var_resolver_.reset(new DBContentManagerVariableResolver(*dbcontent_manager_));
     projection_manager_->varResolver(*var_resolver_);
@@ -294,15 +302,35 @@ void CompassRoot::startManagers()
     job_manager_->start();
     rt_cmd_manager_->start();
 
-    rt_cmd_runner_.reset(new rtcommand::RTCommandRunner(*compass_, *compass_));
-    managers.rt_cmd_runner = rt_cmd_runner_.get();
+    rt_cmd_runner_.reset(new rtcommand::RTCommandRunner(*compass_));
     rt_cmd_manager_->setManagers(*rt_cmd_runner_);
 
     // DBContextManager - not a Configurable, created directly
     context_manager_.reset(new context::DBContextManager(compass_->appState(), *db_interface_));
     managers.context_manager = context_manager_.get();
 
+    // peers - set after creation, since the creation order follows the configuration
     projection_manager_->setManagers(*context_manager_);
+    filter_manager_->setManagers(*context_manager_, *db_interface_);
+    task_manager_->setManagers(*view_manager_,
+                               *eval_manager_,
+                               *filter_manager_,
+                               *context_manager_,
+                               *job_manager_,
+                               *unit_manager_,
+                               *projection_manager_,
+                               *license_manager_);
+    view_manager_->setManagers(*filter_manager_,
+                               *db_interface_,
+                               *context_manager_,
+                               *job_manager_,
+                               *license_manager_);
+    eval_manager_->setManagers(*view_manager_,
+                               *filter_manager_,
+                               *db_interface_,
+                               *context_manager_,
+                               *projection_manager_,
+                               *task_manager_);
 
     dbcontent_manager_->setManagers(*db_interface_,
                                     *context_manager_,
@@ -314,6 +342,26 @@ void CompassRoot::startManagers()
                                     *eval_manager_);
 
     sensor_status_tracker_.reset(new SensorStatusTracker(*context_manager_, *dbcontent_manager_));
+
+    // all late-set peers must be present now => missing wiring fails at startup
+    const std::vector<std::pair<std::string, const IManager*>> wired_managers =
+    {
+        { "ProjectionManager", projection_manager_.get() },
+        { "RTCommandManager" , rt_cmd_manager_.get()     },
+        { "DBContentManager" , dbcontent_manager_.get()  },
+        { "FilterManager"    , filter_manager_.get()     },
+        { "ViewManager"      , view_manager_.get()       },
+        { "EvaluationManager", eval_manager_.get()       },
+        { "TaskManager"      , task_manager_.get()       }
+    };
+
+    for (const auto& [ name, manager ] : wired_managers)
+    {
+        if (!manager->checkWired())
+            logerr << name << " not wired";
+
+        traced_assert(manager->checkWired());
+    }
 }
 
 /**
@@ -411,15 +459,11 @@ void CompassRoot::connectManagers()
     QObject::connect(license_manager_.get(), &LicenseManager::changed, view_manager_.get(), &ViewManager::updateFeatures);
 
     // view signals for code below the view layer
-    QObject::connect(view_manager_.get(), &ViewManager::dataDistributedSignal,
-                     compass, &COMPASS::viewDataDistributedSignal);
-    QObject::connect(view_manager_.get(), &ViewManager::loadingDoneSignal,
-                     compass, &COMPASS::viewLoadingDoneSignal);
     QObject::connect(view_manager_.get(), &ViewManager::loadingDoneSignal,
                      dbcontent_manager_.get(), &DBContentManager::viewLoadingDoneSignal);
 
     // sensor status from the data distributed to the views
-    QObject::connect(compass, &COMPASS::viewDataDistributedSignal,
+    QObject::connect(view_manager_.get(), &ViewManager::dataDistributedSignal,
                      sensor_status_tracker_.get(), &SensorStatusTracker::dataDistributedSlot, Qt::QueuedConnection);
 }
 
@@ -431,6 +475,9 @@ void CompassRoot::shutdown()
 {
     COMPASS::Managers& managers = compass_->managers();
 
+    // the command creators reference the managers torn down below => no new commands from here on
+    rtcommand::RTCommandRegistry::instance().clear();
+
     // asynchronous view processing (geo geometry builds) may still read manager state -
     // wait it out before any manager is torn down
     if (view_manager_ && view_manager_->hasPendingViewProcessing())
@@ -441,7 +488,6 @@ void CompassRoot::shutdown()
 
     traced_assert(task_manager_);
     task_manager_->shutdown();
-    managers.task_provider = nullptr;
     task_manager_ = nullptr;
 
     // A job still in flight keeps using the managers reset below. The live delete job is
@@ -473,7 +519,6 @@ void CompassRoot::shutdown()
 
     traced_assert(eval_manager_);
     eval_manager_->close();
-    managers.eval_provider = nullptr;
     eval_manager_ = nullptr;
 
 #if USE_EXPERIMENTAL_SOURCE == true
@@ -483,7 +528,6 @@ void CompassRoot::shutdown()
 #endif
 
     traced_assert(filter_manager_);
-    managers.filter_provider = nullptr;
     filter_manager_ = nullptr;
 
     if (db_interface_->ready())
@@ -509,7 +553,6 @@ void CompassRoot::destroyManagers()
 {
     COMPASS::Managers& managers = compass_->managers();
 
-    managers.rt_cmd_runner = nullptr;
     rt_cmd_runner_ = nullptr;
 
     var_resolver_ = nullptr;
@@ -520,9 +563,7 @@ void CompassRoot::destroyManagers()
     managers.projection_manager = nullptr;
     projection_manager_ = nullptr;
 
-    managers.unit_manager = nullptr;
     unit_manager_ = nullptr;
 
-    managers.job_manager = nullptr;
     job_manager_ = nullptr;
 }

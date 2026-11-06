@@ -28,7 +28,6 @@
 
 #include "dbcontent.h"
 
-#include "compass.h"
 #include "logger.h"
 #include "latexvisitor.h"
 

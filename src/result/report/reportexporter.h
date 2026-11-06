@@ -31,7 +31,8 @@
 
 #include "json.hpp"
 
-class COMPASS;
+class AppState;
+class LicenseManager;
 class TaskResult;
 
 namespace ResultReport
@@ -93,7 +94,8 @@ signals:
     void progressChanged();
 
 protected:
-    COMPASS& compass() const;
+    AppState& appState() const;
+    LicenseManager& licenseManager() const;
 
     virtual ResultT<nlohmann::json> exportReport_impl(TaskResult& result,
                                                       Section* section,

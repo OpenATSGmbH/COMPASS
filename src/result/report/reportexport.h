@@ -28,7 +28,8 @@
 
 #include <QObject>
 
-class COMPASS;
+class AppState;
+class LicenseManager;
 class TaskResult;
 class ITaskProvider;
 
@@ -53,7 +54,8 @@ public:
     ReportExport(nlohmann::json& config, Configurable* parent, ITaskProvider& task_manager);
     virtual ~ReportExport();
 
-    COMPASS& compass() const;
+    AppState& appState() const;
+    LicenseManager& licenseManager() const;
 
     ResultT<nlohmann::json> exportReport(TaskResult& result,
                                          ReportExportMode mode,

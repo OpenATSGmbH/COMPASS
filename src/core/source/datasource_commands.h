@@ -32,7 +32,8 @@ namespace dbContent
 {
 
 
-extern void init_data_source_commands(context::DBContextManager& ctx_man,
+extern void init_data_source_commands(rtcommand::RTCommandRegistry& registry,
+                                      context::DBContextManager& ctx_man,
                                       DBContentManager& dbcont_man,
                                       SensorStatusTracker& sensor_status_tracker);
 
@@ -41,11 +42,14 @@ extern void init_data_source_commands(context::DBContextManager& ctx_man,
 struct RTCommandGetDataSources : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetDataSources();
+    explicit RTCommandGetDataSources(context::DBContextManager& ctx_man);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    context::DBContextManager& ctx_man_;
 
     DECLARE_RTCOMMAND(get_data_sources, "retrieves descriptions of data sources in the active context")
     DECLARE_RTCOMMAND_NOOPTIONS
@@ -55,11 +59,14 @@ protected:
 struct RTCommandGetDataSourceCounts : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetDataSourceCounts();
+    explicit RTCommandGetDataSourceCounts(context::DBContextManager& ctx_man);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    context::DBContextManager& ctx_man_;
 
     DECLARE_RTCOMMAND(get_data_source_counts, "retrieves per data source per dbcontent per line inserted record counts")
     DECLARE_RTCOMMAND_NOOPTIONS
@@ -69,11 +76,15 @@ protected:
 struct RTCommandGetSensorStatus : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetSensorStatus();
+    RTCommandGetSensorStatus(context::DBContextManager& ctx_man, SensorStatusTracker& sensor_status_tracker);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    context::DBContextManager& ctx_man_;
+    SensorStatusTracker&       sensor_status_tracker_;
 
     DECLARE_RTCOMMAND(get_sensor_status,
                       "retrieves the CAT063 based sensor status of the data sources, as shown in the Sensor Status tool")
@@ -87,11 +98,14 @@ public:
     std::string ds_json_str_;
     nlohmann::json ds_json_;
 
-    RTCommandSetDataSources();
+    explicit RTCommandSetDataSources(context::DBContextManager& ctx_man);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    context::DBContextManager& ctx_man_;
 
     DECLARE_RTCOMMAND(set_data_sources, "sets data source descriptions")
     DECLARE_RTCOMMAND_OPTIONS
@@ -104,11 +118,15 @@ public:
     std::string delete_info_str_;
     nlohmann::json delete_info_;
 
-    RTCommandDeleteData();
+    RTCommandDeleteData(context::DBContextManager& ctx_man, DBContentManager& dbcont_man);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    context::DBContextManager& ctx_man_;
+    DBContentManager&          dbcont_man_;
 
     DECLARE_RTCOMMAND(delete_data, "deletes data from the database")
     DECLARE_RTCOMMAND_OPTIONS

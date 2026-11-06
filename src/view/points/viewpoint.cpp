@@ -19,7 +19,6 @@
 #include "viewmanager.h"
 #include "logger.h"
 #include "json.hpp"
-#include "compass.h"
 #include "dbinterface.h"
 #include "latexvisitor.h"
 #include "files.h"
@@ -88,7 +87,7 @@ void ViewPoint::save()
 {
     logdbg << "id " << id_;
 
-    DBInterface& db_interface = view_manager_.compass().dbInterface();
+    DBInterface& db_interface = view_manager_.dbInterface();
     db_interface.setViewPoint(id_, data_.dump());
 }
 

@@ -18,6 +18,7 @@
 #pragma once
 
 #include "configurable.h"
+#include "imanager.h"
 //#include "logger.h"
 #include "rtcommand_defs.h"
 #include "json_fwd.hpp"
@@ -58,7 +59,7 @@ namespace rtcommand
  * Class for listening for and processing string commands at runtime,
  * either coming externally from a TCP port or internally from the application itself.
  */
-class RTCommandManager : public QThread, public Configurable
+class RTCommandManager : public QThread, public Configurable, public IManager
 {
     Q_OBJECT
 public:
@@ -97,6 +98,7 @@ public:
 
     // peers, set by the composition root (the runner is created after this manager)
     void setManagers(rtcommand::RTCommandRunner& runner) { runner_ = &runner; }
+    bool checkWired() const override;
 
     rtcommand::IssueInfo addCommand(const std::string& cmd_str, CommandId* id = nullptr);
     void addCommandFromConsole(const std::string& cmd_str); // throws on failure

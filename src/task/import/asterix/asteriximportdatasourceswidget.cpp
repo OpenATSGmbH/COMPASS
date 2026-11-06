@@ -16,10 +16,11 @@
  */
 
 #include "asteriximportdatasourceswidget.h"
+#include "appstate.h"
+#include "taskmanager.h"
 
 #include "asteriximporttask.h"
 #include "asteriximportsource.h"
-#include "compass.h"
 #include "data_source.h"
 #include "datasourceeditwidget.h"
 #include "db_context.h"
@@ -143,10 +144,10 @@ ASTERIXImportDataSourcesWidget::ASTERIXImportDataSourcesWidget(ASTERIXImportTask
             this, &ASTERIXImportDataSourcesWidget::rebuildAll);
     connect(&task_, &ASTERIXImportTask::sourceUsageChanged,
             this, &ASTERIXImportDataSourcesWidget::rebuildAll);
-    connect(&task_.compass().dbContextManager(),
+    connect(&task_.manager().dbContextManager(),
             &context::DBContextManager::activeContextChangedSignal,
             this, &ASTERIXImportDataSourcesWidget::rebuildAll);
-    connect(&task_.compass().dbContextManager(),
+    connect(&task_.manager().dbContextManager(),
             &context::DBContextManager::dataSourcesChangedSignal,
             this, &ASTERIXImportDataSourcesWidget::rebuildAll);
 
@@ -226,7 +227,7 @@ void ASTERIXImportDataSourcesWidget::buildUI()
                 return;
             }
 
-            auto& ctx_man = task_.compass().dbContextManager();
+            auto& ctx_man = task_.manager().dbContextManager();
             if (ctx_man.hasActiveContext())
                 ctx_man.saveContext(ctx_man.activeContextName());
             rebuildTree();
@@ -234,7 +235,7 @@ void ASTERIXImportDataSourcesWidget::buildUI()
         [](unsigned int /*ds_id*/) {
             // deletion intentionally not allowed from the import dialog
         },
-        &task_.compass().dbContextManager());
+        &task_.manager().dbContextManager());
     detail_stack_->addWidget(ds_edit_widget_);
 
     // page 2: items table
@@ -283,14 +284,14 @@ void ASTERIXImportDataSourcesWidget::buildUI()
 
 void ASTERIXImportDataSourcesWidget::rebuildAll()
 {
-    auto& ctx_man = task_.compass().dbContextManager();
+    auto& ctx_man = task_.manager().dbContextManager();
     last_result_ = ASTERIXImportProbeAggregator::aggregate(task_.source(), ctx_man);
     rebuildTree();
 }
 
 void ASTERIXImportDataSourcesWidget::rebuildTree()
 {
-    auto& ctx_man = task_.compass().dbContextManager();
+    auto& ctx_man = task_.manager().dbContextManager();
 
     // tree items about to be deleted - drop the dangling pointer
     last_committed_item_ = nullptr;
@@ -579,12 +580,12 @@ void ASTERIXImportDataSourcesWidget::onTreeSelectionChanged()
         selected_ds_id_    = ds_id;
         selected_category_.reset();
 
-        auto& ctx_man = task_.compass().dbContextManager();
+        auto& ctx_man = task_.manager().dbContextManager();
         if (auto* ds = ctx_man.dataSource(ds_id))
         {
             // existing context DS - normal edit flow
             banner_widget_->hide();
-            ds_edit_widget_->show(*ds, task_.compass().lastUsedPath());
+            ds_edit_widget_->show(*ds, task_.manager().appState().lastUsedPath());
             showDetailWidget(ds_edit_widget_);
         }
         else
@@ -611,7 +612,7 @@ void ASTERIXImportDataSourcesWidget::onTreeSelectionChanged()
                                 std::to_string(probe_it->second.sic));
             transient_editing_ = true;
 
-            ds_edit_widget_->show(*transient_ds_, task_.compass().lastUsedPath());
+            ds_edit_widget_->show(*transient_ds_, task_.manager().appState().lastUsedPath());
             add_to_context_button_->setEnabled(canAddTransient(*transient_ds_));
             showDetailWidget(ds_edit_widget_);
             banner_widget_->show();
@@ -808,7 +809,7 @@ void ASTERIXImportDataSourcesWidget::addToContextClicked()
     if (!canAddTransient(*transient_ds_))
         return;
 
-    auto& ctx_man = task_.compass().dbContextManager();
+    auto& ctx_man = task_.manager().dbContextManager();
     if (!ctx_man.hasActiveContext())
         return;
 

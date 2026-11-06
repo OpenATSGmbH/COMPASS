@@ -22,6 +22,7 @@
 #include "requirement/group.h"
 #include "requirement/base/baseconfig.h"
 #include "evaluation_commands.h"
+#include "rtcommand_registry.h"
 #include "evaluationsettings.h"
 #include "evaluationtargetfilter.h"
 #include "evaluationtargetfilterdialog.h"
@@ -40,9 +41,10 @@
 #include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variable.h"
 
-#include "compass.h"
+#include "appstate.h"
 #include "dbinterface.h"
 #include "db_context_manager.h"
+#include "projectionmanager.h"
 #include "filtermanager.h"
 #include "viewmanager.h"
 #include "itaskprovider.h"
@@ -89,13 +91,15 @@ const std::string EVAL_TIME_CONSTRAINTS_EXCLUDED_WINDOWS {"excluded_windows"};
 /**
  */
 EvaluationManager::EvaluationManager(nlohmann::json& config,
-                                     COMPASS& compass)
-    : Configurable(config, &compass)
-    , compass_(compass)
-    , dbcontent_man_(compass.dbContentManager())
+                                     Configurable& parent,
+                                     AppState& app_state,
+                                     DBContentManager& dbcont_man)
+    : Configurable(config, &parent)
+    , app_state_(app_state)
+    , dbcontent_man_(dbcont_man)
 {
     createSubConfigurables();
-    init_evaluation_commands(*this);
+    init_evaluation_commands(rtcommand::RTCommandRegistry::instance(), *this);
 }
 
 /**
@@ -108,10 +112,30 @@ EvaluationManager::~EvaluationManager()
  * Sets the peer managers, called by the composition root right after all managers were created.
  */
 void EvaluationManager::setManagers(ViewManager& view_manager,
-                                    FilterManager& filter_manager)
+                                    FilterManager& filter_manager,
+                                    DBInterface& db_interface,
+                                    context::DBContextManager& ctx_man,
+                                    ProjectionManager& projection_manager,
+                                    ITaskProvider& task_provider)
 {
-    view_manager_   = &view_manager;
-    filter_manager_ = &filter_manager;
+    view_manager_       = &view_manager;
+    filter_manager_     = &filter_manager;
+    db_interface_       = &db_interface;
+    ctx_man_            = &ctx_man;
+    projection_manager_ = &projection_manager;
+    task_provider_      = &task_provider;
+}
+
+/**
+ */
+bool EvaluationManager::checkWired() const
+{
+    return view_manager_       &&
+           filter_manager_     &&
+           db_interface_       &&
+           ctx_man_            &&
+           projection_manager_ &&
+           task_provider_;
 }
 
 /**
@@ -128,6 +152,38 @@ FilterManager& EvaluationManager::filterManager()
 {
     traced_assert(filter_manager_);
     return *filter_manager_;
+}
+
+/**
+ */
+DBInterface& EvaluationManager::dbInterface()
+{
+    traced_assert(db_interface_);
+    return *db_interface_;
+}
+
+/**
+ */
+context::DBContextManager& EvaluationManager::dbContextManager()
+{
+    traced_assert(ctx_man_);
+    return *ctx_man_;
+}
+
+/**
+ */
+ProjectionManager& EvaluationManager::projectionManager()
+{
+    traced_assert(projection_manager_);
+    return *projection_manager_;
+}
+
+/**
+ */
+ITaskProvider& EvaluationManager::taskProvider()
+{
+    traced_assert(task_provider_);
+    return *task_provider_;
 }
 
 /**
@@ -287,7 +343,7 @@ Result EvaluationManager::evaluate(bool show_dialog,
     traced_assert(calculator_local->evaluated());
 
     //store calculator to task result
-    auto& task_man = compass_.taskProvider();
+    auto& task_man = taskProvider();
 
     traced_assert(task_man.hasResult(calculator_local->resultName()));
 
@@ -315,15 +371,15 @@ void EvaluationManager::databaseOpenedSlot()
     traced_assert(calculator_);
 
     // sectors are now loaded by DBContextManager - forward its signal
-    connect(&compass_.dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
+    connect(&dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
             this, &EvaluationManager::sectorsChangedSignal);
-    connect(&compass_.dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
+    connect(&dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
             this, &EvaluationManager::sectorsChangedSlot);
 
     //load sectors before locking any results via this connections
     connect(this, &EvaluationManager::sectorsChangedSignal, this, &EvaluationManager::lockResultsSlot);
 
-    auto& dbinterface = compass_.dbInterface();
+    auto& dbinterface = dbInterface();
 
     use_timestamp_filter_ = false;
     load_timestamp_begin_ = {};
@@ -384,9 +440,9 @@ void EvaluationManager::databaseClosedSlot()
     disconnect(this, &EvaluationManager::sectorsChangedSignal, this, &EvaluationManager::lockResultsSlot);
 
     // disconnect forwarding of DBContextManager signal
-    disconnect(&compass_.dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
+    disconnect(&dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
                this, &EvaluationManager::sectorsChangedSignal);
-    disconnect(&compass_.dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
+    disconnect(&dbContextManager(), &context::DBContextManager::sectorsChangedSignal,
                this, &EvaluationManager::sectorsChangedSlot);
 
     use_timestamp_filter_ = false;
@@ -472,7 +528,7 @@ void EvaluationManager::saveTimeConstraints()
 
     constraints_json[EVAL_TIME_CONSTRAINTS_EXCLUDED_WINDOWS] = load_filtered_time_windows_.asJSON();
 
-    compass_.dbInterface().setProperty(EVAL_TIME_CONSTRAINTS_PROPRTY_NAME, constraints_json.dump());
+    dbInterface().setProperty(EVAL_TIME_CONSTRAINTS_PROPRTY_NAME, constraints_json.dump());
 }
 
 /**
@@ -599,7 +655,7 @@ void EvaluationManager::addVariables (const std::string& dbcontent_name, dbConte
  */
 void EvaluationManager::updateSectorLayers()
 {
-    auto& ctx = compass_.dbContextManager();
+    auto& ctx = dbContextManager();
 
     if (ctx.sectorsLoaded())
     {

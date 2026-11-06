@@ -23,7 +23,6 @@
 #include "report/sectioncontentfigure.h"
 #include "report/sectioncontenttable.h"
 
-#include "compass.h"
 #include "dbinterface.h"
 #include "dbcontentmanager.h"
 #include "dbcontentdataengine.h"
@@ -336,7 +335,7 @@ TaskResultHeader TaskResult::header() const
 ReportTableWriter& TaskResult::tableWriter()
 {
     if (!table_writer_)
-        table_writer_.reset(new ReportTableWriter(id_, task_manager_.compass().dbInterface()));
+        table_writer_.reset(new ReportTableWriter(id_, task_manager_.dbInterface()));
 
     return *table_writer_;
 }
@@ -1025,7 +1024,7 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
 
     std::vector<std::pair<QImage, std::string>> renderings;
 
-    DBContentManager& dbcont_man = task_manager_.compass().dbContentManager();
+    DBContentManager& dbcont_man = task_manager_.dbContentManager();
     ViewManager&      view_man   = task_manager_.viewManager();
 
     QCoreApplication::processEvents();

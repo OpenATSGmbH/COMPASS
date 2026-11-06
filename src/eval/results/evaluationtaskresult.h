@@ -30,7 +30,6 @@ class QMenu;
 class QCheckBox;
 
 class Buffer;
-class COMPASS;
 class EvaluationManager;
 class EvaluationCalculator;
 
@@ -41,7 +40,6 @@ class EvaluationTaskResult : public QObject, public TaskResult
 public:
     EvaluationTaskResult(unsigned int id,
                          ITaskProvider& task_man,
-                         COMPASS& compass,
                          EvaluationManager& eval_man);
     virtual ~EvaluationTaskResult();
 
@@ -128,7 +126,6 @@ private:
 
     void informUpdateEvalResult(int update_type);
 
-    COMPASS&           compass_;
     EvaluationManager& eval_man_;
     mutable std::unique_ptr<EvaluationCalculator> calculator_;
     mutable bool                                  calculator_failed_ = false; // creation failed, do not retry

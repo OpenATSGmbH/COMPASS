@@ -31,7 +31,6 @@
 #include <vector>
 
 class TaskManager;
-class COMPASS;
 class DataSourceInspectorBase;
 class InspectorSettingsBase;
 class SectorLayer;
@@ -252,8 +251,6 @@ public:
 
     /// True if the active license enables Professional features.
     bool professionalLicenseEnabled() const;
-
-    COMPASS& compass() const;
 
 protected:
     void checkSubConfigurables() override;

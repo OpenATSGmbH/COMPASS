@@ -17,8 +17,6 @@
 
 #pragma once
 
-class COMPASS;
-
 #include "rtcommand_defs.h"
 #include "rtcommand_host.h"
 #include "rtcommand_result.h"
@@ -162,8 +160,7 @@ struct RTCommand
     static std::vector<std::string> DefaultOptions;
 
 protected:
-    COMPASS*        compass_{nullptr}; // injected by RTCommandRunnerStash before run/checkResult (commands above core)
-    IRTCommandHost* host_{nullptr};    // injected by RTCommandRunnerStash before run/checkResult
+    IRTCommandHost* host_{nullptr}; // injected by RTCommandRunnerStash before run/checkResult
 
     void setResultMessage(const std::string& m) const;
     void setJSONReply(const nlohmann::json& json_reply, const std::string& reply_as_string = "") const;
@@ -242,5 +239,10 @@ protected:
     DECLARE_RTCOMMAND(help, "the help command, generates help information")
     DECLARE_RTCOMMAND_OPTIONS
 };
+
+class RTCommandRegistry;
+
+/// registers the basic commands (empty, round_trip, help)
+void init_basic_commands(RTCommandRegistry& registry);
 
 } // namespace rtcommand

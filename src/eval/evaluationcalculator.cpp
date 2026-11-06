@@ -28,7 +28,6 @@
 #include "results/base/single.h"
 #include "results/base/joined.h"
 
-#include "compass.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -586,7 +585,7 @@ Result EvaluationCalculator::evaluateData()
     traced_assert(data_loaded_);
     traced_assert(canEvaluate().ok());
 
-    Projection& projection = eval_man_.compass().projectionManager().currentProjection();
+    Projection& projection = eval_man_.projectionManager().currentProjection();
     projection.clearCoordinateSystems();
     projection.addAllCoordinateSystems();
 
@@ -652,7 +651,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
 {
     std::map<unsigned int, std::set<unsigned int>> data_sources;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     std::set<unsigned int> line_ref_set = {settings_.line_id_ref_};
 
@@ -716,7 +715,7 @@ const std::string& EvaluationCalculator::minHeightFilterLayerName() const
  */
 void EvaluationCalculator::minHeightFilterLayerName(const std::string& layer_name)
 {
-    traced_assert(layer_name.empty() || eval_man_.compass().dbContextManager().hasSectorLayer(layer_name));
+    traced_assert(layer_name.empty() || eval_man_.dbContextManager().hasSectorLayer(layer_name));
 
     loginf << "layer changed to "
            << (layer_name.empty() ? "null" : "'" + layer_name + "'");
@@ -732,7 +731,7 @@ std::shared_ptr<SectorLayer> EvaluationCalculator::minHeightFilterLayer() const
         return {};
 
     //!will assert on non-existing layer name!
-    return eval_man_.compass().dbContextManager().sectorLayer(settings_.min_height_filter_layer_);
+    return eval_man_.dbContextManager().sectorLayer(settings_.min_height_filter_layer_);
 }
 
 /**
@@ -741,7 +740,7 @@ std::shared_ptr<SectorLayer> EvaluationCalculator::minHeightFilterLayer() const
  */
 void EvaluationCalculator::checkMinHeightFilterValid()
 {
-    if (!settings_.min_height_filter_layer_.empty() && !eval_man_.compass().dbContextManager().hasSectorLayer(settings_.min_height_filter_layer_))
+    if (!settings_.min_height_filter_layer_.empty() && !eval_man_.dbContextManager().hasSectorLayer(settings_.min_height_filter_layer_))
     {
         logerr << "Layer '" << settings_.min_height_filter_layer_ << "'"
                << " not present, resetting min height filter";
@@ -798,7 +797,7 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesRef()
 {
     set<unsigned int> srcs;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_ref_[settings_.dbcontent_name_ref_])
     {
@@ -819,7 +818,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
     EvaluationDSInfo ds_info;
     ds_info.dbcontent = settings_.dbcontent_name_ref_;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_ref_.at(settings_.dbcontent_name_ref_))
     {
@@ -896,7 +895,7 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesTst()
 {
     set<unsigned int> srcs;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_tst_[settings_.dbcontent_name_tst_])
     {
@@ -917,7 +916,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
     EvaluationDSInfo ds_info;
     ds_info.dbcontent = settings_.dbcontent_name_tst_;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
     {
@@ -1144,7 +1143,7 @@ std::vector<std::string> EvaluationCalculator::currentRequirementNames() const
  */
 bool EvaluationCalculator::sectorsLoaded() const
 {
-    return eval_man_.compass().dbContextManager().sectorsLoaded();
+    return eval_man_.dbContextManager().sectorsLoaded();
 }
 
 /**
@@ -1201,14 +1200,14 @@ bool EvaluationCalculator::anySectorsWithReq() const
  */
 std::vector<std::shared_ptr<SectorLayer>>& EvaluationCalculator::sectorLayers()
 {
-    return eval_man_.compass().dbContextManager().sectorLayers();
+    return eval_man_.dbContextManager().sectorLayers();
 }
 
 /**
  */
 const std::vector<std::shared_ptr<SectorLayer>>& EvaluationCalculator::sectorLayers() const
 {
-    return eval_man_.compass().dbContextManager().sectorLayers();
+    return eval_man_.dbContextManager().sectorLayers();
 }
 
 /**
@@ -1228,7 +1227,7 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
     if (!hasValidReferenceDBContent())
         return;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     // clear out old ds_ids
     auto ds_copy = data_sources_ref_[settings_.dbcontent_name_ref_];
@@ -1270,7 +1269,7 @@ void EvaluationCalculator::checkTestDataSources(bool update_settings)
     if (!hasValidTestDBContent())
         return;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     // clear out old ds_ids
     auto ds_copy = data_sources_tst_[settings_.dbcontent_name_tst_];
@@ -1746,7 +1745,7 @@ std::vector<SectorsFilter::Layer> EvaluationCalculator::usedSectorFilterLayers()
     if (used_sector_layers_.empty())
         return layers;
 
-    auto sector_cache = eval_man_.compass().dbInterface().sectorInsideCachePtr();
+    auto sector_cache = eval_man_.dbInterface().sectorInsideCachePtr();
 
     if (!sector_cache)
     {
@@ -1808,7 +1807,7 @@ void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sou
 
     tst_srcs_coverage_->clear();
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto ds_id : tst_sources)
     {
@@ -2005,7 +2004,7 @@ std::string EvaluationCalculator::suggestReportName() const
     if (ds_sel.empty())
         return "";
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     unsigned int ds_id = stoul(ds_sel);
     traced_assert(ds_man.hasDataSource(ds_id));

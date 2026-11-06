@@ -53,6 +53,7 @@ public:
         bool         dark_mode                              = false;
         unsigned int color_mode                             = 0;     // 0=DSType, 1=DBContent, 2=DataSource, 3=DataSourceLine
         std::string  last_path;                                      // last used directory in file dialogs
+        std::string  last_db_filename;                               // last opened database (or the in-memory name)
 
         bool         disable_live_to_offline_switch         = false;
         bool         disable_menu_config_save               = false;
@@ -137,6 +138,12 @@ public:
     std::string lastUsedPath() const;
     void lastUsedPath(const std::string& last_path);
 
+    const std::string& lastDbFilename() const { return settings_.last_db_filename; }
+    void lastDbFilename(const std::string& filename) { settings_.last_db_filename = filename; }
+
+    const std::string& appVersion() const { return app_version_; } // e.g. "1.1.0", from config.json
+    void appVersion(const std::string& version) { app_version_ = version; }
+
     const char* lineEditInvalidStyle() const;
 
     bool isUnspecificACID(const std::string& acid) const;
@@ -162,4 +169,6 @@ private:
     bool live_overload_forced_    = false; // debug: live ticks held until switched off (not persisted)
     bool sensor_status_time_hack_ = false;
     bool pdflatex_found_          = false;
+
+    std::string app_version_; // set by COMPASS from config.json
 };

@@ -17,7 +17,6 @@
 
 #include "filtermanager.h"
 
-#include "compass.h"
 #include "dbfilter.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -50,10 +49,11 @@ using namespace nlohmann;
 //                              COMPASS* compass)
 //     : Configurable(class_name, instance_name, compass, "filter.json") ...
 
-FilterManager::FilterManager(nlohmann::json& config, COMPASS& compass)
-    : Configurable(config, &compass),
-      compass_(compass),
-      dbcontent_man_(compass.dbContentManager()),
+FilterManager::FilterManager(nlohmann::json& config,
+                             Configurable& parent,
+                             DBContentManager& dbcont_man)
+    : Configurable(config, &parent),
+      dbcontent_man_(dbcont_man),
       var_resolver_(dbcontent_man_)
 {
     logdbg;
@@ -66,9 +66,35 @@ FilterManager::FilterManager(nlohmann::json& config, COMPASS& compass)
     sortFilters();
 }
 
+/**
+ * Sets the peer managers, called by the composition root right after all managers were created.
+ */
+void FilterManager::setManagers(context::DBContextManager& ctx_man,
+                                DBInterface& db_interface)
+{
+    ctx_man_      = &ctx_man;
+    db_interface_ = &db_interface;
+}
+
+/**
+ */
+bool FilterManager::checkWired() const
+{
+    return ctx_man_ && db_interface_;
+}
+
 context::DBContextManager& FilterManager::dbContextManager()
 {
-    return compass_.dbContextManager();
+    traced_assert(ctx_man_);
+    return *ctx_man_;
+}
+
+/**
+ */
+DBInterface& FilterManager::dbInterface()
+{
+    traced_assert(db_interface_);
+    return *db_interface_;
 }
 
 FilterManager::~FilterManager()
@@ -351,7 +377,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
     const json& data = vp->data();
 
-    auto& ctx_man = compass_.dbContextManager();
+    auto& ctx_man = dbContextManager();
 
     // add all data source types that need loading
     if (data.contains(ViewPointKeys::VP_DS_TYPES_KEY)) // the listed ones should be loaded
@@ -445,7 +471,7 @@ void FilterManager::setConfigInViewPoint (nlohmann::json& data)
 {
     loginf;
 
-    auto& ctx_man = compass_.dbContextManager();
+    auto& ctx_man = dbContextManager();
 
     if (ctx_man.dsTypeFiltered()) // ds types filters active
         data[ViewPointKeys::VP_DS_TYPES_KEY] = ctx_man.wantedDSTypes(); // add all data sources that need loading

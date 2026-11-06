@@ -133,16 +133,7 @@ protected:
     DECLARE_RTCOMMAND_OPTIONS
 };
 
-/**
-*/
-inline void initUITestCommands()
-{
-    RTCommandUISet::init();
-    RTCommandUIGet::init();
-    RTCommandUIGetJSON::init();
-    RTCommandUIInject::init();
-    RTCommandUIRefresh::init();
-    RTCommandUIFileDialog::init();
-}
+/// registers the UI test commands
+void initUITestCommands(rtcommand::RTCommandRegistry& registry);
 
 } // namespace ui_test

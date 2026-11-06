@@ -32,7 +32,6 @@
 #include "grid2d.h"
 #include "grid2dlayer.h"
 
-#include "compass.h"
 #include "taskmanager.h"
 #include "report/report.h"
 #include "report/section.h"

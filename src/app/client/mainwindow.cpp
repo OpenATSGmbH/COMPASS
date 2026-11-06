@@ -49,6 +49,7 @@
 #include "ui_test_common.h"
 #include "ui_test_cmd.h"
 #include "rtcommand_shell.h"
+#include "rtcommand_registry.h"
 #include "licensemanagerdialog.h"
 #include "licensemanager.h"
 #include "toolbox.h"
@@ -115,10 +116,10 @@ MainWindow::MainWindow(CompassRoot& root)
     setLocale(QLocale::c());
 
     const char* appdir = Utils::System::appDir();
-    if (appdir && compass_.disableNativeDialogs())
+    if (appdir && compass_.appState().settings().disable_native_dialogs)
         QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs); // disable native
 
-    setMinimumSize(QSize(compass_.minAppWidth(), compass_.minAppHeight()));
+    setMinimumSize(QSize(compass_.appState().settings().min_app_width, compass_.appState().settings().min_app_height));
 
     QIcon ats_icon(Files::IconProvider::getIcon("ats.png"));
     setWindowIcon(ats_icon);  // for the glory of the empire
@@ -126,16 +127,18 @@ MainWindow::MainWindow(CompassRoot& root)
     //create ui
     createUI();
 
+    auto& cmd_registry = rtcommand::RTCommandRegistry::instance();
+
     //init ui related commands
-    ui_test::initUITestCommands();
+    ui_test::initUITestCommands(cmd_registry);
 
     //init extra commands
 #if USE_EXPERIMENTAL_SOURCE == true
-    if (!compass_.isAppImage())
-        extra::init_extra_commands();
+    if (!AppState::isAppImage())
+        extra::init_extra_commands(cmd_registry, root_);
 #endif
 
-    main_window::init_commands(root_);
+    main_window::init_commands(cmd_registry, root_);
 }
 
 void MainWindow::init()
@@ -196,7 +199,7 @@ void MainWindow::createUI()
     add_view_button_->setFixedSize(UI_ICON_SIZE);
     add_view_button_->setFlat(UI_ICON_BUTTON_FLAT);
     add_view_button_->setToolTip(tr(tool_tip.toStdString().c_str()));
-    add_view_button_->setDisabled(compass_.disableAddRemoveViews());
+    add_view_button_->setDisabled(compass_.appState().settings().disable_add_remove_views);
 
     connect(add_view_button_, &QPushButton::clicked, this, &MainWindow::showAddViewMenuSlot);
     tab_widget_->setCornerWidget(add_view_button_);
@@ -257,7 +260,7 @@ void MainWindow::createUI()
     connect(live_pause_resume_button_, &QPushButton::clicked, this, &MainWindow::livePauseResumeSlot);
     bottom_layout->addWidget(live_pause_resume_button_);
 
-    if (!compass_.disableLiveToOfflineSwitch())
+    if (!compass_.appState().settings().disable_live_to_offline_switch)
     {
         live_stop_button_ = new QPushButton("Stop");
         connect(live_stop_button_, &QPushButton::clicked, this, &MainWindow::liveStopSlot);
@@ -325,7 +328,7 @@ void MainWindow::createUI()
 
 void MainWindow::createMenus ()
 {
-    bool expert_mode = compass_.expertMode();
+    bool expert_mode = compass_.appState().expertMode();
 
     menuBar()->setObjectName("mainmenu");
 
@@ -371,7 +374,7 @@ void MainWindow::createMenus ()
 
     // config operations
 
-    if (!compass_.disableMenuConfigSave())
+    if (!compass_.appState().settings().disable_menu_config_save)
     {
         save_config_action_ = new QAction("&Save Config");
         save_config_action_->setShortcut(tr("Ctrl+S"));
@@ -466,7 +469,7 @@ void MainWindow::createMenus ()
 
     dark_mode_action_ = config_menu_->addAction("Dark Mode");
     dark_mode_action_->setCheckable(true);
-    dark_mode_action_->setChecked(compass_.darkMode());
+    dark_mode_action_->setChecked(compass_.appState().darkMode());
     dark_mode_action_->setShortcut(tr("Ctrl+D"));
     connect(dark_mode_action_, &QAction::toggled, this, &MainWindow::toggleDarkModeSlot);
 
@@ -562,8 +565,8 @@ void MainWindow::updateMenus()
 
     traced_assert(license_action_);
 
-    bool in_live_running        = compass_.appMode() == AppMode::LiveRunning;
-    bool in_live_paused         = compass_.appMode() == AppMode::LivePaused;
+    bool in_live_running        = compass_.appState().appMode() == AppMode::LiveRunning;
+    bool in_live_paused         = compass_.appState().appMode() == AppMode::LivePaused;
     bool in_live                = in_live_running || in_live_paused;
     bool asterix_import_running = root_.taskManager().asterixImporterTask().isRunning();
 
@@ -715,17 +718,17 @@ void MainWindow::updateBottomWidget()
     traced_assert(db_label_);
 
     if (compass.dbOpened())
-        db_label_->setText(("DB: "+compass.lastDbFilename()).c_str());
+        db_label_->setText(("DB: "+compass.appState().lastDbFilename()).c_str());
     else
         db_label_->setText("No Database");
 
     traced_assert(status_label_);
-    status_label_->setText(compass.appModeStr().c_str());
+    status_label_->setText(compass.appState().appModeStr().c_str());
 
     traced_assert(load_button_);
     traced_assert(live_pause_resume_button_);
 
-    AppMode app_mode = compass.appMode();
+    AppMode app_mode = compass.appState().appMode();
 
     if (!compass.dbOpened())
     {
@@ -766,7 +769,7 @@ void MainWindow::updateBottomWidget()
             live_stop_button_->setHidden(false);
     }
     else
-        logerr << "unknown app mode " << (unsigned int) compass_.appMode();
+        logerr << "unknown app mode " << (unsigned int) compass_.appState().appMode();
 }
 
 void MainWindow::disableConfigurationSaving()
@@ -823,7 +826,7 @@ void MainWindow::newDBSlot()
     loginf;
 
     string filename = QFileDialog::getSaveFileName(
-                          this, "New Database File", compass_.lastUsedPath().c_str()).toStdString();
+                          this, "New Database File", compass_.appState().lastUsedPath().c_str()).toStdString();
 
     if (filename.size() > 0)
         createDB(filename);
@@ -834,7 +837,7 @@ void MainWindow::openExistingDBSlot()
     loginf;
 
     string filename = QFileDialog::getOpenFileName(
-                          this, "Open Database File", compass_.lastUsedPath().c_str()).toStdString();
+                          this, "Open Database File", compass_.appState().lastUsedPath().c_str()).toStdString();
 
     if (filename.size() > 0)
         openExistingDB(filename);
@@ -859,7 +862,7 @@ void MainWindow::exportDBSlot()
     loginf;
 
     string filename = QFileDialog::getSaveFileName(
-                          this, "Export Database File", compass_.lastUsedPath().c_str()).toStdString();
+                          this, "Export Database File", compass_.appState().lastUsedPath().c_str()).toStdString();
 
     if (filename.size() > 0)
     {
@@ -891,7 +894,7 @@ void MainWindow::saveConfigSlot()
 {
     loginf;
 
-    traced_assert(!compass_.disableMenuConfigSave());
+    traced_assert(!compass_.appState().settings().disable_menu_config_save);
 
     compass_.configManager().saveConfiguration();
 }
@@ -922,7 +925,7 @@ void MainWindow::importAsterixRecordingSlot()
     QFileDialog dialog(this, "Import ASTERIX File(s)");
     dialog.setViewMode(QFileDialog::Detail);
     dialog.setFileMode(QFileDialog::ExistingFiles);
-    dialog.setDirectory(compass_.lastUsedPath().c_str());
+    dialog.setDirectory(compass_.appState().lastUsedPath().c_str());
 
     ASTERIXImportTask& task = root_.taskManager().asterixImporterTask();
 
@@ -937,7 +940,7 @@ void MainWindow::importAsterixRecordingSlot()
         for (auto& filename : filenames)
         {
             traced_assert(Files::fileExists(filename.toStdString()));
-            compass_.lastUsedPath(Files::getDirectoryFromPath(filename.toStdString()));
+            compass_.appState().lastUsedPath(Files::getDirectoryFromPath(filename.toStdString()));
 
             filenames_vec.push_back(filename.toStdString());
         }
@@ -976,7 +979,7 @@ void MainWindow::importAsterixFromPCAPSlot()
 
     // auto fn = QFileDialog::getOpenFileName(this,
     //                                        "Import PCAP File",
-    //                                        compass_.lastUsedPath().c_str(),
+    //                                        compass_.appState().lastUsedPath().c_str(),
     //                                        "PCAP Files (*.pcap *.PCAP)");
     // if (fn.isEmpty())
     //     return;
@@ -992,7 +995,7 @@ void MainWindow::importAsterixFromPCAPSlot()
     QFileDialog dialog(this, "Import PCAP File(s)", QString(), "PCAP Files (*.pcap *.PCAP)");
     dialog.setViewMode(QFileDialog::Detail);
     dialog.setFileMode(QFileDialog::ExistingFiles);
-    dialog.setDirectory(compass_.lastUsedPath().c_str());
+    dialog.setDirectory(compass_.appState().lastUsedPath().c_str());
 
     ASTERIXImportTask& task = root_.taskManager().asterixImporterTask();
 
@@ -1007,7 +1010,7 @@ void MainWindow::importAsterixFromPCAPSlot()
         for (auto& filename : filenames)
         {
             traced_assert(Files::fileExists(filename.toStdString()));
-            compass_.lastUsedPath(Files::getDirectoryFromPath(filename.toStdString()));
+            compass_.appState().lastUsedPath(Files::getDirectoryFromPath(filename.toStdString()));
 
             filenames_vec.push_back(filename.toStdString());
         }
@@ -1026,7 +1029,7 @@ void MainWindow::importAsterixFromJSONSlot()
 
     auto fn = QFileDialog::getOpenFileName(this, 
                                            "Import JSON File", 
-                                           compass_.lastUsedPath().c_str());
+                                           compass_.appState().lastUsedPath().c_str());
     if (fn.isEmpty())
         return;
 
@@ -1057,13 +1060,13 @@ void MainWindow::importAsterixFromNetworkSlot()
 void MainWindow::importJSONRecordingSlot()
 {
     string filename = QFileDialog::getOpenFileName(
-                          this, "Import JSON File", compass_.lastUsedPath().c_str(),
+                          this, "Import JSON File", compass_.appState().lastUsedPath().c_str(),
                           "JSON Files (*.json *.zip)").toStdString();
 
     if (filename.size() > 0)
     {
         root_.taskManager().jsonImporterTask().importFilename(filename); // also adds
-        compass_.lastUsedPath(Files::getDirectoryFromPath(filename));
+        compass_.appState().lastUsedPath(Files::getDirectoryFromPath(filename));
 
         updateMenus();
 
@@ -1075,13 +1078,13 @@ void MainWindow::importJSONRecordingSlot()
 void MainWindow::importGPSTrailSlot()
 {
     string filename = Dialogs::getOpenFileName(this, "Import GPS Trail",
-                                               compass_.lastUsedPath().c_str(),
+                                               compass_.appState().lastUsedPath().c_str(),
                                                "Text Files (*.nmea *.txt)").toStdString();
 
     if (filename.size() > 0)
     {
         root_.taskManager().gpsTrailImportTask().importFilename(filename);
-        compass_.lastUsedPath(Files::getDirectoryFromPath(filename));
+        compass_.appState().lastUsedPath(Files::getDirectoryFromPath(filename));
 
         updateMenus();
 
@@ -1092,13 +1095,13 @@ void MainWindow::importGPSTrailSlot()
 // void MainWindow::importGPSCSVSlot()
 // {
 //     string filename = QFileDialog::getOpenFileName(this, "Import GPS Trail CSV",
-//                                                    compass_.lastUsedPath().c_str(),
+//                                                    compass_.appState().lastUsedPath().c_str(),
 //                                                    "Text Files (*.csv *.txt)").toStdString();
 
 //     if (filename.size() > 0)
 //     {
 //         root_.taskManager().gpsImportCSVTask().importFilename(filename);
-//         compass_.lastUsedPath(Files::getDirectoryFromPath(filename));
+//         compass_.appState().lastUsedPath(Files::getDirectoryFromPath(filename));
 
 //         updateMenus();
 
@@ -1109,12 +1112,12 @@ void MainWindow::importGPSTrailSlot()
 void MainWindow::importViewPointsSlot()
 {
     string filename = QFileDialog::getOpenFileName(this, "Import View Points",
-                                                   compass_.lastUsedPath().c_str(), "*.json").toStdString();
+                                                   compass_.appState().lastUsedPath().c_str(), "*.json").toStdString();
 
     if (filename.size() > 0)
     {
         root_.taskManager().viewPointsImportTask().importFilename(filename);
-        compass_.lastUsedPath(Files::getDirectoryFromPath(filename));
+        compass_.appState().lastUsedPath(Files::getDirectoryFromPath(filename));
 
         updateMenus();
 
@@ -1188,7 +1191,7 @@ void MainWindow::showAddViewMenuSlot()
 {
     loginf;
 
-    traced_assert(!compass_.disableAddRemoveViews());
+    traced_assert(!compass_.appState().settings().disable_add_remove_views);
     root_.viewManager().showMainViewContainerAddView();
 }
 
@@ -1196,7 +1199,7 @@ void MainWindow::resetViewsMenuSlot()
 {
     loginf;
 
-    if (!compass_.disableConfirmResetViews()
+    if (!compass_.appState().settings().disable_confirm_reset_views
         && !QuestionDialog::ask(this, "Reset Views",
                 "Confirm to enable all data sources, reset labels,\n"
                 "disable all filters and reset Views to startup configuration?"))
@@ -1235,12 +1238,12 @@ void MainWindow::resetViewsMenuSlot()
         root_.viewManager().resetToStartupConfiguration();
 
         // set AppMode
-        if (compass_.appMode() == AppMode::LivePaused)
-            compass_.appMode(AppMode::LiveRunning);
+        if (compass_.appState().appMode() == AppMode::LivePaused)
+            compass_.appState().appMode(AppMode::LiveRunning);
         else
         {
             root_.viewManager().appModeSwitchSlot(
-                compass_.appMode(), compass_.appMode());
+                compass_.appState().appMode(), compass_.appState().appMode());
         }
 
         msg_box.hide();
@@ -1255,7 +1258,7 @@ void MainWindow::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_
 {
     bool enable_tabs = app_mode_current == AppMode::Offline;
 
-    loginf << "app_mode " << compass_.appModeStr()
+    loginf << "app_mode " << compass_.appState().appModeStr()
            << " enable_tabs " << enable_tabs;
 
     traced_assert(tool_box_);
@@ -1283,7 +1286,7 @@ void MainWindow::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_
         auto_resume_timer_ = new QTimer();
 
         connect(auto_resume_timer_, &QTimer::timeout, this, &MainWindow::autoResumeTimerSlot);
-        auto_resume_timer_->start(compass_.autoLiveRunningResumeAskTime() * 60 * 1000); // min -> ms
+        auto_resume_timer_->start(compass_.appState().settings().auto_live_running_resume_ask_time * 60 * 1000); // min -> ms
     }
     else if (auto_resume_timer_)
     {
@@ -1305,7 +1308,7 @@ void MainWindow::autoResumeTimerSlot()
     traced_assert(!auto_resume_dialog_);
 
     // parented to the main window so the dialog is centered over it
-    auto_resume_dialog_.reset(new AutoResumeDialog(compass_.autoLiveRunningResumeAskWaitTime() * 60, this));
+    auto_resume_dialog_.reset(new AutoResumeDialog(compass_.appState().settings().auto_live_running_resume_ask_wait_time * 60, this));
 
             // min to s
     connect (auto_resume_dialog_.get(), &AutoResumeDialog::resumeSignal, this, &MainWindow::autoResumeResumeSlot);
@@ -1335,16 +1338,16 @@ void MainWindow::autoResumeStaySlot()
     auto_resume_dialog_ = nullptr;
 
             // restart timer
-    auto_resume_timer_->start(compass_.autoLiveRunningResumeAskTime() * 60 * 1000); // min -> ms
+    auto_resume_timer_->start(compass_.appState().settings().auto_live_running_resume_ask_time * 60 * 1000); // min -> ms
 }
 
 void MainWindow::toggleDarkModeSlot()
 {
     loginf;
 
-    bool dark = !compass_.darkMode();
+    bool dark = !compass_.appState().darkMode();
     Client::applyDarkMode(dark);
-    compass_.darkMode(dark);
+    compass_.appState().darkMode(dark);
 }
 
 void MainWindow::toggleFullscreenSlot()
@@ -1440,21 +1443,21 @@ void MainWindow::livePauseResumeSlot()
 {
     loginf;
 
-    AppMode app_mode = compass_.appMode();
+    AppMode app_mode = compass_.appState().appMode();
 
     traced_assert(app_mode == AppMode::LivePaused || AppMode::LiveRunning);
 
     if (app_mode == AppMode::LiveRunning)
-        compass_.appMode(AppMode::LivePaused);
+        compass_.appState().appMode(AppMode::LivePaused);
     else // AppMode::LivePaused)
-        compass_.appMode(AppMode::LiveRunning);
+        compass_.appState().appMode(AppMode::LiveRunning);
 }
 
 void MainWindow::liveStopSlot()
 {
     loginf;
 
-    compass_.appMode(AppMode::Offline);
+    compass_.appState().appMode(AppMode::Offline);
 
     //transfer memory db to file
     if (compass_.canCreateDBFileFromMemory())
@@ -1669,7 +1672,7 @@ void MainWindow::createDebugMenu()
         connect(shortcut, &QShortcut::activated, [ this ] () { this->showCommandShell(); });
     }
 
-    debug_menu->menuAction()->setVisible(!compass_.isAppImage());
+    debug_menu->menuAction()->setVisible(!AppState::isAppImage());
 }
 
 void MainWindow::showCommandShell()
@@ -1694,8 +1697,8 @@ void MainWindow::manageLicensesSlot()
 
 void MainWindow::updateWindowTitle()
 {
-    auto version  = compass_.versionString();
-    auto licensee = compass_.licenseeString();
+    auto version  = compass_.licenseManager().versionString(compass_.appState().appVersion());
+    auto licensee = compass_.licenseManager().licenseeString();
 
     auto title = version;
     if (!licensee.empty())

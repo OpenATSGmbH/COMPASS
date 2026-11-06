@@ -16,9 +16,9 @@
  */
 
 #include "histogramviewconfigwidget.h"
+#include "viewmanager.h"
 #include "histogramviewwidget.h"
 #include "histogramviewdatawidget.h"
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 #include "histogramview.h"
@@ -76,7 +76,7 @@ HistogramViewConfigWidget::HistogramViewConfigWidget(HistogramViewWidget* view_w
     {
         auto config_layout = configLayout();
 
-        config_layout->addWidget(new ColorModeLabel(view_->compass(), this));
+        config_layout->addWidget(new ColorModeLabel(view_->viewManager().appState(), this));
 
         layer_panel_ = createLayerPanel({}, view_->canShowAnnotations());
 

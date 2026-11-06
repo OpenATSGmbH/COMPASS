@@ -19,7 +19,6 @@
 #include "evaluationdata.h"
 #include "stringconv.h"
 #include "number.h"
-#include "compass.h"
 #include "timeconv.h"
 
 using namespace std;

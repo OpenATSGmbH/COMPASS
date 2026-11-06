@@ -26,7 +26,6 @@
 
 #include <QPointer>
 
-class COMPASS;
 class ViewManager;
 class LoadOperation;
 class QProgressDialog;
@@ -52,8 +51,7 @@ class LoadController : public QObject
     Q_OBJECT
 
 public:
-    LoadController(COMPASS& compass,
-                   ViewManager& view_manager,
+    LoadController(ViewManager& view_manager,
                    QObject* parent = nullptr);
     virtual ~LoadController();
 
@@ -106,7 +104,6 @@ private slots:
     void opFinishedSlot();
 
 private:
-    COMPASS&     compass_;
     ViewManager& view_manager_;
 
     // QPointer, not unique_ptr: the dialog is parented to the active window, so Qt

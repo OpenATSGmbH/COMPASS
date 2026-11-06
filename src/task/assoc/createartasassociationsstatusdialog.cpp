@@ -17,7 +17,6 @@
 
 #include "createartasassociationsstatusdialog.h"
 
-#include "compass.h"
 #include "createartasassociationstask.h"
 #include "taskmanager.h"
 //#include "dbcontent/dbcontent.h"
@@ -278,7 +277,7 @@ void CreateARTASAssociationsStatusDialog::updateDBContentAssociatedGrid()
         dbcont_associated_grid_->addWidget(percent_label, row, 3);
     }
 
-    for (auto& dbcont_it : task_.manager().compass().dbContentManager())
+    for (auto& dbcont_it : task_.manager().dbContentManager())
     {
         if (!dbcont_it.second->containsTargetReports() ||
             dbcont_it.second->isReferenceContent())

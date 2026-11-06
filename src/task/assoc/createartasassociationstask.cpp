@@ -17,7 +17,6 @@
 
 #include "createartasassociationstask.h"
 
-#include "compass.h"
 #include "dialogs.h"
 #include "createartasassociationstaskdialog.h"
 #include "createartasassociationsstatusdialog.h"
@@ -88,8 +87,8 @@ void CreateARTASAssociationsTask::showDialog()
 
 CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() const
 {
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-    auto& ctx_man = manager().compass().dbContextManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
+    auto& ctx_man = manager().dbContextManager();
 
     logdbg << "tracker " << dbcontent_man.existsDBContent("CAT062");
 
@@ -213,9 +212,9 @@ void CreateARTASAssociationsTask::run()
     status_dialog_->setAssociationStatus("Loading Data");
     status_dialog_->show();
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
-    auto& ctx_man = manager().compass().dbContextManager();
+    auto& ctx_man = manager().dbContextManager();
 
     std::set<std::string> targets;
     std::string cat062_clause;
@@ -290,7 +289,7 @@ const CreateARTASAssociationsTask::ResultStats& CreateARTASAssociationsTask::res
 
 bool CreateARTASAssociationsTask::wasRun()
 {
-    return manager().compass().dbContentManager().artasAssociationsCreated();
+    return manager().dbContentManager().artasAssociationsCreated();
 }
 
 void CreateARTASAssociationsTask::loadingDoneSlot()
@@ -308,7 +307,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
     load_op_ = nullptr; // release the isolated operation
 
     create_job_ = std::make_shared<CreateARTASAssociationsJob>(
-                *this, manager().compass().dbInterface(), data_);
+                *this, manager().dbInterface(), data_);
 
     connect(create_job_.get(), &CreateARTASAssociationsJob::doneSignal, this,
             &CreateARTASAssociationsTask::createDoneSlot, Qt::QueuedConnection);
@@ -318,7 +317,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
             this, &CreateARTASAssociationsTask::saveAssociationsQuestionSlot,
             Qt::QueuedConnection);
 
-    manager().compass().jobManager().addDBJob(create_job_);
+    manager().jobManager().addDBJob(create_job_);
 
     status_dialog_->setAssociationStatus("In Progress");
 }
@@ -369,9 +368,9 @@ void CreateARTASAssociationsTask::createDoneSlot()
 
     if (save_associations_)
     {
-        manager().compass().dbInterface().setProperty(DBContentManager::ARTASAssociationsCreatedProperty, "1");
+        manager().dbInterface().setProperty(DBContentManager::ARTASAssociationsCreatedProperty, "1");
 
-        manager().compass().dbInterface().saveProperties();
+        manager().dbInterface().saveProperties();
 
         done_ = true;
     }
@@ -541,7 +540,7 @@ void CreateARTASAssociationsTask::markTrackCoastingAssociationsDubious(bool valu
 
 VariableSet CreateARTASAssociationsTask::getReadSetFor(const std::string& dbcontent_name)
 {
-    DBContentManager& dbcont_man = manager().compass().dbContentManager();
+    DBContentManager& dbcont_man = manager().dbContentManager();
 
     VariableSet read_set;
 

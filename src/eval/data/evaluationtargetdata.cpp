@@ -24,7 +24,6 @@
 #include "logger.h"
 #include "stringconv.h"
 #include "dbcontent/target/target.h"
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "evaluationmanager.h"
 #include "evaluationcalculator.h"

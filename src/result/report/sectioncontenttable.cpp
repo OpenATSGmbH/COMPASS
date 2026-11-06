@@ -23,7 +23,6 @@
 #include "taskresult.h"
 
 #include "itaskprovider.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
 
 #include "popupmenu.h"

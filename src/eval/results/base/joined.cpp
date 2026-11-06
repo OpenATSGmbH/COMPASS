@@ -28,6 +28,7 @@
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
+#include "appstate.h"
 
 #include "points/viewpointgenerator.h"
 #include "points/viewpoint.h"
@@ -36,7 +37,6 @@
 #include "gridview/grid2dlayer.h"
 #include "gridview/grid2d_defs.h"
 
-#include "compass.h"
 #include "tbbhack.h"
 
 #include <QApplication>
@@ -353,7 +353,7 @@ bool Joined::exportAsCSV() const
 
     QFileDialog dialog(QApplication::activeWindow());
     dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(calculator_.manager().compass().lastUsedPath().c_str());
+    dialog.setDirectory(calculator_.manager().appState().lastUsedPath().c_str());
     dialog.setNameFilter("CSV Files (*.csv)");
     dialog.setDefaultSuffix("csv");
     dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);

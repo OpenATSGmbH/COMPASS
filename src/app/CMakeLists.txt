@@ -6,6 +6,7 @@ add_library(compass_app "")
 # Instead, manually MOC only compass_app's own Q_OBJECT headers.
 set_target_properties(compass_app PROPERTIES AUTOMOC OFF)
 qt5_wrap_cpp(COMPASS_APP_MOC_SRCS
+    "${CMAKE_CURRENT_LIST_DIR}/compass.h"
     "${CMAKE_CURRENT_LIST_DIR}/client/mainwindow.h"
     "${CMAKE_CURRENT_LIST_DIR}/client/toolbox.h"
 )
@@ -16,8 +17,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/watchdog/CMakeLists.txt")
 
 target_sources(compass_app
     PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/compass.h"
         "${CMAKE_CURRENT_LIST_DIR}/compassroot.h"
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/compass.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/compassroot.cpp"
 )
 

@@ -27,19 +27,24 @@
 #include <boost/optional.hpp>
 
 class EvaluationManager;
-extern void init_evaluation_commands(EvaluationManager& eval_manager);
+extern void init_evaluation_commands(rtcommand::RTCommandRegistry& registry, EvaluationManager& eval_manager);
 
 /**
  * evaluate
  */
 struct RTCommandEvaluate : public rtcommand::RTCommand
 {
+    explicit RTCommandEvaluate(EvaluationManager& eval_manager);
+
     bool        run_filter_ {false};
     std::string config_;
     std::string result_name_;
 
 protected:
     virtual bool run_impl() override;
+
+private:
+    EvaluationManager& eval_manager_;
 
     DECLARE_RTCOMMAND(evaluate, "run evaluation, replies with the name of the stored report")
     DECLARE_RTCOMMAND_OPTIONS
@@ -50,12 +55,17 @@ protected:
  */
 struct RTCommandFilterEvalTargets : public rtcommand::RTCommand
 {
+    explicit RTCommandFilterEvalTargets(EvaluationManager& eval_manager);
+
     bool        use_all_ {false};
     bool        no_run_ {false};
     std::string config_;
 
 protected:
     virtual bool run_impl() override;
+
+private:
+    EvaluationManager& eval_manager_;
 
     DECLARE_RTCOMMAND(filter_eval_targets, "sets the evaluation target filter configuration and runs the filter on the target use flags, replies with the target counts")
     DECLARE_RTCOMMAND_OPTIONS
@@ -67,11 +77,14 @@ protected:
 struct RTCommandGetEvalStandards : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetEvalStandards();
+    explicit RTCommandGetEvalStandards(EvaluationManager& eval_manager);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    EvaluationManager& eval_manager_;
 
     DECLARE_RTCOMMAND(get_eval_standards, "retrieves available evaluation standards with their requirement groups and requirements")
     DECLARE_RTCOMMAND_NOOPTIONS

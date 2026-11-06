@@ -22,7 +22,6 @@
 #include "viewlayerpanelwidget.h"
 #include "viewpresetwidget.h"
 #include "viewmanager.h"
-#include "compass.h"
 
 #include <iostream>
 
@@ -131,7 +130,7 @@ ViewLayerPanelWidget* ViewConfigWidget::createLayerPanel(const std::vector<Layer
     // the data widget fills the data rows and reacts on visibility changes
     view_widget_->getViewDataWidget()->attachLayerPanel(layer_panel->model());
 
-    layer_panel->followColorMode(view_widget_->getView()->compass());
+    layer_panel->followColorMode(view_widget_->getView()->viewManager().appState());
 
     return layer_panel;
 }

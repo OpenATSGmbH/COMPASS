@@ -37,7 +37,6 @@
 
 #include "dbcontent/target/targetreportchain.h"
 
-#include "compass.h"
 #include "dbinterface.h"
 #include "itaskprovider.h"
 #include "taskresult.h"
@@ -265,8 +264,8 @@ Single::EvaluationDetails Single::loadDetailsFromReportTable() const
 
     EvaluationDetails details;
 
-    auto& compass      = calculator_.manager().compass();
-    auto& task_manager = compass.taskProvider();
+    auto& eval_man     = calculator_.manager();
+    auto& task_manager = eval_man.taskProvider();
 
     const std::string& result_name = calculator_.resultName();
 
@@ -298,7 +297,7 @@ Single::EvaluationDetails Single::loadDetailsFromReportTable() const
     const std::string filter = "\"" + ReportTableDefinition::UTNColumnName + "\" = " + std::to_string(utn_)
                              + " ORDER BY \"" + ReportTableDefinition::TimestampColumnName + "\"";
 
-    auto res = compass.dbInterface().select(table.tableName(result->id()), table.propertyList(), filter);
+    auto res = eval_man.dbInterface().select(table.tableName(result->id()), table.propertyList(), filter);
 
     if (!res.ok() || !res.result())
     {

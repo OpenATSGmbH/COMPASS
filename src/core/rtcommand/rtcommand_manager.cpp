@@ -60,9 +60,16 @@ RTCommandManager::RTCommandManager(nlohmann::json& config,
 
 /**
  */
-RTCommandManager::~RTCommandManager() 
+RTCommandManager::~RTCommandManager()
 {
-     logdbg; 
+     logdbg;
+}
+
+/**
+ */
+bool RTCommandManager::checkWired() const
+{
+    return runner_ != nullptr;
 }
 
 /**

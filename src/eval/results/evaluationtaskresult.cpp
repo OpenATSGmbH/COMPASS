@@ -29,7 +29,6 @@
 #include "taskdefs.h"
 #include "itaskprovider.h"
 
-#include "compass.h"
 #include "dbinterface.h"
 #include "dbcontentmanager.h"
 #include "buffer.h"
@@ -55,10 +54,8 @@ const std::string EvaluationTaskResult::FieldTargetInfo = "info";
  */
 EvaluationTaskResult::EvaluationTaskResult(unsigned int id,
                                            ITaskProvider& task_man,
-                                           COMPASS& compass,
                                            EvaluationManager& eval_man)
 :   TaskResult(id, task_man)
-,   compass_(compass)
 ,   eval_man_(eval_man)
 {
     //connected here and not during init or finalization: a result whose content is not read yet
@@ -136,7 +133,7 @@ Result EvaluationTaskResult::createCalculator()
 
     //clone calculator from config
     auto res = EvaluationCalculator::clone(eval_man_,
-                                              compass_.dbContentManager(),
+                                              eval_man_.dbContentManager(),
                                               config_);
     if (!res.ok())
         return res;
@@ -345,7 +342,7 @@ std::shared_ptr<Buffer> EvaluationTaskResult::loadReportTableRows(const ReportTa
     const std::string filter = "\"" + ReportTableDefinition::UTNColumnName + "\" = " + std::to_string(utn)
                              + " ORDER BY \"" + ReportTableDefinition::TimestampColumnName + "\"";
 
-    auto res = compass_.dbInterface().select(table_name, table.propertyList(), filter);
+    auto res = eval_man_.dbInterface().select(table_name, table.propertyList(), filter);
 
     if (!res.ok())
     {
@@ -624,7 +621,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
             auto usage_menu = menu.addMenu("Target Usage");
 
             const auto& target             = targets_.at(utn);
-            auto        target_list_widget = compass_.dbContentManager().targetListWidget();
+            auto        target_list_widget = eval_man_.dbContentManager().targetListWidget();
 
             target_list_widget->createTargetEvalMenu(*usage_menu, 
                                                      target,
@@ -661,7 +658,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
         if (calculator() && !isLocked())
         {
             auto usage_menu = menu.addMenu("Target Usage");
-            compass_.dbContentManager().targetListWidget()->createTargetEvalMenu(*usage_menu, { utn }, true);
+            eval_man_.dbContentManager().targetListWidget()->createTargetEvalMenu(*usage_menu, { utn }, true);
         }
 
         return true;
@@ -766,7 +763,7 @@ std::string EvaluationTaskResult::customTooltip_impl(const ResultReport::Section
  */
 void EvaluationTaskResult::updateTargets()
 {
-    auto& dbcontent_man = compass_.dbContentManager();
+    auto& dbcontent_man = eval_man_.dbContentManager();
 
     for (auto& t : targets_)
         EvaluationTargetData::updateTarget(dbcontent_man, t.second);

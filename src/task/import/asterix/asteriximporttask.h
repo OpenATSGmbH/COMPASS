@@ -36,7 +36,6 @@
 #include <memory>
 
 
-class COMPASS;
 class DBContentManager;
 class TaskManager;
 
@@ -102,8 +101,6 @@ public slots:
 public:
     ASTERIXImportTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ASTERIXImportTask();
-
-    COMPASS& compass() const { return compass_; }
 
     void generateSubConfigurable(nlohmann::json& child_json) override;
 
@@ -175,7 +172,6 @@ protected:
     void beginResultReport();
     void buildResultReport(const boost::posix_time::ptime& end_time);
 
-    COMPASS&          compass_;
     DBContentManager& dbcontent_man_;
 
     ASTERIXImportTaskSettings settings_;

@@ -19,7 +19,6 @@
 #include "reconstructorbase.h"
 #include "reconstructortask.h"
 #include "taskmanager.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
 #include "dbcontent.h"
 #include "dbcontent/variable/variable.h"
@@ -509,7 +508,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
 
     if (!ecat_ || *ecat_ == 0) // check for FFT
     {
-        auto& ctx_man = reconstructor_.task().manager().compass().dbContextManager();
+        auto& ctx_man = reconstructor_.task().manager().dbContextManager();
 
         boost::optional<float> baro_altitude_ft;
 
@@ -2400,7 +2399,7 @@ void ReconstructorTarget::updateCounts()
 
 std::map <std::string, unsigned int> ReconstructorTarget::getDBContentCounts() const
 {
-    DBContentManager& dbcont_man = reconstructor_.task().manager().compass().dbContentManager();
+    DBContentManager& dbcont_man = reconstructor_.task().manager().dbContentManager();
 
     std::map <std::string, unsigned int> counts;
 
@@ -2424,7 +2423,7 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     string dbcontent_name = "RefTraj";
     unsigned int dbcontent_id = 255;
 
-    DBContentManager& dbcontent_man = reconstructor_.task().manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = reconstructor_.task().manager().dbContentManager();
 
     PropertyList buffer_list;
 

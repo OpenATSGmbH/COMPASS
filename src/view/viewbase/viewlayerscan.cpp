@@ -18,7 +18,6 @@
 #include "viewlayerscan.h"
 
 #include "buffer.h"
-#include "compass.h"
 #include "data_source.h"
 #include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
@@ -113,12 +112,12 @@ LayerId layerIdOrUnknown(const std::string& id)
 /**
  */
 ScanInput makeScanInput(const std::map<std::string, std::shared_ptr<Buffer>>& data,
-                        COMPASS& compass)
+                        DBContentManager& dbcont_man,
+                        context::DBContextManager& ctx_man)
 {
     ScanInput input;
 
-    auto& dbcont_man = compass.dbContentManager();
-    auto& ctx_mgr    = compass.dbContextManager();
+    auto& ctx_mgr = ctx_man;
 
     for (const auto& buf_it : data)
     {

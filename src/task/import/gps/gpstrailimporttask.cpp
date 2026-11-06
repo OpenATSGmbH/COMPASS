@@ -16,9 +16,9 @@
  */
 
 #include "gpstrailimporttask.h"
+#include "logmodel.h"
 #include "gpstrailimporttaskdialog.h"
 #include "dialogs.h"
-#include "compass.h"
 #include "dbinterface.h"
 #include "stringconv.h"
 #include "taskmanager.h"
@@ -151,10 +151,10 @@ void GPSTrailImportTask::importFilename(const std::string& filename)
 */
 bool GPSTrailImportTask::checkPrerequisites()
 {
-    if (!manager().compass().dbInterface().ready())  // must be connected
+    if (!manager().dbInterface().ready())  // must be connected
         return false;
 
-    if (!manager().compass().dbContentManager().existsDBContent("RefTraj"))
+    if (!manager().dbContentManager().existsDBContent("RefTraj"))
         return false;
 
     return true;
@@ -640,15 +640,15 @@ void GPSTrailImportTask::run()
     traced_assert(gps_fixes_.size());
     traced_assert(!buffer_);
 
-    manager().compass().logInfo("GPS Trail NMEA Import") << "started";
+    manager().logStore().logInfo("GPS Trail NMEA Import") << "started";
 
     if (currentError().size())
-        manager().compass().logWarn("GPS Trail NMEA Import") << "errors:\n" << currentError();
+        manager().logStore().logWarn("GPS Trail NMEA Import") << "errors:\n" << currentError();
 
     if (currentText().size())
-        manager().compass().logInfo("GPS Trail NMEA Import") << currentText();
+        manager().logStore().logInfo("GPS Trail NMEA Import") << currentText();
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     string dbcontent_name = "RefTraj";
     traced_assert(dbcontent_man.existsDBContent(dbcontent_name));
@@ -762,7 +762,7 @@ void GPSTrailImportTask::run()
 
     // config data source
     {
-        auto& ctx_man = manager().compass().dbContextManager();
+        auto& ctx_man = manager().dbContextManager();
 
         if (!ctx_man.hasDataSource(ds_id))
         {
@@ -963,16 +963,16 @@ void GPSTrailImportTask::insertDoneSlot()
 
     buffer_ = nullptr;
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
             this, &GPSTrailImportTask::insertDoneSlot);
 
-    manager().compass().dbContextManager().saveCountsToDB();
-    manager().compass().dbInterface().saveProperties(); // persist min/max timestamps & positions
+    manager().dbContextManager().saveCountsToDB();
+    manager().dbInterface().saveProperties(); // persist min/max timestamps & positions
     // dbContentStatusChanged emitted by DBContentManager::finishInserting()
 
-    manager().compass().logInfo("GPS Trail NMEA Import") << "done with " << gps_fixes_.size() << " GPS fixes";
+    manager().logStore().logInfo("GPS Trail NMEA Import") << "done with " << gps_fixes_.size() << " GPS fixes";
 
     done_ = true;
 

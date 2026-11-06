@@ -18,7 +18,6 @@
 #include "datasourceanalysistaskresult.h"
 #include "analyzedatasourcetask.h"
 #include "taskmanager.h"
-#include "compass.h"
 #include "evaluationmanager.h"
 #include "logger.h"
 

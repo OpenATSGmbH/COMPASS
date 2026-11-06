@@ -20,6 +20,8 @@
 #include "rtcommand.h"
 #include "rtcommand_macros.h"
 
+class CompassRoot;
+
 namespace main_window
 {
 // import_view_points
@@ -29,10 +31,13 @@ struct RTCommandImportViewPointsFile : public rtcommand::RTCommand
 
     virtual rtcommand::IsValid valid() const override;
 
-    RTCommandImportViewPointsFile();
+    explicit RTCommandImportViewPointsFile(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_view_points, "imports view points JSON file with given filename, e.g. '/data/file1.json'")
     DECLARE_RTCOMMAND_OPTIONS
@@ -51,11 +56,14 @@ struct RTCommandImportASTERIXFile : public rtcommand::RTCommand
 
     virtual rtcommand::IsValid valid() const override;
 
-    RTCommandImportASTERIXFile();
+    explicit RTCommandImportASTERIXFile(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_asterix_file,
                       "imports ASTERIX file with given filename, e.g. '/data/file1.ff'")
@@ -76,11 +84,14 @@ struct RTCommandImportASTERIXFiles : public rtcommand::RTCommand
 
     virtual rtcommand::IsValid valid() const override;
 
-    RTCommandImportASTERIXFiles();
+    explicit RTCommandImportASTERIXFiles(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_asterix_files,
                       "imports multiple ASTERIX files with given filenames, e.g. '/data/file1.ff;/data/file2.ff'")
@@ -99,11 +110,14 @@ struct RTCommandImportASTERIXPCAPFile : public rtcommand::RTCommand
 
     virtual rtcommand::IsValid valid() const override;
 
-    RTCommandImportASTERIXPCAPFile();
+    explicit RTCommandImportASTERIXPCAPFile(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_asterix_pcap_file,
                       "imports ASTERIX PCAP file with given filename, e.g. '/data/file1.pcap'")
@@ -123,11 +137,14 @@ struct RTCommandImportASTERIXPCAPFiles : public rtcommand::RTCommand
 
     virtual rtcommand::IsValid valid() const override;
 
-    RTCommandImportASTERIXPCAPFiles();
+    explicit RTCommandImportASTERIXPCAPFiles(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_asterix_pcap_files,
                       "imports multiple ASTERIX PCAP files with given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'")
@@ -151,10 +168,13 @@ struct RTCommandImportASTERIXNetworkStart : public rtcommand::RTCommand
 
     virtual rtcommand::IsValid valid() const override;
 
-    RTCommandImportASTERIXNetworkStart();
+    explicit RTCommandImportASTERIXNetworkStart(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_asterix_network, "imports ASTERIX from defined network UDP streams")
     DECLARE_RTCOMMAND_OPTIONS
@@ -163,10 +183,13 @@ protected:
 // import_asterix_network_stop
 struct RTCommandImportASTERIXNetworkStop : public rtcommand::RTCommand
 {
-    RTCommandImportASTERIXNetworkStop();
+    explicit RTCommandImportASTERIXNetworkStop(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_asterix_network_stop, "stops import ASTERIX from network")
     DECLARE_RTCOMMAND_NOOPTIONS
@@ -175,10 +198,13 @@ protected:
 // import_asterix_network_pause
 struct RTCommandImportASTERIXNetworkPause : public rtcommand::RTCommand
 {
-    RTCommandImportASTERIXNetworkPause();
+    explicit RTCommandImportASTERIXNetworkPause(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_asterix_network_pause,
                       "pauses the live display of the running ASTERIX network import, the database keeps receiving data")
@@ -188,10 +214,13 @@ protected:
 // import_asterix_network_resume
 struct RTCommandImportASTERIXNetworkResume : public rtcommand::RTCommand
 {
-    RTCommandImportASTERIXNetworkResume();
+    explicit RTCommandImportASTERIXNetworkResume(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_asterix_network_resume,
                       "resumes the live display of the paused ASTERIX network import")
@@ -205,10 +234,13 @@ struct RTCommandImportJSONFile : public rtcommand::RTCommand
 
     virtual rtcommand::IsValid valid() const override;
 
-    RTCommandImportJSONFile();
+    explicit RTCommandImportJSONFile(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_json, "imports JSON file with given filename, e.g. ’/data/file1.json’")
     DECLARE_RTCOMMAND_OPTIONS
@@ -231,10 +263,13 @@ struct RTCommandImportGPSTrail : public rtcommand::RTCommand
 
     virtual rtcommand::IsValid valid() const override;
 
-    RTCommandImportGPSTrail();
+    explicit RTCommandImportGPSTrail(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_gps_trail, "imports gps trail NMEA with given filename, e.g. ’/data/file2.txt’")
     DECLARE_RTCOMMAND_OPTIONS

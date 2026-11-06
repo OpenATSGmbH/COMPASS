@@ -28,15 +28,20 @@
 #include <QMainWindow>
 #include <QDialog>
 
-REGISTER_RTCOMMAND(ui_test::RTCommandUISet)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIGet)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIGetJSON)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIInject)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIRefresh)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIFileDialog)
-
 namespace ui_test
 {
+
+/**
+ */
+void initUITestCommands(rtcommand::RTCommandRegistry& registry)
+{
+    registry.registerCommand<RTCommandUISet>();
+    registry.registerCommand<RTCommandUIGet>();
+    registry.registerCommand<RTCommandUIGetJSON>();
+    registry.registerCommand<RTCommandUIInject>();
+    registry.registerCommand<RTCommandUIRefresh>();
+    registry.registerCommand<RTCommandUIFileDialog>();
+}
 
 /***************************************************************************************
  * RTCommandObject

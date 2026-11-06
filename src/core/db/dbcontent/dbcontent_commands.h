@@ -33,7 +33,7 @@ class DBContentManager;
 namespace dbContent
 {
 
-extern void init_dbcontent_commands(DBContentManager& dbcont_man);
+extern void init_dbcontent_commands(rtcommand::RTCommandRegistry& registry, DBContentManager& dbcont_man);
 
 // get_dbcontent_data --dbcontent CAT021 --variables "Timestamp|Time of Day|Latitude|Longitude|Associations" --max_size 100
 // get_dbcontent_data --dbcontent CAT021 --variables "Timestamp|Time of Day|Latitude|Longitude|Associations" --utn 0
@@ -50,7 +50,7 @@ public:
 
     dbContent::Variable* resolveVariable(const std::string& name) const;
 
-    RTCommandGetData();
+    explicit RTCommandGetData(DBContentManager& dbcont_man);
 
 protected:
     virtual bool run_impl() override;
@@ -60,6 +60,9 @@ protected:
 
     std::map<std::string, std::shared_ptr<Buffer>> buffers_; // harvested in run_impl
 
+private:
+    DBContentManager& dbcont_man_;
+
     DECLARE_RTCOMMAND(get_dbcontent_data, "retrieves dbcontent data from the database")
     DECLARE_RTCOMMAND_OPTIONS
 };
@@ -68,13 +71,16 @@ protected:
 struct RTCommandGetUTNs : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetUTNs();
+    explicit RTCommandGetUTNs(DBContentManager& dbcont_man);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
 
     bool no_desc_ = false;
+
+private:
+    DBContentManager& dbcont_man_;
 
     DECLARE_RTCOMMAND(get_utns, "retrieves UTNS with (optional) target descriptions")
     DECLARE_RTCOMMAND_OPTIONS
@@ -84,13 +90,16 @@ protected:
 struct RTCommandGetTarget : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetTarget();
+    explicit RTCommandGetTarget(DBContentManager& dbcont_man);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
 
     unsigned int utn_ = 0;
+
+private:
+    DBContentManager& dbcont_man_;
 
     DECLARE_RTCOMMAND(get_target, "retrieves a target description for the given UTN")
     DECLARE_RTCOMMAND_OPTIONS
@@ -100,11 +109,14 @@ protected:
 struct RTCommandGetTargetStats : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetTargetStats();
+    explicit RTCommandGetTargetStats(DBContentManager& dbcont_man);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
+
+private:
+    DBContentManager& dbcont_man_;
 
     DECLARE_RTCOMMAND(get_target_stats, "retrieves statistics for the current targets")
     DECLARE_RTCOMMAND_NOOPTIONS

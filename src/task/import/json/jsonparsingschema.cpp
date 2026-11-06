@@ -16,13 +16,12 @@
  */
 
 #include "jsonparsingschema.h"
-#include "compass.h"
 #include "jsonimporttask.h"
 
 using namespace std;
 
-JSONParsingSchema::JSONParsingSchema(nlohmann::json& config, JSONImportTask* parent, COMPASS& compass)
-    : Configurable(config, parent), compass_(compass)
+JSONParsingSchema::JSONParsingSchema(nlohmann::json& config, JSONImportTask* parent, TaskManager& task_man)
+    : Configurable(config, parent), task_man_(task_man)
 {
     registerParameter("name", &name_, std::string());
 
@@ -59,7 +58,7 @@ void JSONParsingSchema::generateSubConfigurable(nlohmann::json& child_json)
         logdbg << "generating schema " << instance_name
                << " with name " << name;
 
-        auto parser = std::make_unique<JSONObjectParser>(child_json, this, compass_);
+        auto parser = std::make_unique<JSONObjectParser>(child_json, this, task_man_);
         parsers_[name] = std::move(parser);
     }
     else

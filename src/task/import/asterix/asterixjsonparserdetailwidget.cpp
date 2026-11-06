@@ -16,12 +16,13 @@
  */
 
 #include "asterixjsonparserdetailwidget.h"
+#include "appstate.h"
+#include "taskmanager.h"
 #include "datatypeformatselectionwidget.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 #include "logger.h"
 #include "unitselectionwidget.h"
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variableeditdialog.h"
 #include "dbcontent/variable/variablecreatedialog.h"
@@ -44,7 +45,7 @@ using namespace Utils;
 ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& parser, QWidget* parent)
     : QWidget(parent), parser_(parser)
 {
-    expert_mode_ = parser_.compass().expertMode();
+    expert_mode_ = parser_.taskManager().appState().expertMode();
 
     QVBoxLayout* main_layout = new QVBoxLayout();
 
@@ -114,7 +115,7 @@ ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& 
 
 
     //    UnitSelectionWidget* unit_sel_ {nullptr};
-    unit_sel_ = new UnitSelectionWidget(parser_.compass().unitManager());
+    unit_sel_ = new UnitSelectionWidget(parser_.taskManager().unitManager());
     form_layout->addRow("Unit", unit_sel_);
 
 
@@ -134,7 +135,7 @@ ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& 
     dbcontvar_label->setFont(font_bold);
     form_layout->addRow(dbcontvar_label);
 
-    dbcont_var_sel_ = new dbContent::VariableSelectionWidget(parser_.compass().dbContentManager());
+    dbcont_var_sel_ = new dbContent::VariableSelectionWidget(parser_.taskManager().dbContentManager());
     dbcont_var_sel_->showMetaVariables(false);
     dbcont_var_sel_->showDBContentOnly(parser_.dbContentName());
     dbcont_var_sel_->showEmptyVariable(true);

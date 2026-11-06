@@ -18,6 +18,7 @@
 #pragma once
 
 #include "configurable.h"
+#include "imanager.h"
 #include "buffer.h"
 #include "targetmodel.h"
 #include "loadrequest.h"
@@ -71,7 +72,7 @@ namespace dbContent
 
 /**
  */
-class DBContentManager : public QObject, public Configurable
+class DBContentManager : public QObject, public Configurable, public IManager
 {
     Q_OBJECT
 
@@ -117,6 +118,7 @@ public:
                      IViewProvider& view_provider,
                      IFilterProvider& filter_provider,
                      IEvalProvider& eval_provider);
+    bool checkWired() const override;
 
     DBInterface& dbInterface();
     DBContentDB& contentDB(); // DB content specific database access

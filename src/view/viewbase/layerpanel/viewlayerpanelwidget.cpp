@@ -22,7 +22,7 @@
 #include "dbcontentlayer.h"
 #include "annotationsrootitem.h"
 
-#include "compass.h"
+#include "appstate.h"
 
 #include <QTreeView>
 
@@ -130,11 +130,11 @@ void ViewLayerPanelWidget::setDataExpansion(int depth)
 
 /**
  */
-void ViewLayerPanelWidget::followColorMode(COMPASS& compass)
+void ViewLayerPanelWidget::followColorMode(AppState& app_state)
 {
-    setDataExpansion(dataExpansionDepth((context::ColorProvider::Mode)compass.colorMode()));
+    setDataExpansion(dataExpansionDepth((context::ColorProvider::Mode)app_state.colorMode()));
 
-    connect(&compass, &COMPASS::colorModeChangedSignal, this, [ this ] (unsigned int mode)
+    connect(&app_state, &AppState::colorModeChangedSignal, this, [ this ] (unsigned int mode)
     {
         setDataExpansion(dataExpansionDepth((context::ColorProvider::Mode)mode));
     });

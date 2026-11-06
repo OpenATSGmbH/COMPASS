@@ -18,6 +18,7 @@
 #include "mainwindow_commands_file.h"
 #include "mainwindow.h"
 #include "compass.h"
+#include "compassroot.h"
 #include "logger.h"
 #include "files.h"
 #include "traced_assert.h"
@@ -31,6 +32,14 @@ using namespace Utils;
 namespace main_window
 {
 // open_db
+
+/**
+ */
+RTCommandOpenDB::RTCommandOpenDB(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
 
 rtcommand::IsValid RTCommandOpenDB::valid() const
 {
@@ -54,9 +63,9 @@ bool RTCommandOpenDB::run_impl()
         return false;
     }
 
-    if (compass_->dbOpened())
+    if (root_.compass().dbOpened())
     {
-        if (assure_open_ && compass_->lastDbFilename() == filename_)
+        if (assure_open_ && root_.compass().appState().lastDbFilename() == filename_)
         {
             return true;
         }
@@ -67,9 +76,9 @@ bool RTCommandOpenDB::run_impl()
         }
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -78,7 +87,7 @@ bool RTCommandOpenDB::run_impl()
 
     main_window->openExistingDB(filename_);
 
-    return compass_->dbOpened();
+    return root_.compass().dbOpened();
 }
 
 void RTCommandOpenDB::collectOptions_impl(OptionsDescription& options,
@@ -99,9 +108,17 @@ void RTCommandOpenDB::assignVariables_impl(const VariablesMap& variables)
 
 // open_recent_db
 
+/**
+ */
+RTCommandOpenRecentDB::RTCommandOpenRecentDB(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 std::string RTCommandOpenRecentDB::getPath() const
 {
-    vector<string> recent_file_list = compass_->dbFileList();
+    vector<string> recent_file_list = root_.compass().dbFileList();
     if (recent_file_list.empty())
         return "";
 
@@ -151,15 +168,15 @@ bool RTCommandOpenRecentDB::run_impl()
         return false;
     }
 
-    if (compass_->dbOpened())
+    if (root_.compass().dbOpened())
     {
         setResultMessage("Database already opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -168,7 +185,7 @@ bool RTCommandOpenRecentDB::run_impl()
 
     main_window->openExistingDB(fn);
 
-    return compass_->dbOpened();
+    return root_.compass().dbOpened();
 }
 
 void RTCommandOpenRecentDB::collectOptions_impl(OptionsDescription& options,
@@ -189,6 +206,14 @@ void RTCommandOpenRecentDB::assignVariables_impl(const VariablesMap& variables)
 
 // create db
 
+/**
+ */
+RTCommandCreateDB::RTCommandCreateDB(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 rtcommand::IsValid  RTCommandCreateDB::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(!filename_.size(), "Filename empty")
@@ -204,15 +229,15 @@ bool RTCommandCreateDB::run_impl()
         return false;
     }
 
-    if (compass_->dbOpened())
+    if (root_.compass().dbOpened())
     {
         setResultMessage("Database already opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -221,7 +246,7 @@ bool RTCommandCreateDB::run_impl()
 
     main_window->createDB(filename_);
 
-    return compass_->dbOpened();
+    return root_.compass().dbOpened();
 }
 
 void RTCommandCreateDB::collectOptions_impl(OptionsDescription& options,
@@ -240,6 +265,14 @@ void RTCommandCreateDB::assignVariables_impl(const VariablesMap& variables)
 
 // close db
 
+/**
+ */
+RTCommandCloseDB::RTCommandCloseDB(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 void RTCommandCloseDB::collectOptions_impl(OptionsDescription& options,
                                            PosOptionsDescription& positional)
 {
@@ -255,10 +288,10 @@ void RTCommandCloseDB::assignVariables_impl(const VariablesMap& variables)
 bool RTCommandCloseDB::run_impl()
 {
     //lets return true if there's nothing to be done
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
         return !strict_;
 
-    if (compass_->appMode() != AppMode::Offline)
+    if (root_.compass().appState().appMode() != AppMode::Offline)
         return false;
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
@@ -266,7 +299,7 @@ bool RTCommandCloseDB::run_impl()
 
     main_window->closeDBSlot();
 
-    return !compass_->dbOpened();
+    return !root_.compass().dbOpened();
 }
 
 // quit app
