@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "result.h"
 
 #include <vector>

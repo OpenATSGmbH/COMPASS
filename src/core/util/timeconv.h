@@ -23,6 +23,7 @@
 #include <QDateTime>
 
 #include <string>
+#include <cstdint>
 
 namespace Utils
 {

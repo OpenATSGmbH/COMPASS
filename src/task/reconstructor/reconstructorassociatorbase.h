@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "targetreportdefs.h"
 #include "reconstructortarget.h"
 #include "reconstructorbase.h"

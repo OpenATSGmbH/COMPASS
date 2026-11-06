@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "targetreportdefs.h"
 #include "accuracy.h"
 

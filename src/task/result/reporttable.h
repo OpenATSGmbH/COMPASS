@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "property.h"
 #include "propertylist.h"
 #include "buffer.h"

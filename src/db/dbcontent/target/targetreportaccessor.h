@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "bufferaccessor.h"
 #include "dbcontent/variable/variableset.h"
 

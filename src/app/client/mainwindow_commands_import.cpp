@@ -1011,6 +1011,13 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
         return false;
     }
 
+    // a stopped import finishes asynchronously, wait for it before the new one is prepared
+    if (!compass_->taskManager().asterixImporterTask().waitForFinished())
+    {
+        setResultMessage("Previous ASTERIX import still running");
+        return false;
+    }
+
     bool db_opened = compass_->dbOpened();
     assert (db_opened);
     bool db_inmem  = compass_->dbInMem();
@@ -1221,6 +1228,14 @@ bool RTCommandImportASTERIXNetworkStop::run_impl()
     traced_assert(main_window);
 
     main_window->liveStopSlot();
+
+    // the import finishes asynchronously after the stop, return only when it is done, so a
+    // following start does not find it still running
+    if (!import_task.waitForFinished())
+    {
+        setResultMessage("ASTERIX import did not finish after stop");
+        return false;
+    }
 
     // handle errors
 

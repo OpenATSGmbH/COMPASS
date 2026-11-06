@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "job.h"
 
 #include "boost/date_time/posix_time/ptime.hpp"

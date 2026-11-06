@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "dbcontentaccessor.h"
 #include "accuracyestimatorbase.h"
 #include "configurable.h"

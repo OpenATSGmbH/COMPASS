@@ -20,6 +20,8 @@
 #include <boost/stacktrace.hpp>
 #include <boost/current_function.hpp>
 
+#include <cstdint>
+
 #define traced_assert(expr) \
     (BOOST_LIKELY(!!(expr))? ((void)0): (::compass_assert::assertion_failed(#expr, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__, boost::stacktrace::stacktrace(), false), ::std::abort()))
 

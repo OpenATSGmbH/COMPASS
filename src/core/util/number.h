@@ -24,6 +24,7 @@
 #include <numeric>
 #include <cmath>
 #include <limits>
+#include <cstdint>
 
 namespace Utils
 {

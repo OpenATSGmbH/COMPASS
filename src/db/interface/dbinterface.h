@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "configurable.h"
 #include "dbcontent/variable/variableset.h"
 #include "dbdefs.h"

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "dbcontent/target/targetreportchain.h"
 #include "property.h"
 

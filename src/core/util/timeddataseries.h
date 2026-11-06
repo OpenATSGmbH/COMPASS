@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>

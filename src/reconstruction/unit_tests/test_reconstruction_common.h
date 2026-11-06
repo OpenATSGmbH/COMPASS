@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "measurement.h"
 
 #include <cmath>

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "histogram.h"
 #include "histogramgenerator.h"
 #include "histograminitializer.h"

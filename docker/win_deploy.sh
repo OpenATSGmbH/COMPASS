@@ -4,6 +4,7 @@
 # in the same layout as the AppImage (see Utils::System::appDir):
 #
 #   compass_client.exe, compass_handler.exe, *.dll   executables and runtime libraries
+#   compass_client.exe.debug                          debug information for gdb (not in the zip)
 #   platforms/, styles/, imageformats/, iconengines/  Qt plugins
 #   lib/osgPlugins-<version>/                         OSG/osgEarth plugins
 #   compass/conf, compass/data, compass/presets       COMPASS configuration, data, view presets
@@ -39,9 +40,19 @@ done
 EXES="compass_client.exe compass_handler.exe"
 if [ $WITH_TESTS == 1 ]; then EXES="$EXES compass_tests.exe"; fi
 
-# executables without debug information (about 2 GB each with it)
+# executables without debug information (about 2 GB each with it). The debug information of
+# compass_client.exe goes to compass_client.exe.debug next to it, with a debug link, so gdb
+# finds it there. The MinGW debug sections are part of the PE image and would be mapped at
+# every start, so they cannot stay in the executable.
+OBJCOPY=x86_64-w64-mingw32-objcopy
 for exe in $EXES; do
-    $STRIP -o "$DEPLOY/$exe" "$BUILD/bin/$exe"
+    if [ "$exe" == "compass_client.exe" ]; then
+        $OBJCOPY --only-keep-debug "$BUILD/bin/$exe" "$DEPLOY/$exe.debug"
+        $STRIP -o "$DEPLOY/$exe" "$BUILD/bin/$exe"
+        (cd "$DEPLOY" && $OBJCOPY --add-gnu-debuglink="$exe.debug" "$exe")
+    else
+        $STRIP -o "$DEPLOY/$exe" "$BUILD/bin/$exe"
+    fi
 done
 
 # runtime of the MinGW toolchain (libssp: stack protection, needed by TBB)
@@ -79,7 +90,8 @@ if [ $ZIP == 1 ]; then
     rm -rf "$STAGE" "/out/$NAME.zip"
     mkdir -p "$STAGE"
     ln -s "$DEPLOY" "$STAGE/$NAME"
-    (cd "$STAGE" && 7z a -tzip -mx=7 -l "/out/$NAME.zip" "$NAME" > /dev/null)
+    # without the debug file (about 2 GB), crunch_win_deploy.sh copies it separately
+    (cd "$STAGE" && 7z a -tzip -mx=7 -l "-xr!*.debug" "/out/$NAME.zip" "$NAME" > /dev/null)
     rm -rf "$STAGE"
     echo "zip file /out/$NAME.zip"
     ls -la "/out/$NAME.zip"

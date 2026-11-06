@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "kalman_defs.h"
 #include "measurement.h"
 

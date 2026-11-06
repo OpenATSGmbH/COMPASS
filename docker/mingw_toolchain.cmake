@@ -1,4 +1,4 @@
-# CMake toolchain file for cross builds with MinGW-w64 (posix thread model)
+# CMake toolchain file for cross builds with MinGW-w64 (posix thread model, toolchain in /opt/mingw)
 
 set(CMAKE_SYSTEM_NAME Windows)
 set(CMAKE_SYSTEM_PROCESSOR x86_64)
@@ -9,7 +9,7 @@ set(CMAKE_C_COMPILER   ${MINGW_PREFIX}-gcc-posix)
 set(CMAKE_CXX_COMPILER ${MINGW_PREFIX}-g++-posix)
 set(CMAKE_RC_COMPILER  ${MINGW_PREFIX}-windres)
 
-set(CMAKE_FIND_ROOT_PATH /usr/${MINGW_PREFIX} /opt/win64 $ENV{QT_WIN_DIR})
+set(CMAKE_FIND_ROOT_PATH /opt/mingw/${MINGW_PREFIX} /opt/win64 $ENV{QT_WIN_DIR})
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)

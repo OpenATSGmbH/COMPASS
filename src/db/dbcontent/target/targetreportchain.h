@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "dbcontent/target/targetreportdefs.h"
 #include "targetposition.h"
 #include "dbcontent/target/targetpositionaccuracy.h"

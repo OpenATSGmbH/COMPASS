@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "configurable.h"
 #include "buffer.h"
 #include "targetmodel.h"

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "dbcontent/target/targetreportdefs.h"
 #include "projection/transformation.h"
 #include "reconstruction_defs.h"

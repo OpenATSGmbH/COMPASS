@@ -1,10 +1,77 @@
 # Windows cross build environment (MinGW-w64) on Debian 12
 #
-# MinGW GCC 12 with posix thread model, prebuilt Qt 5.15.2 (with Charts) for MinGW,
+# MinGW GCC 14.2 with mingw-w64 13.0.0, built from source in the first stage (the Debian 12
+# packages, GCC 12.2 with mingw-w64 10.0.0, corrupt the heap when a thread with thread_local
+# objects ends). Posix thread model, msvcrt runtime, prebuilt Qt 5.15.2 (with Charts) for MinGW,
 # OpenSceneGraph 3.6, osgEarth 3.8 and the other COMPASS and jASTERIX dependencies
 # built from source (DuckDB as official binary).
 # All Windows libraries are installed into /opt/win64.
 # The resulting executables run on Windows or in Wine.
+
+# ---------------------------------------------------------------------------------------------
+# stage 1: MinGW-w64 cross toolchain in /opt/mingw
+# ---------------------------------------------------------------------------------------------
+
+FROM debian:12 AS mingw
+
+ARG BINUTILS_VERSION=2.43
+ARG MINGW_VERSION=13.0.0
+ARG GCC_VERSION=14.2.0
+ARG TARGET=x86_64-w64-mingw32
+ARG PREFIX=/opt/mingw
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+     build-essential ca-certificates wget bzip2 xz-utils file texinfo \
+     libgmp-dev libmpfr-dev libmpc-dev libisl-dev zlib1g-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV PATH=${PREFIX}/bin:${PATH}
+
+WORKDIR /build
+
+RUN wget -q https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz \
+  && wget -q https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz \
+  && wget -q https://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v${MINGW_VERSION}.tar.bz2 \
+  && tar xf binutils-${BINUTILS_VERSION}.tar.xz && tar xf gcc-${GCC_VERSION}.tar.xz \
+  && tar xf mingw-w64-v${MINGW_VERSION}.tar.bz2 && rm *.tar.*
+
+# binutils
+RUN mkdir b-binutils && cd b-binutils \
+  && ../binutils-${BINUTILS_VERSION}/configure --target=${TARGET} --prefix=${PREFIX} \
+       --disable-multilib --disable-nls --disable-werror \
+  && make -j$(nproc) && make install
+
+# mingw-w64 headers
+RUN mkdir b-headers && cd b-headers \
+  && ../mingw-w64-v${MINGW_VERSION}/mingw-w64-headers/configure --host=${TARGET} \
+       --prefix=${PREFIX}/${TARGET} --with-default-msvcrt=msvcrt \
+  && make install
+
+# GCC stage 1: compiler only
+RUN mkdir b-gcc && cd b-gcc \
+  && ../gcc-${GCC_VERSION}/configure --target=${TARGET} --prefix=${PREFIX} \
+       --enable-languages=c,c++ --enable-threads=posix --disable-multilib --disable-nls \
+       --enable-shared --enable-static --with-system-zlib \
+  && make -j$(nproc) all-gcc && make install-gcc
+
+# mingw-w64 runtime (64 bit only)
+RUN mkdir b-crt && cd b-crt \
+  && ../mingw-w64-v${MINGW_VERSION}/mingw-w64-crt/configure --host=${TARGET} \
+       --prefix=${PREFIX}/${TARGET} --disable-lib32 --enable-lib64 --with-default-msvcrt=msvcrt \
+  && make -j$(nproc) && make install
+
+# winpthreads
+RUN mkdir b-winpthreads && cd b-winpthreads \
+  && ../mingw-w64-v${MINGW_VERSION}/mingw-w64-libraries/winpthreads/configure --host=${TARGET} \
+       --prefix=${PREFIX}/${TARGET} --enable-shared --enable-static \
+  && make -j$(nproc) && make install
+
+# GCC stage 2: libgcc, libstdc++
+RUN cd b-gcc && make -j$(nproc) && make install
+
+# ---------------------------------------------------------------------------------------------
+# stage 2: Windows libraries
+# ---------------------------------------------------------------------------------------------
 
 FROM debian:12
 
@@ -12,9 +79,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-     g++-mingw-w64-x86-64-posix \
-     gcc-mingw-w64-x86-64-posix \
      mingw-w64-tools \
+     libisl23 \
+     libmpc3 \
+     libmpfr6 \
+     libgmp10 \
+     zlib1g \
      cmake \
      ninja-build \
      make \
@@ -33,6 +103,12 @@ RUN apt-get update \
      qtbase5-dev-tools \
   && rm -rf /var/lib/apt/lists/*
 
+# toolchain from stage 1, the -posix names as in the Debian packages (thread model posix)
+COPY --from=mingw /opt/mingw /opt/mingw
+ENV PATH=/opt/mingw/bin:${PATH}
+RUN ln -s x86_64-w64-mingw32-gcc /opt/mingw/bin/x86_64-w64-mingw32-gcc-posix \
+  && ln -s x86_64-w64-mingw32-g++ /opt/mingw/bin/x86_64-w64-mingw32-g++-posix
+
 RUN x86_64-w64-mingw32-g++-posix --version && /usr/lib/qt5/bin/moc -v
 
 # prebuilt Qt 5.15.2 for MinGW 64 bit (Windows host tools, only libraries and headers are used)
@@ -43,8 +119,8 @@ RUN python3 -m venv /opt/aqt \
   && test -f /opt/qt/5.15.2/mingw81_64/lib/cmake/Qt5Charts/Qt5ChartsConfig.cmake
 
 ENV QT_WIN_DIR=/opt/qt/5.15.2/mingw81_64
-ENV MINGW_GCC_DLL_DIR=/usr/lib/gcc/x86_64-w64-mingw32/12-posix
-ENV MINGW_SYS_DLL_DIR=/usr/x86_64-w64-mingw32/lib
+ENV MINGW_GCC_DLL_DIR=/opt/mingw/x86_64-w64-mingw32/lib
+ENV MINGW_SYS_DLL_DIR=/opt/mingw/x86_64-w64-mingw32/bin
 ENV WIN64_PREFIX=/opt/win64
 
 # only Windows pkg-config files, never the ones of the Linux host
@@ -179,7 +255,7 @@ RUN git clone --branch OpenSceneGraph-3.6 --depth 1 https://github.com/openscene
   && rm -rf OpenSceneGraph-3.6 osg-build
 
 # mixed-case Windows header names used by MSVC code (Linux file systems are case-sensitive)
-RUN cd /usr/x86_64-w64-mingw32/include \
+RUN cd /opt/mingw/x86_64-w64-mingw32/include \
   && ln -s windows.h Windows.h \
   && ln -s wininet.h WinInet.h \
   && ln -s shobjidl.h ShObjIdl.h

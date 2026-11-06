@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "traced_assert.h"
 
 namespace context { class DBContextManager; }

@@ -115,6 +115,9 @@ public:
 
     virtual void stop() override;
     bool isRunning() const;
+    bool waitForFinished(int timeout_ms = FinishTimeoutMs);
+
+    static const int FinishTimeoutMs = 60000;
 
     void runDialog(QWidget* parent = nullptr);
 

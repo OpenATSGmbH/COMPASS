@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "reconstruction_defs.h"
 #include "kalman_estimator.h"
 
