@@ -881,7 +881,8 @@ void ProjectionManager::test()
 REDO_LABEL:
 
                 azimuth_rad = Number::randomNumber(-M_PI/2, M_PI/2);
-                slant_range_m = Number::randomNumber(0, 100000);
+                // not 0: at the radar position the azimuth is undefined, the round trip can not match
+                slant_range_m = Number::randomNumber(100, 100000);
 
                 if (Number::randomNumber(1, 100) > 50)
                 {

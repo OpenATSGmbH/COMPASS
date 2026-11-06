@@ -88,7 +88,16 @@ UDPReceiver::UDPReceiver(boost::asio::io_context& io_context, //const std::strin
     }
 
     //    socket.bind(listen_endpoint, ec);
+#ifdef _WIN32
+    //Windows can not bind a socket to a multicast address: bind to the port on all
+    //interfaces, the socket receives the group's datagrams after join_group
+    boost::asio::ip::udp::endpoint bind_endpoint = mcast_addr.is_multicast() ?
+        boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::any(), line_info_->mcastPort()) :
+        socket_endpoint_;
+    socket_.bind(bind_endpoint, ec);
+#else
     socket_.bind(socket_endpoint_, ec);
+#endif
     if (ec)
     {
         logerr << "socket bind error " << ec.message();

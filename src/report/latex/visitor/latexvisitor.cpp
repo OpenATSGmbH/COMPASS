@@ -287,7 +287,7 @@ void LatexVisitor::visit(HistogramView* e)
     LatexSection& sec = report_.getSection(current_section_name_);
 
     // add normal screenshot after overview
-    sec.addImage(image_path, e->instanceName());
+    sec.addImage(report_.graphicsPath(image_path), e->instanceName());
 }
 
 #if USE_EXPERIMENTAL_SOURCE == true
@@ -368,11 +368,11 @@ void LatexVisitor::visit(GeographicView* e)
         ret = overview_screenshot.save(overview_image_path.c_str(), "JPG", 100); // , 50
         traced_assert(ret);
 
-        sec.addImage(overview_image_path, e->instanceName()+" Overview");
+        sec.addImage(report_.graphicsPath(overview_image_path), e->instanceName()+" Overview");
     }
 
     // add normal screenshot after overview
-    sec.addImage(image_path, e->instanceName());
+    sec.addImage(report_.graphicsPath(image_path), e->instanceName());
 }
 
 #endif
@@ -435,7 +435,7 @@ void LatexVisitor::visit(ScatterPlotView* e)
     LatexSection& sec = report_.getSection(current_section_name_);
 
     // add normal screenshot after overview
-    sec.addImage(image_path, e->instanceName());
+    sec.addImage(report_.graphicsPath(image_path), e->instanceName());
 }
 
 /**
@@ -494,7 +494,7 @@ void LatexVisitor::visit(GridView* e)
     LatexSection& sec = report_.getSection(current_section_name_);
 
     // add normal screenshot after overview
-    sec.addImage(image_path, e->instanceName());
+    sec.addImage(report_.graphicsPath(image_path), e->instanceName());
 }
 
 /**

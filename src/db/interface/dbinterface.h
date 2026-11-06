@@ -28,6 +28,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/locks.hpp>
 
+#include <atomic>
 #include <future>
 #include <vector>
 
@@ -273,6 +274,9 @@ public:
     COMPASS& compass() { return compass_; }
     DBContentManager& dbContentManager() { return dbcontent_man_; }
 
+    // number of task log writes deferred because of a busy instance, since program start
+    unsigned int numDeferredTaskLogWrites() const { return num_deferred_task_log_writes_; }
+
 protected:
     void insertBufferInternal(const std::string& table_name, std::shared_ptr<Buffer> buffer);
     void saveTaskLogInfoInternal(unsigned int msg_id, const nlohmann::json& info);
@@ -286,7 +290,7 @@ protected:
     unsigned int max_ram_file_gb_{2};
     unsigned int max_ram_inmem_gb_{8};
     unsigned int num_threads_{8};
-    unsigned int live_cleanup_time_min_{60};
+    unsigned int live_cleanup_time_secs_{3600};
     bool use_live_inmem_db_{true};
 
     bool preserve_insert_order_{true};
@@ -329,6 +333,7 @@ protected:
     // task log writes deferred while instance_mutex_ was busy (live cleanup reconnect)
     std::vector<std::future<void>> pending_task_log_writes_;
     boost::mutex                   pending_task_log_writes_mutex_;
+    std::atomic<unsigned int>      num_deferred_task_log_writes_{0};
 
     unsigned int read_chunk_size_;
 

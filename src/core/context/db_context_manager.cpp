@@ -1558,10 +1558,10 @@ void DBContextManager::writeContextToDB()
     traced_assert(compass_.dbOpened());
     traced_assert(hasActiveContext());
 
+    // saveDBContextSection creates the table if needed and waits for a running live
+    // cleanup reconnect, so no table check here (it would meet a closed database)
     auto& db = compass_.dbInterface();
 
-    if (!db.existsDBContextTable())
-        db.createDBContextTable();
     const auto& ctx = activeContext();
 
     // save each section

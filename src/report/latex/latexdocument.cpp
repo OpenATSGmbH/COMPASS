@@ -25,6 +25,9 @@
 #include "reportdefs.h"
 
 #include <QDateTime>
+#include <QFile>
+
+#include <boost/filesystem.hpp>
 
 #include <memory>
 
@@ -38,10 +41,14 @@ namespace
 {
     /**
      */
+    // the logo is copied into the document folder by write(), so the document only uses relative paths
+    const std::string LogoFilename    = "openats.png";
+    const std::string LogoDocumentDir = "images";
+
     std::string getLogoImage(double height_cm)
     {
-        auto footer_img_fn = Utils::Files::getImageFilepath("openats.png");
-        return "\\includegraphics[height=" + std::to_string(height_cm) + "cm]{" + footer_img_fn + "}";
+        return "\\includegraphics[height=" + std::to_string(height_cm) + "cm]{"
+               + LogoDocumentDir + "/" + LogoFilename + "}";
     }
 }
 
@@ -62,6 +69,18 @@ void LatexDocument::write()
 
     if (!ret)
         throw runtime_error("LatexDocument: write: unable to create directories for '"+path_+"'");
+
+    // logo used in the footer and on the title page
+    std::string logo_dir  = path_ + "/" + LogoDocumentDir;
+    std::string logo_path = logo_dir + "/" + LogoFilename;
+
+    if (!Files::fileExists(logo_path))
+    {
+        if (!Files::createMissingDirectories(logo_dir) ||
+            !QFile::copy(QString::fromStdString(Files::getImageFilepath(LogoFilename)),
+                         QString::fromStdString(logo_path)))
+            throw runtime_error("LatexDocument: write: could not copy logo to '" + logo_path + "'");
+    }
 
     std::string path = path_ + "/" + filename_;
 
@@ -320,6 +339,35 @@ void LatexDocument::addSubSection (const std::string& heading)
 std::string LatexDocument::path() const
 {
     return path_;
+}
+
+std::string LatexDocument::graphicsPath(const std::string& file) const
+{
+    return graphicsPath(path_, file);
+}
+
+std::string LatexDocument::graphicsPath(const std::string& doc_dir, const std::string& file)
+{
+    namespace fs = boost::filesystem;
+
+    fs::path p(file);
+
+    // pdflatex runs in the document folder (latex::runPDFLatex). has_root_path: on Windows
+    // a path like /data/x has no drive letter and is not absolute, but it is not relative either
+    if (p.has_root_path())
+    {
+        // without trailing separators, lexical normalization would append a '.' element
+        std::string base_str = doc_dir;
+        while (base_str.size() > 1 && (base_str.back() == '/' || base_str.back() == '\\'))
+            base_str.pop_back();
+
+        fs::path rel = p.lexically_normal().lexically_relative(fs::path(base_str).lexically_normal());
+
+        if (!rel.empty() && *rel.begin() != ".." && *rel.begin() != ".")
+            p = rel;
+    }
+
+    return p.generic_string();
 }
 
 std::string LatexDocument::filename() const

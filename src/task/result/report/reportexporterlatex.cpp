@@ -150,7 +150,7 @@ Result ReportExporterLatex::exportFigure_impl(SectionContentFigure& figure,
     auto& latex_section = latex_doc_->getSection(it->second);
 
     for (const auto& img : images.result())
-        latex_section.addImage(img.path, img.name);
+        latex_section.addImage(latex_doc_->graphicsPath(img.path), img.name);
 
     return Result::succeeded();
 }
@@ -328,7 +328,8 @@ ResultT<ReportExporterLatex::LatexCmdResult> ReportExporterLatex::handleLatexCom
         std::string part0 = cmd.substr(0, gfx_fn0);
         std::string part1 = cmd.substr(gfx_fn1, std::string::npos);
 
-        cmd = part0 + icon_path_rel + part1;
+        // relative to the document folder, written with '/' for LaTeX
+        cmd = part0 + latex_doc_->graphicsPath(icon_path_rel) + part1;
 
         return ResultT<LatexCmdResult>::succeeded(LatexCmdResult::Handled);
     }

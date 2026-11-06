@@ -91,7 +91,24 @@ namespace
     {
         //loginf << "UGA0 '" << command << "'";
 
+#ifdef _WIN32
+        //on Windows the backslash is the path separator: it only escapes a quote character
+        //(e.g. JSON arguments in quotes), every other backslash is a normal character
+        string escaped;
+        escaped.reserve(command.size() + 16);
+
+        for (size_t i = 0; i < command.size(); ++i)
+        {
+            if (command[ i ] == '\\' && (i + 1 >= command.size() || (command[ i + 1 ] != '"' && command[ i + 1 ] != '\'')))
+                escaped += "\\\\";
+            else
+                escaped += command[ i ];
+        }
+
+        vector<string> parts = boost::program_options::split_unix(escaped);
+#else
         vector<string> parts = boost::program_options::split_unix(command);
+#endif
 
 //        for (auto& part : parts)
 //            loginf << "UGA1 '" << part << "'";
@@ -235,7 +252,18 @@ bool RTCommandString::parse(boost::program_options::variables_map& vm,
 
     //QStringList parts = splitCommand(cmd_);
 
-    vector<string> parts = splitCommand2(cmd_.toStdString());
+    //split_unix throws on an invalid escape sequence (e.g. a backslash in a path)
+    vector<string> parts;
+    try
+    {
+        parts = splitCommand2(cmd_.toStdString());
+    }
+    catch (const std::exception& ex)
+    {
+        logerr << "error splitting command: " << ex.what();
+        setErrorMsg("Parse error: " + QString(ex.what()));
+        return false;
+    }
 
     int argc = parts.size();
 

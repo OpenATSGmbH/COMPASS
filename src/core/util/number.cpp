@@ -29,7 +29,9 @@
 #include <cmath>
 #include <stdlib.h>
 #include <algorithm>
+#include <mutex>
 #include <numeric>
+#include <random>
 
 using namespace std;
 
@@ -37,9 +39,19 @@ namespace Utils
 {
 namespace Number
 {
+/**
+ * Uniform random number in [min, max). rand() has only 32768 values on Windows and the former
+ * formula did not reach max. Fixed seed: the same sequence at every start, as before.
+ */
 float randomNumber(float min, float max)
 {
-    return (float)min + rand() / (RAND_MAX / (max - min) + 1);
+    static std::mt19937 generator;
+    static std::mutex   generator_mutex;
+
+    std::lock_guard<std::mutex> lock(generator_mutex);
+
+    std::uniform_real_distribution<float> distribution(min, max);
+    return distribution(generator);
 }
 
 float roundToNearest(float num) { return (num > 0.0) ? floor(num + 0.5) : ceil(num - 0.5); }

@@ -47,7 +47,7 @@
             "class_name": "DBInterface",
             "instance_name": "DBInterface0",
             "parameters": {
-                "live_cleanup_time_min": 5,
+                "live_cleanup_time_secs": 300,
                 "log_verbose": false,
                 "max_ram_file_gb": 2,
                 "max_ram_inmem_gb": 8,

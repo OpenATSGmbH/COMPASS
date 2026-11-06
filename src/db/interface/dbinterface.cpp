@@ -203,7 +203,7 @@ DBInterface::DBInterface(nlohmann::json& config, COMPASS& compass)
     registerParameter("max_ram_file_gb", &max_ram_file_gb_, max_ram_file_gb_);
     registerParameter("max_ram_inmem_gb", &max_ram_inmem_gb_, max_ram_inmem_gb_);
     registerParameter("num_threads", &num_threads_, num_threads_);
-    registerParameter("live_cleanup_time_min", &live_cleanup_time_min_, live_cleanup_time_min_);
+    registerParameter("live_cleanup_time_secs", &live_cleanup_time_secs_, live_cleanup_time_secs_);
     registerParameter("use_live_inmem_db", &use_live_inmem_db_, use_live_inmem_db_);
 
     if (use_live_inmem_db_)
@@ -1473,6 +1473,10 @@ void DBInterface::createViewPointsTable()
 
 /**
  */
+/**
+ * Can be called from the main thread while a live cleanup reconnect runs (view point edited
+ * in live mode). The lock is taken first, it waits for the reconnect to finish.
+ */
 void DBInterface::setViewPoint(const unsigned int id, const string& value)
 {
     if (!db_instance_)
@@ -1481,19 +1485,22 @@ void DBInterface::setViewPoint(const unsigned int id, const string& value)
         return;
     }
 
-    if (!existsViewPointsTable())
-        createViewPointsTable();
+    #ifdef PROTECT_INSTANCE
+    boost::mutex::scoped_lock locker(instance_mutex_);
+    #endif
 
+    if (!existsTable(TABLE_NAME_VIEWPOINTS))
     {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
+        setProperty("view_points_version", ViewPoint::VP_COLLECTION_CONTENT_VERSION);
 
-        string str = sqlGenerator().getInsertViewPointStatement(id, value);
-        logdbg << "cmd '" << str << "'";
-
-        execute(str);
+        execute(sqlGenerator().getTableViewPointsCreateStatement());
+        updateTableInfo();
     }
+
+    string str = sqlGenerator().getInsertViewPointStatement(id, value);
+    logdbg << "cmd '" << str << "'";
+
+    execute(str);
 }
 
 /**
@@ -1945,6 +1952,8 @@ void DBInterface::saveTaskLogInfo(unsigned int msg_id, const nlohmann::json& inf
 
     loginf << "instance busy, deferring task log write " << msg_id;
 
+    ++num_deferred_task_log_writes_;
+
     boost::mutex::scoped_lock locker(pending_task_log_writes_mutex_);
 
     // drop finished writes
@@ -2030,17 +2039,23 @@ void DBInterface::createDBContextTable()
     }
 }
 
+/**
+ * Can be called from the main thread while a live cleanup reconnect runs (e.g. a new data
+ * source in live data). The lock is taken first, it waits for the reconnect to finish.
+ */
 void DBInterface::saveDBContextSection(const std::string& section, const std::string& json_str)
 {
+    boost::mutex::scoped_lock locker(instance_mutex_);
+
     traced_assert(ready());
 
-    if (!existsDBContextTable())
-        createDBContextTable();
-
+    if (!existsTable(TABLE_NAME_DB_CONTEXT))
     {
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        execute(sqlGenerator().getReplaceDBContextSectionStatement(section, json_str));
+        execute(sqlGenerator().getTableDBContextCreateStatement());
+        updateTableInfo();
     }
+
+    execute(sqlGenerator().getReplaceDBContextSectionStatement(section, json_str));
 }
 
 std::string DBInterface::loadDBContextSection(const std::string& section)
@@ -2130,17 +2145,24 @@ void DBInterface::createDBInfoTable()
     }
 }
 
+/**
+ * Can be called from the main thread while a live cleanup reconnect runs on a worker thread.
+ * The cleanup holds instance_mutex_ while the database is closed, so the lock is taken first:
+ * it waits for the reconnect to finish (a few seconds at most), then the database is ready.
+ */
 void DBInterface::saveDBInfo(const std::string& name, const std::string& json_str)
 {
+    boost::mutex::scoped_lock locker(instance_mutex_);
+
     traced_assert(ready());
 
-    if (!existsDBInfoTable())
-        createDBInfoTable();
-
+    if (!existsTable(TABLE_NAME_DB_INFO))
     {
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        execute(sqlGenerator().getReplaceDBInfoStatement(name, json_str));
+        execute(sqlGenerator().getTableDBInfoCreateStatement());
+        updateTableInfo();
     }
+
+    execute(sqlGenerator().getReplaceDBInfoStatement(name, json_str));
 }
 
 std::string DBInterface::loadDBInfo(const std::string& name)
@@ -3558,7 +3580,7 @@ void DBInterface::deleteBefore(const DBContent& dbcontent,
     if (last_live_cleanup_time_.is_not_a_date_time())
         last_live_cleanup_time_ = boost::posix_time::microsec_clock::local_time();
 
-    if (boost::posix_time::microsec_clock::local_time() - last_live_cleanup_time_ > boost::posix_time::minutes(live_cleanup_time_min_))
+    if (boost::posix_time::microsec_clock::local_time() - last_live_cleanup_time_ > boost::posix_time::seconds(live_cleanup_time_secs_))
     {
         loginf << "live cleanup time reached, doing cleanup";
         cleanupDBInternal();
