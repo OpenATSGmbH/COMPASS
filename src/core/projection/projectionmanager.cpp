@@ -43,7 +43,7 @@ const string ProjectionManager::RS2G_NAME = "RS2G";
 
 ProjectionManager::ProjectionManager(nlohmann::json& config, Configurable* parent)
     : Configurable(config, parent),
-      mag_model_("wmm2020", HOME_DATA_DIRECTORY + "wmm") // WMM model (World Magnetic Model)
+      mag_model_("wmm2020", Utils::Files::dataDirectory() + "wmm") // WMM model (World Magnetic Model)
 {
     loginf;
 
@@ -58,7 +58,7 @@ ProjectionManager::ProjectionManager(nlohmann::json& config, Configurable* paren
 
     loginf << "loading EGM96 map";
 
-    std::string file_path = HOME_DATA_DIRECTORY + "geoid";
+    std::string file_path = Utils::Files::dataDirectory() + "geoid";
     traced_assert(Files::fileExists(file_path+"/egm96-5.pgm"));
 
     // geoid_.reset(new GeographicLib::Geoid ("egm96-5", file_path));

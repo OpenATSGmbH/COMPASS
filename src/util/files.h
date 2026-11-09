@@ -34,9 +34,9 @@ static const std::string SYSTEM_INSTALL_PATH = CMAKE_INSTALL_PREFIX + std::strin
 
 static const std::string HOME_PATH = QDir::homePath().toStdString();
 
-static const std::string HOME_SUBDIRECTORY = HOME_PATH + "/.compass/";
+static const std::string HOME_SUBDIRECTORY           = HOME_PATH + "/.compass/";
 static const std::string OSGEARTH_CACHE_SUBDIRECTORY = HOME_SUBDIRECTORY + "osgearth_cache/";
-static const std::string HOME_VERSION_SUBDIRECTORY = HOME_SUBDIRECTORY + VERSION + "/";
+static const std::string HOME_VERSION_SUBDIRECTORY   = HOME_SUBDIRECTORY + VERSION + "/";
 
 static const std::string CONF_SUBDIRECTORY   = "conf/";
 static const std::string DATA_SUBDIRECTORY   = "data/";
@@ -46,7 +46,7 @@ static const std::string HOME_CONF_DIRECTORY   = HOME_VERSION_SUBDIRECTORY + CON
 static const std::string HOME_DATA_DIRECTORY   = HOME_VERSION_SUBDIRECTORY + DATA_SUBDIRECTORY;
 static const std::string HOME_PRESET_DIRECTORY = HOME_VERSION_SUBDIRECTORY + PRESET_SUBDIRECTORY;
 
-static const std::string LICENSE_SUBDIRECTORY = HOME_SUBDIRECTORY + "license/";
+static const std::string LICENSE_SUBDIRECTORY       = HOME_SUBDIRECTORY + "license/";
 static const std::string DATA_CONTEXTS_SUBDIRECTORY = HOME_SUBDIRECTORY + "data_contexts/";
 
 #include "config_paths.h"
@@ -63,6 +63,9 @@ bool directoryExists(const std::string& path);
 bool copyRecursively(const std::string& source_folder, const std::string& dest_folder);
 QStringList getFilesInDirectory(const std::string& path);
 QStringList getSubdirectories(const std::string& path);
+
+const std::string& dataDirectory();             // data resources (icons, maps, ...): the override if set, else HOME_DATA_DIRECTORY
+void setDataDirectory(const std::string& path); // overrides the data directory, set once at startup (unit tests: repository data/)
 
 std::string getIconFilepath(const std::string& filename, bool verify = true);
 std::string getImageFilepath(const std::string& filename, bool verify = true);

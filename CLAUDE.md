@@ -81,6 +81,8 @@ Unit tests live inside each module's `unit_tests/` subdirectory (e.g. `src/core/
 
 When adding tests, add new `test_<topic>.cpp` files in the appropriate module's `unit_tests/` directory and register them in that module's `unit_tests/CMakeLists.txt`. The top-level test CMakeLists is `src/unit_tests/CMakeLists.txt`.
 
+The unit tests take their resources from the repository, never from `~/.compass` (CI containers have none): `test_main.cpp` points `Utils::Files::setDataDirectory()` to the repository's `data/` (used by all `Utils::Files::dataDirectory()` lookups: icons, images, fonts, maps, ...), and tests read other files via `COMPASS_SOURCE_DIR` (e.g. `conf/default/`). Application code reads data resources via `Utils::Files::dataDirectory()`, not `HOME_DATA_DIRECTORY`.
+
 ## Project structure
 
 ```

@@ -33,6 +33,10 @@ target_include_directories(compass_tests PRIVATE
 
 target_compile_definitions(compass_tests PRIVATE BUFFER_PEDANTIC_CHECKING_ENABLED)
 
+# the tests take their resources from the repository, not from ~/.compass:
+# data/ via Utils::Files::setDataDirectory() in test_main.cpp, conf/ read directly (e.g. test_calculation_plan.cpp)
+target_compile_definitions(compass_tests PRIVATE COMPASS_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+
 target_link_libraries(compass_tests PRIVATE
     compass_app
     compass_config compass_core compass_reconstruction

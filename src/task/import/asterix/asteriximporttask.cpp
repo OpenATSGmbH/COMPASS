@@ -151,7 +151,7 @@ using namespace std;
 //     registerParameter("chunk_size_jasterix", &settings_.chunk_size_jasterix, ASTERIXImportTaskSettings().chunk_size_jasterix);
 //     registerParameter("chunk_size_insert", &settings_.chunk_size_insert, ASTERIXImportTaskSettings().chunk_size_insert);
 
-//     std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+//     std::string jasterix_definition_path = Utils::Files::dataDirectory() + "jasterix_definitions";
 
 //     loginf << "jasterix definition path '"
 //            << jasterix_definition_path << "'";
@@ -243,7 +243,7 @@ ASTERIXImportTask::ASTERIXImportTask(nlohmann::json& config, TaskManager* parent
     registerParameter("max_packets_in_processing", &settings_.max_packets_in_processing_,
                       ASTERIXImportTaskSettings().max_packets_in_processing_);
 
-    std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+    std::string jasterix_definition_path = Utils::Files::dataDirectory() + "jasterix_definitions";
 
     loginf << "jasterix definition path '"
            << jasterix_definition_path << "'";
@@ -474,7 +474,7 @@ std::shared_ptr<jASTERIX::jASTERIX> ASTERIXImportTask::jASTERIX(bool refresh) co
 */
 void ASTERIXImportTask::initjASTERIX() const
 {
-    std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+    std::string jasterix_definition_path = Utils::Files::dataDirectory() + "jasterix_definitions";
 
     logdbg << "jasterix definition path '"
            << jasterix_definition_path << "'";
