@@ -18,10 +18,15 @@
 #pragma once
 
 #include "configurable.h"
+#include "imanager.h"
 #include "buffer.h"
 
-class COMPASS;
 class IDBVariableResolver;
+
+namespace context
+{
+    class DBContextManager;
+}
 
 #include "gdal_priv.h"
 
@@ -38,10 +43,10 @@ class ProjectionManagerWidget;
 class Projection;
 class GeoProjection;
 
-class ProjectionManager : public Configurable
+class ProjectionManager : public Configurable, public IManager
 {
 public:
-    ProjectionManager(nlohmann::json& config, COMPASS* parent);
+    ProjectionManager(nlohmann::json& config, Configurable* parent);
     virtual ~ProjectionManager();
 
     void generateSubConfigurable(nlohmann::json& child_json) override;
@@ -75,14 +80,17 @@ public:
 
     void test();
 
-    COMPASS& compass() { return compass_; }
+    // peers, set by the composition root (the context manager is created after this manager)
+    void setManagers(context::DBContextManager& ctx_man) { ctx_man_ = &ctx_man; }
+    bool checkWired() const override;
+    context::DBContextManager& dbContextManager();
 
     void varResolver(IDBVariableResolver& resolver) { var_resolver_ = &resolver; }
     IDBVariableResolver& varResolver() const { return *var_resolver_; }
 
 protected:
-    COMPASS& compass_;
-    IDBVariableResolver* var_resolver_ {nullptr};
+    context::DBContextManager* ctx_man_      = nullptr; // peer, set by the composition root
+    IDBVariableResolver*       var_resolver_ = nullptr;
 
     std::string current_projection_name_;
 

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/results/position/positionbase.h"
+#include "results/position/positionbase.h"
 
 namespace EvaluationRequirement
 {

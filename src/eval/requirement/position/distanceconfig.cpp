@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/distanceconfig.h"
-#include "eval/requirement/position/distanceconfigwidget.h"
-#include "eval/requirement/position/distance.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/probabilitybase.h"
+#include "requirement/position/distanceconfig.h"
+#include "requirement/position/distanceconfigwidget.h"
+#include "requirement/position/distance.h"
+#include "requirement/group.h"
+#include "requirement/base/probabilitybase.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #include "stringconv.h"
 

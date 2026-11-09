@@ -26,7 +26,12 @@
 #include <vector>
 
 class Buffer;
-class COMPASS;
+class DBContentManager;
+
+namespace context
+{
+    class DBContextManager;
+}
 
 /**
  * Shared per-row layer scan over loaded buffers, used by the table and histogram views
@@ -85,7 +90,8 @@ struct ScanInput
 
 /// builds the scan input snapshot; main thread only (reads managers)
 ScanInput makeScanInput(const std::map<std::string, std::shared_ptr<Buffer>>& data,
-                        COMPASS& compass);
+                        DBContentManager& dbcont_man,
+                        context::DBContextManager& ctx_man);
 
 /// layer id "<ds_type>:<ds_name>:L<n>:<dbcontent>" aggregation per row; worker-safe
 std::map<std::string, LayerAgg> aggregateLayers(const ScanInput& input);

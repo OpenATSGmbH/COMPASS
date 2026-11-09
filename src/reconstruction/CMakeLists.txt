@@ -41,6 +41,13 @@ if(EXPERIMENTAL_SRC)
     target_include_directories(compass_reconstruction PRIVATE
         "${CMAKE_SOURCE_DIR}/experimental_src/reconstruction/kalman"
     )
+
+    # host <-> experimental cycle (plugin plan, Kalman-interface registry): kalman_estimator.cpp
+    # creates the Kalman interfaces of compass_reconst_adv. Link-only, consumers get no include paths.
+    target_link_libraries(compass_reconstruction
+        INTERFACE
+            "$<LINK_ONLY:compass_reconst_adv>"
+    )
 endif()
 
 target_link_libraries(compass_reconstruction

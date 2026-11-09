@@ -15,13 +15,13 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/mode_c/correct.h"
-#include "eval/results/mode_c/correct.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/mode_c/correct.h"
+#include "results/mode_c/correct.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "logger.h"
 
 using namespace std;

@@ -16,10 +16,10 @@
  */
 
 #include "basetablemodel.h"
+#include "viewmanager.h"
 #include "basetablewidget.h"
 #include "buffer.h"
 #include "buffer_utils.h"
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variable.h"
@@ -191,7 +191,8 @@ QVariant BaseBufferTableModel::data(const QModelIndex& index, int role) const
         // try special representation first
         std::string value_str;
         if (view_.settings().use_presentation_ &&
-            getSpecialRepresentation(value_str, *variable, *rd.buffer, rd.buffer_index, view_.compass()))
+            getSpecialRepresentation(value_str, *variable, *rd.buffer, rd.buffer_index,
+                                     view_.viewManager().dbContentManager(), view_.viewManager().dbContextManager()))
             return QString(value_str.c_str());
 
         // get value string via shared utility
@@ -286,7 +287,8 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
                                                      dbContent::Variable& var,
                                                      Buffer& buffer,
                                                      unsigned int buffer_idx,
-                                                     COMPASS& compass)
+                                                     DBContentManager& dbcontent_man,
+                                                     context::DBContextManager& ctx_man)
 {
     auto data_type = var.dataType();
     std::string property_name = var.name();
@@ -304,7 +306,6 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
 
     // resolve the row's data source id (used by row-aware representations like MLAT_RUS)
     unsigned int ds_id = 0;
-    auto& dbcontent_man = compass.dbContentManager();
     if (dbcontent_man.metaCanGetVariable(var.dbContentName(), dbcontent_vars::meta_var_ds_id_))
     {
         auto& ds_var = dbcontent_man.metaGetVariable(var.dbContentName(), dbcontent_vars::meta_var_ds_id_);
@@ -316,7 +317,7 @@ bool BaseBufferTableModel::getSpecialRepresentation(std::string& repr,
         }
     }
 
-    repr = var.getAsJSONRepresentationString(json_value, &compass.dbContextManager(), ds_id);
+    repr = var.getAsJSONRepresentationString(json_value, &ctx_man, ds_id);
     return true;
 }
 

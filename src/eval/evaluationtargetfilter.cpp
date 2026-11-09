@@ -17,9 +17,8 @@
 
 #include "evaluationtargetfilter.h"
 #include "evaluationmanager.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 #include "json.hpp"
 

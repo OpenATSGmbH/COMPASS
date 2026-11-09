@@ -21,7 +21,6 @@
 #include "db_context_manager.h"
 #include "evaluationcalculator.h"
 #include "evaluationmanager.h"
-#include "compass.h"
 
 #include <QLabel>
 #include <QCheckBox>
@@ -69,7 +68,7 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
     if (title_ == "Reference Data")
         excluded_dbcontents = {"CAT001", "CAT048"};
 
-    dbcont_combo_ = new DBContentComboBox(calculator_.manager().compass().dbContentManager(),
+    dbcont_combo_ = new DBContentComboBox(calculator_.manager().dbContentManager(),
                                           false, true, excluded_dbcontents);
 
     if (dbcont_combo_->findText(dbcontent_name_.c_str()) >= 0)
@@ -118,9 +117,9 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
 
     setLayout(main_layout);
 
-    connect(&calculator_.manager().compass().dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
+    connect(&calculator_.manager().dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
             this, &EvaluationDataSourceWidget::updateDataSourcesSlot); // update if data sources changed
-    connect(&calculator_.manager().compass().dbContextManager(), &context::DBContextManager::dataSourcesChangedSignal,
+    connect(&calculator_.manager().dbContextManager(), &context::DBContextManager::dataSourcesChangedSignal,
             this, &EvaluationDataSourceWidget::updateDataSourcesSlot);
 }
 
@@ -148,7 +147,7 @@ void EvaluationDataSourceWidget::updateDataSourcesSlot()
     unsigned int col, row;
     unsigned int cnt = 0;
 
-    auto& ctx_man = calculator_.manager().compass().dbContextManager();
+    auto& ctx_man = calculator_.manager().dbContextManager();
 
     map<string, bool> data_sources;
 

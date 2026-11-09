@@ -20,7 +20,6 @@
 
 #include <QApplication>
 
-#include "compass.h"
 #include "tableviewconfigwidget.h"
 #include "tableviewdatasource.h"
 #include "tableviewdatawidget.h"

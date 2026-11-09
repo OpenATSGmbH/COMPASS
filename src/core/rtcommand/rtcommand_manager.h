@@ -18,6 +18,7 @@
 #pragma once
 
 #include "configurable.h"
+#include "imanager.h"
 //#include "logger.h"
 #include "rtcommand_defs.h"
 #include "json_fwd.hpp"
@@ -47,13 +48,18 @@ namespace rtcommand
 namespace boost { namespace asio { class io_context; } }
 
 class TCPServer;
-class COMPASS;
+class AppState;
+
+namespace rtcommand
+{
+    class RTCommandRunner;
+}
 
 /**
  * Class for listening for and processing string commands at runtime,
  * either coming externally from a TCP port or internally from the application itself.
  */
-class RTCommandManager : public QThread, public Configurable
+class RTCommandManager : public QThread, public Configurable, public IManager
 {
     Q_OBJECT
 public:
@@ -77,7 +83,9 @@ public:
 
     static bool open_port_;
 
-    RTCommandManager(nlohmann::json& config, COMPASS* parent);
+    RTCommandManager(nlohmann::json& config,
+                     Configurable* parent,
+                     AppState& app_state);
     virtual ~RTCommandManager();
 
     void startCommandProcessing(); // only process command after start has been called
@@ -87,6 +95,10 @@ public:
     void shutdown();
 
     static const int ShutdownTimeoutSecs = 10;
+
+    // peers, set by the composition root (the runner is created after this manager)
+    void setManagers(rtcommand::RTCommandRunner& runner) { runner_ = &runner; }
+    bool checkWired() const override;
 
     rtcommand::IssueInfo addCommand(const std::string& cmd_str, CommandId* id = nullptr);
     void addCommandFromConsole(const std::string& cmd_str); // throws on failure
@@ -99,7 +111,8 @@ signals:
     void shellCommandProcessed(const QString& msg, const QString& data, bool is_error);
 
 protected:
-    COMPASS& compass_;
+    AppState&                   app_state_;
+    rtcommand::RTCommandRunner* runner_ = nullptr; // peer, set by the composition root
 
     volatile bool started_ {false};
     volatile bool stop_requested_ {false};

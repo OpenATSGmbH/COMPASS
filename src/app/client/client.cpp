@@ -16,6 +16,7 @@
  */
 
 #include "client.h"
+#include "compassroot.h"
 
 #include "compass.h"
 #include "crashbreadcrumbs.h"
@@ -32,11 +33,11 @@
 #include "taskmanager.h"
 #include "asteriximporttask.h"
 #include "mainwindow.h"
-#include "util/system.h"
+#include "system.h"
 #include "render.h"
 
 #include "json.hpp"
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include "traced_assert.h"
 
@@ -57,7 +58,7 @@
 #include <QFontDatabase>
 #include <QGLFormat>
 
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
@@ -81,8 +82,6 @@ using namespace std;
 using namespace Utils;
 
 namespace po = boost::program_options;
-
-std::string APP_FILENAME;
 
 namespace
 {
@@ -443,20 +442,21 @@ bool Client::run ()
 
     try
     {
-        compass_ = std::make_unique<COMPASS>(*config_manager_);
+        root_.reset(new CompassRoot(*config_manager_));
+        compass_ = &root_->compass();
 
-        applyDarkMode(compass_->darkMode());
+        applyDarkMode(compass_->appState().darkMode());
 
         // make system your application font (applies to all widgets)
         if (Utils::System::appDir() != nullptr)
         {
             QFont system_font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
 
-            system_font.setPointSizeF(system_font.pointSizeF() * compass_->appFontScale());
+            system_font.setPointSizeF(system_font.pointSizeF() * compass_->appState().settings().app_font_scale);
             setFont(system_font);
         }
 
-        compass_->init(); //here everything created in compass instance should be available
+        root_->init(); //here everything created in compass instance should be available
 
         compass_->projectionManager().test();
     }
@@ -478,12 +478,12 @@ bool Client::run ()
     loginf << "created COMPASS instance";
 
     if (expert_mode_)
-        compass_->expertMode(true);
+        compass_->appState().expertMode(true);
 
     if (do_sensor_status_hack_)
-        compass_->sensorStatusTimeHack(do_sensor_status_hack_);
+        compass_->appState().sensorStatusTimeHack(do_sensor_status_hack_);
 
-    MainWindow& main_window = compass_->mainWindow();
+    MainWindow& main_window = root_->mainWindow();
     main_window.init();
     splash.raise();
 
@@ -557,7 +557,7 @@ bool Client::run ()
         if (import_view_points_filename_.size())
             rt_man.addCommandFromConsole("import_view_points " + import_view_points_filename_);
 
-        TaskManager& task_man = compass_->taskManager();
+        TaskManager& task_man = root_->taskManager();
 
         if (asterix_decoder_cfg.size())
             task_man.asterixImporterTask().asterixDecoderConfig(asterix_decoder_cfg);
@@ -746,7 +746,7 @@ bool Client::run ()
 
         if (export_report_name_.size())
         {
-            if (export_report_mode_ == "PDF" && !compass_->pdflatexFound())
+            if (export_report_mode_ == "PDF" && !compass_->appState().pdflatexFound())
                 throw runtime_error("Cannot export as PDF: pdflatex not installed");
 
             string cmd = "export_report --report '"+export_report_name_+"'";
@@ -765,7 +765,7 @@ bool Client::run ()
         rt_man.startCommandProcessing();
 
         // finally => set compass as running
-        compass_->setAppState(AppState::Running);
+        compass_->appState().phase(AppPhase::Running);
 
         return true;
     }

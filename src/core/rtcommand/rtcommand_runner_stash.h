@@ -21,13 +21,12 @@
 
 #include <QObject>
 
-class COMPASS;
-
 class QSignalSpy;
 
 namespace rtcommand
 {
     struct RTCommand;
+    class IRTCommandHost;
 }
 
 /**
@@ -42,8 +41,8 @@ namespace rtcommand
 
 /**
  * Outcome of one attempt to run a command in the main thread. Deferred means the main
- * thread was not in a state to run it and the runner has to try again - see viewsBusy()
- * in the implementation. Passed as int through the queued invocation, since moc only
+ * thread was not in a state to run it and the runner has to try again - see
+ * IRTCommandHost::viewsBusy() and RTCommandRunnerStash::executeCommand(). Passed as int through the queued invocation, since moc only
  * marshals registered types across threads.
  */
 enum class ExecResult
@@ -70,7 +69,7 @@ class RTCommandRunnerStash : public QObject
 {
     Q_OBJECT
 public:
-    RTCommandRunnerStash(COMPASS& compass);
+    explicit RTCommandRunnerStash(IRTCommandHost& host);
     virtual ~RTCommandRunnerStash();
 
 private slots:
@@ -87,7 +86,7 @@ private slots:
 private:
     friend class RTCommandRunner;
 
-    COMPASS& compass_;
+    IRTCommandHost& host_;
     std::unique_ptr<QSignalSpy> spy_;
 };
 

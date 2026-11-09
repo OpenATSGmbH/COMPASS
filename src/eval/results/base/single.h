@@ -17,13 +17,13 @@
 
 #pragma once
 
-#include "eval/results/base/base.h"
+#include "results/base/base.h"
 
-#include "task/result/reporttable.h"
+#include "reporttable.h"
 
-#include "view/gridview/grid2d.h"
-#include "view/gridview/grid2dlayer.h"
-#include "view/gridview/grid2drendersettings.h"
+#include "gridview/grid2d.h"
+#include "gridview/grid2dlayer.h"
+#include "gridview/grid2drendersettings.h"
 
 #include <vector>
 

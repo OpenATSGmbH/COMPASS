@@ -18,6 +18,7 @@
 #pragma once
 
 #include "viewabledataconfig.h"
+#include "viewpointkeys.h"
 
 class ViewManager;
 class LatexVisitor;
@@ -43,40 +44,6 @@ class ViewPoint : public ViewableDataConfig
                             const std::string& json_filename = "", 
                             std::string* err_msg = nullptr,
                             bool verbose = false);
-
-    static const std::string VP_COLLECTION_CONTENT_VERSION;
-    static const std::string VP_COLLECTION_CONTENT_TYPE;
-
-    static const std::string VP_COLLECTION_CONTENT_VERSION_KEY;
-    static const std::string VP_COLLECTION_CONTENT_TYPE_KEY;
-    static const std::string VP_COLLECTION_ARRAY_KEY;
-
-    static const std::string VP_CONTEXT_KEY;
-    static const std::string VP_CONTEXT_DATASETS_KEY;
-    static const std::string VP_CONTEXT_DATASET_FILENAME_KEY;
-
-    static const std::string VP_ID_KEY;
-    static const std::string VP_NAME_KEY;
-    static const std::string VP_TYPE_KEY ;
-    static const std::string VP_STATUS_KEY;
-    static const std::string VP_DESCRIPTION_KEY;
-    static const std::string VP_COMMENT_KEY;
-
-    static const std::string VP_DS_TYPES_KEY;
-    static const std::string VP_DS_KEY;
-    static const std::string VP_FILTERS_KEY;
-    static const std::string VP_SELECTED_RECNUMS_KEY;
-    static const std::string VP_LABELS_KEY;
-
-    static const std::string VP_POS_LAT_KEY;
-    static const std::string VP_POS_LON_KEY;
-    static const std::string VP_POS_WIN_LAT_KEY;
-    static const std::string VP_POS_WIN_LON_KEY;
-
-    static const std::string VP_TIMESTAMP_KEY;
-    static const std::string VP_TIME_WIN_KEY;
-
-    static const std::string VP_ANNOTATION_KEY;
 
 protected:
     ViewManager& view_manager_;

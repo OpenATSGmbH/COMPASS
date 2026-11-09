@@ -16,6 +16,8 @@
  */
 
 #include "viewpointsreportgenerator.h"
+#include "licensemanager.h"
+#include "appstate.h"
 #include "viewpointsreportgeneratordialog.h"
 #include "dialogs.h"
 #include "viewmanager.h"
@@ -27,7 +29,6 @@
 #include "stringconv.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
-#include "compass.h"
 #include "global.h"
 #include "dbinterface.h"
 #include "dbconnection.h"
@@ -68,7 +69,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, Vie
 
     registerParameter("abstract", &abstract_, std::string());
 
-    string current_filename = view_manager_.compass().lastDbFilename();
+    string current_filename = view_manager_.appState().lastDbFilename();
 
     report_path_ = Files::getDirectoryFromPath(current_filename)+"/report_"
                 + Files::getFilenameFromPath(current_filename) + "/";
@@ -88,7 +89,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, Vie
     registerParameter("run_pdflatex", &run_pdflatex_, true);
     registerParameter("open_created_pdf", &open_created_pdf_, false);
 
-    pdflatex_found_ = view_manager_.compass().pdflatexFound();
+    pdflatex_found_ = view_manager_.appState().pdflatexFound();
 
     if (!pdflatex_found_)
     {
@@ -120,7 +121,7 @@ void ViewPointsReportGenerator::run ()
 
     try
     {
-        LatexDocument doc (view_manager_.compass(), report_path_, report_filename_);
+        LatexDocument doc (report_path_, report_filename_, view_manager_.licenseManager().licenseeString(true));
         doc.title("View Points Report");
 
         if (author_.size())
@@ -159,7 +160,7 @@ void ViewPointsReportGenerator::run ()
             vp_ids = vp_widget->viewedViewPoints();
 
         string status_str, elapsed_time_str, remaining_time_str;
-        DBContentManager& dbcont_man = view_manager_.compass().dbContentManager();
+        DBContentManager& dbcont_man = view_manager_.dbContentManager();
 
         unsigned int vp_cnt = 0;
         unsigned int vp_size = vp_ids.size();
@@ -321,7 +322,7 @@ void ViewPointsReportGenerator::run ()
                 {
                     // no modal dialog during automatic runs, it would block the run
                     // until someone clicks it away
-                    if (view_manager_.compass().allowUserInteractions())
+                    if (view_manager_.appState().allowUserInteractions())
                     {
                         QMessageBox msgBox(QApplication::activeWindow());
                         msgBox.setText(QString(fatal_error ? "PDF Latex failed:\n\n"
@@ -374,7 +375,7 @@ void ViewPointsReportGenerator::run ()
 
         running_ = false;
 
-        if (view_manager_.compass().allowUserInteractions())
+        if (view_manager_.appState().allowUserInteractions())
         {
             QMessageBox m_warning(QMessageBox::Warning, "Export PDF Failed",
                                   (string("Error message:\n")+e.what()).c_str(),

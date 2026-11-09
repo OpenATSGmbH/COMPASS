@@ -21,38 +21,29 @@
 
 /**
  * Declares a new runtime command.
- * Add preferably at end of command class declaration.
- * 
+ * Add preferably at end of command class declaration. The command is registered by the init function
+ * of its module, which passes the needed managers to its constructor:
+ *
  * struct RTCommandExample : public RTCommand
  * {
+ *     explicit RTCommandExample(DBContentManager& dbcont_man);
  *     ...
  *     DECLARE_RTCOMMAND(example, "just an example command")
  * };
+ *
+ * void init_example_commands(rtcommand::RTCommandRegistry& registry, DBContentManager& dbcont_man)
+ * {
+ *     registry.registerCommand<RTCommandExample>(dbcont_man);
+ * }
  */
 #define DECLARE_RTCOMMAND(Name, Description)                                          \
 public:                                                                               \
     static QString staticName() { return #Name; }                                     \
     static QString staticDescription() { return Description; }                        \
-    static void init() { is_registered_ = true; }                                     \
 protected:                                                                            \
     virtual QString name_impl() const override { return staticName(); }               \
     virtual QString description_impl() const override { return staticDescription(); } \
-private:                                                                              \
-    static bool is_registered_;
-
-/**
- * Add on top of cpp file (if possible outside of any namespace).
- * 
- * #include "rtcommandexample.h"
- * 
- * REGISTER_RTCOMMAND({any_needed_namespace::}RTCommandExample)
- * 
- * RTCommandExample::RTCommandExample()
- * {
- *     ...
- */
-#define REGISTER_RTCOMMAND(Class) \
-    bool Class::is_registered_ = rtcommand::RTCommandRegistry::instance().registerCommand(Class::staticName(), Class::staticDescription(), [] () { return new Class; });
+private:
 
 /**
  * Overrides the abstract option related methods with empty behavior. 

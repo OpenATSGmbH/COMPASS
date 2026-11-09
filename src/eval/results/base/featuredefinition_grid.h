@@ -17,17 +17,17 @@
 
 #pragma once
 
-#include "eval/results/base/featuredefinition.h"
-#include "eval/results/base/featuredefinition_t.h"
+#include "results/base/featuredefinition.h"
+#include "results/base/featuredefinition_t.h"
 
 #include "sectorlayer.h"
 
-#include "view/gridview/grid2d.h"
-#include "view/gridview/grid2dlayer.h"
-#include "view/gridview/grid2drendersettings.h"
-#include "view/gridview/grid2dlayerrenderer.h"
+#include "gridview/grid2d.h"
+#include "gridview/grid2dlayer.h"
+#include "gridview/grid2drendersettings.h"
+#include "gridview/grid2dlayerrenderer.h"
 
-#include "view/points/viewpointgenerator.h"
+#include "points/viewpointgenerator.h"
 
 #include "evaluationcalculator.h"
 

@@ -21,7 +21,7 @@
 
 #include "asterix_decoding_config.h"
 #include "color_provider.h"
-#include "compass.h"
+#include "appstate.h"
 
 #include <jasterix/jasterix.h>
 #include <jasterix/category.h>
@@ -29,8 +29,6 @@
 #include "sector.h"
 #include "sectorlayer.h"
 #include "airspace.h"
-#include "datasourcestoolwidget.h"
-#include "datasourcesstatustoolwidget.h"
 #include "db_context_conflict_dialog.h"
 #include "db_context_merge_dialog.h"
 #include "files.h"
@@ -60,9 +58,11 @@ namespace context
 
 static const string ACTIVE_CONTEXT_FILENAME = "active_context.json";
 
-DBContextManager::DBContextManager(COMPASS& compass)
+DBContextManager::DBContextManager(AppState& app_state,
+                                   DBInterface& db_interface)
     : QObject()
-    , compass_(compass)
+    , app_state_(app_state)
+    , db_interface_(db_interface)
 {
     // ensure base directory exists
     fs::create_directories(basePath());
@@ -263,7 +263,7 @@ void DBContextManager::saveContext(const string& name)
     {
         DBContextSerializer::save(ctx, basePath());
 
-        if (compass_.dbOpened())
+        if (app_state_.dbOpened())
             writeContextToDB();
     }
     catch (const std::exception& e)
@@ -323,7 +323,7 @@ void DBContextManager::setActiveContext(const string& name)
 
     // switching context while a DB with imported data is open is not allowed -
     // callers (GUI, RT commands) must prevent this
-    traced_assert(!compass_.dbOpened() || !hasInsertedData());
+    traced_assert(!app_state_.dbOpened() || !hasInsertedData());
 
     active_context_name_ = name;
     saveActiveContextName();
@@ -332,7 +332,7 @@ void DBContextManager::setActiveContext(const string& name)
 
     rebuildSectorLayers();
 
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 
     loginf << "sector layers rebuilt, sectors_loaded_=" << sectors_loaded_;
@@ -486,7 +486,7 @@ DataSource& DBContextManager::createDataSource(unsigned int sac, unsigned int si
     traced_assert(inserted);
     saveContext(active_context_name_);
 
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 
     emit dataSourcesChangedSignal();
@@ -1119,7 +1119,7 @@ static const string DBInfoKeyInsertedCounts = "inserted_counts";
 
 void DBContextManager::saveCountsToDB()
 {
-    assert (compass_.dbOpened());
+    assert (app_state_.dbOpened());
     loginf << "saving " << inserted_counts_.size() << " data sources";
 
     // serialize: { "ds_id": { "dbcontent": { "line_id": count } } }
@@ -1131,7 +1131,7 @@ void DBContextManager::saveCountsToDB()
 
     loginf << "json: " << j.dump().substr(0, 500);
 
-    compass_.dbInterface().saveDBInfo(DBInfoKeyInsertedCounts, j.dump());
+    db_interface_.saveDBInfo(DBInfoKeyInsertedCounts, j.dump());
 
     loginf << "saved inserted counts to db_info";
 }
@@ -1140,13 +1140,13 @@ void DBContextManager::loadCountsFromDB()
 {
     inserted_counts_.clear();
 
-    if (!compass_.dbOpened())
+    if (!app_state_.dbOpened())
     {
         loginf << "db not opened, skipping";
         return;
     }
 
-    string json_str = compass_.dbInterface().loadDBInfo(DBInfoKeyInsertedCounts);
+    string json_str = db_interface_.loadDBInfo(DBInfoKeyInsertedCounts);
 
     if (json_str.empty())
     {
@@ -1366,12 +1366,12 @@ DBContextManager::asterixInfoFromJSON(const nlohmann::json& j)
 
 void DBContextManager::saveAsterixInfoToDB()
 {
-    assert (compass_.dbOpened());
+    assert (app_state_.dbOpened());
     loginf << "saving " << asterix_info_.size() << " data sources";
 
     json j = asterixInfoToJSON(asterix_info_);
 
-    compass_.dbInterface().saveDBInfo(DBInfoKeyAsterixInfo, j.dump());
+    db_interface_.saveDBInfo(DBInfoKeyAsterixInfo, j.dump());
 
     loginf << "saved asterix_info to db_info";
 }
@@ -1380,13 +1380,13 @@ void DBContextManager::loadAsterixInfoFromDB()
 {
     asterix_info_.clear();
 
-    if (!compass_.dbOpened())
+    if (!app_state_.dbOpened())
     {
         loginf << "db not opened, skipping";
         return;
     }
 
-    string json_str = compass_.dbInterface().loadDBInfo(DBInfoKeyAsterixInfo);
+    string json_str = db_interface_.loadDBInfo(DBInfoKeyAsterixInfo);
 
     if (json_str.empty())
     {
@@ -1555,10 +1555,10 @@ pair<bool, float> DBContextManager::isFromFFT(double latitude_deg, double longit
 
 void DBContextManager::writeContextToDB()
 {
-    traced_assert(compass_.dbOpened());
+    traced_assert(app_state_.dbOpened());
     traced_assert(hasActiveContext());
 
-    auto& db = compass_.dbInterface();
+    auto& db = db_interface_;
 
     if (!db.existsDBContextTable())
         db.createDBContextTable();
@@ -1619,9 +1619,9 @@ void DBContextManager::writeContextToDB()
 
 DBContext DBContextManager::readContextFromDB() const
 {
-    traced_assert(compass_.dbOpened());
+    traced_assert(app_state_.dbOpened());
 
-    auto& db = compass_.dbInterface();
+    auto& db = db_interface_;
 
     if (!db.existsDBContextTable())
         return {};
@@ -1734,7 +1734,7 @@ DBContext DBContextManager::readContextFromDB() const
 
 DBContextDiff DBContextManager::diffWithDB() const
 {
-    traced_assert(compass_.dbOpened());
+    traced_assert(app_state_.dbOpened());
     traced_assert(hasActiveContext());
 
     DBContext db_ctx = readContextFromDB();
@@ -1756,7 +1756,7 @@ void DBContextManager::databaseOpenedSlot()
 
     invalidateDataSourceCache();
 
-    auto& db = compass_.dbInterface();
+    auto& db = db_interface_;
 
     if (!hasActiveContext())
     {
@@ -1859,7 +1859,7 @@ void DBContextManager::databaseOpenedSlot()
 
                 DBContextConflictDialog::Resolution resolution;
 
-                if (!compass_.allowUserInteractions())
+                if (!app_state_.allowUserInteractions())
                 {
                     // automated processing (CLI / runtime command): do not open a modal dialog,
                     // keep the configuration context and write it to the database
@@ -2069,7 +2069,7 @@ shared_ptr<Sector> DBContextManager::createSector(const string& name, const stri
 
     // save context
     saveContext(activeContextName());
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 
     // rebuild cached layers
@@ -2124,7 +2124,7 @@ void DBContextManager::deleteSector(shared_ptr<Sector> sector)
     ctx_sectors.erase(iter);
 
     saveContext(activeContextName());
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 
     rebuildSectorLayers();
@@ -2151,7 +2151,7 @@ void DBContextManager::deleteSectors(const vector<shared_ptr<Sector>>& sectors)
     }
 
     saveContext(activeContextName());
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 
     rebuildSectorLayers();
@@ -2175,7 +2175,7 @@ void DBContextManager::deleteSectorLayer(const std::string& layer_name)
     ctx_sectors.erase(new_end, ctx_sectors.end());
 
     saveContext(activeContextName());
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 
     rebuildSectorLayers();
@@ -2206,7 +2206,7 @@ void DBContextManager::renameSectorLayer(const std::string& old_name, const std:
         return;
 
     saveContext(activeContextName());
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 
     rebuildSectorLayers();
@@ -2243,7 +2243,7 @@ void DBContextManager::saveSector(shared_ptr<Sector> sector)
     traced_assert(sector);
 
     saveContext(activeContextName());
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 }
 
@@ -2317,7 +2317,7 @@ void DBContextManager::setSectorLayerColor(const string& layer_name, QColor colo
 void DBContextManager::persistSectorEdit()
 {
     saveContext(activeContextName());
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 
     emit sectorsChangedSignal();
@@ -2332,7 +2332,7 @@ void DBContextManager::moveSector(unsigned int id, const string& old_layer, cons
     // move callback - calling the setter here again would recurse endlessly
 
     saveContext(activeContextName());
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 
     rebuildSectorLayers();
@@ -2373,7 +2373,7 @@ void DBContextManager::importAirSpace(const AirSpace& air_space,
         return;
 
     saveContext(activeContextName());
-    if (compass_.dbOpened())
+    if (app_state_.dbOpened())
         writeContextToDB();
 
     rebuildSectorLayers();
@@ -2805,24 +2805,6 @@ string DBContextManager::importContextZip(const string& zip_filepath)
 // ============================================================
 // Storage
 // ============================================================
-
-// ============================================================
-// Widgets
-// ============================================================
-
-DataSourcesToolWidget* DBContextManager::loadWidget()
-{
-    if (!load_widget_)
-        load_widget_.reset(new DataSourcesToolWidget(*this));
-    return load_widget_.get();
-}
-
-DataSourcesStatusToolWidget* DBContextManager::statusWidget()
-{
-    if (!status_widget_)
-        status_widget_.reset(new DataSourcesStatusToolWidget(*this));
-    return status_widget_.get();
-}
 
 string DBContextManager::basePath()
 {

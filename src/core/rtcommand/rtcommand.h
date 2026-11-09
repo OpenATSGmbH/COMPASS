@@ -17,9 +17,8 @@
 
 #pragma once
 
-class COMPASS;
-
 #include "rtcommand_defs.h"
+#include "rtcommand_host.h"
 #include "rtcommand_result.h"
 #include "rtcommand_macros.h"
 
@@ -58,9 +57,9 @@ class RTCommandRunnerStash;
  * Obtains the command receiver with the given path casted to T*.
  */
 template <typename T>
-inline std::pair<FindObjectErrCode, T*> getCommandReceiverAs(const std::string& object_path, COMPASS& compass)
+inline std::pair<FindObjectErrCode, T*> getCommandReceiverAs(const std::string& object_path, IRTCommandHost& host)
 {
-    auto obj = getCommandReceiver(object_path, compass);
+    auto obj = getCommandReceiver(object_path, host);
     if (obj.first != FindObjectErrCode::NoError)
         return std::make_pair(obj.first, nullptr);
 
@@ -161,7 +160,7 @@ struct RTCommand
     static std::vector<std::string> DefaultOptions;
 
 protected:
-    COMPASS* compass_{nullptr}; // injected by RTCommandRunnerStash before run/checkResult
+    IRTCommandHost* host_{nullptr}; // injected by RTCommandRunnerStash before run/checkResult
 
     void setResultMessage(const std::string& m) const;
     void setJSONReply(const nlohmann::json& json_reply, const std::string& reply_as_string = "") const;
@@ -240,5 +239,10 @@ protected:
     DECLARE_RTCOMMAND(help, "the help command, generates help information")
     DECLARE_RTCOMMAND_OPTIONS
 };
+
+class RTCommandRegistry;
+
+/// registers the basic commands (empty, round_trip, help)
+void init_basic_commands(RTCommandRegistry& registry);
 
 } // namespace rtcommand

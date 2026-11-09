@@ -17,7 +17,6 @@
 
 #include "licensemanager.h"
 
-#include "compass.h"
 #include "files.h"
 #include "logger.h"
 
@@ -30,9 +29,8 @@ const std::string LicenseManager::LicenseFileName = "licenses.json";
 
 /**
 */
-LicenseManager::LicenseManager(nlohmann::json& config, COMPASS& compass)
-    : Configurable(config, &compass),
-      compass_(compass)
+LicenseManager::LicenseManager(nlohmann::json& config, Configurable& parent)
+    : Configurable(config, &parent)
 {
     readLicenses();
 
@@ -234,6 +232,45 @@ const license::License* LicenseManager::activeLicense() const
         return nullptr;
 
     return &getLicense(id.value());
+}
+
+/**
+ * Licensee of the active license, optionally prefixed with "Licensed to ", empty if there is no active license.
+ */
+std::string LicenseManager::licenseeString(bool licensed_to) const
+{
+    auto vl = activeLicense();
+
+    if (!vl)
+        return "";
+
+    return (licensed_to ? "Licensed to " : "") + vl->licensee;
+}
+
+/**
+ * Application name and version, optionally with the type of the active license.
+ */
+std::string LicenseManager::versionString(const std::string& app_version,
+                                          bool open_ats,
+                                          bool license_type) const
+{
+    std::string version_str;
+    if (open_ats)
+        version_str += "OpenATS ";
+
+    version_str += "COMPASS v" + app_version;
+
+    if (license_type)
+    {
+        auto vl = activeLicense();
+
+        if (vl)
+            version_str += " " + license::License::typeToString(vl->type);
+        else
+            version_str += " " + license::License::typeToString(license::License::Type::Free);
+    }
+
+    return version_str;
 }
 
 /**

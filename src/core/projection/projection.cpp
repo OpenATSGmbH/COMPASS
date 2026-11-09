@@ -20,7 +20,6 @@
 #include "db_context_manager.h"
 #include "logger.h"
 #include "projectionmanager.h"
-#include "compass.h"
 
 Projection::Projection(nlohmann::json& config, ProjectionManager* parent)
     : Configurable(config, parent), proj_manager_(*parent)
@@ -55,7 +54,7 @@ void Projection::addAllCoordinateSystems()
         if (coordinate_systems_added_)
             return;
 
-        auto& ctx_man = proj_manager_.compass().dbContextManager();
+        auto& ctx_man = proj_manager_.dbContextManager();
 
         if (!ctx_man.hasActiveContext())
             return; // will be called again when context becomes available

@@ -20,10 +20,9 @@
 #include "logger.h"
 #include "stringconv.h"
 #include "timeconv.h"
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 #include "reconstructortask.h"
 #include "taskmanager.h"
-#include "compass.h"
 #include "db_context_manager.h"
 #include "number.h"
 
@@ -557,7 +556,7 @@ void ReconstructorAssociatorBase::associateTargetReports(std::set<unsigned int> 
 
         try
         {
-            ds_name = reconstructor().task().manager().compass().dbContextManager()
+            ds_name = reconstructor().task().manager().dbContextManager()
                           .dataSource(diag_it.first)->name();
         }
         catch (...) {}

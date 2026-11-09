@@ -16,14 +16,16 @@
  */
 
 #include "reconstructortask.h"
+#include "logmodel.h"
+#include "appstate.h"
 #include "dialogs.h"
 
-#include "compass.h"
 #include "reconstructortaskdialog.h"
 #include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/dbcontentdb.h"
 #include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variableset.h"
 #include "filtermanager.h"
@@ -41,7 +43,7 @@
 #include "number.h"
 #include "dbinterface.h"
 #include "metavariable.h"
-#include "util/async.h"
+#include "async.h"
 #include "evaluationmanager.h"
 #include "viewpointgenerator.h"
 #include "projectionmanager.h"
@@ -50,9 +52,9 @@
 #include "licensemanager.h"
 #include "sectorlayer.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "probimmreconstructor.h"
@@ -196,7 +198,7 @@ void ReconstructorTask::initTask()
 
 void ReconstructorTask::checkReconstructor()
 {
-    const auto& license_manager = manager().compass().licenseManager();
+    const auto& license_manager = manager().licenseManager();
 
     if (!license_manager.componentEnabled(license::License::ComponentProbIMMReconstructor) && currentReconstructorStr() == ProbImmReconstructorName)
         currentReconstructorStr(ScoringUMReconstructorName);
@@ -213,7 +215,7 @@ bool ReconstructorTask::canRun()
 {
     traced_assert(currentReconstructor());
 
-    bool has_data       = manager().compass().dbContentManager().hasData();
+    bool has_data       = manager().dbContentManager().hasData();
     bool has_next_slice = has_data && currentReconstructor()->hasNextTimeSlice();
 
     loginf << "has_data " << has_data << " has_next_slice " << has_next_slice;
@@ -285,8 +287,8 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
 
         const auto& counts = currentReconstructor()->assocCounts();
 
-        auto& ctx_man = manager().compass().dbContextManager();
-        DBContentManager& dbcont_man = manager().compass().dbContentManager();
+        auto& ctx_man = manager().dbContextManager();
+        DBContentManager& dbcont_man = manager().dbContentManager();
 
         if (counts.size())
         {
@@ -420,7 +422,7 @@ std::set<unsigned int> ReconstructorTask::disabledDataSources() const
 
     if (current_reconstructor_str_ == ScoringUMReconstructorName)
     {
-        for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
+        for (const auto& [ds_id, ds] : manager().dbContextManager().activeContext().dataSources())
         {
             if (ds.name() == "CalcRef")
                 disabled_ds.insert(ds.id());
@@ -452,18 +454,18 @@ void ReconstructorTask::run()
     delassocs_future_ = {};
     process_future_ = {};
 
-    ReconstructorBase::TargetsContainer::unspecific_acids_ = manager().compass().unspecificACIDs();
+    ReconstructorBase::TargetsContainer::unspecific_acids_ = manager().appState().settings().unspecific_acids;
 
-    manager().compass().dbContentManager().clearAssociationsIdentifier();
-    manager().compass().dbInterface().startPerformanceMetrics();
+    manager().dbContentManager().clearAssociationsIdentifier();
+    manager().dbInterface().startPerformanceMetrics();
 
-    manager().compass().taskManager().beginTaskResultWriting(
+    manager().beginTaskResultWriting(
         "Reconstruct References "+String::lineStrFrom(currentReconstructor()->settings().ds_line),
          task::TaskResultType::Generic);
 
-    manager().compass().logInfo("Reconstructor") << "running " << current_reconstructor_str_;
+    manager().logStore().logInfo("Reconstructor") << "running " << current_reconstructor_str_;
 
-    Projection& projection = manager().compass().projectionManager().currentProjection();
+    Projection& projection = manager().projectionManager().currentProjection();
     projection.clearCoordinateSystems();
     projection.addAllCoordinateSystems();
 
@@ -472,7 +474,7 @@ void ReconstructorTask::run()
     run_start_time_ = boost::posix_time::microsec_clock::local_time();
     run_start_time_after_del_ = {};
 
-    auto& section = manager().compass().taskManager().currentReport()->getSection("Overview");
+    auto& section = manager().currentReport()->getSection("Overview");
     section.addTable("Info", 3, {"Name", "Value", "Comment"}, false);
 
     auto& table = section.getTable("Info");
@@ -504,9 +506,9 @@ void ReconstructorTask::run()
 
     updateProgressSlot("Deleting Previous References", false);
 
-    manager().compass().viewManager().clearDataInViews();
+    manager().viewManager().clearDataInViews();
 
-    manager().compass().evaluationManager().clearData(); // in case there are previous results
+    manager().evaluationManager().clearData(); // in case there are previous results
 
     delcalcref_future_ = std::async(std::launch::async, [&] {
         {
@@ -533,7 +535,7 @@ void ReconstructorTask::deleteCalculatedReferencesDoneSlot()
 
     updateProgressSlot("Deleting Previous Targets", false);
 
-    DBContentManager& cont_man = manager().compass().dbContentManager();
+    DBContentManager& cont_man = manager().dbContentManager();
 
     deltgts_future_ = std::async(std::launch::async, [&] {
         {
@@ -560,7 +562,7 @@ void ReconstructorTask::deleteTargetsDoneSlot()
 
     updateProgressSlot("Deleting Previous Associations", false);
 
-    DBContentManager& cont_man = manager().compass().dbContentManager();
+    DBContentManager& cont_man = manager().dbContentManager();
 
     delassocs_future_ = std::async(std::launch::async, [&] {
         {
@@ -574,7 +576,7 @@ void ReconstructorTask::deleteTargetsDoneSlot()
                                                   Q_ARG(const QString&, "Deleting Previous Associations"),
                                                   Q_ARG(bool, false));
 
-                        manager().compass().dbInterface().clearAssociations(*dbcont_it.second);
+                        manager().dbContentManager().contentDB().clearAssociations(*dbcont_it.second);
                     }
                 }
 
@@ -643,7 +645,7 @@ void ReconstructorTask::loadDataSlice()
 
     if (use_sectors_extend_)
     {
-        auto& ctx = manager().compass().dbContextManager();
+        auto& ctx = manager().dbContextManager();
 
         bool first = true;
         double tmp_lat_min{0}, tmp_lat_max{0}, tmp_long_min{0}, tmp_long_max{0};
@@ -686,7 +688,7 @@ void ReconstructorTask::loadDataSlice()
         }
     }
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     std::set<std::string> targets;
     for (auto& dbcont_it : dbcontent_man)
@@ -732,8 +734,8 @@ std::string ReconstructorTask::loadFilterClause(
     const std::string& dbcontent_name, bool has_bbox,
     double lat_min, double lat_max, double long_min, double long_max)
 {
-    IDBVariableResolver& resolver   = manager().compass().filterManager().variableResolver();
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    IDBVariableResolver& resolver   = manager().filterManager().variableResolver();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     std::vector<FilterClause> parts;
 
@@ -886,7 +888,7 @@ void ReconstructorTask::processLoadedSliceIfReady()
 
         // the previous slice load must be finished, the engine's wait for a running load
         // processes events and the old load's done slot would fill the new slice
-        traced_assert(!manager().compass().dbContentManager().dataEngine().isLoading());
+        traced_assert(!manager().dbContentManager().dataEngine().isLoading());
 
         loadDataSlice();
     }
@@ -1006,7 +1008,7 @@ void ReconstructorTask::writeDataSlice()
 
     traced_assert(writing_slice_);
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     if (skip_reference_data_writing_)
     {
@@ -1142,7 +1144,7 @@ void ReconstructorTask::endReconstruction()
 {
     loginf << "ending reconstruction...";
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                this, &ReconstructorTask::writeDoneSlot);
@@ -1155,8 +1157,8 @@ void ReconstructorTask::endReconstruction()
 
     currentReconstructor()->finalizePersistence();
 
-    manager().compass().dbContextManager().saveCountsToDB();
-    manager().compass().dbInterface().saveProperties();
+    manager().dbContextManager().saveCountsToDB();
+    manager().dbInterface().saveProperties();
 
     done_ = true;
 
@@ -1184,20 +1186,20 @@ void ReconstructorTask::endReconstruction()
            << String::timeStringFromDouble(time_elapsed_s, false)
            << ", after deletion " << String::timeStringFromDouble(time_elapsed_s_after_del, false);
 
-    loginf << manager().compass().dbInterface().stopPerformanceMetrics().asString();
+    loginf << manager().dbInterface().stopPerformanceMetrics().asString();
 
-    manager().compass().logInfo("Reconstructor") << "done using " << current_reconstructor_str_
+    manager().logStore().logInfo("Reconstructor") << "done using " << current_reconstructor_str_
                                                  << " after " << String::timeStringFromDouble(time_elapsed_s, false);
 
     // report: info
-    auto& section = manager().compass().taskManager().currentReport()->getSection("Overview");
+    auto& section = manager().currentReport()->getSection("Overview");
 
     {
         auto& table = section.getTable("Info");
         table.addRow({"End", Time::toString(boost::posix_time::microsec_clock::local_time()), ""});
         table.addRow({"Elapsed", String::timeStringFromDouble(time_elapsed_s, false), ""});
         table.addRow({"Elapsed After Deletion", String::timeStringFromDouble(time_elapsed_s_after_del, false), ""});
-        table.addRow({"Number of Targets", manager().compass().dbContentManager().numTargets(), ""});
+        table.addRow({"Number of Targets", manager().dbContentManager().numTargets(), ""});
     }
 
     // report: assoc counts
@@ -1210,8 +1212,8 @@ void ReconstructorTask::endReconstruction()
 
         const auto& counts = currentReconstructor()->assocCounts();
 
-        auto& ctx_man = manager().compass().dbContextManager();
-        DBContentManager& dbcont_man = manager().compass().dbContentManager();
+        auto& ctx_man = manager().dbContextManager();
+        DBContentManager& dbcont_man = manager().dbContentManager();
 
         if (counts.size())
         {
@@ -1246,12 +1248,12 @@ void ReconstructorTask::endReconstruction()
     currentReconstructor()->reset();
 
     if (!skip_reference_data_writing_)
-        manager().compass().dbContentManager().setAssociationsIdentifier("All");
+        manager().dbContentManager().setAssociationsIdentifier("All");
 
-    manager().compass().taskManager().endTaskResultWriting(true, true);
+    manager().endTaskResultWriting(true, true);
 
     //cleanup db after reconstruction
-    manager().compass().dbInterface().cleanupDB(true);
+    manager().dbInterface().cleanupDB(true);
 
     if (!allow_user_interactions_)
     {
@@ -1264,9 +1266,9 @@ void ReconstructorTask::sectorsChangedSlot()
 {
     used_sectors_.clear();
 
-    if (manager().compass().dbContextManager().sectorsLoaded())
+    if (manager().dbContextManager().sectorsLoaded())
     {
-        auto& sectors_layers = manager().compass().dbContextManager().sectorLayers();
+        auto& sectors_layers = manager().dbContextManager().sectorLayers();
 
         use_sectors_extend_ = sectors_layers.size();
 
@@ -1320,7 +1322,7 @@ void ReconstructorTask::runCancelledSlot()
 
     Async::waitAndProcessEventsFor(50);
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     if (dbcontent_man.dataEngine().isLoading())
         dbcontent_man.dataEngine().cancelLoad();
@@ -1342,7 +1344,7 @@ void ReconstructorTask::runCancelledSlot()
 
     loginf << "all done";
 
-    manager().compass().logInfo("Reconstructor") << "canceled by user";
+    manager().logStore().logInfo("Reconstructor") << "canceled by user";
 
     currentReconstructor()->reset();
 
@@ -1358,7 +1360,7 @@ void ReconstructorTask::runCancelledSlot()
     msg_box->close();
     delete msg_box;
 
-    manager().compass().taskManager().endTaskResultWriting(false);
+    manager().endTaskResultWriting(false);
 
     emit doneSignal();
 }
@@ -1414,7 +1416,7 @@ std::set<unsigned int> ReconstructorTask::unusedDSIDs() const
 {
     std::set<unsigned int> unused_ds = disabledDataSources();
 
-    for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
+    for (const auto& [ds_id, ds] : manager().dbContextManager().activeContext().dataSources())
     {
         if (unused_ds.count(ds.id()))
             continue;
@@ -1432,7 +1434,7 @@ std::map<unsigned int, std::set<unsigned int>> ReconstructorTask::unusedDSIDLine
 
     std::map<unsigned int, std::set<unsigned int>> unused_lines;
 
-    for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
+    for (const auto& [ds_id, ds] : manager().dbContextManager().activeContext().dataSources())
     {
         if (unused_ds.count(ds.id()))
             continue;
@@ -1538,7 +1540,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
 // {
 //     loginf;
 
-//     manager().compass().viewManager().clearViewPoints();
+//     manager().viewManager().clearViewPoints();
 
 //     std::vector <nlohmann::json> view_points;
 
@@ -1550,7 +1552,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
 //         view_points.emplace_back(j);
 //     }
 
-//     manager().compass().viewManager().addViewPoints(view_points);
+//     manager().viewManager().addViewPoints(view_points);
 
 //     debug_viewpoints_.clear();
 // }
@@ -1617,7 +1619,7 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
     loginf << "delete_all_calc_reftraj "
            << currentReconstructor()->settings().delete_all_calc_reftraj;
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     loginf << "deleting";
 
@@ -1643,7 +1645,7 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
         QThread::msleep(1000);
     }
 
-    auto& ctx_man_del = manager().compass().dbContextManager();
+    auto& ctx_man_del = manager().dbContextManager();
 
     unsigned int ds_id = Number::dsIdFrom(currentReconstructor()->settings().ds_sac,
                                           currentReconstructor()->settings().ds_sic);

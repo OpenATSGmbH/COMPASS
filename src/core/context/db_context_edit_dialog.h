@@ -19,6 +19,9 @@
 
 #include <QDialog>
 
+#include <string>
+#include <vector>
+
 class QComboBox;
 class QTreeView;
 class QStackedWidget;
@@ -43,7 +46,9 @@ class DBContextEditDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit DBContextEditDialog(DBContextManager& manager, QWidget* parent = nullptr);
+    DBContextEditDialog(DBContextManager& manager,
+                        const std::vector<std::string>& dbcontent_names, // DBContents with target reports, for the colors
+                        QWidget* parent = nullptr);
     ~DBContextEditDialog() override;
 
 private slots:

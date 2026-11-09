@@ -18,7 +18,7 @@
 #include "asterixfiledecoder.h"
 #include "asterixdecoderbase.h"
 #include "asteriximporttask.h"
-#include "util/files.h"
+#include "files.h"
 
 #include <jasterix/jasterix.h>
 

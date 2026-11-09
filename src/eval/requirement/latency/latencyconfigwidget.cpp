@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/latency/latencyconfigwidget.h"
-#include "eval/requirement/latency/latencyconfig.h"
+#include "requirement/latency/latencyconfigwidget.h"
+#include "requirement/latency/latencyconfig.h"
 //#include "textfielddoublevalidator.h"
 #include "logger.h"
 #include "stringconv.h"

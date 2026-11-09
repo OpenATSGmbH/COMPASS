@@ -150,7 +150,6 @@ message("Install path: ${CMAKE_INSTALL_PREFIX}")
 
 # Global include directories (for all targets)
 include_directories (
-    ${CMAKE_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     ${PROJECT_BINARY_DIR}/include
     ${Qt5Widgets_INCLUDE_DIRS}
@@ -180,9 +179,6 @@ link_directories(
 # Third-party headers
 include(lib/CMakeLists.txt)
 
-# src/ root include (for #include "src/..." style paths)
-include(src/CMakeLists.txt)
-
 # Detect experimental source early (before component libs that check EXPERIMENTAL_SRC)
 set (EXPERIMENTAL_SRC true)
 message("Experimental source: ${EXPERIMENTAL_SRC}")
@@ -197,6 +193,7 @@ IF (EXPERIMENTAL_SRC)
 ENDIF()
 
 # Component libraries (order matters: dependencies first)
+add_subdirectory(src/util)
 add_subdirectory(src/config)
 add_subdirectory(src/core)
 add_subdirectory(src/reconstruction)
@@ -205,7 +202,7 @@ add_subdirectory(src/filter)
 add_subdirectory(src/task)
 add_subdirectory(src/eval)
 add_subdirectory(src/view)
-add_subdirectory(src/report)
+add_subdirectory(src/result)
 
 # Experimental source - creates its own library targets
 IF (EXPERIMENTAL_SRC)
@@ -232,9 +229,9 @@ if(NOT EXISTS "/.dockerenv")
     )
 
     set(COMPASS_PCH_TARGETS
-        compass_config compass_core compass_reconstruction
+        compass_util compass_config compass_core compass_reconstruction
         compass_gui compass_filter compass_task
-        compass_eval compass_view compass_report)
+        compass_eval compass_view compass_result)
 
     if(EXPERIMENTAL_SRC)
         list(APPEND COMPASS_PCH_TARGETS
@@ -248,7 +245,7 @@ if(NOT EXISTS "/.dockerenv")
     endforeach()
 endif()
 
-configure_file(src/core/util/global.h.in include/global.h)
+configure_file(src/util/global.h.in include/global.h)
 
 # Application executables
 add_subdirectory(src/app)
@@ -270,9 +267,9 @@ install(DIRECTORY "conf" DESTINATION compass)
 install(DIRECTORY "data" DESTINATION compass)
 
 set(COMPASS_INSTALL_LIBS
-    compass_config compass_core compass_reconstruction
+    compass_util compass_config compass_core compass_reconstruction
     compass_gui compass_filter compass_task
-    compass_eval compass_view compass_report)
+    compass_eval compass_view compass_result)
 if(EXPERIMENTAL_SRC)
     list(APPEND COMPASS_INSTALL_LIBS
         compass_osg_utils compass_docx compass_reconst_adv

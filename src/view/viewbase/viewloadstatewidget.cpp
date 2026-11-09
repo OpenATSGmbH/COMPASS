@@ -16,10 +16,10 @@
  */
 
 #include "viewloadstatewidget.h"
+#include "appstate.h"
 #include "viewwidget.h"
 #include "viewdatawidget.h"
 #include "view.h"
-#include "compass.h"
 #include "viewmanager.h"
 #include "dbcontentmanager.h"
 #include "ui_test_common.h"
@@ -179,7 +179,7 @@ void ViewLoadStateWidget::setState(State state)
 void ViewLoadStateWidget::updateState()
 {
     //not needed in live running
-    if (view_widget_->getView()->viewManager().compass().appMode() == AppMode::LiveRunning)
+    if (view_widget_->getView()->viewManager().appState().appMode() == AppMode::LiveRunning)
         return;
 
     //return if we are in loading/drawing state (will be set back after those operations have finished)
@@ -188,7 +188,7 @@ void ViewLoadStateWidget::updateState()
         return;
 
     //ask widget for special states
-    bool needs_reload =  view_widget_->getView()->viewManager().compass().viewManager().reloadNeeded();
+    bool needs_reload =  view_widget_->getView()->viewManager().reloadNeeded();
     bool needs_redraw =  view_widget_->getView()->updateNeeded();
     bool needs_data   = !view_widget_->getViewDataWidget()->hasData();
 
@@ -212,7 +212,7 @@ void ViewLoadStateWidget::updateState()
 void ViewLoadStateWidget::loadingStarted()
 {
     //not needed in live running
-    if (view_widget_->getView()->viewManager().compass().appMode() == AppMode::LiveRunning)
+    if (view_widget_->getView()->viewManager().appState().appMode() == AppMode::LiveRunning)
         return;
 
     setState(State::Loading);
@@ -224,7 +224,7 @@ void ViewLoadStateWidget::loadingStarted()
 void ViewLoadStateWidget::loadingDone()
 {
     //not needed in live running
-    if (view_widget_->getView()->viewManager().compass().appMode() == AppMode::LiveRunning)
+    if (view_widget_->getView()->viewManager().appState().appMode() == AppMode::LiveRunning)
         return;
 
     setState(State::None); //reset state
@@ -237,7 +237,7 @@ void ViewLoadStateWidget::loadingDone()
 void ViewLoadStateWidget::redrawStarted()
 {
     //not needed in live running
-    if (view_widget_->getView()->viewManager().compass().appMode() == AppMode::LiveRunning)
+    if (view_widget_->getView()->viewManager().appState().appMode() == AppMode::LiveRunning)
         return;
 
     setState(State::Drawing);
@@ -249,7 +249,7 @@ void ViewLoadStateWidget::redrawStarted()
 void ViewLoadStateWidget::redrawDone()
 {
     //not needed in live running
-    if (view_widget_->getView()->viewManager().compass().appMode() == AppMode::LiveRunning)
+    if (view_widget_->getView()->viewManager().appState().appMode() == AppMode::LiveRunning)
         return;
 
     setState(State::None); //reset state

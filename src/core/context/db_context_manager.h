@@ -37,9 +37,8 @@
 #include <unordered_map>
 #include <vector>
 
-class COMPASS;
-class DataSourcesToolWidget;
-class DataSourcesStatusToolWidget;
+class AppState;
+class DBInterface;
 class SectorLayer;
 class Sector;
 class AirSpace;
@@ -75,7 +74,8 @@ signals:
     void loadingSelectionChangedSignal();
 
 public:
-    explicit DBContextManager(COMPASS& compass);
+    DBContextManager(AppState& app_state,
+                     DBInterface& db_interface);
     virtual ~DBContextManager();
 
     // ================================================================
@@ -400,18 +400,14 @@ public:
     std::string importContextZip(const std::string& zip_filepath); // returns imported context name
 
     // ================================================================
-    // Widgets (lazy creation, owned by this manager)
-    // ================================================================
-    DataSourcesToolWidget* loadWidget();
-    DataSourcesStatusToolWidget* statusWidget();
-
-    // ================================================================
     // Utility
     // ================================================================
     void rebuildSectorLayers();
     void persistSectorEdit();
     static std::string basePath();
-    COMPASS& compass() { return compass_; }
+
+    AppState& appState() { return app_state_; }
+    const AppState& appState() const { return app_state_; }
 
 public slots:
     void databaseOpenedSlot();
@@ -427,7 +423,9 @@ private:
     void ensureDataSourceCache() const;
     void invalidateDataSourceCache() const;
 
-    COMPASS& compass_;
+    AppState&    app_state_;
+    DBInterface& db_interface_;
+
     std::string active_context_name_;
     std::map<std::string, DBContext> contexts_;
 
@@ -453,10 +451,6 @@ private:
     std::map<unsigned int, std::map<unsigned int, boost::posix_time::ptime>> max_timestamps_;
 
     SensorConfig sensor_config_;
-
-    // widgets (lazy, owned)
-    std::unique_ptr<DataSourcesToolWidget> load_widget_;
-    std::unique_ptr<DataSourcesStatusToolWidget> status_widget_;
 
     // Lazy RU-name cache over active context's data sources. ds_id lookup
     // itself is served directly by activeContext().dataSources() (a std::map),

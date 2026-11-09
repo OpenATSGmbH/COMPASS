@@ -16,8 +16,9 @@
  */
 
 #include "viewcontainerwidget.h"
+#include "licensemanager.h"
+#include "appstate.h"
 
-#include "compass.h"
 #include "config.h"
 #include "files.h"
 #include "logger.h"
@@ -82,7 +83,7 @@ ViewContainerWidget::ViewContainerWidget(nlohmann::json& config,
 
     createSubConfigurables();
 
-    if (view_manager_.compass().disableAddRemoveViews())
+    if (view_manager_.appState().settings().disable_add_remove_views)
         setWindowFlags(Qt::Window | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 
     show();
@@ -153,7 +154,7 @@ void ViewContainerWidget::resizeEvent(QResizeEvent* event)
 
 void ViewContainerWidget::updateWindowTitle()
 {
-    std::string title = view_manager_.compass().versionString() + " " + name_;
+    std::string title = view_manager_.licenseManager().versionString(view_manager_.appState().appVersion()) + " " + name_;
     QWidget::setWindowTitle(title.c_str());
 }
 

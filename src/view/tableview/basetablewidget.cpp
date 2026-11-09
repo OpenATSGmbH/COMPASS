@@ -16,11 +16,12 @@
  */
 
 #include "basetablewidget.h"
+#include "appstate.h"
+#include "viewmanager.h"
 #include "basetablemodel.h"
 #include "tableview.h"
 #include "tableviewdatasource.h"
 #include "logger.h"
-#include "compass.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -87,7 +88,7 @@ void BaseBufferTableWidget::exportSlot()
 
     QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(view_.compass().lastUsedPath().c_str());
+    dialog.setDirectory(view_.viewManager().appState().lastUsedPath().c_str());
     dialog.setNameFilter("CSV Files (*.csv)");
     dialog.setDefaultSuffix("csv");
     dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);

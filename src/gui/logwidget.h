@@ -18,7 +18,7 @@
 #pragma once
 
 #include "toolboxwidget.h"
-#include "util/logmodel.h"
+#include "logmodel.h"
 
 #include <QTextEdit>
 #include <QIcon>

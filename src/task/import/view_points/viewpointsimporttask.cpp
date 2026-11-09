@@ -16,9 +16,9 @@
  */
 
 #include "viewpointsimporttask.h"
+#include "logmodel.h"
 #include "viewpointsimporttaskdialog.h"
 #include "taskmanager.h"
-#include "compass.h"
 #include "dbinterface.h"
 #include "files.h"
 #include "logger.h"
@@ -27,8 +27,8 @@
 #include "viewpoint.h"
 
 #include "asteriximporttask.h"
-#include "util/timeconv.h"
-#include "util/async.h"
+#include "timeconv.h"
+#include "async.h"
 
 #include <fstream>
 
@@ -151,7 +151,7 @@ void ViewPointsImportTask::run()
     done_ = false;
     stopped_ = false;
 
-    DBInterface& db_interface = manager().compass().dbInterface();
+    DBInterface& db_interface = manager().dbInterface();
 
     // check and clear existing ones
     if(db_interface.existsViewPointsTable() && db_interface.viewPoints().size() && allow_user_interactions_)
@@ -171,33 +171,33 @@ void ViewPointsImportTask::run()
         }
     }
 
-    manager().compass().logInfo("ViewPoints Import") << "started, clearing previous viewpoints";
+    manager().logStore().logInfo("ViewPoints Import") << "started, clearing previous viewpoints";
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-    manager().compass().viewManager().loadViewPoints(current_data_);
+    manager().viewManager().loadViewPoints(current_data_);
 
-    manager().compass().logInfo("ViewPoints Import") << "imported";
+    manager().logStore().logInfo("ViewPoints Import") << "imported";
 
     QApplication::restoreOverrideCursor();
 
     // datasets
-    if (current_data_.contains(ViewPoint::VP_CONTEXT_KEY))
+    if (current_data_.contains(ViewPointKeys::VP_CONTEXT_KEY))
     {
-        json& context = current_data_.at(ViewPoint::VP_CONTEXT_KEY);
+        json& context = current_data_.at(ViewPointKeys::VP_CONTEXT_KEY);
 
-        if (context.contains(ViewPoint::VP_CONTEXT_DATASETS_KEY))
+        if (context.contains(ViewPointKeys::VP_CONTEXT_DATASETS_KEY))
         {
-            manager().compass().logInfo("ViewPoints Import") << "importing datasets";
+            manager().logStore().logInfo("ViewPoints Import") << "importing datasets";
 
-            for (auto& ds_it : context.at(ViewPoint::VP_CONTEXT_DATASETS_KEY).get<json::array_t>())
+            for (auto& ds_it : context.at(ViewPointKeys::VP_CONTEXT_DATASETS_KEY).get<json::array_t>())
             {
 //                std::string name;
 
 //                if (ds_it.contains("name"))
 //                    name = ds_it.at("name");
 
-                std::string filename = ds_it.at(ViewPoint::VP_CONTEXT_DATASET_FILENAME_KEY);
+                std::string filename = ds_it.at(ViewPointKeys::VP_CONTEXT_DATASET_FILENAME_KEY);
 
                 loginf << "importing dataset file '" << filename << "'";
 
@@ -276,11 +276,11 @@ void ViewPointsImportTask::run()
 
             Async::waitAndProcessEventsFor(50);
 
-            manager().compass().logInfo("ViewPoints Import") << "importing datasets done";
+            manager().logStore().logInfo("ViewPoints Import") << "importing datasets done";
         }
     }
 
-    manager().compass().logInfo("ViewPoints Import") << "done";
+    manager().logStore().logInfo("ViewPoints Import") << "done";
 
     done_ = true;
 

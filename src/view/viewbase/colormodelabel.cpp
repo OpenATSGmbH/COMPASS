@@ -18,16 +18,16 @@
 #include "colormodelabel.h"
 
 #include "color_provider.h"
-#include "compass.h"
+#include "appstate.h"
 
 /**
  */
-ColorModeLabel::ColorModeLabel(COMPASS& compass, QWidget* parent)
+ColorModeLabel::ColorModeLabel(AppState& app_state, QWidget* parent)
 :   QLabel(parent)
 {
-    showMode(compass.colorMode());
+    showMode(app_state.colorMode());
 
-    connect(&compass, &COMPASS::colorModeChangedSignal, this, &ColorModeLabel::showMode);
+    connect(&app_state, &AppState::colorModeChangedSignal, this, &ColorModeLabel::showMode);
 }
 
 /**

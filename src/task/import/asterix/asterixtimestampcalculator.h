@@ -23,7 +23,9 @@
 #include <memory>
 
 class Buffer;
-class COMPASS;
+class AppState;
+class DBContentManager;
+class LogStore;
 
 class ASTERIXTimestampCalculator
 {
@@ -35,14 +37,16 @@ public:
                    boost::posix_time::ptime date, bool reset_date_between_files,
                    bool override_tod_active, float override_tod_offset,
                    bool ignore_time_jumps, bool do_timestamp_checks,
-                   COMPASS& compass);
+                   const AppState& app_state,
+                   DBContentManager& dbcont_man,
+                   LogStore& log_store);
     bool processing() const {return processing_; }
     void setProcessingDone();
     void reset();
 
     void resetDateInfo();
     void clearTimeStats();
-    void logLastTimestamp(COMPASS& compass);
+    void logLastTimestamp(LogStore& log_store);
 
     bool first_time_{true};
     boost::posix_time::ptime timestamp_first_;
@@ -66,9 +70,9 @@ private:
     bool did_recent_time_jump_{false}; // indicator if recently a time jump was performed
     bool had_late_time_{false}; // indicator if time late before 24h mark occured
 
-    void doTodOverride(float override_tod_offset, COMPASS& compass);
-    void doFutureTimestampsCheck(COMPASS& compass);
-    void doTimeStampCalculation(bool ignore_time_jumps, COMPASS& compass);
+    void doTodOverride(float override_tod_offset, DBContentManager& dbcont_man);
+    void doFutureTimestampsCheck(DBContentManager& dbcont_man);
+    void doTimeStampCalculation(bool ignore_time_jumps, DBContentManager& dbcont_man, LogStore& log_store);
 };
 
 

@@ -19,7 +19,6 @@
 #include "sectorsfilterwidget.h"
 #include "filtermanager.h"
 #include "idbvariableresolver.h"
-#include "compass.h"
 #include "dbinterface.h"
 #include "db_context_manager.h"
 #include "sectorlayer.h"
@@ -316,7 +315,7 @@ std::vector<std::string> SectorsFilter::availableLayers() const
 SectorInsideCache& SectorsFilter::cache()
 {
     if (filter_manager_)
-        return filter_manager_->compass().dbInterface().sectorInsideCache();
+        return filter_manager_->dbInterface().sectorInsideCache();
 
     if (!own_cache_)
         own_cache_ = std::make_shared<SectorInsideCache>();

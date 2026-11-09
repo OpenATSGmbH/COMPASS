@@ -21,14 +21,13 @@
 
 #include "evaluationstandard.h"
 #include "evaluationdialog.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/results/base/base.h"
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
+#include "requirement/base/baseconfig.h"
+#include "results/base/base.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
 
-#include "compass.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -46,7 +45,7 @@
 //#include "viewabledataconfig.h"
 #include "viewmanager.h"
 #include "stringconv.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "global.h"
 #include "viewpoint.h"
 #include "projectionmanager.h"
@@ -586,7 +585,7 @@ Result EvaluationCalculator::evaluateData()
     traced_assert(data_loaded_);
     traced_assert(canEvaluate().ok());
 
-    Projection& projection = eval_man_.compass().projectionManager().currentProjection();
+    Projection& projection = eval_man_.projectionManager().currentProjection();
     projection.clearCoordinateSystems();
     projection.addAllCoordinateSystems();
 
@@ -652,7 +651,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
 {
     std::map<unsigned int, std::set<unsigned int>> data_sources;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     std::set<unsigned int> line_ref_set = {settings_.line_id_ref_};
 
@@ -716,7 +715,7 @@ const std::string& EvaluationCalculator::minHeightFilterLayerName() const
  */
 void EvaluationCalculator::minHeightFilterLayerName(const std::string& layer_name)
 {
-    traced_assert(layer_name.empty() || eval_man_.compass().dbContextManager().hasSectorLayer(layer_name));
+    traced_assert(layer_name.empty() || eval_man_.dbContextManager().hasSectorLayer(layer_name));
 
     loginf << "layer changed to "
            << (layer_name.empty() ? "null" : "'" + layer_name + "'");
@@ -732,7 +731,7 @@ std::shared_ptr<SectorLayer> EvaluationCalculator::minHeightFilterLayer() const
         return {};
 
     //!will assert on non-existing layer name!
-    return eval_man_.compass().dbContextManager().sectorLayer(settings_.min_height_filter_layer_);
+    return eval_man_.dbContextManager().sectorLayer(settings_.min_height_filter_layer_);
 }
 
 /**
@@ -741,7 +740,7 @@ std::shared_ptr<SectorLayer> EvaluationCalculator::minHeightFilterLayer() const
  */
 void EvaluationCalculator::checkMinHeightFilterValid()
 {
-    if (!settings_.min_height_filter_layer_.empty() && !eval_man_.compass().dbContextManager().hasSectorLayer(settings_.min_height_filter_layer_))
+    if (!settings_.min_height_filter_layer_.empty() && !eval_man_.dbContextManager().hasSectorLayer(settings_.min_height_filter_layer_))
     {
         logerr << "Layer '" << settings_.min_height_filter_layer_ << "'"
                << " not present, resetting min height filter";
@@ -798,7 +797,7 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesRef()
 {
     set<unsigned int> srcs;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_ref_[settings_.dbcontent_name_ref_])
     {
@@ -819,7 +818,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
     EvaluationDSInfo ds_info;
     ds_info.dbcontent = settings_.dbcontent_name_ref_;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_ref_.at(settings_.dbcontent_name_ref_))
     {
@@ -896,7 +895,7 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesTst()
 {
     set<unsigned int> srcs;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_tst_[settings_.dbcontent_name_tst_])
     {
@@ -917,7 +916,7 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
     EvaluationDSInfo ds_info;
     ds_info.dbcontent = settings_.dbcontent_name_tst_;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
     {
@@ -1144,7 +1143,7 @@ std::vector<std::string> EvaluationCalculator::currentRequirementNames() const
  */
 bool EvaluationCalculator::sectorsLoaded() const
 {
-    return eval_man_.compass().dbContextManager().sectorsLoaded();
+    return eval_man_.dbContextManager().sectorsLoaded();
 }
 
 /**
@@ -1201,14 +1200,14 @@ bool EvaluationCalculator::anySectorsWithReq() const
  */
 std::vector<std::shared_ptr<SectorLayer>>& EvaluationCalculator::sectorLayers()
 {
-    return eval_man_.compass().dbContextManager().sectorLayers();
+    return eval_man_.dbContextManager().sectorLayers();
 }
 
 /**
  */
 const std::vector<std::shared_ptr<SectorLayer>>& EvaluationCalculator::sectorLayers() const
 {
-    return eval_man_.compass().dbContextManager().sectorLayers();
+    return eval_man_.dbContextManager().sectorLayers();
 }
 
 /**
@@ -1228,7 +1227,7 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
     if (!hasValidReferenceDBContent())
         return;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     // clear out old ds_ids
     auto ds_copy = data_sources_ref_[settings_.dbcontent_name_ref_];
@@ -1270,7 +1269,7 @@ void EvaluationCalculator::checkTestDataSources(bool update_settings)
     if (!hasValidTestDBContent())
         return;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     // clear out old ds_ids
     auto ds_copy = data_sources_tst_[settings_.dbcontent_name_tst_];
@@ -1451,7 +1450,7 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
     // restrict to the evaluated sector layers, with their exclusion sectors and altitude limits
     if (!used_sector_layers_.empty())
     {
-        auto& sectors_filter = data[ViewPoint::VP_FILTERS_KEY][SectorsFilter::FilterName];
+        auto& sectors_filter = data[ViewPointKeys::VP_FILTERS_KEY][SectorsFilter::FilterName];
 
         sectors_filter[SectorsFilter::ViewPointKeyLayers]   = used_sector_layers_;
         sectors_filter[SectorsFilter::ViewPointKeyUseDelta] = true;
@@ -1460,50 +1459,50 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
 
     // if (settings_.use_adsb_filter_)
     // {
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v1"] = settings_.use_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v2"] = settings_.use_v2_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_v1"] = settings_.use_v1_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_v2"] = settings_.use_v2_;
 
     //     // nucp
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nucp"] = settings_.use_min_nucp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nucp"] = settings_.min_nucp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nucp"] = settings_.use_max_nucp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nucp"] = settings_.max_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nucp"] = settings_.use_min_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_nucp"] = settings_.min_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nucp"] = settings_.use_max_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_nucp"] = settings_.max_nucp_;
 
     //     // nic
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nic"] = settings_.use_min_nic_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nic"] = settings_.min_nic_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nic"] = settings_.use_max_nic_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nic"] = settings_.max_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nic"] = settings_.use_min_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_nic"] = settings_.min_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nic"] = settings_.use_max_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_nic"] = settings_.max_nic_;
 
     //     // nacp
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nacp"] = settings_.use_min_nacp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nacp"] = settings_.min_nacp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nacp"] = settings_.use_max_nacp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nacp"] = settings_.max_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nacp"] = settings_.use_min_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_nacp"] = settings_.min_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nacp"] = settings_.use_max_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_nacp"] = settings_.max_nacp_;
 
     //     // sil v1
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v1"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v1"] =
     //         settings_.use_min_sil_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v1"] = settings_.min_sil_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v1"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v1"] = settings_.min_sil_v1_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v1"] =
     //         settings_.use_max_sil_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v1"] = settings_.max_sil_v1_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v1"] = settings_.max_sil_v1_;
 
     //     // sil v2
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v2"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v2"] =
     //         settings_.use_min_sil_v2_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v2"] = settings_.min_sil_v2_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v2"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v2"] = settings_.min_sil_v2_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v2"] =
     //         settings_.use_max_sil_v2_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v2"] = settings_.max_sil_v2_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v2"] = settings_.max_sil_v2_;
     // }
 
     if (eval_man_.use_timestamp_filter_)
     {
-        data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
+        data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
             Time::toString(eval_man_.load_timestamp_begin_);
-        data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] =
+        data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] =
             Time::toString(eval_man_.load_timestamp_end_);
     }
 
@@ -1526,7 +1525,7 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableNoDataConfig () co
 std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForUTN (unsigned int utn) const
 {
     nlohmann::json::object_t data = getBaseViewableDataConfig();
-    data[ViewPoint::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     return std::unique_ptr<nlohmann::json::object_t>{new nlohmann::json::object_t(move(data))};
 }
@@ -1557,7 +1556,7 @@ void EvaluationCalculator::showUTN (unsigned int utn)
     loginf << "utn " << utn;
 
     nlohmann::json data = getBaseViewableDataConfig();
-    data[ViewPoint::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     loginf << "showing";
     eval_man_.setViewableDataConfig(data);
@@ -1568,7 +1567,7 @@ void EvaluationCalculator::showUTN (unsigned int utn)
 void EvaluationCalculator::showFullUTN (unsigned int utn)
 {
     nlohmann::json::object_t data;
-    data[ViewPoint::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     eval_man_.setViewableDataConfig(data);
 }
@@ -1591,21 +1590,21 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
     //    },
 
     // TODO_TIMESTAMP
-    data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(time_end);
-    data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(time_begin);
+    data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(time_end);
+    data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(time_begin);
 
     //    "Aircraft Address": {
     //    "Aircraft Address Values": "FEFE10"
     //    },
     if (target.aircraftAddresses().size())
-        data[ViewPoint::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] = target.aircraftAddressesStr()+",NULL";
+        data[ViewPointKeys::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] = target.aircraftAddressesStr()+",NULL";
 
     //    "Mode 3/A Code": {
     //    "Mode 3/A Code Values": "7000"
     //    }
 
     if (target.modeACodes().size())
-        data[ViewPoint::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] = target.modeACodesStr()+",NULL";
+        data[ViewPointKeys::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] = target.modeACodesStr()+",NULL";
 
     //    VP_FILTERS_KEY: {
     //    "Barometric Altitude": {
@@ -1621,9 +1620,9 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
         float alt_max = target.modeCMax();
         alt_max += 300;
 
-        data[ViewPoint::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = alt_max;
-        data[ViewPoint::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = alt_min;
-        data[ViewPoint::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
+        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = alt_max;
+        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = alt_min;
+        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
     }
 
     //    "Position": {
@@ -1640,10 +1639,10 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
         double lon_eps = (target.longitudeMax() - target.longitudeMin()) / 10.0; // 10%
         lon_eps = min(lon_eps, 0.1); // 10% or 0.1 at max
 
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(target.latitudeMax()+lat_eps);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(target.latitudeMin()-lat_eps);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(target.longitudeMax()+lon_eps);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(target.longitudeMin()-lon_eps);
+        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(target.latitudeMax()+lat_eps);
+        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(target.latitudeMin()-lat_eps);
+        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(target.longitudeMax()+lon_eps);
+        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(target.longitudeMin()-lon_eps);
     }
 
     eval_man_.setViewableDataConfig(data);
@@ -1746,7 +1745,7 @@ std::vector<SectorsFilter::Layer> EvaluationCalculator::usedSectorFilterLayers()
     if (used_sector_layers_.empty())
         return layers;
 
-    auto sector_cache = eval_man_.compass().dbInterface().sectorInsideCachePtr();
+    auto sector_cache = eval_man_.dbInterface().sectorInsideCachePtr();
 
     if (!sector_cache)
     {
@@ -1808,7 +1807,7 @@ void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sou
 
     tst_srcs_coverage_->clear();
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto ds_id : tst_sources)
     {
@@ -2005,7 +2004,7 @@ std::string EvaluationCalculator::suggestReportName() const
     if (ds_sel.empty())
         return "";
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     unsigned int ds_id = stoul(ds_sel);
     traced_assert(ds_man.hasDataSource(ds_id));

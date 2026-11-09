@@ -15,9 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/distanceconfigwidget.h"
-#include "eval/requirement/position/distanceconfig.h"
-#include "eval/requirement/base/comparisontypecombobox.h"
+#include "requirement/position/distanceconfigwidget.h"
+#include "requirement/position/distanceconfig.h"
+#include "requirement/base/comparisontypecombobox.h"
 #include "logger.h"
 
 #include <QLineEdit>

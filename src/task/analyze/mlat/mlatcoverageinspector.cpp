@@ -23,7 +23,6 @@
 #include "targetreport3dgrid.h"
 #include "movementui.h"
 
-#include "compass.h"
 #include "logger.h"
 #include "number.h"
 #include "section.h"
@@ -35,7 +34,7 @@
 #include "sectorlayer.h"
 #include "dbcontent/target/targetreportchain.h"
 
-#include "eval/requirement/detection/detection_pd_helpers.h"
+#include "requirement/detection/detection_pd_helpers.h"
 #include "coveragepdwalk.h"
 
 #include "grid2dlayer.h"

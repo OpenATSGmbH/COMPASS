@@ -50,19 +50,10 @@ target_link_libraries(compass_eval
     PUBLIC
         compass_core
         compass_reconstruction
-        compass_task
         compass_gui
-)
-
-# eval sources include headers from app and view - circular deps
-target_include_directories(compass_eval PRIVATE
-    "${CMAKE_SOURCE_DIR}/src/app/client"
-    "${CMAKE_SOURCE_DIR}/src/view"
-    "${CMAKE_SOURCE_DIR}/src/view/viewbase"
-    "${CMAKE_SOURCE_DIR}/src/view/points"
-    "${CMAKE_SOURCE_DIR}/src/view/histogramview"
-    "${CMAKE_SOURCE_DIR}/src/view/scatterplotview"
-    "${CMAKE_SOURCE_DIR}/src/view/gridview"
+        compass_filter
+        compass_view
+        compass_result
 )
 
 compass_automoc(compass_eval)

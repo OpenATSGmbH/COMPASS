@@ -18,55 +18,55 @@
 #include "evaluation_commands.h"
 #include "rtcommand/rtcommand_macros.h"
 #include "rtcommand_registry.h"
-#include "compass.h"
 #include "evaluationmanager.h"
 #include "evaluationcalculator.h"
 #include "evaluationstandard.h"
 #include "requirement/group.h"
 #include "requirement/base/baseconfig.h"
-#include "mainwindow.h"
-#include "compass.h"
+#include "appstate.h"
 #include "dbcontentmanager.h"
 #include "evaluationtargetfilter.h"
 #include "targetmodel.h"
 
 #include <boost/program_options.hpp>
 
-REGISTER_RTCOMMAND(RTCommandEvaluate)
-REGISTER_RTCOMMAND(RTCommandFilterEvalTargets)
-REGISTER_RTCOMMAND(RTCommandGetEvalStandards)
-
-static COMPASS* s_compass = nullptr;
-
 /**
 */
-void init_evaluation_commands(COMPASS& compass)
+void init_evaluation_commands(rtcommand::RTCommandRegistry& registry,
+                              EvaluationManager& eval_manager)
 {
-    s_compass = &compass;
-    RTCommandEvaluate::init();
-    RTCommandFilterEvalTargets::init();
-    RTCommandGetEvalStandards::init();
+    registry.registerCommand<RTCommandEvaluate>(eval_manager);
+    registry.registerCommand<RTCommandFilterEvalTargets>(eval_manager);
+    registry.registerCommand<RTCommandGetEvalStandards>(eval_manager);
 }
 
 /***************************************************************************************
  * RTCommandEvaluate
  ***************************************************************************************/
 
+/**
+ */
+RTCommandEvaluate::RTCommandEvaluate(EvaluationManager& eval_manager)
+    : rtcommand::RTCommand()
+    , eval_manager_(eval_manager)
+{
+}
+
 bool RTCommandEvaluate::run_impl()
 {
-    if (!(*s_compass).dbOpened())
+    if (!eval_manager_.appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if ((*s_compass).appMode() != AppMode::Offline) // to be sure
+    if (eval_manager_.appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+(*s_compass).appModeStr());
+        setResultMessage("Wrong application mode "+eval_manager_.appState().appModeStr());
         return false;
     }
 
-    EvaluationManager& eval_man = (*s_compass).evaluationManager();
+    EvaluationManager& eval_man = eval_manager_;
 
     //try to parse configuration
     if (!config_.empty())
@@ -80,7 +80,7 @@ bool RTCommandEvaluate::run_impl()
     }
 
     if (run_filter_)
-        (*s_compass).dbContentManager().autoFilterUTNS();
+        eval_manager_.dbContentManager().autoFilterUTNS();
 
     auto can_evaluate = eval_man.canEvaluate();
     if (!can_evaluate.ok())
@@ -124,21 +124,29 @@ void RTCommandEvaluate::assignVariables_impl(const VariablesMap& variables)
  * RTCommandFilterEvalTargets
  ***************************************************************************************/
 
+/**
+ */
+RTCommandFilterEvalTargets::RTCommandFilterEvalTargets(EvaluationManager& eval_manager)
+    : rtcommand::RTCommand()
+    , eval_manager_(eval_manager)
+{
+}
+
 bool RTCommandFilterEvalTargets::run_impl()
 {
-    if (!(*s_compass).dbOpened())
+    if (!eval_manager_.appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if ((*s_compass).appMode() != AppMode::Offline)
+    if (eval_manager_.appState().appMode() != AppMode::Offline)
     {
-        setResultMessage("Wrong application mode "+(*s_compass).appModeStr());
+        setResultMessage("Wrong application mode "+eval_manager_.appState().appModeStr());
         return false;
     }
 
-    DBContentManager& dbcont_man = (*s_compass).dbContentManager();
+    DBContentManager& dbcont_man = eval_manager_.dbContentManager();
 
     if (!dbcont_man.hasTargetsInfo())
     {
@@ -149,7 +157,7 @@ bool RTCommandFilterEvalTargets::run_impl()
     //try to parse configuration
     if (!config_.empty())
     {
-        auto res = (*s_compass).evaluationManager().targetFilter().applyJSONStringParameters(config_);
+        auto res = eval_manager_.targetFilter().applyJSONStringParameters(config_);
         if (!res.ok())
         {
             setResultMessage("Could not apply configuration: " + res.error());
@@ -196,21 +204,16 @@ void RTCommandFilterEvalTargets::assignVariables_impl(const VariablesMap& variab
  * RTCommandGetEvalStandards
  ***************************************************************************************/
 
-RTCommandGetEvalStandards::RTCommandGetEvalStandards()
+RTCommandGetEvalStandards::RTCommandGetEvalStandards(EvaluationManager& eval_manager)
     : rtcommand::RTCommand()
+    , eval_manager_(eval_manager)
 {
     condition.setDelay(10);
 }
 
 bool RTCommandGetEvalStandards::run_impl()
 {
-    if (!s_compass)
-    {
-        setResultMessage("COMPASS not initialized");
-        return false;
-    }
-
-    if (!s_compass->evaluationManager().calculator())
+    if (!eval_manager_.calculator())
     {
         setResultMessage("Evaluation calculator not available");
         return false;
@@ -221,7 +224,7 @@ bool RTCommandGetEvalStandards::run_impl()
 
 bool RTCommandGetEvalStandards::checkResult_impl()
 {
-    auto& calculator = *s_compass->evaluationManager().calculator();
+    auto& calculator = *eval_manager_.calculator();
 
     nlohmann::json standards_array = nlohmann::json::array();
 

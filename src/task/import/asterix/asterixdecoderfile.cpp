@@ -16,11 +16,12 @@
  */
 
 #include "asterixdecoderfile.h"
+#include "logmodel.h"
+#include "taskmanager.h"
 #include "asteriximporttask.h"
 
 #include "asynctask.h"
 
-#include "compass.h"
 #include "logger.h"
 #include "files.h"
 #include "stringconv.h"
@@ -123,7 +124,7 @@ void ASTERIXDecoderFile::processCurrentFile()
     }
     catch(const std::exception& e)
     {
-        task().compass().logError("ASTERIX Import") << "file '" << current_file.filename
+        task().manager().logStore().logError("ASTERIX Import") << "file '" << current_file.filename
                                        << "' decode error '" << e.what() << "'";
 
         logerr << "decode error '" << e.what() << "'";
@@ -131,7 +132,7 @@ void ASTERIXDecoderFile::processCurrentFile()
     }
     catch(...)
     {
-        task().compass().logError("ASTERIX Import") << "file '" << current_file.filename
+        task().manager().logStore().logError("ASTERIX Import") << "file '" << current_file.filename
                                        << "' unknown decode error";
 
         logerr << "unknown decode error";

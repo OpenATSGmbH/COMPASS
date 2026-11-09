@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/base/targetselection.h"
+#include "requirement/base/targetselection.h"
 
 #include "logger.h"
 

@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/dubious/dubiousbase.h"
+#include "results/dubious/dubiousbase.h"
 #include "evaluationmanager.h"
 
 namespace EvaluationRequirementResult

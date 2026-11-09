@@ -28,15 +28,20 @@
 #include <QMainWindow>
 #include <QDialog>
 
-REGISTER_RTCOMMAND(ui_test::RTCommandUISet)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIGet)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIGetJSON)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIInject)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIRefresh)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIFileDialog)
-
 namespace ui_test
 {
+
+/**
+ */
+void initUITestCommands(rtcommand::RTCommandRegistry& registry)
+{
+    registry.registerCommand<RTCommandUISet>();
+    registry.registerCommand<RTCommandUIGet>();
+    registry.registerCommand<RTCommandUIGetJSON>();
+    registry.registerCommand<RTCommandUIInject>();
+    registry.registerCommand<RTCommandUIRefresh>();
+    registry.registerCommand<RTCommandUIFileDialog>();
+}
 
 /***************************************************************************************
  * RTCommandObject
@@ -95,7 +100,7 @@ void RTCommandUIInjection::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUISet::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *host_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -144,7 +149,7 @@ void RTCommandUISet::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIGet::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *host_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -255,7 +260,7 @@ void RTCommandUIGet::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIGetJSON::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *host_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -335,7 +340,7 @@ void RTCommandUIGetJSON::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIInject::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *host_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -386,7 +391,7 @@ void RTCommandUIInject::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIRefresh::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *host_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");

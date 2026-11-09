@@ -17,9 +17,9 @@
 
 #include "catch.hpp"
 
-#include "task/analyze/mlat/mlatcoveragehelpers.h"
-#include "task/analyze/movementui.h"
-#include "eval/requirement/detection/detection_pd_helpers.h"
+#include "analyze/mlat/mlatcoveragehelpers.h"
+#include "analyze/movementui.h"
+#include "requirement/detection/detection_pd_helpers.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 

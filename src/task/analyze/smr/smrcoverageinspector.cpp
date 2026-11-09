@@ -16,6 +16,7 @@
  */
 
 #include "smrcoverageinspector.h"
+#include "taskmanager.h"
 #include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
 #include "reporttable.h"
@@ -25,7 +26,6 @@
 #include "movementui.h"
 #include "scancyclewalk.h"
 
-#include "compass.h"
 #include "db_context_manager.h"
 #include "data_source.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -44,7 +44,7 @@
 #include "sectorlayer.h"
 #include "transformation.h"
 
-#include "eval/requirement/detection/detection_pd_helpers.h"
+#include "requirement/detection/detection_pd_helpers.h"
 
 #include "grid2dlayer.h"
 #include "grid2dlayerrenderer.h"
@@ -393,8 +393,8 @@ void SMRCoverageInspector::compute(AnalysisDataset* dataset)
     grid_.reset(new TargetReport3DGrid(sizing.cell_size_m, sizing.cell_size_ft, ref_lat));
     auto& grid = *grid_;
 
-    auto& ctx        = task_.compass().dbContextManager();
-    auto& dbcont_man = task_.compass().dbContentManager();
+    auto& ctx        = task_.manager().dbContextManager();
+    auto& dbcont_man = task_.manager().dbContentManager();
 
     const bool   use_cycles       = settings.cadenceSource()
                                     == SMRCoverageInspectorSettings::CadenceSource::ScanCycles;
@@ -1604,7 +1604,7 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
     // and the views reading them, which only the main thread may do.
     if (settings.create_coverage_sectors_ && !result_.coverage_sectors.empty())
     {
-        auto& ctx = task_.compass().dbContextManager();
+        auto& ctx = task_.manager().dbContextManager();
 
         // One layer per sensor, named after it, e.g. "RETS SMR Nord Coverage".
         auto layer_of = [&](unsigned int ds_id)

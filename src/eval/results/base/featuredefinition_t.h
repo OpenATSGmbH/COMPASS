@@ -18,7 +18,7 @@
 #pragma once
 
 #include "traced_assert.h"
-#include "eval/results/base/result_t.h"
+#include "results/base/result_t.h"
 
 #include <string>
 

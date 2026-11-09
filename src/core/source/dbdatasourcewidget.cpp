@@ -16,10 +16,11 @@
  */
 
 #include "dbdatasourcewidget.h"
-#include "compass.h"
+#include "appstate.h"
 #include "db_context_manager.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "logger.h"
+#include "traced_assert.h"
 
 #include <QGridLayout>
 #include <QCheckBox>
@@ -59,7 +60,7 @@ DBDataSourceWidget::DBDataSourceWidget(
 
     setLayout(main_layout_);
 
-    connect(&ctx_man_.compass(), &COMPASS::darkModeChangedSignal,
+    connect(&ctx_man_.appState(), &AppState::darkModeChangedSignal,
             this, [this](bool) { recreateWidgets(); updateWidgets(); });
 }
 
@@ -222,7 +223,7 @@ QWidget* DBDataSourceWidget::createLinesWidget()
     unsigned int button_size = 26;
     widget->setMinimumHeight(button_size);
 
-    bool dark_mode = ctx_man_.compass().darkMode();
+    bool dark_mode = ctx_man_.appState().darkMode();
 
     for (unsigned int cnt=0; cnt < 4; ++cnt)
     {
@@ -268,7 +269,7 @@ void DBDataSourceWidget::updateWidgets()
     load_check_->setText(src_.name().c_str());
     load_check_->setChecked(get_use_ds_func_());
 
-    AppMode app_mode = ctx_man_.compass().appMode();
+    AppMode app_mode = ctx_man_.appState().appMode();
 
     bool net_lines_shown = app_mode == AppMode::LivePaused
             || app_mode == AppMode::LiveRunning;
@@ -286,7 +287,7 @@ void DBDataSourceWidget::updateWidgets()
 
         boost::posix_time::ptime current_time = Time::currentUTCTime();
 
-        bool dark_mode = ctx_man_.compass().darkMode();
+        bool dark_mode = ctx_man_.appState().darkMode();
 
         for (unsigned int line_cnt=0; line_cnt < 4; ++line_cnt)
         {

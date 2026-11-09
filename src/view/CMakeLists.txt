@@ -32,15 +32,7 @@ target_link_libraries(compass_view
     PUBLIC
         compass_core
         compass_gui
-        compass_eval
-)
-
-# view sources include headers from report and app - circular deps
-target_include_directories(compass_view PRIVATE
-    "${CMAKE_SOURCE_DIR}/src/report"
-    "${CMAKE_SOURCE_DIR}/src/report/latex"
-    "${CMAKE_SOURCE_DIR}/src/report/latex/visitor"
-    "${CMAKE_SOURCE_DIR}/src/app/client"
+        compass_filter
 )
 
 if(EXPERIMENTAL_SRC)

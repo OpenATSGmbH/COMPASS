@@ -17,12 +17,12 @@
 
 #pragma once
 
-#include "eval/results/base/featuredefinition.h"
-#include "eval/results/base/featuredefinition_t.h"
+#include "results/base/featuredefinition.h"
+#include "results/base/featuredefinition_t.h"
 
-#include "view/points/viewpointgenerator.h"
-#include "view/histogramview/histogram.h"
-#include "view/histogramview/histograminitializer.h"
+#include "points/viewpointgenerator.h"
+#include "histogramview/histogram.h"
+#include "histogramview/histograminitializer.h"
 
 #include "evaluationcalculator.h"
 

@@ -16,41 +16,32 @@
  */
 
 #include "compass.h"
+#include "imainwindow.h"
+#include "iviewprovider.h"
 #include "dialogs.h"
 #include "config.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
-#include "filtermanager.h"
 #include "jobmanager.h"
 #include "unitmanager.h"
 #include "projectionmanager.h"
 #include "rtcommand_manager.h"
 #include "logger.h"
-#include "taskmanager.h"
-#include "viewmanager.h"
-#include "viewcontainerwidget.h"
-#include "view.h"
-#include "viewwidget.h"
-#include "evaluationmanager.h"
-#include "mainwindow.h"
 #include "files.h"
-#include "asteriximporttask.h"
-#include "reconstructortask.h"
 #include "rtcommand_runner.h"
 #include "rtcommand_manager.h"
 #include "rtcommand.h"
-#include "util/timeconv.h"
+#include "rtcommand_registry.h"
+#include "timeconv.h"
 #include "db_context_manager.h"
-#include "util/async.h"
+#include "async.h"
 #include "licensemanager.h"
-#include "dbcontentmanagervariableresolver.h"
 #include "configurationmanager.h"
 #include "result.h"
 #include "dbinstance.h"
-#include "logwidget.h"
-#include "util/system.h"
-#include "util/msghandler.h"
-#include "util/stringconv.h"
+#include "system.h"
+#include "msghandler.h"
+#include "stringconv.h"
 
 #include <QMessageBox>
 #include <QApplication>
@@ -59,34 +50,37 @@
 
 #include "global.h"
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geo_view_api.h"
-#endif
-
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace std;
 using namespace nlohmann;
 using namespace Utils;
 
-const bool COMPASS::is_app_image_ = {Utils::System::appDir() != nullptr};
-
 COMPASS::COMPASS(ConfigurationManager& config_manager)
     : Configurable(config_manager.getRootConfigJSON("COMPASS", "COMPASS0").json(), nullptr),
       config_manager_(config_manager),
-      log_store_(!is_app_image_)
+      log_store_(!AppState::isAppImage())
 {
     config_manager_.registerJsonRootConfigurable(*this);
     msghandler::MessageHandler::init(log_store_);
     logdbg;
 
-    std::cout << "APPIMAGE: " << (is_app_image_ ? "yes" : "no") << std::endl;
+    std::cout << "APPIMAGE: " << (AppState::isAppImage() ? "yes" : "no") << std::endl;
 
-    pdflatex_found_ = System::exec("which pdflatex").size(); // empty if none
+    // relay the app state signals for the libraries above core (connected first => run before
+    // the slots connected to AppState directly)
+    connect(&app_state_, &AppState::appModeAboutToSwitchSignal, this, &COMPASS::appModeAboutToSwitchSignal);
+    connect(&app_state_, &AppState::appModeSwitchSignal, this, &COMPASS::appModeSwitchSignal);
+    connect(&app_state_, &AppState::liveOverloadChangedSignal, this, &COMPASS::liveOverloadChangedSignal);
+    connect(&app_state_, &AppState::colorModeChangedSignal, this, &COMPASS::colorModeChangedSignal);
+    connect(&app_state_, &AppState::darkModeChangedSignal, this, &COMPASS::darkModeChangedSignal);
 
     simple_config_.reset(new SimpleConfig("config.json"));
 
-    registerParameter("last_db_filename", &last_db_filename_, std::string());
+    if (simple_config_->existsId("version"))
+        app_state_.appVersion(simple_config_->getString("version"));
+
+    registerParameter("last_db_filename", &app_state_.settings().last_db_filename, std::string());
     registerParameter("db_file_list", &db_file_list_, json::array());
 
     vector<string> cleaned_file_list;
@@ -99,163 +93,117 @@ COMPASS::COMPASS(ConfigurationManager& config_manager)
     }
     db_file_list_ = cleaned_file_list;
 
-    registerParameter("dark_mode", &dark_mode_, false);
+    // settings of the app state, as config parameters of COMPASS
+    auto& settings = app_state_.settings();
 
-    registerParameter("color_mode", &color_mode_, 0u);
+    registerParameter("dark_mode", &settings.dark_mode, false);
 
-    registerParameter("last_path", &last_path_, {});
+    registerParameter("color_mode", &settings.color_mode, 0u);
 
-    if (!Files::directoryExists(last_path_))
-        last_path_ = QDir::homePath().toStdString();
+    registerParameter("last_path", &settings.last_path, {});
 
-    registerParameter("disable_live_to_offline_switch", &disable_live_to_offline_switch_, false);
-    registerParameter("disable_menu_config_save", &disable_menu_config_save_, false);
+    if (!Files::directoryExists(settings.last_path))
+        settings.last_path = QDir::homePath().toStdString();
 
-    registerParameter("disable_geographicview_rotate", &disable_geographicview_rotate_, false);
+    registerParameter("disable_live_to_offline_switch", &settings.disable_live_to_offline_switch, false);
+    registerParameter("disable_menu_config_save", &settings.disable_menu_config_save, false);
 
-    registerParameter("disable_add_remove_views", &disable_add_remove_views_, false);
+    registerParameter("disable_geographicview_rotate", &settings.disable_geographicview_rotate, false);
 
-    registerParameter("max_live_data_age_cache", &max_live_data_age_cache_, 5u);
-    registerParameter("max_live_data_age_db", &max_live_data_age_db_, 60u);
+    registerParameter("disable_add_remove_views", &settings.disable_add_remove_views, false);
 
-    registerParameter("live_overload_max_packets", &live_overload_max_packets_, 4u);
-    registerParameter("live_overload_max_latency_s", &live_overload_max_latency_s_, -1.0);
-    registerParameter("live_overload_show_debug_info", &live_overload_show_debug_info_, false);
+    registerParameter("max_live_data_age_cache", &settings.max_live_data_age_cache, 5u);
+    registerParameter("max_live_data_age_db", &settings.max_live_data_age_db, 60u);
 
-    registerParameter("auto_live_running_resume_ask_time", &auto_live_running_resume_ask_time_, 60u);
-    registerParameter("auto_live_running_resume_ask_wait_time", &auto_live_running_resume_ask_wait_time_, 1u);
+    registerParameter("live_overload_max_packets", &settings.live_overload_max_packets, 4u);
+    registerParameter("live_overload_max_latency_s", &settings.live_overload_max_latency_s, -1.0);
+    registerParameter("live_overload_show_debug_info", &settings.live_overload_show_debug_info, false);
 
-    registerParameter("disable_confirm_reset_views", &disable_confirm_reset_views_, false);
+    registerParameter("auto_live_running_resume_ask_time", &settings.auto_live_running_resume_ask_time, 60u);
+    registerParameter("auto_live_running_resume_ask_wait_time", &settings.auto_live_running_resume_ask_wait_time, 1u);
 
-    registerParameter("min_app_width", &min_app_width_, min_app_width_);
-    if (min_app_width_ > 1600)
-        min_app_width_ = 1600;
-    
-    registerParameter("min_app_height", &min_app_height_, min_app_height_);
-    if (min_app_height_ > 800)
-        min_app_height_ = 800;
+    registerParameter("disable_confirm_reset_views", &settings.disable_confirm_reset_views, false);
 
-    registerParameter("app_font_scale", &app_font_scale_, app_font_scale_);
+    registerParameter("min_app_width", &settings.min_app_width, settings.min_app_width);
+    if (settings.min_app_width > 1600)
+        settings.min_app_width = 1600;
 
-    registerParameter("disable_native_dialogs", &disable_native_dialogs_, disable_native_dialogs_);
+    registerParameter("min_app_height", &settings.min_app_height, settings.min_app_height);
+    if (settings.min_app_height > 800)
+        settings.min_app_height = 800;
+
+    registerParameter("app_font_scale", &settings.app_font_scale, settings.app_font_scale);
+
+    registerParameter("disable_native_dialogs", &settings.disable_native_dialogs, settings.disable_native_dialogs);
 
 
-    registerParameter("unspecific_acids", &unspecific_acids_, {"00000000","????????","        "});
+    registerParameter("unspecific_acids", &settings.unspecific_acids, {"00000000","????????","        "});
     //registerParameter("unspecific_mode_3as", &unspecific_mode_3as_, {});
 
-    traced_assert(auto_live_running_resume_ask_time_ > 0);
-    traced_assert(auto_live_running_resume_ask_wait_time_ > 0);
-    traced_assert(auto_live_running_resume_ask_time_ > auto_live_running_resume_ask_wait_time_);
+    traced_assert(settings.auto_live_running_resume_ask_time > 0);
+    traced_assert(settings.auto_live_running_resume_ask_wait_time > 0);
+    traced_assert(settings.auto_live_running_resume_ask_time > settings.auto_live_running_resume_ask_wait_time);
+
+    logdbg << "end";
+}
+
+/**
+ * Registers the creation of a manager above the core layer (sub-configurable of COMPASS).
+ * Notice: must be called before createManagers(), in the order the managers are created when missing.
+ */
+void COMPASS::registerManagerCreator(const std::string& class_name,
+                                     const std::string& instance_id,
+                                     const std::function<void(nlohmann::json&)>& create)
+{
+    traced_assert(!managers_created_);
+    traced_assert(create);
+
+    ManagerCreator creator;
+    creator.class_name  = class_name;
+    creator.instance_id = instance_id;
+    creator.create      = create;
+
+    manager_creators_.push_back(creator);
+}
+
+/**
+ * Creates the sub-configurable managers from the configuration, via the registered creators.
+ * Notice: the composition root registers the creators before and starts and wires the managers after.
+ */
+void COMPASS::createManagers()
+{
+    traced_assert(!managers_created_);
 
     createSubConfigurables();
 
-    traced_assert(job_manager_);
-    job_manager_->start();
-    traced_assert(rt_cmd_manager_);
-    rt_cmd_manager_->start();
-
-    traced_assert(db_interface_);
-    traced_assert(dbcontent_manager_);
-    traced_assert(filter_manager_);
-    traced_assert(task_manager_);
-    traced_assert(view_manager_);
-    traced_assert(eval_manager_);
-    traced_assert(license_manager_);
-
-    rt_cmd_runner_.reset(new rtcommand::RTCommandRunner(*this));
-
-    // DBContextManager - not a Configurable, created directly
-    context_manager_.reset(new context::DBContextManager(*this));
-
-    // database opening & closing - DBContextManager connects FIRST
-
-    QObject::connect(this, &COMPASS::databaseOpenedSignal,
-                     context_manager_.get(), &context::DBContextManager::databaseOpenedSlot);
-    QObject::connect(this, &COMPASS::databaseClosedSignal,
-                     context_manager_.get(), &context::DBContextManager::databaseClosedSlot);
-
-    QObject::connect(this, &COMPASS::databaseOpenedSignal,
-                     dbcontent_manager_.get(), &DBContentManager::databaseOpenedSlot);
-    QObject::connect(this, &COMPASS::databaseClosedSignal,
-                     dbcontent_manager_.get(), &DBContentManager::databaseClosedSlot);
-
-    QObject::connect(this, &COMPASS::databaseOpenedSignal,
-                     filter_manager_.get(), &FilterManager::databaseOpenedSlot);
-    QObject::connect(this, &COMPASS::databaseClosedSignal,
-                     filter_manager_.get(), &FilterManager::databaseClosedSlot);
-
-    QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
-                     filter_manager_.get(), &FilterManager::dataSourcesChangedSlot);
-    QObject::connect(context_manager_.get(), &context::DBContextManager::dataSourcesChangedSignal,
-                     filter_manager_.get(), &FilterManager::dataSourcesChangedSlot);
-
-    QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
-                     filter_manager_.get(), &FilterManager::sectorsChangedSlot);
-    QObject::connect(context_manager_.get(), &context::DBContextManager::sectorsChangedSignal,
-                     filter_manager_.get(), &FilterManager::sectorsChangedSlot);
-
-    QObject::connect(this, &COMPASS::databaseOpenedSignal,
-                     view_manager_.get(), &ViewManager::databaseOpenedSlot);
-    QObject::connect(this, &COMPASS::databaseClosedSignal,
-                     view_manager_.get(), &ViewManager::databaseClosedSlot);
-
-    QObject::connect(this, &COMPASS::databaseOpenedSignal,
-                     eval_manager_.get(), &EvaluationManager::databaseOpenedSlot);
-    QObject::connect(this, &COMPASS::databaseClosedSignal,
-                     eval_manager_.get(), &EvaluationManager::databaseClosedSlot);
-
-    QObject::connect(this, &COMPASS::databaseOpenedSignal,
-                     task_manager_.get(), &TaskManager::databaseOpenedSlot);
-    QObject::connect(this, &COMPASS::databaseClosedSignal,
-                     task_manager_.get(), &TaskManager::databaseClosedSlot);
-
-    QObject::connect(this, &COMPASS::databaseOpenedSignal,
-                     &log_store_, &LogStore::databaseOpenedSlot);
-    QObject::connect(this, &COMPASS::databaseClosedSignal,
-                     &log_store_, &LogStore::databaseClosedSlot);
-
-    // data sources changed
-    QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
-                     eval_manager_.get(), &EvaluationManager::dataSourcesChangedSlot);
-    QObject::connect(context_manager_.get(), &context::DBContextManager::dataSourcesChangedSignal,
-                     eval_manager_.get(), &EvaluationManager::dataSourcesChangedSlot);
-
-    // sectors changed (direct edits within active context)
-    connect (context_manager_.get(), &context::DBContextManager::sectorsChangedSignal,
-             &task_manager_->reconstructReferencesTask(), &ReconstructorTask::sectorsChangedSlot);
-    // context changed (DB open, context switch - sectors come with the new context)
-    connect (context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
-             &task_manager_->reconstructReferencesTask(), &ReconstructorTask::sectorsChangedSlot);
-
-    // view data flows from the current source (ViewManager owns it); the load bookends
-    // (loadingStarted/DoneSignal) are ViewManager's too - driven off the operation it owns.
-    // The data-sources status widget connects directly to ViewManager::dataDistributedSignal.
-
-    // appmode
-    connect (this, &COMPASS::appModeSwitchSignal,
-             filter_manager_.get(), &FilterManager::appModeSwitchSlot);
-    // retained no-op hook (live bookends now synthesized in ViewManager::appModeSwitchSlot)
-    connect (this, &COMPASS::appModeSwitchSignal,
-             dbcontent_manager_.get(), &DBContentManager::appModeSwitchSlot);
-
-    // features
-    connect (license_manager_.get(), &LicenseManager::changed, task_manager_.get(), &TaskManager::updateFeatures);
-    connect (license_manager_.get(), &LicenseManager::changed, view_manager_.get(), &ViewManager::updateFeatures);
+    managers_created_ = true;
 
     qRegisterMetaType<AppMode>("AppMode");
 
-    rtcommand::RTCommandHelp::init();
+    rtcommand::init_basic_commands(rtcommand::RTCommandRegistry::instance());
 
-    appMode(app_mode_);
+    app_state_.appMode(app_state_.appMode());
+}
 
-    logdbg << "end";
+/**
+ */
+void COMPASS::setMainWindow(IMainWindow* main_window)
+{
+    main_window_ = main_window;
+}
+
+/**
+ */
+void COMPASS::setShutdownSequence(const std::function<void()>& sequence)
+{
+    shutdown_sequence_ = sequence;
 }
 
 COMPASS::~COMPASS()
 {
     logdbg;
 
-    if (app_state_ != AppState::Shutdown)
+    if (!app_state_.isShutDown())
     {
         logerr << "not shut down";
         shutdown();
@@ -263,22 +211,16 @@ COMPASS::~COMPASS()
 
     config_manager_.unregisterJsonRootConfigurable(*this);
 
-    traced_assert(!dbcontent_manager_);
-    traced_assert(!db_interface_);
-    traced_assert(!filter_manager_);
-    traced_assert(!task_manager_);
-    traced_assert(!view_manager_);
-    traced_assert(!eval_manager_);
-    traced_assert(!license_manager_);
+    // the composition root destroys all managers before COMPASS (they are sub-configurables)
+    traced_assert(!managers_.db_interface);
+    traced_assert(!managers_.dbcontent_manager);
+    traced_assert(!managers_.context_manager);
+    traced_assert(!managers_.license_manager);
+    traced_assert(!managers_.projection_manager);
+    traced_assert(!managers_.rt_cmd_manager);
+    traced_assert(!managers_.view_provider);
 
     logdbg << "end";
-}
-
-void COMPASS::setAppState(AppState state)
-{
-    app_state_ = state;
-
-    //notify someone about changed app state?
 }
 
 std::string COMPASS::getPath() const
@@ -291,133 +233,47 @@ void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
     const auto& class_name = Configuration::getClassName(child_json);
 
     logdbg << "class_name " << class_name;
-    if (class_name == "DBInterface")
-    {
-        traced_assert(!db_interface_);
-        db_interface_.reset(new DBInterface(child_json, *this));
-        traced_assert(db_interface_);
-    }
-    else if (class_name == "DBContentManager")
-    {
-        traced_assert(!dbcontent_manager_);
-        dbcontent_manager_.reset(new DBContentManager(child_json, *this));
-        traced_assert(dbcontent_manager_);
-    }
-    else if (class_name == "DataSourceManager")
+    if (class_name == "DataSourceManager")
     {
         // legacy - DataSourceManager replaced by DBContextManager, ignore config
         loginf << "ignoring legacy DataSourceManager config";
-    }
-    else if (class_name == "FilterManager")
-    {
-        traced_assert(!filter_manager_);
-        filter_manager_.reset(new FilterManager(child_json, *this));
-        traced_assert(filter_manager_);
-    }
-    else if (class_name == "TaskManager")
-    {
-        traced_assert(!task_manager_);
-        task_manager_.reset(new TaskManager(child_json, *this));
-        traced_assert(task_manager_);
-    }
-    else if (class_name == "ViewManager")
-    {
-        traced_assert(!view_manager_);
-        view_manager_.reset(new ViewManager(child_json, *this));
-        traced_assert(view_manager_);
-    }
-    else if (class_name == "EvaluationManager")
-    {
-        traced_assert(!eval_manager_);
-        eval_manager_.reset(new EvaluationManager(child_json, *this));
-        traced_assert(eval_manager_);
     }
     else if (class_name == "FFTManager")
     {
         // legacy - FFTManager replaced by DBContextManager, ignore config
         loginf << "ignoring legacy FFTManager config";
     }
-    else if (class_name == "LicenseManager")
-    {
-        traced_assert(!license_manager_);
-        license_manager_.reset(new LicenseManager(child_json, *this));
-        traced_assert(license_manager_);
-    }
-    else if (class_name == "JobManager")
-    {
-        traced_assert(!job_manager_);
-        job_manager_.reset(new JobManager(child_json, this));
-    }
-    else if (class_name == "UnitManager")
-    {
-        traced_assert(!unit_manager_);
-        unit_manager_.reset(new UnitManager(child_json, this));
-    }
-    else if (class_name == "ProjectionManager")
-    {
-        traced_assert(!projection_manager_);
-        projection_manager_.reset(new ProjectionManager(child_json, this));
-    }
-    else if (class_name == "RTCommandManager")
-    {
-        traced_assert(!rt_cmd_manager_);
-        rt_cmd_manager_.reset(new RTCommandManager(child_json, this));
-    }
     else
+    {
+        // managers, created by the composition root
+        for (auto& creator : manager_creators_)
+        {
+            if (creator.class_name != class_name)
+                continue;
+
+            traced_assert(!creator.created);
+            creator.create(child_json);
+            creator.created = true;
+
+            return;
+        }
+
         throw std::runtime_error("COMPASS: generateSubConfigurable: unknown class_name " + class_name);
+    }
 }
 
+/**
+ * Creates the managers missing in the configuration, in the registration order of their creators.
+ */
 void COMPASS::checkSubConfigurables()
 {
-    if (!license_manager_)
+    for (auto& creator : manager_creators_)
     {
-        generateSubConfigurableFromConfig("LicenseManager", "LicenseManager0");
-        traced_assert(license_manager_);
-    }
-    if (!db_interface_)
-    {
-        generateSubConfigurableFromConfig("DBInterface", "DBInterface0");
-        traced_assert(db_interface_);
-    }
-    if (!dbcontent_manager_)
-    {
-        generateSubConfigurableFromConfig("DBContentManager", "DBContentManager0");
-        traced_assert(dbcontent_manager_);
-    }
-    if (!filter_manager_)
-    {
-        generateSubConfigurableFromConfig("FilterManager", "FilterManager0");
-        traced_assert(filter_manager_);
-    }
-    if (!task_manager_)
-    {
-        generateSubConfigurableFromConfig("TaskManager", "TaskManager0");
-        traced_assert(task_manager_);
-    }
-    if (!view_manager_)
-    {
-        generateSubConfigurableFromConfig("ViewManager", "ViewManager0");
-        traced_assert(view_manager_);
-    }
-    if (!eval_manager_)
-    {
-        generateSubConfigurableFromConfig("EvaluationManager", "EvaluationManager0");
-        traced_assert(eval_manager_);
-    }
-    if (!job_manager_)
-        generateSubConfigurableFromConfig("JobManager", "JobManager0");
-    if (!unit_manager_)
-        generateSubConfigurableFromConfig("UnitManager", "UnitManager0");
-    if (!projection_manager_)
-        generateSubConfigurableFromConfig("ProjectionManager", "ProjectionManager0");
-    if (!rt_cmd_manager_)
-        generateSubConfigurableFromConfig("RTCommandManager", "RTCommandManager0");
+        if (creator.created)
+            continue;
 
-    // wire up variable resolver for projection manager (breaks core→db dep)
-    if (projection_manager_ && dbcontent_manager_ && !var_resolver_)
-    {
-        var_resolver_ = std::make_unique<DBContentManagerVariableResolver>(*dbcontent_manager_);
-        projection_manager_->varResolver(*var_resolver_);
+        generateSubConfigurableFromConfig(creator.class_name, creator.instance_id);
+        traced_assert(creator.created);
     }
 }
 
@@ -426,64 +282,17 @@ LogStore& COMPASS::logStore()
     return log_store_;
 }
 
-bool COMPASS::sensorStatusTimeHack() const
-{
-    return sensor_status_time_hack_;
-}
-void COMPASS::sensorStatusTimeHack(bool value)
-{
-    loginf << "value " << value;
-
-    sensor_status_time_hack_ = value;
-}
-
-bool COMPASS::disableNativeDialogs() const
-{
-    return disable_native_dialogs_;
-}
-
-float COMPASS::appFontScale() const
-{
-    return app_font_scale_;
-}
-
-bool COMPASS::isUnspecificACID(const std::string& acid) const
-{
-    // whitespace-only identifications carry no information
-    if (Utils::String::trim(acid).empty())
-        return true;
-
-    // compare against the raw configured forms (e.g. "00000000", "????????")
-    for (const auto& it : unspecific_acids_)
-    {
-        if (it.is_string() && it.get<std::string>() == acid)
-            return true;
-    }
-
-    return false;
-}
-
-unsigned int COMPASS::minAppHeight() const
-{
-    return min_app_height_;
-}
-
-unsigned int COMPASS::minAppWidth() const
-{
-    return min_app_width_;
-}
-
 bool COMPASS::openDBFile(const std::string& filename)
 {
     loginf << "opening file '" << filename << "'";
 
-    traced_assert(!db_opened_);
+    traced_assert(!app_state_.dbOpened());
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
     auto result = openDBFileInternal(filename);
 
-    lastUsedPath(Files::getDirectoryFromPath(filename));
+    app_state_.lastUsedPath(Files::getDirectoryFromPath(filename));
 
     QApplication::restoreOverrideCursor();
 
@@ -497,33 +306,33 @@ bool COMPASS::openDBFile(const std::string& filename)
 
 Result COMPASS::openDBFileInternal(const std::string& filename)
 {
-    traced_assert(db_interface_);
+    traced_assert(managers_.db_interface);
 
     if (dbOpened())
         return Result::failed("Database already open");
 
-    last_db_filename_ = filename;
-    db_inmem_ = false;
+    app_state_.settings().last_db_filename = filename;
+    app_state_.dbInMem(false);
 
     Result res = Result::succeeded();
 
     try
     {
-        db_interface_->openDBFile(filename, false);
-        traced_assert(db_interface_->ready());
+        managers_.db_interface->openDBFile(filename, false);
+        traced_assert(managers_.db_interface->ready());
 
-        db_opened_ = true;
+        app_state_.dbOpened(true);
 
         log_store_.setLogCallbacks(
-            [this](unsigned int id, const nlohmann::json& j) { db_interface_->saveTaskLogInfo(id, j); },
-            [this]() { return db_interface_->loadTaskLogInfo(); });
+            [this](unsigned int id, const nlohmann::json& j) { managers_.db_interface->saveTaskLogInfo(id, j); },
+            [this]() { return managers_.db_interface->loadTaskLogInfo(); });
         emit databaseOpenedSignal();
     }  
     catch (std::exception& e)
     {
         res = Result::failed(e.what());
 
-        db_opened_ = false;
+        app_state_.dbOpened(false);
     }
 
     return res;
@@ -533,11 +342,11 @@ bool COMPASS::createNewDBFile(const std::string& filename)
 {
     loginf << "creating new file '" << filename << "'";
 
-    traced_assert(!db_opened_);
+    traced_assert(!app_state_.dbOpened());
 
     auto result = createNewDBFileInternal(filename);
 
-    lastUsedPath(Files::getDirectoryFromPath(filename));
+    app_state_.lastUsedPath(Files::getDirectoryFromPath(filename));
 
     if (!result.ok())
     {
@@ -553,38 +362,38 @@ bool COMPASS::createNewDBFile(const std::string& filename)
 
 Result COMPASS::createNewDBFileInternal(const std::string& filename)
 {
-    traced_assert(db_interface_);
+    traced_assert(managers_.db_interface);
 
     if (dbOpened())
     {
-        logError("COMPASS") << "Database '" << filename
+        log_store_.logError("COMPASS") << "Database '" << filename
                             << "' creation failed: Database already open";
 
         return Result::failed("Database already open");
     }
 
-    last_db_filename_ = filename;
-    db_inmem_ = false;
+    app_state_.settings().last_db_filename = filename;
+    app_state_.dbInMem(false);
 
     Result res = Result::succeeded();
 
     try
     {
-        db_interface_->openDBFile(filename, true);
-        traced_assert(db_interface_->ready());
+        managers_.db_interface->openDBFile(filename, true);
+        traced_assert(managers_.db_interface->ready());
 
-        db_opened_ = true;
+        app_state_.dbOpened(true);
 
         log_store_.setLogCallbacks(
-            [this](unsigned int id, const nlohmann::json& j) { db_interface_->saveTaskLogInfo(id, j); },
-            [this]() { return db_interface_->loadTaskLogInfo(); });
+            [this](unsigned int id, const nlohmann::json& j) { managers_.db_interface->saveTaskLogInfo(id, j); },
+            [this]() { return managers_.db_interface->loadTaskLogInfo(); });
         emit databaseOpenedSignal();
     }
     catch(const std::exception& e)
     {
         res = Result::failed(e.what());
 
-        db_opened_ = false;
+        app_state_.dbOpened(false);
     }
 
     return res;
@@ -594,7 +403,7 @@ bool COMPASS::createInMemDBFile(const std::string& future_filename)
 {
     loginf << "future filename '" << future_filename << "'";
 
-    traced_assert(!db_opened_);
+    traced_assert(!app_state_.dbOpened());
 
     auto result = createInMemDBFileInternal(future_filename);
 
@@ -606,34 +415,34 @@ bool COMPASS::createInMemDBFile(const std::string& future_filename)
 
 Result COMPASS::createInMemDBFileInternal(const std::string& future_filename)
 {
-    traced_assert(db_interface_);
+    traced_assert(managers_.db_interface);
 
     if (dbOpened())
         return Result::failed("Database already open");
 
     inmem_future_filename_ = future_filename;
-    last_db_filename_ = DBInstance::InMemFilename;
-    db_inmem_ = true;
+    app_state_.settings().last_db_filename = DBInstance::InMemFilename;
+    app_state_.dbInMem(true);
 
     Result res = Result::succeeded();
 
     try
     {
-        db_interface_->openDBInMemory();
-        traced_assert(db_interface_->ready());
+        managers_.db_interface->openDBInMemory();
+        traced_assert(managers_.db_interface->ready());
 
-        db_opened_ = true;
+        app_state_.dbOpened(true);
 
         log_store_.setLogCallbacks(
-            [this](unsigned int id, const nlohmann::json& j) { db_interface_->saveTaskLogInfo(id, j); },
-            [this]() { return db_interface_->loadTaskLogInfo(); });
+            [this](unsigned int id, const nlohmann::json& j) { managers_.db_interface->saveTaskLogInfo(id, j); },
+            [this]() { return managers_.db_interface->loadTaskLogInfo(); });
         emit databaseOpenedSignal();
     }
     catch(const std::exception& e)
     {
         res = Result::failed(e.what());
 
-        db_opened_ = false;
+        app_state_.dbOpened(false);
     }
 
     return res;
@@ -667,7 +476,7 @@ bool COMPASS::createNewDBFileFromMemory()
     if (!result.ok())
         QMessageBox::critical(QApplication::activeWindow(), "Error", QString::fromStdString(result.error()));
     else
-        addDBFileToList(last_db_filename_);
+        addDBFileToList(app_state_.settings().last_db_filename);
     
     return result.ok();
 }
@@ -702,8 +511,8 @@ bool COMPASS::exportDBFile(const std::string& filename)
 {
     loginf << "exporting as file '" << filename << "'";
 
-    traced_assert(db_opened_);
-    traced_assert(!db_export_in_progress_);
+    traced_assert(app_state_.dbOpened());
+    traced_assert(!app_state_.dbExportInProgress());
 
     QMessageBox* msg_box = new QMessageBox(Dialogs::statusDialogParent());
 
@@ -719,7 +528,7 @@ bool COMPASS::exportDBFile(const std::string& filename)
 
     auto result = exportDBFileInternal(filename);
 
-    lastUsedPath(Files::getDirectoryFromPath(filename));
+    app_state_.lastUsedPath(Files::getDirectoryFromPath(filename));
     
     msg_box->close();
     delete msg_box;
@@ -732,36 +541,36 @@ bool COMPASS::exportDBFile(const std::string& filename)
 
 Result COMPASS::exportDBFileInternal(const std::string& filename)
 {
-    traced_assert(db_interface_);
+    traced_assert(managers_.db_interface);
 
-    if (!db_opened_)
+    if (!app_state_.dbOpened())
         return Result::failed("No database opened");
-    if (db_export_in_progress_)
+    if (app_state_.dbExportInProgress())
         return Result::failed("Export already in progress");
     
-    db_export_in_progress_ = true;
+    app_state_.dbExportInProgress(true);
 
     Result res = Result::succeeded();
 
     try
     {
-        db_interface_->exportDBFile(filename);
+        managers_.db_interface->exportDBFile(filename);
     }
     catch(const std::exception& ex)
     {
         res = Result::failed(ex.what());
     }
 
-    db_export_in_progress_ = false;
+    app_state_.dbExportInProgress(false);
 
     return res;
 }
 
 bool COMPASS::closeDB()
 {
-    loginf << "closing db file '" << last_db_filename_ << "'";
+    loginf << "closing db file '" << app_state_.settings().last_db_filename << "'";
 
-    traced_assert(db_opened_);
+    traced_assert(app_state_.dbOpened());
 
     auto result = closeDBInternal();
 
@@ -773,25 +582,25 @@ bool COMPASS::closeDB()
 
 Result COMPASS::closeDBInternal()
 {
-    if (!db_opened_)
+    if (!app_state_.dbOpened())
         return Result::failed("No database opened");
 
     Result res = Result::succeeded();
 
     try
     {
-        dbcontent_manager_->saveTargets();
-        context_manager_->saveCountsToDB();
-        context_manager_->saveAsterixInfoToDB();
+        managers_.dbcontent_manager->saveTargets();
+        managers_.context_manager->saveCountsToDB();
+        managers_.context_manager->saveAsterixInfoToDB();
 
         // a job still in flight would keep working on the interface closed below
-        dbcontent_manager_->waitUntilEngineIdle();
+        managers_.dbcontent_manager->waitUntilEngineIdle();
 
-        db_interface_->closeDB();
-        traced_assert(!db_interface_->ready());
+        managers_.db_interface->closeDB();
+        traced_assert(!managers_.db_interface->ready());
 
-        db_opened_ = false;
-        db_inmem_ = false;
+        app_state_.dbOpened(false);
+        app_state_.dbInMem(false);
 
         emit databaseClosedSignal();
         log_store_.setLogCallbacks({}, {});
@@ -806,53 +615,53 @@ Result COMPASS::closeDBInternal()
 
 DBInterface& COMPASS::dbInterface()
 {
-    traced_assert(db_interface_);
-    return *db_interface_;
+    traced_assert(managers_.db_interface);
+    return *managers_.db_interface;
 }
 
 DBContentManager& COMPASS::dbContentManager()
 {
-    traced_assert(dbcontent_manager_);
-    return *dbcontent_manager_;
-}
-
-FilterManager& COMPASS::filterManager()
-{
-    traced_assert(filter_manager_);
-    return *filter_manager_;
-}
-
-TaskManager& COMPASS::taskManager()
-{
-    traced_assert(task_manager_);
-    return *task_manager_;
-}
-
-ViewManager& COMPASS::viewManager()
-{
-    traced_assert(view_manager_);
-    return *view_manager_;
+    traced_assert(managers_.dbcontent_manager);
+    return *managers_.dbcontent_manager;
 }
 
 QWidget* COMPASS::viewContainerWidget(const std::string& name)
 {
-    traced_assert(view_manager_);
-    return view_manager_->containerWidget(name);
+    return viewProvider().viewContainerWidget(name);
 }
 
 QWidget* COMPASS::latestViewContainerWidget()
 {
-    traced_assert(view_manager_);
-    return view_manager_->latestViewContainer();
+    return viewProvider().latestViewContainerWidget();
 }
 
 QWidget* COMPASS::latestViewWidget()
 {
-    traced_assert(view_manager_);
-    auto* view = view_manager_->latestView();
-    if (!view)
-        return nullptr;
-    return view->getCentralWidget()->findChild<ViewWidget*>();
+    return viewProvider().latestViewWidget();
+}
+
+/**
+ * Finds a configurable below COMPASS (the root configurable) by its path.
+ */
+std::pair<rtcommand::FindObjectErrCode, Configurable*> COMPASS::findConfigurable(const std::string& path)
+{
+    return findSubConfigurablePath(path);
+}
+
+/**
+ * True while a view dispatch is in flight or view processing is pending, so runtime commands
+ * are deferred to the event loop instead of waiting here (see RTCommandRunnerStash).
+ * Notice: a shutdown tears the views down anyway, and its event loop is going away -
+ * deferring against it would leave the runner thread retrying forever.
+ */
+bool COMPASS::viewsBusy()
+{
+    if (app_state_.isShutDown())
+        return false;
+
+    IViewProvider& view_man = viewProvider();
+
+    return view_man.hasPendingViewProcessing() || view_man.isProcessingData();
 }
 
 SimpleConfig& COMPASS::config()
@@ -861,97 +670,63 @@ SimpleConfig& COMPASS::config()
     return *simple_config_;
 }
 
-EvaluationManager& COMPASS::evaluationManager()
-{
-    traced_assert(eval_manager_);
-    return *eval_manager_;
-}
-
 context::DBContextManager& COMPASS::dbContextManager()
 {
-    traced_assert(context_manager_);
-    return *context_manager_;
+    traced_assert(managers_.context_manager);
+    return *managers_.context_manager;
 }
 
 bool COMPASS::hasActiveContext() const
 {
-    return context_manager_ && context_manager_->hasActiveContext();
+    return managers_.context_manager && managers_.context_manager->hasActiveContext();
 }
 
 context::DBContext& COMPASS::context()
 {
-    return context_manager_->activeContext();
+    return managers_.context_manager->activeContext();
 }
 
 const context::DBContext& COMPASS::context() const
 {
-    return context_manager_->activeContext();
+    return managers_.context_manager->activeContext();
 }
 
 LicenseManager& COMPASS::licenseManager()
 {
-    traced_assert(license_manager_);
-    return *license_manager_;
-}
-
-rtcommand::RTCommandRunner& COMPASS::rtCmdRunner()
-{
-    traced_assert(rt_cmd_runner_);
-    return *rt_cmd_runner_;
-}
-
-JobManager& COMPASS::jobManager()
-{
-    traced_assert(job_manager_);
-    return *job_manager_;
-}
-
-UnitManager& COMPASS::unitManager()
-{
-    traced_assert(unit_manager_);
-    return *unit_manager_;
+    traced_assert(managers_.license_manager);
+    return *managers_.license_manager;
 }
 
 ProjectionManager& COMPASS::projectionManager()
 {
-    traced_assert(projection_manager_);
-    return *projection_manager_;
+    traced_assert(managers_.projection_manager);
+    return *managers_.projection_manager;
 }
 
 RTCommandManager& COMPASS::rtCommandManager()
 {
-    traced_assert(rt_cmd_manager_);
-    return *rt_cmd_manager_;
+    traced_assert(managers_.rt_cmd_manager);
+    return *managers_.rt_cmd_manager;
+}
+
+/**
+ */
+IViewProvider& COMPASS::viewProvider()
+{
+    traced_assert(managers_.view_provider);
+    return *managers_.view_provider;
 }
 
 const DBInterface& COMPASS::dbInterface() const
 {
-    traced_assert(db_interface_);
-    return *db_interface_;
+    traced_assert(managers_.db_interface);
+    return *managers_.db_interface;
 }
 
 const DBContentManager& COMPASS::dbContentManager() const
 {
-    traced_assert(dbcontent_manager_);
-    return *dbcontent_manager_;
-}
-
-const FilterManager& COMPASS::filterManager() const
-{
-    traced_assert(filter_manager_);
-    return *filter_manager_;
-}
-
-const TaskManager& COMPASS::taskManager() const
-{
-    traced_assert(task_manager_);
-    return *task_manager_;
-}
-
-const ViewManager& COMPASS::viewManager() const
-{
-    traced_assert(view_manager_);
-    return *view_manager_;
+    traced_assert(managers_.dbcontent_manager);
+    return *managers_.dbcontent_manager;
 }
 
 const SimpleConfig& COMPASS::config() const
@@ -960,367 +735,66 @@ const SimpleConfig& COMPASS::config() const
     return *simple_config_;
 }
 
-const EvaluationManager& COMPASS::evaluationManager() const
-{
-    traced_assert(eval_manager_);
-    return *eval_manager_;
-}
-
-const rtcommand::RTCommandRunner& COMPASS::rtCmdRunner() const
-{
-    traced_assert(rt_cmd_runner_);
-    return *rt_cmd_runner_;
-}
-
 const LicenseManager& COMPASS::licenseManager() const
 {
-    traced_assert(license_manager_);
-    return *license_manager_;
-}
-
-const JobManager& COMPASS::jobManager() const
-{
-    traced_assert(job_manager_);
-    return *job_manager_;
-}
-
-const UnitManager& COMPASS::unitManager() const
-{
-    traced_assert(unit_manager_);
-    return *unit_manager_;
+    traced_assert(managers_.license_manager);
+    return *managers_.license_manager;
 }
 
 const ProjectionManager& COMPASS::projectionManager() const
 {
-    traced_assert(projection_manager_);
-    return *projection_manager_;
+    traced_assert(managers_.projection_manager);
+    return *managers_.projection_manager;
 }
 
 const RTCommandManager& COMPASS::rtCommandManager() const
 {
-    traced_assert(rt_cmd_manager_);
-    return *rt_cmd_manager_;
+    traced_assert(managers_.rt_cmd_manager);
+    return *managers_.rt_cmd_manager;
 }
 
 bool COMPASS::dbOpened()
 {
-    return db_opened_;
+    return app_state_.dbOpened();
 }
 
 bool COMPASS::dbInMem() const
 {
-    return db_inmem_;
+    return app_state_.dbInMem();
 }
 
 bool COMPASS::canCreateDBFileFromMemory() const
 {
-    return db_opened_ && db_inmem_ && db_interface_ && db_interface_->canCreateDBFileFromMemory() && !inmem_future_filename_.empty();
+    return app_state_.dbOpened() && app_state_.dbInMem() && managers_.db_interface && managers_.db_interface->canCreateDBFileFromMemory() && !inmem_future_filename_.empty();
 }
 
-void COMPASS::init()
-{
-    traced_assert(task_manager_);
-    task_manager_->init();
-}
-
+/**
+ * Shuts down all managers in the order given by the composition root's shutdown sequence.
+ */
 void COMPASS::shutdown()
 {
     loginf << "shutdown";
 
-    if (app_state_ == AppState::Shutdown)
+    if (app_state_.isShutDown())
     {
         logerr << "already shut down";
         return;
     }
 
-    app_state_ = AppState::Shutdown;
+    app_state_.phase(AppPhase::Shutdown);
 
-    // asynchronous view processing (geo geometry builds) may still read manager state -
-    // wait it out before any manager is torn down
-    if (view_manager_ && view_manager_->hasPendingViewProcessing())
-    {
-        loginf << "waiting for pending view processing";
-        Utils::Async::pumpUntil([this] { return !view_manager_->hasPendingViewProcessing(); });
-    }
-
-    traced_assert(task_manager_);
-    task_manager_->shutdown();
-    task_manager_ = nullptr;
-
-    // A job still in flight keeps using the managers reset below. The live delete job is
-    // the one that hits this: its database cleanup reconnects, and reopening asks for the
-    // DBContent manager. So all jobs have to be done before anything is torn down.
-    // The call waits until no job is left.
-    if (job_manager_)
-        job_manager_->shutdown();
-
-    traced_assert(db_interface_);
-
-    // Views still ask the managers below while their widgets are torn down, e.g. a Table View
-    // header reads the display names from the DBContent manager. So close the views first.
-    traced_assert(view_manager_);
-    view_manager_->close();
-    view_manager_ = nullptr;
-
-    context_manager_ = nullptr;
-
-    traced_assert(dbcontent_manager_);
-    if (db_interface_->ready())
-        dbcontent_manager_->saveTargets();
-    dbcontent_manager_ = nullptr;
-
-    traced_assert(eval_manager_);
-    eval_manager_->close();
-    eval_manager_ = nullptr;
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    // Release cached textures, retired GL contexts, and drain osgEarth's
-    // job pool - must happen while OSG globals are still alive.
-    geo_view::shutdown();
-#endif
-
-    //osgDB::Registry::instance(true);
-
-    traced_assert(filter_manager_);
-    filter_manager_ = nullptr;
-
-    if (db_interface_->ready())
-        db_interface_->closeDB();
-
-    db_interface_ = nullptr;
-
-    traced_assert(license_manager_);
-    license_manager_ = nullptr;
-
-    //shut down command manager at the end
-    if (rt_cmd_manager_)
-        rt_cmd_manager_->shutdown();
+    traced_assert(shutdown_sequence_);
+    shutdown_sequence_();
 
     loginf << "done. goodbye.";
 }
 
-MainWindow& COMPASS::mainWindow()
+/**
+ */
+IMainWindow& COMPASS::mainWindow()
 {
-    if (!main_window_)
-    {
-        main_window_ = new MainWindow(*this);
-        
-        QObject::connect(view_manager_.get(), &ViewManager::loadingStartedSignal,
-                        main_window_, &MainWindow::loadingStarted);
-        QObject::connect(view_manager_.get(), &ViewManager::loadingDoneSignal,
-                        main_window_, &MainWindow::loadingDone);
-    }
-
     traced_assert(main_window_);
     return *main_window_;
-}
-
-std::string COMPASS::lastUsedPath()
-{
-    loginf << "return '" << last_path_ << "'";
-    return last_path_;
-}
-
-void COMPASS::lastUsedPath(const std::string& last_path)
-{
-    loginf << "set '" << last_path << "'";
-    last_path_ = last_path;
-}
-
-bool COMPASS::darkMode() const
-{
-    return dark_mode_;
-}
-
-void COMPASS::darkMode(bool value)
-{
-    if (dark_mode_ == value)
-        return;
-
-    dark_mode_ = value;
-    emit darkModeChangedSignal(dark_mode_);
-}
-
-void COMPASS::colorMode(unsigned int value)
-{
-    if (color_mode_ == value)
-        return;
-
-    color_mode_ = value;
-    emit colorModeChangedSignal(color_mode_);
-}
-
-const char* COMPASS::lineEditInvalidStyle()
-{
-    if (dark_mode_)
-        return "QLineEdit { background: rgb(255, 50, 50); selection-background-color:"
-                          " rgb(255, 100, 100); }";
-    else
-        return "QLineEdit { background: rgb(255, 100, 100); selection-background-color:"
-                          " rgb(255, 200, 200); }";
-}
-
-LogStream COMPASS::logInfo(const std::string& component,
-                           boost::optional<unsigned int> error_code, nlohmann::json json_blob) 
-{
-    return log_store_.logInfo(component, error_code, json_blob);
-}
-
-LogStream COMPASS::logWarn(const std::string& component,
-                           boost::optional<unsigned int> error_code, nlohmann::json json_blob) 
-{
-    return log_store_.logWarn(component, error_code, json_blob);
-}
-
-LogStream COMPASS::logError(const std::string& component,
-                            boost::optional<unsigned int> error_code, nlohmann::json json_blob) 
-{
-    return log_store_.logError(component, error_code, json_blob);
-}
-
-bool COMPASS::disableConfirmResetViews() const
-{
-    return disable_confirm_reset_views_;
-}
-
-unsigned int COMPASS::autoLiveRunningResumeAskWaitTime() const
-{
-    return auto_live_running_resume_ask_wait_time_;
-}
-
-unsigned int COMPASS::autoLiveRunningResumeAskTime() const
-{
-    return auto_live_running_resume_ask_time_;
-}
-
-bool COMPASS::dbExportInProgress() const
-{
-    return db_export_in_progress_;
-}
-
-bool COMPASS::disableAddRemoveViews() const
-{
-    return disable_add_remove_views_;
-}
-
-bool COMPASS::disableGeographicViewRotate() const
-{
-    return disable_geographicview_rotate_;
-}
-
-bool COMPASS::disableMenuConfigSave() const
-{
-    return disable_menu_config_save_;
-}
-
-bool COMPASS::pdflatexFound() const
-{
-    return pdflatex_found_;
-}
-
-bool COMPASS::disableLiveToOfflineSwitch() const
-{
-    return disable_live_to_offline_switch_;
-}
-
-bool COMPASS::isShutDown() const
-{
-    return (app_state_ == AppState::Shutdown);
-}
-
-bool COMPASS::isRunning() const
-{
-    return (app_state_ == AppState::Running);
-}
-
-bool COMPASS::expertMode() const
-{
-    return expert_mode_;
-}
-
-void COMPASS::expertMode(bool expert_mode)
-{
-    loginf << "setting expert mode " << expert_mode;
-
-    expert_mode_ = expert_mode;
-}
-
-AppMode COMPASS::appMode() const
-{
-    return app_mode_;
-}
-
-void COMPASS::appMode(const AppMode& app_mode)
-{
-    if (app_mode_ != app_mode)
-    {
-        AppMode last_app_mode = app_mode_;
-
-        app_mode_ = app_mode;
-
-        loginf << "app_mode_current " << toString(app_mode_)
-               << " previous " << toString(last_app_mode);
-
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
-        // Live entry / pause / resume / exit all reduce to the same two steps: switch
-        // ASTERIX ingestion (importer first, so no trailing inserts land after a pause),
-        // then flip the display. Within a live session ViewManager keeps the LiveDataFeed as
-        // the current source across running+paused, so pause = freeze and resume = unfreeze;
-        // no reload or cache prime is needed - the feed already holds the data.
-        taskManager().asterixImporterTask().appModeSwitchSlot(last_app_mode, app_mode_);
-        emit appModeSwitchSignal(last_app_mode, app_mode_);
-
-        QApplication::restoreOverrideCursor();
-    }
-}
-
-/**
- */
-void COMPASS::liveOverloaded(bool overloaded)
-{
-    if (live_overloaded_ == overloaded)
-        return;
-
-    live_overloaded_ = overloaded;
-
-    loginf << "live overload " << (overloaded ? "detected" : "cleared");
-
-    emit liveOverloadChangedSignal(overloaded);
-}
-
-/**
- */
-unsigned int COMPASS::liveImportBacklogSize() const
-{
-    return taskManager().asterixImporterTask().numPacketsInProcessing();
-}
-
-std::string COMPASS::appModeStr() const
-{
-    if (!appModes2Strings().count(app_mode_))
-    {
-        std::cout << "COMPASS: appModeStr: unkown type " << (unsigned int) app_mode_ << std::endl;
-        logerr << "unkown type " << (unsigned int) app_mode_;
-    }
-
-    traced_assert(appModes2Strings().count(app_mode_) > 0);
-    return appModes2Strings().at(app_mode_);
-}
-
-const std::map<AppMode, std::string>& COMPASS::appModes2Strings()
-{
-    static const auto* map = new std::map<AppMode, std::string>
-    {{AppMode::Offline, "Offline Mode"},
-        {AppMode::LiveRunning, "Live Mode: Running"},
-        {AppMode::LivePaused, "Live Mode: Paused"}};
-
-    return *map;
-}
-
-std::string COMPASS::lastDbFilename() const
-{
-    return last_db_filename_;
 }
 
 std::vector<std::string> COMPASS::dbFileList() const
@@ -1347,43 +821,6 @@ void COMPASS::addDBFileToList(const std::string filename)
 
         db_file_list_ = tmp_list;
     }
-}
-
-std::string COMPASS::versionString(bool open_ats, 
-                                   bool license_type) const
-{
-    traced_assert(simple_config_->existsId("version"));
-    std::string version = simple_config_->getString("version");
-
-    std::string version_str;
-    if (open_ats) 
-        version_str += "OpenATS ";
-
-    version_str += "COMPASS v" + version;
-
-    if (license_type)
-    {
-        const auto& license_manager = *license_manager_;
-        auto vl = license_manager.activeLicense();
-
-        if (vl)
-            version_str += " " + license::License::typeToString(vl->type);
-        else
-            version_str += " " + license::License::typeToString(license::License::Type::Free);
-    }
-
-    return version_str;
-}
-
-std::string COMPASS::licenseeString(bool licensed_to) const
-{
-    const auto& license_manager = *license_manager_;
-    auto vl = license_manager.activeLicense();
-
-    if (!vl)
-        return "";
-
-    return (licensed_to ? "Licensed to " : "") + vl->licensee;
 }
 
 

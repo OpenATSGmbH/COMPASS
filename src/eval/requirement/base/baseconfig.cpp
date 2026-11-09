@@ -15,17 +15,17 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/comparisontype.h"
+#include "requirement/base/baseconfig.h"
+#include "requirement/base/base.h"
+#include "requirement/group.h"
+#include "requirement/base/comparisontype.h"
 #include "evaluationstandard.h"
 #include "evaluationcalculator.h"
 #include "logger.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #include <QFormLayout>
 #include <QLineEdit>

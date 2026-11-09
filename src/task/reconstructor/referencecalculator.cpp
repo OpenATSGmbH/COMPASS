@@ -32,16 +32,15 @@
 #include "grid2d.h"
 #include "grid2dlayer.h"
 
-#include "compass.h"
 #include "taskmanager.h"
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
-#include "task/result/report/sectioncontentfigure.h"
-#include "task/result/report/sectioncontenttext.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
+#include "report/sectioncontentfigure.h"
+#include "report/sectioncontenttext.h"
 
-#include "util/timeconv.h"
-#include "util/number.h"
+#include "timeconv.h"
+#include "number.h"
 #include "stringconv.h"
 #include "logger.h"
 #include "global.h"
@@ -1294,7 +1293,7 @@ void ReferenceCalculator::createAnnotations()
 
     if (num_targets > 0)
     {
-        auto& report           = reconstructor_.task().manager().compass().taskManager().currentReport();
+        auto& report           = reconstructor_.task().manager().currentReport();
         auto& section_ref_calc = report->getSection("Reference Calculation");
 
         std::vector<std::string> headings = { "UTN" };

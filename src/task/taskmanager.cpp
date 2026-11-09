@@ -18,7 +18,6 @@
 #include "taskmanager.h"
 #include "taskresultswidget.h"
 
-#include "compass.h"
 #include "dialogs.h"
 #include "createartasassociationstask.h"
 #include "jsonimporttask.h"
@@ -28,7 +27,6 @@
 //#include "gpsimportcsvtask.h"
 #include "reconstructortask.h"
 #include "analyzedatasourcetask.h"
-#include "mainwindow.h"
 #include "viewabledataconfig.h"
 #include "viewmanager.h"
 #include "dbinterface.h"
@@ -40,8 +38,10 @@
 #include "asteriximporttaskwidget.h"
 
 #include "taskresult.h"
+#include "taskresultdb.h"
 #include "taskresultswidget.h"
 
+#include "section.h"
 #include "reportexport.h"
 #include "reportexportdialog.h"
 
@@ -52,7 +52,6 @@
 
 #include <QCoreApplication>
 #include <QApplication>
-#include <QMainWindow>
 #include <QThread>
 #include <QProgressDialog>
 #include <QMessageBox>
@@ -68,10 +67,21 @@ const bool TaskManager::CleanupDBIfNeeded = true;
 // TaskManager::TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass)
 //     : Configurable(class_name, instance_name, compass, "task.json") ...
 
-TaskManager::TaskManager(nlohmann::json& config, COMPASS& compass)
-    : Configurable(config, &compass), compass_(compass)
+TaskManager::TaskManager(nlohmann::json& config,
+                         Configurable& parent,
+                         AppState& app_state,
+                         LogStore& log_store,
+                         DBInterface& db_interface,
+                         DBContentManager& dbcont_man)
+    : Configurable(config, &parent),
+      app_state_(app_state),
+      log_store_(log_store),
+      db_interface_(db_interface),
+      dbcont_man_(dbcont_man)
 {
     setObjectName("TaskManager");
+
+    result_db_.reset(new TaskResultDB(db_interface_, *this));
 
     createSubConfigurables();
 }
@@ -81,6 +91,115 @@ TaskManager::TaskManager(nlohmann::json& config, COMPASS& compass)
 TaskManager::~TaskManager()
 {
     widget_ = nullptr;
+}
+
+/**
+ * Sets the peer managers, called by the composition root after all managers and the DB context manager were created.
+ */
+void TaskManager::setManagers(ViewManager& view_manager,
+                              EvaluationManager& eval_manager,
+                              FilterManager& filter_manager,
+                              context::DBContextManager& ctx_man,
+                              JobManager& job_manager,
+                              UnitManager& unit_manager,
+                              ProjectionManager& proj_man,
+                              LicenseManager& license_manager)
+{
+    view_manager_    = &view_manager;
+    eval_manager_    = &eval_manager;
+    filter_manager_  = &filter_manager;
+    ctx_man_         = &ctx_man;
+    job_manager_     = &job_manager;
+    unit_manager_    = &unit_manager;
+    proj_man_        = &proj_man;
+    license_manager_ = &license_manager;
+}
+
+/**
+ * Notice: the main window is set later and not checked.
+ */
+bool TaskManager::checkWired() const
+{
+    return view_manager_    &&
+           eval_manager_    &&
+           filter_manager_  &&
+           ctx_man_         &&
+           job_manager_     &&
+           unit_manager_    &&
+           proj_man_        &&
+           license_manager_;
+}
+
+/**
+ */
+LicenseManager& TaskManager::licenseManager()
+{
+    traced_assert(license_manager_);
+    return *license_manager_;
+}
+
+/**
+ */
+context::DBContextManager& TaskManager::dbContextManager()
+{
+    traced_assert(ctx_man_);
+    return *ctx_man_;
+}
+
+/**
+ */
+JobManager& TaskManager::jobManager()
+{
+    traced_assert(job_manager_);
+    return *job_manager_;
+}
+
+/**
+ */
+UnitManager& TaskManager::unitManager()
+{
+    traced_assert(unit_manager_);
+    return *unit_manager_;
+}
+
+/**
+ */
+ProjectionManager& TaskManager::projectionManager()
+{
+    traced_assert(proj_man_);
+    return *proj_man_;
+}
+
+/**
+ */
+IMainWindow& TaskManager::mainWindow()
+{
+    traced_assert(main_window_);
+    return *main_window_;
+}
+
+/**
+ */
+ViewManager& TaskManager::viewManager()
+{
+    traced_assert(view_manager_);
+    return *view_manager_;
+}
+
+/**
+ */
+EvaluationManager& TaskManager::evaluationManager()
+{
+    traced_assert(eval_manager_);
+    return *eval_manager_;
+}
+
+/**
+ */
+FilterManager& TaskManager::filterManager()
+{
+    traced_assert(filter_manager_);
+    return *filter_manager_;
 }
 
 /**
@@ -127,7 +246,7 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
     else if (class_name == "RadarPlotPositionCalculatorTask")
     {
         traced_assert(!radar_plot_position_calculator_task_);
-        radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(child_json, this, compass_));
+        radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(child_json, this));
         traced_assert(radar_plot_position_calculator_task_);
         addTask(class_name, radar_plot_position_calculator_task_.get());
 
@@ -175,7 +294,7 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
     else if (class_name == "ReportExport")
     {
         traced_assert(!report_export_);
-        report_export_.reset(new ResultReport::ReportExport(child_json, this));
+        report_export_.reset(new ResultReport::ReportExport(child_json, this, *this));
         traced_assert(report_export_);
     }
     else
@@ -453,7 +572,7 @@ std::shared_ptr<TaskResult> TaskManager::createResult(unsigned int id,
     }
     else if (type == task::TaskResultType::Evaluation)
     {
-        result.reset(new EvaluationTaskResult(id, *this, compass_));
+        result.reset(new EvaluationTaskResult(id, *this, evaluationManager()));
     }
     else if (type == task::TaskResultType::DataSourceAnalysis)
     {
@@ -548,7 +667,7 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 
         auto cb = [ this, result_ptr, cleanup_db ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
         {
-            return compass_.dbInterface().saveResult(*result_ptr, cleanup_db);
+            return result_db_->saveResult(*result_ptr, cleanup_db);
         };
 
         AsyncFuncTask task(cb, "Save Result", "Saving result", false);
@@ -578,7 +697,7 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 void TaskManager::resultHeaderChanged(const TaskResult& result)
 {
     //update result header upon change
-    auto res = compass_.dbInterface().updateResultHeader(result);
+    auto res = result_db_->updateResultHeader(result);
     traced_assert(res.ok());
 
     emit taskResultHeaderChangedSignal(QString::fromStdString(result.name()));
@@ -589,26 +708,8 @@ void TaskManager::resultHeaderChanged(const TaskResult& result)
 void TaskManager::resultContentChanged(const TaskResult& result)
 {
     //update result content upon change
-    auto res = compass_.dbInterface().updateResultContent(result);
+    auto res = result_db_->updateResultContent(result);
     traced_assert(res.ok());
-}
-
-/**
- */
-MainWindow* TaskManager::getMainWindow()
-{
-    for(QWidget* pWidget : QApplication::topLevelWidgets())
-    {
-        QMainWindow* qt_main_window = qobject_cast<QMainWindow*>(pWidget);
-
-        if (qt_main_window)
-        {
-            MainWindow* main_window = dynamic_cast<MainWindow*>(qt_main_window);
-            traced_assert(main_window);
-            return main_window;
-        }
-    }
-    return nullptr;
 }
 
 /**
@@ -702,7 +803,7 @@ bool TaskManager::removeResult(const std::string& name,
     const auto& result = results_.at(id.value());
     traced_assert(result);
 
-    auto res = compass_.dbInterface().deleteResult(*result, CleanupDBIfNeeded);
+    auto res = result_db_->deleteResult(*result, CleanupDBIfNeeded);
     if (!res.ok())
         return false;
 
@@ -746,6 +847,10 @@ ResultT<nlohmann::json> TaskManager::exportResult(const std::string& name,
  */
 void TaskManager::databaseOpenedSlot()
 {
+    //determine maximum report content id
+    auto max_id = result_db_->getMaxReportContentID();
+    ResultReport::Section::setCurrentContentID(max_id.has_value() ? max_id.value() + 1 : 0);
+
     loadResults();
 }
 
@@ -763,14 +868,14 @@ void TaskManager::setViewableDataConfig(const nlohmann::json::object_t& data,
 {
     viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 
-    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_, load_blocking);
+    viewManager().setCurrentViewPoint(viewable_data_cfg_, load_blocking);
 }
 
 /**
  */
 void TaskManager::unsetViewableDataConfig()
 {
-    compass_.viewManager().unsetCurrentViewPoint();
+    viewManager().unsetCurrentViewPoint();
     viewable_data_cfg_.reset();
 }
 
@@ -789,7 +894,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
 
         auto cb = [ this, result_ptr, section, content_id ] (const AsyncTaskState&, AsyncTaskProgressWrapper&) 
         { 
-            *result_ptr = compass_.dbInterface().loadContent(section, content_id);
+            *result_ptr = result_db_->loadContent(section, content_id);
             return true;
         };
 
@@ -799,7 +904,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
     else
     {
         //directly run
-        result = compass_.dbInterface().loadContent(section, content_id);
+        result = result_db_->loadContent(section, content_id);
     }
 
     if (!result.ok())
@@ -821,7 +926,7 @@ ResultT<nlohmann::json> TaskManager::loadResultContent(unsigned int result_id) c
     //already running in a worker thread, e.g. the report loading task of TaskResultsWidget?
     //then read directly, a dialog and widget calls are only allowed in the main thread
     if (QThread::currentThread() != QCoreApplication::instance()->thread())
-        return compass_.dbInterface().loadResultContent(result_id);
+        return result_db_->loadResultContent(result_id);
 
     ResultT<nlohmann::json> result;
 
@@ -832,7 +937,7 @@ ResultT<nlohmann::json> TaskManager::loadResultContent(unsigned int result_id) c
 
     auto cb = [ this, result_ptr, result_id ] (const AsyncTaskState&, AsyncTaskProgressWrapper&)
     {
-        *result_ptr = compass_.dbInterface().loadResultContent(result_id);
+        *result_ptr = result_db_->loadResultContent(result_id);
         return Result::succeeded();
     };
 
@@ -853,7 +958,7 @@ void TaskManager::loadResults()
 
     results_.clear();
     
-    auto res = compass_.dbInterface().loadResults();
+    auto res = result_db_->loadResults();
     if (!res.ok())
     {
         logerr << "could not load stored results: " << res.error();
@@ -873,7 +978,7 @@ void TaskManager::loadResults()
         referenced_tables.insert(names.begin(), names.end());
     }
 
-    auto num_orphans = compass_.dbInterface().removeOrphanReportTables(referenced_tables);
+    auto num_orphans = db_interface_.removeOrphanReportTables(referenced_tables);
     if (num_orphans)
         loginf << "Dropped " << num_orphans << " orphan report table(s)";
 
@@ -919,7 +1024,7 @@ void TaskManager::updateReportContents()
         contents.push_back(std::move(content));
     }
 
-    compass_.dbContentManager().setReportContents(std::move(contents));
+    dbcont_man_.setReportContents(std::move(contents));
 }
 
 /**
@@ -936,5 +1041,12 @@ void TaskManager::restoreBackupSection()
 {
     if (widget_)
         widget_->restoreBackupSection();
+}
+
+/**
+ */
+void TaskManager::selectResultID(const std::string& id, bool show_figure)
+{
+    widget()->selectID(id, show_figure);
 }
 

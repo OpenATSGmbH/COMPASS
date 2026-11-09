@@ -16,14 +16,14 @@
  */
 
 #include "dubioustrackconfig.h"
-#include "eval/requirement/dubious/dubioustrack.h"
+#include "requirement/dubious/dubioustrack.h"
 #include "dubioustrackconfigwidget.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 using namespace std;
 

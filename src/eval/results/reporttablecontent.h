@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/results/base/single.h"
+#include "results/base/single.h"
 
 #include <string>
 #include <vector>

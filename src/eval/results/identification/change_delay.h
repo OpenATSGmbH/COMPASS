@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include "eval/results/base/probabilitybase.h"
-#include "eval/results/base/valueaccumulator.h"
+#include "results/base/probabilitybase.h"
+#include "results/base/valueaccumulator.h"
 
 namespace EvaluationRequirementResult
 {

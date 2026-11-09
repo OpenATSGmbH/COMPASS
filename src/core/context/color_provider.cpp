@@ -17,7 +17,7 @@
 
 #include "color_provider.h"
 
-#include "compass.h"
+#include "appstate.h"
 #include "data_source.h"
 #include "db_context.h"
 #include "db_context_manager.h"
@@ -325,13 +325,13 @@ QColor resolveSeriesColor(const std::string& ds_type,
                           const std::string& ds_name,
                           int line_index,
                           const std::string& dbcontent_name,
-                          COMPASS& compass,
+                          DBContextManager& ctx_man,
                           std::function<QColor(const std::string&)> hashed_fallback)
 {
     const unsigned int line_id = (line_index >= 0 && line_index < 4) ? (unsigned int)line_index : 0;
 
-    auto& ctx_mgr = compass.dbContextManager();
-    const auto mode = (ColorProvider::Mode)compass.colorMode();
+    auto& ctx_mgr = ctx_man;
+    const auto mode = (ColorProvider::Mode)ctx_man.appState().colorMode();
 
     auto derive_line_shade = [line_id](const QColor& base) {
         auto shades = ColorProvider::autoLineColors(base);

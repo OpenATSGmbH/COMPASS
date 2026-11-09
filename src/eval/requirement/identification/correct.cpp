@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/identification/correct.h"
-#include "eval/results/identification/correct.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/identification/correct.h"
+#include "results/identification/correct.h"
+#include "standard/evaluationstandard.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 using namespace std;
 using namespace Utils;

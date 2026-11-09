@@ -16,12 +16,12 @@
  */
 
 #include "viewpointswidget.h"
+#include "appstate.h"
 #include "viewmanager.h"
 #include "viewpoint.h"
 #include "logger.h"
 #include "viewpointstablemodel.h"
-#include "compass.h"
-#include "mainwindow.h"
+#include "imainwindow.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "viewpointsreportgenerator.h"
 #include "viewpointsreportgeneratordialog.h"
@@ -131,9 +131,9 @@ ViewPointsWidget::ViewPointsWidget(ViewManager& view_manager)
         connect (p_shortcut, &QShortcut::activated, this, &ViewPointsWidget::selectPreviousSlot);
     }
 
-    QObject::connect(&view_manager_.compass(), &COMPASS::databaseOpenedSignal,
+    QObject::connect(&view_manager_, &ViewManager::databaseOpenedSignal,
                      this, &ViewPointsWidget::databaseOpenedSlot);
-    QObject::connect(&view_manager_.compass(), &COMPASS::databaseClosedSignal,
+    QObject::connect(&view_manager_, &ViewManager::databaseClosedSignal,
                      this, &ViewPointsWidget::databaseClosedSlot);
 }
 
@@ -589,7 +589,7 @@ void ViewPointsWidget::exportSlot()
 
     QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(view_manager_.compass().lastUsedPath().c_str());
+    dialog.setDirectory(view_manager_.appState().lastUsedPath().c_str());
     dialog.setNameFilter("JSON Files (*.json)");
     dialog.setDefaultSuffix("json");
     dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);
@@ -636,7 +636,7 @@ void ViewPointsWidget::importSlot()
 {
     loginf;
 
-    view_manager_.compass().mainWindow().importViewPointsSlot();
+    view_manager_.mainWindow().importViewPointsSlot();
 
     resizeColumnsToContents();
 }

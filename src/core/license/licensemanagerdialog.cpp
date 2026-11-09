@@ -21,7 +21,7 @@
 #include "licenseimportdialog.h"
 #include "licensemanager.h"
 
-#include "compass.h"
+#include "appstate.h"
 #include "timeconv.h"
 
 #include <QLineEdit>
@@ -42,11 +42,11 @@
 
 /**
 */
-LicenseManagerDialog::LicenseManagerDialog(COMPASS& compass,
+LicenseManagerDialog::LicenseManagerDialog(LicenseManager& license_manager,
                                            QWidget* parent,
                                            Qt::WindowFlags f)
 :   QDialog(parent, f),
-    compass_(compass)
+    license_manager_(license_manager)
 {
     setWindowTitle("Manage Licenses");
 
@@ -93,7 +93,7 @@ LicenseManagerDialog::LicenseManagerDialog(COMPASS& compass,
 
     group->setLayout(group_layout);
 
-    bool app_image = compass_.isAppImage();
+    bool app_image = AppState::isAppImage();
 
     license_widget_ = new LicenseWidget(!app_image);
 
@@ -150,7 +150,7 @@ void LicenseManagerDialog::updateList()
     license_list_->blockSignals(true);
     license_list_->clear();
 
-    const auto& license_manager = compass_.licenseManager();
+    const auto& license_manager = license_manager_;
     auto active_license = license_manager.activeLicense();
 
     for (const auto& l : license_manager.getLicenses())
@@ -199,7 +199,7 @@ void LicenseManagerDialog::updateLicenseWidget()
     if (items.isEmpty())
         return;
 
-    auto& license_manager = compass_.licenseManager();
+    auto& license_manager = license_manager_;
 
     auto id = items.front()->text(idx_id_).toStdString();
     const auto& l = license_manager.getLicense(id);
@@ -211,12 +211,12 @@ void LicenseManagerDialog::updateLicenseWidget()
 */
 void LicenseManagerDialog::addLicense()
 {
-    auto& license_manager = compass_.licenseManager();
+    auto& license_manager = license_manager_;
     auto  license_cur     = license_manager.activeLicense();
 
     bool had_pro_license = license_cur && license_cur->type == license::License::Type::Pro;
 
-    LicenseImportDialog dlg(compass_, this);
+    LicenseImportDialog dlg(this);
     dlg.resize(640, 480);
 
     if (dlg.exec() == QDialog::Rejected)
@@ -270,7 +270,7 @@ void LicenseManagerDialog::removeCurrentLicense()
     if (items.isEmpty())
         return;
 
-    auto& license_manager = compass_.licenseManager();
+    auto& license_manager = license_manager_;
 
     auto id = items.front()->text(idx_id_).toStdString();
 

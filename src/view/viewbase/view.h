@@ -33,7 +33,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/optional/optional.hpp>
 
-class COMPASS;
 class ViewContainer;
 class ViewWidget;
 class QQWidget;
@@ -111,7 +110,7 @@ public:
     virtual bool hasPendingProcessing() const;
 
     const std::string& getName() const;
-    ViewManager& viewManager() { return view_manager_; }
+    ViewManager& viewManager() const { return view_manager_; }
 
     /// @brief Returns the view's central widget
     QWidget* getCentralWidget() { return central_widget_; }
@@ -180,9 +179,6 @@ public slots:
     void selectionChangedSlot();
     virtual void unshowViewPointSlot (ViewableDataConfig* vp)=0;
     virtual void showViewPointSlot (ViewableDataConfig* vp)=0;
-
-    COMPASS& compass();
-    COMPASS& compass() const;
 
 protected:
     void updateSelection();

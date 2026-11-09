@@ -16,15 +16,15 @@
  */
 
 
-#include "eval/requirement/dubious/dubioustrack.h"
+#include "requirement/dubious/dubioustrack.h"
 
-#include "eval/results/dubious/dubioustrack.h"
+#include "results/dubious/dubioustrack.h"
 
 #include "evaluationmanager.h"
 
-#include "util/stringconv.h"
-#include "util/timeconv.h"
-#include "util/number.h"
+#include "stringconv.h"
+#include "timeconv.h"
+#include "number.h"
 #include "global.h"
 
 using namespace std;

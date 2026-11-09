@@ -17,7 +17,6 @@
 
 #include "createartasassociationstask.h"
 
-#include "compass.h"
 #include "dialogs.h"
 #include "createartasassociationstaskdialog.h"
 #include "createartasassociationsstatusdialog.h"
@@ -48,8 +47,6 @@
 using namespace std;
 using namespace Utils;
 using namespace dbContent;
-
-const std::string CreateARTASAssociationsTask::DONE_PROPERTY_NAME = "artas_associations_created"; // really needed
 
 CreateARTASAssociationsTask::CreateARTASAssociationsTask(nlohmann::json& config,
                                                          TaskManager* parent)
@@ -90,8 +87,8 @@ void CreateARTASAssociationsTask::showDialog()
 
 CreateARTASAssociationsTask::Error CreateARTASAssociationsTask::checkError() const
 {
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
-    auto& ctx_man = manager().compass().dbContextManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
+    auto& ctx_man = manager().dbContextManager();
 
     logdbg << "tracker " << dbcontent_man.existsDBContent("CAT062");
 
@@ -215,9 +212,9 @@ void CreateARTASAssociationsTask::run()
     status_dialog_->setAssociationStatus("Loading Data");
     status_dialog_->show();
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
-    auto& ctx_man = manager().compass().dbContextManager();
+    auto& ctx_man = manager().dbContextManager();
 
     std::set<std::string> targets;
     std::string cat062_clause;
@@ -256,7 +253,7 @@ void CreateARTASAssociationsTask::run()
         traced_assert(ds_found);
 
         // CAT062 datasource/line constraint via the shared clause toolkit (ds_id/line_id IN)
-        IDBVariableResolver& resolver = manager().compass().filterManager().variableResolver();
+        IDBVariableResolver& resolver = manager().filterManager().variableResolver();
 
         // stored ids, not display representations: ds_id must not be resolved as a data source
         // name, and line_id is stored 0-based while its representation is "L1".."L4"
@@ -292,8 +289,7 @@ const CreateARTASAssociationsTask::ResultStats& CreateARTASAssociationsTask::res
 
 bool CreateARTASAssociationsTask::wasRun()
 {
-    return manager().compass().dbInterface().hasProperty(DONE_PROPERTY_NAME)
-             && manager().compass().dbInterface().getProperty(DONE_PROPERTY_NAME) == "1";
+    return manager().dbContentManager().artasAssociationsCreated();
 }
 
 void CreateARTASAssociationsTask::loadingDoneSlot()
@@ -311,7 +307,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
     load_op_ = nullptr; // release the isolated operation
 
     create_job_ = std::make_shared<CreateARTASAssociationsJob>(
-                *this, manager().compass().dbInterface(), data_);
+                *this, manager().dbInterface(), data_);
 
     connect(create_job_.get(), &CreateARTASAssociationsJob::doneSignal, this,
             &CreateARTASAssociationsTask::createDoneSlot, Qt::QueuedConnection);
@@ -321,7 +317,7 @@ void CreateARTASAssociationsTask::loadingDoneSlot()
             this, &CreateARTASAssociationsTask::saveAssociationsQuestionSlot,
             Qt::QueuedConnection);
 
-    manager().compass().jobManager().addDBJob(create_job_);
+    manager().jobManager().addDBJob(create_job_);
 
     status_dialog_->setAssociationStatus("In Progress");
 }
@@ -372,9 +368,9 @@ void CreateARTASAssociationsTask::createDoneSlot()
 
     if (save_associations_)
     {
-        manager().compass().dbInterface().setProperty(DONE_PROPERTY_NAME, "1");
+        manager().dbInterface().setProperty(DBContentManager::ARTASAssociationsCreatedProperty, "1");
 
-        manager().compass().dbInterface().saveProperties();
+        manager().dbInterface().saveProperties();
 
         done_ = true;
     }
@@ -544,7 +540,7 @@ void CreateARTASAssociationsTask::markTrackCoastingAssociationsDubious(bool valu
 
 VariableSet CreateARTASAssociationsTask::getReadSetFor(const std::string& dbcontent_name)
 {
-    DBContentManager& dbcont_man = manager().compass().dbContentManager();
+    DBContentManager& dbcont_man = manager().dbContentManager();
 
     VariableSet read_set;
 

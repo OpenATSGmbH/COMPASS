@@ -16,6 +16,7 @@
  */
 
 #include "tableviewconfigwidget.h"
+#include "viewmanager.h"
 #include "tableviewwidget.h"
 #include "tableviewdatawidget.h"
 #include "tableview.h"
@@ -23,7 +24,6 @@
 
 #include "ui_test_common.h"
 
-#include "compass.h"
 #include "logger.h"
 #include "viewwidget.h"
 #include "dbcontent/variable/variableorderedsetwidget.h"
@@ -89,7 +89,7 @@ TableViewConfigWidget::TableViewConfigWidget(TableViewWidget* view_widget, QWidg
                 this, &TableViewConfigWidget::toggleIgnoreNonTargetReports);
         cfg_layout->addWidget(ignore_non_target_reports_check_);
 
-        cfg_layout->addWidget(new ColorModeLabel(view_->compass(), this));
+        cfg_layout->addWidget(new ColorModeLabel(view_->viewManager().appState(), this));
 
         // Layer panel - fills remaining vertical space below the checkboxes.
         // No addStretch() anymore: the panel's tree view is the stretchy child.

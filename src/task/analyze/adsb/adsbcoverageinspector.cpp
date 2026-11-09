@@ -16,6 +16,7 @@
  */
 
 #include "adsbcoverageinspector.h"
+#include "taskmanager.h"
 #include "idbvariableresolver.h"
 #include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
@@ -23,7 +24,6 @@
 #include "targetreport3dgrid.h"
 #include "movementui.h"
 
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "logger.h"
 #include "number.h"
@@ -36,7 +36,7 @@
 #include "dbcontent/target/targetreportchain.h"
 #include "dbcontent/target/targetbase.h"
 
-#include "eval/requirement/detection/detection_pd_helpers.h"
+#include "requirement/detection/detection_pd_helpers.h"
 #include "coveragepdwalk.h"
 
 #include "grid2dlayer.h"
@@ -401,7 +401,7 @@ void ADSBCoverageInspector::compute(AnalysisDataset* dataset)
     std::map<int, GroupCounts>                                  type_counts;
     std::map<int, std::string>                                  type_label;
 
-    auto& dbcont_man = task_.compass().dbContentManager();
+    auto& dbcont_man = task_.manager().dbContentManager();
 
     // Per-sector breakdown (over the selected sector layers, independent of the
     // limit-by-sectors toggle). A slot is attributed to every sector it is in.

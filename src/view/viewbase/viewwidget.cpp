@@ -25,7 +25,6 @@
 #include "viewpresetwidget.h"
 #include "viewinfowidget.h"
 #include "files.h"
-#include "compass.h"
 #include "ui_test_common.h"
 #include "dbcontentmanager.h"
 #include "dbcontent.h"
@@ -91,7 +90,7 @@ void ViewWidget::createStandardLayout()
     main_layout->addLayout(top_layout);
 
     //create preset selection
-    if (view_->viewManager().compass().viewManager().viewPresetsEnabled())
+    if (view_->viewManager().viewPresetsEnabled())
     {
         preset_widget_ = new ViewPresetWidget(view_, this);
         preset_widget_->setFixedWidth(PresetSelectionWidth);

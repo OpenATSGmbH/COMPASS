@@ -19,15 +19,15 @@
 
 #include <QLabel>
 
-class COMPASS;
+class AppState;
 
 /**
- * "Color Mode: ..." label following the COMPASS color mode.
+ * "Color Mode: ..." label following the color mode of the app state.
  */
 class ColorModeLabel : public QLabel
 {
 public:
-    explicit ColorModeLabel(COMPASS& compass, QWidget* parent = nullptr);
+    explicit ColorModeLabel(AppState& app_state, QWidget* parent = nullptr);
     virtual ~ColorModeLabel() = default;
 
 private:

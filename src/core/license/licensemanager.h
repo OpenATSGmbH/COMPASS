@@ -30,21 +30,23 @@
 
 #include "json_fwd.hpp"
 
-class COMPASS;
-
 /**
 */
 class LicenseManager : public QObject, public Configurable
 {
     Q_OBJECT
 public:
-    LicenseManager(nlohmann::json& config, COMPASS& compass);
+    LicenseManager(nlohmann::json& config, Configurable& parent);
     virtual ~LicenseManager();
 
     bool readLicenses();
     bool writeLicenses() const;
 
     const license::License* activeLicense() const;
+    std::string licenseeString(bool licensed_to = true) const; // licensee of the active license, empty if none
+    std::string versionString(const std::string& app_version,
+                              bool open_ats = true,
+                              bool license_type = true) const; // e.g. "OpenATS COMPASS v1.1.0 Free"
     const license::License* activeLicenseForComponent(license::License::Component c) const;
     bool componentEnabled(license::License::Component c) const;
     
@@ -71,8 +73,6 @@ private:
     boost::optional<std::string> activeLicenseID() const;
 
     static std::string licenseFilePath();
-
-    COMPASS& compass_;
 
     std::map<std::string, license::License> licenses_;
 };

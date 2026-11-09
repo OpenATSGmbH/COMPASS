@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include "eval/results/base/base.h"
+#include "results/base/base.h"
 
-#include "view/gridview/grid2d_defs.h"
+#include "gridview/grid2d_defs.h"
 
 #include <fstream>
 

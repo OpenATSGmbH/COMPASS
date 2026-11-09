@@ -11,15 +11,15 @@ set_target_properties(compass_tests PROPERTIES AUTOMOC OFF)
 include("${CMAKE_SOURCE_DIR}/src/config/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/core/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/core/context/unit_tests/CMakeLists.txt")
-include("${CMAKE_SOURCE_DIR}/src/db/interface/unit_tests/CMakeLists.txt")
-include("${CMAKE_SOURCE_DIR}/src/db/dbcontent/unit_tests/CMakeLists.txt")
-include("${CMAKE_SOURCE_DIR}/src/db/dbcontent/label/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/core/db/interface/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/core/db/dbcontent/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/core/db/dbcontent/label/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/eval/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/eval/requirement/detection/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/analyze/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/analyze/mlat/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/reconstructor/unit_tests/CMakeLists.txt")
-include("${CMAKE_SOURCE_DIR}/src/task/result/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/result/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/filter/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/reconstruction/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/gui/unit_tests/CMakeLists.txt")
@@ -37,10 +37,7 @@ target_link_libraries(compass_tests PRIVATE
     compass_app
     compass_config compass_core compass_reconstruction
     compass_gui compass_filter compass_task
-    compass_eval compass_view compass_report
-    # Repeated: static archive link order - COMPASS:: methods in compass_app
-    # and compass_core symbols are needed by libs listed above (eval, view, task, etc.)
-    compass_app compass_core
+    compass_eval compass_view compass_result
     ${jASTERIX_LIBRARIES}
     ${Boost_LIBRARIES}
     Qt5::Widgets Qt5::Core Qt5::OpenGL Qt5::Charts Qt5::Test
@@ -52,8 +49,6 @@ if(EXPERIMENTAL_SRC)
     target_link_libraries(compass_tests PRIVATE
         compass_osg_utils compass_docx compass_reconst_adv
         compass_geo_view compass_rtcmd_ext compass_test_lab
-        # Repeated: experimental libs reference COMPASS:: methods and core/task symbols
-        compass_app compass_core compass_reconstruction compass_task
     )
 endif()
 

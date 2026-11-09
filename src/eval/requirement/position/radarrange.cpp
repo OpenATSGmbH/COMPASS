@@ -15,13 +15,12 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/radarrange.h"
-#include "eval/results/position/radarrange.h"
-#include "eval/standard/evaluationstandard.h"
-#include "compass.h"
+#include "requirement/position/radarrange.h"
+#include "results/position/radarrange.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "sectorlayer.h"
 
 #include "projection.h"
@@ -105,7 +104,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                                              .generalComment(comment));
     };
 
-    ProjectionManager& proj_man = calculator_.manager().compass().projectionManager();
+    ProjectionManager& proj_man = calculator_.manager().projectionManager();
 
     Projection& projection = proj_man.currentProjection();
     traced_assert(projection.coordinateSystemsAdded());

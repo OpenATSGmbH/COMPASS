@@ -20,7 +20,6 @@
 #include "viewwidget.h"
 #include "view.h"
 #include "viewscreenshotdialog.h"
-#include "compass.h"
 #include "timeconv.h"
 
 #include "ui_test_common.h"

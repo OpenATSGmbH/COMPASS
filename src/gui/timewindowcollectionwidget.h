@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "util/timewindow.h"
+#include "timewindow.h"
 
 #include <QWidget>
 #include <QTreeWidget>

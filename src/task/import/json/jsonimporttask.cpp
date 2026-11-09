@@ -16,8 +16,8 @@
  */
 
 #include "jsonimporttask.h"
+#include "logmodel.h"
 #include "dialogs.h"
-#include "compass.h"
 #include "buffer.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -53,8 +53,7 @@ const unsigned int num_objects_chunk = 10000;
 JSONImportTask::JSONImportTask(nlohmann::json& config, TaskManager* parent)
     : Task(*parent),
       Configurable(config, parent),
-      compass_(parent->compass()),
-      dbcontent_man_(parent->compass().dbContentManager())
+      dbcontent_man_(parent->dbContentManager())
 {
     tooltip_ = "Allows importing of JSON data in several variants into the opened database.";
 
@@ -86,7 +85,7 @@ void JSONImportTask::generateSubConfigurable(nlohmann::json& child_json)
         logdbg << "generating schema " << instance_name
                << " with name " << name;
 
-        auto schema = make_shared<JSONParsingSchema>(child_json, this, manager().compass());
+        auto schema = make_shared<JSONParsingSchema>(child_json, this, manager());
         schemas_[name] = std::move(schema);
     }
     else
@@ -258,7 +257,7 @@ void JSONImportTask::run()
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
 
-    compass_.logInfo("JSON Import") << "started";
+    manager().logStore().logInfo("JSON Import") << "started";
 
     traced_assert(canImportFile());
 
@@ -301,7 +300,7 @@ void JSONImportTask::run()
     connect(read_json_job_.get(), &ReadJSONFileJob::doneSignal, this,
             &JSONImportTask::readJSONFileDoneSlot, Qt::QueuedConnection);
 
-    compass_.jobManager().addBlockingJob(read_json_job_);
+    manager().jobManager().addBlockingJob(read_json_job_);
 
     updateMsgBox();
 
@@ -381,7 +380,7 @@ void JSONImportTask::addReadJSONSlot()
     connect(json_parse_job_.get(), &JSONParseJob::doneSignal, this,
             &JSONImportTask::parseJSONDoneSlot, Qt::QueuedConnection);
 
-    compass_.jobManager().addNonBlockingJob(json_parse_job_);
+    manager().jobManager().addNonBlockingJob(json_parse_job_);
 
     loginf << "updating message box";
     updateMsgBox();
@@ -434,7 +433,7 @@ void JSONImportTask::parseJSONDoneSlot()
 
         json_map_job = std::make_shared<JSONMappingJob>(
                     std::move(json_objects), keys, file_line_id_,
-                    compass_.taskManager().asterixImporterTask().schema()->parsers());
+                    manager().asterixImporterTask().schema()->parsers());
 
         //loginf << "UGA2";
     }
@@ -461,7 +460,7 @@ void JSONImportTask::parseJSONDoneSlot()
 
     json_map_jobs_.push_back(json_map_job);
 
-    compass_.jobManager().addNonBlockingJob(json_map_job);
+    manager().jobManager().addNonBlockingJob(json_map_job);
 
     updateMsgBox();
 
@@ -526,15 +525,18 @@ void JSONImportTask::mapJSONDoneSlot()
                              boost::posix_time::ptime(boost::gregorian::day_clock::universal_day()), false,
                              false, 0,
                              false, 0,
-                             compass_);
+                             manager().appState(),
+                             dbcontent_man_,
+                             manager().logStore());
 
     std::map<std::string, std::shared_ptr<Buffer>> job_buffers2 {ts_calculator_.buffers()};
     ts_calculator_.setProcessingDone();
 
     std::shared_ptr<ASTERIXPostprocessJob> postprocess_job =
             make_shared<ASTERIXPostprocessJob>(std::move(job_buffers2),
-                                               dbContent::CalculationPlan::create(compass_.dbContentManager()),
-                                               compass_);
+                                               dbContent::CalculationPlan::create(dbcontent_man_),
+                                               dbcontent_man_,
+                                               manager().projectionManager());
 
     postprocess_jobs_.push_back(postprocess_job);
 
@@ -543,7 +545,7 @@ void JSONImportTask::mapJSONDoneSlot()
     connect(postprocess_job.get(), &ASTERIXPostprocessJob::doneSignal, this,
             &JSONImportTask::postprocessDoneSlot, Qt::QueuedConnection);
 
-    compass_.jobManager().addNonBlockingJob(postprocess_job);
+    manager().jobManager().addNonBlockingJob(postprocess_job);
 
     //insertData(std::move(job_buffers));
 
@@ -850,7 +852,7 @@ void JSONImportTask::checkAllDone()
 
         double records_per_second = records_inserted_ / (diff.total_milliseconds() / 1000.0);
 
-        compass_.logInfo("JSON Import")
+        manager().logStore().logInfo("JSON Import")
             << "done after " << time_str
             << ", inserted " << records_inserted_ << " rec"
             << " with " << String::doubleToStringPrecision(records_per_second, 2) << " rec/s";
@@ -1038,9 +1040,9 @@ void JSONImportTask::insertDoneSlot()
                    this, &JSONImportTask::insertDoneSlot);
         insert_slot_connected_ = false;
 
-        compass_.dbContextManager().writeContextToDB();
-        compass_.dbInterface().saveProperties(); // persist min/max timestamps & positions
-        emit compass_.dbContextManager().dataSourcesChangedSignal();
+        manager().dbContextManager().writeContextToDB();
+        manager().dbInterface().saveProperties(); // persist min/max timestamps & positions
+        emit manager().dbContextManager().dataSourcesChangedSignal();
 
         //emit doneSignal(name_); emitted in checkAllDone
     }
