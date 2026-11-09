@@ -2,7 +2,7 @@
 #
 # MinGW GCC 14.2 with mingw-w64 13.0.0, built from source in the first stage (the Debian 12
 # packages, GCC 12.2 with mingw-w64 10.0.0, corrupt the heap when a thread with thread_local
-# objects ends). Posix thread model, msvcrt runtime, prebuilt Qt 5.15.2 (with Charts) for MinGW,
+# objects ends). Posix thread model, msvcrt runtime, Qt 5.15.3 (with Charts) built from source,
 # OpenSceneGraph 3.6, osgEarth 3.8 and the other COMPASS and jASTERIX dependencies
 # built from source (DuckDB as official binary).
 # All Windows libraries are installed into /opt/win64.
@@ -111,7 +111,9 @@ RUN ln -s x86_64-w64-mingw32-gcc /opt/mingw/bin/x86_64-w64-mingw32-gcc-posix \
 
 RUN x86_64-w64-mingw32-g++-posix --version && /usr/lib/qt5/bin/moc -v
 
-# prebuilt Qt 5.15.2 for MinGW 64 bit (Windows host tools, only libraries and headers are used)
+# prebuilt Qt 5.15.2 for MinGW 64 bit: no longer used, QT_WIN_DIR is set to the own Qt 5.15.3
+# build at the end of this file. Kept only so that the layers below stay in the build cache,
+# remove at the next full image rebuild.
 RUN python3 -m venv /opt/aqt \
   && /opt/aqt/bin/pip install --no-cache-dir aqtinstall \
   && /opt/aqt/bin/aqt install-qt windows desktop 5.15.2 win64_mingw81 -m qtcharts -O /opt/qt \
@@ -436,5 +438,41 @@ RUN apt-get update && apt-get install -y --no-install-recommends flex bison \
   && cmake --build libpcap-build \
   && cmake --install libpcap-build \
   && rm -rf libpcap-1.10.5.tar.xz libpcap-1.10.5 libpcap-build
+
+# Qt 5.15.3 (as in the Alma8 build), built with the toolchain of stage 1. The prebuilt Qt 5.15.2
+# (MinGW 8.1) runs with the runtime DLLs of this toolchain and crashed at about 1 in 130 starts
+# in the QApplication constructor (QWindowsContextPrivate), also in a minimal Qt program.
+# qtbase with desktop OpenGL and the bundled third-party libraries, plus qtsvg, qtimageformats
+# and qtcharts. Debug information in separate files (lib/*.dll.debug, plugins/*/*.dll.debug).
+# GCC 11 and later: some headers need <limits> and <cstdint> (fixed in later Qt 5.15 versions).
+# The Linux host tools (qmake, moc, uic, rcc) are in /opt/qt/5.15.3/mingw_64/bin.
+ARG QT_VERSION=5.15.3
+ARG QT_URL=https://download.qt.io/archive/qt/5.15/${QT_VERSION}/submodules
+RUN for m in qtbase qtsvg qtimageformats qtcharts; do \
+       wget -q ${QT_URL}/$m-everywhere-opensource-src-${QT_VERSION}.tar.xz \
+       && tar xf $m-everywhere-opensource-src-${QT_VERSION}.tar.xz || exit 1; done \
+  && for f in src/corelib/text/qbytearraymatcher.h src/corelib/tools/qoffsetstringarray_p.h \
+              src/corelib/global/qfloat16.h src/corelib/global/qendian.h; do \
+       sed -i '0,/^#include/s//#include <limits>\n#include <cstdint>\n#include/' \
+           qtbase-everywhere-src-${QT_VERSION}/$f || exit 1; done \
+  && mkdir qtbase-build && cd qtbase-build \
+  && ../qtbase-everywhere-src-${QT_VERSION}/configure -xplatform win32-g++ \
+       -device-option CROSS_COMPILE=x86_64-w64-mingw32- -prefix /opt/qt/${QT_VERSION}/mingw_64 \
+       -opensource -confirm-license -release -shared -force-debug-info -separate-debug-info \
+       -opengl desktop -nomake examples -nomake tests -no-pkg-config \
+       -qt-zlib -qt-libpng -qt-libjpeg -qt-freetype -qt-harfbuzz -qt-pcre \
+       -no-icu -no-dbus -no-openssl -no-fontconfig \
+  && make -j$(nproc) && make install \
+  && cd /build \
+  && for m in qtsvg qtimageformats qtcharts; do \
+       mkdir $m-build && cd $m-build \
+       && /opt/qt/${QT_VERSION}/mingw_64/bin/qmake ../$m-everywhere-src-${QT_VERSION} \
+       && make -j$(nproc) && make install && cd /build || exit 1; done \
+  && rm -rf qt*-everywhere-* qt*-build \
+  && test -f /opt/qt/${QT_VERSION}/mingw_64/lib/cmake/Qt5Widgets/Qt5WidgetsConfig.cmake \
+  && test -f /opt/qt/${QT_VERSION}/mingw_64/lib/cmake/Qt5Charts/Qt5ChartsConfig.cmake \
+  && test -f /opt/qt/${QT_VERSION}/mingw_64/plugins/platforms/qwindows.dll
+
+ENV QT_WIN_DIR=/opt/qt/5.15.3/mingw_64
 
 WORKDIR /
