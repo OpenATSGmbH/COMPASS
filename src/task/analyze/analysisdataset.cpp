@@ -40,7 +40,7 @@
 #include <QThread>
 
 #include <algorithm>
-#include <atomic>
+#include <chrono>
 #include <future>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -209,14 +209,14 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
     // The chain build runs the scope filter (sector inside test) on every
     // report and can take minutes. Run it on a worker thread and keep the Qt
     // event loop running on the main thread, so the application stays
-    // responsive. Same std::async + polling pattern as the inspector compute.
-    std::atomic<bool> done{false};
+    // responsive. Same std::async + polling pattern as the inspector compute:
+    // poll the future itself, it is also ready when buildChains() throws, and
+    // get() passes the exception on.
     auto fut = std::async(std::launch::async, [&]() {
         buildChains(selected_ds_ids, ref_ds_ids, test_dbcontents);
-        done.store(true, std::memory_order_release);
     });
 
-    while (!done.load(std::memory_order_acquire))
+    while (fut.wait_for(std::chrono::milliseconds(0)) != std::future_status::ready)
     {
         QCoreApplication::processEvents();
         QThread::msleep(50);

@@ -72,7 +72,6 @@
 #include <QProgressDialog>
 #include <QThread>
 
-#include <atomic>
 #include <chrono>
 #include <future>
 
@@ -1226,14 +1225,14 @@ void AnalyzeDataSourceTask::run()
             // Heavy compute on a worker thread; keep the Qt event loop free on
             // the main thread so the status dialog paints. Mirrors
             // EvaluationResultsGenerator's std::async + polling pattern.
-            std::atomic<bool> done{false};
-            auto fut = std::async(std::launch::async, [ins, ds, &done]() {
+            // Poll the future itself: it is also ready when compute() throws,
+            // and get() passes the exception on.
+            auto fut = std::async(std::launch::async, [ins, ds]() {
                 ins->compute(ds);
-                done.store(true, std::memory_order_release);
             });
 
             using namespace std::chrono_literals;
-            while (!done.load(std::memory_order_acquire))
+            while (fut.wait_for(0ms) != std::future_status::ready)
             {
                 QCoreApplication::processEvents();
                 QThread::msleep(50);
