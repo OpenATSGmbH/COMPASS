@@ -33,6 +33,7 @@
 #include <QLayoutItem>
 #include <QPushButton>
 #include <QRadioButton>
+#include <QVariant>
 #include <QVBoxLayout>
 
 namespace context
