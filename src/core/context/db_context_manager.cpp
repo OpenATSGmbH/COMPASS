@@ -144,7 +144,7 @@ void DBContextManager::createContext(const string& name)
     DBContext ctx(name);
 
     // populate default ASTERIX decoding configs from jASTERIX definitions
-    std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+    std::string jasterix_definition_path = Utils::Files::dataDirectory() + "jasterix_definitions";
 
     if (Utils::Files::directoryExists(jasterix_definition_path))
     {

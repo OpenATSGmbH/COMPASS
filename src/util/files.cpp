@@ -181,9 +181,31 @@ QStringList getSubdirectories(const std::string& path)
     return list;
 }
 
+namespace
+{
+std::string data_directory_override; // set once at startup, empty => HOME_DATA_DIRECTORY
+}
+
+/**
+ */
+const std::string& dataDirectory()
+{
+    return data_directory_override.empty() ? HOME_DATA_DIRECTORY : data_directory_override;
+}
+
+/**
+ * Notice: must be called before the first data access (e.g. icons are cached).
+ */
+void setDataDirectory(const std::string& path)
+{
+    traced_assert(!path.empty());
+
+    data_directory_override = path.back() == '/' ? path : path + "/";
+}
+
 std::string getIconFilepath(const std::string& filename, bool verify)
 {
-    std::string filepath = HOME_DATA_DIRECTORY + "icons/" + filename;
+    std::string filepath = dataDirectory() + "icons/" + filename;
     if (verify)
         verifyFileExists(filepath);
     return filepath;
@@ -191,7 +213,7 @@ std::string getIconFilepath(const std::string& filename, bool verify)
 
 std::string getImageFilepath(const std::string& filename, bool verify)
 {
-    std::string filepath = HOME_DATA_DIRECTORY + "images/" + filename;
+    std::string filepath = dataDirectory() + "images/" + filename;
     if (verify)
         verifyFileExists(filepath);
     return filepath;
@@ -200,7 +222,7 @@ std::string getImageFilepath(const std::string& filename, bool verify)
 
 std::string getFontFilepath(const std::string& filename, bool verify)
 {
-    std::string filepath = HOME_DATA_DIRECTORY + "fonts/" + filename;
+    std::string filepath = dataDirectory() + "fonts/" + filename;
     if (verify)
         verifyFileExists(filepath);
     return filepath;
