@@ -50,6 +50,7 @@ class DataSourcesUseWidget : public DataSourcesWidget
 
   public:
     DataSourcesUseWidget(context::DBContextManager& ctx_man,
+                         DBContentManager& dbcont_man,
                          std::function<bool(const std::string&)> get_use_dstype_func,
                          std::function<void(const std::string&,bool)> set_use_dstype_func,
                          std::function<bool(unsigned int)> get_use_ds_func,

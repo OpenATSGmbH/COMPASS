@@ -20,11 +20,10 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/calculationplan.h"
 #include "buffer.h"
-#include "compass.h"
 #include "files.h"
 #include "logger.h"
 #include "projectionmanager.h"
-#include "util/stringconv.h"
+#include "stringconv.h"
 #include "global.h"
 #include "json.hpp"
 
@@ -86,23 +85,27 @@ ASTERIXPostprocessJob::ASTERIXPostprocessJob(
     map<string, shared_ptr<Buffer>> buffers,
     ASTERIXImportTaskSettings settings,
     std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
-    COMPASS& compass)
+    DBContentManager& dbcont_man,
+    ProjectionManager& proj_man)
     : Job("ASTERIXPostprocessJob"),
     buffers_(std::move(buffers)),
     settings_(settings),
     calc_plan_(std::move(calc_plan)),
-    compass_(compass)
+    dbcont_man_(dbcont_man),
+    proj_man_(proj_man)
 {
     traced_assert(calc_plan_);
 }
 
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(map<string, shared_ptr<Buffer>> buffers,
                                              std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
-                                             COMPASS& compass)
+                                             DBContentManager& dbcont_man,
+                                             ProjectionManager& proj_man)
     : Job("ASTERIXPostprocessJob"),
     buffers_(std::move(buffers)),
     calc_plan_(std::move(calc_plan)),
-    compass_(compass)
+    dbcont_man_(dbcont_man),
+    proj_man_(proj_man)
 {
     traced_assert(calc_plan_);
 }
@@ -173,7 +176,7 @@ void ASTERIXPostprocessJob::run_impl()
 
 void ASTERIXPostprocessJob::checkARTASHashes()
 {
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     for (auto& buf_it : buffers_)
     {
@@ -226,7 +229,7 @@ void ASTERIXPostprocessJob::doRadarPlotPositionCalculations()
         if (!calc_plan_->runsFunction(buf_it.first, dbContent::CalculationPlan::FunctionRadarProjection))
             remaining.insert(buf_it);
 
-    compass_.projectionManager().doRadarPlotPositionCalculations(remaining);
+    proj_man_.doRadarPlotPositionCalculations(remaining);
 }
 
 void ASTERIXPostprocessJob::doXYPositionCalculations()
@@ -234,14 +237,14 @@ void ASTERIXPostprocessJob::doXYPositionCalculations()
     logdbg;
 
     // tracked data sources with only x/y coordinates
-    compass_.projectionManager().doXYPositionCalculations(buffers_);
+    proj_man_.doXYPositionCalculations(buffers_);
 }
 
 void ASTERIXPostprocessJob::doFilters()
 {
     string dbcontent_name;
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     // do time based filtering first
     if (settings_.filter_tod_active_)
@@ -394,7 +397,7 @@ void ASTERIXPostprocessJob::doObfuscate()
 
     string dbcontent_name;
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     // filter / change mode 3/a codes
     {

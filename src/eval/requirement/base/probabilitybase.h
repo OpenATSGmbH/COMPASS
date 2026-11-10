@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include "eval/requirement/base/comparisontype.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/base/comparisontype.h"
+#include "requirement/base/base.h"
 
 #include <string>
 #include <memory>

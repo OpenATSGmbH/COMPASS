@@ -19,7 +19,6 @@
 
 #include "configurable.h"
 
-class COMPASS;
 class Dimension;
 
 /**
@@ -28,7 +27,7 @@ class Dimension;
 class UnitManager : public Configurable
 {
   public:
-    UnitManager(nlohmann::json& config, COMPASS* parent);
+    UnitManager(nlohmann::json& config, Configurable* parent);
     virtual ~UnitManager();
 
     bool hasDimension(const std::string& name) { return dimensions_.count(name) > 0; }

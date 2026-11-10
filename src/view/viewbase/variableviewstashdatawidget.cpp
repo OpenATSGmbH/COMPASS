@@ -16,6 +16,8 @@
  */
 
 #include "variableviewstashdatawidget.h"
+#include "appstate.h"
+#include "viewmanager.h"
 #include "viewvariable.h"
 #include "variableview.h"
 #include "viewwidget.h"
@@ -26,7 +28,6 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
 #include "db_context_manager.h"
 #include "stringconv.h"
@@ -136,7 +137,7 @@ bool VariableViewStashDataWidget::postLoadTrigger()
     if (variableView()->showsAnnotation())
         return false;
 
-    if (variableView()->compass().appMode() == AppMode::LiveRunning)
+    if (variableView()->viewManager().appState().appMode() == AppMode::LiveRunning)
         return false;
 
     if (viewData().empty())
@@ -206,8 +207,8 @@ void VariableViewStashDataWidget::updateVariableData(const std::string& dbconten
 
     if (group_per_datasource_) // add by DS ID + Line ID
     {
-        DBContentManager&  dbcontent_man = variableView()->compass().dbContentManager();
-        auto& ds_man = variableView()->compass().dbContextManager();
+        DBContentManager&  dbcontent_man = variableView()->viewManager().dbContentManager();
+        auto& ds_man = variableView()->viewManager().dbContextManager();
 
         traced_assert(buffer.has<unsigned int>(
             dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_).name()));
@@ -635,7 +636,7 @@ void VariableViewStashDataWidget::selectData(double x_min,
     loginf << "sel_cnt: 1 " << sel_cnt;
     sel_cnt = 0;
 
-    DBContentManager& dbcont_man = variableView()->compass().dbContentManager();
+    DBContentManager& dbcont_man = variableView()->viewManager().dbContentManager();
 
     unsigned int index;
 

@@ -17,8 +17,8 @@
 
 #include "timewindowcollectionwidget.h"
 #include "timewindowdialog.h"
-#include "util/files.h"
-#include "util/timeconv.h"
+#include "files.h"
+#include "timeconv.h"
 
 #include <QHBoxLayout>
 #include <QMessageBox>

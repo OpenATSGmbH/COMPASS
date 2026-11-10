@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/identification/correctconfig.h"
-#include "eval/requirement/identification/correct.h"
-#include "eval/requirement/identification/identificationcorrectconfigwidget.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/identification/correctconfig.h"
+#include "requirement/identification/correct.h"
+#include "requirement/identification/identificationcorrectconfigwidget.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #include "stringconv.h"
 

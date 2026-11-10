@@ -15,13 +15,13 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/position/positionbase.h"
-#include "eval/requirement/position/distance.h"
+#include "results/position/positionbase.h"
+#include "requirement/position/distance.h"
 
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/position/distance.h"
+#include "requirement/base/base.h"
+#include "requirement/position/distance.h"
 #include "evaluationmanager.h"
 
 #include "histograminitializer.h"

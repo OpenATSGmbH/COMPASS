@@ -17,7 +17,7 @@
 
 #include "timeperiod.h"
 //#include "stringconv.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 #include "evaluationtargetdata.h"
 #include "dbcontent/target/targetreportchain.h"

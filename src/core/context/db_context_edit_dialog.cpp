@@ -33,7 +33,7 @@
 #include "questiondialog.h"
 #include "importsectordialog.h"
 #include "airspace.h"
-#include "compass.h"
+#include "appstate.h"
 #include "sector.h"
 #include "sectorlayer.h"
 #include "logger.h"
@@ -110,7 +110,9 @@ public:
     }
 };
 
-DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* parent)
+DBContextEditDialog::DBContextEditDialog(DBContextManager& manager,
+                                         const std::vector<std::string>& dbcontent_names,
+                                         QWidget* parent)
     : QDialog(parent)
     , manager_(manager)
 {
@@ -262,7 +264,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
     detail_stack_->addWidget(fft_edit_widget_);
 
     // create colors edit widget
-    colors_edit_widget_ = new ColorsEditWidget(manager_, [this]() {
+    colors_edit_widget_ = new ColorsEditWidget(manager_, dbcontent_names, [this]() {
         manager_.saveContext(manager_.activeContextName());
     }, this);
     detail_stack_->addWidget(colors_edit_widget_);
@@ -314,7 +316,7 @@ void DBContextEditDialog::rebuildContextCombo()
     if (manager_.hasActiveContext())
         context_combo_->setCurrentText(QString::fromStdString(manager_.activeContextName()));
 
-    bool db_has_data = manager_.compass().dbOpened() && manager_.hasInsertedData();
+    bool db_has_data = manager_.appState().dbOpened() && manager_.hasInsertedData();
 
     // disable context switching when a DB with imported data is open
     context_combo_->setEnabled(!db_has_data);
@@ -362,7 +364,7 @@ void DBContextEditDialog::rebuildTree()
     {
         if (auto* ds = manager_.dataSource(*shown_ds_id))
         {
-            ds_edit_widget_->show(*ds, manager_.compass().lastUsedPath());
+            ds_edit_widget_->show(*ds, manager_.appState().lastUsedPath());
             if (shown_ds_tab >= 0)
                 ds_edit_widget_->setCurrentTabIndex(shown_ds_tab);
         }
@@ -409,7 +411,7 @@ void DBContextEditDialog::itemClickedSlot(const QModelIndex& index)
 
         auto* ds = manager_.dataSource(ds_item->dsId());
         if (ds)
-            ds_edit_widget_->show(*ds, manager_.compass().lastUsedPath());
+            ds_edit_widget_->show(*ds, manager_.appState().lastUsedPath());
         showDetailWidget(ds_edit_widget_);
     }
     else if (dynamic_cast<ASTERIXConfigLeafItem*>(item))
@@ -873,7 +875,7 @@ void DBContextEditDialog::importAirSpace()
 
     QString filename = QFileDialog::getOpenFileName(
         this, "Import Air Space Sectors from JSON",
-        QString::fromStdString(manager_.compass().lastUsedPath()), "*.json");
+        QString::fromStdString(manager_.appState().lastUsedPath()), "*.json");
 
     if (filename.isEmpty())
         return;

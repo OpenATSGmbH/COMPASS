@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/reporttablecontent.h"
+#include "results/reporttablecontent.h"
 
 #include "buffer.h"
 #include "logger.h"

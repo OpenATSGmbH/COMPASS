@@ -1,5 +1,8 @@
 #define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
+#include "files.h"
+#include "traced_assert.h"
+
 #include <QApplication>
 #include <QLocale>
 #include <clocale>
@@ -25,6 +28,11 @@ int main(int argc, char* argv[])
     // - matches what Client/MainWindow do in the real application.
     std::setlocale(LC_ALL, "C");
     QLocale::setDefault(QLocale::c());
+
+    // data resources (icons, maps, ...) from the repository instead of ~/.compass
+    const std::string data_dir = std::string(COMPASS_SOURCE_DIR) + "/data/";
+    traced_assert(Utils::Files::directoryExists(data_dir));
+    Utils::Files::setDataDirectory(data_dir);
 
     return Catch::Session().run(argc, argv);
 }

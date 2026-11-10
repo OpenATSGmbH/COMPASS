@@ -16,7 +16,6 @@
  */
 
 #include "filtergeneratordialog.h"
-#include "compass.h"
 #include "configuration.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableselectionwidget.h"

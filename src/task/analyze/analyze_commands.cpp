@@ -18,7 +18,6 @@
 #include "analyze_commands.h"
 #include "analyzedatasourcetask.h"
 #include "datasourceinspectorbase.h"
-#include "compass.h"
 #include "taskmanager.h"
 #include "rtcommand/rtcommand_macros.h"
 #include "rtcommand_registry.h"
@@ -27,37 +26,28 @@
 
 #include <boost/program_options.hpp>
 
-REGISTER_RTCOMMAND(RTCommandGetAnalyzeInspectors)
-
-static COMPASS* s_compass = nullptr;
-
-void init_analyze_commands(COMPASS& compass)
+void init_analyze_commands(rtcommand::RTCommandRegistry& registry,
+                           TaskManager& task_manager)
 {
-    s_compass = &compass;
-    RTCommandGetAnalyzeInspectors::init();
+    registry.registerCommand<RTCommandGetAnalyzeInspectors>(task_manager);
 }
 
-RTCommandGetAnalyzeInspectors::RTCommandGetAnalyzeInspectors()
+RTCommandGetAnalyzeInspectors::RTCommandGetAnalyzeInspectors(TaskManager& task_manager)
     : rtcommand::RTCommand()
+    , task_manager_(task_manager)
 {
     condition.setDelay(10);
 }
 
 bool RTCommandGetAnalyzeInspectors::run_impl()
 {
-    if (!s_compass)
-    {
-        setResultMessage("COMPASS not initialized");
-        return false;
-    }
-
     if (ds_type_.empty())
     {
         setResultMessage("Missing required option --ds_type");
         return false;
     }
 
-    AnalyzeDataSourceTask* task_ptr = s_compass->taskManager().analyzeDataSourceTask(ds_type_);
+    AnalyzeDataSourceTask* task_ptr = task_manager_.analyzeDataSourceTask(ds_type_);
     if (!task_ptr)
     {
         setResultMessage("Unknown DSType '" + ds_type_ + "' (expected MLAT, ADSB or SMR)");
@@ -77,7 +67,7 @@ bool RTCommandGetAnalyzeInspectors::run_impl()
 
 bool RTCommandGetAnalyzeInspectors::checkResult_impl()
 {
-    AnalyzeDataSourceTask* task_ptr = s_compass->taskManager().analyzeDataSourceTask(ds_type_);
+    AnalyzeDataSourceTask* task_ptr = task_manager_.analyzeDataSourceTask(ds_type_);
     if (!task_ptr)
     {
         setResultMessage("Unknown DSType '" + ds_type_ + "'");

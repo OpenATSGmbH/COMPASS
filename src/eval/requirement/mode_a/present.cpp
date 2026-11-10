@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/mode_a/present.h"
-#include "eval/standard/evaluationstandard.h"
-#include "eval/results/mode_a/present.h"
+#include "requirement/mode_a/present.h"
+#include "standard/evaluationstandard.h"
+#include "results/mode_a/present.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 using namespace std;
 using namespace Utils;

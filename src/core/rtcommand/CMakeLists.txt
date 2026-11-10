@@ -7,6 +7,7 @@ target_sources(compass_core
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand_defs.h"
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand_helpers.h"
+        "${CMAKE_CURRENT_LIST_DIR}/rtcommand_host.h"
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand_macros.h"
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand.h"
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand_chain.h"

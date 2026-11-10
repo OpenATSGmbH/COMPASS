@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include "eval/requirement/base/intervalbase.h"
-#include "eval/requirement/base/intervalbaseconfig.h"
-#include "eval/requirement/base/intervalbaseconfigwidget.h"
+#include "requirement/base/intervalbase.h"
+#include "requirement/base/intervalbaseconfig.h"
+#include "requirement/base/intervalbaseconfigwidget.h"
 
 class QLineEdit;
 

@@ -16,11 +16,11 @@
  */
 
 #include "reconstructortaskanalysiswidget.h"
+#include "appstate.h"
 #include "reconstructortask.h"
 #include "stringconv.h"
 #include "timeconv.h"
 #include "logger.h"
-#include "compass.h"
 #include "taskmanager.h"
 
 #include <QGridLayout>
@@ -39,7 +39,7 @@ ReconstructorTaskAnalysisWidget::ReconstructorTaskAnalysisWidget(
     ReconstructorTask& task, bool probimm_reconst, QWidget *parent)
     : QWidget{parent}, task_(task), probimm_reconst_(probimm_reconst)
 {
-    bool add_debug_stuff = !COMPASS::isAppImage() || task_.manager().compass().expertMode();
+    bool add_debug_stuff = !AppState::isAppImage() || task_.manager().appState().expertMode();
 
     QFormLayout* combo_layout = new QFormLayout;
     //combo_layout->setMargin(0);
@@ -237,7 +237,7 @@ void ReconstructorTaskAnalysisWidget::updateValues()
 {
     loginf;
 
-    bool add_debug_stuff = !COMPASS::isAppImage() || task_.manager().compass().expertMode();
+    bool add_debug_stuff = !AppState::isAppImage() || task_.manager().appState().expertMode();
 
     if (!add_debug_stuff) // disable everything not shown in the settings, to be on the safe side
     {

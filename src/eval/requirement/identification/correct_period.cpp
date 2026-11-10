@@ -15,10 +15,10 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/identification/correct_period.h"
-#include "eval/requirement/group.h"
+#include "requirement/identification/correct_period.h"
+#include "requirement/group.h"
 
-#include "eval/results/identification/correct_period.h"
+#include "results/identification/correct_period.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"

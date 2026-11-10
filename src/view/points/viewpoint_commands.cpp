@@ -16,16 +16,15 @@
  */
 
 #include "viewpoint_commands.h"
+#include "appstate.h"
 #include "rtcommand/rtcommand_macros.h"
 #include "rtcommand_registry.h"
 #include "dbcontentmanager.h"
 #include "viewmanager.h"
 #include "viewpointgenerator.h"
-#include "compass.h"
 
 #include <boost/program_options.hpp>
 
-REGISTER_RTCOMMAND(RTCommandSetViewPoint)
 
 using namespace std;
 
@@ -65,18 +64,18 @@ namespace
     }
 }
 
-static COMPASS* s_compass = nullptr;
 
-void init_view_point_commands(COMPASS& compass)
+void init_view_point_commands(rtcommand::RTCommandRegistry& registry,
+                              ViewManager& view_manager)
 {
-    s_compass = &compass;
-    RTCommandSetViewPoint::init();
+    registry.registerCommand<RTCommandSetViewPoint>(view_manager);
 }
 
 // set
 
-RTCommandSetViewPoint::RTCommandSetViewPoint()
+RTCommandSetViewPoint::RTCommandSetViewPoint(ViewManager& view_manager)
     : rtcommand::RTCommand()
+    , view_manager_(view_manager)
 {
     condition.setSignal("compass.viewmanager.loadingDoneSignal()", -1); // think about max duration
 
@@ -88,19 +87,19 @@ bool RTCommandSetViewPoint::run_impl()
 {
     loginf << "vp_json_str_ '" << vp_json_str_ << "'";
 
-    if (!s_compass->dbOpened())
+    if (!view_manager_.appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (s_compass->appMode() != AppMode::Offline) // to be sure
+    if (view_manager_.appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+s_compass->appModeStr());
+        setResultMessage("Wrong application mode "+view_manager_.appState().appModeStr());
         return false;
     }
 
-    s_compass->viewManager().clearDataInViews();
+    view_manager_.clearDataInViews();
 
     try
     {
@@ -123,7 +122,7 @@ bool RTCommandSetViewPoint::run_impl()
         viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(
             vp_json_parsed.get<nlohmann::json::object_t>());
 
-        s_compass->viewManager().setCurrentViewPoint(viewable_data_cfg_);
+        view_manager_.setCurrentViewPoint(viewable_data_cfg_);
     }
     catch (exception& e)
     {

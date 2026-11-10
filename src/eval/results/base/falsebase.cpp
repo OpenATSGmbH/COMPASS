@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/base/falsebase.h"
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/falsebase.h"
+#include "results/base/featuredefinitions.h"
 
 namespace EvaluationRequirementResult
 {

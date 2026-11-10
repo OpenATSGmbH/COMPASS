@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/trackangle/trackangleconfig.h"
-#include "eval/requirement/trackangle/trackangleconfigwidget.h"
-#include "eval/requirement/trackangle/trackangle.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/trackangle/trackangleconfig.h"
+#include "requirement/trackangle/trackangleconfigwidget.h"
+#include "requirement/trackangle/trackangle.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 using namespace std;
 

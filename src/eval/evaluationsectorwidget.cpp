@@ -20,7 +20,7 @@
 #include "evaluationdialog.h"
 #include "sectorlayer.h"
 #include "evaluationstandard.h"
-#include "eval/requirement/group.h"
+#include "requirement/group.h"
 
 #include <QLabel>
 #include <QCheckBox>

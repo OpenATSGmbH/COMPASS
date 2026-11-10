@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/positionbaseconfig.h"
+#include "requirement/base/positionbaseconfig.h"
 
 class Group;
 class EvaluationStandard;

@@ -19,8 +19,8 @@
 
 #include "configurable.h"
 #include "evaluationstandardtreeitem.h"
-#include "eval/requirement/base/baseconfigwidget.h"
-#include "eval/requirement/base/targetselection.h"
+#include "requirement/base/baseconfigwidget.h"
+#include "requirement/base/targetselection.h"
 
 #include <QObject>
 

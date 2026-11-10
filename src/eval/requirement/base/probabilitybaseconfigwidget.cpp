@@ -17,7 +17,7 @@
 
 #include "probabilitybaseconfigwidget.h"
 #include "probabilitybaseconfig.h"
-#include "eval/requirement/base/comparisontypecombobox.h"
+#include "requirement/base/comparisontypecombobox.h"
 #include "logger.h"
 
 #include <QLabel>

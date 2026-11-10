@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/position/along.h"
+#include "results/position/along.h"
 #include "stringconv.h"
 
 #include "logger.h"

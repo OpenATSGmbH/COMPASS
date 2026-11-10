@@ -18,7 +18,7 @@
 #pragma once
 
 #include "dbfilter.h"
-#include "util/timewindow.h"
+#include "timewindow.h"
 
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/optional.hpp>

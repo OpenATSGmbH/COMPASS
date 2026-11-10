@@ -19,9 +19,9 @@
 
 #include "rtcommand/rtcommand.h"
 
-class COMPASS;
+class TaskManager;
 
-extern void init_analyze_commands(COMPASS& compass);
+extern void init_analyze_commands(rtcommand::RTCommandRegistry& registry, TaskManager& task_manager);
 
 /**
  * get_analyze_inspectors
@@ -34,13 +34,16 @@ extern void init_analyze_commands(COMPASS& compass);
 struct RTCommandGetAnalyzeInspectors : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetAnalyzeInspectors();
+    explicit RTCommandGetAnalyzeInspectors(TaskManager& task_manager);
 
     std::string ds_type_;
 
 protected:
     bool run_impl() override;
     bool checkResult_impl() override;
+
+private:
+    TaskManager& task_manager_;
 
     DECLARE_RTCOMMAND(get_analyze_inspectors,
                       "list inspectors registered on the analyze data source task for a given DSType")

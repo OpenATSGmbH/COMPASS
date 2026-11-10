@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
-#include "eval/results/base/probabilitybase.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
+#include "results/base/probabilitybase.h"
 
 #include "valueaccumulator.h"
 

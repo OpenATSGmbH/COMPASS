@@ -16,6 +16,8 @@
  */
 
 #include "scatterplotviewdatawidget.h"
+#include "viewmanager.h"
+#include "appstate.h"
 #include "scatterplotviewwidget.h"
 #include "scatterplotview.h"
 #include "viewabledataconfig.h"
@@ -23,7 +25,6 @@
 #include "viewpointgenerator.h"
 
 #include "buffer.h"
-#include "compass.h"
 #include "color_provider.h"
 
 #include "dbcontent/dbcontent.h"
@@ -105,7 +106,7 @@ ScatterPlotViewDataWidget::ScatterPlotViewDataWidget(ScatterPlotViewWidget* view
 
     // color-mode redraw also without a layer panel (the commit rebuilds the layer tree),
     // see colorModeChanged()
-    connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
+    connect(&view_->viewManager().appState(), &AppState::colorModeChangedSignal,
             this, [this](unsigned int /*mode*/) { redrawData(true); });
 }
 
@@ -585,7 +586,7 @@ void ScatterPlotViewDataWidget::processStash(const VariableViewStash<double>& st
                 layer_id.ds_name = name;
 
             QColor line_color = context::resolveSeriesColor(
-                layer_id.ds_type, layer_id.ds_name, layer_id.line_index, layer_id.dbcontent, view_->compass(),
+                layer_id.ds_type, layer_id.ds_name, layer_id.line_index, layer_id.dbcontent, view_->viewManager().dbContextManager(),
                 [this](const std::string& key) { return colorForGroupName(key); });
 
             scatter_series_.addDataSeries(dbc_series, name, line_color, MarkerSizePx, dbc_null_count);

@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/detection/detectionconfigwidget.h"
-#include "eval/requirement/detection/detectionconfig.h"
+#include "requirement/detection/detectionconfigwidget.h"
+#include "requirement/detection/detectionconfig.h"
 
 #include "logger.h"
 

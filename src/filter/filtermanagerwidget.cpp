@@ -23,7 +23,7 @@
 #include "filtermanager.h"
 #include "global.h"
 #include "logger.h"
-#include "util/files.h"
+#include "files.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>

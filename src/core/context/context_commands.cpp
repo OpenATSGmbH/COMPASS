@@ -21,52 +21,47 @@
 #include "db_context.h"
 #include "db_context_serializer.h"
 #include "sector_import_utils.h"
-#include "compass.h"
+#include "appstate.h"
 #include "logger.h"
-#include "util/files.h"
+#include "files.h"
 #include "json.hpp"
 
 #include <boost/program_options.hpp>
 
 using namespace std;
 
-REGISTER_RTCOMMAND(context_cmd::RTCommandCreateContext)
-REGISTER_RTCOMMAND(context_cmd::RTCommandSetContext)
-REGISTER_RTCOMMAND(context_cmd::RTCommandDeleteContext)
-REGISTER_RTCOMMAND(context_cmd::RTCommandListContexts)
-REGISTER_RTCOMMAND(context_cmd::RTCommandGetContextInfo)
-REGISTER_RTCOMMAND(context_cmd::RTCommandGetContext)
-REGISTER_RTCOMMAND(context_cmd::RTCommandImportFFTsJSON)
-REGISTER_RTCOMMAND(context_cmd::RTCommandImportContext)
-REGISTER_RTCOMMAND(context_cmd::RTCommandDeleteAllSectors)
-REGISTER_RTCOMMAND(context_cmd::RTCommandDeleteAllFFTs)
-REGISTER_RTCOMMAND(context_cmd::RTCommandImportSectorsGDAL)
-REGISTER_RTCOMMAND(context_cmd::RTCommandExportSectorsJSON)
-REGISTER_RTCOMMAND(context_cmd::RTCommandExportDataSourcesJSON)
-
 namespace context_cmd
 {
 
-void init_context_commands()
+void init_context_commands(rtcommand::RTCommandRegistry& registry,
+                           context::DBContextManager& ctx_man)
 {
-    RTCommandCreateContext::init();
-    RTCommandSetContext::init();
-    RTCommandDeleteContext::init();
-    RTCommandListContexts::init();
-    RTCommandGetContextInfo::init();
-    RTCommandGetContext::init();
-    RTCommandImportFFTsJSON::init();
-    RTCommandImportContext::init();
-    RTCommandDeleteAllSectors::init();
-    RTCommandDeleteAllFFTs::init();
-    RTCommandImportSectorsGDAL::init();
-    RTCommandExportSectorsJSON::init();
-    RTCommandExportDataSourcesJSON::init();
+    registry.registerCommand<RTCommandCreateContext>(ctx_man);
+    registry.registerCommand<RTCommandSetContext>(ctx_man);
+    registry.registerCommand<RTCommandDeleteContext>(ctx_man);
+    registry.registerCommand<RTCommandListContexts>(ctx_man);
+    registry.registerCommand<RTCommandGetContextInfo>(ctx_man);
+    registry.registerCommand<RTCommandGetContext>(ctx_man);
+    registry.registerCommand<RTCommandImportFFTsJSON>(ctx_man);
+    registry.registerCommand<RTCommandImportContext>(ctx_man);
+    registry.registerCommand<RTCommandDeleteAllSectors>(ctx_man);
+    registry.registerCommand<RTCommandDeleteAllFFTs>(ctx_man);
+    registry.registerCommand<RTCommandImportSectorsGDAL>(ctx_man);
+    registry.registerCommand<RTCommandExportSectorsJSON>(ctx_man);
+    registry.registerCommand<RTCommandExportDataSourcesJSON>(ctx_man);
 }
 
 // ============================================================
 // create_context
 // ============================================================
+
+/**
+ */
+RTCommandCreateContext::RTCommandCreateContext(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
 
 rtcommand::IsValid RTCommandCreateContext::valid() const
 {
@@ -76,7 +71,7 @@ rtcommand::IsValid RTCommandCreateContext::valid() const
 
 bool RTCommandCreateContext::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     try
     {
@@ -116,6 +111,14 @@ void RTCommandCreateContext::assignVariables_impl(const VariablesMap& variables)
 // set_context
 // ============================================================
 
+/**
+ */
+RTCommandSetContext::RTCommandSetContext(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 rtcommand::IsValid RTCommandSetContext::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(name_.empty(), "Context name empty")
@@ -124,7 +127,7 @@ rtcommand::IsValid RTCommandSetContext::valid() const
 
 bool RTCommandSetContext::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (!ctx_man.hasContext(name_))
     {
@@ -132,7 +135,7 @@ bool RTCommandSetContext::run_impl()
         return false;
     }
 
-    if (compass_->dbOpened() && ctx_man.hasInsertedData())
+    if (ctx_man_.appState().dbOpened() && ctx_man.hasInsertedData())
     {
         setResultMessage("Cannot switch context while a database with imported data is open");
         return false;
@@ -162,6 +165,14 @@ void RTCommandSetContext::assignVariables_impl(const VariablesMap& variables)
 // delete_context
 // ============================================================
 
+/**
+ */
+RTCommandDeleteContext::RTCommandDeleteContext(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 rtcommand::IsValid RTCommandDeleteContext::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(name_.empty(), "Context name empty")
@@ -170,7 +181,7 @@ rtcommand::IsValid RTCommandDeleteContext::valid() const
 
 bool RTCommandDeleteContext::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (!ctx_man.hasContext(name_))
     {
@@ -210,9 +221,17 @@ void RTCommandDeleteContext::assignVariables_impl(const VariablesMap& variables)
 // list_contexts
 // ============================================================
 
+/**
+ */
+RTCommandListContexts::RTCommandListContexts(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 bool RTCommandListContexts::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     nlohmann::json j;
     j["contexts"] = nlohmann::json::array();
@@ -231,9 +250,17 @@ bool RTCommandListContexts::run_impl()
 // get_context_info
 // ============================================================
 
+/**
+ */
+RTCommandGetContextInfo::RTCommandGetContextInfo(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 bool RTCommandGetContextInfo::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -259,6 +286,14 @@ bool RTCommandGetContextInfo::run_impl()
 // get_context
 // ============================================================
 
+/**
+ */
+RTCommandGetContext::RTCommandGetContext(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 rtcommand::IsValid RTCommandGetContext::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(name_.empty(), "Context name empty")
@@ -267,7 +302,7 @@ rtcommand::IsValid RTCommandGetContext::valid() const
 
 bool RTCommandGetContext::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (!ctx_man.hasContext(name_))
     {
@@ -297,6 +332,14 @@ void RTCommandGetContext::assignVariables_impl(const VariablesMap& variables)
 // import_ffts_json
 // ============================================================
 
+/**
+ */
+RTCommandImportFFTsJSON::RTCommandImportFFTsJSON(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 rtcommand::IsValid RTCommandImportFFTsJSON::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(filename_.empty(), "Filename empty")
@@ -307,7 +350,7 @@ rtcommand::IsValid RTCommandImportFFTsJSON::valid() const
 
 bool RTCommandImportFFTsJSON::run_impl()
 {
-    if (!compass_->dbContextManager().hasActiveContext())
+    if (!ctx_man_.hasActiveContext())
     {
         setResultMessage("No active context");
         return false;
@@ -315,7 +358,7 @@ bool RTCommandImportFFTsJSON::run_impl()
 
     try
     {
-        compass_->dbContextManager().importFFTs(filename_);
+        ctx_man_.importFFTs(filename_);
     }
     catch (const exception& e)
     {
@@ -343,6 +386,14 @@ void RTCommandImportFFTsJSON::assignVariables_impl(const VariablesMap& variables
 // import_context
 // ============================================================
 
+/**
+ */
+RTCommandImportContext::RTCommandImportContext(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 rtcommand::IsValid RTCommandImportContext::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(filename_.empty(), "Filename empty")
@@ -355,7 +406,7 @@ bool RTCommandImportContext::run_impl()
 {
     try
     {
-        string name = compass_->dbContextManager().importContextZip(filename_);
+        string name = ctx_man_.importContextZip(filename_);
 
         nlohmann::json reply;
         reply["name"] = name;
@@ -387,9 +438,17 @@ void RTCommandImportContext::assignVariables_impl(const VariablesMap& variables)
 // delete_all_sectors
 // ============================================================
 
+/**
+ */
+RTCommandDeleteAllSectors::RTCommandDeleteAllSectors(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 bool RTCommandDeleteAllSectors::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -414,9 +473,17 @@ bool RTCommandDeleteAllSectors::run_impl()
 // delete_all_ffts
 // ============================================================
 
+/**
+ */
+RTCommandDeleteAllFFTs::RTCommandDeleteAllFFTs(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 bool RTCommandDeleteAllFFTs::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -441,6 +508,14 @@ bool RTCommandDeleteAllFFTs::run_impl()
 // import_sectors_gdal
 // ============================================================
 
+/**
+ */
+RTCommandImportSectorsGDAL::RTCommandImportSectorsGDAL(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 rtcommand::IsValid RTCommandImportSectorsGDAL::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(filename_.empty(), "Filename empty")
@@ -451,7 +526,7 @@ rtcommand::IsValid RTCommandImportSectorsGDAL::valid() const
 
 bool RTCommandImportSectorsGDAL::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -533,6 +608,14 @@ void RTCommandImportSectorsGDAL::assignVariables_impl(const VariablesMap& variab
 // export_sectors_json
 // ============================================================
 
+/**
+ */
+RTCommandExportSectorsJSON::RTCommandExportSectorsJSON(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 rtcommand::IsValid RTCommandExportSectorsJSON::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(filename_.empty(), "Filename empty")
@@ -541,7 +624,7 @@ rtcommand::IsValid RTCommandExportSectorsJSON::valid() const
 
 bool RTCommandExportSectorsJSON::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (!ctx_man.hasActiveContext())
     {
@@ -579,6 +662,14 @@ void RTCommandExportSectorsJSON::assignVariables_impl(const VariablesMap& variab
 // export_data_sources_json
 // ============================================================
 
+/**
+ */
+RTCommandExportDataSourcesJSON::RTCommandExportDataSourcesJSON(context::DBContextManager& ctx_man)
+    : rtcommand::RTCommand()
+    , ctx_man_(ctx_man)
+{
+}
+
 rtcommand::IsValid RTCommandExportDataSourcesJSON::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(filename_.empty(), "Filename empty")
@@ -587,7 +678,7 @@ rtcommand::IsValid RTCommandExportDataSourcesJSON::valid() const
 
 bool RTCommandExportDataSourcesJSON::run_impl()
 {
-    auto& ctx_man = compass_->dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (!ctx_man.hasActiveContext())
     {

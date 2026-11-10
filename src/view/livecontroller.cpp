@@ -18,7 +18,7 @@
 #include "livecontroller.h"
 #include "dialogs.h"
 #include "viewmanager.h"
-#include "compass.h"
+#include "appstate.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
@@ -31,7 +31,7 @@
 #include "filterclause.h"
 #include "idbvariableresolver.h"
 #include "global.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "logger.h"
 
 #include <QApplication>
@@ -42,15 +42,15 @@ using namespace Utils;
 
 /**
  */
-LiveController::LiveController(COMPASS& compass, ViewManager& view_manager, QObject* parent)
-    : QObject(parent), compass_(compass), view_manager_(view_manager)
+LiveController::LiveController(ViewManager& view_manager, QObject* parent)
+    : QObject(parent), view_manager_(view_manager)
 {
     // the feed lives for the whole session lifetime (cleared, not recreated, on stop);
     // DBContentManager + its engine already exist when ViewManager builds us
-    feed_ = std::make_shared<LiveDataFeed>(compass_.dbContentManager());
+    feed_ = std::make_shared<LiveDataFeed>(view_manager_.dbContentManager());
 
     feed_->setReadSetProvider([this](const std::string& name) -> dbContent::VariableSet {
-        auto& dbcm = compass_.dbContentManager();
+        auto& dbcm = view_manager_.dbContentManager();
         dbContent::VariableSet read_set = view_manager_.getReadSet(name);
         dbcm.addStandardVariables(name, read_set);
 
@@ -68,7 +68,7 @@ LiveController::LiveController(COMPASS& compass, ViewManager& view_manager, QObj
         return read_set;
     });
 
-    connect(&compass_.dbContentManager().dataEngine(), &DBContentDataEngine::insertedDataSignal,
+    connect(&view_manager_.dbContentManager().dataEngine(), &DBContentDataEngine::insertedDataSignal,
             this, &LiveController::insertedDataSlot);
 }
 
@@ -192,11 +192,11 @@ void LiveController::reloadWindow(const QString& title)
     msg_box.show();
     QCoreApplication::processEvents(); // paint before the load busies the main thread
 
-    ptime min_ts = Time::currentUTCTime() - minutes(compass_.maxLiveDataAgeCache());
+    ptime min_ts = Time::currentUTCTime() - minutes(view_manager_.appState().settings().max_live_data_age_cache);
 
     // live-prime window as a per-content clause via the shared toolkit (timestamp >= min);
     // resolver is a long-lived filter member, the clause runs synchronously inside load() below
-    IDBVariableResolver* resolver = &compass_.filterManager().variableResolver();
+    IDBVariableResolver* resolver = &view_manager_.filterManager().variableResolver();
     std::int64_t min_ts_long = Time::toLong(min_ts);
 
     LoadRequest req;
@@ -208,14 +208,14 @@ void LiveController::reloadWindow(const QString& title)
                                          std::to_string(min_ts_long)).sql;
     };
 
-    auto op = std::make_shared<LoadOperation>(compass_.dbContentManager(), req);
+    auto op = std::make_shared<LoadOperation>(view_manager_.dbContentManager(), req);
 
     // the modal blocks user input, but not the engine's insertedDataSignal (fired Direct as
     // continued ingestion completes during the pump); state_ stays Paused across this load
     // (resumeSession only flips to Running afterwards), so a pump-fired tick can't issue an
     // overlapping DB delete or process (then lose) inserts the seedFrom is about to replace.
     // Inserts still stage and are merged on the next tick.
-    compass_.dbContentManager().dataEngine().load(op);
+    view_manager_.dbContentManager().dataEngine().load(op);
     op->wait();
     // @TODO: op state unchecked - a Failed/Cancelled window load seeds an empty/partial feed
     feed_->seedFrom(op->buffers()); // replace the stale feed with the current DB window
@@ -245,7 +245,7 @@ void LiveController::insertedDataSlot(std::map<std::string, std::shared_ptr<Buff
     // running(): during the resume reloadWindow pump appMode is already LiveRunning while the
     // state is still Paused, and inserts arriving then must still stage (processLiveModeSlot's
     // running() guard suppresses the tick, so they merge on the first tick after resume).
-    if (compass_.appMode() != AppMode::LiveRunning)
+    if (view_manager_.appState().appMode() != AppMode::LiveRunning)
         return;
 
     feed().addInserted(std::move(buffers));
@@ -268,12 +268,12 @@ void LiveController::processLiveModeSlot()
     // still draining (its queued doneSlot hasn't cleared it): skip this tick's bound. The
     // DB delete is independent of the display cut (cutCachedData bounds what is shown), so
     // skipping one is harmless - the next tick re-bounds.
-    if (compass_.dbContentManager().hasActiveDeleteJob())
+    if (view_manager_.dbContentManager().hasActiveDeleteJob())
         logwrn << "skipping DB bound, a delete is still in flight";
     else
     {
-        ptime old_time = Time::currentUTCTime() - minutes(compass_.maxLiveDataAgeDb());
-        compass_.dbContentManager().deleteDBContentData(old_time);
+        ptime old_time = Time::currentUTCTime() - minutes(view_manager_.appState().settings().max_live_data_age_db);
+        view_manager_.dbContentManager().deleteDBContentData(old_time);
     }
 
     tryTick();
@@ -318,17 +318,19 @@ void LiveController::tryTick()
 }
 
 /**
- * Overload check of a tick attempt (see LiveOverloadDetector), updates COMPASS::liveOverloaded().
+ * Overload check of a tick attempt (see LiveOverloadDetector), updates AppState::liveOverloaded().
  * Returns true if the tick has to be held.
  */
 bool LiveController::checkOverload()
 {
     auto& settings = overload_detector_.settings();
-    settings.max_packets_in_processing = compass_.liveOverloadMaxPackets();
-    settings.max_latency_s             = compass_.liveOverloadMaxLatency();
-    settings.force                     = compass_.liveOverloadForced();
+    auto& app_state = view_manager_.appState();
 
-    unsigned int packets = compass_.liveImportBacklogSize();
+    settings.max_packets_in_processing = app_state.settings().live_overload_max_packets;
+    settings.max_latency_s             = app_state.settings().live_overload_max_latency_s;
+    settings.force                     = app_state.liveOverloadForced();
+
+    unsigned int packets = view_manager_.liveImportBacklogSize();
 
     std::optional<double> latency_s;
     auto latency = feed_->takeInsertLatency();
@@ -342,7 +344,7 @@ bool LiveController::checkOverload()
                << ", packets in processing " << packets
                << ", latency " << (latency_s ? std::to_string(*latency_s) + " s" : "-");
 
-    compass_.liveOverloaded(overload_detector_.isOverloaded());
+    app_state.liveOverloaded(overload_detector_.isOverloaded());
 
     emit overloadCheckedSignal(packets,
                                latency_s.value_or(-1.0),
@@ -358,7 +360,7 @@ bool LiveController::checkOverload()
 void LiveController::resetOverload()
 {
     overload_detector_.reset();
-    compass_.liveOverloaded(false);
+    view_manager_.appState().liveOverloaded(false);
 }
 
 /**

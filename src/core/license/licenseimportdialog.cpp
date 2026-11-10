@@ -19,7 +19,7 @@
 #include "license.h"
 #include "licensewidget.h"
 
-#include "compass.h"
+#include "appstate.h"
 #include "timeconv.h"
 #include "files.h"
 
@@ -99,11 +99,9 @@ private:
 
 /**
 */
-LicenseImportDialog::LicenseImportDialog(COMPASS& compass,
-                                         QWidget* parent,
+LicenseImportDialog::LicenseImportDialog(QWidget* parent,
                                          Qt::WindowFlags f)
-:   QDialog(parent, f),
-    compass_(compass)
+:   QDialog(parent, f)
 {
     setWindowTitle("Add New License");
 
@@ -130,7 +128,7 @@ LicenseImportDialog::LicenseImportDialog(COMPASS& compass,
 
     group->setLayout(group_layout);
 
-    bool app_image = compass_.isAppImage();
+    bool app_image = AppState::isAppImage();
 
     license_widget_ = new LicenseWidget(!app_image);
     group_layout->addWidget(license_widget_);

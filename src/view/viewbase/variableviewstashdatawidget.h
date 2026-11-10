@@ -20,7 +20,7 @@
 #include "variableviewdatawidget.h"
 #include "variableviewstash.h"
 #include "nullablevector.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "property_templates.h"
 
 #include <limits>

@@ -20,10 +20,10 @@
 #include "evaluationcalculator.h"
 #include "timeconv.h"
 
-#include "eval/results/base/intervalbase.h"
-#include "eval/standard/evaluationstandard.h"
+#include "results/base/intervalbase.h"
+#include "standard/evaluationstandard.h"
 
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 
 namespace EvaluationRequirement 

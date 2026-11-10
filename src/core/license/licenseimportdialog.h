@@ -26,7 +26,6 @@ namespace license
     struct License;
 }
 
-class COMPASS;
 class LicenseWidget;
 
 class QPushButton;
@@ -37,8 +36,7 @@ class QLabel;
 class LicenseImportDialog : public QDialog
 {
 public:
-    LicenseImportDialog(COMPASS& compass,
-                        QWidget* parent = nullptr,
+    LicenseImportDialog(QWidget* parent = nullptr,
                         Qt::WindowFlags f = Qt::WindowFlags());
     virtual ~LicenseImportDialog();
 
@@ -46,8 +44,6 @@ public:
 
 private:
     void importLicenseKey(const QString& license_key);
-
-    COMPASS& compass_;
 
     std::unique_ptr<license::License> license_;
 

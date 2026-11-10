@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/baseconfigwidget.h"
+#include "requirement/base/baseconfigwidget.h"
 
 namespace EvaluationRequirement {
 

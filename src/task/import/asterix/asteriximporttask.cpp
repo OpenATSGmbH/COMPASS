@@ -16,6 +16,8 @@
  */
 
 #include "asteriximporttask.h"
+#include "logmodel.h"
+#include "appstate.h"
 #include "dialogs.h"
 #include "asteriximportprogressdialog.h"
 #include "asteriximportprobeaggregator.h"
@@ -23,14 +25,13 @@
 #include "asterixreporthelpers.h"
 #include "asterix_decoding_config.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
-#include "task/result/report/sectioncontenttext.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
+#include "report/sectioncontenttext.h"
 
 #include "data_source.h"
 #include "number.h"
-#include "compass.h"
 #include "viewmanager.h"
 #include "buffer.h"
 #include "configurable.h"
@@ -44,11 +45,11 @@
 #include "logger.h"
 #include "asteriximporttaskdialog.h"
 #include "traced_assert.h"
-#include "util/stringconv.h"
+#include "stringconv.h"
 #include "system.h"
 #include "taskmanager.h"
-#include "mainwindow.h"
-#include "util/timeconv.h"
+#include "imainwindow.h"
+#include "timeconv.h"
 #include "projection.h"
 #include "projectionmanager.h"
 #include "jobmanager.h"
@@ -150,7 +151,7 @@ using namespace std;
 //     registerParameter("chunk_size_jasterix", &settings_.chunk_size_jasterix, ASTERIXImportTaskSettings().chunk_size_jasterix);
 //     registerParameter("chunk_size_insert", &settings_.chunk_size_insert, ASTERIXImportTaskSettings().chunk_size_insert);
 
-//     std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+//     std::string jasterix_definition_path = Utils::Files::dataDirectory() + "jasterix_definitions";
 
 //     loginf << "jasterix definition path '"
 //            << jasterix_definition_path << "'";
@@ -176,8 +177,7 @@ using namespace std;
 ASTERIXImportTask::ASTERIXImportTask(nlohmann::json& config, TaskManager* parent)
     : Task(*parent),
     Configurable(config, parent),
-    compass_(parent->compass()),
-    dbcontent_man_(parent->compass().dbContentManager())
+    dbcontent_man_(parent->dbContentManager())
 {
     tooltip_ = "Allows importing of ASTERIX data recording files into the opened database.";
 
@@ -243,7 +243,7 @@ ASTERIXImportTask::ASTERIXImportTask(nlohmann::json& config, TaskManager* parent
     registerParameter("max_packets_in_processing", &settings_.max_packets_in_processing_,
                       ASTERIXImportTaskSettings().max_packets_in_processing_);
 
-    std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+    std::string jasterix_definition_path = Utils::Files::dataDirectory() + "jasterix_definitions";
 
     loginf << "jasterix definition path '"
            << jasterix_definition_path << "'";
@@ -325,7 +325,7 @@ void ASTERIXImportTask::asterixDecoderConfig(const std::string& asterix_decoder_
     if (!config.is_object())
         throw runtime_error("ASTERIXImportTask: asterixDecoderConfig: json config is not an object");
 
-    auto& ctx_mgr = compass_.dbContextManager();
+    auto& ctx_mgr = manager().dbContextManager();
 
     for (auto& cat_it : config.items())
     {
@@ -474,7 +474,7 @@ std::shared_ptr<jASTERIX::jASTERIX> ASTERIXImportTask::jASTERIX(bool refresh) co
 */
 void ASTERIXImportTask::initjASTERIX() const
 {
-    std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+    std::string jasterix_definition_path = Utils::Files::dataDirectory() + "jasterix_definitions";
 
     logdbg << "jasterix definition path '"
            << jasterix_definition_path << "'";
@@ -499,13 +499,13 @@ void ASTERIXImportTask::configurejASTERIX() const
 
     jasterix_->decodeNoCategories();
 
-    if (!compass_.hasActiveContext())
+    if (!manager().dbContextManager().hasActiveContext())
     {
         logdbg << "no active context, no categories configured";
         return;
     }
 
-    auto& ctx_mgr = compass_.dbContextManager();
+    auto& ctx_mgr = manager().dbContextManager();
 
     // contexts store their decoding configs from creation time - categories added to
     // the jASTERIX definitions later would otherwise stay disabled forever, since
@@ -624,7 +624,7 @@ void ASTERIXImportTask::refreshjASTERIX() const
 */
 bool ASTERIXImportTask::hasConfiguratonFor(unsigned int category)
 {
-    return compass_.dbContextManager().hasAsterixConfig(category);
+    return manager().dbContextManager().hasAsterixConfig(category);
 }
 
 /**
@@ -649,7 +649,7 @@ std::string ASTERIXImportTask::editionForCategory(unsigned int category)
 {
     traced_assert(hasConfiguratonFor(category));
 
-    auto* cfg = compass_.dbContextManager().asterixConfig(category);
+    auto* cfg = manager().dbContextManager().asterixConfig(category);
 
     // check if edition exists, otherwise reset to default
     if (jasterix_->category(category)->editions().count(cfg->edition()) == 0)
@@ -667,7 +667,7 @@ std::string ASTERIXImportTask::refEditionForCategory(unsigned int category)
 {
     traced_assert(hasConfiguratonFor(category));
 
-    auto* cfg = compass_.dbContextManager().asterixConfig(category);
+    auto* cfg = manager().dbContextManager().asterixConfig(category);
 
     // check if edition exists, otherwise reset to default
     if (cfg->ref().size() &&  // if value set and not exist in jASTERIX
@@ -686,7 +686,7 @@ std::string ASTERIXImportTask::spfEditionForCategory(unsigned int category)
 {
     traced_assert(hasConfiguratonFor(category));
 
-    auto* cfg = compass_.dbContextManager().asterixConfig(category);
+    auto* cfg = manager().dbContextManager().asterixConfig(category);
 
     // check if edition exists, otherwise reset to default
     if (cfg->spf().size() &&  // if value set and not exist in jASTERIX
@@ -940,7 +940,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
         ASTERIXPostprocessJob::loadObfuscationMaps();
 
     // the calculated variables, read from the variable model here on the main thread
-    calc_plan_ = dbContent::CalculationPlan::create(compass_.dbContentManager());
+    calc_plan_ = dbContent::CalculationPlan::create(manager().dbContentManager());
 
     // re-push chunk sizes in case the RAM tier was changed after construction
     jASTERIX::frame_chunk_size      = settings_.chunk_size_jasterix;
@@ -952,9 +952,9 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
 
     if (source_.isNetworkType())
     {
-        compass_.appMode(AppMode::LiveRunning); // set live mode
+        manager().appState().appMode(AppMode::LiveRunning); // set live mode
 
-        compass_.logInfo("ASTERIX Import") << "started: network";
+        manager().logStore().logInfo("ASTERIX Import") << "started: network";
 
         data_received_timer_.reset(new QTimer);
         connect(data_received_timer_.get(), &QTimer::timeout, this, &ASTERIXImportTask::checkDataReceivedSlot);
@@ -962,7 +962,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
         data_received_timer_->start();
     }
     else
-        compass_.logInfo("ASTERIX Import") << "started: files";
+        manager().logStore().logInfo("ASTERIX Import") << "started: files";
 
 
     //reset state before new run
@@ -1000,7 +1000,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     jASTERIX::add_record_data = true; // original record bytes as hex, mapped to Record Data
 
     // set up projections
-    ProjectionManager& proj_man = compass_.projectionManager();
+    ProjectionManager& proj_man = manager().projectionManager();
 
     traced_assert(proj_man.hasCurrentProjection());
     Projection& projection = proj_man.currentProjection();
@@ -1010,7 +1010,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     loginf << "starting decode job";
 
     if (source_.isNetworkType())
-        compass_.dbContextManager().createNetworkDBDataSources();
+        manager().dbContextManager().createNetworkDBDataSources();
 
     decode_job_ = make_shared<ASTERIXDecodeJob>(*this, post_process_);
 
@@ -1019,7 +1019,7 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     connect(decode_job_.get(), &ASTERIXDecodeJob::decodedASTERIXSignal, this,
             &ASTERIXImportTask::addDecodedASTERIXSlot, Qt::QueuedConnection);
 
-    compass_.jobManager().addBlockingJob(decode_job_);
+    manager().jobManager().addBlockingJob(decode_job_);
 
     loginf << "done";
 
@@ -1152,7 +1152,7 @@ void ASTERIXImportTask::addDecodedASTERIXSlot()
 
     //loginf << "queueing in new mapping job, main thread is " << QThread::currentThreadId();
 
-    compass_.jobManager().addNonBlockingJob(json_map_job);
+    manager().jobManager().addNonBlockingJob(json_map_job);
 }
 
 /**
@@ -1195,7 +1195,7 @@ void ASTERIXImportTask::mapJSONDoneSlot()
 
     // selection variables first: "Time of Day*" must hold the chosen time before the shift and
     // the timestamp, the positions before the projections fill the rows still null
-    dbContent::SelectionFiller::fill(compass_.dbContentManager(), job_buffers);
+    dbContent::SelectionFiller::fill(manager().dbContentManager(), job_buffers);
 
     logdbg << "starting ts calc";
 
@@ -1211,7 +1211,9 @@ void ASTERIXImportTask::mapJSONDoneSlot()
                              settings_.date_, settings_.reset_date_between_files_,
                              settings_.override_tod_active_, settings_.override_tod_offset_,
                              settings_.ignore_time_jumps_, check_future_ts,
-                             compass_);
+                             manager().appState(),
+                             dbcontent_man_,
+                             manager().logStore());
 
     logdbg << "ts calc done, calling timestampCalculationDoneSlot";
 
@@ -1266,7 +1268,11 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
     ts_calculator_.setProcessingDone();
 
     std::shared_ptr<ASTERIXPostprocessJob> postprocess_job =
-        make_shared<ASTERIXPostprocessJob>(std::move(job_buffers), settings_, calc_plan_, compass_);
+        make_shared<ASTERIXPostprocessJob>(std::move(job_buffers),
+                                           settings_,
+                                           calc_plan_,
+                                           dbcontent_man_,
+                                           manager().projectionManager());
 
     postprocess_jobs_.push_back(postprocess_job);
 
@@ -1274,7 +1280,7 @@ void ASTERIXImportTask::timestampCalculationDoneSlot()
     connect(postprocess_job.get(), &ASTERIXPostprocessJob::doneSignal, this,
             &ASTERIXImportTask::postprocessDoneSlot, Qt::QueuedConnection);
 
-    compass_.jobManager().addNonBlockingJob(postprocess_job);
+    manager().jobManager().addNonBlockingJob(postprocess_job);
 }
 
 /**
@@ -1330,7 +1336,7 @@ void ASTERIXImportTask::postprocessDoneSlot()
 
             if (!insert_active_ &&
                 !queued_insert_buffers_.empty() &&
-                !compass_.dbExportInProgress() &&
+                !manager().appState().dbExportInProgress() &&
                 !dbcontent_man_.dataEngine().isLoading())
             {
                 logdbg << "inserting";
@@ -1432,7 +1438,7 @@ void ASTERIXImportTask::postprocessDoneSlot()
 
         if (!insert_active_ &&
             !queued_insert_buffers_.empty() &&
-            !compass_.dbExportInProgress() &&
+            !manager().appState().dbExportInProgress() &&
             !dbcontent_man_.dataEngine().isLoading())
         {
             logdbg << "inserting";
@@ -1483,7 +1489,7 @@ void ASTERIXImportTask::insertData()
 
         // paused still ingests live buffers, cleanup would e.g. strip an all-null
         // timestamp column of a chunk without any ToD (CAT001) before insert
-        if (!isLiveSession(compass_.appMode())) // is cleaned special there
+        if (!isLiveSession(manager().appState().appMode())) // is cleaned special there
             job_it.second->deleteEmptyProperties();
     }
 
@@ -1571,16 +1577,16 @@ void ASTERIXImportTask::checkDataReceivedSlot()
 {
     loginf;
 
-    traced_assert(compass_.appMode() == AppMode::LiveRunning);
+    traced_assert(manager().appState().appMode() == AppMode::LiveRunning);
 
     using namespace boost::posix_time;
 
     if (!num_packets_in_processing_
-        && !compass_.dbInterface().cleanupInProgress()
+        && !manager().dbInterface().cleanupInProgress()
         && (microsec_clock::local_time() - last_live_update_time_).total_seconds() > 5)
     {
         loginf << "forcing live update";
-        QMetaObject::invokeMethod(&compass_.viewManager(), "forceLiveUpdate", Qt::QueuedConnection);
+        QMetaObject::invokeMethod(&manager().viewManager(), "forceLiveUpdate", Qt::QueuedConnection);
         last_live_update_time_ = microsec_clock::local_time();
     }
 }
@@ -1633,7 +1639,7 @@ bool ASTERIXImportTask::prepareReplay(const std::vector<std::string>& filenames,
     std::string  target_ip;
     unsigned int target_port {0};
 
-    for (auto& ds_it : compass_.dbContextManager().getNetworkLines())
+    for (auto& ds_it : manager().dbContextManager().getNetworkLines())
     {
         if (!ds_it.second.count(line_key))
             continue;
@@ -1722,8 +1728,8 @@ void ASTERIXImportTask::replaySenderDoneSlot()
         sender->stop(); // joins the finished threads
     replay_senders_.clear();
 
-    if (replay_stop_at_end_ && running_ && compass_.appMode() != AppMode::Offline)
-        compass_.mainWindow().liveStopSlot();
+    if (replay_stop_at_end_ && running_ && manager().appState().appMode() != AppMode::Offline)
+        manager().mainWindow().liveStopSlot();
 }
 
 /**
@@ -1797,7 +1803,7 @@ void ASTERIXImportTask::checkAllDone()
         accumulated_buffers_.clear();
 
         if (!insert_active_
-            && !compass_.dbExportInProgress()
+            && !manager().appState().dbExportInProgress()
             && !dbcontent_man_.dataEngine().isLoading())
         {
             insertData(); // calls checkAllDone again when done via insertDoneSlot
@@ -1818,7 +1824,7 @@ void ASTERIXImportTask::checkAllDone()
     {
         loginf << "setting all done: total packets " << num_packets_total_;
 
-        ts_calculator_.logLastTimestamp(compass_);
+        ts_calculator_.logLastTimestamp(manager().logStore());
 
         all_done_ = true;
         done_     = true; // why was this not set?
@@ -1830,7 +1836,7 @@ void ASTERIXImportTask::checkAllDone()
 
         int records_per_second = num_records_ / std::max(1.0, time_diff.total_milliseconds() / 1000.0);
 
-        compass_.logInfo("ASTERIX Import")
+        manager().logStore().logInfo("ASTERIX Import")
             << " finished after "
             << String::timeStringFromDouble(time_diff.total_milliseconds() / 1000.0, false)
             << ", inserted " << num_records_ << " rec"
@@ -1845,7 +1851,7 @@ void ASTERIXImportTask::checkAllDone()
             for (const auto& e : errors)
                 ss << e << "\n";
 
-            compass_.logError("ASTERIX Import")
+            manager().logStore().logError("ASTERIX Import")
                 << "Import finished with errors." << "\n\n"
                 << ss.str();
         }
@@ -1855,12 +1861,12 @@ void ASTERIXImportTask::checkAllDone()
             for (const auto& w : warnings)
                 ss << w << "\n";
 
-            compass_.logWarn("ASTERIX Import")
+            manager().logStore().logWarn("ASTERIX Import")
                 << "Import finished with warnings." << "\n\n"
                 << ss.str();
         }
 
-        compass_.mainWindow().updateMenus(); // re-enable import menu
+        manager().mainWindow().updateMenus(); // re-enable import menu
 
         logdbg << "refresh";
 
@@ -1877,13 +1883,13 @@ void ASTERIXImportTask::checkAllDone()
             logdbg << "deleting status widget";
         }
 
-        compass_.dbContextManager().saveCountsToDB();
+        manager().dbContextManager().saveCountsToDB();
 
         // merge per-DS / per-CAT / per-item probe stats into the cumulative
         // store and persist them for this DB
         {
             auto agg = ASTERIXImportProbeAggregator::aggregate(
-                source_, compass_.dbContextManager());
+                source_, manager().dbContextManager());
 
             context::DBContextManager::AsterixInfoMap delta;
             for (const auto& [ds_id, ds_probe] : agg.probe_by_dsid)
@@ -1902,12 +1908,12 @@ void ASTERIXImportTask::checkAllDone()
                 }
             }
 
-            compass_.dbContextManager().mergeAsterixInfo(delta);
-            compass_.dbContextManager().saveAsterixInfoToDB();
+            manager().dbContextManager().mergeAsterixInfo(delta);
+            manager().dbContextManager().saveAsterixInfoToDB();
         }
 
         // dbContentStatusChanged emitted by DBContentManager::finishInserting()
-        compass_.dbInterface().saveProperties();
+        manager().dbInterface().saveProperties();
 
         logRAMUsage("finalize before malloc_trim");
 
@@ -1932,16 +1938,16 @@ void ASTERIXImportTask::checkAllDone()
 
         //cleanup db after import
         if (source_.isFileType())
-            compass_.dbInterface().cleanupDB(true);
+            manager().dbInterface().cleanupDB(true);
 
         // append this import to the persistent "ASTERIX Import" task result.
         // Skip on cancel/error: we never open the result so previous content
         // (from earlier imports) stays untouched.
-        if (!stopped_ && !error_ && compass_.hasActiveContext())
+        if (!stopped_ && !error_ && manager().dbContextManager().hasActiveContext())
         {
             beginResultReport();
             buildResultReport(boost::posix_time::microsec_clock::local_time());
-            compass_.taskManager().endTaskResultWriting(true, allow_user_interactions_);
+            manager().endTaskResultWriting(true, allow_user_interactions_);
         }
 
         // Persist the obfuscation maps so the next import (this run or the
@@ -2113,7 +2119,7 @@ void ASTERIXImportTask::beginResultReport()
     // Single, persistent task result accumulating across all ASTERIX imports
     // into the open DB. Pass clear_existing=false so prior imports' content
     // is not wiped on each call. Network imports share the same result.
-    compass_.taskManager().beginTaskResultWriting(
+    manager().beginTaskResultWriting(
         "ASTERIX Import", task::TaskResultType::Generic, /*clear_existing=*/false);
 }
 
@@ -2125,7 +2131,7 @@ void ASTERIXImportTask::beginResultReport()
  */
 void ASTERIXImportTask::buildResultReport(const boost::posix_time::ptime& end_time)
 {
-    auto& tm = compass_.taskManager();
+    auto& tm = manager();
     auto report = tm.currentReport();
     if (!report)
         return;
@@ -2224,13 +2230,13 @@ void ASTERIXImportTask::buildResultReport(const boost::posix_time::ptime& end_ti
                 const unsigned int sic = Utils::Number::sicFromDsId(ds_id);
 
                 std::string ds_label;
-                if (auto* ds = compass_.dbContextManager().dataSource(ds_id))
+                if (auto* ds = manager().dbContextManager().dataSource(ds_id))
                     ds_label = ds->name() + " (" + std::to_string(sac) + "/" + std::to_string(sic) + ")";
                 else
                     ds_label = std::to_string(sac) + "/" + std::to_string(sic);
 
                 std::string ds_type;
-                if (auto* ds = compass_.dbContextManager().dataSource(ds_id))
+                if (auto* ds = manager().dbContextManager().dataSource(ds_id))
                     ds_type = ds->dsType();
                 if (ds_type.empty())
                     ds_type = ASTERIXImportProbeAggregator::inferDsType(ds_probe.categories);
@@ -2315,7 +2321,7 @@ void ASTERIXImportTask::buildResultReport(const boost::posix_time::ptime& end_ti
             for (const auto& [ds_id, ds_probe] : file_probe.probe_by_dsid)
             {
                 std::string ds_type;
-                if (auto* ds = compass_.dbContextManager().dataSource(ds_id))
+                if (auto* ds = manager().dbContextManager().dataSource(ds_id))
                     ds_type = ds->dsType();
                 if (ds_type.empty())
                     ds_type = ASTERIXImportProbeAggregator::inferDsType(ds_probe.categories);
@@ -2338,7 +2344,7 @@ void ASTERIXImportTask::buildResultReport(const boost::posix_time::ptime& end_ti
                     const unsigned int sic = Utils::Number::sicFromDsId(ds_id);
 
                     std::string ds_label;
-                    if (auto* ds = compass_.dbContextManager().dataSource(ds_id))
+                    if (auto* ds = manager().dbContextManager().dataSource(ds_id))
                         ds_label = ds->name() + " (" + std::to_string(sac) + "/" + std::to_string(sic) + ")";
                     else
                         ds_label = std::to_string(sac) + "/" + std::to_string(sic);

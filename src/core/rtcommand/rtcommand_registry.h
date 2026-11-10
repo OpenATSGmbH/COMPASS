@@ -19,11 +19,13 @@
 
 #include "singleton.h"
 #include "rtcommand.h"
+#include "traced_assert.h"
 
 #include <map>
 #include <vector>
 #include <functional>
 #include <iostream>
+#include <mutex>
 
 #include <QString>
 
@@ -33,6 +35,10 @@ namespace rtcommand
 /**
  * Registry/Factory for runtime commands.
  * Keeps track of registered runtime commands and spawns command templates given a registered command name.
+ * - the commands are registered at startup by the init_*_commands(registry, ...) functions of their modules,
+ *   whose creators pass the needed managers to the command constructors
+ * - cleared by the composition root on shutdown (the creators reference the managers)
+ * - thread safe: registration runs in the main thread, while the command threads may already create commands
  */
 class RTCommandRegistry : public Singleton
 {
@@ -53,7 +59,7 @@ public:
      */
     bool registerCommand(const QString& name, const QString& description, CreatorFunc func)
     {
-        //std::cout << "Registering command '" << name.toStdString() << "'" << std::endl;
+        std::lock_guard<std::mutex> lock(mutex_);
 
         bool inserted = creators_.insert(std::make_pair(name, func)).second;
 
@@ -65,25 +71,59 @@ public:
 
             commands_.insert(std::make_pair(name, d));
         }
-            
+
         return inserted;
+    }
+
+    /**
+     * Registers a command whose creator passes the given dependencies to its constructor.
+     * Notice: the dependencies must outlive the registration (see clear()).
+     */
+    template<typename Cmd, typename... Deps>
+    void registerCommand(Deps&... deps)
+    {
+        bool inserted = registerCommand(Cmd::staticName(),
+                                        Cmd::staticDescription(),
+                                        [ &deps... ] () { return new Cmd(deps...); });
+        traced_assert(inserted); // registered twice => programming error
+    }
+
+    /**
+     * Removes all registered commands.
+     */
+    void clear()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+
+        creators_.clear();
+        commands_.clear();
     }
 
     /**
      * Returns names and descriptions for all available/registered commands.
      */
-    const AvailableCommands& availableCommands() const { return commands_; }
+    AvailableCommands availableCommands() const
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return commands_;
+    }
 
     /**
      * Cheacks if a command of the given name is registered.
      */
-    bool hasCommand(const QString& name) { return commands_.find(name) != commands_.end(); }
+    bool hasCommand(const QString& name)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return commands_.find(name) != commands_.end();
+    }
 
     /**
      * Creates an unconfigured command template given a registered command name.
      */
     std::unique_ptr<RTCommand> createCommandTemplate(const QString& name)
     {
+        std::lock_guard<std::mutex> lock(mutex_);
+
         auto it = creators_.find(name);
         if (it == creators_.end() || !it->second)
             return std::unique_ptr<RTCommand>();
@@ -94,6 +134,7 @@ public:
 protected:
     RTCommandRegistry() = default;
 
+    mutable std::mutex             mutex_;
     std::map<QString, CreatorFunc> creators_;
     AvailableCommands              commands_;
 };

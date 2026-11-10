@@ -18,7 +18,6 @@
 #include "deletedatadialog.h"
 #include "db_context_manager.h"
 #include "data_source.h"
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "stringconv.h"
@@ -39,8 +38,10 @@
 
 using namespace std;
 
-DeleteDataDialog::DeleteDataDialog(context::DBContextManager& ctx_man, QWidget* parent)
-    : QDialog(parent), ctx_man_(ctx_man)
+DeleteDataDialog::DeleteDataDialog(context::DBContextManager& ctx_man,
+                                   DBContentManager& dbcont_man,
+                                   QWidget* parent)
+    : QDialog(parent), ctx_man_(ctx_man), dbcont_man_(dbcont_man)
 {
     setWindowTitle("Delete Data");
     setMinimumSize(QSize(1000, 800));
@@ -56,7 +57,7 @@ void DeleteDataDialog::createUI()
     QGroupBox* dbc_group = new QGroupBox("DBContent");
     QGridLayout* dbc_layout = new QGridLayout;
 
-    DBContentManager& dbcont_man = ctx_man_.compass().dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     vector<string> dbc_names;
     for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
@@ -278,7 +279,7 @@ nlohmann::json DeleteDataDialog::selectedDeleteInfo() const
     //    (skip dbcontents already fully deleted above)
     if (!sel_ds.empty())
     {
-        DBContentManager& dbcont_man = ctx_man_.compass().dbContentManager();
+        DBContentManager& dbcont_man = dbcont_man_;
 
         for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
         {

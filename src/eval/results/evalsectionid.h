@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "task/result/report/sectionid.h"
+#include "report/sectionid.h"
 #include "evaluationdefs.h"
 
 #include <string>

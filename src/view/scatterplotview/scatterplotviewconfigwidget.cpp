@@ -16,7 +16,7 @@
  */
 
 #include "scatterplotviewconfigwidget.h"
-#include "compass.h"
+#include "viewmanager.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 #include "scatterplotviewwidget.h"
@@ -55,7 +55,7 @@ ScatterPlotViewConfigWidget::ScatterPlotViewConfigWidget(ScatterPlotViewWidget* 
 
     auto layout = configLayout();
 
-    layout->addWidget(new ColorModeLabel(view_->compass(), this));
+    layout->addWidget(new ColorModeLabel(view_->viewManager().appState(), this));
 
     layer_panel_ = createLayerPanel({ ViewLayerPanelWidget::nullCountColumn() }, view_->canShowAnnotations());
     layout->addWidget(layer_panel_);

@@ -29,6 +29,7 @@
 
 namespace context { class DBContextManager; class DataSource; }
 
+class DBContentManager;
 class DBContentDeleteDBJob;
 class QMessageBox;
 
@@ -227,7 +228,9 @@ signals:
     void dataSourceSelectedSignal(unsigned int ds_id);
 
 public:
-    DataSourcesWidget(bool can_show_counts, context::DBContextManager& ctx_man);
+    DataSourcesWidget(bool can_show_counts,
+                      context::DBContextManager& ctx_man,
+                      DBContentManager& dbcont_man);
     virtual ~DataSourcesWidget();
 
     void updateContent(bool recreate_required = false);
@@ -242,6 +245,7 @@ public:
     virtual bool getShowCounts() const;
 
     context::DBContextManager& ctxManager() { return ctx_man_; }
+    DBContentManager& dbContentManager() { return dbcont_man_; }
 
     void addActionsToConfigMenu(QMenu* menu);
 
@@ -255,6 +259,7 @@ public:
 protected:
     bool can_show_counts_;
     context::DBContextManager& ctx_man_;
+    DBContentManager&          dbcont_man_;
 
     QHBoxLayout* top_layout_ {nullptr};
     QTreeWidget* tree_widget_ {nullptr};

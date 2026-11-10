@@ -16,13 +16,12 @@
  */
 
 #include "unitmanager.h"
-#include "compass.h"
 #include "dimension.h"
 #include "logger.h"
 
 #include <math.h>
 
-UnitManager::UnitManager(nlohmann::json& config, COMPASS* parent)
+UnitManager::UnitManager(nlohmann::json& config, Configurable* parent)
     : Configurable(config, parent)
 {
     createSubConfigurables();

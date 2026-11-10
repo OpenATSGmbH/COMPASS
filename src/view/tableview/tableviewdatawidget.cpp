@@ -16,11 +16,12 @@
  */
 
 #include "tableviewdatawidget.h"
+#include "appstate.h"
+#include "viewmanager.h"
 #include "tableviewwidget.h"
 #include "tableview.h"
 #include "allbuffertablewidget.h"
 #include "allbuffertablemodel.h"
-#include "compass.h"
 #include "buffer.h"
 #include "data_source.h"
 #include "db_context_manager.h"
@@ -125,7 +126,7 @@ bool TableViewDataWidget::launchAsyncPrepare()
     for (auto& buf_it : viewData())
         num_records += buf_it.second->size();
 
-    bool async = view_->compass().appMode() != AppMode::LiveRunning && num_records > 0;
+    bool async = view_->viewManager().appState().appMode() != AppMode::LiveRunning && num_records > 0;
 
     if (!async)
         return false;
@@ -136,7 +137,9 @@ bool TableViewDataWidget::launchAsyncPrepare()
     traced_assert(model);
 
     auto scan_input = std::make_shared<view_layer_scan::ScanInput>(
-        view_layer_scan::makeScanInput(viewData(), view_->compass()));
+        view_layer_scan::makeScanInput(viewData(),
+                                       view_->viewManager().dbContentManager(),
+                                       view_->viewManager().dbContextManager()));
     auto prep_input = std::make_shared<AllBufferTableModel::PrepareInput>(
         model->makePrepareInput(viewData(), /*for_load*/ true));
 
@@ -451,7 +454,7 @@ void TableViewDataWidget::pushLayerStateToModel()
     std::set<std::string> allowed;
     std::map<std::string, QColor> layer_colors;
 
-    auto& dbcont_man = view_->compass().dbContentManager();
+    auto& dbcont_man = view_->viewManager().dbContentManager();
     for (const auto& layer : layers)
     {
         if (layer->visible())

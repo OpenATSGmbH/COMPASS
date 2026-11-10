@@ -16,12 +16,12 @@
  */
 
 #include "scatterplotviewdatasource.h"
+#include "viewmanager.h"
 #include "scatterplotview.h"
 #include "viewabledataconfig.h"
 
 #include <QMessageBox>
 
-#include "compass.h"
 //#include "configuration.h"
 //#include "configurationmanager.h"
 #include "dbcontent/dbcontent.h"
@@ -74,7 +74,7 @@ void ScatterPlotViewDataSource::generateSubConfigurable(nlohmann::json& child_js
     if (class_name.compare("VariableOrderedSet") == 0)
     {
         traced_assert(set_ == 0);
-        set_ = new dbContent::VariableOrderedSet(child_json, view_->compass().dbContentManager(), this);
+        set_ = new dbContent::VariableOrderedSet(child_json, view_->viewManager().dbContentManager(), this);
     }
     else
         throw std::runtime_error(

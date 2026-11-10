@@ -22,6 +22,7 @@
 #include <QObject>
 
 class AnalyzeDataSourceTask;
+class TaskManager;
 
 /**
  * TaskResult subclass produced by AnalyzeDataSourceTask, tagged DataSourceAnalysis (=2) in the
@@ -54,4 +55,7 @@ protected:
 
 protected slots:
     void informUpdateAnalysisResult(int state);
+
+private:
+    TaskManager& task_man_; // the full task manager (TaskResult only knows ITaskProvider)
 };

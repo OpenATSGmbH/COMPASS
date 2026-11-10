@@ -19,7 +19,6 @@
 
 #include <QApplication>
 
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/metavariable.h"
@@ -29,7 +28,6 @@
 #include "histogramviewwidget.h"
 #include "logger.h"
 #include "latexvisitor.h"
-#include "evaluationmanager.h"
 #include "viewpointgenerator.h"
 
 using namespace dbContent;

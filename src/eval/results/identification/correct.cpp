@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/identification/correct.h"
+#include "results/identification/correct.h"
 
 namespace EvaluationRequirementResult
 {

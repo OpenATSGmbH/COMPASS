@@ -15,12 +15,12 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/detection/detection.h"
-#include "eval/results/evaluationdetail.h"
-#include "eval/results/base/featuredefinitions.h"
+#include "results/detection/detection.h"
+#include "results/evaluationdetail.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/detection/detection.h"
+#include "requirement/base/base.h"
+#include "requirement/detection/detection.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"

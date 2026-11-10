@@ -19,6 +19,7 @@
 #include "dialogs.h"
 #include "analyzedatasourcedialog.h"
 #include "analyze_commands.h"
+#include "rtcommand_registry.h"
 #include "analysisdataset.h"
 #include "datasourceinspectorbase.h"
 #include "inspectorsettingsbase.h"
@@ -41,8 +42,7 @@
 #include "smrunassociatedinspector.h"
 #endif
 
-#include "compass.h"
-#include "mainwindow.h"
+#include "imainwindow.h"
 #include "taskmanager.h"
 #include "evaluationmanager.h"
 #include "evaluationconstraints.h"
@@ -113,7 +113,7 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     // The runtime-command registry is process-global; initialize it once from
     // the primary (MLAT) instance to avoid a double registration.
     if (ds_type_ == "MLAT")
-        init_analyze_commands(compass());
+        init_analyze_commands(rtcommand::RTCommandRegistry::instance(), manager());
 }
 
 AnalyzeDataSourceTask::~AnalyzeDataSourceTask() = default;
@@ -289,7 +289,7 @@ void AnalyzeDataSourceTask::initTask()
 
     // A new active context exposes a different data-source set, so any
     // previously-saved custom report name will no longer match - drop it.
-    connect(&compass().dbContextManager(),
+    connect(&manager().dbContextManager(),
             &context::DBContextManager::activeContextChangedSignal,
             this, [this]() { resetCustomReportName(); });
 }
@@ -459,7 +459,7 @@ std::set<unsigned int> AnalyzeDataSourceTask::selectedDataSourceIDs() const
 
 bool AnalyzeDataSourceTask::dataSourceHasCategory(unsigned int ds_id, unsigned int cat) const
 {
-    const auto& info_map = compass().dbContextManager().asterixInfo();
+    const auto& info_map = manager().dbContextManager().asterixInfo();
     auto it = info_map.find(ds_id);
     if (it == info_map.end())
         return false;
@@ -468,7 +468,7 @@ bool AnalyzeDataSourceTask::dataSourceHasCategory(unsigned int ds_id, unsigned i
 
 bool AnalyzeDataSourceTask::dataSourceMatches(unsigned int ds_id) const
 {
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     const auto* ds = ctx.dataSource(ds_id);
     if (!ds)
         return false;
@@ -484,7 +484,7 @@ bool AnalyzeDataSourceTask::dataSourceMatches(unsigned int ds_id) const
 std::set<unsigned int> AnalyzeDataSourceTask::testDataSourceCandidateIDs() const
 {
     std::set<unsigned int> ids;
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     for (auto ds_id : ctx.allDataSourceIds())
     {
         if (dataSourceMatches(ds_id))
@@ -537,7 +537,7 @@ std::set<unsigned int> AnalyzeDataSourceTask::selectedReferenceDataSourceIDs() c
 std::set<unsigned int> AnalyzeDataSourceTask::referenceDataSourceCandidateIDs() const
 {
     std::set<unsigned int> ids;
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     auto types = ctx.dsTypes();
 
     for (auto ds_id : ctx.allDataSourceIds())
@@ -562,7 +562,7 @@ std::string AnalyzeDataSourceTask::suggestReportName() const
     if (ids.empty())
         return "Analyze " + ds_type_ + " Data Source";
 
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     const auto* ds = ctx.dataSource(*ids.begin());
     std::string name = ds ? ds->name() : std::to_string(*ids.begin());
 
@@ -681,7 +681,7 @@ AnalyzeDataSourceTask::clampedCellSizes(const AnalysisDataset& dataset) const
 
 bool AnalyzeDataSourceTask::selectionContainsCAT020() const
 {
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     const auto& info_map = ctx.asterixInfo();
 
     for (auto ds_id : selectedDataSourceIDs())
@@ -791,7 +791,7 @@ ADSBAccuracyInspectorSettings& AnalyzeDataSourceTask::adsbAccuracySettings() con
 
 bool AnalyzeDataSourceTask::professionalLicenseEnabled() const
 {
-    return compass().licenseManager().componentEnabled(
+    return manager().licenseManager().componentEnabled(
         license::License::Component::ComponentProbIMMReconstructor);
 }
 
@@ -810,7 +810,7 @@ void AnalyzeDataSourceTask::setUseSector(const std::string& layer_name, bool val
 std::vector<std::string> AnalyzeDataSourceTask::selectedSectorLayers() const
 {
     std::vector<std::string> out;
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     for (const auto& layer : ctx.sectorLayers())
     {
         if (layer && useSector(layer->name()))
@@ -822,18 +822,13 @@ std::vector<std::string> AnalyzeDataSourceTask::selectedSectorLayers() const
 std::vector<std::shared_ptr<SectorLayer>> AnalyzeDataSourceTask::scopeSectorLayers() const
 {
     std::vector<std::shared_ptr<SectorLayer>> out;
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     for (const auto& layer : ctx.sectorLayers())
     {
         if (layer && useSector(layer->name()))
             out.push_back(layer);
     }
     return out;
-}
-
-COMPASS& AnalyzeDataSourceTask::compass() const
-{
-    return task_manager_.compass();
 }
 
 void AnalyzeDataSourceTask::showDialog()
@@ -922,7 +917,7 @@ void AnalyzeDataSourceTask::run()
     loginf << "running with ds_type " << ds_type_
            << " selected " << selectedDataSourceIDs().size() << " data sources";
 
-    auto& tm = compass().taskManager();
+    auto& tm = manager();
 
     const std::string window_title = "Analyze " + ds_type_ + " Data Source";
     const std::string result_name  = reportName();
@@ -1029,7 +1024,7 @@ void AnalyzeDataSourceTask::run()
         std::string out;
         for (auto ds_id : ids)
         {
-            const auto* ds = compass().dbContextManager().dataSource(ds_id);
+            const auto* ds = manager().dbContextManager().dataSource(ds_id);
             if (!ds)
                 continue;
             if (!out.empty()) out += "\n";
@@ -1085,7 +1080,7 @@ void AnalyzeDataSourceTask::run()
     if (use_eval_exclusions_)
     {
         eval_exclusions = std::make_shared<EvaluationConstraints>();
-        eval_exclusions->update(compass().evaluationManager());
+        eval_exclusions->update(manager().evaluationManager());
 
         auto& excl_section = overview.addSubSection(EvaluationConstraints::ExcludedDataSectionHeading);
         eval_exclusions->addReportSection(excl_section, nullptr, false);
@@ -1099,7 +1094,7 @@ void AnalyzeDataSourceTask::run()
     {
         advanceStep("Loading combined dataset...");
 
-        dataset.reset(new AnalysisDataset(compass()));
+        dataset.reset(new AnalysisDataset(manager().dbContentManager(), manager().dbContextManager()));
 
         AnalysisDataset::ScopeFilter scope_filter;
         scope_filter.ground_only = use_ground_only_;
@@ -1109,7 +1104,7 @@ void AnalyzeDataSourceTask::run()
         scope_filter.max_fl      = max_fl_;
         scope_filter.limit_by_sectors = limit_by_sectors_;
         {
-            auto& ctx = compass().dbContextManager();
+            auto& ctx = manager().dbContextManager();
 
             if (limit_by_sectors_)
             {
@@ -1181,7 +1176,7 @@ void AnalyzeDataSourceTask::run()
                 std::string cycles;
                 for (const auto& kv : dataset->statusCyclesByDS())
                 {
-                    const auto* ds = compass().dbContextManager().dataSource(kv.first);
+                    const auto* ds = manager().dbContextManager().dataSource(kv.first);
                     if (!cycles.empty()) cycles += "\n";
                     cycles += (ds ? ds->name() : std::to_string(kv.first))
                               + ": " + std::to_string(kv.second.size());
@@ -1274,5 +1269,5 @@ void AnalyzeDataSourceTask::run()
     // Mirror the evaluation flow: switch to the Task Results tool and show
     // the freshly written report so the user lands on it without an extra
     // click. See MainWindow::showResult / showEvaluationResult.
-    compass().mainWindow().showResult(result_name);
+    manager().mainWindow().showResult(result_name);
 }

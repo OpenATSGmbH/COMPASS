@@ -29,7 +29,8 @@
 #include <map>
 
 class Buffer;
-class COMPASS;
+class DBContentManager;
+class ProjectionManager;
 
 namespace dbContent
 {
@@ -43,11 +44,13 @@ public:
     ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers,
                           ASTERIXImportTaskSettings settings,
                           std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
-                          COMPASS& compass);
+                          DBContentManager& dbcont_man,
+                          ProjectionManager& proj_man);
 
     ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers,
                           std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
-                          COMPASS& compass);
+                          DBContentManager& dbcont_man,
+                          ProjectionManager& proj_man);
     // ctor with no checks/overrides/filters for JSON
 
     virtual ~ASTERIXPostprocessJob();
@@ -62,7 +65,8 @@ private:
 
     ASTERIXImportTaskSettings settings_;
     std::shared_ptr<const dbContent::CalculationPlan> calc_plan_;
-    COMPASS& compass_;
+    DBContentManager& dbcont_man_;
+    ProjectionManager& proj_man_;
 
     static boost::mutex m3a_map_mutex_;
     static tbb::concurrent_unordered_map<unsigned int, unsigned int> obfuscate_m3a_map_;

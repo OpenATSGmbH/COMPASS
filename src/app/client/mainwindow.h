@@ -18,6 +18,7 @@
 #pragma once
 #include "appmode.h"
 #include "autoresumedialog.h"
+#include "imainwindow.h"
 
 #include <QMainWindow>
 
@@ -41,8 +42,9 @@ class MainLoadWidget;
 class ToolBox;
 
 class COMPASS;
+class CompassRoot;
 
-class MainWindow : public QMainWindow
+class MainWindow : public QMainWindow, public IMainWindow
 {
     Q_OBJECT
 signals:
@@ -66,7 +68,7 @@ public slots:
     void loadingDoneSlot();
 
     void livePauseResumeSlot();
-    void liveStopSlot();
+    void liveStopSlot() override;
 
     void configureDBContentSlot();
 
@@ -79,7 +81,7 @@ public slots:
 
     void importGPSTrailSlot();
 
-    void importViewPointsSlot();
+    void importViewPointsSlot() override;
 
     void calculateRadarPlotPositionsSlot();
     void calculateAssociationsARTASSlot();
@@ -109,7 +111,7 @@ public slots:
     void updateMenuEnabledState();
 
 public:
-    explicit MainWindow(COMPASS& compass);
+    explicit MainWindow(CompassRoot& root);
     virtual ~MainWindow();
 
     void init();
@@ -121,14 +123,14 @@ public:
     void createInMemoryDB(const std::string& future_filename = "");
     void createDBFromMemory();
 
-    void updateMenus();
+    void updateMenus() override;
     void updateBottomWidget();
 
     void loadingStarted();
     void loadingDone();
 
     void selectTool(const std::string& name);
-    void showResult(const std::string& name);
+    void showResult(const std::string& name) override;
 
 protected:
     void createUI();
@@ -210,7 +212,8 @@ protected:
 private:
     void showCommandShell();
 
-    COMPASS& compass_;
+    CompassRoot& root_; // managers of the upper layers
+    COMPASS&     compass_;
 
     unsigned int tool_ds_;
     unsigned int tool_sstatus_;

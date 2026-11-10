@@ -24,7 +24,7 @@
 #include "color_provider.h"
 
 class ViewLayerTreeModel;
-class COMPASS;
+class AppState;
 
 /**
  */
@@ -50,8 +50,8 @@ public:
     /// default expansion of the Data subtree: the root plus depth levels below it (-1 = collapsed),
     /// applied to all Data rows on change
     void setDataExpansion(int depth);
-    /// Data expansion follows the COMPASS color mode
-    void followColorMode(COMPASS& compass);
+    /// Data expansion follows the color mode of the app state
+    void followColorMode(AppState& app_state);
 
     /// levels below the Data root expanded by default, so the rows distinguishing the mode's colors are visible
     static int dataExpansionDepth(context::ColorProvider::Mode mode);

@@ -6,7 +6,6 @@ target_include_directories(compass_view PUBLIC
 
 target_sources(compass_view
     PUBLIC
-        "${CMAKE_CURRENT_LIST_DIR}/viewabledataconfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewpoint.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewpoint_commands.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewpointswidget.h"

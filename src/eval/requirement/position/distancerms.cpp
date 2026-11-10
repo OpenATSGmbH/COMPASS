@@ -15,12 +15,12 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/distancerms.h"
-#include "eval/results/position/distancerms.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/position/distancerms.h"
+#include "results/position/distancerms.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "sectorlayer.h"
 
 #include <algorithm>

@@ -15,11 +15,11 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/identification/change_delay.h"
-#include "eval/results/evaluationdetail.h"
+#include "results/identification/change_delay.h"
+#include "results/evaluationdetail.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/identification/change_delay.h"
+#include "requirement/base/base.h"
+#include "requirement/identification/change_delay.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"

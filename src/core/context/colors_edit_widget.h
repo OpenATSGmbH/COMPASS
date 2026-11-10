@@ -42,12 +42,14 @@ class DBContextManager;
  *    color buttons with per-line reset.
  *
  * on_changed is invoked after any edit so the dialog can persist the context.
+ * dbcontent_names are the DBContents listed in the DBContent palette (those containing target reports).
  */
 class ColorsEditWidget : public QWidget
 {
     Q_OBJECT
 public:
     ColorsEditWidget(DBContextManager& manager,
+                     const std::vector<std::string>& dbcontent_names,
                      std::function<void()> on_changed,
                      QWidget* parent = nullptr);
 
@@ -76,6 +78,7 @@ private:
     void clearLayout(QVBoxLayout* layout);
 
     DBContextManager& manager_;
+    std::vector<std::string> dbcontent_names_; // sorted
     std::function<void()> on_changed_;
 
     QRadioButton* light_radio_ {nullptr};

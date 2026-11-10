@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/latency/adsblatency.h"
-#include "eval/results/latency/adsblatency.h"
+#include "requirement/latency/adsblatency.h"
+#include "results/latency/adsblatency.h"
 
 #include "evaluationmanager.h"
 #include "logger.h"

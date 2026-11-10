@@ -20,6 +20,7 @@
 #include "toolboxwidget.h"
 
 class DataSourcesStatusWidget;
+class SensorStatusTracker;
 namespace context { class DBContextManager; }
 
 class QComboBox;
@@ -30,6 +31,7 @@ class QLabel;
 class QSplitter;
 
 /**
+ * Sensor Status tool: shows and selects the tracker line of the SensorStatusTracker, with its events.
  */
 class DataSourcesStatusToolWidget : public ToolBoxWidget
 {
@@ -38,7 +40,8 @@ class DataSourcesStatusToolWidget : public ToolBoxWidget
 public:
     typedef std::map<unsigned int, std::vector<unsigned int>> ActiveTrackerLines;
 
-    DataSourcesStatusToolWidget(context::DBContextManager& ctx_man);
+    DataSourcesStatusToolWidget(context::DBContextManager& ctx_man,
+                                SensorStatusTracker& tracker);
     virtual ~DataSourcesStatusToolWidget();
 
     //ToolBoxWidget
@@ -82,6 +85,7 @@ private:
     void eventFollowBoxToggled(bool ok);
 
     context::DBContextManager& ctx_man_;
+    SensorStatusTracker&       tracker_;
     DataSourcesStatusWidget* ds_widget_{nullptr};
 
     QSplitter*   main_splitter_          = nullptr;

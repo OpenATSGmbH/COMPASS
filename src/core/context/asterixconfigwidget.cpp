@@ -95,7 +95,7 @@ ASTERIXConfigWidget::~ASTERIXConfigWidget() {}
 
 void ASTERIXConfigWidget::initjASTERIX()
 {
-    std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+    std::string jasterix_definition_path = Utils::Files::dataDirectory() + "jasterix_definitions";
 
     logdbg << "jasterix definition path '" << jasterix_definition_path << "'";
     traced_assert(Files::directoryExists(jasterix_definition_path));

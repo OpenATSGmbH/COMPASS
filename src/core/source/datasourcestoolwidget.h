@@ -20,6 +20,7 @@
 #include "toolboxwidget.h"
 
 class DataSourcesWidget;
+class DBContentManager;
 namespace context { class DBContextManager; }
 
 
@@ -32,7 +33,8 @@ class DataSourcesToolWidget : public ToolBoxWidget
     Q_OBJECT
 
 public:
-    DataSourcesToolWidget(context::DBContextManager& ctx_man);
+    DataSourcesToolWidget(context::DBContextManager& ctx_man,
+                          DBContentManager& dbcont_man);
     virtual ~DataSourcesToolWidget();
 
         //ToolBoxWidget
@@ -53,6 +55,7 @@ private slots:
 
 private:
     context::DBContextManager& ctx_man_;
+    DBContentManager&          dbcont_man_;
     DataSourcesWidget* ds_widget_{nullptr};
 
     QComboBox* color_mode_combo_{nullptr};

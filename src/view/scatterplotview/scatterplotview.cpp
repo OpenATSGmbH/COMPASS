@@ -16,9 +16,9 @@
  */
 
 #include "scatterplotview.h"
+#include "viewmanager.h"
 #include "viewcontainer.h"
 
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/metavariable.h"
@@ -176,7 +176,7 @@ VariableSet ScatterPlotView::getBaseSet(const std::string& dbcontent_name)
 
     if (dbcontent_name == "CAT063") // add sensor sec/sic special case
     {
-        DBContentManager& dbcont_man = compass().dbContentManager();
+        DBContentManager& dbcont_man = viewManager().dbContentManager();
 
         traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sac_));
         traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat063_sensor_sic_));

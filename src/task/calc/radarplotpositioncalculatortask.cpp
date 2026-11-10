@@ -16,8 +16,8 @@
  */
 
 #include "radarplotpositioncalculatortask.h"
+#include "logmodel.h"
 #include "dialogs.h"
-#include "compass.h"
 #include "buffer.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
@@ -46,12 +46,10 @@ using namespace Utils;
 using namespace dbContent;
 
 RadarPlotPositionCalculatorTask::RadarPlotPositionCalculatorTask(nlohmann::json& config,
-                                                                 TaskManager* parent,
-                                                                 COMPASS& compass)
+                                                                 TaskManager* parent)
     : Task(*parent),
       Configurable(config, parent),
-      compass_(compass),
-      dbcontent_man_(compass.dbContentManager())
+      dbcontent_man_(parent->dbContentManager())
 {
     tooltip_ =
             "Allows calculation of Radar plot position information based on the defined data sources.";
@@ -63,7 +61,7 @@ RadarPlotPositionCalculatorTask::~RadarPlotPositionCalculatorTask() {}
 
 ProjectionManager& RadarPlotPositionCalculatorTask::projectionManager()
 {
-    return compass_.projectionManager();
+    return manager().projectionManager();
 }
 
 void RadarPlotPositionCalculatorTask::showDialog()
@@ -91,7 +89,7 @@ bool RadarPlotPositionCalculatorTask::canRun()
             && !dbcont_man.dbContent("CAT048").loadable())
         return false;
 
-    auto& ctx_man = compass_.dbContextManager();
+    auto& ctx_man = manager().dbContextManager();
 
     bool found_radar_with_data = false;
     for (const auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
@@ -114,11 +112,11 @@ void RadarPlotPositionCalculatorTask::run()
 
     start_time_ = boost::posix_time::microsec_clock::local_time();
 
-    compass_.logInfo("Radar Plot Position Calculation")
+    manager().logStore().logInfo("Radar Plot Position Calculation")
         << "started";
 
     // set up projections
-    ProjectionManager& proj_man = compass_.projectionManager();
+    ProjectionManager& proj_man = manager().projectionManager();
 
     traced_assert(proj_man.hasCurrentProjection());
     Projection& projection = proj_man.currentProjection();
@@ -181,7 +179,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     data_ = load_op_->buffers();
     load_op_ = nullptr; // release the isolated operation
 
-    ProjectionManager& proj_man = compass_.projectionManager();
+    ProjectionManager& proj_man = manager().projectionManager();
 
     std::pair<unsigned int, std::map<std::string, std::shared_ptr<Buffer>>> result_buffers =
             proj_man.doUpdateRadarPlotPositionCalculations (data_);
@@ -197,7 +195,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
     traced_assert(msg_box_);
     delete msg_box_;
 
-    compass_.logInfo("Radar Plot Position Calculation")
+    manager().logStore().logInfo("Radar Plot Position Calculation")
         << transformation_errors << " transformation errors";
 
     if (transformation_errors)
@@ -215,7 +213,7 @@ void RadarPlotPositionCalculatorTask::loadingDoneSlot()
             loginf << "aborted by user because of "
                       "transformation errors";
 
-            compass_.logInfo("Radar Plot Position Calculation") << "save declined";
+            manager().logStore().logInfo("Radar Plot Position Calculation") << "save declined";
 
             return;
         }
@@ -296,7 +294,7 @@ void RadarPlotPositionCalculatorTask::updateDoneSlot(DBContent& db_content)
         delete msg_box_;
         msg_box_ = nullptr;
 
-        compass_.logInfo("Radar Plot Position Calculation")
+        manager().logStore().logInfo("Radar Plot Position Calculation")
             << "finished after "
             << String::timeStringFromDouble(time_diff.total_milliseconds() / 1000.0, false);
 

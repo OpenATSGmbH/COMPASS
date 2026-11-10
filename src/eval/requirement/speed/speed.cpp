@@ -15,13 +15,13 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/speed/speed.h"
-#include "eval/results/speed/speed.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/speed/speed.h"
+#include "results/speed/speed.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
 
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "sectorlayer.h"
 
 #include <ogr_spatialref.h>

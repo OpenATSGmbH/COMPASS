@@ -22,7 +22,7 @@
 
 #include "global.h"
 
-#include "util/stringconv.h"
+#include "stringconv.h"
 
 #include <QBuffer>
 #include <QImageReader>
@@ -1164,9 +1164,9 @@ QRectF ViewPointGenAnnotations::roi() const
  * ViewPointGenVP
  ********************************************************************************/
 
-//literals, not copies of the ViewPoint::VP_*_KEY strings: the initialization order of
+//literals, not copies of the ViewPointKeys::VP_*_KEY strings: the initialization order of
 //static strings in different files is undefined, a copy can be empty (seen on Windows,
-//no annotations found). Values must stay equal to the ViewPoint keys (unit test).
+//no annotations found). Values must stay equal to the ViewPointKeys keys (unit test).
 const std::string ViewPointGenVP::ViewPointFieldName        = "name";
 const std::string ViewPointGenVP::ViewPointFieldID          = "id";
 const std::string ViewPointGenVP::ViewPointFieldType        = "type";
@@ -1232,7 +1232,7 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
     j[ViewPointFieldStatus] = statusString();
 
     if (description_.size())
-        j[ViewPoint::VP_DESCRIPTION_KEY] = description_;
+        j[ViewPointKeys::VP_DESCRIPTION_KEY] = description_;
 
     if (!roi_.isEmpty())
     {
@@ -1266,9 +1266,9 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
     }
 
     if (no_data_loaded_)
-        j[ViewPoint::VP_DS_TYPES_KEY] = nlohmann::json::array();
+        j[ViewPointKeys::VP_DS_TYPES_KEY] = nlohmann::json::array();
     else if (!ds_types_.empty())
-        j[ViewPoint::VP_DS_TYPES_KEY] = ds_types_;
+        j[ViewPointKeys::VP_DS_TYPES_KEY] = ds_types_;
 }
 
 /**
@@ -1473,7 +1473,7 @@ void ViewPointGenerator::toJSON(nlohmann::json& j,
     nlohmann::json vp_content;
 
     vp_content[ViewPointsFieldContentType] = "view_points";
-    vp_content[ViewPointsFieldVersion    ] = ViewPoint::VP_COLLECTION_CONTENT_VERSION;
+    vp_content[ViewPointsFieldVersion    ] = ViewPointKeys::VP_COLLECTION_CONTENT_VERSION;
 
     nlohmann::json viewpoints = nlohmann::json::array();
 

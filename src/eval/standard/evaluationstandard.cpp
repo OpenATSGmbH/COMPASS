@@ -18,19 +18,19 @@
 #include "evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "evaluationcalculator.h"
-#include "eval/requirement/group.h"
+#include "requirement/group.h"
 #include "evaluationstandardwidget.h"
 #include "evaluationstandardtreemodel.h"
 #include "logger.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttext.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttext.h"
+#include "report/sectioncontenttable.h"
 
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/data/evaluationtargetdata.h"
+#include "requirement/group.h"
+#include "requirement/base/baseconfig.h"
+#include "data/evaluationtargetdata.h"
 
 #include <QTreeView>
 

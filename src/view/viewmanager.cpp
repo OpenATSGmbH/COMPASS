@@ -18,11 +18,15 @@
 #include "viewmanager.h"
 #include "loadcontroller.h"
 #include "livecontroller.h"
-#include "compass.h"
+#include "appstate.h"
+#include "jobmanager.h"
+#include "licensemanager.h"
+#include "imainwindow.h"
 #include "buffer.h"
 #include "logger.h"
 #include "stringconv.h"
 #include "view.h"
+#include "viewwidget.h"
 #include "viewcontainer.h"
 #include "viewcontainerwidget.h"
 #include "viewpoint.h"
@@ -42,10 +46,11 @@
 #include "dbcontent/variable/variable.h"
 #include "viewpointsreportgenerator.h"
 #include "viewpointsreportgeneratordialog.h"
-#include "util/timeconv.h"
-#include "util/number.h"
-#include "util/async.h"
+#include "timeconv.h"
+#include "number.h"
+#include "async.h"
 #include "viewpoint_commands.h"
+#include "rtcommand_registry.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "geographicview_commands.h"
@@ -92,27 +97,114 @@ namespace
 
 /**
 */
-ViewManager::ViewManager(nlohmann::json& config, COMPASS& compass)
-    : Configurable(config, &compass), compass_(compass)
+ViewManager::ViewManager(nlohmann::json& config,
+                         Configurable& parent,
+                         AppState& app_state,
+                         DBContentManager& dbcont_man)
+    : Configurable(config, &parent), app_state_(app_state), dbcont_man_(dbcont_man)
 {
     logdbg;
 
     qRegisterMetaType<ViewPoint*>("ViewPoint*");
 
-    init_view_point_commands(compass_);
+    init_view_point_commands(rtcommand::RTCommandRegistry::instance(), *this);
 
 #if USE_EXPERIMENTAL_SOURCE == true
-    init_geographic_view_commands();
+    init_geographic_view_commands(rtcommand::RTCommandRegistry::instance(), *this);
 #endif
 
     registerParameter("automatic_reload", &config_.automatic_reload, Config().automatic_reload);
     registerParameter("automatic_redraw", &config_.automatic_redraw, Config().automatic_redraw);
 
-    load_controller_.reset(new LoadController(compass_));
-    live_controller_.reset(new LiveController(compass_, *this));
+    load_controller_.reset(new LoadController(*this));
+    live_controller_.reset(new LiveController(*this));
 
     connect(live_controller_.get(), &LiveController::overloadCheckedSignal,
             this, &ViewManager::liveOverloadCheckedSignal);
+}
+
+/**
+ * Sets the peer managers, called by the composition root right after all managers were created.
+ */
+void ViewManager::setManagers(FilterManager& filter_manager,
+                              DBInterface& db_interface,
+                              context::DBContextManager& ctx_man,
+                              JobManager& job_manager,
+                              LicenseManager& license_manager)
+{
+    filter_manager_  = &filter_manager;
+    db_interface_    = &db_interface;
+    ctx_man_         = &ctx_man;
+    job_manager_     = &job_manager;
+    license_manager_ = &license_manager;
+}
+
+/**
+ * Notice: the main window and the live import backlog function are set later and not checked.
+ */
+bool ViewManager::checkWired() const
+{
+    return filter_manager_  &&
+           db_interface_    &&
+           ctx_man_         &&
+           job_manager_     &&
+           license_manager_;
+}
+
+/**
+ */
+FilterManager& ViewManager::filterManager()
+{
+    traced_assert(filter_manager_);
+    return *filter_manager_;
+}
+
+/**
+ */
+DBInterface& ViewManager::dbInterface()
+{
+    traced_assert(db_interface_);
+    return *db_interface_;
+}
+
+/**
+ */
+context::DBContextManager& ViewManager::dbContextManager()
+{
+    traced_assert(ctx_man_);
+    return *ctx_man_;
+}
+
+/**
+ */
+JobManager& ViewManager::jobManager()
+{
+    traced_assert(job_manager_);
+    return *job_manager_;
+}
+
+/**
+ */
+LicenseManager& ViewManager::licenseManager()
+{
+    traced_assert(license_manager_);
+    return *license_manager_;
+}
+
+/**
+ */
+IMainWindow& ViewManager::mainWindow()
+{
+    traced_assert(main_window_);
+    return *main_window_;
+}
+
+/**
+ */
+unsigned int ViewManager::liveImportBacklogSize() const
+{
+    traced_assert(live_import_backlog_size_func_);
+    return live_import_backlog_size_func_();
 }
 
 /**
@@ -127,7 +219,7 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
     main_tab_widget_ = main_tab_widget;
 
-    connect (&compass_, &COMPASS::appModeSwitchSignal, this, &ViewManager::appModeSwitchSlot);
+    // app mode switches: connected by the composition root (CompassRoot::mainWindow())
 
     // view point stuff
 
@@ -139,7 +231,7 @@ void ViewManager::init(QTabWidget* main_tab_widget)
 
     traced_assert(view_points_widget_);
 
-    FilterManager& filter_man = compass_.filterManager();
+    FilterManager& filter_man = filterManager();
 
     connect (this, &ViewManager::showViewPointSignal, &filter_man, &FilterManager::showViewPointSlot);
     connect (this, &ViewManager::unshowViewPointSignal, &filter_man, &FilterManager::unshowViewPointSlot);
@@ -299,7 +391,7 @@ void ViewManager::enableStoredReadSets()
 {
     loginf;
 
-    for (const auto& cont_it : compass_.dbContentManager())
+    for (const auto& cont_it : dbcont_man_)
     {
         logdbg << "stored readset for '" << cont_it.first << "'";
         tmp_stored_readset_[cont_it.first] = getReadSet(cont_it.first);
@@ -368,27 +460,27 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
         if (!json_ok)
             return std::make_pair(false, err);
 
-        DBInterface& db_interface = compass_.dbInterface();
+        DBInterface& db_interface = dbInterface();
 
         //delete existing viewpoints
         if (db_interface.existsViewPointsTable() && db_interface.viewPoints().size())
             db_interface.deleteAllViewPoints();
 
-        traced_assert(json_obj.contains(ViewPoint::VP_COLLECTION_ARRAY_KEY));
+        traced_assert(json_obj.contains(ViewPointKeys::VP_COLLECTION_ARRAY_KEY));
         
         //add new ones
-        json& view_points = json_obj.at(ViewPoint::VP_COLLECTION_ARRAY_KEY);
+        json& view_points = json_obj.at(ViewPointKeys::VP_COLLECTION_ARRAY_KEY);
         traced_assert(view_points.size());
 
         unsigned int id;
         for (auto& vp_it : view_points.get<json::array_t>())
         {
-            traced_assert(vp_it.contains(ViewPoint::VP_ID_KEY));
+            traced_assert(vp_it.contains(ViewPointKeys::VP_ID_KEY));
 
-            id = vp_it.at(ViewPoint::VP_ID_KEY);
+            id = vp_it.at(ViewPointKeys::VP_ID_KEY);
 
-            if (!vp_it.contains(ViewPoint::VP_STATUS_KEY))
-                vp_it[ViewPoint::VP_STATUS_KEY] = "open";
+            if (!vp_it.contains(ViewPointKeys::VP_STATUS_KEY))
+                vp_it[ViewPointKeys::VP_STATUS_KEY] = "open";
 
             db_interface.setViewPoint(id, vp_it.dump());
         }
@@ -414,7 +506,7 @@ std::pair<bool, std::string> ViewManager::loadViewPoints(nlohmann::json json_obj
 */
 void ViewManager::clearViewPoints()
 {
-    DBInterface& db_interface = compass_.dbInterface();
+    DBInterface& db_interface = dbInterface();
 
             //delete existing viewpoints
     if (db_interface.existsViewPointsTable() && db_interface.viewPoints().size())
@@ -585,9 +677,9 @@ void ViewManager::doViewPointAfterLoad ()
 
     logdbg << "data '" << data.dump(4) << "'";
 
-    bool vp_contains_timestamp = data.contains(ViewPoint::VP_TIMESTAMP_KEY);
+    bool vp_contains_timestamp = data.contains(ViewPointKeys::VP_TIMESTAMP_KEY);
     boost::posix_time::ptime vp_timestamp;
-    bool vp_contains_time_window = data.contains(ViewPoint::VP_TIME_WIN_KEY);
+    bool vp_contains_time_window = data.contains(ViewPointKeys::VP_TIME_WIN_KEY);
     float vp_time_window;
     boost::posix_time::ptime vp_ts_min, vp_ts_max;
 
@@ -598,16 +690,16 @@ void ViewManager::doViewPointAfterLoad ()
     }
     else
     {
-        traced_assert(data.at(ViewPoint::VP_TIMESTAMP_KEY).is_string());
-        vp_timestamp = Time::fromString(data.at(ViewPoint::VP_TIMESTAMP_KEY));
+        traced_assert(data.at(ViewPointKeys::VP_TIMESTAMP_KEY).is_string());
+        vp_timestamp = Time::fromString(data.at(ViewPointKeys::VP_TIMESTAMP_KEY));
 
         loginf << "time " << Time::toString(vp_timestamp);
     }
 
     if (vp_contains_time_window)
     {
-        traced_assert(data.at(ViewPoint::VP_TIME_WIN_KEY).is_number());
-        vp_time_window = data.at(ViewPoint::VP_TIME_WIN_KEY);
+        traced_assert(data.at(ViewPointKeys::VP_TIME_WIN_KEY).is_number());
+        vp_time_window = data.at(ViewPointKeys::VP_TIME_WIN_KEY);
         vp_ts_min = vp_timestamp - Time::partialSeconds(vp_time_window / 2.0);
         vp_ts_max = vp_timestamp + Time::partialSeconds(vp_time_window / 2.0);
 
@@ -615,7 +707,7 @@ void ViewManager::doViewPointAfterLoad ()
                << " max " << Time::toString(vp_ts_max);
     }
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     bool selection_changed = false;
     for (auto& dbcont_it : dbcont_man)
@@ -688,7 +780,7 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
 {
     loginf << "ts_min " << ts_min << " ts_max " << ts_max;
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     bool selection_changed = false;
     for (auto& dbcont_it : dbcont_man)
@@ -1041,6 +1133,8 @@ void ViewManager::databaseOpenedSlot()
 
     for (auto& view_it : views_)
         view_it.second->databaseOpened();
+
+    emit databaseOpenedSignal();
 }
 
 /**
@@ -1060,6 +1154,8 @@ void ViewManager::databaseClosedSlot()
 
     for (auto& view_it : views_)
         view_it.second->databaseClosed();
+
+    emit databaseClosedSignal();
 }
 
 /**
@@ -1141,7 +1237,7 @@ void ViewManager::sourceDataChangedSlot(const std::vector<std::string>& names, b
     using namespace boost::posix_time;
     ptime tmp_time;
 
-    bool live_running = compass_.appMode() == AppMode::LiveRunning;
+    bool live_running = app_state_.appMode() == AppMode::LiveRunning;
 
     for (auto& view_it : views_)
     {
@@ -1163,7 +1259,7 @@ void ViewManager::sourceDataChangedSlot(const std::vector<std::string>& names, b
     // distribution side-effects: data-source loaded counts (per arrival) + status-widget
     // trigger (once, on the finalize event)
     if (current_source_)
-        compass_.dbContextManager().setLoadedCounts(current_source_->loadedCounts());
+        dbContextManager().setLoadedCounts(current_source_->loadedCounts());
     if (last)
         emit dataDistributedSignal(reset);
 
@@ -1223,7 +1319,7 @@ void ViewManager::reload(bool blocking, bool measure_performance)
     // would swap the source away from it and lose the accumulated live data (live view
     // refreshes are handled in-widget, View::notifyViewUpdateNeeded -> liveReload). Paused
     // displays a LoadOperation like offline, so a reload there is a normal load.
-    if (compass_.appMode() == AppMode::LiveRunning)
+    if (app_state_.appMode() == AppMode::LiveRunning)
     {
         logwrn << "reload ignored while live is running";
         return;
@@ -1244,7 +1340,7 @@ void ViewManager::reload(bool blocking, bool measure_performance)
  */
 void ViewManager::loadPausedDisplay()
 {
-    if (compass_.appMode() != AppMode::LivePaused)
+    if (app_state_.appMode() != AppMode::LivePaused)
     {
         loginf << "no longer paused, skipping the paused display load";
         return;
@@ -1281,10 +1377,10 @@ void ViewManager::issueLoad(const LoadRequest& req, bool blocking)
 
     clearDataInViews();
 
-    auto op = std::make_shared<LoadOperation>(compass_.dbContentManager(), req);
+    auto op = std::make_shared<LoadOperation>(dbcont_man_, req);
     setCurrentSource(op);
 
-    compass_.dbContentManager().dataEngine().load(op);
+    dbcont_man_.dataEngine().load(op);
     if (blocking)
         op->wait();
 }
@@ -1409,7 +1505,7 @@ void ViewManager::storeSelectedRecNums(const std::vector<std::uint64_t>& selecte
 {
     clearSelectedRecNums(); // replace any current selection
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
     for (auto rec_num : selected)
         carried_selection_[dbcont_man.dbContentWithId(Utils::Number::recNumGetDBContId(rec_num))].insert(rec_num);
 }
@@ -1551,7 +1647,7 @@ void ViewManager::viewProcessingStartedSlot()
 {
     // during a load cycle its own dialog covers the busy state; during shutdown the
     // ux is being torn down
-    if (compass_.isShutDown() || processing_data_)
+    if (app_state_.isShutDown() || processing_data_)
         return;
 
     load_controller_->beginViewProcessing();
@@ -1563,7 +1659,7 @@ void ViewManager::viewProcessingFinishedSlot()
 {
     // a completion arriving during shutdown must not drive the load UX any more: the
     // views and the progress dialog are being torn down around it
-    if (compass_.isShutDown())
+    if (app_state_.isShutDown())
         return;
 
     // advance the view phase for the view that just finished - the dispatch loop only
@@ -1650,7 +1746,7 @@ void ViewManager::endLiveSession()
 */
 void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current)
 {
-    loginf << "app_mode " << compass_.appModeStr();
+    loginf << "app_mode " << app_state_.appModeStr();
 
     const bool was_live = isLiveSession(app_mode_previous);
     const bool now_live = isLiveSession(app_mode_current);
@@ -1769,6 +1865,30 @@ ViewContainerWidget* ViewManager::latestViewContainer()
     }
 
     return latest_container;
+}
+
+/**
+*/
+QWidget* ViewManager::viewContainerWidget(const std::string& name)
+{
+    return containerWidget(name);
+}
+
+/**
+*/
+QWidget* ViewManager::latestViewContainerWidget()
+{
+    return latestViewContainer();
+}
+
+/**
+*/
+QWidget* ViewManager::latestViewWidget()
+{
+    auto* view = latestView();
+    if (!view)
+        return nullptr;
+    return view->getCentralWidget()->findChild<ViewWidget*>();
 }
 
 /**

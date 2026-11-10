@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/results/base/probabilitybase.h"
+#include "results/base/probabilitybase.h"
 #include "valueaccumulator.h"
 
 #include <memory>

@@ -15,10 +15,10 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/trackangle/trackangleconfigwidget.h"
-#include "eval/requirement/trackangle/trackangleconfig.h"
+#include "requirement/trackangle/trackangleconfigwidget.h"
+#include "requirement/trackangle/trackangleconfig.h"
 //#include "textfielddoublevalidator.h"
-#include "eval/requirement/base/comparisontypecombobox.h"
+#include "requirement/base/comparisontypecombobox.h"
 #include "logger.h"
 
 #include <QLineEdit>

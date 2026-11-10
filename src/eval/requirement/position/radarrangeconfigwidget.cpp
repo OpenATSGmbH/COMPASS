@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/radarrangeconfigwidget.h"
-#include "eval/requirement/position/radarrangeconfig.h"
+#include "requirement/position/radarrangeconfigwidget.h"
+#include "requirement/position/radarrangeconfig.h"
 //#include "textfielddoublevalidator.h"
 //#include "eval/requirement/base/comparisontypecombobox.h"
 #include "logger.h"

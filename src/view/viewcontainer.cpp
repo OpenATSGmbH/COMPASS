@@ -16,6 +16,7 @@
  */
 
 #include "viewcontainer.h"
+#include "appstate.h"
 
 //#include "config.h"
 #include "files.h"
@@ -31,7 +32,6 @@
 #include "viewcontainer.h"
 #include "viewmanager.h"
 #include "ui_test_common.h"
-#include "compass.h"
 #include "rtcommand_helpers.h"
 #include "viewwidget.h"
 
@@ -78,7 +78,7 @@ ViewContainer::ViewContainer(nlohmann::json& config,
     static std::uint64_t creation_counter = 0;
     creation_index_ = ++creation_counter;
 
-    disable_add_remove_views_ = view_manager_.compass().disableAddRemoveViews();
+    disable_add_remove_views_ = view_manager_.appState().settings().disable_add_remove_views;
 
     if (window_cnt != 0)
     {
@@ -201,7 +201,7 @@ void ViewContainer::addView(View* view)
 
     //in localbuild we show some info about how the view is reachable via rtcommands
 #if USE_EXPERIMENTAL_SOURCE == true
-    if (!view_manager_.compass().isAppImage())
+    if (!AppState::isAppImage())
     {
         QString tt = rtcommand::getTooltip(view->getViewWidget(), view);
         tab_widget_->setTabToolTip(index, tt);

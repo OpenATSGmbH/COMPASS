@@ -17,8 +17,8 @@
 
 #include "catch.hpp"
 
-#include "task/analyze/scancyclewalk.h"
-#include "eval/requirement/detection/detection_pd_helpers.h"
+#include "analyze/scancyclewalk.h"
+#include "requirement/detection/detection_pd_helpers.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 

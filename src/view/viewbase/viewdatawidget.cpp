@@ -16,12 +16,13 @@
  */
 
 #include "viewdatawidget.h"
+#include "appstate.h"
+#include "viewmanager.h"
 #include "viewwidget.h"
 #include "view.h"
 #include "viewtoolswitcher.h"
 #include "viewlayertreemodel.h"
 #include "viewlayersnapshot.h"
-#include "compass.h"
 #include "color_provider.h"
 #include "logger.h"
 #include "buffer.h"
@@ -177,7 +178,7 @@ void ViewDataWidget::attachLayerPanel(ViewLayerTreeModel* layer_model)
     };
 
     layer_connections_.push_back(connect(layer_model_, &LayerTreeModel::hiddenChangedSignal, this, visibilityChanged));
-    layer_connections_.push_back(connect(&view_widget_->getView()->compass(), &COMPASS::colorModeChangedSignal,
+    layer_connections_.push_back(connect(&view_widget_->getView()->viewManager().appState(), &AppState::colorModeChangedSignal,
                                          this, [ this ] (unsigned int) { colorModeChanged(); }));
 
     rebuildLayerTree();
@@ -232,7 +233,9 @@ const ViewDataWidget::LayerAggregates& ViewDataWidget::layerAggregates()
     if (!layer_agg_valid_)
     {
         layer_agg_cache_ = view_layer_scan::aggregateLayers(
-            view_layer_scan::makeScanInput(viewData(), view_widget_->getView()->compass()));
+            view_layer_scan::makeScanInput(viewData(),
+                                           view_widget_->getView()->viewManager().dbContentManager(),
+                                           view_widget_->getView()->viewManager().dbContextManager()));
         layer_agg_valid_ = true;
     }
 
@@ -251,14 +254,14 @@ void ViewDataWidget::setLayerAggregates(LayerAggregates aggregates)
  */
 ViewDataWidget::LayerSnapshots ViewDataWidget::snapshotsFromAggregates(const LayerAggregates& aggregates) const
 {
-    auto& compass = view_widget_->getView()->compass();
+    auto& ctx_man = view_widget_->getView()->viewManager().dbContextManager();
 
     LayerSnapshots layers;
     layers.reserve(aggregates.size());
 
     for (const auto& [ key, agg ] : aggregates)
     {
-        const QColor color = context::resolveSeriesColor(agg.ds_type, agg.ds_name, agg.line_index, agg.dbcontent, compass);
+        const QColor color = context::resolveSeriesColor(agg.ds_type, agg.ds_name, agg.line_index, agg.dbcontent, ctx_man);
 
         layers.push_back(std::make_unique<ViewLayerSnapshot>(key, agg, agg.count, 0, color));
     }

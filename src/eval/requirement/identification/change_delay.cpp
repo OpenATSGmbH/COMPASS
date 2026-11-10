@@ -15,21 +15,21 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/identification/change_delay.h"
-#include "eval/requirement/group.h"
+#include "requirement/identification/change_delay.h"
+#include "requirement/group.h"
 
-#include "eval/results/identification/change_delay.h"
+#include "results/identification/change_delay.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
 #include "comparisontype.h"
 #include "stringconv.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 #include "logger.h"
 

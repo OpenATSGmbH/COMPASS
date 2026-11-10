@@ -16,6 +16,7 @@
  */
 
 #include "analyzedatasourcedialog.h"
+#include "taskmanager.h"
 #include "analyzedatasourcetask.h"
 #include "datasourceinspectorbase.h"
 #include "mlatdataiteminspector.h"
@@ -30,7 +31,6 @@
 #include "mlatrueffectinspector.h"
 #endif
 
-#include "compass.h"
 #include "db_context_manager.h"
 #include "sectorlayer.h"
 #include "data_source.h"
@@ -212,7 +212,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
     auto* w = new QWidget();
     auto* outer = new QVBoxLayout(w);
 
-    auto& ctx = task_.compass().dbContextManager();
+    auto& ctx = task_.manager().dbContextManager();
 
     // -- Reference Data ----------------------------------------------------
     auto* ref_box    = new QGroupBox("Reference Data");
@@ -442,7 +442,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
     // Limit by sectors: precise per-report inside test (as in the evaluation)
     // against the selected sector layers; when off, all data is used.
     {
-        const auto& layers = task_.compass().dbContextManager().sectorLayers();
+        const auto& layers = task_.manager().dbContextManager().sectorLayers();
 
         auto* sectors_cb = new QCheckBox();
         sectors_cb->setChecked(task_.limitBySectors());
@@ -580,7 +580,7 @@ void buildDataItemSettings(QFormLayout* form,
     auto* gl = new QVBoxLayout(group);
 
     std::set<unsigned int> cats;
-    auto& info_map = task.compass().dbContextManager().asterixInfo();
+    auto& info_map = task.manager().dbContextManager().asterixInfo();
     for (auto ds_id : task.selectedDataSourceIDs())
     {
         auto it = info_map.find(ds_id);
@@ -806,7 +806,7 @@ void buildADSBDataItemSettings(QFormLayout* form,
     auto* gl = new QVBoxLayout(group);
 
     std::set<unsigned int> cats;
-    auto& info_map = task.compass().dbContextManager().asterixInfo();
+    auto& info_map = task.manager().dbContextManager().asterixInfo();
     for (auto ds_id : task.selectedDataSourceIDs())
     {
         auto it = info_map.find(ds_id);

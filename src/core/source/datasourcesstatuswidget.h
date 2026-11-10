@@ -21,14 +21,7 @@
 #include "datasourceswidgetbase.h"
 #include "datasourcesstatus.h"
 
-#include <set>
-#include <map>
-#include <deque>
-
-#include <boost/optional.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-
-class DBContentManager;
+class SensorStatusTracker;
 class DataSourcesStatusWidget;
 class DataSourcesWidgetItemBase;
 
@@ -57,69 +50,23 @@ private:
 };
 
 /**
+ * Shows the sensor status of the active tracker line, as tracked by the SensorStatusTracker.
+ * - updated on the tracker's signals
  */
 class DataSourcesStatusWidget : public DataSourcesWidgetBase
 {
     Q_OBJECT
 
-signals:
-    void activeTrackerChanged();
-    void eventsAdded();
-    void refreshed();
-
 public:
-    /**
-     * Sensor status related information for a certain tracker line and sensor.
-     */
-    struct SensorStatusCache
-    {
-        void initForParse();
-
-        sensor_status::SensorState state_current;
-        sensor_status::SensorState state_last_update;
-        sensor_status::SensorState state_last_item;
-
-        bool last_update_found_in_scan = false;
-    };
-
-    typedef std::map<unsigned int, SensorStatusCache> SensorStateMap; // sensor id => state
-
-    /**
-     * Holds all important state information related to a certain tracker (+line).
-     */
-    struct TrackerStates
-    {
-        void initForParse();
-        void clearOutdatedEvents(double max_event_age);
-        bool queueCandidateEvents();
-
-        SensorStateMap                 states;           // sensor states
-        boost::posix_time::ptime       last_update_ts;   // latest update received for a sensor from this tracker
-        sensor_status::EventQueue      events;           // tracker status events
-        std::set<sensor_status::Event> added_events;     // set protecting from duplicate event logging
-        std::set<sensor_status::Event> candidates;
-    };
-
     DataSourcesStatusWidget(context::DBContextManager& ctx_man,
-                            DBContentManager& dbcontent_man,
+                            SensorStatusTracker& tracker,
                             bool init_ui = true);
     virtual ~DataSourcesStatusWidget();
 
+    SensorStatusTracker& tracker() { return tracker_; }
+    const SensorStatusTracker& tracker() const { return tracker_; }
+
     void reset();
-
-    void setActiveTracker(unsigned int ds_id, unsigned int line_id);
-    void unsetActiveTracker();
-    bool hasActiveTracker() const { return active_tracker_.has_value(); }
-
-    const boost::optional<sensor_status::TrackerKey>& activeTracker() const { return active_tracker_; }
-    const boost::posix_time::ptime& lastRefresh() const { return last_refresh_ts_; }
-    const sensor_status::EventQueue& currentEventQueue() const;
-    sensor_status::EventQueue& currentEventQueue();
-
-    bool hasActiveTrackerStates() const;
-    const TrackerStates& activeTrackerStates() const;
-    bool hasActiveTrackerSensorState(unsigned int ds_id) const;
-    const sensor_status::SensorState& activeTrackerSensorState(unsigned int ds_id) const;
 
     void showLastUpdates(bool show);
 
@@ -148,31 +95,5 @@ protected:
     virtual DataSourceItemBase* createDSItem(DataSourcesWidgetItemBase* parent = nullptr) override;
 
 private:
-    void logEvent(TrackerStates* tracker_states,
-                  sensor_status::Event::Type type,
-                  const boost::posix_time::ptime& ts,
-                  const boost::optional<sensor_status::TrackerKey>& tracker_key = boost::optional<sensor_status::TrackerKey>(),
-                  const boost::optional<unsigned int>& sensor_ds_id = boost::optional<unsigned int>(),
-                  const boost::optional<sensor_status::StatusChange>& status_change = boost::optional<sensor_status::StatusChange>());
-    void addEvent(TrackerStates& tracker_states,
-                  const sensor_status::Event& evt,
-                  bool check_duplicates);
-    void addEvent(sensor_status::EventQueue& event_queue,
-                  const sensor_status::Event& evt);
-    void initTrackerStates(const sensor_status::TrackerKey& key,
-                           TrackerStates& tracker_states) const;
-
-    void dataLoaded();
-    void initSensorStatesForParse();
-    void updateSensorStatus();
-
-    DBContentManager& dbcontent_man_;
-
-    boost::optional<sensor_status::TrackerKey> active_tracker_;
-
-    std::map<sensor_status::TrackerKey, TrackerStates> tracker_states_;
-    std::map<std::uint64_t, boost::posix_time::ptime>  processed_rec_nums_;
-
-    boost::posix_time::ptime  last_refresh_ts_;
-    sensor_status::EventQueue general_events_;
+    SensorStatusTracker& tracker_;
 };

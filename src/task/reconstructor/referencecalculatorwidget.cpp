@@ -16,12 +16,12 @@
  */
 
 #include "referencecalculatorwidget.h"
+#include "appstate.h"
 
 #include "reconstructorbase.h"
 #include "reconstructortask.h"
 #include "taskmanager.h"
 
-#include "compass.h"
 
 #include <QFormLayout>
 #include <QComboBox>
@@ -39,7 +39,7 @@ ReferenceCalculatorWidget::ReferenceCalculatorWidget(ReconstructorBase& reconstr
 {
     auto* settings = &reconstructor_.referenceCalculatorSettings();
 
-    bool add_optionals = !COMPASS::isAppImage() || reconstructor_.task().manager().compass().expertMode();
+    bool add_optionals = !AppState::isAppImage() || reconstructor_.task().manager().appState().expertMode();
 
     auto layout = new QFormLayout;
     setLayout(layout);

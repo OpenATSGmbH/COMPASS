@@ -26,12 +26,12 @@
 #include "dbcontent/dbcontent.h"
 #include "buffer.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
-#include "task/result/report/sectioncontenttext.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
+#include "report/sectioncontenttext.h"
 
-#include "util/async.h"
+#include "async.h"
 //#include "util/stringmat.h"
 
 #include <QApplication>
@@ -39,7 +39,7 @@
 #include <QProgressDialog>
 #include <QLabel>
 
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 //#include "boost/date_time/posix_time/posix_time.hpp"
 

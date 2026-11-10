@@ -16,10 +16,10 @@
  */
 
 #include "asterixnetworkdecoder.h"
+#include "taskmanager.h"
 #include "asteriximporttask.h"
 #include "asynctask.h"
 #include "stringconv.h"
-#include "compass.h"
 #include "datasourcelineinfo.h"
 #include "db_context_manager.h"
 #include "udpreceiver.h"
@@ -59,7 +59,7 @@ ASTERIXNetworkDecoder::ASTERIXNetworkDecoder(ASTERIXImportTask& task,
     traced_assert(source.isNetworkType());
 
     // build DataSourceLineInfo objects from context data sources' network line JSON
-    auto& ctx_man = task.compass().dbContextManager();
+    auto& ctx_man = task.manager().dbContextManager();
     for (auto& [ds_id, ds] : ctx_man.activeContext().dataSources())
     {
         if (!ds.hasNetworkLines())
@@ -106,7 +106,7 @@ bool ASTERIXNetworkDecoder::canDecode_impl() const
 */
 bool ASTERIXNetworkDecoder::canRun_impl() const
 {
-    return task().compass().dbContextManager().getNetworkLines().size(); // there are network lines defined
+    return task().manager().dbContextManager().getNetworkLines().size(); // there are network lines defined
 }
 
 /**

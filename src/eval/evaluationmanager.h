@@ -18,21 +18,33 @@
 #pragma once
 
 #include "configurable.h"
+#include "ievalprovider.h"
+#include "imanager.h"
 #include "evaluationdata.h"
 #include "evaluationresultsgenerator.h"
 #include "evaluationcalculator.h"
 #include "viewabledataconfig.h"
 #include "result.h"
-#include "util/timewindow.h"
+#include "timewindow.h"
 
 #include <QObject>
 
 #include "json_fwd.hpp"
 
-class COMPASS;
+class AppState;
+class ViewManager;
+class FilterManager;
 class EvaluationStandard;
 class DBContent;
 class DBContentManager;
+class DBInterface;
+class ProjectionManager;
+class ITaskProvider;
+
+namespace context
+{
+    class DBContextManager;
+}
 class LoadOperation;
 class SectorLayer;
 struct EvaluationSettings;
@@ -47,7 +59,7 @@ class QWidget;
 
 /**
  */
-class EvaluationManager : public QObject, public Configurable
+class EvaluationManager : public QObject, public Configurable, public IEvalProvider, public IManager
 {
     Q_OBJECT
 
@@ -72,7 +84,10 @@ public slots:
     void lockResultsSlot();
 
 public:
-    EvaluationManager(nlohmann::json& config, COMPASS& compass);
+    EvaluationManager(nlohmann::json& config,
+                      Configurable& parent,
+                      AppState& app_state,
+                      DBContentManager& dbcont_man);
     virtual ~EvaluationManager();
 
     const EvaluationCalculator* calculator() const { return calculator_.get(); }
@@ -86,8 +101,8 @@ public:
     Result evaluate(bool show_dialog, const std::string& custom_result_name = "");
 
     //data loading
-    bool needsAdditionalVariables() const;
-    void addVariables(const std::string dbcontent_name, dbContent::VariableSet& read_set);
+    bool needsAdditionalVariables() const override;
+    void addVariables(const std::string& dbcontent_name, dbContent::VariableSet& read_set) override;
 
     //viewables
     void setViewableDataConfig (const nlohmann::json::object_t& data);
@@ -103,15 +118,30 @@ public:
     Utils::TimeWindowCollection& excludedTimeWindows(); // needs to be saved externally
     void saveTimeConstraints();
 
-    bool useTimestampFilter() const;
+    bool useTimestampFilter() const override;
     void useTimestampFilter(bool value);
     std::string timestampFilterStr() const;
 
     bool removeDisabledUTNData() const { return remove_disabled_utn_data_; } // not load disabled utn for performance hack
 
     //standards
-    bool hasCurrentStandard() const;
+    bool hasCurrentStandard() const override;
     const EvaluationStandard& currentStandard() const;
+    std::set<std::string> currentRequirementNames() const override;
+
+    //target list
+    void applyTargetFilter(dbContent::TargetCache& target_data) override;
+
+    void editTargetFilter(dbContent::TargetModel& model, QWidget* parent) override;
+    bool editTimestampConditions(QWidget* parent) override;
+    bool editExcludedTimeWindows(const std::string& utns,
+                                 Utils::TimeWindowCollection& time_windows,
+                                 QWidget* parent) override;
+    bool editExcludedRequirements(const std::string& utns,
+                                  std::set<std::string>& selected_requirements,
+                                  const std::set<std::string>& all_requirements,
+                                  std::string& comment,
+                                  QWidget* parent) override;
 
     //other stuff
     EvaluationTargetFilter& targetFilter() const;
@@ -119,8 +149,24 @@ public:
 
     virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
-    COMPASS& compass() { return compass_; }
+    AppState& appState() { return app_state_; }
     DBContentManager& dbContentManager() { return dbcontent_man_; }
+
+    // peers, set by the composition root
+    void setManagers(ViewManager& view_manager,
+                     FilterManager& filter_manager,
+                     DBInterface& db_interface,
+                     context::DBContextManager& ctx_man,
+                     ProjectionManager& projection_manager,
+                     ITaskProvider& task_provider);
+    bool checkWired() const override;
+
+    ViewManager& viewManager();
+    FilterManager& filterManager();
+    DBInterface& dbInterface();
+    context::DBContextManager& dbContextManager();
+    ProjectionManager& projectionManager();
+    ITaskProvider& taskProvider();
 
 protected:
     friend class EvaluationCalculator;
@@ -149,8 +195,16 @@ private:
     // isolated batch load of the start-of-update-cycle messages of the test data sources
     void loadStatusCycles(const EvaluationCalculator& calculator);
 
-    COMPASS& compass_;
+    AppState&         app_state_;
     DBContentManager& dbcontent_man_;
+
+    // peers, set by the composition root
+    ViewManager*               view_manager_       = nullptr;
+    FilterManager*             filter_manager_     = nullptr;
+    DBInterface*               db_interface_       = nullptr;
+    context::DBContextManager* ctx_man_            = nullptr;
+    ProjectionManager*         projection_manager_ = nullptr;
+    ITaskProvider*             task_provider_      = nullptr;
 
     bool initialized_ {false};
 

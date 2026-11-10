@@ -17,25 +17,25 @@
 
 #include "catch.hpp"
 
-#include "viewpoint.h"
+#include "viewpointkeys.h"
 #include "viewpointgenerator.h"
 
 #include "json.hpp"
 
 // The ViewPointGenVP field names are literals (static strings in different files have
-// no defined initialization order). They must stay equal to the ViewPoint keys.
-TEST_CASE("ViewPointGenVP field names equal the ViewPoint keys", "[viewpoint]")
+// no defined initialization order). They must stay equal to the ViewPointKeys keys.
+TEST_CASE("ViewPointGenVP field names equal the ViewPointKeys keys", "[viewpoint]")
 {
-    REQUIRE(ViewPointGenVP::ViewPointFieldName        == ViewPoint::VP_NAME_KEY);
-    REQUIRE(ViewPointGenVP::ViewPointFieldID          == ViewPoint::VP_ID_KEY);
-    REQUIRE(ViewPointGenVP::ViewPointFieldType        == ViewPoint::VP_TYPE_KEY);
-    REQUIRE(ViewPointGenVP::ViewPointFieldStatus      == ViewPoint::VP_STATUS_KEY);
-    REQUIRE(ViewPointGenVP::ViewPointFieldAnnotations == ViewPoint::VP_ANNOTATION_KEY);
-    REQUIRE(ViewPointGenVP::ViewPointFieldFilters     == ViewPoint::VP_FILTERS_KEY);
-    REQUIRE(ViewPointGenVP::ViewPointFieldPosLat      == ViewPoint::VP_POS_LAT_KEY);
-    REQUIRE(ViewPointGenVP::ViewPointFieldPosLon      == ViewPoint::VP_POS_LON_KEY);
-    REQUIRE(ViewPointGenVP::ViewPointFieldWinLat      == ViewPoint::VP_POS_WIN_LAT_KEY);
-    REQUIRE(ViewPointGenVP::ViewPointFieldWinLon      == ViewPoint::VP_POS_WIN_LON_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldName        == ViewPointKeys::VP_NAME_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldID          == ViewPointKeys::VP_ID_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldType        == ViewPointKeys::VP_TYPE_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldStatus      == ViewPointKeys::VP_STATUS_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldAnnotations == ViewPointKeys::VP_ANNOTATION_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldFilters     == ViewPointKeys::VP_FILTERS_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldPosLat      == ViewPointKeys::VP_POS_LAT_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldPosLon      == ViewPointKeys::VP_POS_LON_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldWinLat      == ViewPointKeys::VP_POS_WIN_LAT_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldWinLon      == ViewPointKeys::VP_POS_WIN_LON_KEY);
 }
 
 // Scan of a view point with one histogram annotation, as set by set_view_point

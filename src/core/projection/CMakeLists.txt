@@ -16,8 +16,9 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/transformation.h"
         "${CMAKE_CURRENT_LIST_DIR}/projector.h"
         "${CMAKE_CURRENT_LIST_DIR}/rasterreference.h"
-        "${CMAKE_CURRENT_LIST_DIR}/radarbiasinfo.h"
         "${CMAKE_CURRENT_LIST_DIR}/coordconverter.h"
+        "${CMAKE_CURRENT_LIST_DIR}/geotiff_defs.h"
+        "${CMAKE_CURRENT_LIST_DIR}/geotiff.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/projectionmanager.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/projectionmanagerwidget.cpp"
@@ -26,7 +27,8 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/transformation.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/projector.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/coordconverter.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/radarbiasinfo.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/geotiff_defs.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/geotiff.cpp"
 )
 
 

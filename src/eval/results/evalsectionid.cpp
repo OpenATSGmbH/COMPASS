@@ -18,9 +18,9 @@
 #include "evalsectionid.h"
 
 #include "sectorlayer.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
-#include "eval/results/base/base.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
+#include "results/base/base.h"
 #include "evaluationcalculator.h"
 
 #include <QString>

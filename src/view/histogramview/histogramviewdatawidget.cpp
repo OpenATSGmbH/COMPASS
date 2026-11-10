@@ -16,9 +16,10 @@
  */
 
 #include "histogramviewdatawidget.h"
+#include "appstate.h"
+#include "viewmanager.h"
 #include "histogramviewwidget.h"
 #include "histogramview.h"
-#include "compass.h"
 #include "buffer.h"
 #include "color_provider.h"
 #include "data_source.h"
@@ -39,7 +40,6 @@
 #include "logger.h"
 #include "number.h"
 #include "stringconv.h"
-#include "evaluationmanager.h"
 #include "histogramgenerator.h"
 #include "histogramgeneratorbuffer.h"
 #include "viewasyncprocessor.h"
@@ -68,8 +68,6 @@
 #include <algorithm>
 
 QT_CHARTS_USE_NAMESPACE
-
-using namespace EvaluationRequirementResult;
 using namespace std;
 
 namespace
@@ -77,7 +75,7 @@ namespace
     /// Group key derived from a full layer id ("<ds_type>:<ds_name>:L<n>:
     /// <dbcontent>") for the given color mode - this is what the chart
     /// actually stacks on (one bar set per group). Matches the semantics of
-    /// COMPASS::colorMode():
+    /// AppState::colorMode():
     ///   0 DSType, 1 DBContent, 2 Data Source, 3 Data Source + Line.
     std::string groupKeyFor(const std::string& layer_id, unsigned int color_mode)
     {
@@ -186,14 +184,16 @@ void HistogramViewDataWidget::updateDataEvent(bool requires_reset)
     // rebuilds the panel, and the base defers the load-done redraw until then (the
     // redraw then only runs the generator + chart with the ids already computed).
     // Live stays synchronous: the feed mutates the same buffers every tick.
-    bool async = view_->compass().appMode() != AppMode::LiveRunning
+    bool async = view_->viewManager().appState().appMode() != AppMode::LiveRunning
               && !viewData().empty()
               && hasLayerPanel();
 
     if (async)
     {
         auto scan_input = std::make_shared<view_layer_scan::ScanInput>(
-            view_layer_scan::makeScanInput(viewData(), view_->compass()));
+            view_layer_scan::makeScanInput(viewData(),
+                                           view_->viewManager().dbContentManager(),
+                                           view_->viewManager().dbContextManager()));
 
         auto agg     = std::make_shared<LayerAggregates>();
         auto row_ids = std::make_shared<view_layer_scan::RowLayerIndex>();
@@ -248,7 +248,7 @@ bool HistogramViewDataWidget::postLoadTrigger()
     if (view_->showsAnnotation())
         return false;
 
-    if (view_->compass().appMode() == AppMode::LiveRunning)
+    if (view_->viewManager().appState().appMode() == AppMode::LiveRunning)
         return false;
 
     if (viewData().empty())
@@ -425,7 +425,7 @@ void HistogramViewDataWidget::updateFromVariables()
         dynamic_cast<HistogramGeneratorBuffer*>(histogram_generator_.get());
     traced_assert(buf_gen);
 
-    const unsigned int color_mode = view_->compass().colorMode();
+    const unsigned int color_mode = view_->viewManager().appState().colorMode();
 
     // Everything the generator needs per row is precomputed per POOL ENTRY here - the
     // color-mode group key and the hidden flag. A row then costs one array lookup;
@@ -504,7 +504,7 @@ void HistogramViewDataWidget::compileRawDataFromGenerator()
     // Data Source / Data Source + Line - determined by color mode). All
     // full-layer payloads that collapse to the same group share the same
     // color by construction, so "first wins" is safe.
-    const unsigned int color_mode = view_->compass().colorMode();
+    const unsigned int color_mode = view_->viewManager().appState().colorMode();
 
     std::map<std::string, QColor> group_colors;
     for (const auto& layer : layerSnapshots())
@@ -1032,6 +1032,8 @@ void HistogramViewDataWidget::computeRowLayerIds()
 {
     // shared scan helper (worker version runs in updateDataEvent's task)
     row_layer_index_ = view_layer_scan::computeRowLayerIndex(
-        view_layer_scan::makeScanInput(viewData(), view_->compass()));
+        view_layer_scan::makeScanInput(viewData(),
+                                       view_->viewManager().dbContentManager(),
+                                       view_->viewManager().dbContextManager()));
 }
 

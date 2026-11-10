@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/trackangle/trackangle.h"
-#include "eval/results/trackangle/trackangle.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/trackangle/trackangle.h"
+#include "results/trackangle/trackangle.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
 
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "sectorlayer.h"
-#include "util/number.h"
+#include "number.h"
 #include "global.h"
 
 #include <ogr_spatialref.h>

@@ -19,18 +19,16 @@
 #include "evaluationcalculator.h"
 #include "evaluationmanager.h"
 #include "evalsectionid.h"
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
-#include "eval/results/reporttablecontent.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
+#include "results/reporttablecontent.h"
 
-#include "task/result/report/sectioncontentfigure.h"
-#include "task/result/report/sectioncontenttable.h"
-#include "task/result/report/section.h"
-#include "task/taskdefs.h"
-#include "taskmanager.h"
-#include "radarplotpositioncalculatortask.h"
+#include "report/sectioncontentfigure.h"
+#include "report/sectioncontenttable.h"
+#include "report/section.h"
+#include "taskdefs.h"
+#include "itaskprovider.h"
 
-#include "compass.h"
 #include "dbinterface.h"
 #include "dbcontentmanager.h"
 #include "buffer.h"
@@ -55,14 +53,14 @@ const std::string EvaluationTaskResult::FieldTargetInfo = "info";
 /**
  */
 EvaluationTaskResult::EvaluationTaskResult(unsigned int id,
-                                           TaskManager& task_man,
-                                           COMPASS& compass)
+                                           ITaskProvider& task_man,
+                                           EvaluationManager& eval_man)
 :   TaskResult(id, task_man)
-,   compass_(compass)
+,   eval_man_(eval_man)
 {
     //connected here and not during init or finalization: a result whose content is not read yet
     //must still follow the update and lock state of the evaluation manager
-    connect(&compass_.evaluationManager(), &EvaluationManager::resultsNeedUpdate,
+    connect(&eval_man_, &EvaluationManager::resultsNeedUpdate,
             this, &EvaluationTaskResult::informUpdateEvalResult);
 }
 
@@ -134,8 +132,8 @@ Result EvaluationTaskResult::createCalculator()
     loginf << "creating calculator for result '" << name() << "' with config: " << config_.dump();
 
     //clone calculator from config
-    auto res = EvaluationCalculator::clone(compass_.evaluationManager(),
-                                              compass_.dbContentManager(),
+    auto res = EvaluationCalculator::clone(eval_man_,
+                                              eval_man_.dbContentManager(),
                                               config_);
     if (!res.ok())
         return res;
@@ -344,7 +342,7 @@ std::shared_ptr<Buffer> EvaluationTaskResult::loadReportTableRows(const ReportTa
     const std::string filter = "\"" + ReportTableDefinition::UTNColumnName + "\" = " + std::to_string(utn)
                              + " ORDER BY \"" + ReportTableDefinition::TimestampColumnName + "\"";
 
-    auto res = compass_.dbInterface().select(table_name, table.propertyList(), filter);
+    auto res = eval_man_.dbInterface().select(table_name, table.propertyList(), filter);
 
     if (!res.ok())
     {
@@ -381,15 +379,15 @@ std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetView
 
         if (positions.valid())
         {
-            (*viewable)[ ViewPoint::VP_POS_LAT_KEY     ] = positions.event->first;
-            (*viewable)[ ViewPoint::VP_POS_LON_KEY     ] = positions.event->second;
-            (*viewable)[ ViewPoint::VP_POS_WIN_LAT_KEY ] = zoom;
-            (*viewable)[ ViewPoint::VP_POS_WIN_LON_KEY ] = zoom;
+            (*viewable)[ ViewPointKeys::VP_POS_LAT_KEY     ] = positions.event->first;
+            (*viewable)[ ViewPointKeys::VP_POS_LON_KEY     ] = positions.event->second;
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LAT_KEY ] = zoom;
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LON_KEY ] = zoom;
         }
 
         auto timestamp = ReportTableContent::rowTimestamp(buffer, highlight_row.value());
         if (timestamp.has_value())
-            (*viewable)[ ViewPoint::VP_TIMESTAMP_KEY ] = Utils::Time::toString(timestamp.value());
+            (*viewable)[ ViewPointKeys::VP_TIMESTAMP_KEY ] = Utils::Time::toString(timestamp.value());
     }
     else
     {
@@ -397,17 +395,17 @@ std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetView
 
         if (!bounds.isEmpty() && !bounds.isNull())
         {
-            (*viewable)[ ViewPoint::VP_POS_LAT_KEY ] = bounds.center().x();
-            (*viewable)[ ViewPoint::VP_POS_LON_KEY ] = bounds.center().y();
+            (*viewable)[ ViewPointKeys::VP_POS_LAT_KEY ] = bounds.center().x();
+            (*viewable)[ ViewPointKeys::VP_POS_LON_KEY ] = bounds.center().y();
 
-            (*viewable)[ ViewPoint::VP_POS_WIN_LAT_KEY ] = std::max(bounds.width() , zoom);
-            (*viewable)[ ViewPoint::VP_POS_WIN_LON_KEY ] = std::max(bounds.height(), zoom);
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LAT_KEY ] = std::max(bounds.width() , zoom);
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LON_KEY ] = std::max(bounds.height(), zoom);
         }
     }
 
     //root annotation of the requirement, the same id the result objects use
-    (*viewable)[ ViewPoint::VP_ANNOTATION_KEY ] = nlohmann::json::array();
-    auto& annotations = (*viewable)[ ViewPoint::VP_ANNOTATION_KEY ];
+    (*viewable)[ ViewPointKeys::VP_ANNOTATION_KEY ] = nlohmann::json::array();
+    auto& annotations = (*viewable)[ ViewPointKeys::VP_ANNOTATION_KEY ];
 
     ViewPointGenAnnotation root_annotation("Evaluation:" + info.id.req_name + ":UTN" + std::to_string(info.utn));
 
@@ -623,7 +621,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
             auto usage_menu = menu.addMenu("Target Usage");
 
             const auto& target             = targets_.at(utn);
-            auto        target_list_widget = compass_.dbContentManager().targetListWidget();
+            auto        target_list_widget = eval_man_.dbContentManager().targetListWidget();
 
             target_list_widget->createTargetEvalMenu(*usage_menu, 
                                                      target,
@@ -660,7 +658,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
         if (calculator() && !isLocked())
         {
             auto usage_menu = menu.addMenu("Target Usage");
-            compass_.dbContentManager().targetListWidget()->createTargetEvalMenu(*usage_menu, { utn }, true);
+            eval_man_.dbContentManager().targetListWidget()->createTargetEvalMenu(*usage_menu, { utn }, true);
         }
 
         return true;
@@ -765,7 +763,7 @@ std::string EvaluationTaskResult::customTooltip_impl(const ResultReport::Section
  */
 void EvaluationTaskResult::updateTargets()
 {
-    auto& dbcontent_man = compass_.dbContentManager();
+    auto& dbcontent_man = eval_man_.dbContentManager();
 
     for (auto& t : targets_)
         EvaluationTargetData::updateTarget(dbcontent_man, t.second);

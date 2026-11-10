@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybaseconfig.h"
+#include "requirement/base/probabilitybaseconfig.h"
 
 #include <boost/optional.hpp>
 

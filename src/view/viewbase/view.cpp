@@ -16,12 +16,12 @@
  */
 
 #include "view.h"
+#include "appstate.h"
 #include "logger.h"
 #include "viewcontainer.h"
 #include "viewmanager.h"
 #include "viewwidget.h"
 #include "viewabledataconfig.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
 #include "viewdatawidget.h"
 #include "viewconfigwidget.h"
@@ -77,16 +77,6 @@ View::View(nlohmann::json& config, ViewContainer* parent)
     addJSONExportFilter(Configurable::JSONExportType::Preset, Configurable::JSONExportFilterType::ParamID, "name");
 }
 
-COMPASS& View::compass()
-{
-    return view_manager_.compass();
-}
-
-COMPASS& View::compass() const
-{
-    return view_manager_.compass();
-}
-
 /**
 @brief Destructor.
 
@@ -121,7 +111,7 @@ bool View::init()
     // add view to container widget
     //container_->addView(this);
 
-    app_mode_ = view_manager_.compass().appMode();
+    app_mode_ = view_manager_.appState().appMode();
 
     // invoke derive class (will create subconfigurables, such as view widget)
     if (!init_impl())
@@ -519,7 +509,7 @@ void View::notifyViewUpdateNeeded(int flags, bool add)
     traced_assert(widget_);
 
     //live mode updates are handled immediately in their own way
-    if (view_manager_.compass().appMode() == AppMode::LiveRunning)
+    if (view_manager_.appState().appMode() == AppMode::LiveRunning)
     {
         if (flags & VU_Reload)
         {
@@ -655,7 +645,7 @@ void View::updateView(int flags)
     if (flags & VU_Reload) //reload = complete update
     {
         //start reload (will reset all cached updates)
-        if (view_manager_.compass().dbOpened())
+        if (view_manager_.appState().dbOpened())
             view_manager_.reload();
     }
     else //handle all other updates
@@ -684,7 +674,7 @@ View::PresetError View::applyPreset(const ViewPresets::Preset& preset,
                                     std::vector<MissingKey>* missing_param_keys,
                                     std::string* error_msg)
 {
-    auto version = view_manager_.compass().config().getString("version");
+    auto version = view_manager_.appState().appVersion();
 
     if (!preset.app_version.empty() && preset.app_version != version)
     {
@@ -693,7 +683,7 @@ View::PresetError View::applyPreset(const ViewPresets::Preset& preset,
         //return PresetError::IncompatibleVersion;
     }
 
-    bool assert_on_errors = !view_manager_.compass().isAppImage();
+    bool assert_on_errors = !AppState::isAppImage();
 
     auto result = reconfigure(preset.view_config, missing_subconfig_keys, missing_param_keys, assert_on_errors);
 

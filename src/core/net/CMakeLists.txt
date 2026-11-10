@@ -8,8 +8,10 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/udpreceiver.h"
         "${CMAKE_CURRENT_LIST_DIR}/tcpserver.h"
         "${CMAKE_CURRENT_LIST_DIR}/packetsniffer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/datasourcelineinfo.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/udpreceiver.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/tcpserver.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/packetsniffer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/datasourcelineinfo.cpp"
 )

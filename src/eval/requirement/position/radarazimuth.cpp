@@ -15,16 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/radarazimuth.h"
-#include "eval/results/position/radarazimuth.h"
-#include "eval/standard/evaluationstandard.h"
-#include "compass.h"
+#include "requirement/position/radarazimuth.h"
+#include "results/position/radarazimuth.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
-#include "util/number.h"
+#include "number.h"
 #include "projection.h"
 #include "projectionmanager.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "sectorlayer.h"
 
 #include <algorithm>
@@ -108,7 +107,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
 
     // prepare coordinate systems
 
-    ProjectionManager& proj_man = calculator_.manager().compass().projectionManager();
+    ProjectionManager& proj_man = calculator_.manager().projectionManager();
 
     Projection& projection = proj_man.currentProjection();
     traced_assert(projection.coordinateSystemsAdded());

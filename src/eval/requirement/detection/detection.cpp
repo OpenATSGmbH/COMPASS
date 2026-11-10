@@ -15,10 +15,10 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/detection/detection.h"
-#include "eval/requirement/detection/detection_pd_helpers.h"
-#include "eval/results/detection/detection.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/detection/detection.h"
+#include "requirement/detection/detection_pd_helpers.h"
+#include "results/detection/detection.h"
+#include "standard/evaluationstandard.h"
 
 #include "evaluationmanager.h"
 #include "evaluationdetail.h"

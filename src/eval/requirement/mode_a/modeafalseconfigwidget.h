@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybaseconfigwidget.h"
+#include "requirement/base/probabilitybaseconfigwidget.h"
 
 class QLineEdit;
 class QCheckBox;

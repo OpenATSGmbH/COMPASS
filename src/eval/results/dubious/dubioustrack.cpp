@@ -15,19 +15,19 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/dubious/dubioustrack.h"
+#include "results/dubious/dubioustrack.h"
 
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/dubious/dubioustrack.h"
+#include "requirement/base/base.h"
+#include "requirement/dubious/dubioustrack.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
 
 #include "logger.h"
-#include "util/stringconv.h"
-#include "util/timeconv.h"
+#include "stringconv.h"
+#include "timeconv.h"
 #include "viewpoint.h"
 
 #include "traced_assert.h"

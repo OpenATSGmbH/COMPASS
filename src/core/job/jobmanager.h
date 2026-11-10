@@ -20,7 +20,6 @@
 #include "configurable.h"
 #include "job.h"
 
-class COMPASS;
 
 #ifndef Q_MOC_RUN
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -30,7 +29,7 @@ class COMPASS;
 #include <QMutex>
 #include <QThread>
 
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include <list>
 #include <memory>
@@ -228,7 +227,7 @@ class JobManager : public JobManagerAsync, public Configurable
 class JobManager : public JobManagerThreadPool, public Configurable
 {
 public:
-    JobManager(nlohmann::json& config, COMPASS* parent);
+    JobManager(nlohmann::json& config, Configurable* parent);
     virtual ~JobManager();
 };
 

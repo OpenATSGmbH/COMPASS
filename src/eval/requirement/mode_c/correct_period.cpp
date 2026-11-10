@@ -15,12 +15,12 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/mode_c/correct_period.h"
-#include "eval/requirement/group.h"
+#include "requirement/mode_c/correct_period.h"
+#include "requirement/group.h"
 
-#include "eval/results/mode_c/correct_period.h"
+#include "results/mode_c/correct_period.h"
 
-#include "task/result/report/sectioncontenttable.h"
+#include "report/sectioncontenttable.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"

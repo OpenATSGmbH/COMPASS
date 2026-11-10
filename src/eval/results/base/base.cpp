@@ -15,17 +15,17 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/base/base.h"
-#include "eval/results/base/result_t.h"
-#include "eval/results/base/featuredefinition.h"
+#include "results/base/base.h"
+#include "results/base/result_t.h"
+#include "results/base/featuredefinition.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
-#include "eval/results/evalsectionid.h"
+#include "results/evalsectionid.h"
 
-#include "eval/requirement/base/base.h"
+#include "requirement/base/base.h"
 #include "number.h"
 
 #include "sectorlayer.h"
@@ -294,8 +294,8 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
         //overview => set region of interest
         if (!info.bounds.isEmpty() && !info.bounds.isNull())
         {
-            (*viewable_ptr)[ViewPoint::VP_POS_LAT_KEY] = info.bounds.center().x();
-            (*viewable_ptr)[ViewPoint::VP_POS_LON_KEY] = info.bounds.center().y();
+            (*viewable_ptr)[ViewPointKeys::VP_POS_LAT_KEY] = info.bounds.center().x();
+            (*viewable_ptr)[ViewPointKeys::VP_POS_LON_KEY] = info.bounds.center().y();
 
             double lat_w = info.bounds.width();
             double lon_w = info.bounds.height();
@@ -306,8 +306,8 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
             if (lon_w < calculator_.settings().result_detail_zoom_)
                 lon_w = calculator_.settings().result_detail_zoom_;
 
-            (*viewable_ptr)[ViewPoint::VP_POS_WIN_LAT_KEY] = lat_w;
-            (*viewable_ptr)[ViewPoint::VP_POS_WIN_LON_KEY] = lon_w;
+            (*viewable_ptr)[ViewPointKeys::VP_POS_WIN_LAT_KEY] = lat_w;
+            (*viewable_ptr)[ViewPointKeys::VP_POS_WIN_LON_KEY] = lon_w;
         }
     }
     else
@@ -315,17 +315,17 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
         //detail => set position of interest
         if (!info.bounds.isNull())
         {
-            (*viewable_ptr)[ViewPoint::VP_POS_LAT_KEY    ] = info.bounds.x();
-            (*viewable_ptr)[ViewPoint::VP_POS_LON_KEY    ] = info.bounds.y();
-            (*viewable_ptr)[ViewPoint::VP_POS_WIN_LAT_KEY] = calculator_.settings().result_detail_zoom_;
-            (*viewable_ptr)[ViewPoint::VP_POS_WIN_LON_KEY] = calculator_.settings().result_detail_zoom_;
+            (*viewable_ptr)[ViewPointKeys::VP_POS_LAT_KEY    ] = info.bounds.x();
+            (*viewable_ptr)[ViewPointKeys::VP_POS_LON_KEY    ] = info.bounds.y();
+            (*viewable_ptr)[ViewPointKeys::VP_POS_WIN_LAT_KEY] = calculator_.settings().result_detail_zoom_;
+            (*viewable_ptr)[ViewPointKeys::VP_POS_WIN_LON_KEY] = calculator_.settings().result_detail_zoom_;
         }
-        (*viewable_ptr)[ViewPoint::VP_TIMESTAMP_KEY  ] = Utils::Time::toString(info.timestamp);
+        (*viewable_ptr)[ViewPointKeys::VP_TIMESTAMP_KEY  ] = Utils::Time::toString(info.timestamp);
     }
 
     //init annotation array
-    (*viewable_ptr)[ViewPoint::VP_ANNOTATION_KEY] = nlohmann::json::array();
-    auto& vp_anno_array = (*viewable_ptr)[ViewPoint::VP_ANNOTATION_KEY];
+    (*viewable_ptr)[ViewPointKeys::VP_ANNOTATION_KEY] = nlohmann::json::array();
+    auto& vp_anno_array = (*viewable_ptr)[ViewPointKeys::VP_ANNOTATION_KEY];
 
     //add root annotation and retrieve its annotation array
     std::string root_anno_name = getRequirementAnnotationID();

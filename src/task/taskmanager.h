@@ -20,6 +20,8 @@
 #include <QObject>
 
 #include "configurable.h"
+#include "itaskprovider.h"
+#include "imanager.h"
 #include "taskdefs.h"
 #include "task.h"
 #include "reportdefs.h"
@@ -29,7 +31,18 @@
 
 #include <boost/optional.hpp>
 
-class COMPASS;
+class AppState;
+class LogStore;
+class DBInterface;
+class DBContentManager;
+class LicenseManager;
+class JobManager;
+class UnitManager;
+class ProjectionManager;
+class IMainWindow;
+class ViewManager;
+class EvaluationManager;
+class FilterManager;
 class TaskResultsWidget;
 class CreateARTASAssociationsTask;
 class JSONImportTask;
@@ -40,11 +53,14 @@ class ViewPointsImportTask;
 class RadarPlotPositionCalculatorTask;
 class ReconstructorTask;
 class AnalyzeDataSourceTask;
-class MainWindow;
 class TaskResult;
+class TaskResultDB;
 class ViewableDataConfig;
 
-class QMainWindow;
+namespace context
+{
+    class DBContextManager;
+}
 
 namespace ResultReport
 {
@@ -54,7 +70,7 @@ namespace ResultReport
     class ReportExport;
 }
 
-class TaskManager : public QObject, public Configurable
+class TaskManager : public QObject, public Configurable, public ITaskProvider, public IManager
 {
     Q_OBJECT
 
@@ -75,9 +91,39 @@ public slots:
 
 public:
     // TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
-    TaskManager(nlohmann::json& config, COMPASS& compass);
+    TaskManager(nlohmann::json& config,
+                Configurable& parent,
+                AppState& app_state,
+                LogStore& log_store,
+                DBInterface& db_interface,
+                DBContentManager& dbcont_man);
 
-    COMPASS& compass() { return compass_; }
+    AppState& appState() override { return app_state_; }
+    LogStore& logStore() { return log_store_; }
+    DBInterface& dbInterface() override { return db_interface_; }
+    DBContentManager& dbContentManager() override { return dbcont_man_; }
+    LicenseManager& licenseManager() override;
+
+    // peers, set by the composition root
+    void setManagers(ViewManager& view_manager,
+                     EvaluationManager& eval_manager,
+                     FilterManager& filter_manager,
+                     context::DBContextManager& ctx_man,
+                     JobManager& job_manager,
+                     UnitManager& unit_manager,
+                     ProjectionManager& proj_man,
+                     LicenseManager& license_manager);
+    bool checkWired() const override; // without the main window, set later
+    void setMainWindow(IMainWindow& main_window) { main_window_ = &main_window; }
+
+    ViewManager& viewManager() override;
+    EvaluationManager& evaluationManager();
+    FilterManager& filterManager();
+    context::DBContextManager& dbContextManager();
+    JobManager& jobManager();
+    UnitManager& unitManager();
+    ProjectionManager& projectionManager();
+    IMainWindow& mainWindow();
 
     virtual ~TaskManager();
 
@@ -110,17 +156,17 @@ public:
 
     void beginTaskResultWriting(const std::string& name,
                                 task::TaskResultType type,
-                                bool clear_existing = true);
-    bool hasCurrentResult() const;
-    std::shared_ptr<TaskResult>& currentResult();
-    std::shared_ptr<ResultReport::Report>& currentReport();
+                                bool clear_existing = true) override;
+    bool hasCurrentResult() const override;
+    std::shared_ptr<TaskResult>& currentResult() override;
+    std::shared_ptr<ResultReport::Report>& currentReport() override;
     void endTaskResultWriting(bool store_result,
-                              bool show_dialog = false);
+                              bool show_dialog = false) override;
 
     const std::map<unsigned int, std::shared_ptr<TaskResult>>& results() const;
     std::shared_ptr<TaskResult> result(unsigned int id) const; // get existing result
-    std::shared_ptr<TaskResult> result(const std::string& name) const; // get existing result
-    bool hasResult (const std::string& name) const;
+    std::shared_ptr<TaskResult> result(const std::string& name) const override; // get existing result
+    bool hasResult (const std::string& name) const override;
     bool removeResult(const std::string& name, 
                       bool inform_changes = true);
     ResultT<nlohmann::json> exportResult(const std::string& name, 
@@ -129,24 +175,26 @@ public:
                                          const boost::optional<std::string>& export_dir = boost::optional<std::string>(),
                                          const std::string& section = std::string());
     
-    std::shared_ptr<TaskResult> createResult(unsigned int id, 
-                                             task::TaskResultType type);
+    std::shared_ptr<TaskResult> createResult(unsigned int id,
+                                             task::TaskResultType type) override;
 
-    void resultHeaderChanged(const TaskResult& result);
-    void resultContentChanged(const TaskResult& result);
-    
+    void resultHeaderChanged(const TaskResult& result) override;
+    void resultContentChanged(const TaskResult& result) override;
+
     void setViewableDataConfig(const nlohmann::json::object_t& data,
-                               bool load_blocking = false);
-    void unsetViewableDataConfig();
+                               bool load_blocking = false) override;
+    void unsetViewableDataConfig() override;
 
     std::shared_ptr<ResultReport::SectionContent> loadContent(ResultReport::Section* section,
                                                               unsigned int content_id,
-                                                              bool show_dialog = false) const;
+                                                              bool show_dialog = false) const override;
 
-    ResultT<nlohmann::json> loadResultContent(unsigned int result_id) const;
+    ResultT<nlohmann::json> loadResultContent(unsigned int result_id) const override;
 
-    void storeBackupSection();
-    void restoreBackupSection();
+    void storeBackupSection() override;
+    void restoreBackupSection() override;
+
+    void selectResultID(const std::string& id, bool show_figure) override;
 
     static const bool CleanupDBIfNeeded;
 
@@ -154,7 +202,6 @@ protected:
     virtual void checkSubConfigurables() override;
 
     void addTask(const std::string& class_name, Task* task);
-    MainWindow* getMainWindow();
 
     std::shared_ptr<TaskResult> getOrCreateResult(const std::string& name, 
                                                   task::TaskResultType type);
@@ -164,7 +211,21 @@ protected:
     void updateReportContents();
     boost::optional<unsigned int> findResult(const std::string& name) const;
 
-    COMPASS& compass_;
+    AppState&         app_state_;
+    LogStore&         log_store_;
+    DBInterface&      db_interface_;
+    DBContentManager& dbcont_man_;
+
+    // peers, set by the composition root
+    ViewManager*               view_manager_    = nullptr;
+    EvaluationManager*         eval_manager_    = nullptr;
+    FilterManager*             filter_manager_  = nullptr;
+    context::DBContextManager* ctx_man_         = nullptr;
+    JobManager*                job_manager_     = nullptr;
+    UnitManager*               unit_manager_    = nullptr;
+    ProjectionManager*         proj_man_        = nullptr;
+    LicenseManager*            license_manager_ = nullptr;
+    IMainWindow*               main_window_     = nullptr;
 
     // tasks
     std::unique_ptr<ASTERIXImportTask> asterix_importer_task_;
@@ -185,6 +246,8 @@ protected:
 
     std::map<unsigned int, std::shared_ptr<TaskResult>> results_; // id -> result
     std::shared_ptr<TaskResult> current_result_;
+
+    std::unique_ptr<TaskResultDB> result_db_; // persistence of the results
 
     std::unique_ptr<ResultReport::ReportExport> report_export_;
 

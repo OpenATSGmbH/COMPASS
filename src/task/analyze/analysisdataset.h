@@ -30,7 +30,12 @@
 #include <string>
 #include <vector>
 
-class COMPASS;
+class DBContentManager;
+
+namespace context
+{
+    class DBContextManager;
+}
 
 class SectorLayer;
 class EvaluationConstraints;
@@ -114,7 +119,7 @@ public:
         }
     };
 
-    explicit AnalysisDataset(COMPASS& compass);
+    AnalysisDataset(DBContentManager& dbcont_man, context::DBContextManager& ctx_man);
     ~AnalysisDataset();
 
     /// Set the per-report scope filter; must be called before `load()`.
@@ -320,7 +325,8 @@ private:
     /// Mirrors EvaluationManager::addVariables.
     dbContent::VariableSet buildReadSet(const std::string& dbcontent_name) const;
 
-    COMPASS& compass_;
+    DBContentManager&          dbcont_man_;
+    context::DBContextManager& ctx_man_;
     ScopeFilter scope_filter_;
     bool require_reference_ = true;
     mutable std::map<unsigned int, bool> ground_only_cache_;

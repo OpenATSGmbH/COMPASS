@@ -28,7 +28,6 @@
 #include <memory>
 #include <string>
 
-class COMPASS;
 class ViewManager;
 class LiveDataFeed;
 class Buffer;
@@ -53,7 +52,7 @@ class Buffer;
  * ViewManager::sourceDataChangedSlot; only the raw-buffer empty-clear is handled here.
  *
  * Ticks are held (the inserts stay staged in the feed) while the application is overloaded
- * (LiveOverloadDetector, COMPASS::liveOverloaded()) or the views are still being dispatched to.
+ * (LiveOverloadDetector, AppState::liveOverloaded()) or the views are still being dispatched to.
  * So the distributed buffers only change inside a tick that is distributed synchronously,
  * views never see buffers ahead of their own data.
  */
@@ -70,7 +69,7 @@ signals:
                                unsigned int hold_ticks);
 
 public:
-    LiveController(COMPASS& compass, ViewManager& view_manager, QObject* parent = nullptr);
+    LiveController(ViewManager& view_manager, QObject* parent = nullptr);
     virtual ~LiveController();
 
     enum class State { Stopped, Running, Paused };
@@ -119,7 +118,6 @@ private:
 
     void processTick();                   // in-memory tick + raw-buffer empty-clear
 
-    COMPASS&     compass_;
     ViewManager& view_manager_;
 
     std::shared_ptr<LiveDataFeed> feed_;

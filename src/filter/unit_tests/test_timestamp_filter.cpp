@@ -20,7 +20,7 @@
 #include "timestampfilter.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variableset.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 using namespace dbContent;
 
