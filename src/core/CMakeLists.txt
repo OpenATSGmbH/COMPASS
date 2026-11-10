@@ -56,6 +56,7 @@ target_link_libraries(compass_core
         Qt5::Widgets
         Qt5::Core
         Qt5::OpenGL
+        Qt5::Test # test/ui_test_event_injections.cpp (QTest key and mouse events)
         ${Boost_LIBRARIES}
         ${LOG4CPP_LIBRARIES}
         ${GDAL_LIBRARIES}
