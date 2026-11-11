@@ -4,7 +4,7 @@
 # in the same layout as the AppImage (see Utils::System::appDir):
 #
 #   compass_client.exe, compass_handler.exe, *.dll   executables and runtime libraries
-#   compass_client.exe.debug                          debug information for gdb (not in the zip)
+#   compass_client.exe.debug, compass_*.dll.debug     debug information for gdb (not in the zip)
 #   platforms/, styles/, imageformats/, iconengines/  Qt plugins
 #   lib/osgPlugins-<version>/                         OSG/osgEarth plugins
 #   compass/conf, compass/data, compass/presets       COMPASS configuration, data, view presets
@@ -54,6 +54,18 @@ for exe in $EXES; do
         $STRIP -o "$DEPLOY/$exe" "$BUILD/bin/$exe"
     fi
 done
+
+# COMPASS libraries (one DLL per module, readme_plugins.md workstream B): debug information
+# split off as for compass_client.exe, into <name>.dll.debug next to them
+for dll in "$BUILD"/bin/compass_*.dll; do
+    name=$(basename "$dll")
+    $OBJCOPY --only-keep-debug "$dll" "$DEPLOY/$name.debug"
+    $STRIP -o "$DEPLOY/$name" "$dll"
+    (cd "$DEPLOY" && $OBJCOPY --add-gnu-debuglink="$name.debug" "$name")
+done
+
+# jASTERIX (shared, installed by win_build.sh)
+$STRIP -o "$DEPLOY/libjasterix.dll" /out/jasterix_install/lib/libjasterix.dll
 
 # runtime of the MinGW toolchain (libssp: stack protection, needed by TBB)
 cp "$MINGW_GCC_DLL_DIR/libstdc++-6.dll" "$MINGW_GCC_DLL_DIR/libgcc_s_seh-1.dll" \

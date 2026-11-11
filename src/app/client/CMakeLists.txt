@@ -48,7 +48,6 @@ target_link_libraries ( compass_client
     compass_config compass_core compass_reconstruction
     compass_gui compass_filter compass_task
     compass_eval compass_view compass_result
-    ${jASTERIX_LIBRARIES}
     ${Boost_LIBRARIES}
     Qt5::Widgets Qt5::Core Qt5::OpenGL Qt5::Charts Qt5::Test
     ${OPENSCENEGRAPH_LIBRARIES}

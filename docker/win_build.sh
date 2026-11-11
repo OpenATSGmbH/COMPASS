@@ -22,8 +22,9 @@ JASTERIX_INSTALL=/out/jasterix_install
 
 build_jasterix()
 {
+    # shared: linked by the shared compass_core (readme_plugins.md, workstream B)
     cmake -G Ninja -S /src/jasterix -B /out/jasterix_build -DCMAKE_TOOLCHAIN_FILE=/opt/mingw_toolchain.cmake \
-        -DCMAKE_INSTALL_PREFIX="$JASTERIX_INSTALL"
+        -DCMAKE_INSTALL_PREFIX="$JASTERIX_INSTALL" -DBUILD_SHARED_LIBS=ON
     cmake --build /out/jasterix_build -j "$JOBS"
     cmake --install /out/jasterix_build
 }
@@ -32,7 +33,7 @@ build_compass()
 {
     # jASTERIX is outside the find root paths of the toolchain: set its paths directly
     cmake -G Ninja -S /src/compass -B /out/compass_build -DCMAKE_TOOLCHAIN_FILE=/opt/mingw_toolchain.cmake \
-        -DjASTERIX_INCLUDE_DIR="$JASTERIX_INSTALL/include" -DjASTERIX_LIBRARIES="$JASTERIX_INSTALL/lib/libjasterix.a" \
+        -DjASTERIX_INCLUDE_DIR="$JASTERIX_INSTALL/include" -DjASTERIX_LIBRARIES="$JASTERIX_INSTALL/lib/libjasterix.dll.a" \
         -DCMAKE_INSTALL_PREFIX=/out/compass_install
     cmake --build /out/compass_build -j "$JOBS" -- -k 0
 }

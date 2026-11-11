@@ -43,7 +43,8 @@ fi
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 echo "$ASAN" > "$ASAN_MARKER"
-cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release "${CMAKE_EXTRA[@]}" ..
+# shared: linked by the shared compass_core (readme_plugins.md, workstream B)
+cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON "${CMAKE_EXTRA[@]}" ..
 make -j $(nproc)
 # `make install` depends on the `all` target, so it would re-run the compiler as
 # root and leave root-owned object files in the shared build dir, which the next

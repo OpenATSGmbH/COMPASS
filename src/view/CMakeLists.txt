@@ -1,4 +1,4 @@
-add_library(compass_view "")
+add_library(compass_view SHARED "")
 
 include("${CMAKE_CURRENT_LIST_DIR}/tableview/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/histogramview/CMakeLists.txt")

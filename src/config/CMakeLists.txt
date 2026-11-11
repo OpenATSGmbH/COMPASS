@@ -1,4 +1,4 @@
-add_library(compass_config "")
+add_library(compass_config SHARED "")
 
 target_sources(compass_config
     PUBLIC

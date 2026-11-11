@@ -1,4 +1,4 @@
-add_library(compass_core "")
+add_library(compass_core SHARED "")
 
 include("${CMAKE_CURRENT_LIST_DIR}/base/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/property/CMakeLists.txt")
@@ -62,6 +62,8 @@ target_link_libraries(compass_core
         ${GeographicLib_LIBRARIES}
         ${PCAP_LIBRARY}
         ${OPENSSL_CRYPTO_LIBRARY}
+        ${LibArchive_LIBRARIES}
+        ${jASTERIX_LIBRARIES} # shared, used by core and task: linked once here
         ${TBB_LIBRARIES}
         TBB::tbb
         Threads::Threads

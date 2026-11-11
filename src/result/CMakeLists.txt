@@ -1,4 +1,4 @@
-add_library(compass_result "")
+add_library(compass_result SHARED "")
 
 include("${CMAKE_CURRENT_LIST_DIR}/report/CMakeLists.txt")
 
@@ -31,6 +31,8 @@ if(EXPERIMENTAL_SRC)
         "${CMAKE_SOURCE_DIR}/experimental_src/docx"
         "${CMAKE_SOURCE_DIR}/experimental_src/libs/osg"
     )
+    # DOCX export (report/reportexporterdocx.cpp)
+    target_link_libraries(compass_result PUBLIC compass_docx)
 endif()
 
 compass_automoc(compass_result)

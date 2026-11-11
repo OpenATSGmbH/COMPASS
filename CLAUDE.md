@@ -7,7 +7,7 @@ OpenATS COMPASS is a C++ application for air traffic surveillance data inspectio
 - **OS**: Linux 64-bit (x86_64) only - no Windows or macOS support
 - **Tested distributions**: Debian 10+, Ubuntu 18.04+, Linux Mint 18.3+
 - **Distribution format**: AppImage - single self-contained executable, no installation required. Downloaded from GitHub releases. The AppImage is built on Debian 10 (Buster) via Docker to maximize glibc compatibility across distributions.
-- **No plugin system**: Extensions require source code modification. The Geographic View lives in a separate closed-source repository (`experimental_src/`) and is only published in the AppImage binary, not in source builds.
+- **Plugins**: ProbIMM reconstruction and the Geographic View are closed-source plugins in a separate repository (`experimental_src/plugins/<name>/`), only published in the AppImage binary, not in source builds. Each implements the `Plugin` interface (`src/app/plugin/plugin.h`, init steps called by `CompassRoot` / `MainWindow`). Currently statically created in `compass_client`'s `main.cpp`; loadable modules are planned (`readme_plugins.md`).
 - **Licensing**: Source code is GPL-3.0; AppImage binary is CC BY 4.0; Geographic View is closed-source (AppImage only). Free for all use including commercial.
 - **Hardware requirements**: Minimum 2+ physical CPU cores, dedicated NVidia or ATI GPU (native drivers, OpenGL 3.0+), 8 GB RAM. Recommended: Intel i5+, 16 GB+ RAM. Large datasets (>1M reports/hour): 32 GB RAM.
 
@@ -27,7 +27,7 @@ COMPASS is a **monolithic Qt5 desktop application** with a **DuckDB** embedded d
 
 ## Library layering
 
-The code is split into static libraries with acyclic dependencies. Each library is one directory, and a library may only depend on the libraries below it (bottom to top):
+The code is split into shared libraries with acyclic dependencies, linked with `-Wl,--no-undefined` (each library must link everything it uses). Each library is one directory, and a library may only depend on the libraries below it (bottom to top):
 
 | Layer | Library | Directory |
 |---|---|---|
@@ -50,7 +50,7 @@ Rules:
 - **Check:** `python3 scripts/check_layering.py --build-dir build` checks the headers each compiled file actually includes and the CMake link and include paths (without `--build-dir` it analyzes the include lines). It is run manually (not part of the build or CI), e.g. after larger refactorings; the allowlist `scripts/layering_allowlist.txt` is empty and may not grow.
 - **Sub-layers inside `compass_core`** (bottom to top): `base` → `rtcommand` (incl. `test/`) → `gui` → `services` (job, unit, sector, license) → `dbinterface` → `context` → `projection` → `dbcontent` (incl. `db/job`, `i*provider.h`) → `ui` (`source/`). The check verifies them too; the allowlist `scripts/layering_core_allowlist.txt` is empty and may not grow (workstream I in `readme_dependencies.md`). `DBInterface` is generic database access; DB content specific access (DB content tables, targets table) goes through `DBContentDB` (`dbcont_man.contentDB()`).
 - **`compass.h` only at app level:** it lives in `src/app/` (so an include from a lower `src/` library does not compile); besides `src/app/` only the app-level parts of `experimental_src/` (`rtcommand/`, `test/`, linked to `compass_app`) may include it. `compass_app` never names these parts: `compass_client`'s `main.cpp` hooks them in via `AppHooks` (`src/app/apphooks.h`, reached via `CompassRoot::appHooks()`). The check enforces this for `src/` and `experimental_src/`; the allowlist `scripts/layering_compass_allowlist.txt` is empty and may not grow (workstream J). Code above core gets its managers directly (e.g. `filter_manager.dbContextManager()`, `view_->viewManager().appState()`).
-- **Exceptions:** host sites that use `experimental_src/` (geo view, ProbIMM, Kalman interfaces) are known host ↔ experimental cycles, resolved by the plugin plan (`readme_plugins.md`). Background and history: `readme_dependencies.md`.
+- **Plugins** (`experimental_src/plugins/<name>/`) sit on top: they link the host through the INTERFACE target `compass_plugin_sdk` (`src/app/CMakeLists.txt`), and the host never names plugin types. They register through generic extension points, e.g. sub-configurable factories (`DECLARE_SUBCONFIGURABLE_FACTORY`, `src/config/subconfigurablefactory.h`), virtuals like `ReconstructorBase::createKalmanInterface()` / `createWidget()` and `View::visitLatex()`, and interfaces like `GeoImageSink`. Plan and decisions: `readme_plugins.md`, background of the layering: `readme_dependencies.md`.
 
 ## Build
 
@@ -60,6 +60,8 @@ make -C build -j$(nproc)
 ```
 
 Build output goes to `build/bin/` (executables) and `build/lib/` (libraries).
+
+Third-party libraries linked into the COMPASS libraries must be shared or built with `-fPIC`: jASTERIX and NemaTode (hpuhr fork) are built shared (their default), see `docker/build_jasterix.sh` and the Dockerfiles.
 
 **C++ standard**: The project uses **C++17** (`-std=c++17`). The AppImage is built inside a Debian 10 Docker container (see `docker/Dockerfile_deb10`) using GCC 8.3. C++17 features such as structured bindings (`auto [x, y] = ...`), `std::optional`, `std::variant`, `if constexpr`, `std::string_view`, and `std::any` are available and may be used freely.
 
@@ -126,12 +128,13 @@ src/                    Main source code, one directory per library (see Library
   app/                  compass_app, compass_client, compass_handler
     compass.h           COMPASS application facade (DB session, app state, config parameters, command host)
     compassroot.h       Composition root: creates COMPASS and the managers, wiring, startup/shutdown
+    plugin/             Plugin interface (plugin.h)
     client/             GUI application (Client, MainWindow, main.cpp)
     watchdog/           Watchdog process (compass_handler)
   unit_tests/           Test main (CATCH_CONFIG_MAIN) and top-level test CMakeLists
 experimental_src/       Experimental features (separate git repo)
-  reconstruction/       Advanced reconstruction (Kalman, JPDA, ProbIMM)
-  view/geographicview/  OSG/osgEarth geographic view
+  plugins/probimm/      ProbIMM plugin: advanced reconstruction (Kalman, JPDA, ProbIMM)
+  plugins/geoview/      Geographic view plugin (OSG/osgEarth)
   unit_tests/           Experimental unit tests
 lib/                    Third-party headers (catch.hpp, json.hpp, spline.h)
 conf/                   Runtime configuration (JSON)

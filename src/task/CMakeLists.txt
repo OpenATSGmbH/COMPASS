@@ -1,4 +1,4 @@
-add_library(compass_task "")
+add_library(compass_task SHARED "")
 
 include("${CMAKE_CURRENT_LIST_DIR}/analyze/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/assoc/CMakeLists.txt")
@@ -31,7 +31,6 @@ target_link_libraries(compass_task
         compass_eval
         NemaTode::NemaTode
         ${LibArchive_LIBRARIES}
-        ${jASTERIX_LIBRARIES}
 )
 
 if(EXPERIMENTAL_SRC)

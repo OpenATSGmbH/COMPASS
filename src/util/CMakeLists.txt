@@ -1,4 +1,4 @@
-add_library(compass_util "")
+add_library(compass_util SHARED "")
 
 target_sources(compass_util
     PUBLIC

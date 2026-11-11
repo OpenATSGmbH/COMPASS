@@ -28,6 +28,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand_runner_stash.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand_wait_condition.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand_manager.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/rtcommand_registry.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand_shell.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand_string.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rtcommand_response.cpp"

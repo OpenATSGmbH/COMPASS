@@ -68,6 +68,16 @@ std::string formatFuncName(const char* pretty_function)
 
 Logger::Logger() : console_appender_(0), file_appender_(0), event_log_(new logger::EventLog(MAX_EVENTS_PER_CATEGORY)) {}
 
+/**
+ * Notice: defined here and not in the header, a function-local static in a header-defined
+ * function exists once per DLL on Windows.
+ */
+Logger& Logger::getInstance()
+{
+    static Logger instance;
+    return instance;
+}
+
 void Logger::init(const std::string& log_config_filename, bool enable_event_log)
 {
     log4cpp::PropertyConfigurator::configure(log_config_filename);

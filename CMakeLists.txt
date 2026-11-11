@@ -17,6 +17,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# the compass_* libraries are shared (readme_plugins.md, workstream B): each one has to link
+# all libraries it uses, unresolved symbols fail at link time as for Windows DLLs
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
+
 if(EXISTS "/.dockerenv")
 message("  Platform: Linux (inside docker)")
 add_definitions ( -UNDEBUG -Wall -std=c++17 -fext-numeric-literals) # -DQT_NO_KEYWORDS
@@ -298,7 +302,7 @@ install(DIRECTORY "data" DESTINATION compass)
 set(COMPASS_INSTALL_LIBS
     compass_util compass_config compass_core compass_reconstruction
     compass_gui compass_filter compass_task
-    compass_eval compass_view compass_result)
+    compass_eval compass_view compass_result compass_app)
 if(EXPERIMENTAL_SRC)
     list(APPEND COMPASS_INSTALL_LIBS
         compass_osg_utils compass_docx compass_reconst_adv

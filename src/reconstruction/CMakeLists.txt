@@ -1,4 +1,4 @@
-add_library(compass_reconstruction "")
+add_library(compass_reconstruction SHARED "")
 
 target_sources(compass_reconstruction
     PUBLIC

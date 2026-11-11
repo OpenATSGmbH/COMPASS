@@ -1,4 +1,4 @@
-add_library(compass_app "")
+add_library(compass_app SHARED "")
 
 # Disable AUTOMOC: compass_app links libraries (compass_view, compass_eval, etc.)
 # whose PUBLIC include dirs expose Q_OBJECT headers. AUTOMOC would re-MOC those
@@ -50,3 +50,17 @@ target_link_libraries(compass_app
 
 # No experimental libraries are linked here, only by compass_client: they extend the
 # application through AppHooks (incl. the plugin objects), set in compass_client's main.cpp.
+
+# compass_plugin_sdk: the host libraries a plugin may link (readme_plugins.md). Plugins link this
+# target instead of the libraries, so the set can change (e.g. a core/UI split) without touching
+# the plugins' CMake files. compass_app: the Plugin interface (plugin/plugin.h)
+add_library(compass_plugin_sdk INTERFACE)
+target_link_libraries(compass_plugin_sdk INTERFACE
+    compass_core
+    compass_reconstruction
+    compass_gui
+    compass_view
+    compass_result
+    compass_task
+    compass_app
+)
