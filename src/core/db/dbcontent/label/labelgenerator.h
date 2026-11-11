@@ -206,10 +206,10 @@ public:
 
     // view point defined labels: rec_num to label level (LOD 1-3), set when a view
     // point with a "labels" key is shown, cleared when it is unshown
-    void setViewPointLabels(const std::map<unsigned long, unsigned int>& labels);
+    void setViewPointLabels(const std::map<std::uint64_t, unsigned int>& labels);
     void clearViewPointLabels();
     bool hasViewPointLabels() const { return !view_point_labels_.empty(); }
-    const std::map<unsigned long, unsigned int>& viewPointLabels() const override { return view_point_labels_; }
+    const std::map<std::uint64_t, unsigned int>& viewPointLabels() const override { return view_point_labels_; }
 
     LabelGeneratorConfig& config() { return config_; }
     void updateFilterValuesFromStrings();
@@ -272,7 +272,7 @@ protected:
     bool filter_ta_null_wanted_ {false};
 
     // view point defined labels: rec_num to label level (LOD 1-3)
-    std::map<unsigned long, unsigned int> view_point_labels_;
+    std::map<std::uint64_t, unsigned int> view_point_labels_;
 
     // per data source settings cached from the config (string + json lookups are too expensive
     // for per row and per frame use), filled on first access, cleared on every change

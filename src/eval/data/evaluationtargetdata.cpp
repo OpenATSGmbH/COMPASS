@@ -526,12 +526,12 @@ const dbContent::TargetReport::DataMapping& EvaluationTargetData::mappedRefMappi
 
 /**
  */
-std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>>
+std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>>
 EvaluationTargetData::mappedRefRecordNumbers(const DataID& tst_id) const
 {
     const auto& mapping = mappedRefMapping(tst_id);
 
-    std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>> rec_nums;
+    std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>> rec_nums;
 
     if (mapping.has_ref1_)
         rec_nums.first = ref_chain_.recordNumber(mapping.dataid_ref1_);

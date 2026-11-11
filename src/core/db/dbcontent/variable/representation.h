@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "stringconv.h"
 
 #include <iomanip>
@@ -107,7 +108,7 @@ bool representationString(std::string& str, Representation repr, const T& value)
             {
                 //lineStrFrom asserts on anything outside the four lines, and an
                 //axis tick can land outside the data range
-                const long line = (long) value;
+                const std::int64_t line = (std::int64_t) value;
                 if (line < 0 || line > 3)
                     str = std::to_string(line);
                 else

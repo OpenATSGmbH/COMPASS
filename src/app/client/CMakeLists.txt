@@ -27,6 +27,12 @@ add_executable ( compass_client
     "${CMAKE_CURRENT_LIST_DIR}/cxa_throw_hook.cpp"
 )
 
+if(WIN32)
+    # application manifest (see the top-level CMakeLists.txt)
+    add_dependencies(compass_client compass_windows_rc)
+    target_link_libraries(compass_client "${COMPASS_WINDOWS_RC}")
+endif()
+
 # export symbols so backtrace_symbols_fd() can resolve function names on crash
 # No Q_OBJECT sources in this target (they live in compass_app). Disable AUTOMOC
 # to prevent re-MOCing headers from linked libraries (whose .cpp files already

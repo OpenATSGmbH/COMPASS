@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "traced_assert.h"
 
 #include <Eigen/Core>
@@ -444,7 +445,7 @@ struct KalmanUpdateMinimal
 };
 
 //unique update id which also accounts for interpolated source data
-typedef std::pair<unsigned long, boost::posix_time::ptime> UniqueUpdateID;
+typedef std::pair<std::uint64_t, boost::posix_time::ptime> UniqueUpdateID;
 
 /**
  * Low-level struct for a kalman update.
@@ -525,7 +526,7 @@ struct KalmanUpdate
     double                   lon{0};               // longitude of state position (do not confuse with center of local projection!)
     boost::posix_time::ptime t;                 // time of update
 
-    boost::optional<unsigned long> source_id;    // optional source id
+    boost::optional<std::uint64_t> source_id;    // optional source id
     boost::optional<float>         Q_var_interp; // optional interpolation process noise variance
 
     bool has_wgs84_pos = false; // lat/long are set

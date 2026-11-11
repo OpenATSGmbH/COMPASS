@@ -1164,16 +1164,19 @@ QRectF ViewPointGenAnnotations::roi() const
  * ViewPointGenVP
  ********************************************************************************/
 
-const std::string ViewPointGenVP::ViewPointFieldName        = ViewPointKeys::VP_NAME_KEY;
-const std::string ViewPointGenVP::ViewPointFieldID          = ViewPointKeys::VP_ID_KEY;
-const std::string ViewPointGenVP::ViewPointFieldType        = ViewPointKeys::VP_TYPE_KEY;
-const std::string ViewPointGenVP::ViewPointFieldStatus      = ViewPointKeys::VP_STATUS_KEY;
-const std::string ViewPointGenVP::ViewPointFieldAnnotations = ViewPointKeys::VP_ANNOTATION_KEY;
-const std::string ViewPointGenVP::ViewPointFieldFilters     = ViewPointKeys::VP_FILTERS_KEY;
-const std::string ViewPointGenVP::ViewPointFieldPosLat      = ViewPointKeys::VP_POS_LAT_KEY;
-const std::string ViewPointGenVP::ViewPointFieldPosLon      = ViewPointKeys::VP_POS_LON_KEY;
-const std::string ViewPointGenVP::ViewPointFieldWinLat      = ViewPointKeys::VP_POS_WIN_LAT_KEY;
-const std::string ViewPointGenVP::ViewPointFieldWinLon      = ViewPointKeys::VP_POS_WIN_LON_KEY;
+//literals, not copies of the ViewPointKeys::VP_*_KEY strings: the initialization order of
+//static strings in different files is undefined, a copy can be empty (seen on Windows,
+//no annotations found). Values must stay equal to the ViewPointKeys keys (unit test).
+const std::string ViewPointGenVP::ViewPointFieldName        = "name";
+const std::string ViewPointGenVP::ViewPointFieldID          = "id";
+const std::string ViewPointGenVP::ViewPointFieldType        = "type";
+const std::string ViewPointGenVP::ViewPointFieldStatus      = "status";
+const std::string ViewPointGenVP::ViewPointFieldAnnotations = "annotations";
+const std::string ViewPointGenVP::ViewPointFieldFilters     = "filters";
+const std::string ViewPointGenVP::ViewPointFieldPosLat      = "position_latitude";
+const std::string ViewPointGenVP::ViewPointFieldPosLon      = "position_longitude";
+const std::string ViewPointGenVP::ViewPointFieldWinLat      = "position_window_latitude";
+const std::string ViewPointGenVP::ViewPointFieldWinLon      = "position_window_longitude";
 
 const std::string ViewPointGenVP::StatusNameOpen   = "open";
 const std::string ViewPointGenVP::StatusNameClosed = "closed";

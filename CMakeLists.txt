@@ -25,11 +25,31 @@ message("  Platform: Linux (local)")
 add_definitions ( -UNDEBUG -Wall -std=c++17 -fno-omit-frame-pointer) # -DQT_NO_KEYWORDS -fext-numeric-literals
 ENDIF()
 
+IF (WIN32)
+# Windows resources of the executables (application manifest, UTF-8 code page), compiled
+# directly with windres: the RC language would get the add_definitions compiler flags
+set(COMPASS_WINDOWS_RC "${CMAKE_BINARY_DIR}/compass_rc.o")
+add_custom_command(
+    OUTPUT "${COMPASS_WINDOWS_RC}"
+    COMMAND x86_64-w64-mingw32-windres -O coff -i compass.rc -o "${COMPASS_WINDOWS_RC}"
+    WORKING_DIRECTORY "${COMPASS_PATH}/src/app/windows"
+    DEPENDS "${COMPASS_PATH}/src/app/windows/compass.rc" "${COMPASS_PATH}/src/app/windows/compass.manifest")
+add_custom_target(compass_windows_rc DEPENDS "${COMPASS_WINDOWS_RC}")
+
+# M_PI etc. (math.h), no min/max macros and fewer other macros (windows.h, included by TBB)
+add_definitions(-D_USE_MATH_DEFINES -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+ENDIF()
+
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 
 #-Wno-deprecated-declarations -Wno-ignored-attributes -Wno-misleading-indentation for new compiler and old libs
 # -UNDEBUG for enabling asserts in release buils (until testing/error management is improved)
+
+IF (WIN32 AND CMAKE_CROSSCOMPILING)
+# MinGW cross build: moc, uic and rcc of the Linux host Qt
+include(${COMPASS_PATH}/docker/qt5_host_tools.cmake)
+ENDIF()
 
 find_package(Qt5Widgets)
 find_package(Qt5Core)
@@ -85,6 +105,10 @@ message("  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 find_package (Eigen3 3.2 REQUIRED)
 
 find_package ( LOG4CPP REQUIRED )
+IF (WIN32)
+# log4cpp/config-MinGW32.h does not define int64_t
+add_definitions(-DLOG4CPP_HAVE_INT64_T)
+ENDIF()
 message("  LOG4CPP_INCLUDE_DIR: ${LOG4CPP_INCLUDE_DIR}")
 message("  LOG4CPP_LIBRARY: ${LOG4CPP_LIBRARIES}")
 
@@ -96,7 +120,12 @@ find_package ( LibArchive REQUIRED )
 message("  LibArchive_INCLUDE_DIRS: ${LibArchive_INCLUDE_DIRS}")
 message("  LibArchive_LIBRARIES: ${LibArchive_LIBRARIES}")
 
+IF (WIN32)
+# oneTBB on Windows is tbb12, the own FindTBB.cmake searches tbb: use the oneTBB config
+find_package(TBB CONFIG REQUIRED)
+ELSE()
 find_package(TBB REQUIRED)
+ENDIF()
 message("  TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIRS}")
 message("  TBB_LIBRARIES: ${TBB_LIBRARIES}")
 

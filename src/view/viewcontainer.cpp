@@ -75,7 +75,7 @@ ViewContainer::ViewContainer(nlohmann::json& config,
     logdbg << "window " << window_cnt_;
     traced_assert(tab_widget_);
 
-    static unsigned long creation_counter = 0;
+    static std::uint64_t creation_counter = 0;
     creation_index_ = ++creation_counter;
 
     disable_add_remove_views_ = view_manager_.appState().settings().disable_add_remove_views;

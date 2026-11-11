@@ -160,7 +160,7 @@ void EvaluationDataSourceWidget::updateDataSourcesSlot()
 
     for (auto& it : data_sources)
     {
-        ds_id = stoul(it.first);
+        ds_id = stoull(it.first);
 
         if (!ctx_man.hasDataSource(ds_id))
             continue;

@@ -23,6 +23,7 @@
 #include <QDateTime>
 
 #include <string>
+#include <cstdint>
 
 namespace Utils
 {
@@ -33,14 +34,14 @@ extern const std::string QT_DATETIME_FORMAT_SHORT;
 
 extern boost::posix_time::ptime fromString(const std::string& value, bool* ok = nullptr);
 extern boost::posix_time::ptime fromString(const std::string& value, const std::string& facet, bool* ok = nullptr);
-extern boost::posix_time::ptime fromLong(unsigned long value);
-extern long toLong(const boost::posix_time::ptime& value);
-extern long toLongQtUTC(const boost::posix_time::ptime& value);
-extern long correctLongQtUTC(long t);
-extern long decorrectLongQtUTC(long t);
+extern boost::posix_time::ptime fromLong(std::uint64_t value);
+extern std::int64_t toLong(const boost::posix_time::ptime& value);
+extern std::int64_t toLongQtUTC(const boost::posix_time::ptime& value);
+extern std::int64_t correctLongQtUTC(std::int64_t t);
+extern std::int64_t decorrectLongQtUTC(std::int64_t t);
 extern std::string toString(const boost::posix_time::ptime& value, unsigned int partial_digits=3, bool* ok = nullptr);
 extern std::string toString(const boost::posix_time::time_duration& duration, unsigned int partial_digits=3);
-extern std::string toStringLong(unsigned long value);
+extern std::string toStringLong(std::uint64_t value);
 extern std::string toTimeString(const boost::posix_time::ptime& value, bool show_digits = true);
 extern std::string toDateString(const boost::posix_time::ptime& value);
 extern boost::posix_time::ptime fromDateString(const std::string& value);

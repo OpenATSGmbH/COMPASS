@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "targetreportdefs.h"
 #include "accuracy.h"
 
@@ -93,7 +94,7 @@ struct Measurement
     unsigned char covMatFlags() const;
     bool setFromCovMat(const Eigen::MatrixXd& C, unsigned char components = 255);
 
-    std::pair<unsigned long, boost::posix_time::ptime> uniqueID() const;
+    std::pair<std::uint64_t, boost::posix_time::ptime> uniqueID() const;
 
     Measurement replaceTimestamp(const boost::posix_time::ptime& t) const;
 
@@ -137,7 +138,7 @@ struct Measurement
     static const std::string FieldQVar;
     static const std::string FieldQVarInterp;
 
-    boost::optional<unsigned long> source_id;           // source of the measurement
+    boost::optional<std::uint64_t> source_id;           // source of the measurement
 
     boost::posix_time::ptime t;                         // timestamp
 

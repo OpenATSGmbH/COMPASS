@@ -373,14 +373,14 @@ void ReconstructorTaskAnalysisWidget::recNumsChangedSlot(const QString& value)
 {
     loginf << "value '" << value.toStdString() << "'";
 
-    set<unsigned long> values_tmp;
+    set<std::uint64_t> values_tmp;
     vector<string> split_str = String::split(value.toStdString(), ',');
 
     bool ok;
 
     for (auto& tmp_str : split_str)
     {
-        unsigned long utn_tmp = QString(tmp_str.c_str()).toInt(&ok, 10);
+        std::uint64_t utn_tmp = QString(tmp_str.c_str()).toInt(&ok, 10);
 
         if (!ok)
         {

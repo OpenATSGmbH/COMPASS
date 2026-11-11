@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "traced_assert.h"
 
 namespace context { class DBContextManager; }
@@ -64,7 +65,7 @@ struct SensorState
 
     SensorStatus             status = SensorStatus::Fresh;      // current sensor status
     boost::posix_time::ptime ts_con;                            // timestamp the last CON status was obtained
-    unsigned long            rec_num_con;                       // cat063 rec num of con status
+    std::uint64_t            rec_num_con;                       // cat063 rec num of con status
 };
 
 typedef std::pair<unsigned int, unsigned int> TrackerKey;     // sensor id, line id

@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <random>
+#include <set>
 #include <tuple>
 
 using namespace Utils::Number;
@@ -24,6 +25,34 @@ TEST_CASE("deg2rad and rad2deg", "[number][conversion]")
     // roundtrip
     REQUIRE(rad2deg(deg2rad(47.5)) == Approx(47.5));
     REQUIRE(deg2rad(rad2deg(1.23)) == Approx(1.23));
+}
+
+TEST_CASE("randomNumber covers the range with fine resolution", "[number][random]")
+{
+    // rand() has only 32768 values on Windows, and the former formula did not reach max
+    const float min = 0.0f;
+    const float max = 100000.0f;
+    const int   num = 100000;
+
+    std::set<float> values;
+    float v_min = max;
+    float v_max = min;
+
+    for (int i = 0; i < num; ++i)
+    {
+        float v = randomNumber(min, max);
+
+        REQUIRE(v >= min);
+        REQUIRE(v <= max);
+
+        v_min = std::min(v_min, v);
+        v_max = std::max(v_max, v);
+        values.insert(v);
+    }
+
+    REQUIRE(v_min < 0.01f * max);
+    REQUIRE(v_max > 0.99f * max);
+    REQUIRE(values.size() > 50000);
 }
 
 TEST_CASE("knots2MPS and mps2Knots", "[number][conversion]")
@@ -120,10 +149,10 @@ TEST_CASE("calculateMinAngleDifference", "[number]")
 
 TEST_CASE("recNum encoding/decoding", "[number]")
 {
-    unsigned long rec_num = 12345;
+    std::uint64_t rec_num = 12345;
     unsigned int dbcont_id = 42;
 
-    unsigned long encoded = recNumAddDBContId(rec_num, dbcont_id);
+    std::uint64_t encoded = recNumAddDBContId(rec_num, dbcont_id);
     REQUIRE(recNumGetWithoutDBContId(encoded) == rec_num);
     REQUIRE(recNumGetDBContId(encoded) == dbcont_id);
 }

@@ -452,6 +452,29 @@ bool Client::run ()
         {
             QFont system_font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
 
+#ifdef _WIN32
+            // Windows: the Ubuntu font shipped in data/fonts/ubuntu, so COMPASS looks as on Linux,
+            // at the size of the Windows UI font (9 pt by default, follows the Windows text size)
+            const qreal   WindowsAppFontPointSize = system_font.pointSizeF();
+            const QString font_dir = QString::fromStdString(system_install_path_ + "data/fonts/ubuntu/");
+            bool fonts_loaded = true;
+
+            for (const char* file : { "Ubuntu-R.ttf", "Ubuntu-B.ttf", "Ubuntu-RI.ttf", "Ubuntu-BI.ttf" })
+            {
+                if (QFontDatabase::addApplicationFont(font_dir + file) < 0)
+                {
+                    logwrn << "could not load font '" << (font_dir + file).toStdString() << "'";
+                    fonts_loaded = false;
+                }
+            }
+
+            if (fonts_loaded)
+            {
+                system_font = QFont("Ubuntu");
+                system_font.setPointSizeF(WindowsAppFontPointSize);
+            }
+#endif
+
             system_font.setPointSizeF(system_font.pointSizeF() * compass_->appState().settings().app_font_scale);
             setFont(system_font);
         }
@@ -952,6 +975,17 @@ void Client::checkAndSetupConfig()
 
             string gdal_path = string(appdir) + "/compass/data/gdal";
             CPLSetConfigOption("GDAL_DATA", gdal_path.c_str());
+
+#ifdef _WIN32
+            // proj.db of the package, on Linux PROJ finds it in the system paths
+            string proj_path = string(appdir) + "/proj";
+            qputenv("PROJ_DATA", proj_path.c_str());
+
+            // osgEarth loads arial.ttf as default font on Windows only, use the font the
+            // geographic view sets later anyway
+            string font_path = system_install_path_ + "data/fonts/times.ttf";
+            qputenv("OSGEARTH_DEFAULT_FONT", font_path.c_str());
+#endif
         }
 #endif
 

@@ -45,12 +45,12 @@ std::string joinNames(const std::set<std::string>& names, const std::string& sep
 }
 
 /// Sum of the inserted counts of `dbcontents` on `line_id` over `ds_ids`.
-unsigned long numInsertedOnLine(const context::DBContextManager& ctx,
+std::uint64_t numInsertedOnLine(const context::DBContextManager& ctx,
                                 const std::set<unsigned int>& ds_ids,
                                 const std::set<std::string>& dbcontents,
                                 unsigned int line_id)
 {
-    unsigned long num = 0;
+    std::uint64_t num = 0;
     for (auto ds_id : ds_ids)
     {
         for (const auto& dbc : dbcontents)
@@ -334,9 +334,9 @@ void DataSourceInspectorBase::writeAccuracyRow(ReportTableRows& rows, const Accu
     rows.set<bool>("gated", row.gated);
 
     if (row.ref_rec_nums.first)
-        rows.set<unsigned long>("ref_rec_num_1", *row.ref_rec_nums.first);
+        rows.set<std::uint64_t>("ref_rec_num_1", *row.ref_rec_nums.first);
     if (row.ref_rec_nums.second)
-        rows.set<unsigned long>("ref_rec_num_2", *row.ref_rec_nums.second);
+        rows.set<std::uint64_t>("ref_rec_num_2", *row.ref_rec_nums.second);
 
     rows.nextRow();
 }
@@ -405,7 +405,7 @@ bool DataSourceInspectorBase::writeGapRow(ReportTableRows& rows, AnalysisDataset
     auto last = dataset.lastReferenceSampleInRange(gap.utn, gap.begin, gap.end);
     if (last)
     {
-        rows.set<unsigned long>("ref_rec_num_last", ref_chain.recordNumber(*last));
+        rows.set<std::uint64_t>("ref_rec_num_last", ref_chain.recordNumber(*last));
 
         auto pos_last = ref_chain.posOpt(*last);
         if (pos_last)
@@ -417,11 +417,11 @@ bool DataSourceInspectorBase::writeGapRow(ReportTableRows& rows, AnalysisDataset
 
     auto before = dataset.testRecordNumberAt(gap.utn, gap.begin);
     if (before)
-        rows.set<unsigned long>("tst_rec_num_before", *before);
+        rows.set<std::uint64_t>("tst_rec_num_before", *before);
 
     auto after = dataset.testRecordNumberAt(gap.utn, gap.end);
     if (after)
-        rows.set<unsigned long>("tst_rec_num_after", *after);
+        rows.set<std::uint64_t>("tst_rec_num_after", *after);
 
     rows.nextRow();
 

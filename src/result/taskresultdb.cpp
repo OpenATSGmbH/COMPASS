@@ -877,12 +877,12 @@ ResultT<std::shared_ptr<ResultReport::SectionContent>> TaskResultDB::loadContent
 
 /**
  */
-boost::optional<unsigned long> TaskResultDB::getMaxReportContentID()
+boost::optional<std::uint64_t> TaskResultDB::getMaxReportContentID()
 {
     traced_assert(db_interface_.ready());
 
     if (!existsReportContentsTable())
-        return boost::optional<unsigned long>();
+        return boost::optional<std::uint64_t>();
 
     return db_interface_.getMaxUIntValue(ResultReport::SectionContent::DBTableName,
                                          ResultReport::SectionContent::DBColumnContentID.name());

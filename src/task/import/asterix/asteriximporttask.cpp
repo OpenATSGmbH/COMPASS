@@ -63,6 +63,7 @@
 
 #include <QApplication>
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QMessageBox>
 #include <QThread>
 #include <QMessageBox>
@@ -70,7 +71,6 @@
 #include <QTimer>
 
 #include <algorithm>
-#include <malloc.h>
 
 using namespace Utils;
 using namespace nlohmann;
@@ -771,6 +771,31 @@ bool ASTERIXImportTask::isRunning() const
 }
 
 /**
+ * Waits until a stopped import has finished. The jobs report done through queued signals,
+ * running_ is reset in checkAllDone, so the event loop runs while waiting.
+ * Returns false on timeout.
+ */
+bool ASTERIXImportTask::waitForFinished(int timeout_ms)
+{
+    QElapsedTimer timer;
+    timer.start();
+
+    while (running_)
+    {
+        if (timer.elapsed() > timeout_ms)
+        {
+            logwrn << "import not finished after " << timeout_ms << " ms";
+            return false;
+        }
+
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        QThread::msleep(1);
+    }
+
+    return true;
+}
+
+/**
 */
 bool ASTERIXImportTask::canRun()
 {
@@ -889,6 +914,10 @@ void ASTERIXImportTask::stop()
 void ASTERIXImportTask::run() // , bool create_mapping_stubs
 {
     loginf;
+
+    // a stopped import finishes asynchronously, wait for it before the next one starts
+    if (running_ && stopped_)
+        waitForFinished();
 
     traced_assert(!running_);
     traced_assert(decoder_);
@@ -1888,7 +1917,7 @@ void ASTERIXImportTask::checkAllDone()
 
         logRAMUsage("finalize before malloc_trim");
 
-        malloc_trim(0); // release unused memory
+        Utils::System::trimMemory(); // release unused memory
 
         logRAMUsage("finalize after malloc_trim");
 

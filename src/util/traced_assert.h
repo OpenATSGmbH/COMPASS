@@ -20,6 +20,8 @@
 #include <boost/stacktrace.hpp>
 #include <boost/current_function.hpp>
 
+#include <cstdint>
+
 #define traced_assert(expr) \
     (BOOST_LIKELY(!!(expr))? ((void)0): (::compass_assert::assertion_failed(#expr, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__, boost::stacktrace::stacktrace(), false), ::std::abort()))
 
@@ -31,7 +33,7 @@ namespace compass_assert
     extern void assertion_failed(char const * expr, 
                                  char const * function,
                                  char const * file, 
-                                 long line,
+                                 std::int64_t line,
                                  const boost::stacktrace::stacktrace& stack_trace,
                                  bool expr_is_message);
 }

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "configurable.h"
 #include "iviewprovider.h"
 #include "imanager.h"
@@ -175,7 +176,7 @@ class ViewManager : public QObject, public Configurable, public IViewProvider, p
     boost::posix_time::time_duration maxLatency() const override;
 
     // selection carried to the next load (set by FilterManager / view-point selection)
-    void storeSelectedRecNums(const std::vector<unsigned long>& selected) override;
+    void storeSelectedRecNums(const std::vector<std::uint64_t>& selected) override;
     void clearSelectedRecNums();
 
     void registerView(View* view);
@@ -381,7 +382,7 @@ protected:
     std::unique_ptr<LoadController> load_controller_; // view-load dialog/cursor/progress
     std::unique_ptr<LiveController> live_controller_; // live session: feed + tick
 
-    std::map<std::string, std::set<unsigned long>> carried_selection_; // selected rec nums carried between loads
+    std::map<std::string, std::set<std::uint64_t>> carried_selection_; // selected rec nums carried between loads
 
     std::unique_ptr<ViewPointsReportGenerator> view_points_report_gen_;
 

@@ -251,7 +251,6 @@ void ViewPointsReportGenerator::run ()
             if (run_pdflatex_)
             {
                 std::string command_out;
-                std::string command = latex::pdfLatexCommand(report_path_, report_filename_);
 
                 loginf << "running pdflatex";
                 dialog_->setStatus("Running pdflatex");
@@ -259,9 +258,9 @@ void ViewPointsReportGenerator::run ()
 
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-                logdbg << "cmd '" << command << "'";
+                logdbg << "document '" << report_path_ << "/" << report_filename_ << "'";
 
-                command_out = System::exec(command);
+                command_out = latex::runPDFLatex(report_path_, report_filename_);
 
                 logdbg << "cmd done";
 
@@ -280,7 +279,7 @@ void ViewPointsReportGenerator::run ()
 
                     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-                    command_out = System::exec(command);
+                    command_out = latex::runPDFLatex(report_path_, report_filename_);
 
                     time_diff = stop_time - start_time;
                     ms = time_diff.total_milliseconds();

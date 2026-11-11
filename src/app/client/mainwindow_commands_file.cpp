@@ -23,6 +23,10 @@
 #include "files.h"
 #include "traced_assert.h"
 
+#include <QApplication>
+#include <QDialog>
+#include <QTimer>
+
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
 
@@ -304,12 +308,44 @@ bool RTCommandCloseDB::run_impl()
 
 // quit app
 
+namespace
+{
+/**
+ * Quits when no modal dialog is open. A modal dialog runs its own event loop and
+ * keeps references to the managers. A shutdown inside this loop deletes the managers
+ * before the dialog, and the dialog destructor then uses a deleted manager. So the
+ * dialogs are closed first, and the quit runs from the main event loop.
+ */
+void quitWhenNoModalDialog(MainWindow* main_window, int retries)
+{
+    QWidget* modal = QApplication::activeModalWidget();
+
+    if (modal && retries > 0)
+    {
+        loginf << "closing modal dialog '" << modal->windowTitle().toStdString() << "' before quit";
+
+        if (auto* dialog = qobject_cast<QDialog*>(modal))
+            dialog->reject();
+        else
+            modal->close();
+
+        QTimer::singleShot(100, [main_window, retries] () { quitWhenNoModalDialog(main_window, retries - 1); });
+        return;
+    }
+
+    if (modal)
+        logwrn << "modal dialog '" << modal->windowTitle().toStdString() << "' still open, quitting";
+
+    main_window->quitSlot();
+}
+}
+
 bool RTCommandQuit::run_impl()
 {
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
     traced_assert(main_window);
 
-    QTimer::singleShot(100, [main_window] () { main_window->quitSlot(); });
+    QTimer::singleShot(100, [main_window] () { quitWhenNoModalDialog(main_window, 50); });
 
     return true;
 }

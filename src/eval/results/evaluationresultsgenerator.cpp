@@ -58,6 +58,7 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <chrono>
 #include <future>
 
 using namespace std;
@@ -212,7 +213,6 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
                 vector<bool> done_flags;
                 done_flags.resize(num_utns, false);
-                bool task_done = false;
 
                 // generate results
 //                EvaluateTask* t = new (tbb::task::allocate_root()) EvaluateTask(
@@ -252,16 +252,18 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
                         for(unsigned int utn_cnt=0; utn_cnt < num_utns; ++utn_cnt)
                             traced_assert(results[utn_cnt]);
-
-                        task_done = true;
                     }
                     catch (const std::exception& e)
                     {
                         logerr << "exception '" << e.what() << "'";
-                        throw e;
+                        throw;
                     }
 
                 });
+
+                // the future is also ready when the task throws, get() below passes the exception on
+                auto task_done = [&] () {
+                    return pending_future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready; };
 
                 unsigned int tmp_done_cnt;
 
@@ -275,7 +277,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                 logdbg << "waiting on group " << req_group_it->name()
                        << " req '" << req_cfg_it->name() << "'";
 
-                while (!task_done)
+                while (!task_done())
                 {
                     tmp_done_cnt = 0;
 
@@ -310,12 +312,14 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                         Async::waitAndProcessEventsFor(50);
                     }
 
-                    if (!task_done)
+                    if (!task_done())
                     {
                         QCoreApplication::processEvents();
                         QThread::msleep(100);
                     }
                 }
+
+                pending_future.get();
 
                 postprocess_dialog.setLabelText(("Sector Layer "+sector_layer_name+":\nAggregating results").c_str());
 

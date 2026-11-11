@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "traced_assert.h"
 
 #include <vector>
@@ -126,7 +127,7 @@ struct GroupedDataStash
     std::vector<VariableStash<T>> variable_stashes;
     std::vector<bool>             selected_values;
     std::vector<bool>             nan_values;
-    std::vector<unsigned long>    record_numbers;
+    std::vector<std::uint64_t>    record_numbers;
 
     unsigned int                  valid_count = 0;
     unsigned int                  nan_count   = 0;

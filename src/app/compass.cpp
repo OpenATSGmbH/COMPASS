@@ -589,12 +589,14 @@ Result COMPASS::closeDBInternal()
 
     try
     {
+        // a job still in flight would keep working on the interface closed below. Wait
+        // before the writes too: a live delete job may still run a cleanup reconnect, which
+        // closes the database.
+        managers_.dbcontent_manager->waitUntilEngineIdle();
+
         managers_.dbcontent_manager->saveTargets();
         managers_.context_manager->saveCountsToDB();
         managers_.context_manager->saveAsterixInfoToDB();
-
-        // a job still in flight would keep working on the interface closed below
-        managers_.dbcontent_manager->waitUntilEngineIdle();
 
         managers_.db_interface->closeDB();
         traced_assert(!managers_.db_interface->ready());

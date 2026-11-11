@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "targetreportdefs.h"
 #include "reconstructortarget.h"
 #include "reconstructorbase.h"
@@ -105,7 +106,7 @@ class ReconstructorAssociatorBase
         const boost::optional<unsigned int>& thread_id,
         reconstruction::PredictionStats* stats = nullptr) = 0;
 
-    const std::vector<unsigned long>& unassociatedRecNums() const;
+    const std::vector<std::uint64_t>& unassociatedRecNums() const;
 
     // why a track number lookup was severed: the position offset check failed
     // (ghost/seduction case), or the same track number turned out to be reused
@@ -130,7 +131,7 @@ protected:
 
     std::map<unsigned int, std::map<unsigned int, std::pair<unsigned int, unsigned int>>> assoc_counts_;
     // ds_id -> dbcont id -> (assoc, unassoc cnt)
-    std::vector<unsigned long> unassoc_rec_nums_;
+    std::vector<std::uint64_t> unassoc_rec_nums_;
     
     unsigned int num_merges_ {0};
 
@@ -145,7 +146,7 @@ protected:
 
     virtual void associateUnreliablePrimaryOnly(unsigned int ds_id,
                                                 const boost::posix_time::ptime& ts,
-                                                const std::vector<unsigned long>& rec_nums,
+                                                const std::vector<std::uint64_t>& rec_nums,
                                                 bool debug);
 
     void selfAssociateNewUTNs();
@@ -155,7 +156,7 @@ protected:
     virtual void postAssociate() {}
     //void checkACADLookup();
     virtual void countUnAssociated();
-    void countUnAssociated(const std::vector<unsigned long>& rec_nums);
+    void countUnAssociated(const std::vector<std::uint64_t>& rec_nums);
 
     struct FindByMACPosDiag
     {

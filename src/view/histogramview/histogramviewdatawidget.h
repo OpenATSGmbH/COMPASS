@@ -111,7 +111,7 @@ protected:
     virtual void resetVariableDisplay() override final;
     virtual void preUpdateVariableDataEvent() override final;
     virtual void postUpdateVariableDataEvent() override final;
-    virtual DrawState updateVariableDisplay() override final;
+    virtual ViewDrawState updateVariableDisplay() override final;
     virtual void updateFromVariables() override final;
     virtual bool updateFromAnnotations() override final;
 
@@ -130,7 +130,7 @@ protected:
     void releaseChartView();
     void compileRawDataFromGenerator();
 
-    DrawState updateChart();
+    ViewDrawState updateChart();
     bool updateChartFromVariable();
 
     void selectData(unsigned int index1, unsigned int index2);

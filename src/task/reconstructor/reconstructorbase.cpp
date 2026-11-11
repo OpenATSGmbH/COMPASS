@@ -480,7 +480,7 @@ int ReconstructorBase::TargetsContainer::assocByTrackNumber(
 }
 
 unsigned int ReconstructorBase::TargetsContainer::createTargetFromReports(
-    const std::vector<unsigned long>& rec_nums, unsigned int source_utn)
+    const std::vector<std::uint64_t>& rec_nums, unsigned int source_utn)
 {
     traced_assert(rec_nums.size());
     traced_assert(reconstructor_);
@@ -1100,7 +1100,7 @@ void ReconstructorBase::createTargetReports()
            << Time::toString(currentSlice().slice_begin_);
 
     boost::posix_time::ptime ts;
-    unsigned long record_num;
+    std::uint64_t record_num;
 
     dbContent::targetReport::ReconstructorInfo info;
 
@@ -1388,7 +1388,7 @@ void ReconstructorBase::createTargetReportBatches()
                     if (status_info.hasInfo(ds_it.first, line_it.first))
                         ds_ui_times = status_info.getInfo(ds_it.first, line_it.first);
 
-                    std::map<boost::posix_time::ptime, std::vector<unsigned long>> batches;
+                    std::map<boost::posix_time::ptime, std::vector<std::uint64_t>> batches;
 
                     for (auto& rn_it : line_it.second)
                     {
@@ -1491,8 +1491,8 @@ std::pair<ReconstructorBase::AssocMap, ReconstructorBase::AssocMap> Reconstructo
 {
     loginf;
 
-    std::map<unsigned int, std::map<unsigned long, unsigned int>> associations_written;
-    std::map<unsigned int, std::map<unsigned long, unsigned int>> associations_glue;
+    std::map<unsigned int, std::map<std::uint64_t, unsigned int>> associations_written;
+    std::map<unsigned int, std::map<std::uint64_t, unsigned int>> associations_glue;
     unsigned int num_assoc_written {0};
     unsigned int num_assoc_glue    {0};
 
@@ -1554,7 +1554,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
             string dbcontent_name = dbcontent_man.dbContentWithId(cont_assoc_it.first);
             //DBContent& dbcontent = dbcontent_man.dbContent(dbcontent_name);
 
-            const std::map<unsigned long, unsigned int>& tr_associations = cont_assoc_it.second;
+            const std::map<std::uint64_t, unsigned int>& tr_associations = cont_assoc_it.second;
 
             logdbg << "db content " << dbcontent_name;
 
@@ -1573,7 +1573,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
             shared_ptr<Buffer> buffer = assoc_data.at(dbcontent_name);
 
             NullableVector<unsigned int>& utn_col_vec      = buffer->get<unsigned int>(utn_name);
-            NullableVector<unsigned long>& rec_num_col_vec = buffer->get<unsigned long>(rec_num_name);
+            NullableVector<std::uint64_t>& rec_num_col_vec = buffer->get<std::uint64_t>(rec_num_name);
 
             traced_assert(tr_ds_.count(dbcontent_id));
 
@@ -2262,7 +2262,7 @@ void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,
 }
 
 void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,
-                                          unsigned long rec_num,
+                                          std::uint64_t rec_num,
                                           const dbContent::ReconstructorTarget* target)
 {
     auto it = target_reports_.find(rec_num);
@@ -2271,7 +2271,7 @@ void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,
     createMeasurement(mm, it->second, target);
 }
 
-const dbContent::targetReport::ReconstructorInfo* ReconstructorBase::getInfo(unsigned long rec_num) const
+const dbContent::targetReport::ReconstructorInfo* ReconstructorBase::getInfo(std::uint64_t rec_num) const
 {
     auto it = target_reports_.find(rec_num);
     if (it == target_reports_.end())
@@ -2329,13 +2329,13 @@ std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfigured
     auto rec_ptr = const_cast<ReconstructorBase*>(this);
 
     chain->setMeasurementAssignFunc(
-        [ rec_ptr ] (reconstruction::Measurement& mm, unsigned long rec_num)
+        [ rec_ptr ] (reconstruction::Measurement& mm, std::uint64_t rec_num)
         {
             rec_ptr->createMeasurement(mm, rec_num);
         });
 
     chain->setMeasurementCheckFunc(
-        [ rec_ptr ] (unsigned long rec_num)
+        [ rec_ptr ] (std::uint64_t rec_num)
         {
             return rec_ptr->target_reports_.find(rec_num) != rec_ptr->target_reports_.end();
         });

@@ -40,7 +40,7 @@ std::map<unsigned int, ASTERIXSkippedCategoryInfo> ASTERIXSkippedCategoryInfo::f
         if (!cat_it.value().is_object())
             continue;
 
-        unsigned int cat = std::stoul(cat_it.key());
+        unsigned int cat = std::stoull(cat_it.key());
 
         auto& info = skipped[cat];
 

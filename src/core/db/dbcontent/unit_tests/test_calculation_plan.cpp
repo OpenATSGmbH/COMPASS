@@ -25,6 +25,7 @@
 #include <boost/optional.hpp>
 
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <functional>
 #include <map>
@@ -360,7 +361,10 @@ TEST_CASE("CalculationPlan: parseStep errors", "[dbcontent][calculation]")
  */
 TEST_CASE("CalculationPlan: conf/default calculations", "[dbcontent][calculation]")
 {
-    const std::string conf_dir = std::string(COMPASS_SOURCE_DIR) + "/conf/default/";
+    // the source path of the build, or COMPASS_SOURCE_DIR (e.g. tests of a cross build)
+    const char* source_dir_env = std::getenv("COMPASS_SOURCE_DIR");
+    const std::string conf_dir =
+        std::string(source_dir_env ? source_dir_env : COMPASS_SOURCE_DIR) + "/conf/default/";
 
     std::vector<std::string> files;
 

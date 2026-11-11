@@ -227,8 +227,8 @@ void TableViewDataWidget::commitLoadedData(const std::map<std::string, view_laye
 
     setUpdatesEnabled(true);
 
-    setDrawState(all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent
-                                                          : DrawState::Drawn);
+    setDrawState(all_buffer_table_widget_->rowCount() > 0 ? ViewDrawState::DrawnContent
+                                                          : ViewDrawState::Drawn);
     emit displayChanged();
 
     boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
@@ -238,7 +238,7 @@ void TableViewDataWidget::commitLoadedData(const std::map<std::string, view_laye
            << Utils::String::timeStringFromDouble(elapsed_s, true);
 }
 
-ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
+ViewDataWidget::ViewDrawState TableViewDataWidget::redrawData_impl(bool recompute)
 {
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
@@ -254,7 +254,7 @@ ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
     //the view keeps showing the previous rows until the commit, and viewRefreshed is
     //held back by the pending processing guard
     if (launchAsyncPrepare())
-        return (all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent : DrawState::Drawn);
+        return (all_buffer_table_widget_->rowCount() > 0 ? ViewDrawState::DrawnContent : ViewDrawState::Drawn);
 
     setUpdatesEnabled(false);
 
@@ -270,7 +270,7 @@ ViewDataWidget::DrawState TableViewDataWidget::redrawData_impl(bool recompute)
     loginf << "done with " << num_records << " records in "
            << Utils::String::timeStringFromDouble(elapsed_s, true);
 
-    return (all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent : DrawState::Drawn);
+    return (all_buffer_table_widget_->rowCount() > 0 ? ViewDrawState::DrawnContent : ViewDrawState::Drawn);
 }
 
 void TableViewDataWidget::liveReload_impl()

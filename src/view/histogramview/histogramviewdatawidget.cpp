@@ -313,7 +313,7 @@ void HistogramViewDataWidget::postUpdateVariableDataEvent()
 
 /**
  */
-ViewDataWidget::DrawState HistogramViewDataWidget::updateVariableDisplay()
+ViewDataWidget::ViewDrawState HistogramViewDataWidget::updateVariableDisplay()
 {
     return updateChart();
 }
@@ -557,7 +557,7 @@ QPixmap HistogramViewDataWidget::renderPixmap()
 
 /**
  */
-ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
+ViewDataWidget::ViewDrawState HistogramViewDataWidget::updateChart()
 {
     loginf;
 
@@ -566,7 +566,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
     releaseChartView();
 
-    ViewDataWidget::DrawState draw_state = ViewDataWidget::DrawState::NotDrawn;
+    ViewDataWidget::ViewDrawState draw_state = ViewDataWidget::ViewDrawState::NotDrawn;
 
     //create chart
     QChart* chart = new QChart();
@@ -717,7 +717,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
 
         generateYAxis(use_log_scale, max_count);
 
-        draw_state = ViewDataWidget::DrawState::DrawnContent;
+        draw_state = ViewDataWidget::ViewDrawState::DrawnContent;
     }
     else
     {
@@ -737,7 +737,7 @@ ViewDataWidget::DrawState HistogramViewDataWidget::updateChart()
         chart_y_axis->setGridLineVisible(false);
         chart_y_axis->setMinorGridLineVisible(false);
 
-        draw_state = ViewDataWidget::DrawState::Drawn;
+        draw_state = ViewDataWidget::ViewDrawState::Drawn;
     }
 
     //update chart

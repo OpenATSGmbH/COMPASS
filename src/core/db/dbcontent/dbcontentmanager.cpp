@@ -1065,7 +1065,7 @@ void DBContentManager::setViewableDataConfig (const nlohmann::json::object_t& da
     viewProvider().setCurrentViewPoint(viewable_data_cfg_);
 }
 
-void DBContentManager::storeSelectedRecNums(const std::vector<unsigned long>& selected)
+void DBContentManager::storeSelectedRecNums(const std::vector<std::uint64_t>& selected)
 {
     // selection carry-over lives in ViewManager; this is a thin façade for lower layers
     viewProvider().storeSelectedRecNums(selected);

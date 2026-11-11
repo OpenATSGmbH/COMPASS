@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "dbcontent/variable/variableset.h"
 
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
@@ -48,7 +50,7 @@ public:
 
     virtual void setCurrentViewPoint(std::shared_ptr<ViewableDataConfig> viewable,
                                      bool load_blocking = false) = 0;
-    virtual void storeSelectedRecNums(const std::vector<unsigned long>& selected) = 0;
+    virtual void storeSelectedRecNums(const std::vector<std::uint64_t>& selected) = 0;
 
     virtual bool hasMaxLatency() const = 0;
     virtual boost::posix_time::time_duration maxLatency() const = 0;

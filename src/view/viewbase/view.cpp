@@ -58,7 +58,7 @@ View::View(nlohmann::json& config, ViewContainer* parent)
     loginf << "name '" << name_ << "'";
     traced_assert(name_.size());
 
-    static unsigned long creation_counter = 0;
+    static std::uint64_t creation_counter = 0;
     creation_index_ = ++creation_counter;
 
     central_widget_ = new QWidget();

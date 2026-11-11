@@ -329,7 +329,7 @@ bool DBPrepare::bind_uint(size_t idx, unsigned int v)
 
 /**
  */
-bool DBPrepare::bind_long(size_t idx, long v) 
+bool DBPrepare::bind_long(size_t idx, std::int64_t v) 
 { 
     traced_assert(prepared_stmnt_ok_);
     active_binds_ = true; 
@@ -342,7 +342,7 @@ bool DBPrepare::bind_long(size_t idx, long v)
 
 /**
  */
-bool DBPrepare::bind_ulong(size_t idx, unsigned long v) 
+bool DBPrepare::bind_ulong(size_t idx, std::uint64_t v) 
 { 
     traced_assert(prepared_stmnt_ok_);
     active_binds_ = true; 

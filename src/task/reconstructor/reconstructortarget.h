@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "dbcontent/target/targetreportdefs.h"
 #include "projection/transformation.h"
 #include "reconstruction_defs.h"
@@ -85,7 +86,7 @@ struct ContributingSourcesInfo
 {
     boost::posix_time::ptime timestamp_;
     
-    std::vector<unsigned long> rec_nums_;
+    std::vector<std::uint64_t> rec_nums_;
 
     boost::optional<float> adsb_age_;
     boost::optional<float> mlat_age_;
@@ -263,19 +264,19 @@ public:
         InterpOptions& initFirst() { init_mode_ = InitMode::First; return *this; }
         InterpOptions& initLast() { init_mode_ = InitMode::Last; return *this; }
         InterpOptions& initFirstValid() { init_mode_ = InitMode::FirstValid; return *this; }
-        InterpOptions& initRecNum(unsigned long rec_num) {
+        InterpOptions& initRecNum(std::uint64_t rec_num) {
             init_mode_ = InitMode::RecNum; init_rec_num_ = rec_num; return *this; }
 
         InterpOptions& enableDebug(bool ok) { debug_ = ok; return *this; }
 
         InitMode initMode() const { return init_mode_; }
-        unsigned long initRecNum() const { return init_rec_num_; }
+        std::uint64_t initRecNum() const { return init_rec_num_; }
 
         bool debug() const { return debug_; }
 
     private:
         InitMode      init_mode_    = InitMode::FirstValid;
-        unsigned long init_rec_num_ = 0;
+        std::uint64_t init_rec_num_ = 0;
 
         bool debug_ = false;
     };
@@ -296,7 +297,7 @@ public:
         static boost::posix_time::time_duration TimeIncrement;
         static unsigned int                     MaxUpdates;
 
-        unsigned long            rec_num;         // record number of first standing update
+        std::uint64_t            rec_num;         // record number of first standing update
         boost::posix_time::ptime ts_init;         // timestamp at initialization
         boost::posix_time::ptime ts_last_update;  // timestamp of last added standing update
         boost::posix_time::ptime ts_next_update;  // timestamp of next standing update
@@ -326,12 +327,12 @@ public:
     bool associations_written_ {false}; // set after the utn was used in db at least once
 
     // target report aggregation & search structures, by record numbers
-    std::vector<unsigned long> target_reports_;
-    std::multimap<boost::posix_time::ptime, unsigned long> tr_timestamps_;
+    std::vector<std::uint64_t> target_reports_;
+    std::multimap<boost::posix_time::ptime, std::uint64_t> tr_timestamps_;
     // all sources sorted by time, ts -> record_num
     std::map<unsigned int, std::map<unsigned int,
                                     std::map<unsigned int,
-                                             std::multimap<boost::posix_time::ptime, unsigned long>>>> tr_ds_timestamps_;
+                                             std::multimap<boost::posix_time::ptime, std::uint64_t>>>> tr_ds_timestamps_;
     // dbcontent id -> ds_id -> line_id -> ts -> record_num
 
     std::set<unsigned int> acads_;
@@ -368,7 +369,7 @@ public:
     std::map<std::string, unsigned int> adsb_mops_count_; // mops str -> count
 
     std::map<boost::posix_time::ptime, reconstruction::Reference> references_; // ts -> tr
-    std::multimap<boost::posix_time::ptime, unsigned long> reference_tr_usages_;
+    std::multimap<boost::posix_time::ptime, std::uint64_t> reference_tr_usages_;
     std::map<boost::posix_time::ptime, ContributingSourcesInfo> references_tr_contributions_;
 
     mutable Transformation trafo_;
@@ -381,12 +382,12 @@ public:
     // dbContent::Target info JSON by TargetModel::createNewTargets()
     std::map<std::string, unsigned int> dubious_ref_counts_;
 
-    void addTargetReport (unsigned long rec_num);
-    void addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums);
+    void addTargetReport (std::uint64_t rec_num);
+    void addTargetReports (const std::multimap<boost::posix_time::ptime, std::uint64_t>& rec_nums);
     void addTargetReports (const ReconstructorTarget& other);
 
     unsigned int numAssociated() const;
-    unsigned long lastAssociated() const;
+    std::uint64_t lastAssociated() const;
 
     bool hasACAD () const;
     bool hasACAD (unsigned int ta)  const;
@@ -437,29 +438,29 @@ public:
     //    unsigned long dataForExactTime (boost::posix_time::ptime timestamp) const; // TargetReport& ???
     //    dbContent::targetReport::Position posForExactTime (boost::posix_time::ptime timestamp) const;
 
-    bool hasDataFor (unsigned long rec_num) const;
-    dbContent::targetReport::ReconstructorInfo& dataFor (unsigned long rec_num) const;
+    bool hasDataFor (std::uint64_t rec_num) const;
+    dbContent::targetReport::ReconstructorInfo& dataFor (std::uint64_t rec_num) const;
 
-    bool hasPositionFor (unsigned long rec_num) const;
-    dbContent::targetReport::Position positionFor (unsigned long rec_num) const;
+    bool hasPositionFor (std::uint64_t rec_num) const;
+    dbContent::targetReport::Position positionFor (std::uint64_t rec_num) const;
 
     float duration () const;
     bool timeOverlaps (const ReconstructorTarget& other) const;
     float probTimeOverlaps (const ReconstructorTarget& other) const; // ratio of overlap, measured by shortest target
 
-    std::tuple<std::vector<unsigned long>,
-               std::vector<unsigned long>,
-               std::vector<unsigned long>> compareModeACodes (
+    std::tuple<std::vector<std::uint64_t>,
+               std::vector<std::uint64_t>,
+               std::vector<std::uint64_t>> compareModeACodes (
         const ReconstructorTarget& other, boost::posix_time::time_duration max_time_diff, bool do_debug) const;
     // unknown, same, different
     ComparisonResult compareModeACode (
         const dbContent::targetReport::ReconstructorInfo& tr,
         boost::posix_time::time_duration max_time_diff, bool do_debug) const;
 
-    std::tuple<std::vector<unsigned long>,
-               std::vector<unsigned long>,
-               std::vector<unsigned long>> compareModeCCodes (
-        const ReconstructorTarget& other, const std::vector<unsigned long>& rec_nums,
+    std::tuple<std::vector<std::uint64_t>,
+               std::vector<std::uint64_t>,
+               std::vector<std::uint64_t>> compareModeCCodes (
+        const ReconstructorTarget& other, const std::vector<std::uint64_t>& rec_nums,
         boost::posix_time::time_duration max_time_diff, float max_alt_diff, bool do_debug) const;
 
     bool isPrimaryAt(boost::posix_time::ptime timestamp,
@@ -509,7 +510,7 @@ public:
     // chain and identity aggregates; identity values that belong exclusively to the
     // removed side are dropped, values of the retained side are kept even when their
     // reports were already purged
-    std::vector<unsigned long> removeStreamReports(unsigned int ds_id,
+    std::vector<std::uint64_t> removeStreamReports(unsigned int ds_id,
                                                    unsigned int line_id,
                                                    unsigned int track_number,
                                                    const boost::posix_time::ptime& ts,
@@ -608,7 +609,7 @@ protected:
     bool checkChainBeforeAdd(const dbContent::targetReport::ReconstructorInfo& tr,
                              std::pair<int, int>& idxs_remove) const;
 
-    TargetReportAddResult addTargetReportInternal (unsigned long rec_num,
+    TargetReportAddResult addTargetReportInternal (std::uint64_t rec_num,
                                                    bool add_to_chain, // false if internal re-add
                                                    bool reestimate);
 

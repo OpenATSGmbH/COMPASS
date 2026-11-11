@@ -29,6 +29,8 @@
 
 #include <osgEarth/GeoMath>
 
+#include <boost/filesystem.hpp>
+
 #include <QThread>
 
 #include <cctype>
@@ -74,7 +76,9 @@ std::mt19937& obfuscateRng()
     return rng;
 }
 
-static const char* kObfuscationFile = "/tmp/compass_obfuscation.json";
+// system temp folder: /tmp on Linux, %TEMP% on Windows
+static const std::string kObfuscationFile =
+    (boost::filesystem::temp_directory_path() / "compass_obfuscation.json").string();
 }
 
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(
@@ -937,7 +941,7 @@ void ASTERIXPostprocessJob::loadObfuscationMaps()
         {
             try
             {
-                obfuscate_m3a_map_[static_cast<unsigned int>(std::stoul(kv.key()))]
+                obfuscate_m3a_map_[static_cast<unsigned int>(std::stoull(kv.key()))]
                     = kv.value().get<unsigned int>();
             }
             catch (...) { /* skip malformed entry */ }
@@ -950,7 +954,7 @@ void ASTERIXPostprocessJob::loadObfuscationMaps()
         {
             try
             {
-                obfuscate_acad_map_[static_cast<unsigned int>(std::stoul(kv.key()))]
+                obfuscate_acad_map_[static_cast<unsigned int>(std::stoull(kv.key()))]
                     = kv.value().get<unsigned int>();
             }
             catch (...) {}

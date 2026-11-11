@@ -732,9 +732,9 @@ ProjectionManager::doUpdateRadarPlotPositionCalculations (std::map<std::string, 
 
         // copy record number
 
-        NullableVector<unsigned long>& read_rec_num_vec = read_buffer->get<unsigned long> (rec_num_var_name);
+        NullableVector<std::uint64_t>& read_rec_num_vec = read_buffer->get<std::uint64_t> (rec_num_var_name);
 
-        NullableVector<unsigned long>& update_rec_num_vec = update_buffer->get<unsigned long> (rec_num_var_name);
+        NullableVector<std::uint64_t>& update_rec_num_vec = update_buffer->get<std::uint64_t> (rec_num_var_name);
 
         traced_assert(read_rec_num_vec.isNeverNull());
 
@@ -894,7 +894,8 @@ void ProjectionManager::test()
 REDO_LABEL:
 
                 azimuth_rad = Number::randomNumber(-M_PI/2, M_PI/2);
-                slant_range_m = Number::randomNumber(0, 100000);
+                // not 0: at the radar position the azimuth is undefined, the round trip can not match
+                slant_range_m = Number::randomNumber(100, 100000);
 
                 if (Number::randomNumber(1, 100) > 50)
                 {

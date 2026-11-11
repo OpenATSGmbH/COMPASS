@@ -85,6 +85,135 @@ std::string GeoTIFF::generateUniqueMemFilename(const std::string& descr)
 }
 
 /**
+ * Reads any raster file GDAL supports into an ARGB32 image (same result on all platforms,
+ * e.g. also for TIFF files with JPEG compression).
+ *
+ * Bands: 1 gray or palette, 2 gray + alpha, 3 RGB, 4 RGB + alpha. Other data types than byte
+ * are converted by GDAL (clamped to 0..255). Transparency comes from the alpha band, the
+ * palette or the GDAL mask (nodata).
+ */
+bool GeoTIFF::readImage(const std::string& fn, QImage& img, std::string* error)
+{
+    auto setError = [ & ] (const std::string& msg)
+    {
+        if (error)
+            *error = msg;
+        return false;
+    };
+
+    if (!Utils::Files::fileExists(fn))
+        return setError("file not found");
+
+    GDALDatasetH dataset = GDALOpen(fn.c_str(), GDALAccess::GA_ReadOnly);
+    if (!dataset)
+        return setError("file could not be opened");
+
+    const int w = GDALGetRasterXSize(dataset);
+    const int h = GDALGetRasterYSize(dataset);
+    const int n = GDALGetRasterCount(dataset);
+
+    if (w <= 0 || h <= 0 || n < 1)
+    {
+        GDALClose(dataset);
+        return setError("no raster data");
+    }
+
+    if ((size_t)w * (size_t)h > MaxPixels)
+    {
+        GDALClose(dataset);
+        return setError("image too large");
+    }
+
+    const size_t num_pixels = (size_t)w * (size_t)h;
+
+    auto readBand = [ & ] (GDALRasterBandH band, std::vector<GByte>& data)
+    {
+        data.resize(num_pixels);
+        return GDALRasterIO(band, GF_Read, 0, 0, w, h, data.data(), w, h, GDT_Byte, 0, 0) == CE_None;
+    };
+
+    // alpha band: by color interpretation, else the last band of a 2 or 4 band image
+    int alpha_band = 0;
+    for (int i = 1; i <= n; ++i)
+        if (GDALGetRasterColorInterpretation(GDALGetRasterBand(dataset, i)) == GCI_AlphaBand)
+            alpha_band = i;
+
+    if (!alpha_band && (n == 2 || n == 4))
+        alpha_band = n;
+
+    const int num_color_bands = alpha_band ? n - 1 : n;
+
+    GDALRasterBandH band1 = GDALGetRasterBand(dataset, 1);
+    GDALColorTableH color_table = GDALGetRasterColorInterpretation(band1) == GCI_PaletteIndex
+                                  ? GDALGetRasterColorTable(band1) : nullptr;
+
+    std::vector<GByte> r, g, b, a;
+    bool ok = readBand(band1, r);
+
+    if (ok && !color_table && num_color_bands >= 3)
+        ok = readBand(GDALGetRasterBand(dataset, 2), g) && readBand(GDALGetRasterBand(dataset, 3), b);
+
+    // alpha from the alpha band, else from the mask (nodata) if not all pixels are valid
+    if (ok && alpha_band)
+        ok = readBand(GDALGetRasterBand(dataset, alpha_band), a);
+    else if (ok && !color_table && !(GDALGetMaskFlags(band1) & GMF_ALL_VALID))
+        ok = readBand(GDALGetMaskBand(band1), a);
+
+    if (!ok)
+    {
+        GDALClose(dataset);
+        return setError("raster data could not be read");
+    }
+
+    // palette entries as ARGB
+    std::vector<QRgb> palette;
+    if (color_table)
+    {
+        palette.resize(256, qRgba(0, 0, 0, 0));
+        const int num_entries = std::min(256, GDALGetColorEntryCount(color_table));
+        for (int i = 0; i < num_entries; ++i)
+        {
+            const GDALColorEntry* e = GDALGetColorEntry(color_table, i);
+            if (e)
+                palette[ i ] = qRgba(e->c1, e->c2, e->c3, e->c4);
+        }
+    }
+
+    GDALClose(dataset);
+
+    img = QImage(w, h, QImage::Format_ARGB32);
+    if (img.isNull())
+        return setError("image could not be allocated");
+
+    const bool rgb = !g.empty();
+
+    for (int y = 0; y < h; ++y)
+    {
+        QRgb* line = reinterpret_cast<QRgb*>(img.scanLine(y));
+
+        for (int x = 0; x < w; ++x)
+        {
+            const size_t idx = (size_t)y * (size_t)w + (size_t)x;
+
+            QRgb c;
+            if (color_table)
+                c = palette[ r[ idx ] ];
+            else if (rgb)
+                c = qRgb(r[ idx ], g[ idx ], b[ idx ]);
+            else
+                c = qRgb(r[ idx ], r[ idx ], r[ idx ]);
+
+            if (!a.empty())
+                c = qRgba(qRed(c), qGreen(c), qBlue(c), a[ idx ]);
+
+            line[ x ] = c;
+        }
+    }
+
+    return true;
+}
+
+/**
  * Retrieves info about the given geotiff file.
 */
 GeoTIFFInfo GeoTIFF::getInfo(const std::string& fn, 

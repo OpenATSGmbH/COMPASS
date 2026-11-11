@@ -2,6 +2,12 @@ add_executable(compass_tests
     test_main.cpp
 )
 
+if(WIN32)
+    # application manifest (see the top-level CMakeLists.txt)
+    add_dependencies(compass_tests compass_windows_rc)
+    target_link_libraries(compass_tests PRIVATE "${COMPASS_WINDOWS_RC}")
+endif()
+
 # Tests have no Q_OBJECT classes of their own. Disable AUTOMOC to prevent
 # re-MOCing headers from linked libraries (their .cpp files already include
 # their own moc_*.cpp, so a second MOC would cause duplicate symbols).

@@ -115,14 +115,14 @@ void DBContentDB::initDBContentBuffer(DBContent& dbcontent, std::shared_ptr<Buff
     traced_assert(rec_num_var.dataType() == PropertyDataType::ULONGINT);
 
     std::string rec_num_col_str = rec_num_var.dbColumnName();
-    traced_assert(!buffer->has<unsigned long>(rec_num_col_str));
+    traced_assert(!buffer->has<std::uint64_t>(rec_num_col_str));
 
     buffer->addProperty(rec_num_col_str, PropertyDataType::ULONGINT);
 
     traced_assert(dbcont_man_.dataEngine().hasMaxRecordNumberWODBContentID());
-    unsigned long max_rec_num = dbcont_man_.dataEngine().maxRecordNumberWODBContentID();
+    std::uint64_t max_rec_num = dbcont_man_.dataEngine().maxRecordNumberWODBContentID();
 
-    NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(rec_num_col_str);
+    NullableVector<std::uint64_t>& rec_num_vec = buffer->get<std::uint64_t>(rec_num_col_str);
 
     unsigned int buffer_size = buffer->size();
     unsigned int dbcont_id = dbcontent.id();
@@ -374,7 +374,7 @@ void DBContentDB::clearAssociations(const DBContent& dbcontent)
 
 /**
  */
-unsigned long DBContentDB::getMaxRecordNumber(DBContent& dbcontent)
+std::uint64_t DBContentDB::getMaxRecordNumber(DBContent& dbcontent)
 {
     traced_assert(db_interface_.ready());
     traced_assert(dbcontent.existsInDB());

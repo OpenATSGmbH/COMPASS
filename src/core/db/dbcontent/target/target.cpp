@@ -486,7 +486,7 @@ std::set<unsigned int> Target::adsbMopsList() const
                 continue;
 
             logdbg << "key '" << mops_it.first << "' value '" <<  mops_it.second.dump(-1) << "'";
-            ret.insert(std::stoul(mops_it.first));
+            ret.insert(std::stoull(mops_it.first));
         }
     }
 

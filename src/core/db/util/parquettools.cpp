@@ -232,7 +232,7 @@ bool ParquetWriter::createArrowArray(std::shared_ptr<arrow::Array>& array,
 
             if (property)
             {
-                const auto& values = buffer.get<long>(property->name());
+                const auto& values = buffer.get<std::int64_t>(property->name());
                 for (size_t i = 0; i < n; ++i)
                 {
                     if (values.isNull(i))
@@ -254,7 +254,7 @@ bool ParquetWriter::createArrowArray(std::shared_ptr<arrow::Array>& array,
 
             if (property)
             {
-                const auto& values = buffer.get<unsigned long>(property->name());
+                const auto& values = buffer.get<std::uint64_t>(property->name());
                 for (size_t i = 0; i < n; ++i)
                 {
                     if (values.isNull(i))

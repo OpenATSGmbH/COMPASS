@@ -50,6 +50,11 @@ public:
     std::string path() const;
     std::string filename() const;
 
+    // path of a file for use in the document: relative to the document folder if the file is
+    // inside it, always with '/' (a backslash starts a LaTeX command, also on Windows)
+    std::string graphicsPath(const std::string& file) const;
+    static std::string graphicsPath(const std::string& doc_dir, const std::string& file);
+
 protected:
     std::string path_;
     std::string filename_;

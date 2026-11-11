@@ -1014,7 +1014,7 @@ void Single::addReportTableRows(ReportTableRows& rows) const
         return (t1 - t0).total_microseconds() / 1e6;
     };
 
-    auto testRecordNumberAt = [ & ] (const boost::posix_time::ptime& ts) -> boost::optional<unsigned long>
+    auto testRecordNumberAt = [ & ] (const boost::posix_time::ptime& ts) -> boost::optional<std::uint64_t>
     {
         auto it = tst_indexes.find(ts);
         if (it == tst_indexes.end())
@@ -1060,9 +1060,9 @@ void Single::addReportTableRows(ReportTableRows& rows) const
 
             auto ref_rec_nums = target_->mappedRefRecordNumbers(id);
             if (ref_rec_nums.first)
-                rows.set<unsigned long>("ref_rec_num_1", *ref_rec_nums.first);
+                rows.set<std::uint64_t>("ref_rec_num_1", *ref_rec_nums.first);
             if (ref_rec_nums.second)
-                rows.set<unsigned long>("ref_rec_num_2", *ref_rec_nums.second);
+                rows.set<std::uint64_t>("ref_rec_num_2", *ref_rec_nums.second);
         }
         else
         {
@@ -1109,7 +1109,7 @@ void Single::addReportTableRows(ReportTableRows& rows) const
                 {
                     DataID last(*ub);
 
-                    rows.set<unsigned long>("ref_rec_num_last", ref_chain.recordNumber(last));
+                    rows.set<std::uint64_t>("ref_rec_num_last", ref_chain.recordNumber(last));
 
                     auto pos_last = ref_chain.posOpt(last);
                     if (pos_last.has_value())
@@ -1122,11 +1122,11 @@ void Single::addReportTableRows(ReportTableRows& rows) const
 
             auto before = testRecordNumberAt(begin);
             if (before)
-                rows.set<unsigned long>("tst_rec_num_before", *before);
+                rows.set<std::uint64_t>("tst_rec_num_before", *before);
 
             auto after = testRecordNumberAt(end);
             if (after)
-                rows.set<unsigned long>("tst_rec_num_after", *after);
+                rows.set<std::uint64_t>("tst_rec_num_after", *after);
         }
 
         fillReportTableRow(rows, detail, parent_detail, prev_detail);

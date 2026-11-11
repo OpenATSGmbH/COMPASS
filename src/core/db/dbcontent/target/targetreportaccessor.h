@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "bufferaccessor.h"
 #include "dbcontent/variable/variableset.h"
 
@@ -53,7 +54,7 @@ public:
     // have to be always present, not optional
     bool hasTimestamp(unsigned int index) const;
     boost::posix_time::ptime timestamp(unsigned int index) const;
-    unsigned long recordNumber(unsigned int index) const;
+    std::uint64_t recordNumber(unsigned int index) const;
     unsigned int dsID(unsigned int index) const;
     unsigned int lineID(unsigned int index) const;
 
@@ -146,7 +147,7 @@ private:
 
     //general
     const NullableVector<boost::posix_time::ptime>* meta_timestamp_vec_ = nullptr;
-    const NullableVector<unsigned long>*            meta_rec_num_vec_   = nullptr;
+    const NullableVector<std::uint64_t>*            meta_rec_num_vec_   = nullptr;
     const NullableVector<unsigned int>*             meta_ds_id_vec_     = nullptr;
     const NullableVector<unsigned int>*             meta_line_id_vec_   = nullptr;
     const NullableVector<unsigned int>*             meta_acad_vec_      = nullptr;

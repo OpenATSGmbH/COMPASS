@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <duckdb.h>
 
 #include "dbprepare.h"
@@ -56,8 +57,8 @@ protected:
     bool bind_uchar_impl(size_t idx, unsigned char v) override final;
     bool bind_int_impl(size_t idx, int v) override final;
     bool bind_uint_impl(size_t idx, unsigned int v) override final;
-    bool bind_long_impl(size_t idx, long v) override final;
-    bool bind_ulong_impl(size_t idx, unsigned long v) override final;
+    bool bind_long_impl(size_t idx, std::int64_t v) override final;
+    bool bind_ulong_impl(size_t idx, std::uint64_t v) override final;
     bool bind_float_impl(size_t idx, float v) override final;
     bool bind_double_impl(size_t idx, double v) override final;
     bool bind_string_impl(size_t idx, const std::string& v) override final;
@@ -91,8 +92,8 @@ StandardBind(char, int8)
 StandardBind(unsigned char, uint8)
 StandardBind(int, int32)
 StandardBind(unsigned int, uint32)
-StandardBind(long, int64)
-StandardBind(unsigned long, uint64)
+StandardBind(std::int64_t, int64)
+StandardBind(std::uint64_t, uint64)
 StandardBind(float, float)
 StandardBind(double, double)
 
@@ -112,8 +113,8 @@ inline bool DuckDBPrepare::bind(size_t idx, const nlohmann::json& value)
 template<>
 inline bool DuckDBPrepare::bind(size_t idx, const boost::posix_time::ptime& value)
 {
-    long ts = Utils::Time::toLong(value);
-    return bind<long>(idx, ts);
+    std::int64_t ts = Utils::Time::toLong(value);
+    return bind<std::int64_t>(idx, ts);
 }
 
 /**

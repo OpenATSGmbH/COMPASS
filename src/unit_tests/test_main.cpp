@@ -12,7 +12,15 @@ int main(int argc, char* argv[])
     // Run without visible windows (and without a display, e.g. in CI) unless a platform
     // is requested explicitly, e.g. QT_QPA_PLATFORM=xcb to watch widget tests.
     if (!qEnvironmentVariableIsSet("QT_QPA_PLATFORM"))
+    {
+#ifdef _WIN32
+        // offscreen has no font database on Windows (no text drawn at all), minimal with
+        // enable_fonts uses the Windows fonts and shows no windows either
+        qputenv("QT_QPA_PLATFORM", "minimal:enable_fonts");
+#else
         qputenv("QT_QPA_PLATFORM", "offscreen");
+#endif
+    }
 
     QApplication app(argc, argv);
 

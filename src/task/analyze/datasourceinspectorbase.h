@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <set>
 #include <string>
 #include <vector>
@@ -43,7 +44,7 @@ struct ReportTableDefinition;
  */
 struct AccuracyRow
 {
-    unsigned long            rec_num = 0;
+    std::uint64_t            rec_num = 0;
     unsigned int             utn     = 0;
     boost::posix_time::ptime timestamp;
 
@@ -58,7 +59,7 @@ struct AccuracyRow
     boost::optional<double> consistency_ratio;
     boost::optional<double> dt_prev_s;           // time to the previous test report of the target
 
-    std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>> ref_rec_nums;
+    std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>> ref_rec_nums;
 };
 
 /**

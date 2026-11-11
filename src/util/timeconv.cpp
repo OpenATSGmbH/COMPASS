@@ -77,7 +77,7 @@ boost::posix_time::ptime fromString(const std::string& value, const std::string&
     return timestamp;
 }
 
-boost::posix_time::ptime fromLong(unsigned long value)
+boost::posix_time::ptime fromLong(std::uint64_t value)
 {
     boost::posix_time::ptime timestamp;
 
@@ -86,9 +86,9 @@ boost::posix_time::ptime fromLong(unsigned long value)
     return timestamp;
 }
 
-long toLong(const boost::posix_time::ptime& value)
+std::int64_t toLong(const boost::posix_time::ptime& value)
 {
-    long result;
+    std::int64_t result;
 
     boost::posix_time::time_duration duration = value - epoch;
     result = duration.total_milliseconds();
@@ -96,30 +96,30 @@ long toLong(const boost::posix_time::ptime& value)
     return result;
 }
 
-long toLongQtUTC(boost::posix_time::ptime value)
+std::int64_t toLongQtUTC(const boost::posix_time::ptime& value)
 {
     return correctLongQtUTC(toLong(value));
 }
 
-long correctLongQtUTC(long t)
+std::int64_t correctLongQtUTC(std::int64_t t)
 {
     //fix timestamp for display (as UTC time) in e.g. QDateTimeAxis
     //https://stackoverflow.com/questions/45326462/bad-values-in-qdatetimeaxis-qtcharts
     //(@TODO: maybe handle this by setting utc time in qt once)
     auto temp_time       = QDateTime::fromMSecsSinceEpoch(t);
-    auto local_offset    = (long)temp_time.offsetFromUtc() * 1000; //offset in msecs
+    auto local_offset    = (std::int64_t)temp_time.offsetFromUtc() * 1000; //offset in msecs
     auto fixed_timestamp = t - local_offset;
 
     return fixed_timestamp;
 }
 
-long decorrectLongQtUTC(long t)
+std::int64_t decorrectLongQtUTC(std::int64_t t)
 {
     //fix timestamp for display (as UTC time) in e.g. QDateTimeAxis
     //https://stackoverflow.com/questions/45326462/bad-values-in-qdatetimeaxis-qtcharts
     //(@TODO: maybe handle this by setting utc time in qt once)
     auto temp_time       = QDateTime::fromMSecsSinceEpoch(t);
-    auto local_offset    = (long)temp_time.offsetFromUtc() * 1000; //offset in msecs
+    auto local_offset    = (std::int64_t)temp_time.offsetFromUtc() * 1000; //offset in msecs
     auto fixed_timestamp = t + local_offset;
 
     return fixed_timestamp;
@@ -208,7 +208,7 @@ string toString(const boost::posix_time::time_duration& duration, unsigned int p
 }
 
 
-string toStringLong(unsigned long value)
+string toStringLong(std::uint64_t value)
 {
    return toString(fromLong(value));
 }

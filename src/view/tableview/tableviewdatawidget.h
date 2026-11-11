@@ -67,7 +67,7 @@ protected:
                                        const std::vector<std::string>& names, bool reset, bool last) override;
     virtual void clearData_impl() override;
     virtual void clearIntermediateRedrawData_impl() override;
-    virtual DrawState redrawData_impl(bool recompute) override;
+    virtual ViewDrawState redrawData_impl(bool recompute) override;
     virtual void liveReload_impl() override;
     virtual bool hasAnnotations_impl() const override { return false; }
 

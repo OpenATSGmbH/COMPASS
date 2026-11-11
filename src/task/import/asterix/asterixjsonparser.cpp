@@ -423,15 +423,15 @@ size_t ASTERIXJSONParser::parseFlatJSON(const nlohmann::json& flat_cat_data, Buf
             }
             case PropertyDataType::LONGINT:
             {
-                traced_assert(buffer.has<long int>(current_var_name));
-                map_it->setFlatArrayValues(flat_cat_data, buffer.get<long int>(current_var_name),
+                traced_assert(buffer.has<std::int64_t>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<std::int64_t>(current_var_name),
                                            start_row, num_records);
                 break;
             }
             case PropertyDataType::ULONGINT:
             {
-                traced_assert(buffer.has<unsigned long>(current_var_name));
-                map_it->setFlatArrayValues(flat_cat_data, buffer.get<unsigned long>(current_var_name),
+                traced_assert(buffer.has<std::uint64_t>(current_var_name));
+                map_it->setFlatArrayValues(flat_cat_data, buffer.get<std::uint64_t>(current_var_name),
                                            start_row, num_records);
                 break;
             }
@@ -576,9 +576,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             {
                 logdbg2 << "long " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                traced_assert(buffer.has<long int>(current_var_name));
+                traced_assert(buffer.has<std::int64_t>(current_var_name));
                 mandatory_missing =
-                        map_it->findAndSetValue(tr, buffer.get<long int>(current_var_name), row_cnt);
+                        map_it->findAndSetValue(tr, buffer.get<std::int64_t>(current_var_name), row_cnt);
 
                 break;
             }
@@ -586,9 +586,9 @@ bool ASTERIXJSONParser::parseTargetReport(const nlohmann::json& tr, Buffer& buff
             {
                 logdbg2 << "ulong " << current_var_name
                        << " format '" << map_it->jsonValueFormat() << "'";
-                traced_assert(buffer.has<unsigned long>(current_var_name));
+                traced_assert(buffer.has<std::uint64_t>(current_var_name));
                 mandatory_missing = map_it->findAndSetValue(
-                            tr, buffer.get<unsigned long>(current_var_name), row_cnt);
+                            tr, buffer.get<std::uint64_t>(current_var_name), row_cnt);
 
                 break;
             }

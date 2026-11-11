@@ -51,6 +51,7 @@
 #include "projection.h"
 #include "licensemanager.h"
 #include "sectorlayer.h"
+#include "system.h"
 
 #include "report/report.h"
 #include "report/section.h"
@@ -69,7 +70,6 @@
 #include <QLabel>
 #include <QElapsedTimer>
 
-#include <malloc.h>
 
 #include <future>
 
@@ -1122,7 +1122,7 @@ void ReconstructorTask::writeDoneSlot()
     }
 
     // release unused memory
-    malloc_trim(0);
+    Utils::System::trimMemory();
 
     // a loaded slice without data may wait for this write to end
     if (!was_last)
@@ -1355,7 +1355,7 @@ void ReconstructorTask::runCancelledSlot()
     last_slice_ = nullptr;
 
     done_ = true;
-    malloc_trim(0); // release unused memory
+    Utils::System::trimMemory(); // release unused memory
 
     msg_box->close();
     delete msg_box;
@@ -1513,7 +1513,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointNoData(const
     return vp;
 }
 
-std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsigned long utn, const std::string& name_prefix) const
+std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(std::uint64_t utn, const std::string& name_prefix) const
 {
     string name;
 

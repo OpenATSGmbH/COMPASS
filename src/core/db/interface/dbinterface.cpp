@@ -97,7 +97,7 @@ DBInterface::DBInterface(nlohmann::json& config,
     registerParameter("max_ram_file_gb", &max_ram_file_gb_, max_ram_file_gb_);
     registerParameter("max_ram_inmem_gb", &max_ram_inmem_gb_, max_ram_inmem_gb_);
     registerParameter("num_threads", &num_threads_, num_threads_);
-    registerParameter("live_cleanup_time_min", &live_cleanup_time_min_, live_cleanup_time_min_);
+    registerParameter("live_cleanup_time_secs", &live_cleanup_time_secs_, live_cleanup_time_secs_);
     registerParameter("use_live_inmem_db", &use_live_inmem_db_, use_live_inmem_db_);
 
     if (use_live_inmem_db_)
@@ -469,7 +469,7 @@ Result DBInterface::cleanupDBInternal()
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
-    std::function<std::tuple<string, string, string, unsigned long>()> get_db_status = [&]() -> std::tuple<string, string, string, unsigned long>
+    std::function<std::tuple<string, string, string, std::uint64_t>()> get_db_status = [&]() -> std::tuple<string, string, string, std::uint64_t>
     {
         try
         {
@@ -491,7 +491,7 @@ Result DBInterface::cleanupDBInternal()
                 if (buffer->size() > 0)
                 {
                     // Get raw bytes
-                    unsigned long mem_bytes = buffer->get<unsigned long>("mem_bytes").get(0);
+                    std::uint64_t mem_bytes = buffer->get<std::uint64_t>("mem_bytes").get(0);
                     string mem_limit = buffer->get<string>("memory_limit").get(0);
                     string wal_size = buffer->get<string>("wal_size").get(0);
 
@@ -537,7 +537,7 @@ Result DBInterface::cleanupDBInternal()
 
     auto get_db_row_count = [&]()
     {
-        unsigned long row_count = 0;
+        std::uint64_t row_count = 0;
 
         try
         {
@@ -556,7 +556,7 @@ Result DBInterface::cleanupDBInternal()
                 std::shared_ptr<DBResult> result = execute(command);
                 if (result->containsData() && result->buffer() && result->buffer()->size() > 0)
                 {
-                    row_count += result->buffer()->get<unsigned long>("num_rows").get(0);
+                    row_count += result->buffer()->get<std::uint64_t>("num_rows").get(0);
                 }
                 else
                 {
@@ -573,7 +573,7 @@ Result DBInterface::cleanupDBInternal()
     };
 
     string mem_before, limit_before, wal_before;
-    unsigned long mem_bytes_before;
+    std::uint64_t mem_bytes_before;
     std::tie(mem_before, limit_before, wal_before, mem_bytes_before) = get_db_status();
 
     auto db_size_before = get_db_file_size();
@@ -626,10 +626,10 @@ Result DBInterface::cleanupDBInternal()
     boost::posix_time::time_duration time_diff = elapsed_time - start_time;
 
     string mem_after, limit_after, wal_after;
-    unsigned long mem_bytes_after;
+    std::uint64_t mem_bytes_after;
     std::tie(mem_after, limit_after, wal_after, mem_bytes_after) = get_db_status();
 
-    unsigned long total_row_count = get_db_row_count();
+    std::uint64_t total_row_count = get_db_row_count();
     //double kb_per_row = (double)mem_bytes_after / (double)total_row_count / 1000.0;
 
     auto db_size_after = get_db_file_size();
@@ -791,7 +791,7 @@ bool DBInterface::existsPropertiesTable()
 /**
  * Maximum value of an unsigned int column, none if the table is empty (no row, or a row with a NULL max).
  */
-boost::optional<unsigned long> DBInterface::getMaxUIntValue(const std::string& table_name,
+boost::optional<std::uint64_t> DBInterface::getMaxUIntValue(const std::string& table_name,
                                                             const std::string& col_name)
 {
     traced_assert(ready());
@@ -811,7 +811,7 @@ boost::optional<unsigned long> DBInterface::getMaxUIntValue(const std::string& t
         traced_assert(buffer->size() <= 1);
 
         if (buffer->size() == 0 || buffer->get<unsigned int>(col_name).isNull(0))
-            return boost::optional<unsigned long>();
+            return boost::optional<std::uint64_t>();
 
         max_tn = buffer->get<unsigned int>(col_name).get(0);
     }
@@ -820,14 +820,14 @@ boost::optional<unsigned long> DBInterface::getMaxUIntValue(const std::string& t
 }
 
 /**
- * Maximum value of an unsigned long column, none if the table is empty (no row, or a row with a NULL max).
+ * Maximum value of an std::uint64_t column, none if the table is empty (no row, or a row with a NULL max).
  */
-boost::optional<unsigned long> DBInterface::getMaxULongValue(const std::string& table_name,
+boost::optional<std::uint64_t> DBInterface::getMaxULongValue(const std::string& table_name,
                                                              const std::string& col_name)
 {
     traced_assert(ready());
 
-    unsigned long max_value = 0;
+    std::uint64_t max_value = 0;
 
     {
         #ifdef PROTECT_INSTANCE
@@ -840,10 +840,10 @@ boost::optional<unsigned long> DBInterface::getMaxULongValue(const std::string& 
 
         shared_ptr<Buffer> buffer = result->buffer();
 
-        if (!buffer->size() || buffer->get<unsigned long>(col_name).isNull(0))
-            return boost::optional<unsigned long>();
+        if (!buffer->size() || buffer->get<std::uint64_t>(col_name).isNull(0))
+            return boost::optional<std::uint64_t>();
 
-        max_value = buffer->get<unsigned long>(col_name).get(0);
+        max_value = buffer->get<std::uint64_t>(col_name).get(0);
     }
 
     return max_value;
@@ -1275,6 +1275,10 @@ void DBInterface::createViewPointsTable()
 
 /**
  */
+/**
+ * Can be called from the main thread while a live cleanup reconnect runs (view point edited
+ * in live mode). The lock is taken first, it waits for the reconnect to finish.
+ */
 void DBInterface::setViewPoint(const unsigned int id, const string& value)
 {
     if (!db_instance_)
@@ -1283,19 +1287,22 @@ void DBInterface::setViewPoint(const unsigned int id, const string& value)
         return;
     }
 
-    if (!existsViewPointsTable())
-        createViewPointsTable();
+    #ifdef PROTECT_INSTANCE
+    boost::mutex::scoped_lock locker(instance_mutex_);
+    #endif
 
+    if (!existsTable(TABLE_NAME_VIEWPOINTS))
     {
-        #ifdef PROTECT_INSTANCE
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        #endif
+        setProperty("view_points_version", ViewPointKeys::VP_COLLECTION_CONTENT_VERSION);
 
-        string str = sqlGenerator().getInsertViewPointStatement(id, value);
-        logdbg << "cmd '" << str << "'";
-
-        execute(str);
+        execute(sqlGenerator().getTableViewPointsCreateStatement());
+        updateTableInfo();
     }
+
+    string str = sqlGenerator().getInsertViewPointStatement(id, value);
+    logdbg << "cmd '" << str << "'";
+
+    execute(str);
 }
 
 /**
@@ -1569,6 +1576,8 @@ void DBInterface::saveTaskLogInfo(unsigned int msg_id, const nlohmann::json& inf
 
     loginf << "instance busy, deferring task log write " << msg_id;
 
+    ++num_deferred_task_log_writes_;
+
     boost::mutex::scoped_lock locker(pending_task_log_writes_mutex_);
 
     // drop finished writes
@@ -1654,17 +1663,23 @@ void DBInterface::createDBContextTable()
     }
 }
 
+/**
+ * Can be called from the main thread while a live cleanup reconnect runs (e.g. a new data
+ * source in live data). The lock is taken first, it waits for the reconnect to finish.
+ */
 void DBInterface::saveDBContextSection(const std::string& section, const std::string& json_str)
 {
+    boost::mutex::scoped_lock locker(instance_mutex_);
+
     traced_assert(ready());
 
-    if (!existsDBContextTable())
-        createDBContextTable();
-
+    if (!existsTable(TABLE_NAME_DB_CONTEXT))
     {
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        execute(sqlGenerator().getReplaceDBContextSectionStatement(section, json_str));
+        execute(sqlGenerator().getTableDBContextCreateStatement());
+        updateTableInfo();
     }
+
+    execute(sqlGenerator().getReplaceDBContextSectionStatement(section, json_str));
 }
 
 std::string DBInterface::loadDBContextSection(const std::string& section)
@@ -1754,17 +1769,24 @@ void DBInterface::createDBInfoTable()
     }
 }
 
+/**
+ * Can be called from the main thread while a live cleanup reconnect runs on a worker thread.
+ * The cleanup holds instance_mutex_ while the database is closed, so the lock is taken first:
+ * it waits for the reconnect to finish (a few seconds at most), then the database is ready.
+ */
 void DBInterface::saveDBInfo(const std::string& name, const std::string& json_str)
 {
+    boost::mutex::scoped_lock locker(instance_mutex_);
+
     traced_assert(ready());
 
-    if (!existsDBInfoTable())
-        createDBInfoTable();
-
+    if (!existsTable(TABLE_NAME_DB_INFO))
     {
-        boost::mutex::scoped_lock locker(instance_mutex_);
-        execute(sqlGenerator().getReplaceDBInfoStatement(name, json_str));
+        execute(sqlGenerator().getTableDBInfoCreateStatement());
+        updateTableInfo();
     }
+
+    execute(sqlGenerator().getReplaceDBInfoStatement(name, json_str));
 }
 
 std::string DBInterface::loadDBInfo(const std::string& name)
@@ -2086,8 +2108,8 @@ ResultT<size_t> DBInterface::tableStorageSize(const std::string& table_name)
 
         const auto& buffer = *result->buffer();
 
-        long num_blocks = buffer.get<long>("num_blocks").isNull(0) ? 0 : buffer.get<long>("num_blocks").get(0);
-        long block_size = buffer.get<long>("block_size").isNull(0) ? 0 : buffer.get<long>("block_size").get(0);
+        std::int64_t num_blocks = buffer.get<std::int64_t>("num_blocks").isNull(0) ? 0 : buffer.get<std::int64_t>("num_blocks").get(0);
+        std::int64_t block_size = buffer.get<std::int64_t>("block_size").isNull(0) ? 0 : buffer.get<std::int64_t>("block_size").get(0);
 
         return ResultT<size_t>::succeeded((size_t)(num_blocks * block_size));
     }
@@ -2422,7 +2444,7 @@ void DBInterface::liveCleanupIfDue()
     if (last_live_cleanup_time_.is_not_a_date_time())
         last_live_cleanup_time_ = boost::posix_time::microsec_clock::local_time();
 
-    if (boost::posix_time::microsec_clock::local_time() - last_live_cleanup_time_ > boost::posix_time::minutes(live_cleanup_time_min_))
+    if (boost::posix_time::microsec_clock::local_time() - last_live_cleanup_time_ > boost::posix_time::seconds(live_cleanup_time_secs_))
     {
         loginf << "live cleanup time reached, doing cleanup";
         cleanupDBInternal();

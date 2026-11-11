@@ -276,12 +276,12 @@ void ReconstructorTarget::addPredictionToGlobalStats(const reconstruction::Predi
     global_stats_.num_chain_predictions_proj_changed += s.num_proj_changed;
 }
 
-void ReconstructorTarget::addTargetReport (unsigned long rec_num)
+void ReconstructorTarget::addTargetReport (std::uint64_t rec_num)
 {
     addTargetReportInternal(rec_num, true, true);
 }
 
-void ReconstructorTarget::addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums)
+void ReconstructorTarget::addTargetReports (const std::multimap<boost::posix_time::ptime, std::uint64_t>& rec_nums)
 {
     //add single tr without reestimating
     size_t num_added = 0;
@@ -324,7 +324,7 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
 }
 
 ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportInternal(
-    unsigned long rec_num, bool add_to_chain, bool reestimate)
+    std::uint64_t rec_num, bool add_to_chain, bool reestimate)
 {
     bool do_debug = false;
 
@@ -598,7 +598,7 @@ unsigned int ReconstructorTarget::numAssociated() const
     return target_reports_.size();
 }
 
-unsigned long ReconstructorTarget::lastAssociated() const
+std::uint64_t ReconstructorTarget::lastAssociated() const
 {
     traced_assert(target_reports_.size());
     return target_reports_.back();
@@ -901,7 +901,7 @@ ReconstructorTarget::ReconstructorInfoPair ReconstructorTarget::dataFor (ptime t
 
     bool debug = false; //interp_options.debug();
 
-    std::multimap<boost::posix_time::ptime, unsigned long>::const_iterator it_lower, it_upper;
+    std::multimap<boost::posix_time::ptime, std::uint64_t>::const_iterator it_lower, it_upper;
     bool has_lower = false;
     bool has_upper = false;
 
@@ -990,7 +990,7 @@ ReconstructorTarget::ReconstructorInfoPair ReconstructorTarget::dataFor (ptime t
             traced_assert(range.first != tr_timestamps_.end());
 
             // multiple timestamps in map => choose one depending on init mode
-            std::multimap<boost::posix_time::ptime, unsigned long>::const_iterator it_start =
+            std::multimap<boost::posix_time::ptime, std::uint64_t>::const_iterator it_start =
                 tr_timestamps_.end();
 
             auto init_mode = interp_options.initMode();
@@ -1548,23 +1548,23 @@ std::pair<boost::optional<dbContent::targetReport::Position>,
 //    return pos;
 //}
 
-bool ReconstructorTarget::hasDataFor (unsigned long rec_num) const
+bool ReconstructorTarget::hasDataFor (std::uint64_t rec_num) const
 {
     return reconstructor_.target_reports_.count(rec_num);
 }
 
-dbContent::targetReport::ReconstructorInfo& ReconstructorTarget::dataFor (unsigned long rec_num) const
+dbContent::targetReport::ReconstructorInfo& ReconstructorTarget::dataFor (std::uint64_t rec_num) const
 {
     //assert (reconstructor_.target_reports_.count(rec_num));
     return reconstructor_.target_reports_.at(rec_num);
 }
 
-bool ReconstructorTarget::hasPositionFor (unsigned long rec_num) const
+bool ReconstructorTarget::hasPositionFor (std::uint64_t rec_num) const
 {
     return dataFor(rec_num).position().has_value();
 }
 
-dbContent::targetReport::Position ReconstructorTarget::positionFor (unsigned long rec_num) const
+dbContent::targetReport::Position ReconstructorTarget::positionFor (std::uint64_t rec_num) const
 {
     traced_assert(hasPositionFor(rec_num));
     return *dataFor(rec_num).position();
@@ -1613,14 +1613,14 @@ float ReconstructorTarget::probTimeOverlaps (const ReconstructorTarget& other) c
     return overlap_duration / targets_min_duration;
 }
 
-std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>>
+std::tuple<vector<std::uint64_t>, vector<std::uint64_t>, vector<std::uint64_t>>
 ReconstructorTarget::compareModeACodes (
     const ReconstructorTarget& other,
     boost::posix_time::time_duration max_time_diff, bool do_debug) const
 {
-    vector<unsigned long> unknown;
-    vector<unsigned long> same;
-    vector<unsigned long> different;
+    vector<std::uint64_t> unknown;
+    vector<std::uint64_t> same;
+    vector<std::uint64_t> different;
 
     ComparisonResult cmp_res;
 
@@ -1650,7 +1650,7 @@ ReconstructorTarget::compareModeACodes (
 
     traced_assert(target_reports_.size() == unknown.size()+same.size()+different.size());
 
-    return std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>>(unknown, same, different);
+    return std::tuple<vector<std::uint64_t>, vector<std::uint64_t>, vector<std::uint64_t>>(unknown, same, different);
 }
 
 ComparisonResult ReconstructorTarget::compareModeACode (
@@ -1789,13 +1789,13 @@ ComparisonResult ReconstructorTarget::compareModeACode (
         return ComparisonResult::DIFFERENT;
 }
 
-std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>> ReconstructorTarget::compareModeCCodes (
-    const ReconstructorTarget& other, const std::vector<unsigned long>& rec_nums,
+std::tuple<vector<std::uint64_t>, vector<std::uint64_t>, vector<std::uint64_t>> ReconstructorTarget::compareModeCCodes (
+    const ReconstructorTarget& other, const std::vector<std::uint64_t>& rec_nums,
     time_duration max_time_diff, float max_alt_diff, bool do_debug) const
 {
-    vector<unsigned long> unknown;
-    vector<unsigned long> same;
-    vector<unsigned long> different;
+    vector<std::uint64_t> unknown;
+    vector<std::uint64_t> same;
+    vector<std::uint64_t> different;
 
     ComparisonResult cmp_res;
 
@@ -1822,7 +1822,7 @@ std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>> 
 
     traced_assert(rec_nums.size() == unknown.size()+same.size()+different.size());
 
-    return std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>>(unknown, same, different);
+    return std::tuple<vector<std::uint64_t>, vector<std::uint64_t>, vector<std::uint64_t>>(unknown, same, different);
 }
 
 bool ReconstructorTarget::isPrimaryAt(boost::posix_time::ptime timestamp,
@@ -2220,8 +2220,8 @@ TimedDataSeries<unsigned int> ReconstructorTarget::getMode3ASeries() const
 
     float value_usage_seconds = 10; //+/-
 
-    std::function<int(unsigned long)> confidence_func =
-        [this](unsigned long rec_num) -> int
+    std::function<int(std::uint64_t)> confidence_func =
+        [this](std::uint64_t rec_num) -> int
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2252,8 +2252,8 @@ TimedDataSeries<unsigned int> ReconstructorTarget::getMode3ASeries() const
         return -1;  // Always return confidence = -1 if no value
     };
 
-    std::function<boost::optional<unsigned int>(unsigned long)> value_func =
-        [this](unsigned long rec_num) -> boost::optional<unsigned int>
+    std::function<boost::optional<unsigned int>(std::uint64_t)> value_func =
+        [this](std::uint64_t rec_num) -> boost::optional<unsigned int>
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2280,8 +2280,8 @@ TimedDataSeries<float> ReconstructorTarget::getAltitudeSeries() const
 
     float value_usage_seconds = 5; //+/-
 
-    std::function<int(unsigned long)> confidence_func =
-        [this](unsigned long rec_num) -> int
+    std::function<int(std::uint64_t)> confidence_func =
+        [this](std::uint64_t rec_num) -> int
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2311,8 +2311,8 @@ TimedDataSeries<float> ReconstructorTarget::getAltitudeSeries() const
         return -1;  // Always return confidence = -1 if no value
     };
 
-    std::function<boost::optional<float>(unsigned long)> value_func =
-        [this](unsigned long rec_num) -> boost::optional<float>
+    std::function<boost::optional<float>(std::uint64_t)> value_func =
+        [this](std::uint64_t rec_num) -> boost::optional<float>
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2339,8 +2339,8 @@ TimedDataSeries<bool> ReconstructorTarget::getGroundBitSeries() const
 
     float altitude_usage_seconds = 5; //+/-
 
-    std::function<int(unsigned long)> confidence_func =
-        [this](unsigned long rec_num) -> int
+    std::function<int(std::uint64_t)> confidence_func =
+        [this](std::uint64_t rec_num) -> int
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2359,8 +2359,8 @@ TimedDataSeries<bool> ReconstructorTarget::getGroundBitSeries() const
         return -1;  // Always return confidence = -1 if no value
     };
 
-    std::function<boost::optional<bool>(unsigned long)> value_func =
-        [this](unsigned long rec_num) -> boost::optional<bool>
+    std::function<boost::optional<bool>(std::uint64_t)> value_func =
+        [this](std::uint64_t rec_num) -> boost::optional<bool>
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -3137,11 +3137,11 @@ void ReconstructorTarget::removeOutdatedTargetReports()
     references_.clear();
 }
 
-std::vector<unsigned long> ReconstructorTarget::removeStreamReports(
+std::vector<std::uint64_t> ReconstructorTarget::removeStreamReports(
     unsigned int ds_id, unsigned int line_id, unsigned int track_number,
     const boost::posix_time::ptime& ts, bool at_or_after)
 {
-    std::vector<unsigned long> removed;
+    std::vector<std::uint64_t> removed;
 
     auto tmp_tr_timestamps = std::move(tr_timestamps_);
 
@@ -3310,7 +3310,7 @@ bool ReconstructorTarget::compareChainUpdates(const dbContent::targetReport::Rec
 bool ReconstructorTarget::checkChainBeforeAdd(const dbContent::targetReport::ReconstructorInfo& tr,
                                               int idx) const
 {
-    unsigned long rec_num  = chain()->getUpdate(idx).mm_id; // UGA not unsigned int
+    std::uint64_t rec_num  = chain()->getUpdate(idx).mm_id; // UGA not unsigned int
     traced_assert(reconstructor_.target_reports_.count(rec_num));
     const auto&  tr_chain = reconstructor_.target_reports_.at(rec_num);
 

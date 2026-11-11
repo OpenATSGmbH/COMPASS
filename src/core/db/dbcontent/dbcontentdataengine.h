@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <boost/optional.hpp>
 
@@ -84,8 +85,8 @@ public:
     // the insert paths as fresh rec_nums / track_nums are handed out)
     void loadMaxRecordNumberWODBContentID();   // query DB into the cache
     bool          hasMaxRecordNumberWODBContentID() const { return max_rec_num_wo_dbcontid_.has_value(); }
-    unsigned long maxRecordNumberWODBContentID() const;    // cached
-    void          maxRecordNumberWODBContentID(unsigned long value);
+    std::uint64_t maxRecordNumberWODBContentID() const;    // cached
+    void          maxRecordNumberWODBContentID(std::uint64_t value);
 
     void loadMaxRefTrajTrackNum();             // query DB into the cache
     bool         hasMaxRefTrajTrackNum() const { return max_reftraj_track_num_.has_value(); }
@@ -130,12 +131,12 @@ private:
     // datasource/line WHERE fragment for a content (empty when no ds filter applies)
     FilterClause dataSourceClause(const std::string& dbcontent_name, const LoadSpec& spec);
 
-    unsigned long queryMaxRecordNumberWODBContentID() const; // DB scan
+    std::uint64_t queryMaxRecordNumberWODBContentID() const; // DB scan
     boost::optional<unsigned int> queryMaxRefTrajTrackNum() const; // DB scan, none if no RefTraj data
 
     DBContentManager& dbcont_man_;
 
-    std::optional<unsigned long> max_rec_num_wo_dbcontid_;
+    std::optional<std::uint64_t> max_rec_num_wo_dbcontid_;
     std::optional<unsigned int>  max_reftraj_track_num_;
 
     std::optional<boost::posix_time::ptime> timestamp_min_;

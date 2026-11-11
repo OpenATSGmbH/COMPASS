@@ -56,7 +56,7 @@ class ViewDataWidget : public QWidget, public ViewComponent
 {
     Q_OBJECT
 public:
-    enum class DrawState
+    enum class ViewDrawState
     {
         NotDrawn,    // not drawn yet
         Drawn,       // drawn, but no content
@@ -75,7 +75,7 @@ public:
     void updateFromSource(const DBContentDataSet& source,
                           const std::vector<std::string>& names, bool reset, bool last);
     void clearData();
-    DrawState redrawData(bool recompute, bool notify = false);
+    ViewDrawState redrawData(bool recompute, bool notify = false);
     void liveReload();
 
     /// a reload follows: the layer tree keeps its data rows (stale, detached from their payloads)
@@ -192,7 +192,7 @@ protected:
                                        const std::vector<std::string>& names, bool reset, bool last) = 0; //implements behavior at receiving a source update
     virtual void clearData_impl() = 0;                     //implements clearing all view data
     virtual void clearIntermediateRedrawData_impl() = 0;   //implements clearing of any data collected during redraw
-    virtual DrawState redrawData_impl(bool recompute) = 0; //implements redrawing the display (and possibly needed computations), and returns the new draw state
+    virtual ViewDrawState redrawData_impl(bool recompute) = 0; //implements redrawing the display (and possibly needed computations), and returns the new draw state
     virtual void liveReload_impl() = 0;                    //implements data reload during live running mode (reload not handled via a real db reload)
     virtual bool hasAnnotations_impl() const = 0;          //implements checking if the view has any annotations
     virtual void databaseOpened_impl() {}                  //implements behavior on opening a database
@@ -210,8 +210,8 @@ protected:
     void endTool();
     ViewToolSwitcher* toolSwitcher() { return tool_switcher_; } // null before the view widget set it
 
-    void setDrawState(DrawState state) { draw_state_ = state; }
-    DrawState drawState() const { return draw_state_; }
+    void setDrawState(ViewDrawState state) { draw_state_ = state; }
+    ViewDrawState drawState() const { return draw_state_; }
 
     // Invalidates and joins outstanding asynchronous work. MUST be called from the
     // destructor of any derived widget whose work functions capture `this`: the base
@@ -299,7 +299,7 @@ private:
     std::set<std::string> hidden_layer_ids_; // see snapshotHiddenLayerIds()
 
     BufferData data_;
-    DrawState  draw_state_ = DrawState::NotDrawn;
+    ViewDrawState  draw_state_ = ViewDrawState::NotDrawn;
 
     bool data_fulfills_read_set_ = true; // mirrored from the source in updateFromSource
 

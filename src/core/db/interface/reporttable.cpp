@@ -546,9 +546,9 @@ ReportTableRows::~ReportTableRows()
 
 /**
  */
-void ReportTableRows::setRecordNumber(unsigned long rec_num)
+void ReportTableRows::setRecordNumber(std::uint64_t rec_num)
 {
-    set<unsigned long>(ReportTableDefinition::KeyColumnName, rec_num);
+    set<std::uint64_t>(ReportTableDefinition::KeyColumnName, rec_num);
 }
 
 /**
@@ -567,7 +567,7 @@ void ReportTableRows::setTimestamp(const boost::posix_time::ptime& timestamp)
 
 /**
  */
-bool ReportTableRows::hasRecordNumber(unsigned long rec_num) const
+bool ReportTableRows::hasRecordNumber(std::uint64_t rec_num) const
 {
     return keys_.count(rec_num) > 0;
 }
@@ -582,14 +582,14 @@ bool ReportTableRows::nextRow()
     {
         const std::string& key_column = ReportTableDefinition::KeyColumnName;
 
-        if (!buffer_->has<unsigned long>(key_column) || buffer_->get<unsigned long>(key_column).isNull(row_))
+        if (!buffer_->has<std::uint64_t>(key_column) || buffer_->get<std::uint64_t>(key_column).isNull(row_))
         {
             ++num_dropped_;
             clearRow();
             return false;
         }
 
-        auto rec_num = buffer_->get<unsigned long>(key_column).get(row_);
+        auto rec_num = buffer_->get<std::uint64_t>(key_column).get(row_);
 
         if (!keys_.insert(rec_num).second)
         {

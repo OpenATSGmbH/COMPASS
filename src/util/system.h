@@ -41,6 +41,9 @@ extern int tbbCurrentThreadID();
 
 extern void printBacktrace();
 
+// returns freed heap memory to the system (malloc_trim on Linux)
+extern void trimMemory();
+
 extern const char* appDir();
 
 }  // namespace System

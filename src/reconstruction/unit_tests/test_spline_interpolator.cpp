@@ -40,7 +40,7 @@ TEST_CASE("spline interpolator resamples a straight line", "[reconstruction][spl
         mms.push_back(makeMeasurement(
             base_lat,
             base_lon + (v_ms * i * dt_in) / metersPerDegLon(base_lat),
-            t0 + boost::posix_time::seconds((long)(i * dt_in))));
+            t0 + boost::posix_time::seconds((std::int64_t)(i * dt_in))));
 
     SplineInterpolator interp;
     interp.config().sample_dt = 1.0;
@@ -95,7 +95,7 @@ TEST_CASE("spline interpolator handles a curved trajectory", "[reconstruction][s
 
         mms.push_back(makeMeasurement(base_lat + y / MetersPerDegLat,
                                       base_lon + x / metersPerDegLon(base_lat),
-                                      t0 + boost::posix_time::seconds((long)(i * dt_in))));
+                                      t0 + boost::posix_time::seconds((std::int64_t)(i * dt_in))));
     }
 
     SplineInterpolator interp;
@@ -127,10 +127,10 @@ TEST_CASE("spline interpolator splits on time gaps", "[reconstruction][spline]")
     // two groups of measurements separated by a 60 s gap
     for (size_t i = 0; i < 5; ++i)
         mms.push_back(makeMeasurement(47.0, 16.0 + i * 0.001,
-                                      t0 + boost::posix_time::seconds((long)(i * 4))));
+                                      t0 + boost::posix_time::seconds((std::int64_t)(i * 4))));
     for (size_t i = 0; i < 5; ++i)
         mms.push_back(makeMeasurement(47.0, 16.1 + i * 0.001,
-                                      t0 + boost::posix_time::seconds((long)(80 + i * 4))));
+                                      t0 + boost::posix_time::seconds((std::int64_t)(80 + i * 4))));
 
     auto parts = SplineInterpolator::splitMeasurements(mms, 30.0);
 

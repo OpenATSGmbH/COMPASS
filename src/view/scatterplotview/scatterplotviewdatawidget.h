@@ -92,7 +92,7 @@ protected:
     /// drops the current chart view via deleteLater - see the implementation
     void releaseChartView();
     virtual void resetVariableDisplay() override final;
-    virtual DrawState updateVariableDisplay() override final;
+    virtual ViewDrawState updateVariableDisplay() override final;
     virtual bool updateFromAnnotations() override final;
 
     virtual void processStash(const VariableViewStash<double>& stash) override final;
@@ -122,8 +122,8 @@ private:
     /// Picks the date time format from the span the axis shows.
     void updateDateTimeFormat(QtCharts::QDateTimeAxis* axis);
 
-    DrawState updateChart();
-    DrawState updateDataSeries(QtCharts::QChart* chart);
+    ViewDrawState updateChart();
+    ViewDrawState updateDataSeries(QtCharts::QChart* chart);
 
     void resetSeries();
     void correctSeriesDateTime(ScatterSeriesCollection& collection);

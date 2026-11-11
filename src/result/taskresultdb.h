@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "result.h"
 
 #include "json.hpp"
@@ -67,7 +69,7 @@ public:
     ResultT<nlohmann::json> loadResultContent(unsigned int result_id);
     ResultT<std::shared_ptr<ResultReport::SectionContent>> loadContent(ResultReport::Section* section, unsigned int content_id);
 
-    boost::optional<unsigned long> getMaxReportContentID();
+    boost::optional<std::uint64_t> getMaxReportContentID();
 
 private:
     nlohmann::json resultContentWithoutSections(const TaskResult& result,

@@ -142,7 +142,7 @@ TEST_CASE("C++17 std::variant", "[cpp17]")
 TEST_CASE("C++17 if constexpr", "[cpp17]")
 {
     REQUIRE(type_name<int>() == "integral");
-    REQUIRE(type_name<unsigned long>() == "integral");
+    REQUIRE(type_name<std::uint64_t>() == "integral");
     REQUIRE(type_name<double>() == "floating");
     REQUIRE(type_name<float>() == "floating");
     REQUIRE(type_name<std::string>() == "other");

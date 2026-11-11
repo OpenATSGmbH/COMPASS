@@ -5,7 +5,8 @@ PATHS
 /usr/include
 )
 
-FIND_LIBRARY(DUCKDB_LIBRARIES libduckdb.so
+# duckdb: duckdb.lib on Windows
+FIND_LIBRARY(DUCKDB_LIBRARIES NAMES libduckdb.so duckdb
 PATHS
 /usr/local/lib
 /usr/lib

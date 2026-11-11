@@ -192,7 +192,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
                dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_track_coasting_).name()));
     traced_assert(buffer->has<string>(dbcont_man.getVariable(tracker_dbcontent_name_, dbcontent_vars::var_cat062_tris_).name()));
 
-    traced_assert(buffer->has<unsigned long>(
+    traced_assert(buffer->has<std::uint64_t>(
                dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_rec_num_).name()));
     traced_assert(buffer->has<boost::posix_time::ptime>(
                dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_timestamp_).name()));
@@ -208,7 +208,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
     NullableVector<string>& tri_hash_vec = buffer->get<string>(
                 dbcont_man.getVariable(tracker_dbcontent_name_, dbcontent_vars::var_cat062_tris_).name());
 
-    NullableVector<unsigned long>& rec_num_vec = buffer->get<unsigned long>(
+    NullableVector<std::uint64_t>& rec_num_vec = buffer->get<std::uint64_t>(
                 dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_rec_num_).name());
     NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(
                 dbcont_man.metaGetVariable(tracker_dbcontent_name_, dbcontent_vars::meta_var_timestamp_).name());
@@ -231,7 +231,7 @@ void CreateARTASAssociationsJob::createUniqueARTASTracks()
     bool ignore_track_end_associations = task_.ignoreTrackEndAssociations();
     bool ignore_track_coasting_associations = task_.ignoreTrackCoastingAssociations();
 
-    unsigned long rec_num;
+    std::uint64_t rec_num;
     boost::posix_time::ptime timestamp;
 
     int utn;
@@ -390,7 +390,7 @@ void CreateARTASAssociationsJob::createARTASAssociations()
 
     for (auto& ut_it : finished_tracks_)                    // utn -> unique track
         for (auto& assoc_it : ut_it.second.rec_nums_tris_)  // rec_num -> (tri, timestamp)
-            cat062_associations_[assoc_it.first] = std::vector<unsigned long>();
+            cat062_associations_[assoc_it.first] = std::vector<std::uint64_t>();
     // dbcontent -> cat062 rec_num -> <src rec_nums>
 }
 
@@ -402,7 +402,7 @@ void CreateARTASAssociationsJob::saveAssociations()
 
     // write association info to buffers
 
-    unsigned long rec_num;
+    std::uint64_t rec_num;
 
     unsigned int num_associated {0};
     unsigned int num_not_associated {0};
@@ -425,11 +425,11 @@ void CreateARTASAssociationsJob::saveAssociations()
     string rec_num_var_name = rec_num_var.name();
     string tri_rec_num_var_name = tri_rec_num_var.name();
 
-    traced_assert(buffers_.at(tracker_dbcontent_name_)->has<unsigned long>(rec_num_var_name));
+    traced_assert(buffers_.at(tracker_dbcontent_name_)->has<std::uint64_t>(rec_num_var_name));
     traced_assert(buffers_.at(tracker_dbcontent_name_)->has<json>(tri_rec_num_var_name));
 
-    NullableVector<unsigned long>& rec_num_vec =
-            buffers_.at(tracker_dbcontent_name_)->get<unsigned long>(rec_num_var_name);
+    NullableVector<std::uint64_t>& rec_num_vec =
+            buffers_.at(tracker_dbcontent_name_)->get<std::uint64_t>(rec_num_var_name);
     NullableVector<json>& tri_rec_num_vec = buffers_.at(tracker_dbcontent_name_)->get<json>(tri_rec_num_var_name);
 
     for (unsigned int cnt=0; cnt < buffers_.at(tracker_dbcontent_name_)->size(); ++cnt)
@@ -477,7 +477,7 @@ void CreateARTASAssociationsJob::saveAssociations()
     for (auto& prop_it : properties.properties())
     {
         if (prop_it.name() == rec_num_var_name)
-            buffer->rename<unsigned long>(rec_num_var_name, rec_num_col_name);
+            buffer->rename<std::uint64_t>(rec_num_var_name, rec_num_col_name);
         else if (prop_it.name() == tri_rec_num_var_name)
             buffer->rename<json>(tri_rec_num_var_name, tri_rec_num_col_name);
         else
@@ -540,11 +540,11 @@ void CreateARTASAssociationsJob::createSensorAssociations()
     string best_match_dubious_comment;
 
     //string best_match_dbcontent_name;
-    unsigned long best_match_rec_num{0};
+    std::uint64_t best_match_rec_num{0};
     boost::posix_time::ptime best_match_ts;
     boost::posix_time::ptime tri_ts;
 
-    typedef multimap<string, pair<unsigned long, boost::posix_time::ptime>>::iterator HashIterator;
+    typedef multimap<string, pair<std::uint64_t, boost::posix_time::ptime>>::iterator HashIterator;
     pair<HashIterator, HashIterator> possible_hash_matches;
 
     traced_assert(!first_track_ts_.is_not_a_date_time());  // has to be set
@@ -574,7 +574,7 @@ void CreateARTASAssociationsJob::createSensorAssociations()
                 for (HashIterator it = possible_hash_matches.first;
                      it != possible_hash_matches.second; ++it)
                 {
-                    pair<unsigned long, boost::posix_time::ptime>& match = it->second;  // rec_num, tod
+                    pair<std::uint64_t, boost::posix_time::ptime>& match = it->second;  // rec_num, tod
 
                     if (!isPossibleAssociation(tri_ts, match.second))
                         continue;
@@ -660,7 +660,7 @@ void CreateARTASAssociationsJob::createSensorAssociations()
                     //                        .addAssociation(best_match_rec_num, ut_it.first, true, assoc_it.first);
 
                     // add utn to non-tracker rec_num
-                    cat062_associations_[best_match_rec_num] = std::vector<unsigned long>();
+                    cat062_associations_[best_match_rec_num] = std::vector<std::uint64_t>();
 
                     // add non-tracker rec_num to tracker src rec_nums
 
@@ -774,11 +774,11 @@ void CreateARTASAssociationsJob::createSensorHashes(DBContent& object)
     Variable& hash_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_artas_hash_);
     Variable& ts_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_timestamp_);
 
-    traced_assert(buffer->has<unsigned long>(rec_num_var.name()));
+    traced_assert(buffer->has<std::uint64_t>(rec_num_var.name()));
     traced_assert(buffer->has<string>(hash_var.name()));
     traced_assert(buffer->has<boost::posix_time::ptime>(ts_var.name()));
 
-    NullableVector<unsigned long>& rec_nums = buffer->get<unsigned long>(rec_num_var.name());
+    NullableVector<std::uint64_t>& rec_nums = buffer->get<std::uint64_t>(rec_num_var.name());
     NullableVector<string>& hashes = buffer->get<string>(hash_var.name());
     NullableVector<boost::posix_time::ptime>& ts_vec = buffer->get<boost::posix_time::ptime>(ts_var.name());
 

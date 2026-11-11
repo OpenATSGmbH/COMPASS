@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "configurable.h"
 #include "dbcontent/variable/variableset.h"
 #include "viewcontainerwidget.h"
@@ -126,7 +127,7 @@ public:
     AppMode appMode() const { return app_mode_; }
     /// creation sequence number, a higher number means created later. A timestamp with
     /// second resolution could not order views created within the same second
-    unsigned long created() const { return creation_index_; }
+    std::uint64_t created() const { return creation_index_; }
 
     const ViewWidget* getViewWidget() const { traced_assert(widget_); return widget_; }
 
@@ -239,7 +240,7 @@ private:
 
     bool    init_ = false;
     AppMode app_mode_;
-    unsigned long creation_index_ = 0;
+    std::uint64_t creation_index_ = 0;
 
     boost::optional<int> issued_update_;
 

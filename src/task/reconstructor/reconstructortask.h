@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "configurable.h"
 #include "reconstructorbase.h"
 #include "task.h"
@@ -63,7 +64,7 @@ public:
     struct DebugSettings
     {
         std::set<unsigned int> debug_utns_;
-        std::set<unsigned long> debug_rec_nums_;
+        std::set<std::uint64_t> debug_rec_nums_;
 
         boost::posix_time::ptime debug_timestamp_min_;
         boost::posix_time::ptime debug_timestamp_max_;
@@ -94,7 +95,7 @@ public:
         bool stats_association_ {false};
 
         bool debugUTN(unsigned int utn) { return debug_utns_.count(utn); }
-        bool debugRecNum(unsigned long rec_num) { return debug_rec_nums_.count(rec_num); }
+        bool debugRecNum(std::uint64_t rec_num) { return debug_rec_nums_.count(rec_num); }
 
         double grid_max_resolution_{0.0005};
         unsigned int max_num_grid_cells_ {500};
@@ -168,7 +169,7 @@ public:
 
     std::unique_ptr<ViewPointGenVP> getDebugViewpoint(const std::string& name, const std::string& type, bool* created = nullptr) const;
     std::unique_ptr<ViewPointGenVP> getDebugViewpointNoData(const std::string& name, const std::string& type); // w/o sur data
-    std::unique_ptr<ViewPointGenVP> getDebugViewpointForUTN(unsigned long utn, const std::string& name_prefix="") const;
+    std::unique_ptr<ViewPointGenVP> getDebugViewpointForUTN(std::uint64_t utn, const std::string& name_prefix="") const;
 
     bool skipReferenceDataWriting() const;
     void skipReferenceDataWriting(bool newSkip_reference_data_writing);

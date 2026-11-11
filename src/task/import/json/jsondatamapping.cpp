@@ -453,10 +453,10 @@ template bool JSONDataMapping::findAndSetValue(const json& j,
 NullableVector<unsigned int>& array_list,
 size_t row_cnt, bool debug) const;
 template bool JSONDataMapping::findAndSetValue(const json& j,
-NullableVector<long int>& array_list,
+NullableVector<std::int64_t>& array_list,
 size_t row_cnt, bool debug) const;
 template bool JSONDataMapping::findAndSetValue(const json& j,
-NullableVector<unsigned long int>& array_list,
+NullableVector<std::uint64_t>& array_list,
 size_t row_cnt, bool debug) const;
 template bool JSONDataMapping::findAndSetValue(const json& j,
 NullableVector<float>& array_list,
@@ -595,9 +595,9 @@ NullableVector<int>& array_list, size_t start_row, size_t num_records) const;
 template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
 NullableVector<unsigned int>& array_list, size_t start_row, size_t num_records) const;
 template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
-NullableVector<long int>& array_list, size_t start_row, size_t num_records) const;
+NullableVector<std::int64_t>& array_list, size_t start_row, size_t num_records) const;
 template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
-NullableVector<unsigned long int>& array_list, size_t start_row, size_t num_records) const;
+NullableVector<std::uint64_t>& array_list, size_t start_row, size_t num_records) const;
 template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
 NullableVector<float>& array_list, size_t start_row, size_t num_records) const;
 template bool JSONDataMapping::setFlatArrayValues(const json& flat_cat_data,
@@ -1037,16 +1037,16 @@ NullableVector<unsigned int>& array_list,
 size_t row_cnt, bool debug) const;
 
 template void JSONDataMapping::setValue(const json* val_ptr,
-NullableVector<long int>& array_list, size_t row_cnt, bool debug) const;
+NullableVector<std::int64_t>& array_list, size_t row_cnt, bool debug) const;
 template void JSONDataMapping::appendValue(const json* val_ptr,
-NullableVector<long int>& array_list,
+NullableVector<std::int64_t>& array_list,
 size_t row_cnt, bool debug) const;
 
 template void JSONDataMapping::setValue(const json* val_ptr,
-NullableVector<unsigned long int>& array_list,
+NullableVector<std::uint64_t>& array_list,
 size_t row_cnt, bool debug) const;
 template void JSONDataMapping::appendValue(const json* val_ptr,
-NullableVector<unsigned long int>& array_list,
+NullableVector<std::uint64_t>& array_list,
 size_t row_cnt, bool debug) const;
 
 template void JSONDataMapping::setValue(const json* val_ptr,

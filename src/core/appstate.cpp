@@ -24,6 +24,7 @@
 
 #include <QApplication>
 #include <QCursor>
+#include <QStandardPaths>
 
 #include <iostream>
 
@@ -33,7 +34,7 @@ const bool AppState::is_app_image_ = {Utils::System::appDir() != nullptr};
  */
 AppState::AppState()
 {
-    pdflatex_found_ = Utils::System::exec("which pdflatex").size(); // empty if none
+    pdflatex_found_ = !QStandardPaths::findExecutable("pdflatex").isEmpty(); // searches PATH
 }
 
 /**

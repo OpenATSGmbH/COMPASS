@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "dbcontent/variable/variableset.h"
 
 #include "json_fwd.hpp"
@@ -78,7 +80,7 @@ public:
 
     void clearAssociations(const DBContent& dbcontent);
 
-    unsigned long getMaxRecordNumber(DBContent& dbcontent);
+    std::uint64_t getMaxRecordNumber(DBContent& dbcontent);
     boost::optional<unsigned int> getMaxRefTrackTrackNum(); // none if no RefTraj data
 
     bool existsTargetsTable();

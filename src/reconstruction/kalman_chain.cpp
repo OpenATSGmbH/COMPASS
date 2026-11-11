@@ -333,7 +333,7 @@ void KalmanChain::setMeasurementCheckFunc(const MeasurementCheckFunc& check_func
 
 /**
 */
-const Measurement& KalmanChain::getMeasurement(unsigned long mm_id) const
+const Measurement& KalmanChain::getMeasurement(std::uint64_t mm_id) const
 {
     traced_assert(get_func_ || assign_func_);
 
@@ -457,7 +457,7 @@ std::pair<int, int> KalmanChain::indicesNear(const boost::posix_time::ptime& ts,
 /**
  * Internally used.
 */
-bool KalmanChain::addToTracker(unsigned long mm_id,
+bool KalmanChain::addToTracker(std::uint64_t mm_id,
                                const boost::posix_time::ptime& ts,
                                const boost::optional<boost::posix_time::ptime>& ts_mm,
                                UpdateStats* stats)
@@ -489,7 +489,7 @@ bool KalmanChain::addToTracker(unsigned long mm_id,
 /**
  * Internally used.
 */
-void KalmanChain::addToEnd(unsigned long mm_id,
+void KalmanChain::addToEnd(std::uint64_t mm_id,
                            const boost::posix_time::ptime& ts,
                            const boost::optional<boost::posix_time::ptime>& ts_mm)
 {
@@ -503,7 +503,7 @@ void KalmanChain::addToEnd(unsigned long mm_id,
 /**
  * Adds a new measurement to the end of the chain.
 */
-bool KalmanChain::add(unsigned long mm_id,
+bool KalmanChain::add(std::uint64_t mm_id,
                       const boost::posix_time::ptime& ts,
                       const boost::optional<boost::posix_time::ptime>& ts_mm,
                       bool reestim,
@@ -586,7 +586,7 @@ bool KalmanChain::add(const std::vector<MMDefinition>& mms,
  * Inserts a new measurement at the given index.
 */
 void KalmanChain::insertAt(int idx, 
-                           unsigned long mm_id,
+                           std::uint64_t mm_id,
                            const boost::posix_time::ptime& ts, 
                            const boost::optional<boost::posix_time::ptime>& ts_mm)
 {
@@ -661,7 +661,7 @@ void KalmanChain::insertAt(int idx,
 /**
  * Inserts a new measurement into the chain.
 */
-bool KalmanChain::insert(unsigned long mm_id,
+bool KalmanChain::insert(std::uint64_t mm_id,
                          const boost::posix_time::ptime& ts, 
                          const boost::optional<boost::posix_time::ptime>& ts_mm,
                          bool reestim,

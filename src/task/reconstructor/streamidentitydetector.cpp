@@ -256,7 +256,7 @@ StreamIdentityDetector::Settings StreamIdentityDetector::resolveSettings(
 
         try
         {
-            settings.conspicuity_codes_.insert((unsigned int) stoul(trimmed, nullptr, 8));
+            settings.conspicuity_codes_.insert((unsigned int) stoull(trimmed, nullptr, 8));
         }
         catch (const exception& e)
         {

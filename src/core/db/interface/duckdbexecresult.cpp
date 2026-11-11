@@ -374,7 +374,7 @@ static void bulkLoadTimestampColumn(Buffer& buffer, const std::string& name,
     auto& vec = buffer.get<boost::posix_time::ptime>(name);
     vec.ensureMinSize(static_cast<unsigned int>(dst_offset + count));
 
-    const long* timestamps = static_cast<const long*>(data);
+    const std::int64_t* timestamps = static_cast<const std::int64_t*>(data);
 
     for (size_t i = 0; i < count; i++)
     {
@@ -451,11 +451,11 @@ ResultT<bool> DuckDBExecResult::readNextChunk(Buffer& buffer,
                                                  buf_idx, chunk_idx_, rows_to_copy);
                     break;
                 case PropertyDataType::LONGINT:
-                    bulkLoadColumn<long int>(buffer, pname, data_vectors[c], valid_vectors[c],
+                    bulkLoadColumn<std::int64_t>(buffer, pname, data_vectors[c], valid_vectors[c],
                                              buf_idx, chunk_idx_, rows_to_copy);
                     break;
                 case PropertyDataType::ULONGINT:
-                    bulkLoadColumn<unsigned long int>(buffer, pname, data_vectors[c], valid_vectors[c],
+                    bulkLoadColumn<std::uint64_t>(buffer, pname, data_vectors[c], valid_vectors[c],
                                                       buf_idx, chunk_idx_, rows_to_copy);
                     break;
                 case PropertyDataType::FLOAT:

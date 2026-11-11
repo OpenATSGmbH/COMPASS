@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <duckdb.h>
 
 #include "timeconv.h"
@@ -91,8 +92,8 @@ StandardApppender(char, int8)
 StandardApppender(unsigned char, uint8)
 StandardApppender(int, int32)
 StandardApppender(unsigned int, uint32)
-StandardApppender(long, int64)
-StandardApppender(unsigned long, uint64)
+StandardApppender(std::int64_t, int64)
+StandardApppender(std::uint64_t, uint64)
 StandardApppender(float, float)
 StandardApppender(double, double)
 
@@ -115,6 +116,6 @@ inline bool DuckDBScopedAppender::append(const nlohmann::json& value)
 template<>
 inline bool DuckDBScopedAppender::append(const boost::posix_time::ptime& value)
 {
-    long ts = Utils::Time::toLong(value);
-    return append<long>(ts);
+    std::int64_t ts = Utils::Time::toLong(value);
+    return append<std::int64_t>(ts);
 }

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <duckdb.h>
 
 #include "dbexecresult.h"
@@ -109,8 +110,8 @@ StandardRead(char, int8)
 StandardRead(unsigned char, uint8)
 StandardRead(int, int32)
 StandardRead(unsigned int, uint32)
-StandardRead(long, int64)
-StandardRead(unsigned long, uint64)
+StandardRead(std::int64_t, int64)
+StandardRead(std::uint64_t, uint64)
 StandardRead(float, float)
 StandardRead(double, double)
 
@@ -133,7 +134,7 @@ template<>
 inline boost::posix_time::ptime DuckDBExecResult::read(idx_t col, idx_t row)
 {
     traced_assert(result_valid_);
-    long ts = read<long>(col, row);
+    std::int64_t ts = read<std::int64_t>(col, row);
     return Utils::Time::fromLong(ts);
 }
 
@@ -150,8 +151,8 @@ StandardReadVector(char)
 StandardReadVector(unsigned char)
 StandardReadVector(int)
 StandardReadVector(unsigned int)
-StandardReadVector(long)
-StandardReadVector(unsigned long)
+StandardReadVector(std::int64_t)
+StandardReadVector(std::uint64_t)
 StandardReadVector(float)
 StandardReadVector(double)
 
@@ -178,6 +179,6 @@ template<>
 inline boost::posix_time::ptime DuckDBExecResult::readVector(void* v, idx_t row)
 {
     traced_assert(result_valid_);
-    long ts = readVector<long>(v, row);
+    std::int64_t ts = readVector<std::int64_t>(v, row);
     return Utils::Time::fromLong(ts);
 }

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "propertylist.h"
 #include "logger.h"
 #include "traced_assert.h"
@@ -39,8 +40,8 @@ std::map<std::string, std::shared_ptr<NullableVector<char>>>,
 std::map<std::string, std::shared_ptr<NullableVector<unsigned char>>>,
 std::map<std::string, std::shared_ptr<NullableVector<int>>>,
 std::map<std::string, std::shared_ptr<NullableVector<unsigned int>>>,
-std::map<std::string, std::shared_ptr<NullableVector<long int>>>,
-std::map<std::string, std::shared_ptr<NullableVector<unsigned long int>>>,
+std::map<std::string, std::shared_ptr<NullableVector<std::int64_t>>>,
+std::map<std::string, std::shared_ptr<NullableVector<std::uint64_t>>>,
 std::map<std::string, std::shared_ptr<NullableVector<float>>>,
 std::map<std::string, std::shared_ptr<NullableVector<double>>>,
 std::map<std::string, std::shared_ptr<NullableVector<std::string>>>,

@@ -308,17 +308,17 @@ void DBContentDataEngine::deleteJobDoneSlot()
 /**
  * Highest record number (without DBContent id) across contents present in the DB.
  */
-unsigned long DBContentDataEngine::queryMaxRecordNumberWODBContentID() const
+std::uint64_t DBContentDataEngine::queryMaxRecordNumberWODBContentID() const
 {
     traced_assert(dbcont_man_.dbInterface().ready());
 
-    unsigned long result = 0;
+    std::uint64_t result = 0;
 
     for (auto& obj_it : dbcont_man_)
     {
         if (obj_it.second->existsInDB())
         {
-            unsigned long with_id = dbcont_man_.contentDB().getMaxRecordNumber(*obj_it.second);
+            std::uint64_t with_id = dbcont_man_.contentDB().getMaxRecordNumber(*obj_it.second);
             result = std::max(Utils::Number::recNumGetWithoutDBContId(with_id), result);
         }
     }
@@ -344,7 +344,7 @@ void DBContentDataEngine::loadMaxRecordNumberWODBContentID()
 
 /**
  */
-unsigned long DBContentDataEngine::maxRecordNumberWODBContentID() const
+std::uint64_t DBContentDataEngine::maxRecordNumberWODBContentID() const
 {
     traced_assert(max_rec_num_wo_dbcontid_.has_value());
     return *max_rec_num_wo_dbcontid_;
@@ -352,7 +352,7 @@ unsigned long DBContentDataEngine::maxRecordNumberWODBContentID() const
 
 /**
  */
-void DBContentDataEngine::maxRecordNumberWODBContentID(unsigned long value)
+void DBContentDataEngine::maxRecordNumberWODBContentID(std::uint64_t value)
 {
     logdbg << "start" << value;
     max_rec_num_wo_dbcontid_ = value;
@@ -438,12 +438,12 @@ void DBContentDataEngine::loadMinMaxInfo()
 
     if (db_interface.hasProperty(PROP_TIMESTAMP_MIN_NAME))
     {
-        timestamp_min_ = Utils::Time::fromLong(stol(db_interface.getProperty(PROP_TIMESTAMP_MIN_NAME)));
+        timestamp_min_ = Utils::Time::fromLong(stoll(db_interface.getProperty(PROP_TIMESTAMP_MIN_NAME)));
         traced_assert(!timestamp_min_->is_not_a_date_time());
     }
     if (db_interface.hasProperty(PROP_TIMESTAMP_MAX_NAME))
     {
-        timestamp_max_ = Utils::Time::fromLong(stol(db_interface.getProperty(PROP_TIMESTAMP_MAX_NAME)));
+        timestamp_max_ = Utils::Time::fromLong(stoll(db_interface.getProperty(PROP_TIMESTAMP_MAX_NAME)));
         traced_assert(!timestamp_max_->is_not_a_date_time());
     }
 

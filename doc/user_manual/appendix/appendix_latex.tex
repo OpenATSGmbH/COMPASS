@@ -3,15 +3,20 @@
 
 To be able to use the report generation (View points as well as Evaluation reports), a Latex installation has to be installed on the used workstation. \\
 
+COMPASS starts \texttt{pdflatex} from the \texttt{PATH}. It checks for \texttt{pdflatex} once at startup, so COMPASS has to be started again after the Latex installation. \\
+
+\subsection{Linux}
+\label{sec:appendix_latex_linux}
+
 Depending on what Linux operating system is used, the commands will differ. In this section installation instructions for a few selected OSs is provided.
 
-\subsection {Ubuntu \& Debian Variants}
+\subsubsection {Ubuntu \& Debian Variants}
 
 \begin{lstlisting}
 sudo apt-get install texlive-full 
 \end{lstlisting}
 
-\subsection {CentOS, Fedora \& AlmaLinux Variants}
+\subsubsection {CentOS, Fedora \& AlmaLinux Variants}
 
 \begin{lstlisting}
 # AlmaLinux 9 / RHEL 9: enable CRB repository first
@@ -42,9 +47,25 @@ sudo texhash /usr/share/texlive/texmf-local
 
 Verify with \texttt{kpsewhich ltablex.sty} and \texttt{kpsewhich silence.sty}.
 
+\subsection{Windows}
+\label{sec:appendix_latex_windows}
+
+On Windows, the Latex distribution \textbf{TeX Live} is used, the same distribution as on Linux:
+\begin{itemize}
+    \item Download the installer \texttt{install-tl-windows.exe} from \href{https://tug.org/texlive/windows.html}{tug.org/texlive/windows.html}
+    \item Run the installer and keep the default installation scheme \textbf{full}
+    \begin{itemize}
+        \item The full scheme contains all Latex packages the reports use (about 8 GB), no packages have to be installed later
+        \item The installer adds the TeX Live \texttt{bin} folder, which contains \texttt{pdflatex.exe}, to the \texttt{PATH}
+    \end{itemize}
+    \item For workstations without an internet connection, TeX Live is also available as an ISO image with all packages, see \href{https://tug.org/texlive/acquire-iso.html}{tug.org/texlive/acquire-iso.html}
+\end{itemize}
+
+The Latex distribution \textbf{MiKTeX} can also be used. Its basic installation does not contain all packages the reports use, they have to be installed in the \textbf{MiKTeX Console} (for example \texttt{adjustbox}, \texttt{fancyhdr}, \texttt{float}, \texttt{geometry}, \texttt{ltablex}, \texttt{pdflscape}, \texttt{silence}). \\
+
 \subsection{Testing}
 
-After installation, the following command should run and generate a similar output:
+After installation, the following command should run and generate a similar output (on Windows, the output differs in the version lines):
 
 \begin{lstlisting}
 $ pdflatex --version

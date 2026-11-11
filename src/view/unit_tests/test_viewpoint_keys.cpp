@@ -1,0 +1,55 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "catch.hpp"
+
+#include "viewpointkeys.h"
+#include "viewpointgenerator.h"
+
+#include "json.hpp"
+
+// The ViewPointGenVP field names are literals (static strings in different files have
+// no defined initialization order). They must stay equal to the ViewPointKeys keys.
+TEST_CASE("ViewPointGenVP field names equal the ViewPointKeys keys", "[viewpoint]")
+{
+    REQUIRE(ViewPointGenVP::ViewPointFieldName        == ViewPointKeys::VP_NAME_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldID          == ViewPointKeys::VP_ID_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldType        == ViewPointKeys::VP_TYPE_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldStatus      == ViewPointKeys::VP_STATUS_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldAnnotations == ViewPointKeys::VP_ANNOTATION_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldFilters     == ViewPointKeys::VP_FILTERS_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldPosLat      == ViewPointKeys::VP_POS_LAT_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldPosLon      == ViewPointKeys::VP_POS_LON_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldWinLat      == ViewPointKeys::VP_POS_WIN_LAT_KEY);
+    REQUIRE(ViewPointGenVP::ViewPointFieldWinLon      == ViewPointKeys::VP_POS_WIN_LON_KEY);
+}
+
+// Scan of a view point with one histogram annotation, as set by set_view_point
+TEST_CASE("ViewPointGenVP scanForFeatures finds annotation features", "[viewpoint]")
+{
+    nlohmann::json vp = {
+        { "id", 1 }, { "name", "vp" }, { "type", "Saved" }, { "status", "open" },
+        { "annotations", nlohmann::json::array({
+            { { "name", "Anno" }, { "hidden", false },
+              { "features", nlohmann::json::array({ { { "type", "histogram" }, { "histogram", nlohmann::json::object() } } }) } } }) }
+    };
+
+    auto features = ViewPointGenVP::scanForFeatures(vp, { "histogram" });
+    REQUIRE(features.size() == 1);
+
+    REQUIRE(ViewPointGenVP::scanForFeatures(vp, { "grid" }).empty());
+}

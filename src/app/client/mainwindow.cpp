@@ -132,10 +132,9 @@ MainWindow::MainWindow(CompassRoot& root)
     //init ui related commands
     ui_test::initUITestCommands(cmd_registry);
 
-    //init extra commands
+    //init extra commands, also in the AppImage and the Windows package
 #if USE_EXPERIMENTAL_SOURCE == true
-    if (!AppState::isAppImage())
-        extra::init_extra_commands(cmd_registry, root_);
+    extra::init_extra_commands(cmd_registry, root_);
 #endif
 
     main_window::init_commands(cmd_registry, root_);

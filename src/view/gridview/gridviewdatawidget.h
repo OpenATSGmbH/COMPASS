@@ -112,7 +112,7 @@ protected:
     virtual void prepareStashProcessing() override final;
     virtual void commitStashDisplayData() override final;
     virtual void resetVariableDisplay() override final;
-    virtual DrawState updateVariableDisplay() override final;
+    virtual ViewDrawState updateVariableDisplay() override final;
     virtual bool updateFromAnnotations() override final;
 
     virtual void processStash(const VariableViewStash<double>& stash) override final;
@@ -132,9 +132,9 @@ private:
     /// ticks of its own.
     void updateAxisTicks(QtCharts::QCategoryAxis* axis, int axis_id);
 
-    DrawState updateGridChart();
+    ViewDrawState updateGridChart();
     void updateRendering();
-    DrawState updateChart(QtCharts::QChart* chart);
+    ViewDrawState updateChart(QtCharts::QChart* chart);
 
     /// Rebuild grid_ / grid_layers_ / value ranges by iterating the current
     /// stash and accumulating only groups not hidden in the layer panel

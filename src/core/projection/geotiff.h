@@ -45,6 +45,7 @@ public:
     static std::string generateUniqueMemFilename(const std::string& descr = "");
 
     static GeoTIFFInfo getInfo(const std::string& fn, bool vmem = false);
+    static bool readImage(const std::string& fn, QImage& img, std::string* error = nullptr);
     static GeoTIFFInfo getInfo(void* gdal_dataset);
     static bool isValidGeoTIFF(const std::string& fn);
 

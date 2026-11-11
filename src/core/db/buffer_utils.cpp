@@ -135,10 +135,10 @@ void transformVariables(Buffer& buffer, dbContent::VariableSet& list, bool dbcol
                     buffer.rename<unsigned int>(current_var_name, transformed_var_name);
                     break;
                 case PropertyDataType::LONGINT:
-                    buffer.rename<long int>(current_var_name, transformed_var_name);
+                    buffer.rename<std::int64_t>(current_var_name, transformed_var_name);
                     break;
                 case PropertyDataType::ULONGINT:
-                    buffer.rename<unsigned long int>(current_var_name, transformed_var_name);
+                    buffer.rename<std::uint64_t>(current_var_name, transformed_var_name);
                     break;
                 case PropertyDataType::FLOAT:
                     buffer.rename<float>(current_var_name, transformed_var_name);
@@ -193,10 +193,10 @@ std::string getValueString(dbContent::Variable& variable,
             return getTypedValue<unsigned int>(buffer, property_name, buffer_index,
                                               variable, use_presentation, true, is_null);
         case PropertyDataType::LONGINT:
-            return getTypedValue<long int>(buffer, property_name, buffer_index,
+            return getTypedValue<std::int64_t>(buffer, property_name, buffer_index,
                                           variable, use_presentation, true, is_null);
         case PropertyDataType::ULONGINT:
-            return getTypedValue<unsigned long int>(buffer, property_name, buffer_index,
+            return getTypedValue<std::uint64_t>(buffer, property_name, buffer_index,
                                                    variable, use_presentation, true, is_null);
         case PropertyDataType::FLOAT:
             return getTypedValue<float>(buffer, property_name, buffer_index,

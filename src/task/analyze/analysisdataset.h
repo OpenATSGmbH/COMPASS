@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "dbcontent/target/targetreportchain.h"
 #include "property.h"
 
@@ -238,7 +239,7 @@ public:
     /// Record numbers of the reference updates bracketing `timestamp` on
     /// `utn`'s RefTraj, under the same `d_max` rule as `mappedRefPos`. Either
     /// entry is boost::none when that side does not exist.
-    std::pair<boost::optional<unsigned long>, boost::optional<unsigned long>>
+    std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>>
         mappedRefRecordNumbers(unsigned int utn,
                                boost::posix_time::ptime timestamp,
                                boost::posix_time::time_duration d_max) const;
@@ -259,7 +260,7 @@ public:
 
     /// Record number of a test report of `utn` with exactly this timestamp,
     /// in any test data content of the dataset, boost::none if there is none.
-    boost::optional<unsigned long> testRecordNumberAt(unsigned int utn,
+    boost::optional<std::uint64_t> testRecordNumberAt(unsigned int utn,
                                                       boost::posix_time::ptime timestamp) const;
 
     /// Approximate center latitude of the loaded reference data (used for

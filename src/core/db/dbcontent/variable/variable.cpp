@@ -332,7 +332,7 @@ std::string Variable::selectionSourceLabel(const std::string& index_str) const
 
     try
     {
-        index = std::stoul(index_str);
+        index = std::stoull(index_str);
     }
     catch (const std::exception&)
     {
@@ -750,7 +750,7 @@ std::string Variable::getRepresentationStringFromValue(const std::string& value_
     {
         case PropertyDataType::BOOL:
         {
-            bool value = std::stoul(value_str);
+            bool value = std::stoull(value_str);
             return getAsSpecialRepresentationString(value);
         }
         case PropertyDataType::CHAR:
@@ -760,7 +760,7 @@ std::string Variable::getRepresentationStringFromValue(const std::string& value_
         }
         case PropertyDataType::UCHAR:
         {
-            unsigned char value = std::stoul(value_str);
+            unsigned char value = std::stoull(value_str);
             return getAsSpecialRepresentationString(value);
         }
         case PropertyDataType::INT:
@@ -770,17 +770,17 @@ std::string Variable::getRepresentationStringFromValue(const std::string& value_
         }
         case PropertyDataType::UINT:
         {
-            unsigned int value = std::stoul(value_str);
+            unsigned int value = std::stoull(value_str);
             return getAsSpecialRepresentationString(value);
         }
         case PropertyDataType::LONGINT:
         {
-            long value = std::stol(value_str);
+            std::int64_t value = std::stoll(value_str);
             return getAsSpecialRepresentationString(value);
         }
         case PropertyDataType::ULONGINT:
         {
-            unsigned long value = std::stoul(value_str);
+            std::uint64_t value = std::stoull(value_str);
             return getAsSpecialRepresentationString(value);
         }
         case PropertyDataType::FLOAT:
@@ -906,7 +906,7 @@ std::string Variable::multiplyString(const std::string& value_str, double factor
     {
         case PropertyDataType::BOOL:
         {
-            bool value = std::stoul(value_str);
+            bool value = std::stoull(value_str);
             value = value && factor;
             return_string = std::to_string(value);
             break;
@@ -920,7 +920,7 @@ std::string Variable::multiplyString(const std::string& value_str, double factor
         }
         case PropertyDataType::UCHAR:
         {
-            unsigned char value = std::stoul(value_str);
+            unsigned char value = std::stoull(value_str);
             value *= factor;
             return_string = std::to_string(value);
             break;
@@ -934,21 +934,21 @@ std::string Variable::multiplyString(const std::string& value_str, double factor
         }
         case PropertyDataType::UINT:
         {
-            unsigned int value = std::stoul(value_str);
+            unsigned int value = std::stoull(value_str);
             value *= factor;
             return_string = std::to_string(value);
             break;
         }
         case PropertyDataType::LONGINT:
         {
-            long value = std::stol(value_str);
+            std::int64_t value = std::stoll(value_str);
             value *= factor;
             return_string = std::to_string(value);
             break;
         }
         case PropertyDataType::ULONGINT:
         {
-            unsigned long value = std::stoul(value_str);
+            std::uint64_t value = std::stoull(value_str);
             value *= factor;
             return_string = std::to_string(value);
             break;
@@ -1010,7 +1010,7 @@ const std::string& Variable::getLargerValueString(const std::string& value_a_str
         case PropertyDataType::UINT:
         case PropertyDataType::ULONGINT:
         {
-            if (std::stoul(value_a_str) > std::stoul(value_b_str))
+            if (std::stoull(value_a_str) > std::stoull(value_b_str))
                 return value_a_str;
             else
                 return value_b_str;
@@ -1025,7 +1025,7 @@ const std::string& Variable::getLargerValueString(const std::string& value_a_str
         }
         case PropertyDataType::LONGINT:
         {
-            if (std::stol(value_a_str) > std::stol(value_b_str))
+            if (std::stoll(value_a_str) > std::stoll(value_b_str))
                 return value_a_str;
             else
                 return value_b_str;
@@ -1083,7 +1083,7 @@ const std::string& Variable::getSmallerValueString(const std::string& value_a_st
         case PropertyDataType::UINT:
         case PropertyDataType::ULONGINT:
         {
-            if (std::stoul(value_a_str) < std::stoul(value_b_str))
+            if (std::stoull(value_a_str) < std::stoull(value_b_str))
                 return value_a_str;
             else
                 return value_b_str;
@@ -1098,7 +1098,7 @@ const std::string& Variable::getSmallerValueString(const std::string& value_a_st
         }
         case PropertyDataType::LONGINT:
         {
-            if (std::stol(value_a_str) < std::stol(value_b_str))
+            if (std::stoll(value_a_str) < std::stoll(value_b_str))
                 return value_a_str;
             else
                 return value_b_str;

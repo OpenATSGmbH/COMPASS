@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "configurable.h"
 #include "dbdefs.h"
 #include "result.h"
@@ -26,6 +27,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/locks.hpp>
 
+#include <atomic>
 #include <future>
 #include <vector>
 
@@ -129,7 +131,7 @@ public:
     std::pair<std::shared_ptr<Buffer>, bool> readDataChunk(); // last one flag
     void finalizeReadStatement();
 
-    void liveCleanupIfDue(); // cleanup after live deletions, at most every live_cleanup_time_min
+    void liveCleanupIfDue(); // cleanup after live deletions, at most every live_cleanup_time_secs
 
     size_t count(const std::string& table);
 
@@ -219,9 +221,9 @@ public:
                                             const PropertyList& properties,
                                             const std::string& filter);
 
-    boost::optional<unsigned long> getMaxUIntValue(const std::string& table_name,
+    boost::optional<std::uint64_t> getMaxUIntValue(const std::string& table_name,
                                                    const std::string& col_name);  // none if empty or null
-    boost::optional<unsigned long> getMaxULongValue(const std::string& table_name,
+    boost::optional<std::uint64_t> getMaxULongValue(const std::string& table_name,
                                                     const std::string& col_name); // none if empty or null
 
     void startPerformanceMetrics() const;
@@ -245,6 +247,9 @@ public:
     unsigned int numThreads() const { return num_threads_; }
     bool preserveInsertOrder() const { return preserve_insert_order_; }
 
+    // number of task log writes deferred because of a busy instance, since program start
+    unsigned int numDeferredTaskLogWrites() const { return num_deferred_task_log_writes_; }
+
 protected:
     void insertBufferInternal(const std::string& table_name, std::shared_ptr<Buffer> buffer);
     void saveTaskLogInfoInternal(unsigned int msg_id, const nlohmann::json& info);
@@ -259,7 +264,7 @@ protected:
     unsigned int max_ram_file_gb_{2};
     unsigned int max_ram_inmem_gb_{8};
     unsigned int num_threads_{8};
-    unsigned int live_cleanup_time_min_{60};
+    unsigned int live_cleanup_time_secs_{3600};
     bool use_live_inmem_db_{true};
 
     bool preserve_insert_order_{true};
@@ -293,6 +298,7 @@ protected:
     // task log writes deferred while instance_mutex_ was busy (live cleanup reconnect)
     std::vector<std::future<void>> pending_task_log_writes_;
     boost::mutex                   pending_task_log_writes_mutex_;
+    std::atomic<unsigned int>      num_deferred_task_log_writes_{0};
 
     unsigned int read_chunk_size_;
 

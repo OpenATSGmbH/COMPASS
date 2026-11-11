@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "result.h"
 
 #include <vector>
@@ -53,7 +54,7 @@ public:
 
         size_t              packets = 0; // number of packets added
         size_t              size    = 0; // size of added packets
-        std::vector<u_char> data;        // accumulated packet byte data (possibly only a portion, depending on filter)
+        std::vector<unsigned char> data;        // accumulated packet byte data (possibly only a portion, depending on filter)
     };
 
     typedef std::map<Signature, Data> DataPerSignature;
@@ -168,7 +169,7 @@ public:
                                 const std::set<Signature>& signatures_to_read = std::set<Signature>());
 
     void digestPCAPPacket(const struct pcap_pkthdr* pkthdr,
-                          const u_char* packet,
+                          const unsigned char* packet,
                           int link_layer_type,
                           const ReadConfig& read_config,
                           bool& chunk_ended);
@@ -222,8 +223,8 @@ public:
 private:
     void digestPCAPEtherPacket(int ether_type, 
                                const struct pcap_pkthdr* pkthdr, 
-                               const u_char* packet, 
-                               unsigned long data_offs,
+                               const unsigned char* packet, 
+                               std::uint64_t data_offs,
                                const ReadConfig& read_config);
     Signature signatureForPacket(const std::string& src_ip,
                                  unsigned int src_port,
@@ -238,7 +239,7 @@ private:
                    unsigned int dst_port,
                    uint8_t ip_protocol,
                    unsigned int ip_version,
-                   u_char* data,
+                   unsigned char* data,
                    size_t data_len,
                    const ReadConfig& read_config);
     void closePCAPFile();

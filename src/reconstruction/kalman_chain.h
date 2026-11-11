@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "reconstruction_defs.h"
 #include "kalman_estimator.h"
 
@@ -94,7 +95,7 @@ public:
     struct Update
     {
         Update() {}
-        Update(unsigned long id, 
+        Update(std::uint64_t id, 
                const boost::posix_time::ptime& ts, 
                const boost::posix_time::ptime& ts_mm, 
                const kalman::KalmanUpdateMinimal& update = kalman::KalmanUpdateMinimal()) 
@@ -103,7 +104,7 @@ public:
         ,   t_mm         (ts_mm)
         ,   kalman_update(update) {}
 
-        unsigned long               mm_id;
+        std::uint64_t               mm_id;
         boost::posix_time::ptime    t;
         boost::posix_time::ptime    t_mm;
         kalman::KalmanUpdateMinimal kalman_update;
@@ -115,11 +116,11 @@ public:
     typedef std::pair<int, int>                              Interval;
     typedef std::unique_ptr<KalmanOnlineTracker>             TrackerPtr;
     typedef std::unique_ptr<KalmanEstimator>                 EstimatorPtr;
-    typedef std::function<const Measurement&(unsigned long)> MeasurementGetFunc;
-    typedef std::function<void(Measurement&, unsigned long)> MeasurementAssignFunc;
-    typedef std::function<bool(unsigned long)>               MeasurementCheckFunc;
+    typedef std::function<const Measurement&(std::uint64_t)> MeasurementGetFunc;
+    typedef std::function<void(Measurement&, std::uint64_t)> MeasurementAssignFunc;
+    typedef std::function<bool(std::uint64_t)>               MeasurementCheckFunc;
 
-    typedef std::pair<unsigned long, std::pair<boost::posix_time::ptime, boost::optional<boost::posix_time::ptime>>> MMDefinition;
+    typedef std::pair<std::uint64_t, std::pair<boost::posix_time::ptime, boost::optional<boost::posix_time::ptime>>> MMDefinition;
 
     KalmanChain();
     virtual ~KalmanChain();
@@ -139,7 +140,7 @@ public:
     void setMeasurementAssignFunc(const MeasurementAssignFunc& assign_func);
     void setMeasurementCheckFunc(const MeasurementCheckFunc& check_func);
 
-    bool add(unsigned long mm_id,
+    bool add(std::uint64_t mm_id,
              const boost::posix_time::ptime& ts,
              const boost::optional<boost::posix_time::ptime>& ts_mm,
              bool reestim,
@@ -147,7 +148,7 @@ public:
     bool add(const std::vector<MMDefinition>& mms,
              bool reestim,
              UpdateStats* stats = nullptr);
-    bool insert(unsigned long mm_id,
+    bool insert(std::uint64_t mm_id,
                 const boost::posix_time::ptime& ts,
                 const boost::optional<boost::posix_time::ptime>& ts_mm,
                 bool reestim,
@@ -209,7 +210,7 @@ private:
         void reset();
 
         TrackerPtr                     tracker_ptr;
-        boost::optional<unsigned long> tracked_mm_id;
+        boost::optional<std::uint64_t> tracked_mm_id;
     };
 
     struct Predictor
@@ -217,22 +218,22 @@ private:
         void reset();
 
         EstimatorPtr                   estimator_ptr;
-        boost::optional<unsigned long> ref_mm_id = -1;
+        boost::optional<std::uint64_t> ref_mm_id = -1;
     };
 
     bool checkIntegrity() const;
 
-    const Measurement& getMeasurement(unsigned long mm_id) const;
+    const Measurement& getMeasurement(std::uint64_t mm_id) const;
 
-    bool addToTracker(unsigned long mm_id,
+    bool addToTracker(std::uint64_t mm_id,
                       const boost::posix_time::ptime& ts,
                       const boost::optional<boost::posix_time::ptime>& ts_mm,
                       UpdateStats* stats = nullptr);
-    void addToEnd(unsigned long mm_id,
+    void addToEnd(std::uint64_t mm_id,
                   const boost::posix_time::ptime& ts,
                   const boost::optional<boost::posix_time::ptime>& ts_mm);
     void insertAt(int idx, 
-                  unsigned long mm_id,
+                  std::uint64_t mm_id,
                   const boost::posix_time::ptime& ts, 
                   const boost::optional<boost::posix_time::ptime>& ts_mm);
     bool reinit(int idx) const;

@@ -100,7 +100,7 @@ std::pair<int, int> TimeOfDayFilterWidget::effectiveBoundsSecs() const
         return {0, SECONDS_PER_DAY - 1};
 
     auto minmax = dbcont_man.dataEngine().minMaxTimestamp();
-    long span_secs = (minmax.second - minmax.first).total_seconds();
+    std::int64_t span_secs = (minmax.second - minmax.first).total_seconds();
 
     if (span_secs >= SECONDS_PER_DAY)
         return {0, SECONDS_PER_DAY - 1};

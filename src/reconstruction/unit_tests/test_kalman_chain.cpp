@@ -18,7 +18,7 @@ std::unique_ptr<KalmanChain> makeChain(const std::vector<Measurement>& mms)
     auto chain = std::make_unique<KalmanChain>();
     chain->init(kalman::KalmanType::UMKalman2D);
     chain->setMeasurementGetFunc(
-        [&mms](unsigned long mm_id) -> const Measurement& { return mms.at(mm_id); });
+        [&mms](std::uint64_t mm_id) -> const Measurement& { return mms.at(mm_id); });
     return chain;
 }
 

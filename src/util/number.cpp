@@ -29,7 +29,9 @@
 #include <cmath>
 #include <stdlib.h>
 #include <algorithm>
+#include <mutex>
 #include <numeric>
+#include <random>
 
 using namespace std;
 
@@ -37,9 +39,19 @@ namespace Utils
 {
 namespace Number
 {
+/**
+ * Uniform random number in [min, max). rand() has only 32768 values on Windows and the former
+ * formula did not reach max. Fixed seed: the same sequence at every start, as before.
+ */
 float randomNumber(float min, float max)
 {
-    return (float)min + rand() / (RAND_MAX / (max - min) + 1);
+    static std::mt19937 generator;
+    static std::mutex   generator_mutex;
+
+    std::lock_guard<std::mutex> lock(generator_mutex);
+
+    std::uniform_real_distribution<float> distribution(min, max);
+    return distribution(generator);
 }
 
 float roundToNearest(float num) { return (num > 0.0) ? floor(num + 0.5) : ceil(num - 0.5); }
@@ -345,19 +357,19 @@ std::pair<double, double> speedVec2SpeedAngle(double vx_mps,
     return std::make_pair(speed, angle);
 }
 
-unsigned long recNumAddDBContId (unsigned long rec_num_wo_dbcont_id, unsigned int dbcont_id)
+std::uint64_t recNumAddDBContId (std::uint64_t rec_num_wo_dbcont_id, unsigned int dbcont_id)
 {
     traced_assert(dbcont_id < 256); // 8bit max
-    traced_assert(rec_num_wo_dbcont_id < (1ul << 56)); // 56bit max
+    traced_assert(rec_num_wo_dbcont_id < (std::uint64_t{1} << 56)); // 56bit max
     return rec_num_wo_dbcont_id << 8 | dbcont_id;
 }
 
-unsigned long recNumGetWithoutDBContId (unsigned long rec_num)
+std::uint64_t recNumGetWithoutDBContId (std::uint64_t rec_num)
 {
     return rec_num >> 8;
 }
 
-unsigned int recNumGetDBContId (unsigned long rec_num)
+unsigned int recNumGetDBContId (std::uint64_t rec_num)
 {
     return rec_num & 0xFF; // first byte
 }
