@@ -38,6 +38,7 @@
 
 #include "kalman_chain.h"
 #include "kalman_online_tracker.h"
+#include "kalman_interface.h"
 #include "tbbhack.h"
 
 #include "dbcontent/variable/metavariable.h"
@@ -2309,6 +2310,16 @@ reconstruction::KalmanEstimator::Settings ReconstructorBase::assocChainEstimator
     return referenceCalculatorSettings().chainEstimatorSettings(max_time_diff_pred);
 }
 
+/**
+ * Creates the kalman interface of the given type. The base supports the built-in types only (see
+ * KalmanEstimator::createInterface()), derived reconstructors override this for further types.
+ */
+std::unique_ptr<reconstruction::KalmanInterface> ReconstructorBase::createKalmanInterface(kalman::KalmanType ktype,
+                                                                                          const reconstruction::KalmanEstimator::Settings& settings) const
+{
+    return reconstruction::KalmanEstimator::createInterface(ktype, settings);
+}
+
 std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfiguredAssocChain(bool dynamic_insertions) const
 {
     std::unique_ptr<reconstruction::KalmanChain> chain;
@@ -2324,7 +2335,7 @@ std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfigured
     chain->settings().prediction_max_tdiff_sec = settings().max_time_diff_;
 
     chain->configureEstimator(assocChainEstimatorSettings());
-    chain->init(referenceCalculatorSettings().kalman_type_assoc);
+    chain->init(createKalmanInterface(referenceCalculatorSettings().kalman_type_assoc, assocChainEstimatorSettings()));
 
     auto rec_ptr = const_cast<ReconstructorBase*>(this);
 
@@ -2353,7 +2364,7 @@ std::unique_ptr<reconstruction::KalmanEstimator> ReconstructorBase::createConfig
     kalman->settings().verbosity         = 0;
     kalman->settings().debug             = false;
 
-    kalman->init(referenceCalculatorSettings().kalman_type_assoc);
+    kalman->init(createKalmanInterface(referenceCalculatorSettings().kalman_type_assoc, kalman->settings()));
 
     return kalman;
 }
@@ -2370,7 +2381,7 @@ std::unique_ptr<reconstruction::KalmanOnlineTracker> ReconstructorBase::createCo
     kalman->estimatorSettings().verbosity         = 0;
     kalman->estimatorSettings().debug             = false;
 
-    kalman->init(referenceCalculatorSettings().kalman_type_assoc);
+    kalman->init(createKalmanInterface(referenceCalculatorSettings().kalman_type_assoc, kalman->estimatorSettings()));
 
     return kalman;
 }
@@ -2391,8 +2402,10 @@ void ReconstructorBase::initAssocChainPredictors()
     traced_assert(num_threads > 0);
     traced_assert(chain_predictors_);
 
-    chain_predictors_->init(referenceCalculatorSettings().kalman_type_assoc,
-                            assocChainEstimatorSettings(),
+    const auto estimator_settings = assocChainEstimatorSettings();
+
+    chain_predictors_->init(createKalmanInterface(referenceCalculatorSettings().kalman_type_assoc, estimator_settings),
+                            estimator_settings,
                             num_threads);
 }
 

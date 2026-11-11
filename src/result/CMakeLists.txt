@@ -29,20 +29,6 @@ target_link_libraries(compass_result
 if(EXPERIMENTAL_SRC)
     target_include_directories(compass_result PRIVATE
         "${CMAKE_SOURCE_DIR}/experimental_src/docx"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/geometry"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/style"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/style/rule"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/overlay"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/map"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/drawable"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/annotations"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/ffts"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/measurement"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/radars"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/remoteunits"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/sector"
         "${CMAKE_SOURCE_DIR}/experimental_src/libs/osg"
     )
 endif()

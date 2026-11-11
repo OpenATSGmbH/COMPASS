@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "apphooks.h"
+
 #include <memory>
 
 class COMPASS;
@@ -51,17 +53,21 @@ namespace rtcommand
  * - creates and owns COMPASS, all managers and the main window
  * - hands the managers to COMPASS and wires them to COMPASS and to each other
  * - runs the ordered shutdown sequence (triggered via COMPASS::shutdown())
+ * - keeps the hooks set by the executable (AppHooks)
  */
 class CompassRoot
 {
 public:
-    explicit CompassRoot(ConfigurationManager& config_manager);
+    CompassRoot(ConfigurationManager& config_manager,
+                const AppHooks& app_hooks);
     ~CompassRoot();
 
     void init();
 
     COMPASS& compass();
     MainWindow& mainWindow();
+
+    const AppHooks& appHooks() const { return app_hooks_; }
 
     // managers of the upper layers, for the app layer (COMPASS only offers the core managers)
     FilterManager& filterManager();
@@ -77,6 +83,8 @@ private:
     void connectManagers();
     void shutdown();
     void destroyManagers();
+
+    AppHooks app_hooks_;
 
     std::unique_ptr<COMPASS> compass_;
 

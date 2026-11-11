@@ -18,6 +18,7 @@
 #include "configurable.h"
 
 #include "configuration.h"
+#include "subconfigurablefactory.h"
 #include "stringconv.h"
 #include "logger.h"
 #include "traced_assert.h"
@@ -320,7 +321,7 @@ void Configurable::createSubConfigurables()
 
             try
             {
-                generateSubConfigurable(*ptr);
+                createSubConfigurable(*ptr);
             }
             catch (const std::exception& e)
             {
@@ -332,6 +333,7 @@ void Configurable::createSubConfigurables()
         }
     }
 
+    createDefaultSubConfigurables();
     checkSubConfigurables();
 
     logdbg << "class '" << class_name_ << "' instance '" << instance_name_
@@ -354,12 +356,75 @@ void Configurable::generateSubConfigurable(nlohmann::json& child_json)
     throw std::runtime_error("class "+class_name_+": generateSubConfigurable: not implemented");
 }
 
+void Configurable::createSubConfigurable(nlohmann::json& child_json)
+{
+    const std::string class_name = Configuration::getClassName(child_json);
+
+    const SubConfigurableFactoryBase* factory = nullptr;
+
+    for (const auto& attached : sub_config_factories_)
+    {
+        if (!attached.factory->canCreate(class_name))
+            continue;
+
+        traced_assert_msg(!factory, ("sub-configurable class '" + class_name + "' known to several factories").c_str());
+        factory = attached.factory;
+    }
+
+    if (factory)
+    {
+        auto child = factory->createChild(child_json, *this);
+        traced_assert(child);
+
+        childCreated(child);
+    }
+    else
+    {
+        generateSubConfigurable(child_json);
+    }
+}
+
+void Configurable::addSubConfigurableFactory(const SubConfigurableFactoryBase& factory,
+                                             SubConfigurableDefaults defaults)
+{
+    traced_assert(std::none_of(sub_config_factories_.begin(), sub_config_factories_.end(),
+                               [ & ] (const AttachedFactory& attached) { return attached.factory == &factory; }));
+
+    sub_config_factories_.push_back({ &factory, defaults });
+}
+
+void Configurable::createDefaultSubConfigurables()
+{
+    for (const auto& attached : sub_config_factories_)
+    {
+        if (attached.defaults != SubConfigurableDefaults::OnePerClass)
+            continue;
+
+        for (const auto& class_name : attached.factory->classNames())
+        {
+            // any child of the class counts, regardless of its instance name
+            bool has_child = std::any_of(children_vec_.begin(), children_vec_.end(),
+                                         [ & ] (const Configurable* c) { return c && c->className() == class_name; });
+            if (has_child)
+                continue;
+
+            generateSubConfigurableFromConfig(class_name, class_name + "0");
+        }
+    }
+}
+
+void Configurable::childCreated(Configurable* child)
+{
+    traced_assert_msg(false, ("class " + class_name_ + " attaches a sub-configurable factory but does not take over child "
+                              + (child ? child->className() : std::string("null"))).c_str());
+}
+
 
 void Configurable::generateSubConfigurableFromConfig(const std::string& class_name,
                                                      const std::string& instance_name)
 {
     auto& child_json = ensureSubConfig(class_name, instance_name);
-    generateSubConfigurable(child_json);
+    createSubConfigurable(child_json);
 }
 
 void Configurable::generateSubConfigurableFromJSON(const Configurable& configurable,
@@ -389,7 +454,7 @@ void Configurable::generateSubConfigurableFromJSON(const Configurable& configura
     //the requested unique instance name to avoid a duplicate
     Configuration::setInstanceName(child_json, new_instance_name);
 
-    generateSubConfigurable(child_json);
+    createSubConfigurable(child_json);
 }
 
 bool Configurable::hasSubConfigurable(const std::string& class_name,

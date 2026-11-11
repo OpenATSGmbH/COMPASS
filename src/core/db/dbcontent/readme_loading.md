@@ -518,7 +518,7 @@ resume and stop reset the overload; `refreshDisplay()` is never held.
 Notice: in live mode the tick runs on the import's critical path - the engine runs the tick
 synchronously inside the insert completion, and the importer only starts the next insert in its
 queued `insertDoneSlot()` afterwards. Slow ticks therefore raise the backlog (see B33 in
-`experimental_src/view/geographicview/overlay/readme_overlay_issues.md`).
+`experimental_src/plugins/geoview/geographicview/overlay/readme_overlay_issues.md`).
 
 ### Layer keep-alive in the per-tick rebuild
 

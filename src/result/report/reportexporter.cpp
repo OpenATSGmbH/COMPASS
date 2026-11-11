@@ -27,10 +27,7 @@
 
 #include "files.h"
 #include "global.h"
-
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geographicview.h"
-#endif
+#include "view.h"
 
 #include <boost/filesystem.hpp>
 
@@ -206,19 +203,15 @@ ResultT<nlohmann::json> ReportExporter::exportReport(TaskResult& result,
         num_sections_total_ = section_ptr->totalNumSections(func);
         num_contents_total_ = section_ptr->totalNumContents(func);
 
-        //for immediate rendering of geographic view during image generation
-#if USE_EXPERIMENTAL_SOURCE == true
-        GeographicView::instant_display_ = true;
-#endif
+        //for immediate rendering of the views (e.g. geographic view) during image generation
+        View::setInstantDisplay(true);
 
         //export
         res_final = exportReport_impl(result, section_ptr, content_id);
         if (!res_final.ok())
             return res_final;
 
-#if USE_EXPERIMENTAL_SOURCE == true
-        GeographicView::instant_display_ = false;
-#endif
+        View::setInstantDisplay(false);
 
         //check on created in-mem data
         if (exportCreatesInMemoryData() && res_final.result().is_null())

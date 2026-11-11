@@ -16,11 +16,20 @@
  */
 
 #include "client.h"
+#include "compassroot.h"
 #include "crashbreadcrumbs.h"
 #include "cxa_throw_hook.h"
+#include "global.h"
 #include "logger.h"
 #include "msghandler.h"
 #include "system.h"
+
+#if USE_EXPERIMENTAL_SOURCE == true
+#include "extra_commands.h"
+#include "test_lab.h"
+#include "probimmplugin.h"
+#include "geoviewplugin.h"
+#endif
 
 #include <QThread>
 #include <QTimer>
@@ -490,6 +499,32 @@ void signalHandler(int signum)
     raise(signum);
 }
 
+/**
+ * Hooks for the libraries that depend on compass_app (extra commands, test labs), which compass_app cannot name.
+ */
+static AppHooks createAppHooks()
+{
+    AppHooks hooks;
+
+#if USE_EXPERIMENTAL_SOURCE == true
+    hooks.register_commands = &extra::init_extra_commands;
+
+    hooks.add_debug_menu_entries = [ ] (QMenu* menu, CompassRoot& root)
+    {
+        TestLabCollection().appendTestLabs(menu, root.compass(), root.taskManager(), root.viewManager());
+    };
+
+    // plugins, statically linked until they are loaded as modules (readme_plugins.md, workstream C)
+    static ProbIMMPlugin probimm_plugin;
+    static GeoViewPlugin geoview_plugin;
+
+    hooks.plugins.push_back(&probimm_plugin);
+    hooks.plugins.push_back(&geoview_plugin);
+#endif
+
+    return hooks;
+}
+
 int main(int argc, char** argv)
 {
     // line buffer stdout before the first output: the logger writes through std::cout, which
@@ -571,7 +606,7 @@ int main(int argc, char** argv)
             }
         }
 
-        Client client(argc, argv);
+        Client client(argc, argv, createAppHooks());
 
         if (client.quitRequested())
             return 0;

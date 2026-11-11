@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include "configurable.h"
+#include "subconfigurablefactory.h"
 #include "reconstructorbase.h"
 #include "task.h"
 #include "global.h"
@@ -34,14 +35,9 @@ class DBContent;
 class LoadOperation;
 class Buffer;
 class ReconstructorBase;
-class SimpleReconstructor;
 
 class ViewPointGenVP;
 class ViewPointGenAnnotation;
-
-#if USE_EXPERIMENTAL_SOURCE == true
-class ProbIMMReconstructor;
-#endif
 
 namespace dbContent
 {
@@ -121,10 +117,11 @@ public slots:
     void updateProgressSlot(const QString& msg, bool add_slice_progress);
 
 public:
+    // reconstructors by class name, display name = reconstructor name (current_reconstructor_str_), one instance per class
+    DECLARE_SUBCONFIGURABLE_FACTORY(reconstructorFactory, ReconstructorBase, ReconstructorTask, OnePerClass)
+
     ReconstructorTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ReconstructorTask();
-
-    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     virtual bool canRun() override;
     virtual void run() override;
@@ -133,15 +130,11 @@ public:
     void currentReconstructorStr(const std::string& value);
 
     static const std::string ScoringUMReconstructorName;
-
-    ReconstructorBase* currentReconstructor() const;
-    SimpleReconstructor* simpleReconstructor() const;
-
-#if USE_EXPERIMENTAL_SOURCE == true
     static const std::string ProbImmReconstructorName;
 
-    ProbIMMReconstructor* probIMMReconstructor() const;
-#endif
+    ReconstructorBase* currentReconstructor() const;
+    ReconstructorBase* reconstructor(const std::string& class_name) const;
+    std::string reconstructorClassName(const std::string& reconstructor_name) const;
 
     std::set<unsigned int> disabledDataSources() const;
 
@@ -184,7 +177,7 @@ public:
     DebugSettings& debugSettings() { return debug_settings_; }
 
 protected:
-    virtual void checkSubConfigurables() override;
+    virtual void childCreated(Configurable* child) override;
     void deleteCalculatedReferences();
 
     void loadDataSlice();
@@ -208,11 +201,7 @@ protected:
     std::map<std::string, bool> used_sectors_;
     float sector_delta_deg_ {0.1};
 
-    std::unique_ptr<SimpleReconstructor> simple_reconstructor_; // has to be reset after each calculation
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    std::unique_ptr<ProbIMMReconstructor> probimm_reconstructor_; // has to be reset after each calculation
-#endif
+    std::vector<std::unique_ptr<ReconstructorBase>> reconstructors_; // one per factory class, have to be reset after each calculation
 
     std::unique_ptr<QProgressDialog> progress_dialog_;
     boost::posix_time::ptime run_start_time_;

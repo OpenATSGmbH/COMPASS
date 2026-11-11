@@ -17,8 +17,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/watchdog/CMakeLists.txt")
 
 target_sources(compass_app
     PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/apphooks.h"
         "${CMAKE_CURRENT_LIST_DIR}/compass.h"
         "${CMAKE_CURRENT_LIST_DIR}/compassroot.h"
+        "${CMAKE_CURRENT_LIST_DIR}/plugin/plugin.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/compass.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/compassroot.cpp"
@@ -46,13 +48,5 @@ target_link_libraries(compass_app
         ${OSGEARTH_LIBRARY}
 )
 
-if(EXPERIMENTAL_SRC)
-    # No experimental libraries are linked here - only by compass_client.
-    # Linking them would propagate their PUBLIC include dirs into compass_app,
-    # causing AUTOMOC to discover Q_OBJECT headers and generate duplicate moc
-    # symbols (already defined in the component libraries).
-    # Only the geo_view_api.h facade header is needed (no Q_OBJECT).
-    target_include_directories(compass_app PRIVATE
-        "${CMAKE_CURRENT_LIST_DIR}/../../experimental_src/view"
-    )
-endif()
+# No experimental libraries are linked here, only by compass_client: they extend the
+# application through AppHooks (incl. the plugin objects), set in compass_client's main.cpp.

@@ -395,8 +395,6 @@ protected:
 
     unsigned int container_count_{0};
 
-    std::map<std::string, std::string> view_class_list_; // class name -> name (without appended number)
-
     bool use_tmp_stored_readset_ {false};
     std::map<std::string, dbContent::VariableSet> tmp_stored_readset_;
 

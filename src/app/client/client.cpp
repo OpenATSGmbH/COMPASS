@@ -91,7 +91,11 @@ namespace
     }
 }
 
-Client::Client(int& argc, char** argv) : QApplication(argc, argv)
+Client::Client(int& argc,
+               char** argv,
+               const AppHooks& app_hooks)
+:   QApplication(argc, argv)
+,   app_hooks_(app_hooks)
 {
     setlocale(LC_ALL, "C");
 
@@ -442,7 +446,7 @@ bool Client::run ()
 
     try
     {
-        root_.reset(new CompassRoot(*config_manager_));
+        root_.reset(new CompassRoot(*config_manager_, app_hooks_));
         compass_ = &root_->compass();
 
         applyDarkMode(compass_->appState().darkMode());

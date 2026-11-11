@@ -35,10 +35,6 @@
 #include "rtcommand_helpers.h"
 #include "viewwidget.h"
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geographicview.h"
-#endif
-
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QMenu>
@@ -122,7 +118,7 @@ void ViewContainer::addView(const std::string& class_name)
     std::string view_name = view_manager_.newViewName(class_name);
     auto& child_json = addNewSubConfiguration(class_name, instance_name);
     child_json[Configuration::ParameterSection]["name"] = view_name;
-    generateSubConfigurable(child_json);
+    createSubConfigurable(child_json);
 }
 
 void ViewContainer::enableViewTab(QWidget* widget, bool value)
@@ -261,50 +257,42 @@ void ViewContainer::addNewViewSlot()
 
 const std::vector<std::unique_ptr<View>>& ViewContainer::getViews() const { return views_; }
 
+/**
+ * Built-in views, further views are added by their libraries (e.g. geo_view::initViews()).
+ */
+ViewContainer::viewFactoryType& ViewContainer::viewFactory()
+{
+    static viewFactoryType factory = { { "TableView",       &viewFactoryType::createDefault<TableView>,       "Table View"       },
+                                       { "HistogramView",   &viewFactoryType::createDefault<HistogramView>,   "Histogram View"   },
+                                       { "ScatterPlotView", &viewFactoryType::createDefault<ScatterPlotView>, "Scatterplot View" },
+                                       { "GridView",        &viewFactoryType::createDefault<GridView>,        "Grid View"        } };
+    return factory;
+}
+
+/**
+ * Takes over a view created by the view factory.
+ */
+void ViewContainer::childCreated(Configurable* child)
+{
+    auto view = dynamic_cast<View*>(child);
+    traced_assert(view);
+
+    views_.emplace_back(view);
+
+    view->init();
+    addView(view);
+}
+
+/**
+ * Only reached for classes unknown to the view factory.
+ */
 void ViewContainer::generateSubConfigurable(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
-    if (class_name == "TableView")
+    if (!USE_EXPERIMENTAL_SOURCE && class_name == "GeographicView")
     {
-        views_.emplace_back(new TableView(child_json, this));
-
-        (*views_.rbegin())->init();
-        addView(views_.rbegin()->get());
-    }
-    else if (class_name == "HistogramView")
-    {
-        views_.emplace_back(new HistogramView(child_json, this));
-
-        (*views_.rbegin())->init();
-        addView(views_.rbegin()->get());
-    }
-    else if (class_name == "ScatterPlotView")
-    {
-        views_.emplace_back(new ScatterPlotView(child_json, this));
-
-        (*views_.rbegin())->init();
-        addView(views_.rbegin()->get());
-    }
-    else if (class_name == "GridView")
-    {
-        views_.emplace_back(new GridView(child_json, this));
-
-        (*views_.rbegin())->init();
-        addView(views_.rbegin()->get());
-    }
-    else if (class_name == "GeographicView")
-    {
-#if USE_EXPERIMENTAL_SOURCE == true
-
-        views_.emplace_back(new GeographicView(child_json, this));
-
-        (*views_.rbegin())->init();
-        addView(views_.rbegin()->get());
-#else
         loginf << "ignored GeographicView since compiled w/o experimental source";
-#endif
-
     }
     //  else if (class_name.compare ("MosaicView") == 0)
     //  {

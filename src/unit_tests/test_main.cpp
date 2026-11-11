@@ -1,7 +1,12 @@
 #define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
 #include "files.h"
+#include "global.h"
 #include "traced_assert.h"
+
+#if USE_EXPERIMENTAL_SOURCE == true
+#include "probimmplugin.h"
+#endif
 
 #include <QApplication>
 #include <QLocale>
@@ -33,6 +38,12 @@ int main(int argc, char* argv[])
     const std::string data_dir = std::string(COMPASS_SOURCE_DIR) + "/data/";
     traced_assert(Utils::Files::directoryExists(data_dir));
     Utils::Files::setDataDirectory(data_dir);
+
+    // same plugins as the client (main.cpp), core step only (factory entries)
+#if USE_EXPERIMENTAL_SOURCE == true
+    static ProbIMMPlugin probimm_plugin;
+    probimm_plugin.initCore();
+#endif
 
     return Catch::Session().run(argc, argv);
 }

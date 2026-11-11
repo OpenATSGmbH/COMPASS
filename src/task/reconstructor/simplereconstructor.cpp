@@ -196,6 +196,11 @@ SimpleReconstructorWidget* SimpleReconstructor::widget() // ownage by caller
     return widget;
 }
 
+QWidget* SimpleReconstructor::createWidget() // ownage by caller
+{
+    return widget();
+}
+
 void SimpleReconstructor::updateWidgets()
 {
     emit updateWidgetsSignal();

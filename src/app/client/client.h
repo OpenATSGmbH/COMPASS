@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "apphooks.h"
+
 #include <QApplication>
 #include <memory>
 
@@ -27,7 +29,9 @@ class CompassRoot;
 class Client : public QApplication
 {
 public:
-    Client(int& argc, char** argv);
+    Client(int& argc,
+           char** argv,
+           const AppHooks& app_hooks);
     virtual ~Client();
 
     virtual bool notify(QObject* receiver, QEvent* event);
@@ -44,6 +48,8 @@ public:
     static void applyDarkMode(bool dark);
 
 private:
+    AppHooks app_hooks_; // handed to the composition root
+
     std::unique_ptr<ConfigurationManager> config_manager_;
     std::unique_ptr<CompassRoot> root_;
     COMPASS* compass_ = nullptr; // owned by root_

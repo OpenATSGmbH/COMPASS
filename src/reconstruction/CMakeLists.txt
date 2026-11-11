@@ -17,6 +17,7 @@ target_sources(compass_reconstruction
         "${CMAKE_CURRENT_LIST_DIR}/reconstruction_defs.h"
         "${CMAKE_CURRENT_LIST_DIR}/spline_interpolator.h"
         "${CMAKE_CURRENT_LIST_DIR}/gaussian_pdf.h"
+        "${CMAKE_CURRENT_LIST_DIR}/test_target.h"
 
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/kalman_defs.cpp"
@@ -33,22 +34,10 @@ target_sources(compass_reconstruction
         "${CMAKE_CURRENT_LIST_DIR}/kalman_chain.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/spline_interpolator.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/gaussian_pdf.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/test_target.cpp"
 )
 
 target_include_directories(compass_reconstruction PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
-
-if(EXPERIMENTAL_SRC)
-    target_include_directories(compass_reconstruction PRIVATE
-        "${CMAKE_SOURCE_DIR}/experimental_src/reconstruction/kalman"
-    )
-
-    # host <-> experimental cycle (plugin plan, Kalman-interface registry): kalman_estimator.cpp
-    # creates the Kalman interfaces of compass_reconst_adv. Link-only, consumers get no include paths.
-    target_link_libraries(compass_reconstruction
-        INTERFACE
-            "$<LINK_ONLY:compass_reconst_adv>"
-    )
-endif()
 
 target_link_libraries(compass_reconstruction
     PUBLIC

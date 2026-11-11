@@ -8,6 +8,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/layerpanel/CMakeLists.txt")
 target_sources(compass_view
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/view.h"
+        "${CMAKE_CURRENT_LIST_DIR}/geoimagesink.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewcomponent.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewtoolwidget.h"

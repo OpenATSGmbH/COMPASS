@@ -19,6 +19,7 @@
 #include "latexdocument.h"
 #include "latexsection.h"
 #include "latextable.h"
+#include "view.h"
 
 #include "dbcontent/dbcontentmanager.h"
 #include "viewmanager.h"
@@ -38,12 +39,6 @@
 #include "stringconv.h"
 #include "json_tools.h"
 #include "files.h"
-
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "ViewerWidget.h"
-#include "geographicview.h"
-#include "geographicviewdatawidget.h"
-#endif
 
 #include <QCoreApplication>
 #include <QApplication>
@@ -284,93 +279,6 @@ void LatexVisitor::visit(HistogramView* e)
     sec.addImage(report_.graphicsPath(image_path), e->instanceName());
 }
 
-#if USE_EXPERIMENTAL_SOURCE == true
-
-/**
- */
-void LatexVisitor::visit(GeographicView* e)
-{
-    traced_assert(e);
-    loginf << "GeographicView " << e->instanceName();
-
-    std::string screenshot_path = report_.path()+"/screenshots";
-
-    loginf << "path '" << screenshot_path << "'";
-
-    if (!screenshot_folder_created_)
-    {
-        bool ret = Files::createMissingDirectories(screenshot_path);
-
-        if (!ret)
-            throw runtime_error("LatexVisitor: visit: GeographicView: unable to create directories for '"
-                                +screenshot_path+"'");
-
-        screenshot_folder_created_ = true;
-    }
-
-    e->showInTabWidget();
-
-    GeographicViewDataWidget* data_widget = e->getDataWidget();
-    traced_assert(data_widget);
-
-    loginf << "start" << e->instanceName() 
-           << " has screenshot content: " << data_widget->hasScreenshotContent()
-           << " has data " << data_widget->hasData()
-           << " has annotations " << data_widget->hasAnnotations()
-           << " is drawn " << data_widget->isDrawn();
-
-    if (!data_widget->hasScreenshotContent())
-        return;
-
-    if (wait_on_map_loading_)
-        data_widget->waitUntilMapLoaded();
-
-    //data_widget->clearMouseCoordinates();
-
-    // normal screenshot
-
-    QImage screenshot = data_widget->renderData();
-
-    std::string image_path = screenshot_path+"/"+image_prefix_+"_"+e->instanceName()+".jpg";
-    traced_assert(!screenshot.isNull());
-
-    loginf << "saving screenshot as '" << image_path << "'";
-    bool ret = Files::createMissingDirectories(Files::getDirectoryFromPath(image_path));
-
-    if (!ret)
-        throw runtime_error("LatexVisitor: visit: GeographicView: unable to create directories for '"
-                            +image_path+"'");
-
-    ret = screenshot.save(image_path.c_str(), "JPG", 100); // , 50
-    traced_assert(ret);
-
-    LatexSection& sec = report_.getSection(current_section_name_);
-
-    if (add_overview_screenshot_) // overview screenshot
-    {
-        data_widget->zoomToDataSlot(); // TODO wrong
-        data_widget->addDataMarker();
-
-        QImage overview_screenshot = data_widget->osgViewerWidget()->grabFramebuffer();
-
-        data_widget->removeDataMarker();
-
-        std::string overview_image_path = screenshot_path+"/"+image_prefix_+"_overview_"+e->instanceName()+".jpg";
-        traced_assert(!overview_screenshot.isNull());
-
-        loginf << "saving overview screenshot as '" << overview_image_path << "'";
-        ret = overview_screenshot.save(overview_image_path.c_str(), "JPG", 100); // , 50
-        traced_assert(ret);
-
-        sec.addImage(report_.graphicsPath(overview_image_path), e->instanceName()+" Overview");
-    }
-
-    // add normal screenshot after overview
-    sec.addImage(report_.graphicsPath(image_path), e->instanceName());
-}
-
-#endif
-
 /**
  */
 void LatexVisitor::visit(ScatterPlotView* e)
@@ -496,4 +404,50 @@ void LatexVisitor::visit(GridView* e)
 void LatexVisitor::imagePrefix(const std::string& image_prefix)
 {
     image_prefix_ = image_prefix;
+}
+
+/**
+ * Views without their own visit() export themselves (e.g. the geographic view).
+ */
+void LatexVisitor::visit(View* e)
+{
+    traced_assert(e);
+    e->visitLatex(*this);
+}
+
+/**
+ * Returns the screenshot folder of the report, creates it on first use.
+ */
+std::string LatexVisitor::screenshotFolder()
+{
+    std::string screenshot_path = report_.path()+"/screenshots";
+
+    if (!screenshot_folder_created_)
+    {
+        bool ret = Files::createMissingDirectories(screenshot_path);
+
+        if (!ret)
+            throw runtime_error("LatexVisitor: screenshotFolder: unable to create directories for '"
+                                +screenshot_path+"'");
+
+        screenshot_folder_created_ = true;
+    }
+
+    return screenshot_path;
+}
+
+/**
+ * Returns the report section of the current view point.
+ */
+LatexSection& LatexVisitor::currentSection()
+{
+    return report_.getSection(current_section_name_);
+}
+
+/**
+ * Returns the path of an image file as used in the document (relative to the document folder).
+ */
+std::string LatexVisitor::graphicsPath(const std::string& file) const
+{
+    return report_.graphicsPath(file);
 }

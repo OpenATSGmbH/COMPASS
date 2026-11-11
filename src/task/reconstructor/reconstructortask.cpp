@@ -57,11 +57,6 @@
 #include "report/section.h"
 #include "report/sectioncontenttable.h"
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "probimmreconstructor.h"
-#include "complexaccuracyestimator.h"
-#endif
-
 #include <QApplication>
 #include <QMessageBox>
 #include <QProgressDialog>
@@ -78,10 +73,28 @@ using namespace Utils;
 using namespace dbContent;
 
 const std::string ReconstructorTask::ScoringUMReconstructorName {"Scoring + UMKalman"};
-
-#if USE_EXPERIMENTAL_SOURCE == true
 const std::string ReconstructorTask::ProbImmReconstructorName {"Probabilistic + IMM"};
-#endif
+
+namespace
+{
+
+std::unique_ptr<ReconstructorBase> createSimpleReconstructor(nlohmann::json& config, ReconstructorTask& task)
+{
+    std::unique_ptr<AccuracyEstimatorBase> acc_estimator(new SimpleAccuracyEstimator());
+
+    return std::unique_ptr<ReconstructorBase>(new SimpleReconstructor(config, std::move(acc_estimator), &task));
+}
+
+} // namespace
+
+/**
+ * Built-in reconstructors, plugins add theirs in their initCore() (e.g. ProbIMM).
+ */
+ReconstructorTask::reconstructorFactoryType& ReconstructorTask::reconstructorFactory()
+{
+    static reconstructorFactoryType factory = { { "SimpleReconstructor", &createSimpleReconstructor, ScoringUMReconstructorName } };
+    return factory;
+}
 
 ReconstructorTask::ReconstructorTask(nlohmann::json& config, TaskManager* parent)
     : Task(*parent),
@@ -97,12 +110,7 @@ ReconstructorTask::ReconstructorTask(nlohmann::json& config, TaskManager* parent
 
     registerParameter("skip_reference_data_writing", &skip_reference_data_writing_, false);
 
-    if (!current_reconstructor_str_.size()
-        || (current_reconstructor_str_ != ScoringUMReconstructorName
-#if USE_EXPERIMENTAL_SOURCE == true
-            && current_reconstructor_str_ != ProbImmReconstructorName
-#endif
-            ))
+    if (reconstructorClassName(current_reconstructor_str_).empty())
         current_reconstructor_str_ = ScoringUMReconstructorName;
 
     registerParameter("debug", &debug_settings_.debug_, debug_settings_.debug_);
@@ -158,38 +166,15 @@ ReconstructorTask::~ReconstructorTask()
 {
 }
 
-void ReconstructorTask::generateSubConfigurable(nlohmann::json& child_json)
+void ReconstructorTask::childCreated(Configurable* child)
 {
-    const auto& class_name = Configuration::getClassName(child_json);
-    if (class_name == "SimpleReconstructor")
-    {
-        traced_assert(!simple_reconstructor_);
+    auto rec = dynamic_cast<ReconstructorBase*>(child);
+    traced_assert(rec);
+    traced_assert(!reconstructor(rec->className()));
 
-        std::unique_ptr<AccuracyEstimatorBase> acc_estimator;
-        acc_estimator.reset(new SimpleAccuracyEstimator());
+    reconstructors_.emplace_back(rec);
 
-        simple_reconstructor_.reset(new SimpleReconstructor(child_json, std::move(acc_estimator), this));
-        traced_assert(simple_reconstructor_);
-
-        connect(simple_reconstructor_.get(), &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
-    }
-    else if (class_name == "ProbIMMReconstructor")
-    {
-#if USE_EXPERIMENTAL_SOURCE == true
-
-        traced_assert(!probimm_reconstructor_);
-
-        std::unique_ptr<AccuracyEstimatorBase> acc_estimator;
-        acc_estimator.reset(new ComplexAccuracyEstimator());
-
-        probimm_reconstructor_.reset(new ProbIMMReconstructor(child_json, std::move(acc_estimator), this));
-        traced_assert(probimm_reconstructor_);
-
-        connect(probimm_reconstructor_.get(), &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
-#endif
-    }
-    else
-        throw std::runtime_error("ReconstructorTask: generateSubConfigurable: unknown class_name " + class_name);
+    connect(rec, &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
 }
 
 void ReconstructorTask::initTask()
@@ -371,47 +356,46 @@ std::string ReconstructorTask::currentReconstructorStr() const
 
 void ReconstructorTask::currentReconstructorStr(const std::string& value)
 {
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    traced_assert(value == ReconstructorTask::ScoringUMReconstructorName
-           || value == ReconstructorTask::ProbImmReconstructorName);
-#else
-    traced_assert(value == ReconstructorTask::ScoringUMReconstructorName);
-#endif
+    traced_assert(!reconstructorClassName(value).empty());
 
     current_reconstructor_str_ = value;
 }
 
+/**
+ * Returns the class name of the reconstructor with the given name (= factory display name),
+ * or an empty string if unknown.
+ */
+std::string ReconstructorTask::reconstructorClassName(const std::string& reconstructor_name) const
+{
+    const auto& factory = reconstructorFactory();
+
+    for (const auto& class_name : factory.classNames())
+        if (factory.displayName(class_name) == reconstructor_name)
+            return class_name;
+
+    return {};
+}
+
 ReconstructorBase* ReconstructorTask::currentReconstructor() const
 {
-#if USE_EXPERIMENTAL_SOURCE == true
-    traced_assert(current_reconstructor_str_ == ReconstructorTask::ScoringUMReconstructorName
-           || current_reconstructor_str_ == ReconstructorTask::ProbImmReconstructorName);
+    auto rec = reconstructor(reconstructorClassName(current_reconstructor_str_));
+    traced_assert(rec);
 
-    if (current_reconstructor_str_ == ReconstructorTask::ScoringUMReconstructorName)
-        return dynamic_cast<ReconstructorBase*> (simple_reconstructor_.get());
-    else
-        return dynamic_cast<ReconstructorBase*> (probimm_reconstructor_.get());
-#else
-    traced_assert(current_reconstructor_str_ == ReconstructorTask::ScoringUMReconstructorName);
-
-    return dynamic_cast<ReconstructorBase*> (simple_reconstructor_.get());
-#endif
+    return rec;
 }
 
-SimpleReconstructor* ReconstructorTask::simpleReconstructor() const
+/**
+ * Returns the reconstructor of the given class, or nullptr if not existing.
+ */
+ReconstructorBase* ReconstructorTask::reconstructor(const std::string& class_name) const
 {
-    return simple_reconstructor_.get();
+    for (const auto& rec : reconstructors_)
+        if (rec->className() == class_name)
+            return rec.get();
+
+    return nullptr;
 }
 
-#if USE_EXPERIMENTAL_SOURCE == true
-
-ProbIMMReconstructor* ReconstructorTask::probIMMReconstructor() const
-{
-    return probimm_reconstructor_.get();
-}
-
-#endif
 
 std::set<unsigned int> ReconstructorTask::disabledDataSources() const
 {
@@ -1565,23 +1549,6 @@ bool ReconstructorTask::skipReferenceDataWriting() const
 void ReconstructorTask::skipReferenceDataWriting(bool value)
 {
     skip_reference_data_writing_ = value;
-}
-
-void ReconstructorTask::checkSubConfigurables()
-{
-    if (!simple_reconstructor_)
-    {
-        generateSubConfigurableFromConfig("SimpleReconstructor", "SimpleReconstructor0");
-        traced_assert(simple_reconstructor_);
-    }
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    if (!probimm_reconstructor_)
-    {
-        generateSubConfigurableFromConfig("ProbIMMReconstructor", "ProbIMMReconstructor0");
-        traced_assert(probimm_reconstructor_);
-    }
-#endif
 }
 
 Result ReconstructorTask::applyJSONParameters(const nlohmann::json& params_json)

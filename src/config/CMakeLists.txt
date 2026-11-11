@@ -7,6 +7,7 @@ target_sources(compass_config
         "${CMAKE_CURRENT_LIST_DIR}/configuration.h"
         "${CMAKE_CURRENT_LIST_DIR}/configurationmanager.h"
         "${CMAKE_CURRENT_LIST_DIR}/configjson.h"
+        "${CMAKE_CURRENT_LIST_DIR}/subconfigurablefactory.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/configurable.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/configurableparameter.cpp"

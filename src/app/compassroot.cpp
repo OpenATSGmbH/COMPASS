@@ -47,16 +47,24 @@
 
 #include "global.h"
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geo_view_api.h"
-#endif
 
 /**
  * Creates COMPASS and all managers, and wires them.
  */
-CompassRoot::CompassRoot(ConfigurationManager& config_manager)
+CompassRoot::CompassRoot(ConfigurationManager& config_manager,
+                         const AppHooks& app_hooks)
+:   app_hooks_(app_hooks)
 {
     compass_.reset(new COMPASS(config_manager));
+
+    // plugins add their factory entries before the config tree is created
+    for (auto plugin : app_hooks_.plugins)
+    {
+        traced_assert(plugin);
+
+        loginf << "init plugin '" << plugin->name() << "'";
+        plugin->initCore();
+    }
 
     registerManagerCreators();
 
@@ -75,6 +83,9 @@ CompassRoot::CompassRoot(ConfigurationManager& config_manager)
     traced_assert(rt_cmd_manager_);
 
     startManagers();
+
+    for (auto plugin : app_hooks_.plugins)
+        plugin->initCommands(rtcommand::RTCommandRegistry::instance(), *this);
 
     view_manager_->setLiveImportBacklogSizeFunc([ this ] () { return task_manager_->asterixImporterTask().numPacketsInProcessing(); });
     compass_->setShutdownSequence([ this ] () { shutdown(); });
@@ -521,11 +532,9 @@ void CompassRoot::shutdown()
     eval_manager_->close();
     eval_manager_ = nullptr;
 
-#if USE_EXPERIMENTAL_SOURCE == true
-    // Release cached textures, retired GL contexts, and drain osgEarth's
-    // job pool - must happen while OSG globals are still alive.
-    geo_view::shutdown();
-#endif
+    // plugins release their resources (e.g. GeoView: OSG textures, GL contexts, osgEarth job pool)
+    for (auto plugin : app_hooks_.plugins)
+        plugin->shutdown();
 
     traced_assert(filter_manager_);
     filter_manager_ = nullptr;

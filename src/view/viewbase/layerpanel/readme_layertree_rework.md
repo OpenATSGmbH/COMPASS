@@ -131,7 +131,7 @@ pruning, panel snapshot / restore) are gone since U5, see the U sections.
 - `ViewLayerPanelWidget`: annotation subtree auto-expansion replaced by a default policy
 - `DBContentLeafItem`: persistence id cached at construction
 
-### Geographic view (`experimental_src/view/geographicview`)
+### Geographic view (`experimental_src/plugins/geoview/geographicview`)
 
 As built in the first round; since U4 the radar, FFT, RU, sector, map, measurement and annotation
 items are thin views onto drawable collections (settings and root menus unchanged), see U4.
@@ -856,7 +856,7 @@ Original plan:
 
 Done:
 
-- `experimental_src/view/geographicview/drawable/composite/` (namespace `geographicView`):
+- `experimental_src/plugins/geoview/geographicview/drawable/composite/` (namespace `geographicView`):
   - `DrawableComposite`: group below a parent group, starts hidden, `setVisible()` via node mask,
     `setMapNode()` => `mapNodeChanged()`, detaches its group in the destructor
   - `DrawableCollection` (QObject): tree-facing interface by id (`ids(parent_id)`, `name()`,

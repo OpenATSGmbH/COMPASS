@@ -187,8 +187,8 @@ For combined detection types (SSR+PSR, Mode S+PSR), both select the channel with
 | `src/core/util/number.h/.cpp` | `estimateAzimuthBias()`, `estimateRangeBiasGain()` |
 | `src/task/reconstructor/simpleaccuracyestimator.h/.cpp` | Simple reconstructor: loads per-source biases + accuracies, polar-to-Cartesian accuracy model |
 | `src/task/reconstructor/radarbiascorrection.h/.cpp` | Shared bias correction utility used by both reconstructors |
-| `experimental_src/reconstruction/complex/radaraccuracyestimator.h/.cpp` | ProbIMM: per-radar accuracy estimation, bias estimation, and correction |
-| `experimental_src/view/geographicview/geometry/geometryitemgrouppositionaccuracyellipses.cpp` | Error ellipse rendering |
+| `experimental_src/plugins/probimm/complex/radaraccuracyestimator.h/.cpp` | ProbIMM: per-radar accuracy estimation, bias estimation, and correction |
+| `experimental_src/plugins/geoview/geographicview/geometry/geometryitemgrouppositionaccuracyellipses.cpp` | Error ellipse rendering |
 
 ## References
 

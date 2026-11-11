@@ -41,7 +41,6 @@ if(EXPERIMENTAL_SRC)
     # so the dependency stays downward (core doesn't link experimental libs).
     target_include_directories(compass_core PUBLIC
         "${CMAKE_SOURCE_DIR}/experimental_src/util"
-        "${CMAKE_SOURCE_DIR}/experimental_src/test"
     )
     target_sources(compass_core PRIVATE
         "${CMAKE_SOURCE_DIR}/experimental_src/util/extra_resources.h"

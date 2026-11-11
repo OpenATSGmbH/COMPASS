@@ -26,8 +26,6 @@
 #include "dbcontentdataengine.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
-#include "probimmreconstructor.h"
-#include "probimmreconstructorwidget.h"
 #endif
 
 #include <QGridLayout>
@@ -73,13 +71,13 @@ ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task, QWidge
 
     bool has_adv_rec = false;
 
-#if USE_EXPERIMENTAL_SOURCE == true
-    if (license_manager.componentEnabled(license::License::Component::ComponentProbIMMReconstructor))
+    // ProbIMM only if licensed and provided by its plugin
+    if (license_manager.componentEnabled(license::License::Component::ComponentProbIMMReconstructor) &&
+        !task_.reconstructorClassName(ReconstructorTask::ProbImmReconstructorName).empty())
     {
         reconstructor_box_->addItem(QString::fromStdString(ReconstructorTask::ProbImmReconstructorName));
         has_adv_rec = true;
     }
-#endif
 
     int idx = reconstructor_box_->findText(QString::fromStdString(task_.currentReconstructorStr()));
     reconstructor_box_->setCurrentIndex(idx);
@@ -107,12 +105,16 @@ ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task, QWidge
 
     reconstructor_widget_stack_ = new QStackedWidget();
 
-    reconstructor_widget_stack_->addWidget(task_.simpleReconstructor()->widget());
+    // one widget per selectable reconstructor, same order as the combo box (index = stack index)
+    for (int i = 0; i < reconstructor_box_->count(); ++i)
+    {
+        const auto class_name = task_.reconstructorClassName(reconstructor_box_->itemText(i).toStdString());
 
-#if USE_EXPERIMENTAL_SOURCE == true
-    if (license_manager.componentEnabled(license::License::Component::ComponentProbIMMReconstructor))
-        reconstructor_widget_stack_->addWidget(task_.probIMMReconstructor()->widget());
-#endif
+        auto rec = task_.reconstructor(class_name);
+        traced_assert(rec);
+
+        reconstructor_widget_stack_->addWidget(rec->createWidget());
+    }
 
     showCurrentReconstructorWidget();
 
