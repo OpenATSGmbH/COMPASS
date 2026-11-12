@@ -31,8 +31,6 @@ class EvaluationTargetFilter : public Configurable
 
     EvaluationManager& evalManager() { return eval_manager_; }
 
-    void generateSubConfigurable(nlohmann::json& child_json) override {};
-
     void setUse(dbContent::TargetCache& target_data);
 
     bool removeShortTargets() const;
@@ -88,6 +86,8 @@ class EvaluationTargetFilter : public Configurable
     void removeNotDetectedDBContents(const std::string& dbcontent_name, bool value);
 
   protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override { return GenerateResult::Skipped; }
+
     EvaluationManager& eval_manager_;
 
     // utn use filter stuff

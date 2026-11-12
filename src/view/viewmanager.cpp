@@ -303,7 +303,7 @@ ViewManager::~ViewManager()
 
 /**
 */
-void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult ViewManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -347,10 +347,11 @@ void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(view_points_report_gen_);
     }
     else
-        throw std::runtime_error("ViewManager: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
 //    if (widget_)
 //        widget_->update();
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -359,12 +360,12 @@ void ViewManager::checkSubConfigurables()
 {
     if (containers_.size() == 0)
     {
-        generateSubConfigurableFromConfig("ViewContainer", "ViewContainer0");
+        createSubConfigurableFromConfig("ViewContainer", "ViewContainer0");
     }
 
     if (!view_points_report_gen_)
     {
-        generateSubConfigurableFromConfig("ViewPointsReportGenerator", "ViewPointsReportGenerator0");
+        createSubConfigurableFromConfig("ViewPointsReportGenerator", "ViewPointsReportGenerator0");
     }
 }
 
@@ -965,7 +966,7 @@ ViewContainerWidget* ViewManager::addNewContainerWidget()
     container_count_++;
     std::string container_widget_name = "ViewWindow" + std::to_string(container_count_);
 
-    generateSubConfigurableFromConfig("ViewContainerWidget", container_widget_name);
+    createSubConfigurableFromConfig("ViewContainerWidget", container_widget_name);
 
     traced_assert(container_widgets_.count(container_widget_name) == 1);
 

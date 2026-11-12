@@ -147,8 +147,6 @@ public:
     EvaluationTargetFilter& targetFilter() const;
     const std::string& lastResultName() const { return last_result_name_; }
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     AppState& appState() { return app_state_; }
     DBContentManager& dbContentManager() { return dbcontent_man_; }
 
@@ -170,6 +168,8 @@ public:
 
 protected:
     friend class EvaluationCalculator;
+
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
 
     virtual void checkSubConfigurables() override;
     virtual void onConfigurationChanged(const std::vector<std::string>& changed_params) override;

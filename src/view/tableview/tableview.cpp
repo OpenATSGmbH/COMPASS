@@ -94,7 +94,7 @@ bool TableView::init_impl()
 
 /**
 */
-void TableView::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult TableView::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -109,9 +109,10 @@ void TableView::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw std::runtime_error("TableView: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
     }
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -120,7 +121,7 @@ void TableView::checkSubConfigurables()
 {
     if (!data_source_)
     {
-        generateSubConfigurableFromConfig(SubConfigDataSource, SubConfigDataSource + "0");
+        createSubConfigurableFromConfig(SubConfigDataSource, SubConfigDataSource + "0");
     }
 
     if (!widget_)

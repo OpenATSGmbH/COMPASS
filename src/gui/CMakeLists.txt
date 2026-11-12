@@ -17,6 +17,7 @@ target_sources(compass_gui
         "${CMAKE_CURRENT_LIST_DIR}/timewindowdialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/noscrollqspinbox.h"
         "${CMAKE_CURRENT_LIST_DIR}/styledlabel.h"
+        "${CMAKE_CURRENT_LIST_DIR}/test_plot.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/formatselectionwidget.cpp"
@@ -31,6 +32,7 @@ target_sources(compass_gui
         "${CMAKE_CURRENT_LIST_DIR}/timewindowcollectionwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowdialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/styledlabel.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/test_plot.cpp"
 )
 
 target_include_directories(compass_gui PUBLIC "${CMAKE_CURRENT_LIST_DIR}")

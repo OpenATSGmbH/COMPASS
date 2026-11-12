@@ -66,6 +66,11 @@
 #include <sstream>
 #include <utility>
 
+#include <QCheckBox>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QSpinBox>
+
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
 using dbContent::TargetReport::Chain;
@@ -994,4 +999,61 @@ void ADSBCoverageInspector::writeReport(ResultReport::Section& root)
            << result_.transponders.size() << " transponder(s), "
            << result_.total_eui << " EUI, " << result_.total_mui
            << " MUI, overall PD " << result_.overall_pd;
+}
+
+/**
+*/
+void ADSBCoverageInspector::addSettingsRows(QFormLayout* form)
+{
+    auto& s = static_cast<ADSBCoverageInspectorSettings&>(settings_);
+
+    auto* ui_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_s_);
+    QObject::connect(ui_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.update_interval_s_ = static_cast<float>(v); });
+    form->addRow("Update Interval (Moving)", ui_spin);
+
+    auto* ui_stand_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_standing_s_);
+    QObject::connect(ui_stand_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.update_interval_standing_s_ = static_cast<float>(v); });
+    form->addRow("Update Interval (Standing)", ui_stand_spin);
+
+    auto* stand_spd_spin = makeFloatSpin(0.0, 50.0, 0.1, 2, " m/s", s.standing_speed_max_mps_);
+    QObject::connect(stand_spd_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.standing_speed_max_mps_ = static_cast<float>(v); });
+    form->addRow("Standing Speed Threshold", stand_spd_spin);
+
+    auto* miss_cb  = new QCheckBox();
+    miss_cb->setChecked(s.use_miss_tolerance_);
+    auto* miss_spin = makeFloatSpin(0.0, 60.0, 0.05, 3, " s", s.miss_tolerance_s_);
+    miss_spin->setEnabled(s.use_miss_tolerance_);
+    QObject::connect(miss_cb, &QCheckBox::toggled, [&s, miss_spin](bool on) {
+        s.use_miss_tolerance_ = on;
+        miss_spin->setEnabled(on);
+    });
+    QObject::connect(miss_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.miss_tolerance_s_ = static_cast<float>(v); });
+    form->addRow("Use Miss Tolerance", miss_cb);
+    form->addRow("Miss Tolerance",     miss_spin);
+
+    auto* acc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_acceptable_above_);
+    QObject::connect(acc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.pd_acceptable_above_ = static_cast<float>(v); });
+    form->addRow("Value Acceptable (green)", acc_spin);
+
+    auto* unacc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_unacceptable_below_);
+    QObject::connect(unacc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.pd_unacceptable_below_ = static_cast<float>(v); });
+    form->addRow("Value Unacceptable (red)", unacc_spin);
+
+    auto* hbins_spin = new QSpinBox();
+    hbins_spin->setRange(1, 100);
+    hbins_spin->setValue(s.ui_hist_num_bins_);
+    QObject::connect(hbins_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.ui_hist_num_bins_ = v; });
+    form->addRow("Histogram Bins", hbins_spin);
+
+    auto* hmax_spin = makeFloatSpin(0.0, 600.0, 1.0, 1, " s", s.ui_hist_max_s_);
+    QObject::connect(hmax_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.ui_hist_max_s_ = static_cast<float>(v); });
+    form->addRow("Histogram Max Interval (0 = auto)", hmax_spin);
 }

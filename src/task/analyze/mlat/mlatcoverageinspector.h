@@ -78,7 +78,7 @@ public:
  * Feature 2: PD per cell across a 3D grid using RefTraj as ground truth.
  *
  * The full algorithm (per-target slot-walk, gap construction, miss test) is
- * specified in experimental_src/analysis/readme_analysis_mlat_ru.md. The data
+ * specified in experimental_src/plugins/extraanalysis/readme_analysis_mlat_ru.md. The data
  * walk is deferred to a subsequent iteration; this implementation produces the
  * settings recap section and an explicit placeholder for the report contents
  * that depend on the per-target loop.
@@ -105,6 +105,7 @@ public:
 
     void compute(AnalysisDataset* dataset) override;
     void writeReport(ResultReport::Section& root) override;
+    void addSettingsRows(QFormLayout* form) override;
 
     ~MLATCoverageInspector() override;
 

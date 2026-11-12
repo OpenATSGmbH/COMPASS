@@ -37,14 +37,14 @@ class ViewContainerWidget : public QWidget, public Configurable
     ViewContainerWidget(nlohmann::json& config, ViewManager& view_manager);
     virtual ~ViewContainerWidget();
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     const std::string& name() { return name_; }
     ViewContainer& viewContainer() const;
 
     void updateFeatures();
 
   protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     ViewManager& view_manager_;
     std::string name_;
 

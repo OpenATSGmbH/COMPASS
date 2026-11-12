@@ -21,7 +21,6 @@ target_sources(compass_result
         "${CMAKE_CURRENT_LIST_DIR}/reportexporter.h"
         "${CMAKE_CURRENT_LIST_DIR}/reportexporterjson.h"
         "${CMAKE_CURRENT_LIST_DIR}/reportexporterlatex.h"
-        "${CMAKE_CURRENT_LIST_DIR}/reportexporterdocx.h"
         "${CMAKE_CURRENT_LIST_DIR}/reportexportdialog.h"
 
     PRIVATE
@@ -41,6 +40,5 @@ target_sources(compass_result
         "${CMAKE_CURRENT_LIST_DIR}/reportexporter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/reportexporterjson.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/reportexporterlatex.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/reportexporterdocx.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/reportexportdialog.cpp"
     )

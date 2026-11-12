@@ -127,7 +127,7 @@ bool Group::checkable() const
     return true;
 }
 
-void Group::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult Group::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -436,8 +436,9 @@ void Group::generateSubConfigurable(nlohmann::json& child_json)
         configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
     }
     else
-        throw std::runtime_error("EvaluationRequirementGroup: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 std::string Group::name() const
@@ -467,7 +468,7 @@ void Group::addRequirementConfig (const std::string& class_name, const std::stri
     child_json[Configuration::ParameterSection]["name"] = name;
     child_json[Configuration::ParameterSection]["short_name"] = short_name;
 
-    generateSubConfigurable(child_json);
+    createSubConfigurable(child_json);
 
     sortConfigs();
 

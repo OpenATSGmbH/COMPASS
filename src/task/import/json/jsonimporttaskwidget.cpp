@@ -256,7 +256,7 @@ void JSONImportTaskWidget::addSchemaSlot()
         auto& child_json = task_.addNewSubConfiguration("JSONParsingSchema", instance);
         child_json[Configuration::ParameterSection]["name"] = name;
 
-        task_.generateSubConfigurable(child_json);
+        task_.createSubConfigurable(child_json);
         updateSchemasBox();
     }
 }
@@ -372,7 +372,7 @@ void JSONImportTaskWidget::addObjectParserSlot()
         auto& child_json = current->addNewSubConfiguration("JSONObjectParser", instance);
         child_json[Configuration::ParameterSection]["dbcontent_name"] = dbcontent_name;
 
-        current->generateSubConfigurable(child_json);
+        current->createSubConfigurable(child_json);
         updateParserBox();
     }
 }

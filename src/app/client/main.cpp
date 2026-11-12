@@ -22,13 +22,13 @@
 #include "global.h"
 #include "logger.h"
 #include "msghandler.h"
+#include "plugin/pluginmanager.h"
+#include "stringconv.h"
 #include "system.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "extra_commands.h"
 #include "test_lab.h"
-#include "probimmplugin.h"
-#include "geoviewplugin.h"
 #endif
 
 #include <QThread>
@@ -500,11 +500,40 @@ void signalHandler(int signum)
 }
 
 /**
+ * Directory of the plugin modules, derived from the executable.
+ */
+static std::string pluginDirectory()
+{
+#ifdef _WIN32
+    return Utils::System::executableDir() + "/plugins";
+#else
+    return Utils::System::executableDir() + "/../lib/compass_plugins";
+#endif
+}
+
+/**
+ * Plugins expected as modules (all or none), declared with compass_add_plugin()
+ * in experimental_src/CMakeLists.txt and passed as COMPASS_EXPECTED_PLUGINS (comma-separated, empty without
+ * experimental source).
+ */
+static std::vector<std::string> expectedPlugins()
+{
+    const std::string names = COMPASS_EXPECTED_PLUGINS;
+    if (names.empty())
+        return {};
+
+    return Utils::String::split(names, ',');
+}
+
+/**
  * Hooks for the libraries that depend on compass_app (extra commands, test labs), which compass_app cannot name.
+ * Notice: loads the plugin modules, asserts if one of the expected plugins fails to load.
  */
 static AppHooks createAppHooks()
 {
     AppHooks hooks;
+
+    hooks.plugins = plugin_manager::loadPlugins(pluginDirectory(), expectedPlugins());
 
 #if USE_EXPERIMENTAL_SOURCE == true
     hooks.register_commands = &extra::init_extra_commands;
@@ -513,13 +542,6 @@ static AppHooks createAppHooks()
     {
         TestLabCollection().appendTestLabs(menu, root.compass(), root.taskManager(), root.viewManager());
     };
-
-    // plugins, statically linked until they are loaded as modules (readme_plugins.md, workstream C)
-    static ProbIMMPlugin probimm_plugin;
-    static GeoViewPlugin geoview_plugin;
-
-    hooks.plugins.push_back(&probimm_plugin);
-    hooks.plugins.push_back(&geoview_plugin);
 #endif
 
     return hooks;

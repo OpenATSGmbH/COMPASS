@@ -21,9 +21,11 @@ target_sources(compass_app
         "${CMAKE_CURRENT_LIST_DIR}/compass.h"
         "${CMAKE_CURRENT_LIST_DIR}/compassroot.h"
         "${CMAKE_CURRENT_LIST_DIR}/plugin/plugin.h"
+        "${CMAKE_CURRENT_LIST_DIR}/plugin/pluginmanager.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/compass.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/compassroot.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/plugin/pluginmanager.cpp"
 )
 
 target_include_directories(compass_app PUBLIC "${CMAKE_CURRENT_LIST_DIR}")

@@ -34,7 +34,7 @@ Dimension::~Dimension()
     units_.clear();
 }
 
-void Dimension::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult Dimension::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -45,8 +45,9 @@ void Dimension::generateSubConfigurable(nlohmann::json& child_json)
         units_.insert(std::pair<std::string, Unit*>(unit->instanceName(), unit));
     }
     else
-        throw std::runtime_error("Dimension: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 void Dimension::addUnit(const std::string& name, double factor, const std::string& definition)
@@ -55,7 +56,7 @@ void Dimension::addUnit(const std::string& name, double factor, const std::strin
     child_json[Configuration::ParameterSection]["factor"] = factor;
     child_json[Configuration::ParameterSection]["definition"] = definition;
 
-    generateSubConfigurable(child_json);
+    createSubConfigurable(child_json);
 }
 
 bool Dimension::hasUnit(const std::string& unit) const { return units_.find(unit) != units_.end(); }

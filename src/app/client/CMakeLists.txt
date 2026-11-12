@@ -56,8 +56,7 @@ target_link_libraries ( compass_client
 
 if(EXPERIMENTAL_SRC)
     target_link_libraries(compass_client
-        compass_osg_utils compass_docx compass_reconst_adv
-        compass_geo_view compass_rtcmd_ext compass_test_lab
+        compass_osg_utils compass_rtcmd_ext compass_test_lab
     )
 endif()
 

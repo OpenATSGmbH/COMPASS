@@ -5,6 +5,7 @@
 #
 #   compass_client.exe, compass_handler.exe, *.dll   executables and runtime libraries
 #   compass_client.exe.debug, compass_*.dll.debug     debug information for gdb (not in the zip)
+#   plugins/compass_plugin_*.dll                      plugin modules (+ .debug)
 #   platforms/, styles/, imageformats/, iconengines/  Qt plugins
 #   lib/osgPlugins-<version>/                         OSG/osgEarth plugins
 #   compass/conf, compass/data, compass/presets       COMPASS configuration, data, view presets
@@ -55,13 +56,24 @@ for exe in $EXES; do
     fi
 done
 
-# COMPASS libraries (one DLL per module, readme_plugins.md workstream B): debug information
+# COMPASS libraries (one DLL per module): debug information
 # split off as for compass_client.exe, into <name>.dll.debug next to them
 for dll in "$BUILD"/bin/compass_*.dll; do
     name=$(basename "$dll")
     $OBJCOPY --only-keep-debug "$dll" "$DEPLOY/$name.debug"
     $STRIP -o "$DEPLOY/$name" "$dll"
     (cd "$DEPLOY" && $OBJCOPY --add-gnu-debuglink="$name.debug" "$name")
+done
+
+# plugin modules in plugins/, where compass_client loads them; debug information split off as for the
+# libraries
+mkdir -p "$DEPLOY/plugins"
+for dll in "$BUILD"/lib/compass_plugins/compass_plugin_*.dll; do
+    [ -e "$dll" ] || continue # build without experimental source
+    name=$(basename "$dll")
+    $OBJCOPY --only-keep-debug "$dll" "$DEPLOY/plugins/$name.debug"
+    $STRIP -o "$DEPLOY/plugins/$name" "$dll"
+    (cd "$DEPLOY/plugins" && $OBJCOPY --add-gnu-debuglink="$name.debug" "$name")
 done
 
 # jASTERIX (shared, installed by win_build.sh)

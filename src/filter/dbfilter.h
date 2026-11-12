@@ -82,8 +82,6 @@ class DBFilter : public Configurable
     // resets the filter (sub-filters and conditions) to their inital values.
     virtual void reset();
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     const std::vector<std::unique_ptr<DBFilterCondition>>& getConditions() const { return conditions_; }
     unsigned int getNumConditions() { return conditions_.size(); }
     void clearConditions();
@@ -105,6 +103,8 @@ class DBFilter : public Configurable
     void widgetVisible(bool widget_expanded);
 
 protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     FilterManager* filter_manager_{nullptr};
     IDBVariableResolver& var_resolver_;
     std::string name_;

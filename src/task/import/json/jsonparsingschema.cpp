@@ -30,7 +30,7 @@ JSONParsingSchema::JSONParsingSchema(nlohmann::json& config, JSONImportTask* par
     createSubConfigurables();
 }
 
-void JSONParsingSchema::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult JSONParsingSchema::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -62,8 +62,9 @@ void JSONParsingSchema::generateSubConfigurable(nlohmann::json& child_json)
         parsers_[name] = std::move(parser);
     }
     else
-        throw std::runtime_error("JSONParsingSchema: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 std::string JSONParsingSchema::name() const { return name_; }

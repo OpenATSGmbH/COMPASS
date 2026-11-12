@@ -122,7 +122,7 @@ void FilterManager::useFilters(bool use_filters)
         widget_->updateUseFilters();
 }
 
-void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult FilterManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -131,7 +131,7 @@ void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
     {
         logerr << "filter " << instance_name
                << " already present";
-        return;
+        return GenerateResult::Skipped;
     }
 
     logdbg << "filter class_name " << class_name << " instance_name " << instance_name;
@@ -208,8 +208,9 @@ void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
         filters_.emplace_back(filter);
     }
     else
-        throw std::runtime_error("FilterManager: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 bool FilterManager::checkDBContent (const std::string& dbcontent_name)
@@ -239,7 +240,7 @@ void FilterManager::checkSubConfigurables()
                          [&classid](const unique_ptr<DBFilter>& x) { return x->className() == classid;}) == filters_.end())
         {
             auto& child_json = addNewSubConfiguration(classid, classid+"0");
-            generateSubConfigurable(child_json);
+            createSubConfigurable(child_json);
         }
     };
 

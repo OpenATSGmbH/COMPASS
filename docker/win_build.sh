@@ -22,7 +22,7 @@ JASTERIX_INSTALL=/out/jasterix_install
 
 build_jasterix()
 {
-    # shared: linked by the shared compass_core (readme_plugins.md, workstream B)
+    # shared: linked by the shared compass_core
     cmake -G Ninja -S /src/jasterix -B /out/jasterix_build -DCMAKE_TOOLCHAIN_FILE=/opt/mingw_toolchain.cmake \
         -DCMAKE_INSTALL_PREFIX="$JASTERIX_INSTALL" -DBUILD_SHARED_LIBS=ON
     cmake --build /out/jasterix_build -j "$JOBS"

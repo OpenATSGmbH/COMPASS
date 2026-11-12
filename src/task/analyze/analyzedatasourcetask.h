@@ -18,12 +18,17 @@
 #pragma once
 
 #include "configurable.h"
+#include "inspectorsettingsbase.h"
+#include "subconfigurablefactory.h"
 #include "task.h"
 #include "global.h"
+
+#include "creatorregistry.h"
 #include "json_fwd.hpp"
 
 #include <QObject>
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -32,28 +37,9 @@
 
 class TaskManager;
 class DataSourceInspectorBase;
-class InspectorSettingsBase;
 class SectorLayer;
 
 class AnalysisDataset;
-
-class MLATDataItemInspectorSettings;
-class MLATCoverageInspectorSettings;
-
-class ADSBDataItemInspectorSettings;
-class ADSBCoverageInspectorSettings;
-
-class SMRDataItemInspectorSettings;
-class SMRCoverageInspectorSettings;
-
-#if USE_EXPERIMENTAL_SOURCE == true
-class MLATAccuracyInspectorSettings;
-class MLATRUCoverageInspectorSettings;
-class MLATRUEffectInspectorSettings;
-class ADSBAccuracyInspectorSettings;
-class SMRAccuracyInspectorSettings;
-class SMRUnassociatedInspectorSettings;
-#endif
 
 namespace ResultReport { class Section; }
 
@@ -62,6 +48,57 @@ class AnalyzeDataSourceTask : public Task, public Configurable
     Q_OBJECT
 
 public:
+    /**
+     * Slot of an inspector in the inspector registry: the hundreds are the DS type (1 MLAT, 2 ADSB, 3 SMR), the value
+     * is the position in the dialog and the report. Plugins add theirs from the DS type's plugin slot on (pluginSlot()).
+     */
+    enum class InspectorSlot : unsigned int
+    {
+        MLATDataItem = 110,
+        MLATCoverage = 120,
+        MLATPlugin   = 130, // plugin inspectors 130..199
+
+        ADSBDataItem = 210,
+        ADSBCoverage = 220,
+        ADSBPlugin   = 230, // plugin inspectors 230..299
+
+        SMRDataItem  = 310,
+        SMRCoverage  = 320,
+        SMRPlugin    = 330  // plugin inspectors 330..399
+    };
+
+    typedef std::function<std::unique_ptr<DataSourceInspectorBase>(AnalyzeDataSourceTask& task,
+                                                                   InspectorSettingsBase& settings)> InspectorCreator;
+
+    /**
+     * Inspector in the inspector registry: its settings class (created by inspectorSettingsFactory()) and its creator.
+     */
+    struct InspectorEntry
+    {
+        std::string      settings_class;
+        InspectorCreator creator;
+
+        explicit operator bool() const { return !settings_class.empty() && creator; } // valid (CreatorRegistry)
+    };
+
+    /// Settings of all inspectors: built-in types with creator, plugin types listed without (filled by the plugin).
+    DECLARE_SUBCONFIGURABLE_FACTORY(inspectorSettingsFactory, InspectorSettingsBase, AnalyzeDataSourceTask, None)
+    /// Inspectors by slot: the built-in ones, plus those added by plugins.
+    DECLARE_CREATOR_REGISTRY(inspectorRegistry, InspectorSlot, InspectorEntry)
+
+    /// Slot of the index-th plugin inspector of a DS type, plugin_slot one of the *Plugin slots.
+    static InspectorSlot pluginSlot(InspectorSlot plugin_slot, unsigned int index);
+    /// DS type of a slot ("MLAT", "ADSB" or "SMR").
+    static std::string slotDSType(InspectorSlot slot);
+
+    /// Creator for inspectors with the common constructor Inspector(AnalyzeDataSourceTask&, Settings&).
+    template<typename Inspector, typename Settings>
+    static std::unique_ptr<DataSourceInspectorBase> createInspector(AnalyzeDataSourceTask& task,
+                                                                    InspectorSettingsBase& settings)
+    {
+        return std::unique_ptr<DataSourceInspectorBase>(new Inspector(task, static_cast<Settings&>(settings)));
+    }
+
     /// `ds_type_default` binds this task instance to a DSType ("MLAT", "ADSB"
     /// or "SMR"): it sets the default for the `ds_type` parameter and selects
     /// which inspector set is registered. `object_name` distinguishes the
@@ -71,8 +108,6 @@ public:
                           const std::string& ds_type_default = "MLAT",
                           const std::string& object_name = "AnalyzeDataSourceTask");
     ~AnalyzeDataSourceTask() override;
-
-    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     /// Accept JSON-injected configuration. Extends the base behavior with a
     /// top-level `inspector_settings` key shaped as `{<InspectorClassName>:
@@ -231,28 +266,13 @@ public:
     /// Returns the inspector with the given class name, or nullptr.
     DataSourceInspectorBase* inspector(const std::string& class_name) const;
 
-    MLATDataItemInspectorSettings& dataItemSettings() const;
-    MLATCoverageInspectorSettings& coverageSettings()  const;
-
-    ADSBDataItemInspectorSettings& adsbDataItemSettings() const;
-    ADSBCoverageInspectorSettings& adsbCoverageSettings() const;
-
-    SMRDataItemInspectorSettings& smrDataItemSettings() const;
-    SMRCoverageInspectorSettings& smrCoverageSettings() const;
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    MLATAccuracyInspectorSettings&   accuracySettings()   const;
-    MLATRUCoverageInspectorSettings& ruCoverageSettings() const;
-    MLATRUEffectInspectorSettings&   ruEffectSettings()   const;
-    ADSBAccuracyInspectorSettings&   adsbAccuracySettings() const;
-    SMRAccuracyInspectorSettings&     smrAccuracySettings() const;
-    SMRUnassociatedInspectorSettings& smrUnassociatedSettings() const;
-#endif
-
     /// True if the active license enables Professional features.
     bool professionalLicenseEnabled() const;
 
 protected:
+    /// Takes over the inspector settings created by inspectorSettingsFactory().
+    void childCreated(Configurable* child) override;
+    /// Creates the missing settings of the inspectors of this task's DS type.
     void checkSubConfigurables() override;
 
 private:
@@ -284,23 +304,7 @@ private:
     bool           limit_by_sectors_ = false;
     nlohmann::json used_sectors_;     // sector-layer name -> bool (unlisted = true)
 
-    std::unique_ptr<MLATDataItemInspectorSettings> data_item_settings_;
-    std::unique_ptr<MLATCoverageInspectorSettings> coverage_settings_;
+    std::map<std::string, std::unique_ptr<InspectorSettingsBase>> inspector_settings_; // settings class -> settings
 
-    std::unique_ptr<ADSBDataItemInspectorSettings> adsb_data_item_settings_;
-    std::unique_ptr<ADSBCoverageInspectorSettings> adsb_coverage_settings_;
-
-    std::unique_ptr<SMRDataItemInspectorSettings> smr_data_item_settings_;
-    std::unique_ptr<SMRCoverageInspectorSettings> smr_coverage_settings_;
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    std::unique_ptr<MLATAccuracyInspectorSettings>   accuracy_settings_;
-    std::unique_ptr<MLATRUCoverageInspectorSettings> ru_coverage_settings_;
-    std::unique_ptr<MLATRUEffectInspectorSettings>   ru_effect_settings_;
-    std::unique_ptr<ADSBAccuracyInspectorSettings>   adsb_accuracy_settings_;
-    std::unique_ptr<SMRAccuracyInspectorSettings>     smr_accuracy_settings_;
-    std::unique_ptr<SMRUnassociatedInspectorSettings> smr_unassociated_settings_;
-#endif
-
-    std::vector<std::unique_ptr<DataSourceInspectorBase>> inspectors_;
+    std::vector<std::unique_ptr<DataSourceInspectorBase>> inspectors_; // hold references to inspector_settings_
 };

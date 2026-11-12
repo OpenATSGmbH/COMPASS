@@ -95,7 +95,6 @@ public:
     explicit COMPASS(ConfigurationManager& config_manager);
     virtual ~COMPASS();
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
     std::string getPath() const override final;
 
     // composition root interface
@@ -167,6 +166,8 @@ public:
     LogStore& logStore();
 
 protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     Result openDBFileInternal(const std::string& filename);
     Result createNewDBFileInternal(const std::string& filename);
     Result createInMemDBFileInternal(const std::string& future_filename);

@@ -64,7 +64,7 @@ ScatterPlotViewDataSource::~ScatterPlotViewDataSource()
     }
 }
 
-void ScatterPlotViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult ScatterPlotViewDataSource::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -77,15 +77,16 @@ void ScatterPlotViewDataSource::generateSubConfigurable(nlohmann::json& child_js
         set_ = new dbContent::VariableOrderedSet(child_json, view_->viewManager().dbContentManager(), this);
     }
     else
-        throw std::runtime_error(
-            "ScatterPlotViewDataSource: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 void ScatterPlotViewDataSource::checkSubConfigurables()
 {
     if (set_ == nullptr)
     {
-        generateSubConfigurableFromConfig("VariableOrderedSet", "VariableOrderedSet0");
+        createSubConfigurableFromConfig("VariableOrderedSet", "VariableOrderedSet0");
         traced_assert(set_);
 
         DBContentManager& dbcont_man = set_->dbContentManager();

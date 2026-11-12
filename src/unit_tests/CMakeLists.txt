@@ -32,6 +32,7 @@ include("${CMAKE_SOURCE_DIR}/src/gui/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/view/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/view/viewbase/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/view/histogramview/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/app/unit_tests/CMakeLists.txt")
 
 target_include_directories(compass_tests PRIVATE
     "${COMPASS_PATH}/lib"
@@ -56,8 +57,9 @@ target_link_libraries(compass_tests PRIVATE
 
 if(EXPERIMENTAL_SRC)
     target_link_libraries(compass_tests PRIVATE
-        compass_osg_utils compass_docx compass_reconst_adv
-        compass_geo_view compass_rtcmd_ext compass_test_lab
+        compass_osg_utils compass_rtcmd_ext compass_test_lab
+        # plugin sources compiled in, no module loaded
+        compass_plugin_probimm_obj compass_plugin_geoview_obj compass_plugin_docx_obj compass_plugin_extraanalysis_obj
     )
 endif()
 

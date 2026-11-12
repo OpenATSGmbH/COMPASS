@@ -177,8 +177,6 @@ public:
 
     void refreshCount();
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     bool hasKeyVariable();
     dbContent::Variable& getKeyVariable();
 
@@ -203,6 +201,8 @@ private:
     void quitLoading();
 
 protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     void checkStaticVariable(const Property& property);
 
     DBContentManager& dbcont_manager_;

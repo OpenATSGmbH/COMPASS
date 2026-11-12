@@ -83,14 +83,17 @@ public:
             delete child;
     }
 
-    void generateSubConfigurable(nlohmann::json& child_json) override
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override
     {
         const auto& class_name = Configuration::getClassName(child_json);
         if (class_name == "TestConfigurable")
         {
             auto* child = new TestConfigurable(child_json, this);
             owned_children_.push_back(child);
+            return GenerateResult::Generated;
         }
+
+        return GenerateResult::Skipped;
     }
 
     void checkSubConfigurables() override {}

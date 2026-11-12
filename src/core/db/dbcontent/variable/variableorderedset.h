@@ -44,8 +44,6 @@ class VariableOrderedSet : public QObject, public Configurable
     VariableOrderedSet(nlohmann::json& config, DBContentManager& dbcont_man, Configurable* parent = nullptr);
     virtual ~VariableOrderedSet();
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     void add(Variable& var);
     void add(MetaVariable& var);
     void add(const std::string& dbcontent_name, const std::string var_name);
@@ -75,6 +73,8 @@ class VariableOrderedSet : public QObject, public Configurable
     DBContentManager& dbContentManager() { return dbcont_man_; }
 
   protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     DBContentManager& dbcont_man_;
 
     nlohmann::json variable_definitions_; // json list of std::string pairs

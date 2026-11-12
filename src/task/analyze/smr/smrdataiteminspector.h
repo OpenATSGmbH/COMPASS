@@ -48,7 +48,7 @@ public:
  *
  * Report-only: works from the cumulative ASTERIX import info held by the
  * DBContextManager, no dataset load and no Reference Trajectory needed. See
- * experimental_src/analysis/readme_analysis_smr.md (Feature 1).
+ * experimental_src/plugins/extraanalysis/readme_analysis_smr.md (Feature 1).
  */
 class SMRDataItemInspector : public DataSourceInspectorBase
 {

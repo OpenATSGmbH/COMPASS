@@ -61,10 +61,6 @@ public:
         registerParameter("spf"     , &config_.spf     , Config().spf     );
     }
 
-    void generateSubConfigurable(nlohmann::json& child_json) override
-    {
-    }
-
     unsigned int category() const { return config_.category; }
 
     bool decode() const { return config_.decode; }
@@ -83,6 +79,11 @@ public:
     void spf(const std::string& spf) { config_.spf = spf; }
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override
+    {
+        return GenerateResult::Skipped;
+    }
+
     virtual void checkSubConfigurables() {}
 
     void onConfigurationChanged(const std::vector<std::string>& changed_params) override {}

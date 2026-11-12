@@ -46,5 +46,8 @@ extern void trimMemory();
 
 extern const char* appDir();
 
+// directory of the running executable (without trailing separator, '/' as separator), empty if unknown
+extern std::string executableDir();
+
 }  // namespace System
 }  // namespace Utils

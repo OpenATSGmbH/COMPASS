@@ -52,8 +52,6 @@ public:
     /// @brief Destructor
     virtual ~HistogramView() override;
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     /// @brief Returns the used data source
     HistogramViewDataSource* getDataSource()
     {
@@ -78,6 +76,8 @@ signals:
 
 protected:
     friend class LatexVisitor;
+
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
 
     virtual void checkSubConfigurables() override;
     virtual void updateSelection_impl() override;

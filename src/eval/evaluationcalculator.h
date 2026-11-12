@@ -252,7 +252,6 @@ public:
 
     bool isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const;
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 signals:
     void standardsChanged();
     void currentStandardChanged();
@@ -260,6 +259,7 @@ signals:
     void evaluationDone();
     
 protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     virtual void checkSubConfigurables() override;
 
     Result evaluateInternal(bool update_constraints,

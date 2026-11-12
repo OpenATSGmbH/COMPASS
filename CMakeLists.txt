@@ -17,7 +17,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# the compass_* libraries are shared (readme_plugins.md, workstream B): each one has to link
+# the compass_* libraries are shared: each one has to link
 # all libraries it uses, unresolved symbols fail at link time as for Windows DLLs
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 
@@ -91,6 +91,45 @@ function(compass_automoc target)
         target_sources(${target} PRIVATE ${_moc_srcs})
     endif()
 endfunction()
+
+# compass_add_plugin(<Name> <dir> [LIBRARIES <lib>...]): plugin <Name> (Plugin::name()) with its sources in <dir>
+# (readme_plugins.md)
+# - OBJECT library compass_plugin_<name>_obj (PIC, links compass_plugin_sdk and the LIBRARIES publicly), sources
+#   from <dir>/CMakeLists.txt, linked by the MODULE and by compass_tests
+# - MODULE compass_plugin_<name> (no "lib" prefix, -Wl,--no-undefined, build/lib/compass_plugins/) with the
+#   entry symbol source <dir>/<name>plugin_entry.cpp (COMPASS_DECLARE_PLUGIN, only in the MODULE), installed to
+#   lib/compass_plugins/ (RUNPATH $ORIGIN/..)
+# - registers the MODULE (built with compass_client) and the name (expected by compass_client, in call order)
+# A macro, not a function: the lists are appended in the caller's scope.
+macro(compass_add_plugin name dir)
+    cmake_parse_arguments(_plugin "" "" "LIBRARIES" ${ARGN})
+
+    string(TOLOWER "${name}" _plugin_lname)
+    set(_plugin_obj compass_plugin_${_plugin_lname}_obj)
+    set(_plugin_mod compass_plugin_${_plugin_lname})
+
+    add_library(${_plugin_obj} OBJECT "")
+    set_target_properties(${_plugin_obj} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    target_link_libraries(${_plugin_obj}
+        PUBLIC
+            compass_plugin_sdk # host libraries incl. compass_app
+            ${_plugin_LIBRARIES})
+
+    add_library(${_plugin_mod} MODULE "${dir}/${_plugin_lname}plugin_entry.cpp")
+    target_link_libraries(${_plugin_mod} PRIVATE ${_plugin_obj})
+    target_link_options(${_plugin_mod} PRIVATE "-Wl,--no-undefined")
+    set_target_properties(${_plugin_mod} PROPERTIES
+        PREFIX ""
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/compass_plugins"
+        INSTALL_RPATH "$ORIGIN/..") # host libraries next to the plugin directory (container install, AppImage)
+    install(TARGETS ${_plugin_mod} LIBRARY DESTINATION lib/compass_plugins)
+
+    include("${dir}/CMakeLists.txt")
+    compass_automoc(${_plugin_obj})
+
+    list(APPEND COMPASS_PLUGIN_TARGETS ${_plugin_mod})
+    list(APPEND COMPASS_PLUGIN_NAMES ${name})
+endmacro()
 
 #add_definitions(${Qt5Widgets_DEFINITIONS})
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
@@ -237,6 +276,10 @@ add_subdirectory(src/eval)
 add_subdirectory(src/view)
 add_subdirectory(src/result)
 
+# plugin MODULE targets and plugin names, filled by compass_add_plugin() (empty without experimental source)
+set(COMPASS_PLUGIN_TARGETS)
+set(COMPASS_PLUGIN_NAMES)
+
 # Experimental source - creates its own library targets
 IF (EXPERIMENTAL_SRC)
     MESSAGE(STATUS "Including experimental source")
@@ -268,8 +311,8 @@ if(NOT EXISTS "/.dockerenv")
 
     if(EXPERIMENTAL_SRC)
         list(APPEND COMPASS_PCH_TARGETS
-            compass_osg_utils compass_docx compass_reconst_adv
-            compass_geo_view compass_rtcmd_ext compass_test_lab)
+            compass_osg_utils compass_plugin_docx_obj compass_plugin_probimm_obj compass_plugin_extraanalysis_obj
+            compass_plugin_geoview_obj compass_rtcmd_ext compass_test_lab)
     endif()
 
     foreach(_target ${COMPASS_PCH_TARGETS})
@@ -282,6 +325,16 @@ configure_file(src/util/global.h.in include/global.h)
 
 # Application executables
 add_subdirectory(src/app)
+
+# plugins are loaded at runtime, nothing links them => build them with the client, so it never loads stale ones
+IF (COMPASS_PLUGIN_TARGETS)
+    add_dependencies(compass_client ${COMPASS_PLUGIN_TARGETS})
+ENDIF()
+
+# plugins the client expects (all or none, compass_add_plugin()), none without experimental source;
+# comma-separated, a ';' would split the definition
+string(REPLACE ";" "," COMPASS_EXPECTED_PLUGINS "${COMPASS_PLUGIN_NAMES}")
+target_compile_definitions(compass_client PRIVATE COMPASS_EXPECTED_PLUGINS="${COMPASS_EXPECTED_PLUGINS}")
 
 # compass_app links against component libraries inside src/app/CMakeLists.txt
 
@@ -305,8 +358,8 @@ set(COMPASS_INSTALL_LIBS
     compass_eval compass_view compass_result compass_app)
 if(EXPERIMENTAL_SRC)
     list(APPEND COMPASS_INSTALL_LIBS
-        compass_osg_utils compass_docx compass_reconst_adv
-        compass_geo_view compass_rtcmd_ext compass_test_lab)
+        compass_osg_utils
+        compass_rtcmd_ext compass_test_lab)
 endif()
 install(TARGETS ${COMPASS_INSTALL_LIBS} DESTINATION lib
     PUBLIC_HEADER DESTINATION include/compass)

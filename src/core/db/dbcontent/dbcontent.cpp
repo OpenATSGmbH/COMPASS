@@ -100,7 +100,7 @@ DBContent::~DBContent()
 
 /**
  */
-void DBContent::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult DBContent::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     logdbg << "generating variable " << class_name;
@@ -123,8 +123,10 @@ void DBContent::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw runtime_error("DBContent: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
     }
+
+    return GenerateResult::Generated;
 }
 
 /**

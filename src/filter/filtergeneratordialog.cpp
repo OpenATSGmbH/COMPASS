@@ -748,7 +748,7 @@ void FilterGeneratorDialog::accept()
             cond_json[Configuration::ParameterSection]["include_null"] = ct.include_null_;
             cond_json[Configuration::ParameterSection]["reset_value"] = ct.value_;
 
-            edit_filter_->generateSubConfigurable(cond_json);
+            edit_filter_->createSubConfigurable(cond_json);
         }
     }
     else
@@ -763,7 +763,7 @@ void FilterGeneratorDialog::accept()
 
         createConditionConfigs(child_json, filter_name);
 
-        filter_man_.generateSubConfigurable(child_json);
+        filter_man_.createSubConfigurable(child_json);
     }
 
     QDialog::accept();

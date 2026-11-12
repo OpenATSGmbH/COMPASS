@@ -88,11 +88,13 @@ std::unique_ptr<ReconstructorBase> createSimpleReconstructor(nlohmann::json& con
 } // namespace
 
 /**
- * Built-in reconstructors, plugins add theirs in their initCore() (e.g. ProbIMM).
+ * Built-in reconstructors, plus the plugin reconstructors without creator (set by their plugin's initCore(), e.g. ProbIMM).
  */
 ReconstructorTask::reconstructorFactoryType& ReconstructorTask::reconstructorFactory()
 {
-    static reconstructorFactoryType factory = { { "SimpleReconstructor", &createSimpleReconstructor, ScoringUMReconstructorName } };
+    static reconstructorFactoryType factory = { { "SimpleReconstructor",  &createSimpleReconstructor, ScoringUMReconstructorName },
+                                                { "ProbIMMReconstructor", nullptr,                    ProbImmReconstructorName,
+                                                  CreationSource::Plugin } };
     return factory;
 }
 
@@ -185,9 +187,13 @@ void ReconstructorTask::checkReconstructor()
 {
     const auto& license_manager = manager().licenseManager();
 
-    if (!license_manager.componentEnabled(license::License::ComponentProbIMMReconstructor) && currentReconstructorStr() == ProbImmReconstructorName)
+    // licensed and its plugin present
+    const bool probimm_usable = license_manager.componentEnabled(license::License::ComponentProbIMMReconstructor) &&
+                                !reconstructorClassName(ProbImmReconstructorName).empty();
+
+    if (!probimm_usable && currentReconstructorStr() == ProbImmReconstructorName)
         currentReconstructorStr(ScoringUMReconstructorName);
-    else if (license_manager.componentEnabled(license::License::ComponentProbIMMReconstructor) && currentReconstructorStr() != ProbImmReconstructorName)
+    else if (probimm_usable && currentReconstructorStr() != ProbImmReconstructorName)
         currentReconstructorStr(ProbImmReconstructorName);
 }
 

@@ -164,7 +164,7 @@ View* ViewContainer::currentView() const
 
 //    configuration_.addNewSubConfiguration(view_config);
 
-//    generateSubConfigurable (view_config.getClassId(), view_config.getInstanceId());
+//    createSubConfigurableFromConfig(view_config.getClassId(), view_config.getInstanceId());
 //}
 
 void ViewContainer::addView(View* view)
@@ -258,14 +258,16 @@ void ViewContainer::addNewViewSlot()
 const std::vector<std::unique_ptr<View>>& ViewContainer::getViews() const { return views_; }
 
 /**
- * Built-in views, further views are added by their libraries (e.g. geo_view::initViews()).
+ * Built-in views, plus the plugin views without creator (set by their plugin, e.g. geo_view::initViews()).
  */
 ViewContainer::viewFactoryType& ViewContainer::viewFactory()
 {
     static viewFactoryType factory = { { "TableView",       &viewFactoryType::createDefault<TableView>,       "Table View"       },
                                        { "HistogramView",   &viewFactoryType::createDefault<HistogramView>,   "Histogram View"   },
                                        { "ScatterPlotView", &viewFactoryType::createDefault<ScatterPlotView>, "Scatterplot View" },
-                                       { "GridView",        &viewFactoryType::createDefault<GridView>,        "Grid View"        } };
+                                       { "GridView",        &viewFactoryType::createDefault<GridView>,        "Grid View"        },
+                                       { "GeographicView",  nullptr,                                          "Geographic View",
+                                         CreationSource::Plugin } };
     return factory;
 }
 
@@ -281,32 +283,6 @@ void ViewContainer::childCreated(Configurable* child)
 
     view->init();
     addView(view);
-}
-
-/**
- * Only reached for classes unknown to the view factory.
- */
-void ViewContainer::generateSubConfigurable(nlohmann::json& child_json)
-{
-    const auto& class_name = Configuration::getClassName(child_json);
-
-    if (!USE_EXPERIMENTAL_SOURCE && class_name == "GeographicView")
-    {
-        loginf << "ignored GeographicView since compiled w/o experimental source";
-    }
-    //  else if (class_name.compare ("MosaicView") == 0)
-    //  {
-    //    MosaicView* view = new MosaicView ( class_name, instance_name, this );
-    //    unsigned int number = getAppendedInt (instance_name);
-    //    if (number >= view_count_)
-    //      view_count_ = number+1;
-
-    //    traced_assert( view );
-    //    view->init();
-    //  }
-    else
-        throw std::runtime_error("ViewContainer: generateSubConfigurable: unknown class_name " +
-                                 class_name);
 }
 
 void ViewContainer::checkSubConfigurables()

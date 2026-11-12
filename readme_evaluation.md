@@ -52,7 +52,7 @@ To create a new standard: copy the closest existing one in the GUI, adjust the g
 
 Requirement sources are grouped by topic: `detection/`, `position/`, `latency/` (position latency and ADS-B latency), `identification/`, `mode_a/`, `mode_c/`, `speed/`, `trackangle/`, `mom/`, `dubious/`, `extra/`, `status/`, `generic/`, each with a matching folder in `src/eval/results/`. A worked example of a full standard, from requirement mapping to configuration and verification, is [readme_ed129c.md](experimental_src/readme_ed129c.md).
 
-To add a new requirement type (code change): create a `*Config` class + widget in `src/eval/requirement/<topic>/`, a requirement class derived from `EvaluationRequirement::Base` (or `ProbabilityBase` / `IntervalBase` / `PositionBase`), result classes derived from `Single` and `Joined` in `src/eval/results/<topic>/`, and register the config class in `Group::requirement_type_mapping_` and the group's `generateSubConfigurable()`.
+To add a new requirement type (code change): create a `*Config` class + widget in `src/eval/requirement/<topic>/`, a requirement class derived from `EvaluationRequirement::Base` (or `ProbabilityBase` / `IntervalBase` / `PositionBase`), result classes derived from `Single` and `Joined` in `src/eval/results/<topic>/`, and register the config class in `Group::requirement_type_mapping_` and the group's `generateSubConfigurable_impl()`.
 
 ## Sector restriction of the load
 

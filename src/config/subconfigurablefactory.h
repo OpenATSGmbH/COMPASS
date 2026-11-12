@@ -57,6 +57,16 @@ enum class SubConfigurableDefaults
 };
 
 /**
+ * Source of the creator of a factory class.
+ * - a class without creator is known but cannot be created: BuiltIn => error, Plugin => plugin not present, skipped
+ */
+enum class CreationSource
+{
+    BuiltIn, // creator defined with the factory
+    Plugin   // creator added by a plugin at runtime (missing if the plugin is not present)
+};
+
+/**
  * Type-erased part of a sub-configurable factory, as stored by Configurable.
  */
 class SubConfigurableFactoryBase
@@ -64,8 +74,10 @@ class SubConfigurableFactoryBase
 public:
     virtual ~SubConfigurableFactoryBase() = default;
 
-    virtual bool canCreate(const std::string& class_name) const = 0;
-    virtual std::vector<std::string> classNames() const = 0;
+    virtual bool knows(const std::string& class_name) const = 0;     // class listed, with or without creator
+    virtual bool canCreate(const std::string& class_name) const = 0; // class listed with creator
+    virtual CreationSource creationSource(const std::string& class_name) const = 0; // of a known class
+    virtual std::vector<std::string> classNames() const = 0;         // classes that can be created
 
     /// creates the child, ownership goes to the caller
     virtual Configurable* createChild(nlohmann::json& child_json, Configurable& parent) const = 0;
@@ -89,7 +101,9 @@ public:
 /**
  * Creates sub-configurables derived from Base by class name.
  * - Parent is the configurable creating and owning the children
- * - built-in types are added on construction, further types (e.g. plugins) at runtime via add()
+ * - the classes are listed on construction: built-in types with creator, plugin types without (CreationSource::Plugin)
+ * - addPlugin() sets the creator of a listed plugin type (called by the plugin), add() adds a type not listed
+ * - plugin types must be listed: a build without plugins skips them when reading a config instead of throwing
  * - class names are unique
  */
 template<typename Base, typename Parent>
@@ -100,9 +114,10 @@ public:
 
     struct Entry
     {
-        std::string class_name;
-        Creator     creator;
-        std::string display_name; // name shown in menus (empty = class name)
+        std::string    class_name;
+        Creator        creator;                           // empty for a plugin type until the plugin adds it
+        std::string    display_name;                      // name shown in menus (empty = class name)
+        CreationSource source = CreationSource::BuiltIn;
     };
 
     SubConfigurableFactory() = default;
@@ -115,11 +130,19 @@ public:
     template<typename T>
     void add(const std::string& class_name,
              const std::string& display_name = "");
+    void addPlugin(const std::string& class_name,
+                   const Creator& creator,
+                   const std::string& display_name = "");
+    template<typename T>
+    void addPlugin(const std::string& class_name,
+                   const std::string& display_name = "");
 
     template<typename T>
     static std::unique_ptr<Base> createDefault(nlohmann::json& child_json, Parent& parent);
 
+    bool knows(const std::string& class_name) const override;
     bool canCreate(const std::string& class_name) const override;
+    CreationSource creationSource(const std::string& class_name) const override;
     std::unique_ptr<Base> create(nlohmann::json& child_json, Parent& parent) const;
     Configurable* createChild(nlohmann::json& child_json, Configurable& parent) const override;
 
@@ -136,11 +159,17 @@ template<typename Base, typename Parent>
 SubConfigurableFactory<Base, Parent>::SubConfigurableFactory(std::initializer_list<Entry> entries)
 {
     for (const auto& e : entries)
-        add(e.class_name, e.creator, e.display_name);
+    {
+        traced_assert(!e.class_name.empty());
+        traced_assert_msg(!knows(e.class_name), ("sub-configurable class '" + e.class_name + "' listed twice").c_str());
+
+        entries_[ e.class_name ] = e;
+    }
 }
 
 /**
- * Adds a creator for the given class name.
+ * Adds a type not listed on construction, with the given creator.
+ * Notice: plugin types are listed and filled with addPlugin().
  */
 template<typename Base, typename Parent>
 void SubConfigurableFactory<Base, Parent>::add(const std::string& class_name,
@@ -149,9 +178,10 @@ void SubConfigurableFactory<Base, Parent>::add(const std::string& class_name,
 {
     traced_assert(!class_name.empty());
     traced_assert(creator);
-    traced_assert_msg(!canCreate(class_name), ("sub-configurable class '" + class_name + "' added twice").c_str());
+    traced_assert_msg(!knows(class_name),
+                      ("sub-configurable class '" + class_name + "' already listed or added").c_str());
 
-    entries_[ class_name ] = Entry{ class_name, creator, display_name };
+    entries_[ class_name ] = Entry{ class_name, creator, display_name, CreationSource::Plugin };
 }
 
 /**
@@ -163,6 +193,42 @@ void SubConfigurableFactory<Base, Parent>::add(const std::string& class_name,
                                                const std::string& display_name)
 {
     add(class_name, &SubConfigurableFactory<Base, Parent>::createDefault<T>, display_name);
+}
+
+/**
+ * Sets the creator of a plugin type listed on construction, called by the plugin.
+ * Notice: a non-empty display name replaces the listed one.
+ */
+template<typename Base, typename Parent>
+void SubConfigurableFactory<Base, Parent>::addPlugin(const std::string& class_name,
+                                                     const Creator& creator,
+                                                     const std::string& display_name)
+{
+    traced_assert(creator);
+
+    auto it = entries_.find(class_name);
+    traced_assert_msg(it != entries_.end(),
+                      ("plugin sub-configurable class '" + class_name + "' not listed by the host").c_str());
+    traced_assert_msg(it->second.source == CreationSource::Plugin,
+                      ("built-in sub-configurable class '" + class_name + "' added by a plugin").c_str());
+    traced_assert_msg(!it->second.creator,
+                      ("plugin sub-configurable class '" + class_name + "' added twice").c_str());
+
+    it->second.creator = creator;
+
+    if (!display_name.empty())
+        it->second.display_name = display_name;
+}
+
+/**
+ * Sets a creator for plugin type T with the common constructor T(nlohmann::json&, Parent*).
+ */
+template<typename Base, typename Parent>
+template<typename T>
+void SubConfigurableFactory<Base, Parent>::addPlugin(const std::string& class_name,
+                                                     const std::string& display_name)
+{
+    addPlugin(class_name, &SubConfigurableFactory<Base, Parent>::createDefault<T>, display_name);
 }
 
 /**
@@ -180,9 +246,29 @@ std::unique_ptr<Base> SubConfigurableFactory<Base, Parent>::createDefault(nlohma
 /**
 */
 template<typename Base, typename Parent>
-bool SubConfigurableFactory<Base, Parent>::canCreate(const std::string& class_name) const
+bool SubConfigurableFactory<Base, Parent>::knows(const std::string& class_name) const
 {
     return entries_.count(class_name) > 0;
+}
+
+/**
+*/
+template<typename Base, typename Parent>
+bool SubConfigurableFactory<Base, Parent>::canCreate(const std::string& class_name) const
+{
+    auto it = entries_.find(class_name);
+    return it != entries_.end() && it->second.creator;
+}
+
+/**
+*/
+template<typename Base, typename Parent>
+CreationSource SubConfigurableFactory<Base, Parent>::creationSource(const std::string& class_name) const
+{
+    auto it = entries_.find(class_name);
+    traced_assert(it != entries_.end());
+
+    return it->second.source;
 }
 
 /**
@@ -194,7 +280,8 @@ std::unique_ptr<Base> SubConfigurableFactory<Base, Parent>::create(nlohmann::jso
     const auto class_name = Configuration::getClassName(child_json);
 
     auto it = entries_.find(class_name);
-    traced_assert_msg(it != entries_.end(), ("sub-configurable class '" + class_name + "' unknown").c_str());
+    traced_assert_msg(it != entries_.end() && it->second.creator,
+                      ("sub-configurable class '" + class_name + "' cannot be created").c_str());
 
     auto obj = it->second.creator(child_json, parent);
     traced_assert(obj);
@@ -225,7 +312,12 @@ std::vector<std::string> SubConfigurableFactory<Base, Parent>::classNames() cons
     names.reserve(entries_.size());
 
     for (const auto& [ class_name, entry ] : entries_)
+    {
+        if (!entry.creator)
+            continue;
+
         names.push_back(class_name);
+    }
 
     return names;
 }

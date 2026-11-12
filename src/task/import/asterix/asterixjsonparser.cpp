@@ -68,7 +68,7 @@ ASTERIXJSONParser::ASTERIXJSONParser(nlohmann::json& config, ASTERIXImportTask& 
     hint_icon_ = Files::IconProvider::getIcon("hint.png");
 }
 
-void ASTERIXJSONParser::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult ASTERIXJSONParser::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -81,7 +81,9 @@ void ASTERIXJSONParser::generateSubConfigurable(nlohmann::json& child_json)
         mapping_checks_dirty_ = true;
     }
     else
-        throw std::runtime_error("ASTERIXJSONParser: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -752,7 +754,7 @@ void ASTERIXJSONParser::checkIfKeysExistsInMappings(const std::string& location,
         ss << "Type " << j.type_name() << ", value " << j.dump();
         child_json[Configuration::ParameterSection]["comment"] = ss.str();
 
-        generateSubConfigurable(child_json);
+        createSubConfigurable(child_json);
     }
 }
 

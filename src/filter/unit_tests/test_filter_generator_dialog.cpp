@@ -196,7 +196,7 @@ TEST_CASE("Filter edit round-trip: clearConditions and rebuild", "[filter][dialo
         cond_json[Configuration::ParameterSection]["absolute_value"] = false;
         cond_json[Configuration::ParameterSection]["include_null"] = false;
         cond_json[Configuration::ParameterSection]["reset_value"] = "45.0";
-        filter.generateSubConfigurable(cond_json);
+        filter.createSubConfigurable(cond_json);
     }
     {
         auto& cond_json = filter.addNewSubConfiguration("DBFilterCondition", "EditTestCondition1");
@@ -207,7 +207,7 @@ TEST_CASE("Filter edit round-trip: clearConditions and rebuild", "[filter][dialo
         cond_json[Configuration::ParameterSection]["absolute_value"] = false;
         cond_json[Configuration::ParameterSection]["include_null"] = false;
         cond_json[Configuration::ParameterSection]["reset_value"] = "50.0";
-        filter.generateSubConfigurable(cond_json);
+        filter.createSubConfigurable(cond_json);
     }
 
     REQUIRE(filter.getNumConditions() == 2);

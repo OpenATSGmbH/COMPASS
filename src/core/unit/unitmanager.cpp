@@ -34,7 +34,7 @@ UnitManager::~UnitManager()
     dimensions_.clear();
 }
 
-void UnitManager::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult UnitManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -45,15 +45,16 @@ void UnitManager::generateSubConfigurable(nlohmann::json& child_json)
         dimensions_.insert(std::pair<std::string, Dimension*>(dimension->instanceName(), dimension));
     }
     else
-        throw std::runtime_error("UnitManager: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 void UnitManager::checkSubConfigurables()
 {
     if (dimensions_.count("Angle") == 0)
     {
-        generateSubConfigurableFromConfig("Dimension", "Angle");
+        createSubConfigurableFromConfig("Dimension", "Angle");
 
         dimensions_.at("Angle")->addUnit("Degree", 1.0, "");
         dimensions_.at("Angle")->addUnit("Radian", M_PI / 180.0, "");
@@ -61,7 +62,7 @@ void UnitManager::checkSubConfigurables()
 
     if (dimensions_.count("Length") == 0)
     {
-        generateSubConfigurableFromConfig("Dimension", "Length");
+        createSubConfigurableFromConfig("Dimension", "Length");
 
         dimensions_.at("Length")->addUnit("Meter", 1.0, "");
         dimensions_.at("Length")->addUnit("Kilometer", 1.0 / 1000.0, "");
@@ -71,7 +72,7 @@ void UnitManager::checkSubConfigurables()
 
     if (dimensions_.count("Height") == 0)
     {
-        generateSubConfigurableFromConfig("Dimension", "Height");
+        createSubConfigurableFromConfig("Dimension", "Height");
 
         dimensions_.at("Height")->addUnit("Feet", 1.0, "");
         dimensions_.at("Height")->addUnit("Flight Level", 1.0 / 100.0, "");
@@ -80,7 +81,7 @@ void UnitManager::checkSubConfigurables()
 
     if (dimensions_.count("Time") == 0)
     {
-        generateSubConfigurableFromConfig("Dimension", "Time");
+        createSubConfigurableFromConfig("Dimension", "Time");
 
         dimensions_.at("Time")->addUnit("Second", 1.0, "");
         dimensions_.at("Time")->addUnit("Minute", 1.0 / 60.0, "");
@@ -92,7 +93,7 @@ void UnitManager::checkSubConfigurables()
 
     if (dimensions_.count("Speed") == 0)
     {
-        generateSubConfigurableFromConfig("Dimension", "Speed");
+        createSubConfigurableFromConfig("Dimension", "Speed");
 
         dimensions_.at("Speed")->addUnit("Knots", 1.0, "");
         dimensions_.at("Speed")->addUnit("Meter/Second", 0.514444, "");

@@ -1,6 +1,6 @@
 # Splitting COMPASS into host + loadable plugins
 
-*Design document / migration plan. Status: proposed, not started. First written 2026-08-28, revised 2026-10-23 against the then-current code of both repositories (line numbers refer to that state). Revised 2026-11-03: plugins are always present, so plugin presence is asserted once at startup instead of being handled at runtime. Revised again 2026-11-03: builds on the dependency plan, which runs first. Revised 2026-11-04 after the dependency plan was implemented: paths and line numbers refer to that state, starting point updated, findings of a symbol-level link check added (Workstream A, "Further host ↔ experimental edges"). Revised 2026-11-09 after workstreams J and K of the dependency plan (`COMPASS` in `src/app`, runtime commands registered with their managers, app-level experimental libraries): starting point, registration timing, location of the plugin infrastructure and the remaining host ↔ experimental cycles updated, line numbers refer to that state. Revised 2026-11-10: sub-configurable factories (static, generic `childCreated()` hook) and the `ReconstructorTask` remodel added to Workstream A; the Kalman interface factory replaced by a `ReconstructorBase` virtual; plugins as `Plugin` objects with init steps, the list built in `main` (loaded by expected name from C on), no registry aggregates. Revised 2026-11-11: Workstream A complete; Workstream B done on Linux (shared libraries, MinGW instead of MSVC for Windows, so no export annotations; jASTERIX and NemaTode shared).*
+*Design document / migration plan. Status: in progress (A complete, B done on Linux, C and E done, D and G done in the dev build, F done on Linux, phase 1 verification done on Linux; open: the Windows check). First written 2026-08-28, revised 2026-10-23 against the then-current code of both repositories (line numbers refer to that state). Revised 2026-11-03: plugins are always present, so plugin presence is asserted once at startup instead of being handled at runtime. Revised again 2026-11-03: builds on the dependency plan, which runs first. Revised 2026-11-04 after the dependency plan was implemented: paths and line numbers refer to that state, starting point updated, findings of a symbol-level link check added (Workstream A, "Further host ↔ experimental edges"). Revised 2026-11-09 after workstreams J and K of the dependency plan (`COMPASS` in `src/app`, runtime commands registered with their managers, app-level experimental libraries): starting point, registration timing, location of the plugin infrastructure and the remaining host ↔ experimental cycles updated, line numbers refer to that state. Revised 2026-11-10: sub-configurable factories (static, generic `childCreated()` hook) and the `ReconstructorTask` remodel added to Workstream A; the Kalman interface factory replaced by a `ReconstructorBase` virtual; plugins as `Plugin` objects with init steps, the list built in `main` (loaded by expected name from C on), no registry aggregates. Revised 2026-11-11: Workstream A complete; Workstream B done on Linux (shared libraries, MinGW instead of MSVC for Windows, so no export annotations; jASTERIX and NemaTode shared). Revised again 2026-11-11 (Workstream C): plugins are all or none (none in a build without `experimental_src`, a supported runtime case), the expected plugins are hard-coded in `main.cpp` and loaded there; factory entries carry a `CreationSource`, `generateSubConfigurable_impl()` returns a `GenerateResult`, all creation goes through `createSubConfigurable(json, must_exist)`. Revised 2026-11-12 (Workstream C): no plugin API version, no build ID and no `COMPASS_PLUGIN_PATH`, plugins rebuilt with the client instead; `plugin_manager` and the entry macro implemented. Revised again 2026-11-12 (Workstream D): ProbIMM is a loadable module, its test lab tests come in through a plugin debug menu hook, `TestPlot` moved to `compass_gui`. Revised again 2026-11-12 (Workstream G, brought forward before E and F): the geo view is a loadable module too, entry symbols in separate `*_entry.cpp` sources. Revised again 2026-11-12 (Workstream E): plugins fill their listed factory entries with `addPlugin()`, the runtime check of the registrations after each init step is dropped. Revised again 2026-11-12: builds without `experimental_src` verified (four fixes, see E); the DocX export is a plugin too, through the new `CreatorRegistry` (see "DocX plugin"); plugins are declared with `compass_add_plugin()`; the pro analysis inspectors are the plugin ExtraAnalysis, the analyze task is fully generic (see "ExtraAnalysis plugin").*
 
 ## Context
 
@@ -8,7 +8,7 @@ An external constraint requires that some COMPASS functionality be delivered as 
 
 The delivery model is unchanged: **all C++, all compiled from one tree at every release, host and fitting plugins always shipped together in the same package, from one hand.** Nothing is shipped or sold separately. There is no third-party plugin ecosystem, no ABI stability commitment, no version negotiation, and no API deprecation policy. That removes the hard 80% of what usually makes a plugin architecture expensive.
 
-**All plugins are always present.** A missing or broken plugin is a packaging error, not a supported runtime state. The host checks once at startup that every expected plugin loaded and asserts otherwise. No other code checks for plugin presence, and there is no degraded mode.
+**Plugins are all or none (decided 2026-11-11, replaces "always present" of 2026-11-03).** A build without `experimental_src` has no plugins and runs without them; that is a supported runtime case (the plugin types in the default config are skipped, see "Sub-configurable factories"). A build with `experimental_src` expects every plugin: a missing or broken plugin is a packaging error, the host checks once at startup and asserts. No other code checks for plugin presence, and there is no degraded mode beyond "no plugins".
 
 ### Execution order (decided 2026-11-03)
 
@@ -51,10 +51,10 @@ Phase 1 must not make phase 2 harder. The architecture, the export rule and the 
 ## Scoping decisions
 
 - **ProbIMM plugin contains all of `compass_reconst_adv`** (`complex/`, `kalman/`, `jpda/`) **plus the three test lab tests that use its types** (Workstream D). This requires that the host stops constructing experimental Kalman interfaces (solved by a `ReconstructorBase` virtual, Workstream A). Keeping `kalman/` in the host was rejected.
-- **Plugin presence is asserted once at startup (decided 2026-11-03).** All plugins are always shipped, so a missing plugin aborts the client at startup with a clear message (Workstream E). There is no runtime presence query, no fallback and no UI gating for absent plugins.
+- **Plugin presence is asserted once at startup (decided 2026-11-03, refined 2026-11-11).** With `experimental_src` all plugins are shipped, so a missing plugin aborts the client at startup with a clear message (Workstream E); without `experimental_src` there are none. There is no runtime presence query and no fallback; menus and selections show only the types that can be created (`SubConfigurableFactory::classNames()`).
 - **Licence checks stay as they are.** Plugin presence no longer varies at runtime, so the licence is the only runtime axis, and the existing licence checks remain unchanged.
 - **Plugins are CMake `MODULE` libraries**, loaded via `QLibrary`, with no import library on Windows. Nothing links against a plugin. The host only resolves the entry symbol `compass_plugin_create` at runtime, and everything else goes through the returned `Plugin` object and the registries it fills. CMake rejects `target_link_libraries()` on a `MODULE` target, which enforces that the host libraries, the client and the tests build without any plugin. The `.lib`/`.exp` that MSVC may still emit for the exported entry symbol goes unused and is not shipped.
-- **Stay in the host:** `compass_osg_utils`, `compass_docx`, `compass_rtcmd_ext`, `compass_test_lab` (minus the three ProbIMM tests), the MLAT/ADS-B/SMR inspectors under `experimental_src/analysis/`, and in phase 1 also `compass_geo_view`. osgEarth stays a host dependency; host code uses it directly ([accuracy.cpp:24](src/util/accuracy.cpp#L24), [measurement.cpp:27](src/reconstruction/measurement.cpp#L27), [client.cpp:67-69](src/app/client/client.cpp#L67)).
+- **Stay in the host:** `compass_osg_utils`, ~~`compass_docx`~~ (DocX plugin since 2026-11-12, see "DocX plugin"), `compass_rtcmd_ext`, `compass_test_lab` (minus the three ProbIMM tests), ~~the MLAT/ADS-B/SMR inspectors under `experimental_src/analysis/`~~ (ExtraAnalysis plugin since 2026-11-12, see "ExtraAnalysis plugin"), and in phase 1 also `compass_geo_view`. osgEarth stays a host dependency; host code uses it directly ([accuracy.cpp:24](src/util/accuracy.cpp#L24), [measurement.cpp:27](src/reconstruction/measurement.cpp#L27), [client.cpp:67-69](src/app/client/client.cpp#L67)).
 
 ## Target architecture
 
@@ -106,7 +106,7 @@ So both platforms use the same design: the host code lives in shared libraries, 
 
 **Plugin list built in `main` (decided 2026-11-10).** Each plugin is a `Plugin` object with init steps (see below). `compass_client`'s `main.cpp` builds the list of plugin objects and hands it via `Client` to `CompassRoot`, which keeps it; at fixed points of the startup the host calls each step for every plugin in the list. Where the list comes from changes, the call points do not:
 - **Phase 1 until Workstream C:** the plugins are statically linked; `main.cpp` (and the test main) create the plugin objects directly, under `USE_EXPERIMENTAL_SOURCE`.
-- **From Workstream C on:** `PluginManager` (`src/app/plugin/`, called from `main`) loads the expected plugins by name (no folder scan, there are no drop-in plugins), runs the startup check and returns the list.
+- **From Workstream C on:** `main.cpp` gets the list of expected plugin names (declared with `compass_add_plugin()` since 2026-11-12, see E; empty without experimental source) and calls `PluginManager` (`src/app/plugin/`), which loads them by name (no folder scan, there are no drop-in plugins), runs the startup check and returns the list for `AppHooks::plugins`. Plugins become loadable modules one by one (ProbIMM in D, the geo view in G); until then they stay statically created in `main.cpp`.
 
 The core step runs **before** the config tree and with it the managers are instantiated (`COMPASS::createManagers()`), since [task_reconstructor.json](conf/default/task_reconstructor.json) names `ProbIMMReconstructor0` (and [views.json:16](conf/default/views.json#L16) names `GeographicView0`).
 
@@ -124,11 +124,12 @@ The factory registries must exist before the managers. Decided 2026-11-10: they 
 
 ### Sub-configurable factories (decided 2026-11-10)
 
-Reconstructors and views are sub-configurables: their parent creates them by class name from the config tree (`Configurable::generateSubConfigurable()`, an if/else chain per parent). A generic factory in `compass_config` lets a parent create them by class name without naming the concrete types, so plugins can add types:
+Reconstructors and views are sub-configurables: their parent creates them by class name from the config tree (`Configurable::generateSubConfigurable_impl()`, an if/else chain per parent). A generic factory in `compass_config` lets a parent create them by class name without naming the concrete types, so plugins can add types:
 
 - **`SubConfigurableFactory<Base, Parent>`** (`src/config/subconfigurablefactory.h`): maps class names to creators `std::unique_ptr<Base>(nlohmann::json&, Parent&)`.
   - `add(class_name, creator)` for any constructor, `add<T>(class_name)` as shorthand for the common constructor `T(nlohmann::json&, Parent*)`. Class names are unique (asserted). An optional display name per class serves menus (e.g. the "Add view" menu).
-  - `canCreate()`, `create()`, `classNames()`.
+  - **`CreationSource` per entry (decided 2026-11-11):** `BuiltIn` (default, creator defined with the factory) or `Plugin`. Plugin types are listed in the host's factory definition **without creator** (`{ "GeographicView", nullptr, "Geographic View", CreationSource::Plugin }`), the plugin's `addPlugin()` / `addPlugin<T>()` sets the creator. `addPlugin()` asserts that the class is listed as plugin type and not yet creatable, `add()` only adds types not listed (decided 2026-11-12): a plugin type must be listed, otherwise a build without plugins throws "unknown class" on a config containing it; the plugin tests assert `knows()`, `creationSource() == Plugin` and `canCreate()` for their types. So the factory knows what it could create and can tell "plugin not present, fine" from "unknown class". The host names its plugin classes only as strings there; the `USE_EXPERIMENTAL_SOURCE` special cases for plugin classes (`ViewContainer`, `ReconstructorTask`) are gone.
+  - `knows()` (listed, with or without creator), `canCreate()` (with creator), `creationSource()`, `create()`, `classNames()` (only creatable classes, so menus, the reconstructor selection and the `OnePerClass` defaults only offer what is present).
 - **Static members via macro.** `DECLARE_SUBCONFIGURABLE_FACTORY(Name, Base, Parent, Defaults)` in the public part of the parent's class declares a typedef `NameType` and a static accessor `static NameType& Name();`. The parent's .cpp defines the accessor with a function-local static that is initialized with the built-in types:
 
   ```cpp
@@ -139,27 +140,33 @@ Reconstructors and views are sub-configurables: their parent creates them by cla
   ViewContainer::viewFactoryType& ViewContainer::viewFactory()
   {
       static viewFactoryType factory = { { "TableView", &viewFactoryType::createDefault<TableView>, "Table View" },
-                                         ... };
+                                         ...,
+                                         { "GeographicView", nullptr, "Geographic View", CreationSource::Plugin } };
       return factory;
   }
 
-  // geo view registration
-  ViewContainer::viewFactory().add<GeographicView>("GeographicView");
+  // geo view plugin, initUI(): sets the creator of the listed plugin type
+  ViewContainer::viewFactory().addPlugin<GeographicView>("GeographicView", "Geographic View");
   ```
 
   A static accessor instead of a static data member: functions are exported automatically on Windows (no B.5 annotation needed for this), and the factory is initialized on first use (no static initialization order issue). Plugins add their types at runtime in their registration step, never from static initializers. Registrations persist for the whole process, also across test cases: a test registers a plugin type once.
 - **Optional, several per parent, attached automatically.** Besides the accessor, the macro declares a member `SubConfigurableFactoryAttacher Name_attacher_ { this, Name() }` that attaches the factory to its instance (`Configurable::addSubConfigurableFactory()`, protected, the attacher is a friend). Members are initialized after the `Configurable` base and before the constructor body, so the factory is attached before `createSubConfigurables()`; derived parents inherit it. No attach statement in the parent's constructor, and no global collection of factories. A configurable without factories behaves as before. (Decided 2026-11-10; rejected: an explicit `addSubConfigurableFactory()` call per factory in the constructor, and a global list of all factories filtered by parent type.)
-- **Dispatch via a wrapper.** The non-virtual `Configurable::createSubConfigurable(child_json)` asks the attached factories (a class name known to several asserts) and otherwise calls the virtual `generateSubConfigurable()`, so all 39 overrides and the base's "not implemented" throw stay unchanged. `createSubConfigurables()`, `generateSubConfigurableFromConfig()`, `generateSubConfigurableFromJSON()` and the reconfigure path ([configuration.cpp:1083](src/config/configuration.cpp#L1083)) call the wrapper; direct callers of `generateSubConfigurable()` in parents with factories switch to it (`ViewContainer::addView()`), the others can stay.
+- **All creation goes through a wrapper (decided 2026-11-10, extended 2026-11-11).** The non-virtual `GenerateResult Configurable::createSubConfigurable(child_json, must_exist = true)` is the only entry point for creating a child:
+  - a factory that knows the class (a class name known to several asserts) creates it, or, for a `Plugin` type without creator, the child is `Skipped`; a `BuiltIn` without creator throws;
+  - otherwise it calls the private, non-virtual `generateSubConfigurable()`, which calls the virtual `GenerateResult generateSubConfigurable_impl()` (renamed 2026-11-12, so overrides are recognizable as not to be called directly). It returns `Generated`, `Skipped` (deliberately not created: legacy entries like `DataSourceManager`, `OGRProjection`, empty overrides, `FilterManager` duplicates) or `Unknown` (the base implementation). All 35 overrides (plus inline and test ones) return it and are `protected`, so only the wrapper calls them;
+  - **`Unknown` always throws**: a config from a very different build has to be reset or adapted, there is no generic skip of unknown classes;
+  - **`Skipped`** throws if `must_exist`, otherwise it is logged and the entry stays in the configuration, written back unchanged. All skips concern reading a config, so `must_exist = true` is the default and only `createSubConfigurables()` (reading the config) passes `false`. The reconfigure path ([configuration.cpp:1083](src/config/configuration.cpp#L1083)) keeps `true`: it uses the child afterwards, the throw lands in its existing `catch` ("creation failed");
+  - the 39 former direct calls of `generateSubConfigurable_impl()` (add slots, dialogs, `checkSubConfigurables()` defaults) call the wrapper; `generateSubConfigurableFromConfig()` / `FromJSON()` are renamed to `createSubConfigurableFromConfig()` / `FromJSON()` and return the `GenerateResult` too.
 - **Hook.** `virtual void childCreated(Configurable* child)` in `Configurable`, called for every factory-created child. The derived parent **takes ownership** there (stores it in its own `std::unique_ptr` container, connects signals, inits it). The base default asserts, so a parent with a factory but no override fails loudly instead of leaking.
 - **Ownership stays in the derived parent**, as today. Deleting a child is erasing it from the parent's container; `~Configurable` of the child already removes it from the parent's children and its sub-config entry (as for views today, [viewcontainer.cpp:212-230](src/view/viewcontainer.cpp#L212)). No `Configurable::deleteChild()`.
 - **Default instances (decided 2026-11-10).** The required 4th macro parameter `Defaults` (`SubConfigurableDefaults::None` / `OnePerClass`, no default value) is passed to `addSubConfigurableFactory()` by the attacher. `createSubConfigurables()` runs a private, non-virtual `createDefaultSubConfigurables()` after the creation from the config and before the virtual `checkSubConfigurables()` (all overrides unchanged): for `OnePerClass` factories it creates `<class_name>0` for every class without a child of that class (any instance name), including types added at runtime by plugins. Views use `None` (no view per type in each container), reconstructors `OnePerClass` (removes `ReconstructorTask::checkSubConfigurables()` with its `USE_EXPERIMENTAL_SOURCE` block).
 
 Rejected alternatives: root-owned injected factories for these (3a; static members preferred, the factory belongs to its parent class), a typed hook per factory (`reconstructorCreated()`; one generic hook suffices), a mixin base class per factory type (extra multiple inheritance on `QObject` classes), ownership in the base `Configurable` (typed access would need a second list, and deletion a base API).
 
-Plugin interface (`src/app/plugin/plugin.h`, Workstream A) and, from Workstream C on, one exported C symbol per module:
+Plugin interface (`src/app/plugin/plugin.h`, Workstream A) and, from Workstream C on, the exported C symbol per module, defined by the macro `COMPASS_DECLARE_PLUGIN(PluginClass)` in the plugin's .cpp:
 
 ```cpp
-extern "C" Plugin* compass_plugin_create();   // returns a static instance (Workstream C)
+extern "C" Plugin* compass_plugin_create(); // returns a static instance (Workstream C)
 
 class Plugin
 {
@@ -188,13 +195,13 @@ Registries:
 | `TestLabRegistry` | UI | `compass_test_lab` | plugin-specific entries in the host test lab menu (`TestLabPhil().addTestsToMenu()` at [test_lab.cpp:97](experimental_src/test/test_lab.cpp#L97)) | 1 |
 | `Plugin::shutdown()` (formerly `LifecycleHooks`) | shutdown | `compass_app` | `geo_view::shutdown()` in `CompassRoot::shutdown()` (done 2026-11-10 via `GeoViewPlugin`) | 1 |
 
-The sub-configurable factories build on `Configurable::generateSubConfigurable()`, which is already a string-keyed factory, see "Sub-configurable factories" above.
+The sub-configurable factories build on `Configurable::generateSubConfigurable_impl()`, which is already a string-keyed factory, see "Sub-configurable factories" above.
 
 Widget creation for reconstructors is a virtual on the reconstructor (`ReconstructorBase::createWidget()`, Workstream A). The plugin links the UI libraries until it is split internally into core and UI parts; that is a compute core plan concern.
 
 ### Startup presence check
 
-`PluginManager` knows the set of **expected plugins** from the build (Workstream E) and loads exactly those. Every step of loading a plugin is checked with `traced_assert_msg`, and so is the registration result: each expected registry entry must exist after `initCore()` / `initCommands()` / `initUI()`. After this check, host code may rely on every registry entry being present. Registry lookups for expected entries assert instead of returning an "unavailable" result.
+`PluginManager` loads exactly the **expected plugins** that `main.cpp` passes (declared with `compass_add_plugin()`, Workstream E). Every step of loading a plugin is checked with `traced_assert_msg`, and so is the registration result: each expected registry entry must exist after `initCore()` / `initCommands()` / `initUI()`. After this check, host code may rely on every registry entry of a loaded plugin being present. Without `experimental_src` the list is empty and the factories' plugin entries stay without creator.
 
 `traced_assert` does not depend on `NDEBUG` and is active in release builds, so the check also protects the AppImage.
 
@@ -220,7 +227,7 @@ Removes the host ↔ experimental cycles. The experimental libraries stay regula
 
 - **Remodel of `ReconstructorTask` (decided 2026-11-10, part of A).** The reconstructors are held generically in `std::vector<std::unique_ptr<ReconstructorBase>> reconstructors_`, replacing the members `simple_reconstructor_` and `probimm_reconstructor_`.
   - `DECLARE_SUBCONFIGURABLE_FACTORY(reconstructorFactory, ReconstructorBase, ReconstructorTask, OnePerClass)`. `SimpleReconstructor` (with `SimpleAccuracyEstimator`) is a built-in entry; ProbIMM adds `ProbIMMReconstructor` (with `ComplexAccuracyEstimator`, one creator creating both) in `ProbIMMPlugin::initCore()`. `ProbIMMPlugin` (`experimental_src/plugins/probimm/probimmplugin.{h,cpp}` in `compass_reconst_adv`, which then links `compass_app`; the entry symbol follows in D) is created in `main.cpp`.
-  - `generateSubConfigurable()` ([reconstructortask.cpp:161-192](src/task/reconstructor/reconstructortask.cpp#L161)) is replaced by the factory dispatch; `childCreated()` stores the reconstructor and connects `configChanged`.
+  - `generateSubConfigurable_impl()` ([reconstructortask.cpp:161-192](src/task/reconstructor/reconstructortask.cpp#L161)) is replaced by the factory dispatch; `childCreated()` stores the reconstructor and connects `configChanged`.
   - `checkSubConfigurables()` ([:1570-1584](src/task/reconstructor/reconstructortask.cpp#L1570)) is removed, the factory's `OnePerClass` creates the default instances.
   - `simpleReconstructor()` / `probIMMReconstructor()` (6 uses) become a lookup by class name returning `ReconstructorBase*`; `currentReconstructor()` keeps its interface.
   - **Done 2026-11-10**, incl. the ProbIMM registration: [probimmplugin.cpp](experimental_src/plugins/probimm/probimmplugin.cpp) adds the entry in `initCore()` (`compass_reconst_adv` links `compass_app`), created in `main.cpp` and the test main, checked by `test_probimm_plugin.cpp`; `reconstructorFactory()` only holds `SimpleReconstructor`. The reconstructor names (`current_reconstructor_str_`, persisted) are the factory display names (`ScoringUMReconstructorName`, `ProbImmReconstructorName`, the latter now outside the `USE_EXPERIMENTAL_SOURCE` guard), so the constructor fallback, the setter assert and `currentReconstructor()` go through `reconstructorClassName()` without naming types. New public `reconstructor(class_name)` and `reconstructorClassName(name)`; the typed `simpleReconstructor()` / `probIMMReconstructor()` are removed with the widget change (the dialog was their only user).
@@ -243,7 +250,7 @@ Removes the host ↔ experimental cycles. The experimental libraries stay regula
 **Geographic View:**
 
 - **`GeoViewPlugin`** ([geoviewplugin.cpp](experimental_src/plugins/geoview/geoviewplugin.cpp), in `compass_geo_view`, which now links `compass_app`; created in `main.cpp`): `initUI()` → `geo_view::initViews()`, `initCommands()` → `geo_view::initCommands()`, `shutdown()` → `geo_view::shutdown()` (the facade functions in `geo_view_api.h`). `compass_app` names no geo view code any more: its include path into the facade, the `#if` calls in `CompassRoot` (shutdown) and `MainWindow` and the no-op `geo_view::clearHiddenLayers()` call are gone. **Done 2026-11-10**, with the next two items; `test_geoview_plugin.cpp` checks the view factory entries.
-- **View creation.** `ViewContainer` gets `DECLARE_SUBCONFIGURABLE_FACTORY(viewFactory, View, ViewContainer, None)` with the four built-in views as entries (with their display names); the geo view adds `GeographicView` via `GeoViewPlugin::initUI()`. **Done 2026-11-10.** The if/else chain in `ViewContainer::generateSubConfigurable()` ([viewcontainer.cpp:264-305](src/view/viewcontainer.cpp#L264)) is replaced by the dispatch, and `childCreated()` does what each branch does today (`views_.emplace_back()`, `init()`, `addView()`). The class list in `ViewManager` (`viewClassList()`, `newViewName()`) comes from `classNames()` plus the display names (`view_class_list_` removed); `ViewContainer::addView(class_name)` calls `createSubConfigurable()`. In `ViewContainer`, the "compiled w/o experimental source" branch stays a compile-time case (its remaining `generateSubConfigurable()` override, only reached for classes unknown to the factory).
+- **View creation.** `ViewContainer` gets `DECLARE_SUBCONFIGURABLE_FACTORY(viewFactory, View, ViewContainer, None)` with the four built-in views as entries (with their display names); the geo view adds `GeographicView` via `GeoViewPlugin::initUI()`. **Done 2026-11-10.** The if/else chain in `ViewContainer::generateSubConfigurable_impl()` ([viewcontainer.cpp:264-305](src/view/viewcontainer.cpp#L264)) is replaced by the dispatch, and `childCreated()` does what each branch does today (`views_.emplace_back()`, `init()`, `addView()`). The class list in `ViewManager` (`viewClassList()`, `newViewName()`) comes from `classNames()` plus the display names (`view_class_list_` removed); `ViewContainer::addView(class_name)` calls `createSubConfigurable()`. In `ViewContainer`, the "compiled w/o experimental source" branch stays a compile-time case (its remaining `generateSubConfigurable_impl()` override, only reached for classes unknown to the factory).
 - **RT commands.** `init_geographic_view_commands(registry, view_manager)` is called from `GeoViewPlugin::initCommands()` (after `startManagers()`) instead of from the `ViewManager` constructor. Since K.3 the commands already get the `ViewManager` in their constructor, so only the call site moves. **Done 2026-11-10.**
 - **Static `GeographicView::instant_display_`** ([reportexporter.cpp:211-220](src/result/report/reportexporter.cpp#L211), [viewpointsreportgenerator.cpp:171,346](src/view/points/report/viewpointsreportgenerator.cpp#L171)) becomes a flag on the `View` base class. **Done 2026-11-10:** static `View::instantDisplay()` / `setInstantDisplay()`, defined in `view.cpp` (not inline, so other libraries do not reference the static data member, relevant for Windows); the report exporters set it without `#if`, the geo view's data widget reads it.
 - **Grid view export.** "Export to GeographicView" ([gridviewconfigwidget.cpp:233,537-663](src/view/gridview/gridviewconfigwidget.cpp#L537)) uses `viewsOfType<GeographicView>()` and the non-virtual `addInternalAnnotation()` at `:659`. It moves to an abstract `GeoImageSink` in `compass_view` with `addInternalAnnotation()`, implemented by the geo view. `viewsOfType<GeoImageSink>()` ([viewmanager.h:288](src/view/viewmanager.h#L288)) works unchanged. **Done 2026-11-10:** [geoimagesink.h](src/view/viewbase/geoimagesink.h), `GeographicView : public View, public GeoImageSink`; the dialog gets the view names via `dynamic_cast<const View*>`; the export menu entry is no longer behind `#if`, it is only added if a `GeoImageSink` view exists when the menu is created (decided 2026-11-10, accepting that a geo view opened later does not add it).
@@ -282,7 +289,7 @@ Removes the host ↔ experimental cycles. The experimental libraries stay regula
 
 Everything here is testable on the current Linux build before any plugin exists.
 
-**Status (2026-11-11):** done and verified on Linux. Open: the AppImage check (needs the `compass/build_deb10` image rebuilt and `run_make_appimage.sh deb10 --clean`, since `build_deb10` caches the old `libjasterix.a`) and the Windows check (see below).
+**Status (2026-11-11):** done and verified on Linux, including the AppImage: image `compass/build_deb10` rebuilt (shared NemaTode), `run_make_appimage.sh deb10 --clean`; the AppImage bundles all 17 `libcompass_*.so`, `libjasterix.so` and `libNemaTode.so.1` in `usr/lib/` (RUNPATH `$ORIGIN/../lib` on the executables, `$ORIGIN` on the libraries), `ldd` reports no missing library, no `.a` archives are bundled, and it starts (both plugins initialized, geographic view created) and quits normally. Open: only the Windows check (see below).
 
 **Decisions (2026-11-11):**
 - **Explicit `SHARED`** in every library's `add_library()`, no static fallback (a `MODULE` plugin on static archives would get duplicate statics from D on). `-Wl,--no-undefined` for all shared libraries in the top-level CMakeLists.
@@ -326,8 +333,16 @@ Everything here is testable on the current Linux build before any plugin exists.
 ### C: Plugin infrastructure (~3 d)
 
 In `compass_app` (see Extension points, "Location"):
-- `src/app/plugin/plugin.h` (interface from Workstream A): add `COMPASS_PLUGIN_API_VERSION` (a plain build-consistency check, no negotiation) and the entry-symbol declaration.
-- `src/app/plugin/pluginmanager.{h,cpp}`: load the expected plugins by name, startup presence check (Workstream E), log a startup summary, return the plugin list. Called from `main.cpp` instead of the static creation of the plugin objects; the call points of the init steps stay as in Workstream A. Check where in `main` the logger is available for the error messages.
+- `src/app/plugin/plugin.h` (interface from Workstream A): add the macro `COMPASS_DECLARE_PLUGIN(PluginClass)`, which defines the entry symbol `compass_plugin_create()` (static instance, never deleted).
+- **No API version (decided 2026-11-12).** Host and plugins are always built together from one code base and shipped together, and only the expected plugins are loaded by name, so there is no separately built plugin to negotiate with. A manually bumped version would not catch the one realistic mismatch either (see the next point).
+- **Plugins are rebuilt with the client (decided 2026-11-12).** Nothing links the `MODULE` targets, so building only `compass_client` (e.g. the launch target in VS Code) would leave stale plugins in `build/lib/compass_plugins`, loaded against changed host libraries. `experimental_src/CMakeLists.txt` adds `add_dependencies(compass_client <plugin targets>)`; the plugin side names the host target, never the other way round.
+- `src/app/plugin/pluginmanager.{h,cpp}`: `loadPlugins(dir, names)` loads the expected plugins by name from the given directory, startup presence check (Workstream E), startup summary, returns the plugin list. The directory is a parameter (the unit test passes the directory of its test plugin), there is no environment variable override (decided 2026-11-12, it was the only way to load plugins from another build).
+  - **Implemented 2026-11-12** as the namespace `plugin_manager`: `fileName(name)`, `loadPlugin(dir, name, error)` (one plugin, returns `nullptr` and the cause, testable) and `loadPlugins(dir, names)` (prints the cause to `std::cerr` and asserts on any failure). The plugin module of `name` is `compass_plugin_<lowercase name>.so` (`.dll`), so plugin targets set `PREFIX ""`.
+  - **Test:** `src/app/unit_tests/` builds `testplugin.cpp` as two `MODULE` targets into `build/test_plugins` (`compass_plugin_testplugin` and `compass_plugin_wrongname`, the latter for the name check); `test_plugin_manager.cpp` loads them.
+  - `add_dependencies(compass_client <plugin targets>)` comes with the first plugin `MODULE` target (D); `experimental_src/CMakeLists.txt` is included before `src/app`, so it goes where the client target exists.
+- **Called in `main` (decided 2026-11-11)**, at the start, before `Client`: `main.cpp` passes the list of expected plugin names (see E, empty without experimental source) and puts the result into `AppHooks::plugins`, next to the plugins still statically created until D/G. The call points of the init steps stay as in Workstream A. Loading this early is no earlier than today: the linked plugin libraries are loaded, with their static initializers, before `main` runs.
+  - **No logger and no `QCoreApplication` yet:** messages go to `std::cerr` (as the other early output of `main`), the cause is written there before each `traced_assert_msg` (before `Logger::init()` the assert's log4cpp output would go nowhere).
+  - **Plugin directory** from the new `Utils::System::executableDir()` (`/proc/self/exe` on Linux, `GetModuleFileName` on Windows; `applicationDirPath()` needs the application object): `<exe dir>/../lib/compass_plugins` (Windows `<exe dir>/plugins`), determined by `main` and passed to `loadPlugins()` (see F).
 - **Loading via `QLibrary`**, not hand-written `dlopen`/`LoadLibrary` wrappers. Qt is already a dependency, so this keeps the port plan's "no `dlopen`" property and adds no platform seam.
   - Use `ResolveAllSymbolsHint` (`RTLD_NOW`) so a missing symbol fails at startup.
   - Keep the default local symbol scope: plugins only need the host libraries, not each other.
@@ -339,37 +354,54 @@ In `compass_app` (see Extension points, "Location"):
 `compass_reconst_adv` becomes the `MODULE` library `compass_plugin_probimm`, together with the three test lab tests that use its types. `experimental_src/util/` contributes only an include directory; `extra_resources.{h,cpp}` is compiled into `compass_core` ([src/core/CMakeLists.txt:38-50](src/core/CMakeLists.txt#L38)) for `License::verify()` and stays there.
 
 - **Entry point.** `ProbIMMPlugin` from Workstream A (already in `experimental_src/plugins/probimm/`) gets the entry symbol (ProbIMM registers no runtime commands today, so `initCommands()` stays empty). `main.cpp`'s static creation of `ProbIMMPlugin` goes.
-- **`friend class KalmanFilterIMM`** at [kalman_filter.h:181](src/reconstruction/kalman_filter.h#L181) survives the split (friendship is compile-time); the class-level export on `KalmanFilter` makes the befriended members reachable.
+- **`friend class KalmanFilterIMM`** at [kalman_filter.h:180](src/reconstruction/kalman_filter.h#L180) survives the split (friendship is compile-time); the class-level export on `KalmanFilter` makes the befriended members reachable. The IMM calls three protected members on its sub-models through `KalmanFilter*` (`init(x, P)`, `updateInternalMatrices()`, `smoothingStep_impl()`). Kept as is, but no longer behind `#if USE_EXPERIMENTAL_SOURCE` (decided 2026-11-12): a forward-declared name, it compiles without the plugin; protected static forwarders or making the members public were the alternatives.
 - **JPDA moves cleanly.** The JPDA references in the host ([reconstructortask.h:77,91](src/task/reconstructor/reconstructortask.h#L77), [reconstructortarget.h](src/task/reconstructor/reconstructortarget.h), [reconstructorbase.cpp:1811](src/task/reconstructor/reconstructorbase.cpp#L1811), [datasourceeditwidget.cpp:227](src/core/source/datasourceeditwidget.cpp#L227)) are debug flags, statistics counters and labels. The plugin fills the counters through `ReconstructorTarget::global_stats_`, which is why `ReconstructorTarget` is exported.
 - **Test lab.** `compass_test_lab` stays in the host. Three of its 42 tests construct plugin types directly, and the plugin being loaded at runtime does not help there: code naming those types must be linked against them, and on Windows a host DLL must resolve every symbol at link time. These three move into the plugin:
   - Unscented Kalman Test (`unscentedKalmanTest`, [test_lab_phil.cpp:1043](experimental_src/test/test_lab_phil.cpp#L1043): `KalmanFilterUnscented`, `MerweScaledSigmaPoints`)
   - IMM Test (`immTest`, [:1966](experimental_src/test/test_lab_phil.cpp#L1966), runs `KalmanTest` from [kalman_test.cpp](experimental_src/test/kalman_test.cpp): AM/UM/ZM/IMM filters, `dynamic_cast<KalmanFilterIMM*>`)
   - JPDA Test (`jpdaTest`, [:2946](experimental_src/test/test_lab_phil.cpp#L2946): `JPDAFull`, `JPDASettings`, `JPDATentativeTarget`, `JPDAResult`)
 
-  They move into their own source files in the plugin directory (e.g. `experimental_src/plugins/probimm/test/`, decided 2026-11-10: tests move into their plugin, but in their own source files, not merged into existing plugin sources), together with `kalman_test.{h,cpp}`. The plugin contributes them to the host's test lab menu through `TestLabRegistry` (possibly the same hook as the app ↔ `compass_test_lab` decision in Workstream A). `test_target.{h,cpp}` is plugin-free and in the host (`compass_reconstruction` since 2026-11-10), where the plugin's tests can use it. The remaining Kalman/JPDA includes in `test_lab_phil.cpp` go, and so does `compass_test_lab`'s link to `compass_reconst_adv`.
+  They move into their own source files in the plugin directory (e.g. `experimental_src/plugins/probimm/test/`, decided 2026-11-10: tests move into their plugin, but in their own source files, not merged into existing plugin sources), together with `kalman_test.{h,cpp}`.
+  - **Debug menu hook (decided 2026-11-12, replaces a `TestLabRegistry`).** New virtual `Plugin::addDebugMenuEntries(QMenu* menu)`, called by `MainWindow::createDebugMenu()` after the `AppHooks` entries. The plugin adds its own "ProbIMM Lab" submenu. The three tests use none of `TestLab`'s accessors, so the plugin does not link `compass_test_lab` (a dev harness that links the geo view until G).
+  - **`TestPlot` / `TestImage` move into the host (decided 2026-11-12).** The JPDA test draws with them; `test_plot.{h,cpp}` (Qt + Eigen only) move from `compass_test_lab` to `compass_gui` (`src/gui/`), usable by the test lab and plugins. `test_target.{h,cpp}` is plugin-free and in the host (`compass_reconstruction` since 2026-11-10), where the plugin's tests can use it. The remaining Kalman/JPDA includes in `test_lab_phil.cpp` go, and so does `compass_test_lab`'s link to `compass_reconst_adv`.
+- **`-Wl,--no-undefined` on plugin `MODULE` targets (decided 2026-11-12)**, set per target (the global flag only covers `SHARED`), so a missing link fails at build time, as for the host libraries; also on the test plugin modules.
 - **Link dependencies.** The plugin calls `osgEarth::GeoMath` (jpda, associator, accuracy estimators) and uses `compass_view` classes (`Grid2DLayerRenderer`, `ColorMap`, `ScatterSeries`). On Windows the plugin DLL must link osgEarth itself; declare it.
+
+**Done 2026-11-12 (dev build, Linux):**
+- `experimental_src/CMakeLists.txt`: the sources are the `OBJECT` library `compass_plugin_probimm_obj` (PIC, links `compass_plugin_sdk`, Eigen, Qt5::Widgets, Boost, osgEarth), linked by the `MODULE` `compass_plugin_probimm` (`PREFIX ""`, `-Wl,--no-undefined`, output `build/lib/compass_plugins/`) and by `compass_tests` (sources compiled in, no module loaded, see F "Unit tests"). The plugin targets are collected in `COMPASS_PLUGIN_TARGETS`; the top-level `CMakeLists.txt` adds `add_dependencies(compass_client ${COMPASS_PLUGIN_TARGETS})` after `src/app` (where the client target exists). `compass_client` and `compass_test_lab` no longer link ProbIMM; `compass_reconst_adv` is gone (also from the install list).
+- `ProbIMMPlugin`: `addDebugMenuEntries()`; the entry symbol `COMPASS_DECLARE_PLUGIN(ProbIMMPlugin)` is in `probimmplugin_entry.cpp`, compiled only into the `MODULE` (`compass_tests` links the objects of all plugins, a second `compass_plugin_create` would clash, found with G). `main.cpp` expects `{ "ProbIMM" }` and no longer creates it statically.
+- Test lab: the three tests are in [probimmlab.cpp](experimental_src/plugins/probimm/test/probimmlab.cpp) (moved verbatim, free functions, "ProbIMM Lab" submenu), `kalman_test.{h,cpp}` in `experimental_src/plugins/probimm/test/`, `test_plot.{h,cpp}` in `src/gui/`.
+- `experimental_src/util/CMakeLists.txt` (the include directory for the old library) is no longer included: `compass_core` already exports `experimental_src/util` publicly.
+- Checked: the module exports `compass_plugin_create`, `ldd -r` reports no undefined symbols, `compass_client` has no `DT_NEEDED` on it, all unit tests pass, layering check clean.
+- The AppImage contains the plugin since F. Verified in the running client (dev build, 2026-11-12): the startup load and a ProbIMM reconstruction (1,063,321 reference trajectory updates). Not yet checked: running the tests of the "ProbIMM Lab" menu.
 
 ### E: Startup presence check (~1 d)
 
-All plugins are always present, so presence is checked exactly once, in `PluginManager` at startup, before the config tree is instantiated. Nothing else in the host checks for it.
+Plugins are all or none (see Context), so presence is checked exactly once, in `PluginManager` at startup, before the config tree is instantiated. Nothing else in the host checks for it.
 
-- **Expected plugins come from the build.** CMake generates the list of plugin targets built in this configuration into a header (e.g. `COMPASS_EXPECTED_PLUGINS`), together with the registry entries each plugin must provide (ProbIMM: `ProbIMMReconstructor` in the reconstructor factory (its creator also creates `ComplexAccuracyEstimator`; the Kalman types and the widget come with the reconstructor's overrides, no entry), the three test lab entries). `PluginManager` loads exactly these files by name and does not scan for other files.
-- **Asserted steps**, each with `traced_assert_msg` and a message naming the plugin and the plugin directory. Before the assert, the details go to `logerr`, e.g. `QLibrary::errorString()`:
+- **Expected plugins are declared next to the plugin targets (decided 2026-11-12, replaces the list hard-coded in `main.cpp` of 2026-11-11).** The CMake macro `compass_add_plugin(<Name> <dir> [LIBRARIES <lib>...])` (top-level `CMakeLists.txt`) creates a plugin's `OBJECT` library (linking `compass_plugin_sdk` and the plugin's `LIBRARIES`) and `MODULE` (with the entry source `<dir>/<name>plugin_entry.cpp`), includes `<dir>/CMakeLists.txt`, and appends the module to `COMPASS_PLUGIN_TARGETS` (built with the client) and the name to `COMPASS_PLUGIN_NAMES`. The top-level `CMakeLists.txt` passes the names to `compass_client` as `COMPASS_EXPECTED_PLUGINS` (comma-separated), `main.cpp` splits them; the call order in `experimental_src/CMakeLists.txt` is the load order (ProbIMM, GeoView, DocX, ExtraAnalysis); without experimental source the list is empty. `PluginManager` loads exactly these files by name and does not scan for other files. The registry entries each plugin must provide: ProbIMM sets the creator of `ProbIMMReconstructor` in the reconstructor factory (its creator also creates `ComplexAccuracyEstimator`; the Kalman types and the widget come with the reconstructor's overrides, no entry) and adds the three test lab entries.
+- **Asserted steps**, each with `traced_assert_msg` and a message naming the plugin and the plugin directory. Before the assert, the details go to `std::cerr` (no logger yet, see C), e.g. `QLibrary::errorString()`:
   1. the plugin file exists;
   2. `QLibrary::load()` succeeds;
   3. the entry symbol `compass_plugin_create` resolves;
-  4. `COMPASS_PLUGIN_API_VERSION` and `COMPASS_BUILD_ID` match (Workstream F);
-  5. `name()` matches the expected name;
-  6. after each init step (`initCore()`, `initCommands()`, `initUI()`), every expected entry of that step exists.
+  4. `name()` matches the expected name;
+  5. ~~after each init step (`initCore()`, `initCommands()`, `initUI()`), every expected entry of that step exists~~: dropped (decided 2026-11-12). Host and plugins come from one build, so a missing registration is a bug, not a runtime condition. The realistic one, host and plugin naming a plugin type differently, is caught by `addPlugin()` asserting that the class is listed, and by the plugin tests (`test_probimm_plugin.cpp`, `test_geoview_plugin.cpp`: listed, `Plugin` source, creatable after the init step).
+
+  **Done 2026-11-12:** steps 1–4 in `plugin_manager` (C), the expected list in `main.cpp` (D, G).
 - **Consequences for the rest of the host:**
-  - no presence query, no `Availability` enum, no UI gating, no fallback paths;
-  - `createSubConfigurables()` ([configurable.cpp:298](src/config/configurable.cpp#L298)) needs no "known class, provider unavailable" outcome: `ProbIMMReconstructor0` in `task_reconstructor.json` always finds its class;
-  - config preservation for absent plugins is not needed (for the record: `sub_config_storage_` would keep such sub-configs anyway);
-  - registry lookups of expected entries assert instead of returning null.
+  - no presence query, no `Availability` enum, no fallback paths; menus and selections offer only creatable types;
+  - **builds without `experimental_src`** (no plugins): the plugin types in the default config (`ProbIMMReconstructor0` in `task_reconstructor.json`, `GeographicView0` in `views.json`) are listed in their factories without creator, so reading the config skips them with a log message (`GenerateResult::Skipped`), the entries stay in the config and are written back unchanged; the selected reconstructor falls back to Scoring + UM (`checkReconstructor()`);
+  - registry lookups of expected entries of a loaded plugin assert instead of returning null.
 - **Licence checks unchanged.** `checkReconstructor()`, the selector entry, the MLAT/ADS-B/SMR inspectors (via `AnalyzeDataSourceTask::professionalLicenseEnabled()`, [analyzedatasourcetask.cpp:793](src/task/analyze/analyzedatasourcetask.cpp#L793)) and the DocX export ([taskresultswidget.cpp:125](src/task/taskresultswidget.cpp#L125)) keep checking the `ComponentProbIMMReconstructor` licence exactly as today.
 - **A failed check aborts the client.** `compass_handler` reports the crash (message box or relayed exit code, [watchdog/main.cpp:74-94](src/app/watchdog/main.cpp#L74)) and does not restart the client, so there is no restart loop.
-- **Startup summary** in the log: the loaded plugins, with name, file and build ID.
-- **Builds without `experimental_src`.** The ProbIMM plugin is not built and the expected list is empty. After Workstream A, the only code referencing experimental components is the creation of the plugin objects in `main.cpp` (until C) and the test main, compiled only with `experimental_src`. This is not a runtime case.
+- **Startup summary** on stdout (before the logger exists): the loaded plugins, with name and file.
+- **Builds without `experimental_src`.** No plugin is built and the expected list is empty, a supported runtime case (see above). **Verified 2026-11-12** (copy of the working tree without `experimental_src`, started with the user's config of an experimental build and `--no_cfg_save`): starts, runs and shuts down cleanly; `ProbIMMReconstructor0`, `GeographicView0` and the experimental analyze inspector settings are skipped. Fixed for it (all but the first already broken on `master`):
+  - `Configurable::createSubConfigurables()` logged a dangling class name when a child's constructor threw (copied now);
+  - `compass_result` compiled the DocX exporter (`docxdocument.h` from `experimental_src/docx`) unconditionally: first guarded, then moved into the DocX plugin the same day (see "DocX plugin"); without it a DocX export fails with "exporter could not be created";
+  - `AnalyzeDataSourceTask::generateSubConfigurable_impl()` returned `Skipped` for the six experimental inspector settings (`MLATAccuracyInspectorSettings` is also in `conf/default`) instead of `Unknown`; superseded the same day by the inspector settings factory, which lists them as plugin entries (see "ExtraAnalysis plugin");
+  - `MainWindow::updateMenus()` asserted `license_action_`, which is only created with experimental source.
+
+  Since D and G no plugin is created statically; host code naming plugin types: the test main (`initCore()` of the plugins, compiled only with `experimental_src`) and `friend class KalmanFilterIMM` in `kalman_filter.h` (unconditional, see D).
 
 ### F: AppImage packaging + tests (~1 wk)
 
@@ -402,7 +434,7 @@ The CI then runs the Python integration tests against the finished AppImage ([do
 3. **Plugin `RUNPATH`.**
    - Set `INSTALL_RPATH "$ORIGIN/.."` on the plugin target. It resolves to `usr/lib/` in the AppImage and to `/usr/lib/` in the container install, so the plugin finds the host libraries and the bundled dependencies in both.
    - Verify with `readelf -d` that linuxdeploy does not rewrite it.
-4. **Finding the plugins at runtime, without `$APPDIR`.** `PluginManager` derives the directory from the executable: `QCoreApplication::applicationDirPath() + "/../lib/compass_plugins"`. The same rule works everywhere:
+4. **Finding the plugins at runtime, without `$APPDIR`.** `main` derives the directory from the executable: `Utils::System::executableDir() + "/../lib/compass_plugins"` (see C). The same rule works everywhere:
 
    | Environment | Executable | Plugin directory |
    |---|---|---|
@@ -410,11 +442,10 @@ The CI then runs the Python integration tests against the finished AppImage ([do
    | container install | `/usr/bin/compass_client` | `/usr/lib/compass_plugins` |
    | dev build | `build/bin/compass_client` | `build/lib/compass_plugins` (set the plugin's `LIBRARY_OUTPUT_DIRECTORY` accordingly) |
 
-   An environment variable `COMPASS_PLUGIN_PATH` overrides the directory. It is meant for development and tests, e.g. pointing it at an empty directory to check that the startup check fires on the finished AppImage.
-5. **Host and plugins must come from the same build.**
-   - Generate a `COMPASS_BUILD_ID` at configure time (git hashes of `compass` and `experimental_src` plus a configure timestamp) and compile it into both host and plugins.
-   - The startup check (Workstream E) asserts on a plugin with a different ID, with the message "plugin from a different build".
-   - In the AppImage this cannot happen, since `deploy_compass.sh` empties the appdir. In dev build directories, stale plugin files are a real risk, and the check turns them from mysterious crashes into a clear message.
+   There is no override (no `COMPASS_PLUGIN_PATH`, decided 2026-11-12, see C).
+5. **Host and plugins come from the same build, no build ID check (decided 2026-11-12).**
+   - In the AppImage a mismatch cannot happen, since `deploy_compass.sh` empties the appdir.
+   - In dev build directories, stale plugins are prevented by rebuilding the plugins with the client (`add_dependencies`, see C). The only remaining case, plugin files copied in by hand, does not justify a configure-time `COMPASS_BUILD_ID` compiled into host and plugins (rejected, like the API version).
 6. **Qt modules.** linuxdeploy-plugin-qt decides which Qt libraries and Qt plugins to bundle by scanning the deployed ELF files. Verify that it scans `usr/lib/compass_plugins/` too. If it doesn't, the rule is that a plugin may only use Qt modules the host links, which is the case for ProbIMM.
 7. **ASan builds** need no extra handling. The plugin is built with the same flags, and `--deploy-deps-only` bundles `libasan` for it as for the client.
 
@@ -422,25 +453,34 @@ The CI then runs the Python integration tests against the finished AppImage ([do
 
 - **New `docker/check_appimage.sh`, run at the end of [make_appimage.sh](docker/make_appimage.sh).** It extracts the AppImage and fails the build if any of these is wrong:
   - every host library `usr/lib/libcompass_*.so` and every expected `usr/lib/compass_plugins/compass_plugin_*.so` exist;
-  - the plugin `RUNPATH` is `$ORIGIN/..`;
+  - the plugin `RUNPATH` contains `$ORIGIN/..`;
   - `ldd` on `compass_client`, every host library and every plugin, with only the appdir's library directories on the path, reports no `not found`;
   - no `libcompass_*.a` archives were bundled.
-- **CI integration tests on the AppImage.**
-  - A running client means the startup check passed, so no plugin query command is needed.
-  - A ProbIMM reconstruction on a test dataset is compared against a stored reference result.
-  - A negative run starts the same AppImage with `COMPASS_PLUGIN_PATH` set to an empty directory and asserts a non-zero exit code with the plugin assert message in the log.
-- **Manual check on clean systems.** Start the Debian 10–built AppImage on the supported distributions (Debian 10+, Ubuntu 18.04+, Linux Mint 18.3+) and check the plugin summary in the log.
+- ~~**CI integration tests on the AppImage** (ProbIMM reconstruction against a stored reference result, negative run with a plugin file removed) and the **manual check on clean systems**~~: scrapped (decided 2026-11-12). The existing CI integration tests run the AppImage, so a failed startup check already fails them.
 
 #### Windows
 
 Windows packaging is Phase 7 of the port plan:
 - the host `compass_*.dll` files and third-party DLLs flat next to `compass_client.exe`, plugins in `plugins\`;
 - there is no `$ORIGIN`. A plugin's dependencies resolve through the standard DLL search order, which includes the executable's directory. Verify this with a plugin loaded from `plugins\`;
-- the runtime rule in item 4 becomes `applicationDirPath() + "/plugins"` on Windows.
+- the runtime rule in item 4 becomes `executableDir() + "/plugins"` on Windows.
 
 #### Unit tests
 
 Build the plugin's sources once as an `OBJECT` library consumed by both the `MODULE` target and `compass_tests`, which replaces `compass_tests`' link to `compass_reconst_adv`. Tests that construct plugin types directly (`test_jpda`, `test_accuracy_*`, `test_adsb_quality`, `test_dubious_references`) link normally. Tests that go **through the registry** keep creating the plugin object and calling `initCore()` in the test main from Workstream A; no module is loaded. `compass_tests` does not run the startup presence check.
+
+#### Done 2026-11-12 (Linux)
+
+- **Install rule and `RUNPATH`** in `compass_add_plugin()`: `install(TARGETS ... LIBRARY DESTINATION lib/compass_plugins)`, `INSTALL_RPATH "$ORIGIN/.."`. The host libraries were already installed with `install(TARGETS)` (B).
+- **`deploy_compass.sh`** copies `/usr/lib/compass_plugins` to `appdir/usr/lib/compass_plugins` and passes `--deploy-deps-only` for that directory (only if it exists, i.e. with experimental source). linuxdeploy appends `$ORIGIN` to the plugins' `RUNPATH` (`$ORIGIN/..:$ORIGIN`), which is harmless.
+- **`docker/check_appimage.sh <appimage> <build dir>`**, run at the end of `make_appimage.sh`. It extracts the AppImage and fails if
+  - a file the build installed (`install_manifest.txt`: executables, `libcompass_*.so`, `compass_plugins/*.so`) is missing;
+  - a plugin's `RUNPATH` does not contain `$ORIGIN/..`;
+  - `ldd` reports a dependency as not found, or a direct dependency (`DT_NEEDED`) resolves outside the AppImage although it bundles a library of that name. Transitive dependencies are not checked: those of system libraries that are not bundled (e.g. `libGL` → `libXext`) resolve through the system's search path, which is correct;
+  - a `libcompass_*.a` archive is bundled.
+- **`win_deploy.sh`** copies `build/lib/compass_plugins/compass_plugin_*.dll` to `plugins/` (stripped, `.debug` next to it). `win_unused_dlls.py` already treats DLLs in subfolders as roots. Not verified (no Windows image on the development machine, see B).
+- **Verified** (`run_make_appimage.sh deb10`): all four plugins installed and bundled, `check_appimage.sh` passes (20 files, 4 plugin modules) and fails with a manifest naming a missing plugin. The AppImage loads all four plugins from `usr/lib/compass_plugins` and quits normally (`--no_cfg_save --quit`). The extracted AppImage with `compass_plugin_docx.so` removed stops after the first two plugins with "plugin 'DocX': file '.../compass_plugin_docx.so' not found" before any config is read; `compass_handler` reports "COMPASS client crashed with code 6 (relaying 134)" and exits with 134 (128 + SIGABRT).
+- Item 6 (Qt modules) needs no action today: the plugins use only Qt modules the host links, so they are bundled through the host. This stays a rule: `check_appimage.sh` runs in the build container, where every Qt module is installed, so it would not report a Qt module only a plugin needs.
 
 ### Phase 1 verification
 
@@ -454,10 +494,18 @@ Build the plugin's sources once as an `OBJECT` library consumed by both the `MOD
 3. **Functional parity.** A ProbIMM reconstruction against a reference recording produces **identical output to the pre-split build** (same target count, same reference trajectories). This catches a broken `createKalmanInterface()` override. The three plugin tests appear in the test lab menu and run.
 4. **Startup check.** Each failure aborts at startup with a message naming the plugin and the cause, before any config is loaded and without touching `~/.compass/<version>/`:
    - the plugin file removed from the install;
-   - a plugin from a different build (stale file in a dev build dir);
+   - a module containing another plugin than its file name says;
    - a plugin that skips one of its expected registrations (temporary test hack).
-5. **AppImage.** `check_appimage.sh` passes, the CI integration tests (ProbIMM reference result, negative run with an empty plugin dir) pass on the AppImage, and the AppImage starts with the plugin loaded on clean Debian 10, Ubuntu 18.04 and Linux Mint installations.
+5. **AppImage.** `check_appimage.sh` passes and the AppImage starts with the plugins loaded. Done 2026-11-12 (see F); the CI integration tests and the clean-system starts for plugins are scrapped.
 6. **Windows milestones** (when the port gets there): plugin DLL links against the host libraries' import libraries → loads at startup → `compass_tests` passes → a ProbIMM run matches the Linux result.
+
+**Items 1–4 done 2026-11-12 (Linux, dev build against the committed state before the module split):**
+- **Single instances (2):** checked on the symbols instead of logged addresses. The plugins define none of them: `logger::debug_enabled` is undefined in them (resolved from `compass_util`), `Logger::getInstance()` and `RTCommandRegistry::instance()` are out of line in the host, log4cpp is shared; the plugins' own inline statics are GNU-unique symbols, merged by the loader.
+- **Functional parity (3):** ProbIMM is not deterministic (run to run on the same build: 886,758 vs 886,147 reference trajectory updates, 1,228 vs 1,257 targets, 0.5 h dataset), so identical output cannot be checked. Branch and committed build lie within that spread (second runs: 886,141 vs 886,147 updates, 1,257 targets each). Reconstruction time within noise (committed 6:38 / 5:36, branch 6:08 / 5:31).
+- **Lab menus (3):** "ProbIMM Lab" and "GeoView Lab" present; JPDA and IMM tests run via the menu. The osgEarth test renders, but closing its dialog asserts in `~ViewerWidget` (`!running_`, the test never calls `shutdown()`); unchanged from before the move.
+- **Geo view (1):** the geo view integration tests (map, maps, selection, time filter, style modes, annotations, geo image) and `eval_radar` (second geo view with OSM map, PDF report export) pass; `ui_geographicview_presets` fails on a local, outdated preset in `~/.compass` (not part of the split).
+- **Backtraces (1):** resolve names across modules (`plugin_manager::loadPlugins`, `ViewerWidget::~ViewerWidget` in the plugin).
+- **Startup check (4):** missing file verified in the AppImage (F), wrong plugin name by the unit test (`test_plugin_manager.cpp`); the skipped registration no longer applies (E step 5 dropped).
 
 **Evaluation point.** After phase 1, review effort, export-set friction and runtime cost before starting phase 2.
 
@@ -477,7 +525,39 @@ Optional follow-up. Since 2026-11-10 the geo view is already a plugin object (`G
 - **Test lab.** `osgEarth1MPointsTest` ([test_lab_phil.cpp:4016](experimental_src/test/test_lab_phil.cpp#L4016), the only test lab user of `ViewerWidget`) moves into its own source file in the plugin directory (e.g. `experimental_src/plugins/geoview/test/`), contributed to the test lab menu like the ProbIMM tests (D); `compass_test_lab`'s link to `compass_geo_view` goes. `ViewerWidget` / `GraphicsWindowQt` stay in the plugin. `test_offscreen_map.cpp` (disabled) goes with the plugin if it is re-enabled.
 - **AppImage.** No new mechanism: the plugin lands in `usr/lib/compass_plugins/` and `--deploy-deps-only` picks up its dependencies. Add it to the expected files in `check_appimage.sh`. The OSG plugins, `libosgEarth*` and `GDAL_DATA` handling stay host-side, since the host uses osgEarth itself.
 
+**Done 2026-11-12 (dev build, Linux)**, built like ProbIMM (D):
+- `compass_geo_view` is gone (also from the install list): the sources are the `OBJECT` library `compass_plugin_geoview_obj` (PIC, links `compass_plugin_sdk`, `compass_osg_utils`, Qt5::Widgets/OpenGL, OSG, osgEarth, GDAL; Windows: `OSGEARTHQT_LIBRARY_STATIC`), linked by the `MODULE` `compass_plugin_geoview` (entry symbol in `geoviewplugin_entry.cpp`) and by `compass_tests` (the geo unit tests unchanged). The 15 sub-CMake files target the `OBJECT` library.
+- `GeoViewPlugin::addDebugMenuEntries()` adds "GeoView Lab"; `osgEarth1MPointsTest` with its helpers (`osg_earth_test`) moved verbatim into [geoviewlab.cpp](experimental_src/plugins/geoview/test/geoviewlab.cpp); `compass_test_lab` no longer links the geo view (its unused `osg_test` namespace stays).
+- `main.cpp` expects `{ "ProbIMM", "GeoView" }` and creates no plugin statically any more.
+- Checked: both modules export `compass_plugin_create` and have no undefined symbols (`ldd -r`), `compass_client` has no `DT_NEEDED` on them, all unit tests pass, layering check clean.
+- Verified in the running client (dev build, 2026-11-12): the module loads at startup, `set_map` and `get_maps` registered by the plugin work over `localhost:27960`.
+- The verification below is done (see "Phase 1 verification", 2026-11-12). The startup check (E) is done: no registry entries are checked at runtime (E step 5 dropped), `GeographicView` is a listed factory entry filled with `addPlugin()`, checked by the plugin test.
+
 **Verification.** Map renders, overlays and labels draw, grid export lands in the geographic view, LaTeX/PDF export contains the geographic screenshots including the overview, `set_map` registered by the plugin is reachable over `localhost:27960`. The startup check fires for a missing geo plugin as in phase 1.
+
+### DocX plugin (added and done 2026-11-12, dev build, Linux)
+
+The DOCX report export becomes the plugin "DocX" (`compass_plugin_docx`), found while checking a build without `experimental_src` (E): `compass_result` compiled the DocX exporter, which needs `compass_docx` from `experimental_src`.
+
+- **Extension point: creator registry (decided 2026-11-12).** New header-only template `CreatorRegistry<Key, Creator>` in `compass_util` ([creatorregistry.h](src/util/creatorregistry.h): `add()` asserting unique keys, `has()`, `creator()`, `keys()`), declared in its owner with `DECLARE_CREATOR_REGISTRY(Name, Key, Creator)` like `DECLARE_SUBCONFIGURABLE_FACTORY` (type `Name##Type`, static accessor `Name()` defined out of line in the owner's .cpp: one instance per process, also on Windows). Boost offers no keyed registry (`boost::factory` only creates the creator function object). Only for new extension points; `SubConfigurableFactory` stays as is (its entries carry display names, `CreationSource` and listed plugin types).
+- **`ReportExport::exporterRegistry()`** (`ReportExportMode` → creator): `createExporter()` keeps its built-in branches (JSON, Latex, PDF) and otherwise asks the registry; no exporter registered => the existing "exporter could not be created" failure. `DocXPlugin::initCore()` adds `DOCX`. The mode enum and its handling in `reportdefs`, `reportexportdialog` and `sectioncontenttable` stay in the host (generic).
+- **Plugin contents** `experimental_src/plugins/docx/`: the document library (`experimental_src/docx/` → `document/`, `compass_docx` is gone) and `reportexporterdocx.{h,cpp}` (from `src/result/report/`), `docxplugin.{h,cpp}`, `docxplugin_entry.cpp`. `compass_result` no longer has include paths into `experimental_src` nor the `compass_docx` link. Built like ProbIMM and GeoView (`OBJECT` library, `MODULE`, also in `compass_tests`); `main.cpp` expects `{ "ProbIMM", "GeoView", "DocX" }`.
+- **Menu unchanged (decided 2026-11-12):** the DocX action stays enabled by the pro licence only (all or none: without `experimental_src` the licence never verifies).
+- **Tests:** `test_creator_registry.cpp` (`src/core/unit_tests/`), `test_docx_plugin.cpp` (registry holds `DOCX` only, after the test main runs `DocXPlugin::initCore()`).
+- **Checked:** module exports `compass_plugin_create`, no undefined symbols, `compass_result` and the client have no `DT_NEEDED` on it; in the client the ADS-B analysis report of the test data (`at_20230422`, ADS-B) exported as a valid DOCX (38 images), clean shutdown.
+
+### ExtraAnalysis plugin (added and done 2026-11-12, dev build, Linux)
+
+The six pro inspectors of the Analyze Data Source task (MLAT accuracy, RU coverage, RU effect; ADS-B accuracy; SMR accuracy, unassociated) become the plugin "ExtraAnalysis" (`compass_plugin_extraanalysis`). Before, `compass_task` compiled them from `experimental_src/analysis/` and `AnalyzeDataSourceTask` and its dialog named them under `#if USE_EXPERIMENTAL_SOURCE`.
+
+- **All inspectors generic (decided 2026-11-12).** `AnalyzeDataSourceTask` names no inspector or settings type in its logic, built-in ones included:
+  - `DECLARE_SUBCONFIGURABLE_FACTORY(inspectorSettingsFactory, InspectorSettingsBase, AnalyzeDataSourceTask, None)` lists all 12 settings classes, the 6 built-in ones with creator, the 6 pro ones as `CreationSource::Plugin` (replaces the `#else` skip list of E); `childCreated()` keeps them by class name (the 12 typed members and accessors and the `generateSubConfigurable_impl()` override are gone);
+  - `DECLARE_CREATOR_REGISTRY(inspectorRegistry, InspectorSlot, InspectorEntry)`, keyed by the enum `InspectorSlot` (decided 2026-11-12, replaces a struct key of DS type, order and settings class): the hundreds are the DS type (1xx MLAT, 2xx ADSB, 3xx SMR, `slotDSType()`), the value the position in the dialog and the report. The built-in inspectors have named slots (data item x10, coverage x20) and are in the registry from the start; plugins use generic slots, the DS type's plugin slot (`MLATPlugin` 130, `ADSBPlugin` 230, `SMRPlugin` 330) plus an index via `pluginSlot()` (asserts the DS type's range), so the host names no plugin inspector there. The value `InspectorEntry` carries the settings class and the creator (`createInspector<Inspector, Settings>()`). The dialog and report order is unchanged;
+  - `checkSubConfigurables()` creates the missing settings of the task's DS type, `registerInspectors()` its inspectors, both from the registry keys.
+- **Settings forms in the inspectors (decided 2026-11-12, for all).** New virtual `DataSourceInspectorBase::addSettingsRows(QFormLayout*)` (default none) and the protected helper `makeFloatSpin()`; the eight `build*Settings` functions of `AnalyzeDataSourceDialog` moved verbatim into the overrides (announced script), the dialog's if-chain is one call.
+- **Plugin contents** `experimental_src/plugins/extraanalysis/` (plain `mv` of `experimental_src/analysis/` incl. the readmes, paths and relative links updated): `mlat/`, `adsb/`, `smr/`, `extraanalysisplugin.{h,cpp}` (`initCore()` fills the 6 settings types and adds the 6 inspectors), `extraanalysisplugin_entry.cpp`; `compass_add_plugin(ExtraAnalysis …)` after DocX. `compass_task` lost the experimental sources and all include paths into `experimental_src`.
+- **Tests:** `test_extraanalysis_plugin.cpp` (settings listed, `Plugin` source, creatable; MLAT registry order), the test main runs `ExtraAnalysisPlugin::initCore()`.
+- **Checked:** module exports `compass_plugin_create`, no undefined symbols, `compass_task` contains no pro inspector symbols; in the client the ADS-B analysis of the test data ran all three inspectors (data item, coverage, accuracy) and the exported DOCX is identical in size, images and sections to the run before the move. Not checked: the settings forms in the dialog (needs clicking), MLAT and SMR data.
 
 ---
 

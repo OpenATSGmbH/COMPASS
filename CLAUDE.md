@@ -7,7 +7,7 @@ OpenATS COMPASS is a C++ application for air traffic surveillance data inspectio
 - **OS**: Linux 64-bit (x86_64) only - no Windows or macOS support
 - **Tested distributions**: Debian 10+, Ubuntu 18.04+, Linux Mint 18.3+
 - **Distribution format**: AppImage - single self-contained executable, no installation required. Downloaded from GitHub releases. The AppImage is built on Debian 10 (Buster) via Docker to maximize glibc compatibility across distributions.
-- **Plugins**: ProbIMM reconstruction and the Geographic View are closed-source plugins in a separate repository (`experimental_src/plugins/<name>/`), only published in the AppImage binary, not in source builds. Each implements the `Plugin` interface (`src/app/plugin/plugin.h`, init steps called by `CompassRoot` / `MainWindow`). Currently statically created in `compass_client`'s `main.cpp`; loadable modules are planned (`readme_plugins.md`).
+- **Plugins**: ProbIMM reconstruction, the Geographic View, the DocX report export and the pro analysis inspectors (ExtraAnalysis) are closed-source plugins in a separate repository (`experimental_src/plugins/<name>/`), only published in the AppImage binary, not in source builds. Each implements the `Plugin` interface (`src/app/plugin/plugin.h`, init steps called by `CompassRoot` / `MainWindow`). `compass_client`'s `main.cpp` loads the plugin modules (`MODULE` targets in `build/lib/compass_plugins/`, nothing links them) with `plugin_manager::loadPlugins()` (`src/app/plugin/pluginmanager.h`) from the list of expected plugins (all or none: none without `experimental_src`). A plugin is declared with the CMake macro `compass_add_plugin(<Name> <dir> [LIBRARIES <lib>...])` (top-level `CMakeLists.txt`, called in `experimental_src/CMakeLists.txt`, call order = load order): its sources are an `OBJECT` library (`compass_plugin_<name>_obj`, links `compass_plugin_sdk` and the `LIBRARIES`), linked by its `MODULE` and by `compass_tests`; the entry symbol (`COMPASS_DECLARE_PLUGIN`) is in `<dir>/<name>plugin_entry.cpp`, compiled only into the `MODULE`; the name reaches `main.cpp` as `COMPASS_EXPECTED_PLUGINS`. Plan: `readme_plugins.md`.
 - **Licensing**: Source code is GPL-3.0; AppImage binary is CC BY 4.0; Geographic View is closed-source (AppImage only). Free for all use including commercial.
 - **Hardware requirements**: Minimum 2+ physical CPU cores, dedicated NVidia or ATI GPU (native drivers, OpenGL 3.0+), 8 GB RAM. Recommended: Intel i5+, 16 GB+ RAM. Large datasets (>1M reports/hour): 32 GB RAM.
 
@@ -50,7 +50,7 @@ Rules:
 - **Check:** `python3 scripts/check_layering.py --build-dir build` checks the headers each compiled file actually includes and the CMake link and include paths (without `--build-dir` it analyzes the include lines). It is run manually (not part of the build or CI), e.g. after larger refactorings; the allowlist `scripts/layering_allowlist.txt` is empty and may not grow.
 - **Sub-layers inside `compass_core`** (bottom to top): `base` → `rtcommand` (incl. `test/`) → `gui` → `services` (job, unit, sector, license) → `dbinterface` → `context` → `projection` → `dbcontent` (incl. `db/job`, `i*provider.h`) → `ui` (`source/`). The check verifies them too; the allowlist `scripts/layering_core_allowlist.txt` is empty and may not grow (workstream I in `readme_dependencies.md`). `DBInterface` is generic database access; DB content specific access (DB content tables, targets table) goes through `DBContentDB` (`dbcont_man.contentDB()`).
 - **`compass.h` only at app level:** it lives in `src/app/` (so an include from a lower `src/` library does not compile); besides `src/app/` only the app-level parts of `experimental_src/` (`rtcommand/`, `test/`, linked to `compass_app`) may include it. `compass_app` never names these parts: `compass_client`'s `main.cpp` hooks them in via `AppHooks` (`src/app/apphooks.h`, reached via `CompassRoot::appHooks()`). The check enforces this for `src/` and `experimental_src/`; the allowlist `scripts/layering_compass_allowlist.txt` is empty and may not grow (workstream J). Code above core gets its managers directly (e.g. `filter_manager.dbContextManager()`, `view_->viewManager().appState()`).
-- **Plugins** (`experimental_src/plugins/<name>/`) sit on top: they link the host through the INTERFACE target `compass_plugin_sdk` (`src/app/CMakeLists.txt`), and the host never names plugin types. They register through generic extension points, e.g. sub-configurable factories (`DECLARE_SUBCONFIGURABLE_FACTORY`, `src/config/subconfigurablefactory.h`), virtuals like `ReconstructorBase::createKalmanInterface()` / `createWidget()` and `View::visitLatex()`, and interfaces like `GeoImageSink`. Plan and decisions: `readme_plugins.md`, background of the layering: `readme_dependencies.md`.
+- **Plugins** (`experimental_src/plugins/<name>/`) sit on top: they link the host through the INTERFACE target `compass_plugin_sdk` (`src/app/CMakeLists.txt`), and the host never names plugin types. They register through generic extension points, e.g. sub-configurable factories (`DECLARE_SUBCONFIGURABLE_FACTORY`, `src/config/subconfigurablefactory.h`, plugin types listed by the host and filled with `addPlugin()`), creator registries for other extension points (`DECLARE_CREATOR_REGISTRY`, `src/util/creatorregistry.h`, e.g. `ReportExport::exporterRegistry()`, `AnalyzeDataSourceTask::inspectorRegistry()`), virtuals like `ReconstructorBase::createKalmanInterface()` / `createWidget()` and `View::visitLatex()`, and interfaces like `GeoImageSink`. Plan and decisions: `readme_plugins.md`, background of the layering: `readme_dependencies.md`.
 
 ## Build
 
@@ -128,13 +128,15 @@ src/                    Main source code, one directory per library (see Library
   app/                  compass_app, compass_client, compass_handler
     compass.h           COMPASS application facade (DB session, app state, config parameters, command host)
     compassroot.h       Composition root: creates COMPASS and the managers, wiring, startup/shutdown
-    plugin/             Plugin interface (plugin.h)
+    plugin/             Plugin interface (plugin.h), loading of plugin modules (pluginmanager.h)
     client/             GUI application (Client, MainWindow, main.cpp)
     watchdog/           Watchdog process (compass_handler)
   unit_tests/           Test main (CATCH_CONFIG_MAIN) and top-level test CMakeLists
 experimental_src/       Experimental features (separate git repo)
   plugins/probimm/      ProbIMM plugin: advanced reconstruction (Kalman, JPDA, ProbIMM)
   plugins/geoview/      Geographic view plugin (OSG/osgEarth)
+  plugins/docx/         DocX plugin: DOCX document library + report exporter
+  plugins/extraanalysis/  ExtraAnalysis plugin: pro inspectors of Analyze Data Source (MLAT, ADS-B, SMR)
   unit_tests/           Experimental unit tests
 lib/                    Third-party headers (catch.hpp, json.hpp, spline.h)
 conf/                   Runtime configuration (JSON)

@@ -56,8 +56,6 @@ class ViewContainer : public QObject, public Configurable
 
     ViewManager& viewManager() { return view_manager_; }
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     virtual std::string getWindowName();
     //static unsigned int getViewCount() { return view_count_; }
 

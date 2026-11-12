@@ -35,6 +35,9 @@ class Section;
 class AnalyzeDataSourceTask;
 class AnalysisDataset;
 class InspectorSettingsBase;
+class QDoubleSpinBox;
+class QFormLayout;
+class QString;
 class ReportTableWriter;
 class ReportTableRows;
 struct ReportTableDefinition;
@@ -157,6 +160,10 @@ public:
     /// thread, after `compute()` returns.
     virtual void writeReport(ResultReport::Section& root) = 0;
 
+    /// Adds the rows of this inspector's settings form (AnalyzeDataSourceDialog), bound to its
+    /// settings. Default: no settings form.
+    virtual void addSettingsRows(QFormLayout* form) { (void)form; }
+
     AnalyzeDataSourceTask&  task()     const { return task_; }
     InspectorSettingsBase&  settings() const { return settings_; }
 
@@ -200,6 +207,14 @@ protected:
     /// Inspector-specific part of `canCompute()`, called after the common checks passed.
     /// `dataset` is non-null when `requiresLoadedDataset()` is true. Default: true.
     virtual bool specificCanCompute(const AnalysisDataset* dataset, std::string& reason_out) const;
+
+    /// Spin box for a float setting in addSettingsRows().
+    static QDoubleSpinBox* makeFloatSpin(double min,
+                                         double max,
+                                         double step,
+                                         int decimals,
+                                         const QString& suffix,
+                                         double value);
 
     AnalyzeDataSourceTask&  task_;
     InspectorSettingsBase&  settings_;

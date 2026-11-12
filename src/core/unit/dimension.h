@@ -32,8 +32,6 @@ class Dimension : public Configurable
     /// @brief Destructor
     virtual ~Dimension();
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
     void addUnit(const std::string& name, double factor, const std::string& definition);
     /// @brief Returns factor from one unit to another
     bool hasUnit(const std::string& unit) const;
@@ -42,6 +40,8 @@ class Dimension : public Configurable
     const std::map<std::string, Unit*>& units() const { return units_; }
 
   protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     std::map<std::string, Unit*> units_;
 
     void checkSubConfigurables() override {}

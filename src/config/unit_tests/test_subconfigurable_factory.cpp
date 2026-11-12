@@ -96,7 +96,7 @@ public:
 };
 
 /**
- * Child created by the parent's own generateSubConfigurable() override.
+ * Child created by the parent's own generateSubConfigurable_impl() override.
  */
 class PlainChild : public Configurable
 {
@@ -105,7 +105,7 @@ public:
 };
 
 /**
- * Parent with two static factories plus an own generateSubConfigurable() override.
+ * Parent with two static factories plus an own generateSubConfigurable_impl() override.
  */
 class FactoryParent : public Configurable
 {
@@ -141,14 +141,16 @@ public:
     std::string tag_ = "parent_tag";
 
 protected:
-    void generateSubConfigurable(json& child_json) override
+    GenerateResult generateSubConfigurable_impl(json& child_json) override
     {
         const auto& class_name = Configuration::getClassName(child_json);
 
         if (class_name == "PlainChild")
             plain_.emplace_back(new PlainChild(child_json, this));
         else
-            throw std::runtime_error("FactoryParent: generateSubConfigurable: unknown class_name " + class_name);
+            return GenerateResult::Unknown;
+
+        return GenerateResult::Generated;
     }
 
     void childCreated(Configurable* child) override
@@ -200,6 +202,53 @@ protected:
 };
 
 /**
+ * Parent whose factory lists a plugin type without creator.
+ */
+class PluginParent : public Configurable
+{
+public:
+    DECLARE_SUBCONFIGURABLE_FACTORY(itemFactory, ItemBase, PluginParent, OnePerClass)
+
+    PluginParent(json& cfg)
+    :   Configurable(cfg, nullptr)
+    {
+        createSubConfigurables();
+    }
+
+    std::vector<std::unique_ptr<ItemBase>> items_;
+
+protected:
+    void childCreated(Configurable* child) override
+    {
+        auto item = dynamic_cast<ItemBase*>(child);
+        traced_assert(item);
+
+        items_.emplace_back(item);
+    }
+};
+
+/**
+ * Parent whose factory lists a built-in type without creator (definition error).
+ */
+class BrokenParent : public Configurable
+{
+public:
+    DECLARE_SUBCONFIGURABLE_FACTORY(itemFactory, ItemBase, BrokenParent, None)
+
+    BrokenParent(json& cfg)
+    :   Configurable(cfg, nullptr)
+    {
+        createSubConfigurables();
+    }
+
+protected:
+    void childCreated(Configurable* child) override
+    {
+        delete child;
+    }
+};
+
+/**
 */
 FactoryParent::itemFactoryType& FactoryParent::itemFactory()
 {
@@ -228,7 +277,25 @@ DefaultsParent::itemFactoryType& DefaultsParent::itemFactory()
 }
 
 /**
- * Adds ItemC at runtime like a plugin would, once per process.
+ * ItemP is listed as plugin type, its creator is added by the "plugin" in the test.
+ */
+PluginParent::itemFactoryType& PluginParent::itemFactory()
+{
+    static itemFactoryType factory = { { "ItemA", &itemFactoryType::createDefault<ItemA>, "" },
+                                       { "ItemP", nullptr, "Plugin Item", CreationSource::Plugin } };
+    return factory;
+}
+
+/**
+*/
+BrokenParent::itemFactoryType& BrokenParent::itemFactory()
+{
+    static itemFactoryType factory = { { "ItemA", nullptr, "" } };
+    return factory;
+}
+
+/**
+ * Adds ItemC at runtime (a type not listed by the factory), once per process.
  */
 void registerItemC()
 {
@@ -289,15 +356,15 @@ TEST_CASE("SubConfigurableFactory creation", "[configurable][subconfigurablefact
         REQUIRE(parent.hasSubConfigurable("OtherItem", "O0"));
     }
 
-    SECTION("unknown class names fall back to generateSubConfigurable()")
+    SECTION("unknown class names fall back to generateSubConfigurable_impl()")
     {
         REQUIRE(parent.plain_.size() == 1);
         REQUIRE(parent.hasSubConfigurable("PlainChild", "P0"));
     }
 
-    SECTION("generateSubConfigurableFromConfig() goes through the factory")
+    SECTION("createSubConfigurableFromConfig() goes through the factory")
     {
-        parent.generateSubConfigurableFromConfig("ItemA", "A1");
+        parent.createSubConfigurableFromConfig("ItemA", "A1");
 
         REQUIRE(parent.items_.size() == 3);
         REQUIRE(parent.item("A1"));
@@ -366,4 +433,75 @@ TEST_CASE("SubConfigurableFactory default instances", "[configurable][subconfigu
         REQUIRE_FALSE(parent.item("ItemA0"));
         REQUIRE(parent.item("ItemC0"));
     }
+}
+
+TEST_CASE("SubConfigurableFactory plugin types", "[configurable][subconfigurablefactory]")
+{
+    auto& factory = PluginParent::itemFactory();
+
+    // runs once per process: the plugin's creator is added in the last step
+    REQUIRE(factory.knows("ItemP"));
+    REQUIRE_FALSE(factory.canCreate("ItemP"));
+    REQUIRE(factory.creationSource("ItemP") == CreationSource::Plugin);
+    REQUIRE(factory.creationSource("ItemA") == CreationSource::BuiltIn);
+    REQUIRE(factory.displayName("ItemP") == "Plugin Item");
+
+    auto names = factory.classNames();
+    REQUIRE(names == std::vector<std::string>{ "ItemA" }); // only creatable classes
+
+    json cfg = makeConfig("PluginParent", "PP0");
+    cfg[ "sub_configs" ] =
+    {
+        { "ItemA", { { "A0", json::object() } } },
+        { "ItemP", { { "P0", { { "parameters", { { "value", 2.5 } } } } } } }
+    };
+
+    // plugin not present: the plugin type is skipped and no default instance is created for it
+    {
+        json cfg_copy = cfg;
+        PluginParent parent(cfg_copy);
+
+        REQUIRE(parent.items_.size() == 1);
+        REQUIRE(parent.hasSubConfigurable("ItemA", "A0"));
+        REQUIRE_FALSE(parent.hasSubConfigurable("ItemP", "P0"));
+
+        // the skipped entry is written back unchanged
+        json out;
+        parent.generateJSON(out);
+
+        auto it = std::find_if(out[ "sub_configs" ].begin(), out[ "sub_configs" ].end(),
+                               [ & ] (const json& j) { return Configuration::getInstanceName(j) == "P0"; });
+        REQUIRE(it != out[ "sub_configs" ].end());
+        REQUIRE(Configuration::getClassName(*it) == "ItemP");
+        REQUIRE((*it)[ "parameters" ][ "value" ] == 2.5);
+
+        // created explicitly (not while reading a config) the child must exist => throws, as an unknown class
+        auto& p1_json = parent.addNewSubConfiguration("ItemP", "P1");
+        REQUIRE_THROWS_AS(parent.createSubConfigurable(p1_json), std::runtime_error);
+
+        auto& x_json = parent.addNewSubConfiguration("ItemX", "X0");
+        REQUIRE_THROWS_AS(parent.createSubConfigurable(x_json), std::runtime_error);
+    }
+
+    // plugin present: it adds the creator, the listed display name stays
+    factory.addPlugin<ItemC>("ItemP");
+
+    REQUIRE(factory.canCreate("ItemP"));
+    REQUIRE(factory.displayName("ItemP") == "Plugin Item");
+
+    {
+        json cfg_copy = cfg;
+        PluginParent parent(cfg_copy);
+
+        REQUIRE(parent.items_.size() == 2);
+        REQUIRE(parent.hasSubConfigurable("ItemP", "P0"));
+    }
+}
+
+TEST_CASE("SubConfigurableFactory built-in type without creator", "[configurable][subconfigurablefactory]")
+{
+    json cfg = makeConfig("BrokenParent", "BP0");
+    cfg[ "sub_configs" ] = { { "ItemA", { { "A0", json::object() } } } };
+
+    REQUIRE_THROWS_AS(BrokenParent{ cfg }, std::runtime_error);
 }

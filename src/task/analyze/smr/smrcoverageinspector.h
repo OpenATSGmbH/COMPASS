@@ -156,7 +156,7 @@ public:
 /**
  * SMR Feature 2: scan-based Probability of Detection per cell of the
  * horizontal grid, with the number of reports per target and scan. See
- * experimental_src/analysis/readme_analysis_smr.md (Feature 2).
+ * experimental_src/plugins/extraanalysis/readme_analysis_smr.md (Feature 2).
  */
 class SMRCoverageInspector : public DataSourceInspectorBase
 {
@@ -182,6 +182,7 @@ public:
 
     void compute(AnalysisDataset* dataset) override;
     void writeReport(ResultReport::Section& root) override;
+    void addSettingsRows(QFormLayout* form) override;
 
 private:
     /// One selected SMR data source.

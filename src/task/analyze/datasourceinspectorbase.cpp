@@ -28,6 +28,8 @@
 
 #include <cctype>
 
+#include <QDoubleSpinBox>
+
 DataSourceInspectorBase::DataSourceInspectorBase(AnalyzeDataSourceTask& task,
                                                  InspectorSettingsBase& settings)
     : task_(task), settings_(settings)
@@ -345,6 +347,23 @@ double DataSourceInspectorBase::secondsBetween(const boost::posix_time::ptime& t
                                                const boost::posix_time::ptime& t1)
 {
     return (t1 - t0).total_microseconds() / 1e6;
+}
+
+QDoubleSpinBox* DataSourceInspectorBase::makeFloatSpin(double min,
+                                                       double max,
+                                                       double step,
+                                                       int decimals,
+                                                       const QString& suffix,
+                                                       double value)
+{
+    auto* s = new QDoubleSpinBox();
+    s->setRange(min, max);
+    s->setSingleStep(step);
+    s->setDecimals(decimals);
+    if (!suffix.isEmpty())
+        s->setSuffix(suffix);
+    s->setValue(value);
+    return s;
 }
 
 ReportTableDefinition DataSourceInspectorBase::gapTableDefinition(const std::string& key_suffix,

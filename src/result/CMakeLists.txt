@@ -26,13 +26,4 @@ target_link_libraries(compass_result
         Qt5::Core
 )
 
-if(EXPERIMENTAL_SRC)
-    target_include_directories(compass_result PRIVATE
-        "${CMAKE_SOURCE_DIR}/experimental_src/docx"
-        "${CMAKE_SOURCE_DIR}/experimental_src/libs/osg"
-    )
-    # DOCX export (report/reportexporterdocx.cpp)
-    target_link_libraries(compass_result PUBLIC compass_docx)
-endif()
-
 compass_automoc(compass_result)

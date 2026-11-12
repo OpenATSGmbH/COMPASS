@@ -6,6 +6,8 @@
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "probimmplugin.h"
+#include "docxplugin.h"
+#include "extraanalysisplugin.h"
 #endif
 
 #include <QApplication>
@@ -43,6 +45,12 @@ int main(int argc, char* argv[])
 #if USE_EXPERIMENTAL_SOURCE == true
     static ProbIMMPlugin probimm_plugin;
     probimm_plugin.initCore();
+
+    static DocXPlugin docx_plugin;
+    docx_plugin.initCore();
+
+    static ExtraAnalysisPlugin extra_analysis_plugin;
+    extra_analysis_plugin.initCore();
 #endif
 
     return Catch::Session().run(argc, argv);

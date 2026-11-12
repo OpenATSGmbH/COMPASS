@@ -4,6 +4,7 @@ target_sources(compass_util
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/config.h"
         "${CMAKE_CURRENT_LIST_DIR}/config_paths.h"
+        "${CMAKE_CURRENT_LIST_DIR}/creatorregistry.h"
         "${CMAKE_CURRENT_LIST_DIR}/files.h"
         # "${CMAKE_CURRENT_LIST_DIR}/global.h"
         "${CMAKE_CURRENT_LIST_DIR}/number.h"

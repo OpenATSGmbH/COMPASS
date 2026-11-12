@@ -76,7 +76,7 @@ public:
  * addition, the per-target #EUI / #MUI totals are accumulated per aircraft
  * address so the report can surface individual transponders with coverage
  * gaps that an aggregate map averages away. See
- * experimental_src/analysis/readme_analysis_adsb.md (Feature 2).
+ * experimental_src/plugins/extraanalysis/readme_analysis_adsb.md (Feature 2).
  */
 class ADSBCoverageInspector : public DataSourceInspectorBase
 {
@@ -102,6 +102,7 @@ public:
 
     void compute(AnalysisDataset* dataset) override;
     void writeReport(ResultReport::Section& root) override;
+    void addSettingsRows(QFormLayout* form) override;
 
 private:
     /// One transponder (aircraft address) row in the per-transponder table.

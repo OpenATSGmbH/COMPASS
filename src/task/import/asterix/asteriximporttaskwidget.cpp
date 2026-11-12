@@ -326,7 +326,7 @@ void ASTERIXImportTaskWidget::addParserSlot()
         child_json[Configuration::ParameterSection]["category"] = cat;
         child_json[Configuration::ParameterSection]["dbcontent_name"] = dbcontent_name;
 
-        current->generateSubConfigurable(child_json);
+        current->createSubConfigurable(child_json);
         updateParserBox();
     }
 }

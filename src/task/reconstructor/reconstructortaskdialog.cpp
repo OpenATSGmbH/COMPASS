@@ -25,9 +25,6 @@
 #include "dbcontentmanager.h"
 #include "dbcontentdataengine.h"
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#endif
-
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>

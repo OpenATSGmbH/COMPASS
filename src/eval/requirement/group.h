@@ -52,8 +52,6 @@ public:
     EvaluationStandard* parentConfigurable() const;
     virtual ~Group();
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
     void use(bool ok) override;
     bool used() const override;
     bool checkable() const override;
@@ -88,6 +86,8 @@ public:
     const std::vector<std::unique_ptr<EvaluationRequirement::BaseConfig>>& configs() const;
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     EvaluationStandard& standard_;
     EvaluationCalculator& calculator_;
 

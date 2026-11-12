@@ -126,7 +126,7 @@ bool ScatterPlotView::init_impl()
 
 /**
 */
-void ScatterPlotView::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult ScatterPlotView::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -138,8 +138,9 @@ void ScatterPlotView::generateSubConfigurable(nlohmann::json& child_json)
         data_source_ = new ScatterPlotViewDataSource(child_json, this);
     }
     else
-        throw std::runtime_error("ScatterPlotView: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -148,7 +149,7 @@ void ScatterPlotView::checkSubConfigurables()
 {
     if (!data_source_)
     {
-        generateSubConfigurableFromConfig("ScatterPlotViewDataSource", "ScatterPlotViewDataSource0");
+        createSubConfigurableFromConfig("ScatterPlotViewDataSource", "ScatterPlotViewDataSource0");
     }
 
     if (!widget_)

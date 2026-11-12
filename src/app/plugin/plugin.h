@@ -20,7 +20,10 @@
 #include <string>
 #include <vector>
 
+#include <QtGlobal>
+
 class CompassRoot;
+class QMenu;
 
 namespace rtcommand
 {
@@ -46,8 +49,22 @@ public:
     virtual void initCommands(rtcommand::RTCommandRegistry& registry, CompassRoot& root) {}
     /// when the UI is set up, before the view containers are created: views, widgets, menus
     virtual void initUI(CompassRoot& root) {}
+    /// when the Debug menu is created: debug entries, e.g. the plugin's test lab
+    virtual void addDebugMenuEntries(QMenu* menu) {}
     /// during the shutdown sequence, while the managers still exist
     virtual void shutdown() {}
 };
 
 typedef std::vector<Plugin*> Plugins; // non-owning, plugins are static instances
+
+typedef Plugin* (*PluginCreateFunc)(); // type of the entry symbol of a plugin module
+
+/// Defines the entry symbol of a plugin module (compass_plugin_create()), used once per plugin, in a source compiled
+/// only into its MODULE target (the plugin's objects may be linked together with other plugins, e.g. in the tests).
+/// It returns the plugin's static instance, which lives until the process ends (modules are never unloaded).
+#define COMPASS_DECLARE_PLUGIN(PluginClass)                     \
+    extern "C" Q_DECL_EXPORT Plugin* compass_plugin_create()    \
+    {                                                           \
+        static PluginClass plugin;                              \
+        return &plugin;                                         \
+    }

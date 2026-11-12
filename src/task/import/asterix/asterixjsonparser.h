@@ -79,8 +79,6 @@ public:
     std::shared_ptr<Buffer> getNewBuffer() const;
     void appendVariablesToBuffer(Buffer& buffer) const;
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
     ASTERIXJSONParserWidget* createWidget();
 
     std::string dbContentName() const;
@@ -169,6 +167,7 @@ private:
                                      bool is_in_array = false);
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     void checkSubConfigurables() override {}
 
 };

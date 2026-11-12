@@ -45,8 +45,6 @@ class JSONParsingSchema : public Configurable
     JSONObjectParser& parser(const std::string& name);
     void removeParser(const std::string& name);
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
     std::string name() const;
     void name(const std::string& name);
 
@@ -58,5 +56,6 @@ class JSONParsingSchema : public Configurable
     std::map<std::string, std::unique_ptr<JSONObjectParser>> parsers_;
 
   protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     void checkSubConfigurables() override {}
 };

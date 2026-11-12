@@ -560,7 +560,9 @@ void MainWindow::updateMenus()
 
     traced_assert(import_menu_);
 
-    traced_assert(license_action_);
+#if USE_EXPERIMENTAL_SOURCE == true
+    traced_assert(license_action_); // only created with experimental source
+#endif
 
     bool in_live_running        = compass_.appState().appMode() == AppMode::LiveRunning;
     bool in_live_paused         = compass_.appState().appMode() == AppMode::LivePaused;
@@ -1651,6 +1653,10 @@ void MainWindow::createDebugMenu()
         //add test lab entries
     if (root_.appHooks().add_debug_menu_entries)
         root_.appHooks().add_debug_menu_entries(debug_menu, root_);
+
+        //add plugin entries (e.g. their test labs)
+    for (auto plugin : root_.appHooks().plugins)
+        plugin->addDebugMenuEntries(debug_menu);
 
         //add command shell
     {

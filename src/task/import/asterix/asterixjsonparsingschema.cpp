@@ -45,7 +45,7 @@ ASTERIXJSONParsingSchema::ASTERIXJSONParsingSchema(nlohmann::json& config, ASTER
 //    return static_cast<ASTERIXJSONParsingSchema&>(Configurable::operator=(std::move(other)));
 //}
 
-void ASTERIXJSONParsingSchema::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult ASTERIXJSONParsingSchema::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -67,9 +67,10 @@ void ASTERIXJSONParsingSchema::generateSubConfigurable(nlohmann::json& child_jso
     }
     else
     {
-        throw std::runtime_error("ASTERIXJSONParsingSchema: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
     }
+
+    return GenerateResult::Generated;
 }
 
 std::string ASTERIXJSONParsingSchema::name() const { return name_; }

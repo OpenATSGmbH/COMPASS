@@ -131,8 +131,6 @@ public:
     IFilterProvider& filterProvider();
     IEvalProvider& evalProvider();
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     bool existsDBContent(const std::string& dbcontent_name) const;
     DBContent& dbContent(const std::string& dbcontent_name);
     const DBContent& dbContent(const std::string& dbcontent_name) const;
@@ -276,6 +274,8 @@ public:
         { variable_selection_hide_status_contents_ = hide; }
 
 protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     void setViewableDataConfig (const nlohmann::json::object_t& data);
 
     AppState& app_state_;

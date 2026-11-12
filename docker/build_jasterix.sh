@@ -43,7 +43,7 @@ fi
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 echo "$ASAN" > "$ASAN_MARKER"
-# shared: linked by the shared compass_core (readme_plugins.md, workstream B)
+# shared: linked by the shared compass_core
 cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON "${CMAKE_EXTRA[@]}" ..
 make -j $(nproc)
 # `make install` depends on the `all` target, so it would re-run the compiler as

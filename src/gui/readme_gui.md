@@ -386,7 +386,7 @@ When adding a new View:
 
 - All persistent settings are registered as `Configurable` parameters in the View class, not in the data / config widgets.
 - The data widget reads from the View; the config widget writes to it through the View's setters.
-- Sub-configurables (e.g. one config block per axis) follow the standard `generateSubConfigurable` / `checkSubConfigurables` pattern.
+- Sub-configurables (e.g. one config block per axis) follow the standard `generateSubConfigurable_impl` / `checkSubConfigurables` pattern.
 
 ## 11. Reusable helpers
 

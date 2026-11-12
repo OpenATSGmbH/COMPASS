@@ -33,12 +33,4 @@ target_link_libraries(compass_task
         ${LibArchive_LIBRARIES}
 )
 
-if(EXPERIMENTAL_SRC)
-    target_include_directories(compass_task PRIVATE
-        "${CMAKE_SOURCE_DIR}/experimental_src/docx"
-        "${CMAKE_SOURCE_DIR}/experimental_src/libs/osg"
-        "${CMAKE_SOURCE_DIR}/experimental_src/test"
-    )
-endif()
-
 compass_automoc(compass_task)

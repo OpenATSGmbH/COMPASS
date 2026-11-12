@@ -311,7 +311,9 @@ void Configurable::createSubConfigurables()
 
         for (auto& ptr : entries)
         {
-            const std::string inst_id = Configuration::getInstanceName(*ptr);
+            // copies: a child whose constructor throws removes its entry from the storage => class_name dangles
+            const std::string class_id = class_name;
+            const std::string inst_id  = Configuration::getInstanceName(*ptr);
 
             logdbg << "class '" << class_name_ << "' instance '" << instance_name_
                    << "' creating: class_name '" << class_name
@@ -321,12 +323,12 @@ void Configurable::createSubConfigurables()
 
             try
             {
-                createSubConfigurable(*ptr);
+                createSubConfigurable(*ptr, false); // reading the config: skipped entries are expected
             }
             catch (const std::exception& e)
             {
                 logerr << "class '" << class_name_ << "' instance '" << instance_name_
-                       << "' generateSubConfigurable failed for class_name '" << class_name
+                       << "' createSubConfigurable failed for class_name '" << class_id
                        << "' instance_name '" << inst_id << "': " << e.what();
                 throw;
             }
@@ -345,43 +347,78 @@ void Configurable::checkSubConfigurables()
 }
 
 // Old 2-param version removed - use the json-backed 3-param version
-// void Configurable::generateSubConfigurable(const std::string& class_name,
+// void Configurable::generateSubConfigurable_impl(const std::string& class_name,
 //                                            const std::string& instance_name)
 // {
 //     loginf << "class " << class_name_ << " does not override ";
 // }
 
-void Configurable::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult Configurable::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
-    throw std::runtime_error("class "+class_name_+": generateSubConfigurable: not implemented");
+    return GenerateResult::Unknown;
 }
 
-void Configurable::createSubConfigurable(nlohmann::json& child_json)
+GenerateResult Configurable::generateSubConfigurable(nlohmann::json& child_json)
 {
-    const std::string class_name = Configuration::getClassName(child_json);
+    return generateSubConfigurable_impl(child_json);
+}
+
+GenerateResult Configurable::createSubConfigurable(nlohmann::json& child_json, bool must_exist)
+{
+    const std::string class_name    = Configuration::getClassName(child_json);
+    const std::string instance_name = Configuration::getInstanceName(child_json);
 
     const SubConfigurableFactoryBase* factory = nullptr;
 
     for (const auto& attached : sub_config_factories_)
     {
-        if (!attached.factory->canCreate(class_name))
+        if (!attached.factory->knows(class_name))
             continue;
 
         traced_assert_msg(!factory, ("sub-configurable class '" + class_name + "' known to several factories").c_str());
         factory = attached.factory;
     }
 
-    if (factory)
+    GenerateResult result = GenerateResult::Unknown;
+
+    if (factory && factory->canCreate(class_name))
     {
         auto child = factory->createChild(child_json, *this);
         traced_assert(child);
 
         childCreated(child);
+
+        result = GenerateResult::Generated;
+    }
+    else if (factory)
+    {
+        // listed without creator: a plugin type whose plugin is not present is skipped
+        if (factory->creationSource(class_name) != CreationSource::Plugin)
+            throw std::runtime_error("class " + class_name_ + ": createSubConfigurable: built-in class '"
+                                     + class_name + "' cannot be created");
+
+        result = GenerateResult::Skipped;
     }
     else
     {
-        generateSubConfigurable(child_json);
+        result = generateSubConfigurable(child_json);
     }
+
+    if (result == GenerateResult::Unknown)
+        throw std::runtime_error("class " + class_name_ + " instance " + instance_name_
+                                 + ": createSubConfigurable: unknown class '" + class_name + "'");
+
+    if (result == GenerateResult::Skipped && must_exist)
+        throw std::runtime_error("class " + class_name_ + " instance " + instance_name_
+                                 + ": createSubConfigurable: class '" + class_name + "' instance '"
+                                 + instance_name + "' skipped but must exist");
+
+    // the skipped entry stays in the configuration and is written back unchanged
+    if (result == GenerateResult::Skipped)
+        loginf << "class '" << class_name_ << "' instance '" << instance_name_ << "': class '" << class_name
+               << "' instance '" << instance_name << "' skipped";
+
+    return result;
 }
 
 void Configurable::addSubConfigurableFactory(const SubConfigurableFactoryBase& factory,
@@ -408,7 +445,7 @@ void Configurable::createDefaultSubConfigurables()
             if (has_child)
                 continue;
 
-            generateSubConfigurableFromConfig(class_name, class_name + "0");
+            createSubConfigurableFromConfig(class_name, class_name + "0");
         }
     }
 }
@@ -420,16 +457,16 @@ void Configurable::childCreated(Configurable* child)
 }
 
 
-void Configurable::generateSubConfigurableFromConfig(const std::string& class_name,
-                                                     const std::string& instance_name)
+GenerateResult Configurable::createSubConfigurableFromConfig(const std::string& class_name,
+                                                             const std::string& instance_name)
 {
     auto& child_json = ensureSubConfig(class_name, instance_name);
-    createSubConfigurable(child_json);
+    return createSubConfigurable(child_json);
 }
 
-void Configurable::generateSubConfigurableFromJSON(const Configurable& configurable,
-                                                   const std::string& new_instance_name,
-                                                   const nlohmann::json& additional_data)
+GenerateResult Configurable::createSubConfigurableFromJSON(const Configurable& configurable,
+                                                           const std::string& new_instance_name,
+                                                           const nlohmann::json& additional_data)
 {
     traced_assert(configuration_);
 
@@ -454,7 +491,7 @@ void Configurable::generateSubConfigurableFromJSON(const Configurable& configura
     //the requested unique instance name to avoid a duplicate
     Configuration::setInstanceName(child_json, new_instance_name);
 
-    createSubConfigurable(child_json);
+    return createSubConfigurable(child_json);
 }
 
 bool Configurable::hasSubConfigurable(const std::string& class_name,
