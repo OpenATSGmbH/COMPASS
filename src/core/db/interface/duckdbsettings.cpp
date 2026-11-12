@@ -23,6 +23,8 @@
 
 using namespace std;
 
+const std::string DuckDBSettings::StorageCompatibilityVersion = "v1.5.0";
+
 /**
  */
 std::string DuckDBSettings::accessModeAsString(AccessMode mode)
@@ -60,4 +62,6 @@ void DuckDBSettings::configure(duckdb_config* config, const DBInterface& dbinter
     duckdb_set_config(*config, "preserve_insertion_order", preserve_order.c_str());
     
     duckdb_set_config(*config, "default_order", DuckDBSettings::sortOrderAsString(sort_order_default).c_str());
+
+    duckdb_set_config(*config, "storage_compatibility_version", StorageCompatibilityVersion.c_str());
 }
