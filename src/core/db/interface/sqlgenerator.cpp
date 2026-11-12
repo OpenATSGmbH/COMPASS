@@ -106,7 +106,8 @@ std::string SQLGenerator::getCreateTableStatement(const std::string& table_name,
  */
 std::string SQLGenerator::getCreateTableStatement(const std::string& table_name,
                                                   const PropertyList& properties,
-                                                  int primary_key) const
+                                                  int primary_key,
+                                                  const std::set<std::string>& zstd_columns) const
 {
     std::stringstream ss;
 
@@ -116,7 +117,17 @@ std::string SQLGenerator::getCreateTableStatement(const std::string& table_name,
 
     size_t n = properties.size();
     for (size_t i = 0; i < n; ++i)
-        ss << properties.properties().at(i).name() << " "  << properties.properties().at(i).dbDataTypeString(config_.precise_types) <<  (i < n - 1 ? ", " : "");
+    {
+        const auto& prop = properties.properties().at(i);
+
+        ss << prop.name() << " " << prop.dbDataTypeString(config_.precise_types);
+
+        //compress the column with zstd if supported by the backend, e.g. large json texts
+        if (config_.supports_column_zstd && zstd_columns.count(prop.name()))
+            ss << " USING COMPRESSION zstd";
+
+        ss << (i < n - 1 ? ", " : "");
+    }
 
     if (primary_key >= 0)
         ss << ", " << "PRIMARY KEY (" << properties.properties().at(primary_key).name() << ")";

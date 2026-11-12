@@ -23,6 +23,7 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 #include <memory>
+#include <set>
 #include <string>
 
 #include "json_fwd.hpp"
@@ -45,7 +46,8 @@ public:
                                         const std::vector<db::Index>& indices = std::vector<db::Index>());
     std::string getCreateTableStatement(const std::string& table_name,
                                         const PropertyList& properties,
-                                        int primary_key = -1) const;
+                                        int primary_key = -1,
+                                        const std::set<std::string>& zstd_columns = {}) const;
     std::string getInsertDBUpdateStringBind(std::shared_ptr<Buffer> buffer, 
                                             std::string table_name);
     std::string getCreateDBUpdateStringBind(std::shared_ptr<Buffer> buffer,

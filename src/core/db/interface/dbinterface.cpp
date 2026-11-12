@@ -1868,10 +1868,12 @@ void DBInterface::replaceRow(const std::string& table_name, const std::vector<st
 
 /**
  * Creates a table with the given columns, primary_key is the index of the key column (-1 = none).
+ * The columns in zstd_columns are compressed with zstd if the backend supports it (large texts).
  */
 void DBInterface::createTable(const std::string& table_name,
                               const PropertyList& properties,
-                              int primary_key)
+                              int primary_key,
+                              const std::set<std::string>& zstd_columns)
 {
     traced_assert(ready());
     traced_assert(!existsTable(table_name));
@@ -1881,7 +1883,7 @@ void DBInterface::createTable(const std::string& table_name,
         boost::mutex::scoped_lock locker(instance_mutex_);
         #endif
 
-        execute(sqlGenerator().getCreateTableStatement(table_name, properties, primary_key));
+        execute(sqlGenerator().getCreateTableStatement(table_name, properties, primary_key, zstd_columns));
         updateTableInfo();
     }
 }

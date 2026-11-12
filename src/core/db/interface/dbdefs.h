@@ -38,6 +38,7 @@ struct SQLConfig
     bool           indexing                = true;
     bool           supports_mt             = false;
     bool           supports_in_mem         = false;
+    bool           supports_column_zstd    = false; // column compression 'USING COMPRESSION zstd' in CREATE TABLE
 
     bool           verbose                 = true;
 };
