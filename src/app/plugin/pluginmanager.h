@@ -41,6 +41,7 @@ Plugin* loadPlugin(const std::string& dir,
 
 /// loads the expected plugins from dir in list order, asserts on any failure, prints a summary to stdout
 Plugins loadPlugins(const std::string& dir,
-                    const std::vector<std::string>& names);
+                    const std::vector<std::string>& names,
+                    bool must_exist = true);
 
 }  // namespace plugin_manager

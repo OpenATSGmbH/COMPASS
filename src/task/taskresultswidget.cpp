@@ -30,6 +30,7 @@
 #include "dialogs.h"
 #include "dbinterface.h"
 #include "reportdefs.h"
+#include "report/reportexport.h"
 #include "license/licensemanager.h"
 #include "license/license.h"
 
@@ -122,15 +123,30 @@ TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     bool pro_license = task_man_.licenseManager().componentEnabled(
         license::License::Component::ComponentProbIMMReconstructor);
 
-    auto action_export_docx  = export_menu->addAction(
-        pro_license ? "Export as DocX" : "Export as DocX [pro]");
+    // the DocX exporter is added by its plugin, missing in builds without it
+    bool docx_available = ResultReport::ReportExport::exporterRegistry().has(
+        ResultReport::ReportExportMode::DOCX);
+
+    QString docx_label   = "Export as DocX";
+    QString docx_tooltip = "";
+    if (!docx_available)
+    {
+        docx_label  += " [not available]";
+        docx_tooltip = "Plugin not available";
+    }
+    else if (!pro_license)
+    {
+        docx_label  += " [pro]";
+        docx_tooltip = "Only available with active Professional license";
+    }
+
+    auto action_export_docx  = export_menu->addAction(docx_label);
     auto action_export_json  = export_menu->addAction("Export as JSON");
     auto action_export_latex = export_menu->addAction("Export as Latex");
     auto action_export_pdf   = export_menu->addAction("Export as PDF");
 
-    action_export_docx->setEnabled(pro_license);
-    action_export_docx->setToolTip(pro_license ? "" :
-        "Only available with active Professional license");
+    action_export_docx->setEnabled(docx_available && pro_license);
+    action_export_docx->setToolTip(docx_tooltip);
 
     action_export_pdf->setEnabled(pdflatex_found);
     action_export_pdf->setToolTip(pdflatex_found ? "" : "pdflatex not installed");

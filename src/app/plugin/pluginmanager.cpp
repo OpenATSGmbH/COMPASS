@@ -89,7 +89,8 @@ Plugin* loadPlugin(const std::string& dir,
 /**
 */
 Plugins loadPlugins(const std::string& dir,
-                    const std::vector<std::string>& names)
+                    const std::vector<std::string>& names,
+                    bool must_exist)
 {
     if (names.empty())
     {
@@ -109,7 +110,10 @@ Plugins loadPlugins(const std::string& dir,
         {
             // no logger yet => the cause goes to stderr before the assert
             std::cerr << "plugin_manager: " << error << std::endl;
-            traced_assert_msg(plugin, error.c_str());
+
+            traced_assert_msg(!must_exist || plugin, error.c_str());
+
+            continue;
         }
 
         std::cout << "plugin_manager: loaded plugin '" << name << "' from '" << dir << "/" << fileName(name) << "'"

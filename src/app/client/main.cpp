@@ -533,7 +533,7 @@ static AppHooks createAppHooks()
 {
     AppHooks hooks;
 
-    hooks.plugins = plugin_manager::loadPlugins(pluginDirectory(), expectedPlugins());
+    hooks.plugins = plugin_manager::loadPlugins(pluginDirectory(), expectedPlugins(), true);
 
 #if USE_EXPERIMENTAL_SOURCE == true
     hooks.register_commands = &extra::init_extra_commands;

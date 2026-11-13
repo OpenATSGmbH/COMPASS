@@ -27,15 +27,7 @@ namespace compass_assert
         msg.stack_trace = ss.str();
         msg.user_level  = false;
 
-        //log assert msg
-        // Check if log4cpp root category exists
-        try 
-        {
-            log4cpp::Category& root = log4cpp::Category::getRoot();
-            // If we get here, log4cpp is initialized
-            msghandler::MessageHandler::log(logerr.getStream(), msg);
-        }
-        catch (...) // failed, switch to cerr
+        auto logToCerr = [ & ] ()
         {
             bool aborting = true;
             bool show_st = aborting && !msg.stack_trace.empty();
@@ -52,6 +44,24 @@ namespace compass_assert
                       << "Line:        " << msg.line << "\n"
                       << (show_st ? "\n" : "") << (show_st ? msg.stack_trace : "")
                       << (show_st ? "\n" : "") << (aborting ? "Aborting..." : "");
+        };
+
+        //log assert msg
+        // Check if log4cpp root category exists
+        try
+        {
+            log4cpp::Category& root = log4cpp::Category::getRoot();
+
+            // the root category exists from the start, but has no appender before the logger is set up
+            // (e.g. asserts during plugin loading) => the message would be lost, switch to cerr
+            if (root.getAllAppenders().empty())
+                logToCerr();
+            else
+                msghandler::MessageHandler::log(logerr.getStream(), msg);
+        }
+        catch (...) // failed, switch to cerr
+        {
+            logToCerr();
         }
 
         // make buffered diagnostics survive the abort: this message and any preceding
