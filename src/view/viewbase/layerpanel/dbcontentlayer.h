@@ -21,6 +21,7 @@
 
 #include <QVariant>
 
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -207,6 +208,12 @@ public:
     bool isStale() const override { return stale_; }
     void setStale(bool stale) { stale_ = stale; }
 
+    /// view specific entries appended to the context menu (e.g. the grid opacity of the Grid View)
+    using MenuExtension = std::function<void(QMenu&)>;
+    void setMenuExtension(MenuExtension extension) { menu_extension_ = std::move(extension); }
+
+    void buildContextMenu(QMenu& menu) override;
+
     /// Recompute colors bottom-up, so color_ on each group reflects the common color of its direct
     /// children. Runs after every update.
     void recomputeColorsRecursive();
@@ -228,4 +235,5 @@ private:
     const std::vector<TopLeafEntry>*      top_leaves_ = nullptr; // during updateFrom() only
     std::vector<std::vector<std::string>> entry_keys_;           // update keys per entry, DSType level first
     bool                                  stale_      = false;
+    MenuExtension                         menu_extension_;
 };

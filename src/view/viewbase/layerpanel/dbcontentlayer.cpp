@@ -339,6 +339,16 @@ DBContentRootItem::DBContentRootItem()
 }
 
 /**
+ */
+void DBContentRootItem::buildContextMenu(QMenu& menu)
+{
+    DBContentGroupItem::buildContextMenu(menu);
+
+    if (menu_extension_)
+        menu_extension_(menu);
+}
+
+/**
  * Notice: entries without payload are skipped.
  */
 void DBContentRootItem::updateFrom(const std::vector<LeafEntry>& entries,

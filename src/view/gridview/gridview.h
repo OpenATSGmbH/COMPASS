@@ -22,8 +22,11 @@
 #include "property.h"
 #include "grid2d_defs.h"
 #include "colormap_defs.h"
+#include "gridbackground_defs.h"
 
 #include <boost/optional.hpp>
+
+#include <set>
 
 class GridViewWidget;
 class GridViewDataSource;
@@ -49,6 +52,19 @@ public:
         int          render_color_scale;
         unsigned int render_color_num_steps;
         bool         render_color_log_scale;
+
+        unsigned int grid_opacity; // percent
+
+        // background map (longitude / latitude grids), see gridbackground_defs.h
+        bool           background_show;
+        std::string    background_color;
+        bool           background_map_show;
+        std::string    background_map_file;
+        unsigned int   background_map_opacity; // percent
+        bool           background_borders_show;
+        bool           background_sectors_show;
+        std::string    background_sectors_hidden_layers; // JSON array of sector layer names
+        std::string    background_sectors_hidden;        // JSON array of sector ids
     };
 
     enum class Variable
@@ -69,6 +85,28 @@ public:
     void setColorLogScale(bool log_scale, bool notify_changes);
     void setMinValue(const std::string& value_str, bool notify_changes);
     void setMaxValue(const std::string& value_str, bool notify_changes);
+
+    void setGridOpacity(unsigned int percent);
+
+    // background map, the setters update the display (no recompute)
+    void setBackgroundShow(bool show);
+    void setBackgroundColor(const std::string& color);
+    void setBackgroundMapShow(bool show);
+    void setBackgroundMapFile(const std::string& file_name);
+    void setBackgroundMapOpacity(unsigned int percent);
+    void setBackgroundBordersShow(bool show);
+    void setBackgroundSectorsShow(bool show);
+    void setBackgroundSectorLayerShow(const std::string& layer_name, bool show);
+    bool backgroundSectorLayerShown(const std::string& layer_name) const;
+    /// a renamed sector layer keeps its checked state
+    void renameBackgroundSectorLayer(const std::string& old_name, const std::string& new_name);
+    void setBackgroundSectorShow(unsigned int sector_id, bool show);
+    bool backgroundSectorShown(unsigned int sector_id) const;
+    std::set<std::string>  backgroundHiddenSectorLayers() const;
+    std::set<unsigned int> backgroundHiddenSectors() const;
+
+    /// true if the grid is computed over longitude (x) and latitude (y) of the variables
+    bool hasLonLatAxes();
 
     boost::optional<double> getMinValue() const;
     boost::optional<double> getMaxValue() const;
@@ -102,6 +140,9 @@ protected:
 
     virtual bool init_impl() override;
     virtual void viewInfoJSON_impl(nlohmann::json& info) const override;
+    virtual void onConfigurationChanged_impl(const std::vector<std::string>& changed_params) override;
+
+    void backgroundChanged();
 
     virtual dbContent::VariableSet getBaseSet(const std::string& dbcontent_name) override;
 

@@ -185,7 +185,7 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
 
     range_info_label_ = new QLabel;
     range_info_label_->setStyleSheet("QLabel { color : red; }");
-    
+
     layout->addRow("", range_info_label_);
 
     export_button_ = new QPushButton("Export");

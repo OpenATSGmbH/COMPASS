@@ -42,11 +42,21 @@
 #include "viewlayertreemodel.h"
 #include "annotationsrootitem.h"
 
+#include "gridbackgroundrenderer.h"
+#include "gridbackgrounditems.h"
+
+#include "viewmanager.h"
+#include "db_context_manager.h"
+#include "dbcontentmanager.h"
+#include "dbcontentdataengine.h"
+
 #include "logger.h"
 
+#include <QAction>
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMenu>
 
 #include <QChart>
 #include <QGraphicsLayout>
@@ -70,6 +80,39 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
 {
     view_ = view_widget->getView();
     traced_assert(view_);
+
+    background_.reset(new GridBackgroundRenderer(*view_));
+
+    connect(background_.get(), &GridBackgroundRenderer::updateSignal, this, [ this ] ()
+    {
+        //e.g. the map item shows whether the map is available
+        if (auto root = backgroundRootItem())
+            root->syncFromSettings();
+        if (auto sectors = sectorsRootItem())
+            sectors->syncFromSettings();
+
+        if (grid_chart_)
+            grid_chart_->viewport()->update();
+    });
+
+    //the sector layers below the background item
+    auto& ctx_man = view_->viewManager().dbContextManager();
+
+    auto sectorsChanged = [ this ] ()
+    {
+        if (auto sectors = sectorsRootItem())
+            sectors->update();
+    };
+
+    connect(&ctx_man, &context::DBContextManager::sectorsChangedSignal, this, sectorsChanged);
+    connect(&ctx_man, &context::DBContextManager::activeContextChangedSignal, this, sectorsChanged);
+
+    //a renamed layer keeps its checked state (emitted before the sectorsChangedSignal of the rename)
+    connect(&ctx_man, &context::DBContextManager::sectorLayerRenamedSignal, this,
+            [ this ] (const std::string& old_name, const std::string& new_name)
+            {
+                view_->renameBackgroundSectorLayer(old_name, new_name);
+            });
 
     main_layout_ = new QHBoxLayout();
     main_layout_->setMargin(0);
@@ -265,7 +308,13 @@ void GridViewDataWidget::buildGridFromStash()
                      data_ranges[ 1 ].has_value() &&
                      data_ranges[ 2 ].has_value());
     if (!has_data)
+    {
+        loginf << "no grid data, has data " << hasData() << " stash data " << getStash().hasData()
+               << " variables ok " << variablesOk()
+               << " ranges " << data_ranges[ 0 ].has_value() << data_ranges[ 1 ].has_value() << data_ranges[ 2 ].has_value()
+               << " groups " << getStash().groupedStashes().size();
         return;
+    }
 
     auto bounds = getXYVariableBounds(true);
     if (!bounds.has_value() || bounds->isEmpty())
@@ -435,6 +484,10 @@ void GridViewDataWidget::layerVisibilityChanged()
     if (view_->showsAnnotation())
         return;
 
+    // e.g. a background item (no data layer ids) => no re-aggregation
+    if (!hiddenLayerIdsChanged())
+        return;
+
     // a recompute worker fills the stash and the grid => its commit picks up the toggle
     if (hasPendingAsyncWork_impl())
         return;
@@ -562,6 +615,11 @@ GridViewDataTool GridViewDataWidget::selectedTool() const
 QPixmap GridViewDataWidget::renderPixmap()
 {
     traced_assert(grid_chart_);
+
+    //map tiles of the exported viewport, default waiting until the export dialogs set it
+    if (backgroundActive())
+        background_->prepareExport(grid_chart_->viewLonLat(), grid_chart_->chart()->plotArea().size().toSize());
+
     return grid_chart_->grab();
 }
 
@@ -715,6 +773,12 @@ ViewDataWidget::ViewDrawState GridViewDataWidget::updateGridChart()
              this, &GridViewDataWidget::rectangleSelectedSlot, Qt::ConnectionType::QueuedConnection);
 
     main_layout_->insertWidget(0, grid_chart_.get());
+
+    updateBackgroundAvailable();
+
+    //zoom / position of the user kept (e.g. across a load)
+    if (user_view_.has_value() && !view_->showsAnnotation())
+        grid_chart_->setView(*user_view_);
 
     if (colormap_.has_value())
     {
@@ -1003,17 +1067,36 @@ ViewDataWidget::ViewDrawState GridViewDataWidget::updateChart(QtCharts::QChart* 
         chart->legend()->setVisible(false);
 
         QtCharts::QScatterSeries* series = new QtCharts::QScatterSeries;
+
+        //longitude / latitude => the background shows the position extent of the database
+        const QRectF db_extent = (!view_->showsAnnotation() && view_->hasLonLatAxes()) ? databasePositionExtent() : QRectF();
+
+        if (!db_extent.isEmpty())
+        {
+            series->setMarkerSize(0.1);
+            series->setColor(Qt::white);
+
+            series->append(db_extent.topLeft());
+            series->append(db_extent.topRight());
+            series->append(db_extent.bottomRight());
+            series->append(db_extent.bottomLeft());
+        }
+
         chart->addSeries(series);
 
         createAxes();
 
-        chart->axes(Qt::Horizontal).at(0)->setLabelsVisible(false);
-        chart->axes(Qt::Horizontal).at(0)->setGridLineVisible(false);
-        chart->axes(Qt::Horizontal).at(0)->setMinorGridLineVisible(false);
+        //with the database extent the axes keep their labels
+        if (db_extent.isEmpty())
+        {
+            chart->axes(Qt::Horizontal).at(0)->setLabelsVisible(false);
+            chart->axes(Qt::Horizontal).at(0)->setGridLineVisible(false);
+            chart->axes(Qt::Horizontal).at(0)->setMinorGridLineVisible(false);
 
-        chart->axes(Qt::Vertical).at(0)->setLabelsVisible(false);
-        chart->axes(Qt::Vertical).at(0)->setGridLineVisible(false);
-        chart->axes(Qt::Vertical).at(0)->setMinorGridLineVisible(false);
+            chart->axes(Qt::Vertical).at(0)->setLabelsVisible(false);
+            chart->axes(Qt::Vertical).at(0)->setGridLineVisible(false);
+            chart->axes(Qt::Vertical).at(0)->setMinorGridLineVisible(false);
+        }
 
         draw_state = ViewDataWidget::ViewDrawState::Drawn;
     }
@@ -1155,5 +1238,202 @@ const ColorLegend& GridViewDataWidget::currentLegend() const
 {
     traced_assert(legend_);
     return legend_->currentLegend();
+}
+
+/**
+*/
+bool GridViewDataWidget::backgroundActive() const
+{
+    return background_ && background_->active();
+}
+
+/**
+*/
+double GridViewDataWidget::gridCellWidth() const
+{
+    if (grid_layers_.numLayers() == 0 || grid_roi_.isEmpty())
+        return 0.0;
+
+    const auto cols = grid_layers_.layer(0).data.cols();
+
+    return cols > 0 ? grid_roi_.width() / cols : 0.0;
+}
+
+/**
+ * Minimum / maximum position of the database (data engine), empty if not known.
+ */
+QRectF GridViewDataWidget::databasePositionExtent() const
+{
+    const auto& engine = view_->viewManager().dbContentManager().dataEngine();
+
+    if (!engine.hasMinMaxPosition())
+        return {};
+
+    const auto lat = engine.minMaxLatitude();
+    const auto lon = engine.minMaxLongitude();
+
+    QRectF r(lon.first, lat.first, lon.second - lon.first, lat.second - lat.first);
+
+    //a single position => a small area around it
+    const double min_size = 0.01;
+
+    if (r.width() < min_size || r.height() < min_size)
+        r = QRectF(r.center().x() - min_size / 2.0, r.center().y() - min_size / 2.0, min_size, min_size)
+            .united(r);
+
+    return r;
+}
+
+/**
+*/
+QRectF GridViewDataWidget::backgroundExtent() const
+{
+    if (!grid_roi_.isEmpty())
+        return grid_roi_;
+
+    return databasePositionExtent();
+}
+
+/**
+*/
+GridBackgroundRootItem* GridViewDataWidget::backgroundRootItem() const
+{
+    //the model belongs to the layer panel, which may be gone
+    if (!background_model_)
+        return nullptr;
+
+    return background_root_;
+}
+
+/**
+*/
+GridBackgroundSectorsItem* GridViewDataWidget::sectorsRootItem() const
+{
+    //the model belongs to the layer panel, which may be gone
+    if (!background_model_)
+        return nullptr;
+
+    return sectors_root_;
+}
+
+/**
+ * The background is available for longitude / latitude variables (not for annotations), also without
+ * loaded data.
+ */
+void GridViewDataWidget::updateBackgroundAvailable()
+{
+    const bool available = !view_->showsAnnotation() && view_->hasLonLatAxes();
+
+    if (available == background_->available())
+        return;
+
+    background_->setAvailable(available);
+
+    if (auto root = backgroundRootItem())
+        root->notifySubtreeChanged();
+    if (auto sectors = sectorsRootItem())
+        sectors->notifySubtreeChanged();
+}
+
+/**
+*/
+void GridViewDataWidget::backgroundSettingsChanged()
+{
+    updateBackgroundAvailable();
+
+    background_->settingsChanged();
+
+    //e.g. a preset applied
+    if (auto root = backgroundRootItem())
+        root->syncFromSettings();
+    if (auto sectors = sectorsRootItem())
+        sectors->syncFromSettings();
+
+    if (grid_chart_)
+    {
+        //aspect ratio and limits depend on the background
+        grid_chart_->applyViewLimits();
+        grid_chart_->viewport()->update();
+    }
+}
+
+/**
+ * The empty chart was built before the database was open => without axis ranges, where zoom and pan
+ * do nothing. Rebuilt with the position extent of the database.
+ */
+void GridViewDataWidget::databaseOpened_impl()
+{
+    if (!hasValidGrid())
+        updateGridChart();
+}
+
+/**
+*/
+void GridViewDataWidget::databaseClosed_impl()
+{
+    clearUserView();
+
+    if (!hasValidGrid())
+        updateGridChart();
+}
+
+/**
+ * Notice: not for annotations, which bring their own axes.
+ */
+void GridViewDataWidget::setUserView(const QRectF& view)
+{
+    if (view_->showsAnnotation())
+        return;
+
+    user_view_ = view;
+}
+
+/**
+*/
+void GridViewDataWidget::clearUserView()
+{
+    user_view_.reset();
+}
+
+/**
+*/
+void GridViewDataWidget::layerPanelAttached()
+{
+    auto* model = layerTreeModel();
+    if (!model)
+        return;
+
+    //grid opacity in the context menu of the data item, in steps as the map opacity
+    if (auto* data_root = model->dbContentRootItem())
+    {
+        GridView* view = view_;
+
+        data_root->setMenuExtension([ view ] (QMenu& menu)
+        {
+            menu.addSection("Grid");
+
+            QMenu* opacity_menu = menu.addMenu("Opacity");
+
+            for (unsigned int i = 0; i <= 100; i += 10)
+            {
+                QAction* act = opacity_menu->addAction(QString::number(i) + "%");
+                act->setCheckable(true);
+                act->setChecked(view->settings().grid_opacity == i);
+
+                QObject::connect(act, &QAction::triggered, view, [ view, i ] () { view->setGridOpacity(i); });
+            }
+        });
+    }
+
+    //sectors as a top level item (as in the Geographic View), above the Background Map
+    auto sectors = std::make_unique<GridBackgroundSectorsItem>(*view_, *background_);
+
+    sectors_root_ = static_cast<GridBackgroundSectorsItem*>(model->addRootItem(std::move(sectors)));
+    sectors_root_->update();
+
+    auto root = std::make_unique<GridBackgroundRootItem>(*view_, *background_);
+
+    background_root_  = static_cast<GridBackgroundRootItem*>(model->addRootItem(std::move(root)));
+    background_model_ = model;
 }
 

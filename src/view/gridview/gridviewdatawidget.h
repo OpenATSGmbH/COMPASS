@@ -30,6 +30,7 @@
 #include <vector>
 
 #include <QImage>
+#include <QPointer>
 #include <QRectF>
 
 #include <boost/optional.hpp>
@@ -40,6 +41,10 @@ class GridView;
 class GridViewWidget;
 class Grid2D;
 class ColorLegendWidget;
+class GridBackgroundRenderer;
+class GridBackgroundRootItem;
+class GridBackgroundSectorsItem;
+class LayerTreeModel;
 
 namespace QtCharts
 {
@@ -95,6 +100,25 @@ public:
     boost::optional<std::pair<QImage, RasterReference>> currentGeoImage() const;
     const ColorLegend& currentLegend() const;
 
+    // background map (longitude / latitude grids)
+    GridBackgroundRenderer& background() { return *background_; }
+    /// the background is available (longitude / latitude grid) and switched on
+    bool backgroundActive() const;
+    /// the view's background settings or the x / y variables changed (also on a reconfigure / preset)
+    void backgroundSettingsChanged();
+    /// width of a grid cell in x, 0 if there is no grid
+    double gridCellWidth() const;
+    /// area for zoom to home and the zoom limits: the grid bounds, without a grid the position extent of the database
+    QRectF backgroundExtent() const;
+    /// minimum / maximum position of the database, empty if not known
+    QRectF databasePositionExtent() const;
+
+    /// zoom / position changed by the user (axis ranges), kept when the chart is rebuilt (e.g. on a load)
+    void setUserView(const QRectF& view);
+    /// back to the data bounds (zoom to home, other x / y variables, database closed)
+    void clearUserView();
+    bool hasUserView() const { return user_view_.has_value(); }
+
 public slots:
     void rectangleSelectedSlot(QPointF p1, QPointF p2);
 
@@ -107,6 +131,11 @@ protected:
 
     /// rebuilds the grid from the stash so that only checked layers contribute
     virtual void layerVisibilityChanged() override final;
+    /// adds the background subtree to the layer panel
+    virtual void layerPanelAttached() override;
+    /// without a grid: the empty chart follows the position extent of the database
+    virtual void databaseOpened_impl() override;
+    virtual void databaseClosed_impl() override;
 
     // load-time asynchronous recompute inherited from VariableViewStashDataWidget
     virtual void prepareStashProcessing() override final;
@@ -143,7 +172,19 @@ private:
     /// pointers stay valid.
     void buildGridFromStash();
 
+    /// background availability from the current grid and variables
+    void updateBackgroundAvailable();
+    GridBackgroundRootItem* backgroundRootItem() const;
+    GridBackgroundSectorsItem* sectorsRootItem() const;
+
     GridView* view_   = nullptr;
+
+    std::optional<QRectF> user_view_; // see setUserView()
+
+    std::unique_ptr<GridBackgroundRenderer> background_;
+    QPointer<LayerTreeModel>                background_model_;     // model holding background_root_
+    GridBackgroundRootItem*                 background_root_ = nullptr;
+    GridBackgroundSectorsItem*              sectors_root_    = nullptr; // top level Sectors item
     
     GridViewDataTool selected_tool_ = GV_NAVIGATE_TOOL;
 
