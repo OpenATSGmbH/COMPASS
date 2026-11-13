@@ -92,6 +92,9 @@ public slots:
     virtual void showViewPointSlot (ViewableDataConfig* vp) override final;
 
 protected:
+    /// a stored variable not available in the opened database is set to empty, if the variable may be empty
+    virtual void adaptConfigToDatabase() override;
+
     friend class ViewVariable;
 
     ViewVariable& addVariable(const std::string& id,

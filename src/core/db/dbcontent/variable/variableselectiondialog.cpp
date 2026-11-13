@@ -65,6 +65,7 @@ namespace
 
     const int ContentNameRole  = Qt::UserRole + 1;
     const int VariableNameRole = Qt::UserRole + 2;
+    const int EmptyVariableRole = Qt::UserRole + 3; // the "<empty>" row, see VariableSelectionDialog::addEmptyVariableRow()
 
     const int ContentStripColumns = 6;
 
@@ -740,6 +741,10 @@ void VariableSelectionDialog::updateModel()
     model_->clear();
     model_->setHorizontalHeaderLabels({"Name", "Origin", "Type", "Description"});
 
+    //the empty selection as the first entry, only where an empty variable is allowed
+    if (settings_.show_empty_variable)
+        addEmptyVariableRow();
+
     bool by_group = grouping_combo_->currentIndex() == 1;
 
     if (settings_.show_dbcont_only)
@@ -897,6 +902,29 @@ void VariableSelectionDialog::updateModel()
 }
 
 /**
+ * First row "<empty>": selecting it gives the empty selection (as the Select None button).
+ */
+void VariableSelectionDialog::addEmptyVariableRow()
+{
+    QStandardItem* name_item = new QStandardItem("<empty>");
+    name_item->setEditable(false);
+    name_item->setData(true, EmptyVariableRole);
+    name_item->setToolTip("No variable");
+
+    QFont font_italic = name_item->font();
+    font_italic.setItalic(true);
+    name_item->setFont(font_italic);
+
+    QList<QStandardItem*> row;
+    row << name_item << new QStandardItem() << new QStandardItem() << new QStandardItem("No variable");
+
+    for (int i = 1; i < row.size(); ++i)
+        row[i]->setEditable(false);
+
+    model_->appendRow(row);
+}
+
+/**
  */
 void VariableSelectionDialog::updateSelectButton()
 {
@@ -905,7 +933,7 @@ void VariableSelectionDialog::updateSelectButton()
     bool has_selection = false;
 
     for (const auto& index : tree_view_->selectionModel()->selectedRows(0))
-        if (!index.data(VariableNameRole).toString().isEmpty())
+        if (!index.data(VariableNameRole).toString().isEmpty() || index.data(EmptyVariableRole).toBool())
         {
             has_selection = true;
             break;
@@ -990,6 +1018,12 @@ void VariableSelectionDialog::itemDoubleClickedSlot(const QModelIndex& index)
 {
     QModelIndex name_index = index.sibling(index.row(), 0);
 
+    if (name_index.data(EmptyVariableRole).toBool())
+    {
+        selectNoneSlot();
+        return;
+    }
+
     if (name_index.data(VariableNameRole).toString().isEmpty())
         return; // content or group node
 
@@ -1007,6 +1041,13 @@ void VariableSelectionDialog::itemDoubleClickedSlot(const QModelIndex& index)
 void VariableSelectionDialog::selectSlot()
 {
     selection_.clear();
+
+    for (const auto& index : tree_view_->selectionModel()->selectedRows(0))
+        if (index.data(EmptyVariableRole).toBool())
+        {
+            selectNoneSlot();
+            return;
+        }
 
     for (const auto& index : tree_view_->selectionModel()->selectedRows(0))
     {

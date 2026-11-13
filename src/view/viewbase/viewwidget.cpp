@@ -677,6 +677,10 @@ void ViewWidget::databaseOpened()
 {
     if (data_widget_)
         data_widget_->databaseOpened();
+
+    //the config widget shows the stored config, with the availability in this database (e.g. Report Variables)
+    if (config_widget_)
+        config_widget_->configChanged();
 }
 
 /**
@@ -685,4 +689,7 @@ void ViewWidget::databaseClosed()
 {
     if (data_widget_)
         data_widget_->databaseClosed();
+
+    if (config_widget_)
+        config_widget_->configChanged();
 }

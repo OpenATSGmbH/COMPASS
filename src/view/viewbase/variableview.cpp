@@ -435,3 +435,23 @@ void VariableView::loadingDone()
     //call base
     View::loadingDone();
 }
+
+/**
+ * E.g. a Report Variable of a report the opened database does not hold. Only with an open database,
+ * before that no report is known.
+ */
+void VariableView::adaptConfigToDatabase()
+{
+    for (size_t i = 0; i < numVariables(); ++i)
+    {
+        auto& var = variable((int)i);
+
+        if (!var.settings().allow_empty_var || var.isEmpty() || var.hasVariable())
+            continue;
+
+        loginf << "variable " << var.id() << " '" << var.settings().data_var_dbcont << "' '"
+               << var.settings().data_var_name << "' not available, set to empty";
+
+        var.setEmpty(false);
+    }
+}

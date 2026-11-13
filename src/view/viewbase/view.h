@@ -200,6 +200,8 @@ protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
 
     virtual void databaseOpened_impl() {}
+    /// adapts the config to the opened database, before the widgets are informed (e.g. unavailable variables)
+    virtual void adaptConfigToDatabase() {}
     virtual void databaseClosed_impl() {}
 
     virtual void updateSelection_impl() = 0;

@@ -125,6 +125,15 @@ void VariableSelectionWidget::updateLabels()
              && dbcont_man_.dbContent(selected_object_name_).hasVariable(selected_variable_name_))
         shown = dbcont_man_.dbContent(selected_object_name_).variable(selected_variable_name_).displayName(label_max_chars_);
 
+    //the stored selection is shown even if it does not exist in the database (e.g. no database open yet)
+    if (unavailable_variable_selected_)
+    {
+        //a Report Variable name starts with its report name, which the content label shows already
+        const std::string prefix = selected_object_name_ + ": ";
+        if (shown.rfind(prefix, 0) == 0)
+            shown = shown.substr(prefix.size());
+    }
+
     variable_label_->setText(QString::fromStdString(shown));
 }
 
@@ -134,6 +143,9 @@ void VariableSelectionWidget::updateToolTip()
         setToolTip(selectedVariable().info().c_str());
     else if (hasMetaVariable())
         setToolTip(selectedMetaVariable().info().c_str());
+    else if (unavailable_variable_selected_)
+        setToolTip(QString::fromStdString("Variable '" + selected_variable_name_ + "' of '" + selected_object_name_
+                                          + "' is not available in this database"));
     else
         setToolTip("");
 }
@@ -177,6 +189,7 @@ void VariableSelectionWidget::applySelection(const std::string& obj_name,
     meta_variable_selected_   = false;
     variable_selected_        = false;
     report_variable_selected_ = false;
+    unavailable_variable_selected_ = false;
 
     if (var_name.size() || obj_name.size())
     {
@@ -191,6 +204,7 @@ void VariableSelectionWidget::applySelection(const std::string& obj_name,
             traced_assert(dbcont_man_.existsReportVariable(obj_name, var_name));
 
             report_variable_selected_ = true;
+    unavailable_variable_selected_ = false;
         }
         else
         {
@@ -223,6 +237,7 @@ void VariableSelectionWidget::selectedVariable(Variable& variable)
     variable_selected_        = true;
     meta_variable_selected_   = false;
     report_variable_selected_ = false;
+    unavailable_variable_selected_ = false;
 
     updateLabels();
     updateToolTip();
@@ -241,6 +256,7 @@ void VariableSelectionWidget::selectEmptyVariable()
     variable_selected_        = false;
     meta_variable_selected_   = false;
     report_variable_selected_ = false;
+    unavailable_variable_selected_ = false;
 
     updateLabels();
     updateToolTip();
@@ -280,6 +296,7 @@ void VariableSelectionWidget::selectedReportVariable(ReportVariable& variable)
     variable_selected_        = false;
     meta_variable_selected_   = false;
     report_variable_selected_ = true;
+    unavailable_variable_selected_ = false;
 
     updateLabels();
     updateToolTip();
@@ -310,6 +327,7 @@ void VariableSelectionWidget::selectedMetaVariable(MetaVariable& variable)
     variable_selected_        = false;
     meta_variable_selected_   = true;
     report_variable_selected_ = false;
+    unavailable_variable_selected_ = false;
 
     updateLabels();
 
@@ -329,6 +347,23 @@ MetaVariable& VariableSelectionWidget::selectedMetaVariable() const
     traced_assert(dbcont_man_.existsMetaVariable(var_name));
 
     return dbcont_man_.metaVariable(var_name);
+}
+
+void VariableSelectionWidget::selectedUnavailableVariable(const std::string& obj_name, const std::string& var_name)
+{
+    traced_assert(object_label_);
+    traced_assert(variable_label_);
+
+    selected_object_name_   = obj_name;
+    selected_variable_name_ = var_name;
+
+    variable_selected_             = false;
+    meta_variable_selected_        = false;
+    report_variable_selected_      = false;
+    unavailable_variable_selected_ = true;
+
+    updateLabels();
+    updateToolTip();
 }
 
 std::pair<std::string, std::string> VariableSelectionWidget::selectionAsString() const
