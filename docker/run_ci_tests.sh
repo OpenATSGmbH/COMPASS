@@ -24,7 +24,8 @@ fi
 
 echo "Run directory: $RUN_DIR"
 
-APPIMAGE="$RUN_DIR/COMPASS_deb10-x86_64.AppImage"
+# the run dir holds the AppImage of the CI build image (COMPASS_<os>-x86_64.AppImage)
+APPIMAGE=$(ls "$RUN_DIR"/COMPASS_*-x86_64.AppImage 2>/dev/null | head -1 || true)
 SCRIPTS="$RUN_DIR/scripts"
 TEST_PATH="$SCRIPTS/tests"
 DATA_PATH="/home/user/ci/test"

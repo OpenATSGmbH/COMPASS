@@ -33,7 +33,7 @@ pipeline {
         booleanParam(name: 'TAG_LIVE',            defaultValue: true, description: 'Tag: live (live network replay, at_20230422 + skeyes_20251203)')
 
         // Build options
-        booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove build_deb10 before building)')
+        booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove the build dirs before building)')
         booleanParam(name: 'ASAN',                   defaultValue: false, description: 'Build with AddressSanitizer (slower; use to diagnose heap/memory corruption)')
 
         // Datasets (checkboxes)
@@ -49,7 +49,9 @@ pipeline {
         GITHUB_TOKEN    = credentials('github-pat')
         CI_DIR          = '/home/user/ci'
         TEST_DATA_PATH  = '/home/user/ci/test'
-        DOCKER_IMAGE    = 'compass/build_deb10'
+        // OS_NAME of the build image: names the image, the build dirs and the AppImage
+        BUILD_OS        = 'alma8'
+        DOCKER_IMAGE    = "compass/build_${BUILD_OS}"
         DISPLAY             = ':0'
         COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
         PYTHONUNBUFFERED    = '1'
@@ -137,7 +139,7 @@ pipeline {
                             -v \$(pwd)/jasterix:/workspace/jasterix \
                             -w /workspace/compass \
                             ${DOCKER_IMAGE} \
-                            bash -c '${lsanEnv}MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_deb10/bin/compass_tests'
+                            bash -c '${lsanEnv}MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_${BUILD_OS}/bin/compass_tests'
                     """
                 }
             }
@@ -157,10 +159,10 @@ pipeline {
                             -v ${CI_DIR}:${CI_DIR} \
                             -w /workspace/compass \
                             ${DOCKER_IMAGE} \
-                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo cmake --install /workspace/jasterix/build_deb10 && sudo cmake --install /workspace/compass/build_deb10 && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
+                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo cmake --install /workspace/jasterix/build_${BUILD_OS} && sudo cmake --install /workspace/compass/build_${BUILD_OS} && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
                     """
                     // Collect artifacts
-                    sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME}"
+                    sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME} ${BUILD_OS}"
                 }
             }
         }
@@ -224,7 +226,7 @@ pipeline {
                         error "No artifact directory found for build ${BUILD_NUMBER}"
                     }
 
-                    def appimage = "${runDir}/COMPASS_deb10-x86_64.AppImage"
+                    def appimage = "${runDir}/COMPASS_${BUILD_OS}-x86_64.AppImage"
                     def scriptsDir = "${runDir}/scripts"
 
                     // Run tests for each selected dataset
