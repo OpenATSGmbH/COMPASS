@@ -163,6 +163,109 @@ In figure \ref{fig:grid_view_color_example2} the minimum and maximum color limit
 The color legend shows that the color values are now scaled between 30000 (green) and 40000 (red),
 which results in a better color resolution in this range.
 
+\subsection{Background Map}
+\label{sec:grid_background}
+
+For a grid over longitude and latitude, the Grid View shows a background below and above the grid cells: a background color, a map, the national borders and the sectors of the active Data Context. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: figures/grid\_background.png - Grid View over 'Meta - Longitude' / 'Meta - Latitude' with the OpenStreetMap map switched on, sectors shown, grid opacity 50\%, Layers Tree with 'Sectors' and 'Background Map' expanded]}}\vspace{1.5cm}}}
+  \caption{Grid View with background map}
+\end{figure}
+
+For a grid of variables, the background is available if:
+\begin{itemize}
+    \item The X-variable is 'Meta - Longitude' (or the DBContent variable it maps to)
+    \item The Y-variable is 'Meta - Latitude' (or the DBContent variable it maps to)
+\end{itemize}
+\ \\
+
+For a grid annotation of a View Point (e.g. an evaluation or Data Source Analysis figure), the background is available if the grid is over longitude and latitude. Grids over other values (e.g. altitude) have no background. \\
+
+Otherwise the background items stay in the Layers Tree, but are greyed out and inactive. The background is also shown without loaded data: the empty plot then shows the position extent of the database. \\
+
+The background is controlled by the following items in the Layers Tree (see \nameref{sec:layers_tree}):
+
+\begin{itemize}
+    \item \textbf{Sectors}: The sectors of the active Data Context, shown as outlines in the sector colors. Shown by default, also if the 'Background Map' item is switched off. Context menu: 'Delete All'.
+    \begin{itemize}
+        \item \textbf{<sector layer>}: All sectors of the sector layer. Context menu: 'Rename Layer...', 'Set Color...', 'Delete', 'Delete All'.
+        \begin{itemize}
+            \item \textbf{<sector>}: A single sector. Context menu: 'Rename...', 'Set Color...', 'Delete', 'Delete All'.
+        \end{itemize}
+    \end{itemize}
+    \item \textbf{Background Map}: Switches the background color, the national borders and the map on or off. On by default.
+    \begin{itemize}
+        \item \textbf{National Borders}: The national borders, drawn in yellow above the grid. On by default.
+        \item \textbf{Map: <map title>}: The map below the grid. Off by default. Context menu:
+        \begin{itemize}
+            \item 'Map File': Selects the map
+            \item 'Opacity': Sets the map opacity from 0\% to 100\% in steps of 10\%
+        \end{itemize}
+        \item \textbf{Background Color}: The color of the plot area below the map, white by default. A click on the color icon opens the 'Background Color' dialog.
+    \end{itemize}
+\end{itemize}
+\ \\
+
+The sector context menu actions change the active Data Context, as in the Geographic View (see \nameref{sec:geo_sectors_ops}):
+\begin{itemize}
+    \item 'Delete': Deletes the clicked item. For a sector layer, all sectors of the layer are deleted.
+    \item 'Delete All': Deletes all sectors of the active Data Context.
+    \item Both actions ask for a confirmation.
+    \item The changes are shown in all views.
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that the sector edit actions are disabled in Live Mode: Running. The tooltip of a disabled action shows the reason.} \\
+
+The checkboxes only change the display of this Grid View. They are saved in the view settings, and thus in View Presets and View Points. Hidden sector layers are stored by name, hidden sectors by sector. \\
+
+The opacity of the grid cells is set in the context menu of the 'Data' item: 'Opacity' sets the grid opacity from 0\% to 100\% in steps of 10\%. Empty grid cells are always transparent. \\
+
+The background is drawn in the following order, from bottom to top:
+\begin{enumerate}
+    \item Background color
+    \item Map, with the map opacity
+    \item Grid cells, with the grid opacity
+    \item National borders
+    \item Sectors (outlines only, never filled, altitude limits not used)
+\end{enumerate}
+\ \\
+
+\subsubsection{Map Files}
+
+The 'Map File' submenu lists the map files (\texttt{.earth}) of the maps folder in the COMPASS data directory which can be shown in the Grid View:
+\begin{itemize}
+    \item The map is a projected map (as the 2D maps of the Geographic View)
+    \item The map has at least one image layer
+    \item The map uses no shaders
+\end{itemize}
+\ \\
+
+Currently these are 'arcgis\_2d', 'openstreetmap\_2d' and 'openstreetmap\_german\_2d'. \\
+
+The map tiles are loaded with the same configuration as in the Geographic View, so both views use the same map tile cache. The tiles are requested a short time after the last zoom or pan operation. Until the new map image is ready, the previous map image is shown, moved and scaled to the new area. \\
+
+If no map tile can be loaded, e.g. on a PC without internet access, the item shows '(Not Available)'. Switching the map off and on, or selecting another map file, tries again. \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that the map is off by default, so that a PC without internet access does not wait for map tiles.} \\
+
+\subsubsection{Navigation with Background}
+
+With an active background, the following applies:
+\begin{itemize}
+    \item Mouse wheel: Zooms in or out
+    \item Left mouse button drag (if no other tool is active): Moves the shown area
+    \item The shown area keeps equal distances in longitude and latitude direction, as on a map
+    \item Zooming out is limited to the grid area plus a margin of 10\%
+    \item Zooming in is limited to a quarter of a grid cell or to the finest map tile level, whichever is larger
+    \item The zoom and position are kept when the data is reloaded. 'Zoom to Home' shows all data again.
+\end{itemize}
+\ \\
+
+When the Grid View is rendered for a View Points report (see \nameref{sec:view_points}), it waits up to 10 seconds for the map tiles of the shown area.
+
 \subsection{Export}
 
 At the bottom of the config tab resides the export button, which is only active if the grid view is configured as follows:
@@ -188,6 +291,7 @@ select a name for the exported grid item.
 \end{figure}
 
 The grid will be exported to the selected Geographic View, and listed under \textit{Annotations}$\rightarrow$\textit{Grids} in Geographic View's 'Layers' tab.
+The grid is exported with its cell values, so its colors can be changed in the Geographic View with 'Edit Coloring'.
 Refer to section \nameref{sec:geo_annotation_ops} for how to handle grid items in GeographicView.
 
 \subsubsection{Export to GeoTIFF}

@@ -741,9 +741,10 @@ ViewPointGenFeatureGrid::ViewPointGenFeatureGrid(const Grid2DLayer& grid,
 
 /**
 */
-void ViewPointGenFeatureGrid::toJSON_impl(nlohmann::json& j, bool write_binary_if_possible) const
+void ViewPointGenFeatureGrid::toJSON_impl(nlohmann::json& j, bool /*write_binary_if_possible*/) const
 {
-    j[FeatureGridFieldNameGrid] = grid_.toJSON(write_binary_if_possible);
+    //grid data always as json text
+    j[FeatureGridFieldNameGrid] = grid_.toJSON();
 
     if (render_settings_.has_value())
         j[FeatureGridFieldNameRenderSettings] = render_settings_.value().toJSON();

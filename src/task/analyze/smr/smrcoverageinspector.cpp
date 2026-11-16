@@ -47,10 +47,8 @@
 #include "requirement/detection/detection_pd_helpers.h"
 
 #include "grid2dlayer.h"
-#include "grid2dlayerrenderer.h"
 #include "grid2drendersettings.h"
 #include "colormap.h"
-#include "colorlegend.h"
 
 #include "viewpointgenerator.h"
 #include "histogram_raw.h"
@@ -334,22 +332,15 @@ void attachGridFigure(ResultReport::Section& section,
 
     auto* anno = vp->annotations().getOrCreateAnnotation(annotation_name);
 
-    auto rendered = Grid2DLayerRenderer::render(*proj.layer, rs);
-
     // Reverse so the color-map's "good" end ends up at the top of the legend
     // tree, matching operator expectation.
-    auto raw = rs.color_map.colorLegend(
-        /*add_sel_color=*/false,
-        /*add_null_color=*/false,
-        [](double v) { return Utils::String::doubleToStringPrecision(v, 2); });
-    ColorLegend legend;
-    const auto& entries = raw.entries();
-    for (auto it = entries.rbegin(); it != entries.rend(); ++it)
-        legend.addEntry(it->first, it->second);
+    Grid2DRenderSettings feature_rs = rs;
+    feature_rs.legend_order     = Grid2DRenderSettings::LegendOrder::Reversed;
+    feature_rs.legend_precision = 2;
 
-    anno->addFeature(new ViewPointGenFeatureGeoImage(rendered.first, rendered.second, legend));
+    anno->addFeature(new ViewPointGenFeatureGrid(*proj.layer, feature_rs, meta));
 
-    QRectF vp_roi = Grid2DLayerRenderer::geoROIOfOpaquePixels(rendered.first, rendered.second);
+    QRectF vp_roi = proj.layer->geoROIOfValidCells();
     if (!vp_roi.isEmpty())
         vp->setROI(vp_roi);
 

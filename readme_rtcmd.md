@@ -122,7 +122,8 @@ Operational/Degraded/Initializing/Not Connected/Fresh/Unknown and status time)
 **Reports**: `get_existing_reports` (`reports` names, `details` per report with `id` and the
 Report Table catalog `tables`: `key`, `display_name`, `kind`, `num_rows`, `host_dbcontents`,
 `columns`, `variables` as offered in the Views), `get_report` (with `section` for hierarchical
-drill-down, see below), `export_report` (with `report`, `dir`, `mode`),
+drill-down, see below), `get_report_figure` (with `report`, `section`, optional `figure`:
+`figures` list with `name`, `caption` and the stored `view_point` JSON), `export_report` (with `report`, `dir`, `mode`),
 `export_view_points_report`
 
 **Data context**: `create_context`, `set_context`, `delete_context`, `list_contexts`,

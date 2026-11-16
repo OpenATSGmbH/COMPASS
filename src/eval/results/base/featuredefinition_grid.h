@@ -25,7 +25,6 @@
 #include "gridview/grid2d.h"
 #include "gridview/grid2dlayer.h"
 #include "gridview/grid2drendersettings.h"
-#include "gridview/grid2dlayerrenderer.h"
 
 #include "points/viewpointgenerator.h"
 
@@ -56,13 +55,11 @@ public:
     FeatureDefinitionGridBase(const EvaluationCalculator& calculator,
                               const std::string& description_type,
                               const std::string& feature_description,
-                              bool generate_geoimage,
                               const boost::optional<unsigned int>& grid_num_cells_x = boost::optional<unsigned int>(),
                               const boost::optional<unsigned int>& grid_num_cells_y = boost::optional<unsigned int>())
-    :   FeatureDefinition    (calculator, description_type, feature_description, "", "")
+    :   FeatureDefinition    (calculator, description_type, feature_description, "Longitude (deg)", "Latitude (deg)")
     ,   grid_num_cells_x_    (grid_num_cells_x)
     ,   grid_num_cells_y_    (grid_num_cells_y)
-    ,   generate_geoimage_   (generate_geoimage)
     {
         //default converter
         converter_ = [ & ] (const T& v) { return static_cast<double>(v); };
@@ -180,33 +177,11 @@ public:
 
         const auto& layer = *layers.layers().begin();
 
-        std::unique_ptr<ViewPointGenFeature> feature;
+        //grid feature with the render settings as suggested coloring, each display renders the image itself
+        traced_assert(render_settings_map.count(layer->name));
+        const auto& rs = render_settings_map.at(layer->name);
 
-        if (generate_geoimage_)
-        {
-            //get render settings
-            traced_assert(render_settings_map.count(layer->name));
-            const auto& rs = render_settings_map.at(layer->name);
-
-            //render layer
-            auto render_result = Grid2DLayerRenderer::render(*layer, rs);
-
-            //loginf << "rendered image size: " << render_result.first.width() << "x" << render_result.first.height();
-            //render_result.first.save(QString::fromStdString("/home/mcphatty/layer_" + l.first + ".png"));
-
-            //create geo image annotation
-            std::unique_ptr<ViewPointGenFeatureGeoImage> geo_image;
-            geo_image.reset(new ViewPointGenFeatureGeoImage(render_result.first, render_result.second));
-
-            feature = std::move(geo_image);
-        }
-        else
-        {
-            std::unique_ptr<ViewPointGenFeatureGrid> grid_feat;
-            grid_feat.reset(new ViewPointGenFeatureGrid(*layer));
-
-            feature = std::move(grid_feat);
-        }
+        std::unique_ptr<ViewPointGenFeature> feature(new ViewPointGenFeatureGrid(*layer, rs));
 
         return feature;
     }
@@ -285,8 +260,6 @@ private:
 
     boost::optional<unsigned int> grid_num_cells_x_;
     boost::optional<unsigned int> grid_num_cells_y_;
-
-    bool generate_geoimage_ = true;
 };
 
 /**
@@ -298,10 +271,9 @@ class FeatureDefinitionGrid : public FeatureDefinitionGridBase<T>
 public:
     FeatureDefinitionGrid(const EvaluationManager& eval_manager,
                           const std::string& feature_description,
-                          bool generate_geoimage,
                           const boost::optional<unsigned int>& grid_num_cells_x = boost::optional<unsigned int>(),
                           const boost::optional<unsigned int>& grid_num_cells_y = boost::optional<unsigned int>())
-    :   FeatureDefinitionGridBase<T>(eval_manager, "grid", feature_description, generate_geoimage, grid_num_cells_x, grid_num_cells_y)
+    :   FeatureDefinitionGridBase<T>(eval_manager, "grid", feature_description, grid_num_cells_x, grid_num_cells_y)
     {
     }
     virtual ~FeatureDefinitionGrid() = default;
@@ -339,7 +311,7 @@ public:
                                 const std::string& feature_description,
                                 const boost::optional<unsigned int>& grid_num_cells_x = boost::optional<unsigned int>(),
                                 const boost::optional<unsigned int>& grid_num_cells_y = boost::optional<unsigned int>())
-    :   FeatureDefinitionGridBase<bool>(calculator, "binary_grid", feature_description, true, grid_num_cells_x, grid_num_cells_y)
+    :   FeatureDefinitionGridBase<bool>(calculator, "binary_grid", feature_description, grid_num_cells_x, grid_num_cells_y)
     {
         //converts bool -> double
         converter_ = [ & ] (const bool& v) { return v ? 1.0 : 0.0; };

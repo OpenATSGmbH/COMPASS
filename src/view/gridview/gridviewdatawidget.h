@@ -100,6 +100,12 @@ public:
     boost::optional<std::pair<QImage, RasterReference>> currentGeoImage() const;
     const ColorLegend& currentLegend() const;
 
+    /// The shown grid layer with the render settings of the current rendering, e.g. to send it to
+    /// the Geographic View as a grid feature. The legend fields give the shown legend texts: a
+    /// number of decimals (the last digit may differ by rounding), for other texts (e.g. times)
+    /// the shown legend as fixed entries.
+    boost::optional<std::pair<Grid2DLayer, Grid2DRenderSettings>> currentGrid() const;
+
     // background map (longitude / latitude grids)
     GridBackgroundRenderer& background() { return *background_; }
     /// the background is available (longitude / latitude grid) and switched on
@@ -173,6 +179,7 @@ private:
     void buildGridFromStash();
 
     /// background availability from the current grid and variables
+    bool annotationHasLonLatGrid() const;
     void updateBackgroundAvailable();
     GridBackgroundRootItem* backgroundRootItem() const;
     GridBackgroundSectorsItem* sectorsRootItem() const;
@@ -199,6 +206,8 @@ private:
     bool                      grid_north_up_;
     RasterReference           ref_;
     boost::optional<ColorMap> colormap_;
+    Grid2DRenderSettings      render_settings_;      // of the current rendering
+    int                       legend_decimals_ = -1; // of the shown legend numbers, -1 if not known
     boost::optional<double>   grid_value_min_;
     boost::optional<double>   grid_value_max_;
     bool                      custom_range_invalid_ = false;

@@ -21,6 +21,8 @@
 
 #include <iostream>
 
+#include <QString>
+
 /*********************************************************************************
  * Grid2DLayer
  *********************************************************************************/
@@ -78,8 +80,71 @@ boost::optional<std::pair<double, double>> Grid2DLayer::range() const
 }
 
 /**
+ * WGS84 by name ("wgs84", "EPSG:4326"), case and surrounding blanks ignored.
 */
-nlohmann::json Grid2DLayer::toJSON(bool binary) const
+bool Grid2DLayer::isGeographicSRS(const std::string& srs)
+{
+    const auto s = QString::fromStdString(srs).trimmed().toLower();
+
+    return s == "wgs84" || s == "epsg:4326";
+}
+
+/**
+ * Returns the geographic region of the cells with a value. Uses the same cell to
+ * pixel mapping as Grid2DLayerRenderer::render() (row flip if north is up).
+*/
+QRectF Grid2DLayer::geoROIOfValidCells() const
+{
+    if (!hasData())
+        return QRectF();
+
+    const int nrows = (int)data.rows();
+    const int ncols = (int)data.cols();
+
+    int x_min = ncols, x_max = -1;
+    int y_min = nrows, y_max = -1;
+
+    for (int r = 0; r < nrows; ++r)
+    {
+        for (int c = 0; c < ncols; ++c)
+        {
+            if (data(r, c) == Grid2D::InvalidValue)
+                continue;
+
+            //image row of the cell
+            const int y = ref.is_north_up ? nrows - 1 - r : r;
+
+            if (c < x_min) x_min = c;
+            if (c > x_max) x_max = c;
+            if (y < y_min) y_min = y;
+            if (y > y_max) y_max = y;
+        }
+    }
+
+    if (x_max < x_min || y_max < y_min)
+        return QRectF();
+
+    const double lon_min = ref.img_origin_x +  x_min      * ref.img_pixel_size_x;
+    const double lon_max = ref.img_origin_x + (x_max + 1) * ref.img_pixel_size_x;
+
+    double lat_min, lat_max;
+    if (ref.is_north_up)
+    {
+        lat_max = ref.img_origin_y -  y_min      * ref.img_pixel_size_y;
+        lat_min = ref.img_origin_y - (y_max + 1) * ref.img_pixel_size_y;
+    }
+    else
+    {
+        lat_min = ref.img_origin_y +  y_min      * ref.img_pixel_size_y;
+        lat_max = ref.img_origin_y + (y_max + 1) * ref.img_pixel_size_y;
+    }
+
+    return QRectF(lat_min, lon_min, lat_max - lat_min, lon_max - lon_min);
+}
+
+/**
+*/
+nlohmann::json Grid2DLayer::toJSON() const
 {
     nlohmann::json obj;
 
@@ -91,35 +156,19 @@ nlohmann::json Grid2DLayer::toJSON(bool binary) const
     obj[ TagNumCellsX ] = nx;
     obj[ TagNumCellsY ] = ny;
 
-    if (binary)
+    //write data as json array (text only, the database compresses the stored json)
+    nlohmann::json jdata = nlohmann::json::array();
+
+    for (unsigned int y = 0; y < ny; ++y)
     {
-        //write data binary
-        QByteArray ba;
+        nlohmann::json jrow = nlohmann::json::array();
+        for (unsigned int x = 0; x < nx; ++x)
+            jrow.push_back(data(y, x));
 
-        //add array
-        ba.append((const char*)data.data(), data.size() * sizeof(double));
-
-        //code base 64
-        QString byte_str(ba.toBase64());
-
-        obj[ TagDataRaw ] = byte_str.toStdString();
+        jdata.push_back(jrow);
     }
-    else
-    {
-        //write data as json array
-        nlohmann::json jdata = nlohmann::json::array();
 
-        for (unsigned int y = 0; y < ny; ++y)
-        {
-            nlohmann::json jrow = nlohmann::json::array();
-            for (unsigned int x = 0; x < nx; ++x)
-                jrow.push_back(data(y, x));
-
-            jdata.push_back(jrow);
-        }
-
-        obj[ TagData ] = jdata;
-    }
+    obj[ TagData ] = jdata;
 
     return obj;
 }
@@ -153,7 +202,7 @@ bool Grid2DLayer::fromJSON(const nlohmann::json& obj)
 
     if (read_raw)
     {
-        //read data binary
+        //read data binary (only written by older versions, kept for stored results)
         const auto& jdata = obj[ TagDataRaw ];
 
         if (!jdata.is_string())
@@ -308,14 +357,14 @@ bool Grid2DLayers::hasLayer(const std::string& name) const
 
 /**
 */
-nlohmann::json Grid2DLayers::toJSON(bool binary) const
+nlohmann::json Grid2DLayers::toJSON() const
 {
     nlohmann::json obj;
 
     nlohmann::json jlayers = nlohmann::json::array();
 
     for (const auto& l : layers_)
-        jlayers.push_back(l->toJSON(binary));
+        jlayers.push_back(l->toJSON());
 
     obj[ TagLayers ] = jlayers;
 

@@ -247,6 +247,13 @@ report \dots name of the report to retrieve, e.g. 'EUROCAE ED-87E Evaluation' \\
 section \dots optional ID of the section to retrieve, e.g. 'Report:Results:Overview:Results' \\
 See section \nameref{sec:get_report} for more details. \\
 
+\textbf{get\_report\_figure} \\
+\textit{obtain the stored view points of the figures in a report section} \\
+report \dots name of the report, e.g. 'EUROCAE ED-87E Evaluation' \\
+section \dots ID of the section, e.g. 'Report:Results:Overview:Results' \\
+figure \dots optional name of a figure in the section, all figures if not set \\
+Returns a list \texttt{figures}. Each entry has \texttt{name}, \texttt{caption} and \texttt{view\_point} (the view point JSON that the figure shows). \\
+
 \textbf{get\_target} \\
 \textit{retrieves a target description for the given UTN} \\
 utn \dots UTN of the target to retrieve information for \\

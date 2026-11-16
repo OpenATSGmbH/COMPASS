@@ -70,6 +70,9 @@ public:
 
     ResultT<std::vector<ImageResource>> obtainImages(const std::string* resource_dir) const;
 
+    /// stored view point of the figure, loads on-demand content if needed (empty pointer if none)
+    std::shared_ptr<nlohmann::json::object_t> viewableContent() const;
+
     static const std::string FieldFigureType;
     static const std::string FieldCaption;
     static const std::string FieldRenderDelayMSec;
@@ -79,8 +82,6 @@ public:
     static const std::string FieldDocData;
 
 protected:
-    std::shared_ptr<nlohmann::json::object_t> viewableContent() const;
-
     void clearContent_impl() override final;
 
     void toJSON_impl(nlohmann::json& j) const override final;

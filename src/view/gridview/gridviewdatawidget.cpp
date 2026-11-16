@@ -121,8 +121,6 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
 
     legend_ = new ColorLegendWidget(this);
     legend_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    legend_->showSelectionColor(true);
-    legend_->showNullColor(false);
 
     main_layout_->addWidget(legend_);
 
@@ -154,9 +152,8 @@ void GridViewDataWidget::resetGridChart()
 {
     colormap_.reset();
 
-    legend_->setColorMap(ColorMap());
+    legend_->clear();
     legend_->setVisible(false);
-    legend_->showSelectionColor(false);
 
     // deleteLater, not a synchronous reset, see releaseWidgetLater()
     releaseWidgetLater(grid_chart_.release(), layout());
@@ -798,14 +795,28 @@ ViewDataWidget::ViewDrawState GridViewDataWidget::updateGridChart()
                                                   repr,
                                                   (int)std::max((size_t)2, colormap_->numColors())).style.decimals;
 
+        legend_decimals_ = style.decimals;
+
         //update legend widget
         auto decoratorFunc = [ = ] (double v)
         {
             return axis_ticks::label(v, dtype, repr, style);
         };
 
-        legend_->setColorMap(colormap_.value());
-        legend_->setDecorator(decoratorFunc);
+        //legend from the render settings: color map with the active range, legend fields of the
+        //annotation if set (order, precision, unit)
+        Grid2DRenderSettings legend_settings;
+        legend_settings.color_map = colormap_.value();
+
+        if (view_->showsAnnotation() && annotation_render_settings_.has_value())
+        {
+            legend_settings.legend_order     = annotation_render_settings_->legend_order;
+            legend_settings.legend_precision = annotation_render_settings_->legend_precision;
+            legend_settings.legend_unit      = annotation_render_settings_->legend_unit;
+            legend_settings.legend_entries   = annotation_render_settings_->legend_entries;
+        }
+
+        legend_->setLegend(legend_settings.legend(false, false, decoratorFunc));
         legend_->setVisible(true);
     }
 
@@ -820,6 +831,7 @@ void GridViewDataWidget::updateRendering()
 
     custom_range_invalid_ = false;
     colormap_.reset();
+    render_settings_      = {};
 
     //no valid grid no rendering
     if (!hasValidGrid())
@@ -881,72 +893,60 @@ void GridViewDataWidget::updateRendering()
 
         loginf << "combined range min = " << range.first << " max = " << range.second;
 
-        auto dtype = view_->currentLegendDataType();
+        const bool annotation_color_map = annotation_render_settings_.has_value()
+                                          && annotation_render_settings_->color_map.valid();
 
-        //color scale: annotation override -> view setting
-        int active_color_scale = settings.render_color_scale;
-        if (annotation_render_settings_.has_value()
-            && annotation_render_settings_->color_map.valid())
+        if (annotation_color_map)
         {
-            active_color_scale = static_cast<int>(
-                annotation_render_settings_->color_map.colorScale());
-        }
-
-        //number of color steps: annotation override -> derived from ui
-        size_t num_steps = 0;
-        if (annotation_render_settings_.has_value()
-            && annotation_render_settings_->color_map.valid())
-        {
-            num_steps = annotation_render_settings_->color_map.colorSteps();
+            //annotation: its color map as suggested by the producer (colors, type, log scale), with the
+            //combined range
+            render_settings.color_map = annotation_render_settings_->color_map;
+            render_settings.color_map.setValueRange(range);
         }
         else
         {
-            num_steps = property_templates::suggestedNumColorSteps(
+            auto dtype = view_->currentLegendDataType();
+
+            //color scale and steps from the view settings
+            int    active_color_scale = settings.render_color_scale;
+            size_t num_steps          = property_templates::suggestedNumColorSteps(
                 dtype, range.first, range.second, settings.render_color_num_steps);
-        }
 
-        loginf << "suggested color steps = " << num_steps;
+            loginf << "suggested color steps = " << num_steps;
 
-        //create color map
-        if (num_steps == 1)
-        {
-            //single value
-            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
-                                            1,
-                                            ColorMap::Type::LinearSamples,
-                                            range);
-        }
-        else if (num_steps == 2)
-        {
-            //binary
-            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
-                                            2,
-                                            ColorMap::Type::Binary,
-                                            range);
-        }
-        else if (num_steps > 0)
-        {
-            //multi-value
-            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
-                                            num_steps,
-                                            ColorMap::Type::LinearSamples,
-                                            range);
-        }
+            //create color map
+            if (num_steps == 1)
+            {
+                //single value
+                render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
+                                                1,
+                                                ColorMap::Type::LinearSamples,
+                                                range);
+            }
+            else if (num_steps == 2)
+            {
+                //binary
+                render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
+                                                2,
+                                                ColorMap::Type::Binary,
+                                                range);
+            }
+            else if (num_steps > 0)
+            {
+                //multi-value
+                render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
+                                                num_steps,
+                                                ColorMap::Type::LinearSamples,
+                                                range);
+            }
 
-        //logarithmic scale: annotation override -> view setting
-        if (annotation_render_settings_.has_value()
-            && annotation_render_settings_->color_map.valid())
-        {
-            render_settings.color_map.setLogScale(annotation_render_settings_->color_map.logScale(),
-                                                  annotation_render_settings_->color_map.logFloor());
-        }
-        else
-        {
             render_settings.color_map.setLogScale(settings.render_color_log_scale);
         }
 
         colormap_ = render_settings.color_map;
     }
+
+    render_settings_ = render_settings;
 
     //render grid
     auto rendering = Grid2DLayerRenderer::render(layer, render_settings);
@@ -1113,6 +1113,10 @@ void GridViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
     //!call base!
     VariableViewStashDataWidget::viewInfoJSON_impl(info);
 
+    //background map: available for longitude / latitude grids, active if also switched on
+    info[ "background_available" ] = background_->available();
+    info[ "background_active"    ] = background_->active();
+
     info[ "num_valid"   ] = getStash().valid_count_;
     info[ "num_selected"] = getStash().selected_count_;
     info[ "num_nan"     ] = getStash().nan_value_count_;
@@ -1241,6 +1245,113 @@ const ColorLegend& GridViewDataWidget::currentLegend() const
 }
 
 /**
+ * The legend fields of the annotation if one is shown. Else (or without its own precision) the
+ * number of decimals of the shown legend, if it gives the same texts (plain numbers). Otherwise
+ * (e.g. times) the shown legend as fixed entries.
+ */
+boost::optional<std::pair<Grid2DLayer, Grid2DRenderSettings>> GridViewDataWidget::currentGrid() const
+{
+    if (!hasValidGrid() || !colormap_.has_value() || grid_rendering_.isNull() || !legend_)
+        return {};
+
+    Grid2DRenderSettings settings = render_settings_;
+
+    //the JSON of the render settings keeps min / max only, not the value range of the color map
+    if ((!settings.min_value.has_value() || !settings.max_value.has_value()) && settings.color_map.canSampleValues())
+    {
+        settings.min_value = settings.color_map.valueRange()->first;
+        settings.max_value = settings.color_map.valueRange()->second;
+    }
+
+    if (view_->showsAnnotation() && annotation_render_settings_.has_value())
+    {
+        settings.legend_order     = annotation_render_settings_->legend_order;
+        settings.legend_precision = annotation_render_settings_->legend_precision;
+        settings.legend_unit      = annotation_render_settings_->legend_unit;
+        settings.legend_entries   = annotation_render_settings_->legend_entries;
+    }
+
+    if (settings.legend_entries.empty())
+    {
+        const ColorLegend& shown = legend_->currentLegend();
+
+        auto texts = [] (const ColorLegend& legend)
+        {
+            std::vector<std::string> t;
+            for (const auto& e : legend.entries())
+                t.push_back(e.second);
+            return t;
+        };
+
+        //number of decimals giving the shown texts: the one of the shown legend first, whole numbers
+        //(integer data types) ignore it
+        std::vector<int> candidates;
+        if (settings.legend_precision.has_value())
+            candidates.push_back(settings.legend_precision.value());
+        else
+        {
+            if (legend_decimals_ >= 0)
+                candidates.push_back(legend_decimals_);
+            for (int d = 0; d <= 6; ++d)
+                if (d != legend_decimals_)
+                    candidates.push_back(d);
+        }
+
+        bool found = false;
+        for (int d : candidates)
+        {
+            Grid2DRenderSettings with_decimals = settings;
+            with_decimals.legend_precision = d;
+
+            if (texts(with_decimals.legend()) == texts(shown))
+            {
+                settings = with_decimals;
+                found    = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            //numbers (e.g. whole numbers cut instead of rounded): their number of decimals, the last
+            //digit may differ by the rounding; other texts (e.g. times): fixed entries, the coloring
+            //cannot be changed then
+            bool numeric = true;
+            int  decimals = 0;
+
+            for (const auto& t : texts(shown))
+            {
+                const QString s = QString::fromStdString(t).trimmed();
+
+                bool ok;
+                s.toDouble(&ok);
+                if (!ok)
+                {
+                    numeric = false;
+                    break;
+                }
+
+                const int dot = s.indexOf('.');
+                if (dot >= 0)
+                    decimals = std::max(decimals, (int)s.size() - dot - 1);
+            }
+
+            if (numeric)
+            {
+                settings.legend_precision = decimals;
+            }
+            else
+            {
+                loginf << "legend texts are no numbers, sent as fixed entries";
+                settings.legend_entries = shown;
+            }
+        }
+    }
+
+    return std::make_pair(grid_layers_.layer(0), settings);
+}
+
+/**
 */
 bool GridViewDataWidget::backgroundActive() const
 {
@@ -1317,12 +1428,24 @@ GridBackgroundSectorsItem* GridViewDataWidget::sectorsRootItem() const
 }
 
 /**
- * The background is available for longitude / latitude variables (not for annotations), also without
- * loaded data.
+ * True if the shown annotation is a longitude / latitude grid: its grid layer is georeferenced in WGS84.
+ * Grids over other axes (e.g. altitude) have no spatial reference system.
+ */
+bool GridViewDataWidget::annotationHasLonLatGrid() const
+{
+    if (!view_->showsAnnotation() || !hasValidGrid())
+        return false;
+
+    return grid_layers_.layer(0).hasGeographicReference();
+}
+
+/**
+ * The background is available for longitude / latitude variables, also without loaded data, and for
+ * longitude / latitude grid annotations.
  */
 void GridViewDataWidget::updateBackgroundAvailable()
 {
-    const bool available = !view_->showsAnnotation() && view_->hasLonLatAxes();
+    const bool available = view_->showsAnnotation() ? annotationHasLonLatGrid() : view_->hasLonLatAxes();
 
     if (available == background_->available())
         return;
