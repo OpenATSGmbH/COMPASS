@@ -435,7 +435,9 @@ void Single::addToReport(std::shared_ptr<ResultReport::Report> report)
     addTargetToOverviewTable(report);
 
     // add requirement results to targets->utn->requirements->group->req
-    addTargetDetailsToReport(report);
+    // only with a result, a target without data in the requirement's sector gets no section
+    if (result().has_value())
+        addTargetDetailsToReport(report);
 
     // @TODO add requirement description, methods
 }

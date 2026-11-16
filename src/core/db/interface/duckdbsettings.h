@@ -45,6 +45,10 @@ struct DuckDBSettings
     static std::string accessModeAsString(AccessMode mode);
     static std::string sortOrderAsString(SortOrder order);
 
+    // storage version of newly created database files (existing files keep their version), needs
+    // DuckDB v1.5.0 or newer to open them, enables e.g. zstd column compression
+    static const std::string StorageCompatibilityVersion;
+
     AccessMode   access_mode        = AccessMode::ReadWrite;
     SortOrder    sort_order_default = SortOrder::Ascending;
 };

@@ -159,7 +159,9 @@ void TaskResultDB::createTaskResultsTable()
     traced_assert(db_interface_.ready());
     traced_assert(!existsTaskResultsTable());
 
-    db_interface_.createTable(TaskResult::DBTableName, TaskResult::DBPropertyList, 0);
+    // json columns compressed with zstd (large, very repetitive texts)
+    db_interface_.createTable(TaskResult::DBTableName, TaskResult::DBPropertyList, 0,
+                              { TaskResult::DBColumnJSONContent.name() });
 }
 
 /**
@@ -169,7 +171,9 @@ void TaskResultDB::createReportContentsTable()
     traced_assert(db_interface_.ready());
     traced_assert(!existsReportContentsTable());
 
-    db_interface_.createTable(ResultReport::SectionContent::DBTableName, ResultReport::SectionContent::DBPropertyList, 0);
+    // json column compressed with zstd (large, very repetitive texts)
+    db_interface_.createTable(ResultReport::SectionContent::DBTableName, ResultReport::SectionContent::DBPropertyList, 0,
+                              { ResultReport::SectionContent::DBColumnJSONContent.name() });
 }
 
 /**
@@ -186,8 +190,9 @@ void TaskResultDB::createReportSectionsTable()
     traced_assert(db_interface_.ready());
     traced_assert(!existsReportSectionsTable());
 
-    // no primary key, a result owns many rows
-    db_interface_.createTable(TaskResult::DBSectionsTableName, TaskResult::DBSectionsPropertyList, -1);
+    // no primary key, a result owns many rows, json column compressed with zstd (large, very repetitive texts)
+    db_interface_.createTable(TaskResult::DBSectionsTableName, TaskResult::DBSectionsPropertyList, -1,
+                              { TaskResult::DBColumnSectionJSON.name() });
 }
 
 /**

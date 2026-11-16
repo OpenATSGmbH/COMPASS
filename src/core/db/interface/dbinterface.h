@@ -191,7 +191,8 @@ public:
     // generic table operations, e.g. for the task result tables (see TaskResultDB)
     void createTable(const std::string& table_name,
                      const PropertyList& properties,
-                     int primary_key = -1);
+                     int primary_key = -1,
+                     const std::set<std::string>& zstd_columns = {});
     void createTable(const std::string& table_name,
                      const std::vector<DBTableColumnInfo>& column_infos,
                      const std::vector<db::Index>& indices);
