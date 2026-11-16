@@ -1166,8 +1166,9 @@ void ReconstructorBase::createTargetReports()
         //grow once for this buffer instead of rehashing repeatedly while inserting
         target_reports_.reserve(target_reports_.size() + buffer_size);
 
-        std::vector<bool> position_usable;
-        position_usable.resize(buffer_size);
+        //one byte per flag: std::vector<bool> packs flags into shared words,
+        //the parallel writes below would then lose flags (data race)
+        std::vector<unsigned char> position_usable(buffer_size, 0);
 
         tbb::parallel_for(uint(0), buffer_size, [&](unsigned int cnt)
             {
