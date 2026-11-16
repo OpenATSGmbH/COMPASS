@@ -214,7 +214,10 @@ bool ReconstructorTask::canRun()
     return has_data && has_next_slice;
 }
 
-void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_progress)
+/**
+ * Notice: queued callers pass slice_idx explicitly, current_slice_idx_ may have moved on until the slot runs.
+ */
+void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_progress, int slice_idx)
 {
     logdbg << "slice " << add_slice_progress
            << " dialog " << (progress_dialog_ != nullptr);
@@ -222,8 +225,11 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
     if (!progress_dialog_)
         return;
 
+    if (slice_idx < 0)
+        slice_idx = (int)current_slice_idx_;
+
     int ns   = currentReconstructor()->numSlices();
-    int sidx = std::max(0, std::min((int)current_slice_idx_, ns - 1));
+    int sidx = std::max(0, std::min(slice_idx, ns - 1));
 
     if (done_)
         sidx = ns - 1;
@@ -835,10 +841,12 @@ void ReconstructorTask::processLoadedSliceIfReady()
     loginf << "calling process";
 
     // queued: on the modal dialog setValue() processes events, a queued processLoadedSliceIfReady()
-    // would run nested in this half-done transition and load the next slice twice
+    // would run nested in this half-done transition and load the next slice twice;
+    // the slice index is passed, the slot runs after the increment below
     QMetaObject::invokeMethod(this, "updateProgressSlot", Qt::QueuedConnection,
                               Q_ARG(const QString&, "Processing Slice"),
-                              Q_ARG(bool, true));
+                              Q_ARG(bool, true),
+                              Q_ARG(int, (int)current_slice_idx_));
     ++current_slice_idx_;
 
     traced_assert(!processing_data_slice_);

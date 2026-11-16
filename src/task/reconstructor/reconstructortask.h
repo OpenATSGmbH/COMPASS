@@ -114,7 +114,7 @@ public slots:
 
     void runCancelledSlot();
 
-    void updateProgressSlot(const QString& msg, bool add_slice_progress);
+    void updateProgressSlot(const QString& msg, bool add_slice_progress, int slice_idx = -1); // -1 = current_slice_idx_
 
 public:
     // reconstructors by class name, display name = reconstructor name (current_reconstructor_str_), one instance per class
