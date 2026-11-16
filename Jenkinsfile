@@ -130,6 +130,12 @@ pipeline {
                     // fail the stage even if all assertions passed. exitcode=0 keeps
                     // leak output visible while letting the real test exit code stand.
                     def lsanEnv = params.ASAN ? "LSAN_OPTIONS=exitcode=0 " : ''
+                    // Every stage runs in a fresh container, so the jASTERIX install
+                    // of the Build stage is gone - compass_tests links libjasterix.so.
+                    // It goes to /usr/lib, which is no default loader path on alma8,
+                    // only listed in ld.so.conf => ldconfig after the install.
+                    // LANG: the container has the POSIX locale, Qt 5.15 then decodes file
+                    // names as ASCII (test_utf8_paths). Desktop sessions are UTF-8.
                     sh """
                         docker run --rm --init \
                             --name compass-unittests-${CI_TAG} \
@@ -139,7 +145,7 @@ pipeline {
                             -v \$(pwd)/jasterix:/workspace/jasterix \
                             -w /workspace/compass \
                             ${DOCKER_IMAGE} \
-                            bash -c '${lsanEnv}MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_${BUILD_OS}/bin/compass_tests'
+                            bash -c 'set -e; sudo cmake --install /workspace/jasterix/build_${BUILD_OS} > /dev/null && sudo ldconfig && ${lsanEnv}LANG=C.UTF-8 MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_${BUILD_OS}/bin/compass_tests'
                     """
                 }
             }
@@ -159,7 +165,7 @@ pipeline {
                             -v ${CI_DIR}:${CI_DIR} \
                             -w /workspace/compass \
                             ${DOCKER_IMAGE} \
-                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo cmake --install /workspace/jasterix/build_${BUILD_OS} && sudo cmake --install /workspace/compass/build_${BUILD_OS} && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
+                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo cmake --install /workspace/jasterix/build_${BUILD_OS} && sudo cmake --install /workspace/compass/build_${BUILD_OS} && sudo ldconfig && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
                     """
                     // Collect artifacts
                     sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME} ${BUILD_OS}"
