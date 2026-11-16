@@ -52,9 +52,6 @@
 #include "viewpoint_commands.h"
 #include "rtcommand_registry.h"
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geographicview_commands.h"
-#endif
 #include "global.h"
 
 #include "json.hpp"
@@ -108,10 +105,6 @@ ViewManager::ViewManager(nlohmann::json& config,
     qRegisterMetaType<ViewPoint*>("ViewPoint*");
 
     init_view_point_commands(rtcommand::RTCommandRegistry::instance(), *this);
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    init_geographic_view_commands(rtcommand::RTCommandRegistry::instance(), *this);
-#endif
 
     registerParameter("automatic_reload", &config_.automatic_reload, Config().automatic_reload);
     registerParameter("automatic_redraw", &config_.automatic_redraw, Config().automatic_redraw);
@@ -236,16 +229,6 @@ void ViewManager::init(QTabWidget* main_tab_widget)
     connect (this, &ViewManager::showViewPointSignal, &filter_man, &FilterManager::showViewPointSlot);
     connect (this, &ViewManager::unshowViewPointSignal, &filter_man, &FilterManager::unshowViewPointSlot);
 
-    view_class_list_.insert({"HistogramView", "Histogram View"});
-    view_class_list_.insert({"TableView", "Table View"});
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    view_class_list_.insert({"GeographicView", "Geographic View"});
-#endif
-
-    view_class_list_.insert({"ScatterPlotView", "Scatterplot View"});
-    view_class_list_.insert({"GridView", "Grid View"});
-
 #ifdef SCAN_PRESETS
     //scan view presets
     if (!presets_.scanForPresets())
@@ -320,7 +303,7 @@ ViewManager::~ViewManager()
 
 /**
 */
-void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult ViewManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -364,10 +347,11 @@ void ViewManager::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(view_points_report_gen_);
     }
     else
-        throw std::runtime_error("ViewManager: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
 //    if (widget_)
 //        widget_->update();
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -376,12 +360,12 @@ void ViewManager::checkSubConfigurables()
 {
     if (containers_.size() == 0)
     {
-        generateSubConfigurableFromConfig("ViewContainer", "ViewContainer0");
+        createSubConfigurableFromConfig("ViewContainer", "ViewContainer0");
     }
 
     if (!view_points_report_gen_)
     {
-        generateSubConfigurableFromConfig("ViewPointsReportGenerator", "ViewPointsReportGenerator0");
+        createSubConfigurableFromConfig("ViewPointsReportGenerator", "ViewPointsReportGenerator0");
     }
 }
 
@@ -849,10 +833,18 @@ void ViewManager::showMainViewContainerAddView()
 }
 
 /**
+ * Returns the creatable view classes (class name -> display name), from the view factory.
 */
 std::map<std::string, std::string> ViewManager::viewClassList() const
 {
-    return view_class_list_;
+    const auto& factory = ViewContainer::viewFactory();
+
+    std::map<std::string, std::string> classes;
+
+    for (const auto& class_name : factory.classNames())
+        classes[ class_name ] = factory.displayName(class_name);
+
+    return classes;
 }
 
 /**
@@ -883,8 +875,8 @@ std::string ViewManager::newViewInstanceId(const std::string& class_name)
 
 std::string ViewManager::newViewName(const std::string& class_name)
 {
-    traced_assert(view_class_list_.count(class_name));
-    return view_class_list_.at(class_name) + " " + to_string(newViewNumber(class_name));
+    traced_assert(ViewContainer::viewFactory().canCreate(class_name));
+    return ViewContainer::viewFactory().displayName(class_name) + " " + to_string(newViewNumber(class_name));
 }
 
 bool ViewManager::isProcessingData() const
@@ -974,7 +966,7 @@ ViewContainerWidget* ViewManager::addNewContainerWidget()
     container_count_++;
     std::string container_widget_name = "ViewWindow" + std::to_string(container_count_);
 
-    generateSubConfigurableFromConfig("ViewContainerWidget", container_widget_name);
+    createSubConfigurableFromConfig("ViewContainerWidget", container_widget_name);
 
     traced_assert(container_widgets_.count(container_widget_name) == 1);
 

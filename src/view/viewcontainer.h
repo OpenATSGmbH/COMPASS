@@ -22,6 +22,7 @@
 #include <QObject>
 
 #include "configurable.h"
+#include "subconfigurablefactory.h"
 
 class MainLoadWidget;
 class View;
@@ -44,6 +45,9 @@ class ViewContainer : public QObject, public Configurable
     void addNewViewSlot();
 
   public:
+    // views by class name, display name shown in the add view menus; further views are added by their libraries
+    DECLARE_SUBCONFIGURABLE_FACTORY(viewFactory, View, ViewContainer, None)
+
     ViewContainer(nlohmann::json& config, ViewManager& view_manager,
                   Configurable* parent, QTabWidget* tab_widget, int window_cnt);
     virtual ~ViewContainer();
@@ -51,8 +55,6 @@ class ViewContainer : public QObject, public Configurable
     const std::vector<std::unique_ptr<View>>& getViews() const;
 
     ViewManager& viewManager() { return view_manager_; }
-
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     virtual std::string getWindowName();
     //static unsigned int getViewCount() { return view_count_; }
@@ -86,5 +88,6 @@ class ViewContainer : public QObject, public Configurable
     //static unsigned int view_count_;
 
     virtual void checkSubConfigurables();
+    virtual void childCreated(Configurable* child) override;
     void addView(View* view);
 };

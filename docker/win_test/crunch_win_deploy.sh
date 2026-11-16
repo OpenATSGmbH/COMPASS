@@ -14,7 +14,8 @@
 #
 # Usage: crunch_win_deploy.sh [package] [debug] [py] [config] [data <dataset> ...] [gdb]
 #   no arguments: package debug py config data at_20230422
-#   debug: compass_client.exe.debug (debug information, not in the zip) into the package folder
+#   debug: compass_client.exe.debug and compass_*.dll.debug (debug information, not in the zip)
+#          into the package folder
 #   gdb:   one time - gdb with its DLLs and Python library, the crash script, the AeDebug
 #          registry key that starts the crash script on a crash, and Windows Error Reporting
 #          enabled without dialog (AeDebug needs it) - needs admin rights
@@ -66,8 +67,8 @@ while [ $i -lt ${#STEPS[@]} ]; do
             ;;
         debug)
             echo "debug information $NAME"
-            scp -q -o BatchMode=yes "$COMPASS_DIR/build_win/compass_deploy/compass_client.exe.debug" \
-                "$HOST:C:/compass/$NAME/compass_client.exe.debug"
+            # compass_client.exe.debug and compass_*.dll.debug (one DLL per module)
+            scp -q -o BatchMode=yes "$COMPASS_DIR"/build_win/compass_deploy/*.debug "$HOST:C:/compass/$NAME/"
             ;;
         gdb)
             echo "gdb"

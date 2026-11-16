@@ -38,10 +38,6 @@
 #include "latexvisitor.h"
 #include "system.h"
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geographicview.h"
-#endif
-
 #include <QCoreApplication>
 #include <QApplication>
 #include <QMessageBox>
@@ -167,9 +163,7 @@ void ViewPointsReportGenerator::run ()
         double ms;
         double ms_per_vp;
 
-#if USE_EXPERIMENTAL_SOURCE == true
-        GeographicView::instant_display_ = true;
-#endif
+        View::setInstantDisplay(true);
 
         for (auto vp_id : vp_ids)
         {
@@ -341,9 +335,7 @@ void ViewPointsReportGenerator::run ()
 
         QApplication::restoreOverrideCursor();
 
-#if USE_EXPERIMENTAL_SOURCE == true
-        GeographicView::instant_display_ = false;
-#endif
+        View::setInstantDisplay(false);
 
         if (show_done_)
         {

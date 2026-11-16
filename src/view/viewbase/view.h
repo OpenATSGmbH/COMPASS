@@ -132,6 +132,8 @@ public:
     const ViewWidget* getViewWidget() const { traced_assert(widget_); return widget_; }
 
     virtual void accept(LatexVisitor& v) = 0;
+    /// LaTeX export of views without their own LatexVisitor::visit() (called by LatexVisitor::visit(View*)), default: nothing
+    virtual void visitLatex(LatexVisitor& v) {}
 
     virtual std::set<std::string> acceptedAnnotationFeatureTypes() const { return {}; }
 
@@ -142,6 +144,11 @@ public:
 
     void setExporting(bool ok);
     bool hasScreenshotContent() const;
+
+    /// Render immediately, without animations (e.g. camera transitions). Set for all views
+    /// during report and image generation.
+    static bool instantDisplay();
+    static void setInstantDisplay(bool value);
 
     bool reloadNeeded() const;
     bool redrawNeeded() const;
@@ -249,4 +256,6 @@ private:
 
     /// Static member counter
     static unsigned int cnt_;
+
+    static bool instant_display_; // see instantDisplay()
 };

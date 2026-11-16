@@ -58,8 +58,6 @@ public:
     bool removeLicense(const std::string& id, bool write_licenses);
     size_t numLicenses() const;
 
-    void generateSubConfigurable(nlohmann::json& child_json) override {}
-
     static const std::string LicenseFileName;
 
 signals:
@@ -67,6 +65,7 @@ signals:
     void licensesChanged();
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override { return GenerateResult::Skipped; }
     virtual void checkSubConfigurables() override {}
 
 private:

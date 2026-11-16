@@ -71,8 +71,6 @@ class JSONImportTask : public Task, public Configurable
 
     JSONImportTaskDialog* dialog();
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
     bool canImportFile();
 
     virtual bool canRun() override;
@@ -103,6 +101,8 @@ class JSONImportTask : public Task, public Configurable
     void date(const boost::posix_time::ptime& date);
 
   protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     DBContentManager& dbcontent_man_;
 
     std::string import_filename_;

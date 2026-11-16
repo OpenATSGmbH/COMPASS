@@ -95,10 +95,6 @@ class JSONDataMapping : public Configurable
     void dbcontVariableName(const std::string& name);
     std::string dbcontVariableName() const;
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override
-    {
-    }
-
     void initializeIfRequired();
 
     std::string& formatDataTypeRef();
@@ -157,6 +153,11 @@ class JSONDataMapping : public Configurable
     void initialize();
 
   protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override
+    {
+        return GenerateResult::Skipped;
+    }
+
     virtual void checkSubConfigurables() {}
 
     // TODO change to Utils::JSON?

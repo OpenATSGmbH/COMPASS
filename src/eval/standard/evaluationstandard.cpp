@@ -64,7 +64,7 @@ EvaluationStandard::~EvaluationStandard()
 {
 }
 
-void EvaluationStandard::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult EvaluationStandard::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -81,8 +81,9 @@ void EvaluationStandard::generateSubConfigurable(nlohmann::json& child_json)
         connect (group, &Group::configsChangedSignal, this, &EvaluationStandard::groupsChangedSlot);
     }
     else
-        throw std::runtime_error("EvaluationStandard: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 std::string EvaluationStandard::name() const
@@ -110,7 +111,7 @@ void EvaluationStandard::addGroup (const std::string& name)
     auto& child_json = addNewSubConfiguration("EvaluationRequirementGroup", instance);
     child_json[Configuration::ParameterSection]["name"] = name;
 
-    generateSubConfigurable(child_json);
+    createSubConfigurable(child_json);
 
     traced_assert(hasGroup(name));
 

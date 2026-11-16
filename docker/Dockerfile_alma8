@@ -165,11 +165,12 @@ RUN cd osgearth-3.8/build && make -j$(nproc)
 RUN cd osgearth-3.8/build && make install
 
 # bump when hpuhr/NemaTode master changes, to invalidate the cached layers below
-ARG NEMATODE_REV=15aad38
+ARG NEMATODE_REV=11650f3
 RUN wget https://github.com/hpuhr/NemaTode/archive/refs/heads/master.zip
 RUN unzip master.zip
 RUN mkdir NemaTode-master/build
-RUN cd NemaTode-master/build && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
+# shared: linked by the shared compass_task (readme_plugins.md, workstream B)
+RUN cd NemaTode-master/build && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
 RUN cd NemaTode-master/build && make -j$(nproc)
 RUN cd NemaTode-master/build && make install
 

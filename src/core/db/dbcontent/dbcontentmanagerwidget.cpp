@@ -178,7 +178,7 @@ void DBContentManagerWidget::addDBContSlot()
 
         auto& child_json = object_manager_.addNewSubConfiguration("DBContent", instance);
         child_json[Configuration::ParameterSection]["name"] = name;
-        object_manager_.generateSubConfigurable(child_json);
+        object_manager_.createSubConfigurable(child_json);
 
         updateDBContentsSlot();
     }
@@ -352,7 +352,7 @@ void DBContentManagerWidget::addAllMetaVariablesSlot()
 
                     auto& child_json = object_manager_.addNewSubConfiguration("MetaVariable", instance);
                     child_json[Configuration::ParameterSection]["name"] = var_it.first;
-                    object_manager_.generateSubConfigurable(child_json);
+                    object_manager_.createSubConfigurable(child_json);
                 }
 
                 traced_assert(object_manager_.existsMetaVariable(var_it.first));

@@ -177,9 +177,7 @@ public:
     static boost::optional<double> mahalanobisSqr(const Vector& dx, const Matrix& P, bool P_is_inv);
     
 protected:
-#if USE_EXPERIMENTAL_SOURCE
-    friend class KalmanFilterIMM;
-#endif
+    friend class KalmanFilterIMM; // composite filter (ProbIMM plugin), calls the protected steps of its sub-models
 
     void updateInternalMatrices(double dt, double Q_var);
     void fixEstimate(const Vector& x,

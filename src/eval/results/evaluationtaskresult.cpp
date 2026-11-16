@@ -133,8 +133,8 @@ Result EvaluationTaskResult::createCalculator()
 
     //clone calculator from config
     auto res = EvaluationCalculator::clone(eval_man_,
-                                              eval_man_.dbContentManager(),
-                                              config_);
+                                           eval_man_.dbContentManager(),
+                                           config_);
     if (!res.ok())
         return res;
 

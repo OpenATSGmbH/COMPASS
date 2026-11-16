@@ -65,7 +65,7 @@ HistogramViewDataSource::~HistogramViewDataSource()
     }
 }
 
-void HistogramViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult HistogramViewDataSource::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -78,15 +78,16 @@ void HistogramViewDataSource::generateSubConfigurable(nlohmann::json& child_json
         set_ = new VariableOrderedSet(child_json, view_->viewManager().dbContentManager(), this);
     }
     else
-        throw std::runtime_error(
-            "HistogramViewDataSource: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 void HistogramViewDataSource::checkSubConfigurables()
 {
     if (set_ == nullptr)
     {
-        generateSubConfigurableFromConfig("VariableOrderedSet", "VariableOrderedSet0");
+        createSubConfigurableFromConfig("VariableOrderedSet", "VariableOrderedSet0");
         traced_assert(set_);
 
         DBContentManager& dbcont_man = view_->viewManager().dbContentManager();

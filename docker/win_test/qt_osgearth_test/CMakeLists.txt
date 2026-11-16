@@ -6,10 +6,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-# Geographic View sources (experimental_src/view/geographicview), compiled unchanged
-set(GEOVIEW_DIR "" CACHE PATH "experimental_src/view/geographicview")
+# Geographic View sources (experimental_src/plugins/geoview/geographicview), compiled unchanged
+set(GEOVIEW_DIR "" CACHE PATH "experimental_src/plugins/geoview/geographicview")
 if(NOT EXISTS "${GEOVIEW_DIR}/ViewerWidget.cpp")
-    message(FATAL_ERROR "GEOVIEW_DIR must point to experimental_src/view/geographicview")
+    message(FATAL_ERROR "GEOVIEW_DIR must point to experimental_src/plugins/geoview/geographicview")
 endif()
 
 include(/opt/qt5_host_tools.cmake)
@@ -29,9 +29,6 @@ add_executable(qt_osgearth_test
 # shim first: test replacements for the COMPASS logger.h, stringconv.h, compass.h
 target_include_directories(qt_osgearth_test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/shim ${GEOVIEW_DIR} ${OPENSCENEGRAPH_INCLUDE_DIRS})
-
-# Geographic View classes are compiled into the executable, no DLL import/export
-target_compile_definitions(qt_osgearth_test PRIVATE OSGEARTHQT_LIBRARY_STATIC)
 
 target_link_libraries(qt_osgearth_test
     Qt5::Widgets Qt5::Gui Qt5::Core Qt5::OpenGL

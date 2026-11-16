@@ -1,4 +1,4 @@
-add_library(compass_core "")
+add_library(compass_core SHARED "")
 
 include("${CMAKE_CURRENT_LIST_DIR}/base/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/property/CMakeLists.txt")
@@ -41,7 +41,6 @@ if(EXPERIMENTAL_SRC)
     # so the dependency stays downward (core doesn't link experimental libs).
     target_include_directories(compass_core PUBLIC
         "${CMAKE_SOURCE_DIR}/experimental_src/util"
-        "${CMAKE_SOURCE_DIR}/experimental_src/test"
     )
     target_sources(compass_core PRIVATE
         "${CMAKE_SOURCE_DIR}/experimental_src/util/extra_resources.h"
@@ -63,6 +62,8 @@ target_link_libraries(compass_core
         ${GeographicLib_LIBRARIES}
         ${PCAP_LIBRARY}
         ${OPENSSL_CRYPTO_LIBRARY}
+        ${LibArchive_LIBRARIES}
+        ${jASTERIX_LIBRARIES} # shared, used by core and task: linked once here
         ${TBB_LIBRARIES}
         TBB::tbb
         Threads::Threads

@@ -204,7 +204,7 @@ FilterManager& TaskManager::filterManager()
 
 /**
  */
-void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult TaskManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -299,9 +299,10 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw std::runtime_error("TaskManager: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
     }
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -319,76 +320,76 @@ void TaskManager::checkSubConfigurables()
 {
     if (!asterix_importer_task_)
     {
-        generateSubConfigurableFromConfig("ASTERIXImportTask", "ASTERIXImportTask0");
+        createSubConfigurableFromConfig("ASTERIXImportTask", "ASTERIXImportTask0");
         traced_assert(asterix_importer_task_);
     }
 
     if (!view_points_import_task_)
     {
-        generateSubConfigurableFromConfig("ViewPointsImportTask", "ViewPointsImportTask0");
+        createSubConfigurableFromConfig("ViewPointsImportTask", "ViewPointsImportTask0");
         traced_assert(view_points_import_task_);
     }
 
     if (!json_import_task_)
     {
-        generateSubConfigurableFromConfig("JSONImportTask", "JSONImportTask0");
+        createSubConfigurableFromConfig("JSONImportTask", "JSONImportTask0");
         traced_assert(json_import_task_);
     }
 
     if (!gps_trail_import_task_)
     {
-        generateSubConfigurableFromConfig("GPSTrailImportTask", "GPSTrailImportTask0");
+        createSubConfigurableFromConfig("GPSTrailImportTask", "GPSTrailImportTask0");
         traced_assert(gps_trail_import_task_);
     }
 
     // if (!gps_import_csv_task_)
     // {
-    //     generateSubConfigurable("GPSImportCSVTask", "GPSImportCSVTask0");
+    //     createSubConfigurableFromConfig("GPSImportCSVTask", "GPSImportCSVTask0");
     //     traced_assert(gps_import_csv_task_);
     // }
 
     if (!radar_plot_position_calculator_task_)
     {
-        generateSubConfigurableFromConfig("RadarPlotPositionCalculatorTask",
+        createSubConfigurableFromConfig("RadarPlotPositionCalculatorTask",
                                         "RadarPlotPositionCalculatorTask0");
         traced_assert(radar_plot_position_calculator_task_);
     }
 
     if (!create_artas_associations_task_)
     {
-        generateSubConfigurableFromConfig("CreateARTASAssociationsTask", "CreateARTASAssociationsTask0");
+        createSubConfigurableFromConfig("CreateARTASAssociationsTask", "CreateARTASAssociationsTask0");
         traced_assert(create_artas_associations_task_);
     }
 
     if (!reconstruct_references_task_)
     {
-        generateSubConfigurableFromConfig("ReconstructorTask", "ReconstructorTask0");
+        createSubConfigurableFromConfig("ReconstructorTask", "ReconstructorTask0");
         traced_assert(reconstruct_references_task_);
     }
 
     if (!analyze_mlat_data_source_task_)
     {
-        generateSubConfigurableFromConfig("AnalyzeDataSourceTask", "AnalyzeDataSourceTask0");
+        createSubConfigurableFromConfig("AnalyzeDataSourceTask", "AnalyzeDataSourceTask0");
         traced_assert(analyze_mlat_data_source_task_);
     }
 
     if (!analyze_adsb_data_source_task_)
     {
-        generateSubConfigurableFromConfig("AnalyzeADSBDataSourceTask",
-                                          "AnalyzeADSBDataSourceTask0");
+        createSubConfigurableFromConfig("AnalyzeADSBDataSourceTask",
+                                        "AnalyzeADSBDataSourceTask0");
         traced_assert(analyze_adsb_data_source_task_);
     }
 
     if (!analyze_smr_data_source_task_)
     {
-        generateSubConfigurableFromConfig("AnalyzeSMRDataSourceTask",
-                                          "AnalyzeSMRDataSourceTask0");
+        createSubConfigurableFromConfig("AnalyzeSMRDataSourceTask",
+                                        "AnalyzeSMRDataSourceTask0");
         traced_assert(analyze_smr_data_source_task_);
     }
 
     if (!report_export_)
     {
-        generateSubConfigurableFromConfig("ReportExport", "ReportExport0");
+        createSubConfigurableFromConfig("ReportExport", "ReportExport0");
         traced_assert(report_export_);
     }
 }

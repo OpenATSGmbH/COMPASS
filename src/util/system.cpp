@@ -280,5 +280,32 @@ const char* appDir()
     //return nullptr;
 }
 
+/**
+ * Notice: usable before a QCoreApplication exists (unlike QCoreApplication::applicationDirPath()).
+ */
+std::string executableDir()
+{
+#ifdef _WIN32
+    char path[ MAX_PATH ];
+    DWORD len = GetModuleFileNameA(nullptr, path, MAX_PATH);
+    if (len == 0 || len == MAX_PATH)
+        return {};
+
+    std::string dir(path, len);
+    for (char& c : dir)
+        if (c == '\\')
+            c = '/';
+#else
+    char path[ 4096 ];
+    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+    if (len <= 0)
+        return {};
+
+    std::string dir(path, (size_t)len);
+#endif
+
+    return dir.substr(0, dir.find_last_of('/'));
+}
+
 }
 }

@@ -61,6 +61,7 @@ class SimpleReconstructor : public ReconstructorBase
     virtual const SimpleReconstructorSettings& settings() const override;
 
     SimpleReconstructorWidget* widget(); // ownage by caller
+    virtual QWidget* createWidget() override; // ownage by caller
 
     virtual void updateWidgets() override;
 

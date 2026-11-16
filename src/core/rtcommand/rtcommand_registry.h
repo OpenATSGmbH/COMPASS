@@ -48,11 +48,7 @@ public:
 
     virtual ~RTCommandRegistry() = default;
 
-    static RTCommandRegistry& instance()
-    {
-        static RTCommandRegistry instance;
-        return instance;
-    }
+    static RTCommandRegistry& instance(); // out of line: one instance across all shared libraries
 
     /**
      * Registers a command.

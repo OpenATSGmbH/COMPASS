@@ -1,4 +1,4 @@
-add_library(compass_eval "")
+add_library(compass_eval SHARED "")
 
 include("${CMAKE_CURRENT_LIST_DIR}/data/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/requirement/CMakeLists.txt")

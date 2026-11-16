@@ -539,7 +539,7 @@ void ASTERIXJSONParserDetailWidget::mappingDBContentVariableChangedSlot()
         child_json[Configuration::ParameterSection]["db_content_name"] = parser_.dbContentName();
         child_json[Configuration::ParameterSection]["db_content_variable_name"] = dbcont_var_sel_->selectedVariable().name();
 
-        parser_.generateSubConfigurable(child_json);
+        parser_.createSubConfigurable(child_json);
 
         parser_.doMappingChecks();
 
@@ -635,7 +635,7 @@ void ASTERIXJSONParserDetailWidget::createNewDBVariableSlot()
             var_json[Configuration::ParameterSection]["dimension"] = dialog.dimension();
             var_json[Configuration::ParameterSection]["unit"] = dialog.unit();
 
-            parser_.dbContent().generateSubConfigurable(var_json);
+            parser_.dbContent().createSubConfigurable(var_json);
 
             traced_assert(parser_.dbContent().hasVariable(dialog.name()));
         }
@@ -658,7 +658,7 @@ void ASTERIXJSONParserDetailWidget::createNewDBVariableSlot()
             map_json[Configuration::ParameterSection]["db_content_name"] = parser_.dbContentName();
             map_json[Configuration::ParameterSection]["db_content_variable_name"] = dialog.name();
 
-            parser_.generateSubConfigurable(map_json);
+            parser_.createSubConfigurable(map_json);
 
             parser_.doMappingChecks();
 

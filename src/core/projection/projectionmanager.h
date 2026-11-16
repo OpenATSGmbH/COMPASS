@@ -49,8 +49,6 @@ public:
     ProjectionManager(nlohmann::json& config, Configurable* parent);
     virtual ~ProjectionManager();
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
     ProjectionManagerWidget* widget();
     void deleteWidget();
 
@@ -89,6 +87,8 @@ public:
     IDBVariableResolver& varResolver() const { return *var_resolver_; }
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     context::DBContextManager* ctx_man_      = nullptr; // peer, set by the composition root
     IDBVariableResolver*       var_resolver_ = nullptr;
 

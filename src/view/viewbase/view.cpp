@@ -38,6 +38,22 @@
 #include <boost/date_time/posix_time/conversion.hpp>
 
 unsigned int View::cnt_ = 0;
+bool View::instant_display_ = false;
+
+/**
+ * Notice: defined here (not inline) so that other libraries do not reference the static data member.
+ */
+bool View::instantDisplay()
+{
+    return instant_display_;
+}
+
+/**
+*/
+void View::setInstantDisplay(bool value)
+{
+    instant_display_ = value;
+}
 
 /**
 @brief Constructor.

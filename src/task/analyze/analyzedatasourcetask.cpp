@@ -33,15 +33,6 @@
 #include <array>
 #include <cmath>
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "mlataccuracyinspector.h"
-#include "mlatrucoverageinspector.h"
-#include "mlatrueffectinspector.h"
-#include "adsbaccuracyinspector.h"
-#include "smraccuracyinspector.h"
-#include "smrunassociatedinspector.h"
-#endif
-
 #include "imainwindow.h"
 #include "taskmanager.h"
 #include "evaluationmanager.h"
@@ -74,6 +65,101 @@
 
 #include <chrono>
 #include <future>
+
+/**
+ * Notice: the settings of the plugin inspectors (ExtraAnalysis) are listed without creator, so a build without the
+ * plugin skips them when reading a config. Out of line: one factory per process.
+*/
+AnalyzeDataSourceTask::inspectorSettingsFactoryType& AnalyzeDataSourceTask::inspectorSettingsFactory()
+{
+    typedef inspectorSettingsFactoryType Factory;
+
+    static Factory factory = {
+        { "MLATDataItemInspectorSettings",    &Factory::createDefault<MLATDataItemInspectorSettings> },
+        { "MLATCoverageInspectorSettings",    &Factory::createDefault<MLATCoverageInspectorSettings> },
+        { "ADSBDataItemInspectorSettings",    &Factory::createDefault<ADSBDataItemInspectorSettings> },
+        { "ADSBCoverageInspectorSettings",    &Factory::createDefault<ADSBCoverageInspectorSettings> },
+        { "SMRDataItemInspectorSettings",     &Factory::createDefault<SMRDataItemInspectorSettings>  },
+        { "SMRCoverageInspectorSettings",     &Factory::createDefault<SMRCoverageInspectorSettings>  },
+
+        { "MLATAccuracyInspectorSettings",    nullptr, "", CreationSource::Plugin },
+        { "MLATRUCoverageInspectorSettings",  nullptr, "", CreationSource::Plugin },
+        { "MLATRUEffectInspectorSettings",    nullptr, "", CreationSource::Plugin },
+        { "ADSBAccuracyInspectorSettings",    nullptr, "", CreationSource::Plugin },
+        { "SMRAccuracyInspectorSettings",     nullptr, "", CreationSource::Plugin },
+        { "SMRUnassociatedInspectorSettings", nullptr, "", CreationSource::Plugin } };
+
+    return factory;
+}
+
+/**
+ * Notice: holds the built-in inspectors from the start, plugins add theirs at the plugin slots (pluginSlot()).
+ * Out of line: one registry per process.
+*/
+AnalyzeDataSourceTask::inspectorRegistryType& AnalyzeDataSourceTask::inspectorRegistry()
+{
+    auto createBuiltIns = [ ] ()
+    {
+        inspectorRegistryType registry;
+
+        registry.add(InspectorSlot::MLATDataItem,
+                     { "MLATDataItemInspectorSettings",
+                       &createInspector<MLATDataItemInspector, MLATDataItemInspectorSettings> });
+        registry.add(InspectorSlot::MLATCoverage,
+                     { "MLATCoverageInspectorSettings",
+                       &createInspector<MLATCoverageInspector, MLATCoverageInspectorSettings> });
+
+        registry.add(InspectorSlot::ADSBDataItem,
+                     { "ADSBDataItemInspectorSettings",
+                       &createInspector<ADSBDataItemInspector, ADSBDataItemInspectorSettings> });
+        registry.add(InspectorSlot::ADSBCoverage,
+                     { "ADSBCoverageInspectorSettings",
+                       &createInspector<ADSBCoverageInspector, ADSBCoverageInspectorSettings> });
+
+        registry.add(InspectorSlot::SMRDataItem,
+                     { "SMRDataItemInspectorSettings",
+                       &createInspector<SMRDataItemInspector, SMRDataItemInspectorSettings> });
+        registry.add(InspectorSlot::SMRCoverage,
+                     { "SMRCoverageInspectorSettings",
+                       &createInspector<SMRCoverageInspector, SMRCoverageInspectorSettings> });
+
+        return registry;
+    };
+
+    static inspectorRegistryType registry = createBuiltIns();
+    return registry;
+}
+
+/**
+ * Notice: asserts that the slot stays in the DS type's range (below the next hundred).
+*/
+AnalyzeDataSourceTask::InspectorSlot AnalyzeDataSourceTask::pluginSlot(InspectorSlot plugin_slot, unsigned int index)
+{
+    traced_assert(plugin_slot == InspectorSlot::MLATPlugin ||
+                  plugin_slot == InspectorSlot::ADSBPlugin ||
+                  plugin_slot == InspectorSlot::SMRPlugin);
+
+    const unsigned int base  = static_cast<unsigned int>(plugin_slot);
+    const unsigned int value = base + index;
+    traced_assert(value / 100 == base / 100);
+
+    return static_cast<InspectorSlot>(value);
+}
+
+/**
+*/
+std::string AnalyzeDataSourceTask::slotDSType(InspectorSlot slot)
+{
+    switch (static_cast<unsigned int>(slot) / 100)
+    {
+        case 1: return "MLAT";
+        case 2: return "ADSB";
+        case 3: return "SMR";
+    }
+
+    traced_assert_msg(false, "inspector slot outside the DS type ranges");
+    return {};
+}
 
 AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent,
                                              const std::string& ds_type_default,
@@ -118,169 +204,36 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
 
 AnalyzeDataSourceTask::~AnalyzeDataSourceTask() = default;
 
-void AnalyzeDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
+/**
+ * Takes over the inspector settings created by inspectorSettingsFactory(), by class name.
+*/
+void AnalyzeDataSourceTask::childCreated(Configurable* child)
 {
-    const auto& class_name = Configuration::getClassName(child_json);
+    auto settings = dynamic_cast<InspectorSettingsBase*>(child);
+    traced_assert(settings);
+    traced_assert(!inspector_settings_.count(settings->className()));
 
-    if (class_name == "MLATDataItemInspectorSettings")
-    {
-        traced_assert(!data_item_settings_);
-        data_item_settings_.reset(new MLATDataItemInspectorSettings(child_json, this));
-        traced_assert(data_item_settings_);
-    }
-    else if (class_name == "MLATCoverageInspectorSettings")
-    {
-        traced_assert(!coverage_settings_);
-        coverage_settings_.reset(new MLATCoverageInspectorSettings(child_json, this));
-        traced_assert(coverage_settings_);
-    }
-    else if (class_name == "ADSBDataItemInspectorSettings")
-    {
-        traced_assert(!adsb_data_item_settings_);
-        adsb_data_item_settings_.reset(new ADSBDataItemInspectorSettings(child_json, this));
-        traced_assert(adsb_data_item_settings_);
-    }
-    else if (class_name == "ADSBCoverageInspectorSettings")
-    {
-        traced_assert(!adsb_coverage_settings_);
-        adsb_coverage_settings_.reset(new ADSBCoverageInspectorSettings(child_json, this));
-        traced_assert(adsb_coverage_settings_);
-    }
-    else if (class_name == "SMRDataItemInspectorSettings")
-    {
-        traced_assert(!smr_data_item_settings_);
-        smr_data_item_settings_.reset(new SMRDataItemInspectorSettings(child_json, this));
-        traced_assert(smr_data_item_settings_);
-    }
-    else if (class_name == "SMRCoverageInspectorSettings")
-    {
-        traced_assert(!smr_coverage_settings_);
-        smr_coverage_settings_.reset(new SMRCoverageInspectorSettings(child_json, this));
-        traced_assert(smr_coverage_settings_);
-    }
-#if USE_EXPERIMENTAL_SOURCE == true
-    else if (class_name == "SMRAccuracyInspectorSettings")
-    {
-        traced_assert(!smr_accuracy_settings_);
-        smr_accuracy_settings_.reset(new SMRAccuracyInspectorSettings(child_json, this));
-        traced_assert(smr_accuracy_settings_);
-    }
-    else if (class_name == "SMRUnassociatedInspectorSettings")
-    {
-        traced_assert(!smr_unassociated_settings_);
-        smr_unassociated_settings_.reset(new SMRUnassociatedInspectorSettings(child_json, this));
-        traced_assert(smr_unassociated_settings_);
-    }
-    else if (class_name == "MLATAccuracyInspectorSettings")
-    {
-        traced_assert(!accuracy_settings_);
-        accuracy_settings_.reset(new MLATAccuracyInspectorSettings(child_json, this));
-        traced_assert(accuracy_settings_);
-    }
-    else if (class_name == "MLATRUCoverageInspectorSettings")
-    {
-        traced_assert(!ru_coverage_settings_);
-        ru_coverage_settings_.reset(new MLATRUCoverageInspectorSettings(child_json, this));
-        traced_assert(ru_coverage_settings_);
-    }
-    else if (class_name == "MLATRUEffectInspectorSettings")
-    {
-        traced_assert(!ru_effect_settings_);
-        ru_effect_settings_.reset(new MLATRUEffectInspectorSettings(child_json, this));
-        traced_assert(ru_effect_settings_);
-    }
-    else if (class_name == "ADSBAccuracyInspectorSettings")
-    {
-        traced_assert(!adsb_accuracy_settings_);
-        adsb_accuracy_settings_.reset(new ADSBAccuracyInspectorSettings(child_json, this));
-        traced_assert(adsb_accuracy_settings_);
-    }
-#endif
-    else
-    {
-        throw std::runtime_error("AnalyzeDataSourceTask: generateSubConfigurable: "
-                                 "unknown class_name " + class_name);
-    }
+    inspector_settings_[ settings->className() ].reset(settings);
 }
 
+/**
+ * Each task instance is bound to one DS type and only creates the settings of that type's inspectors (the
+ * factory still accepts every known settings class, so a persisted child of another type loads).
+*/
 void AnalyzeDataSourceTask::checkSubConfigurables()
 {
-    // Each task instance is bound to one DSType and only creates that DSType's
-    // inspector-settings sub-configs. generateSubConfigurable() above still
-    // accepts any known class name so a persisted child of either set loads.
-    if (ds_type_ == "ADSB")
+    for (const auto& slot : inspectorRegistry().keys())
     {
-        if (!adsb_data_item_settings_)
-            generateSubConfigurableFromConfig("ADSBDataItemInspectorSettings",
-                                              "ADSBDataItemInspectorSettings0");
-        traced_assert(adsb_data_item_settings_);
+        if (slotDSType(slot) != ds_type_)
+            continue;
 
-        if (!adsb_coverage_settings_)
-            generateSubConfigurableFromConfig("ADSBCoverageInspectorSettings",
-                                              "ADSBCoverageInspectorSettings0");
-        traced_assert(adsb_coverage_settings_);
+        const std::string& settings_class = inspectorRegistry().creator(slot).settings_class;
+        if (inspector_settings_.count(settings_class))
+            continue;
 
-#if USE_EXPERIMENTAL_SOURCE == true
-        if (!adsb_accuracy_settings_)
-            generateSubConfigurableFromConfig("ADSBAccuracyInspectorSettings",
-                                              "ADSBAccuracyInspectorSettings0");
-        traced_assert(adsb_accuracy_settings_);
-#endif
-        return;
+        createSubConfigurableFromConfig(settings_class, settings_class + "0");
+        traced_assert(inspector_settings_.count(settings_class));
     }
-
-    if (ds_type_ == "SMR")
-    {
-        if (!smr_data_item_settings_)
-            generateSubConfigurableFromConfig("SMRDataItemInspectorSettings",
-                                              "SMRDataItemInspectorSettings0");
-        traced_assert(smr_data_item_settings_);
-
-        if (!smr_coverage_settings_)
-            generateSubConfigurableFromConfig("SMRCoverageInspectorSettings",
-                                              "SMRCoverageInspectorSettings0");
-        traced_assert(smr_coverage_settings_);
-
-#if USE_EXPERIMENTAL_SOURCE == true
-        if (!smr_accuracy_settings_)
-            generateSubConfigurableFromConfig("SMRAccuracyInspectorSettings",
-                                              "SMRAccuracyInspectorSettings0");
-        traced_assert(smr_accuracy_settings_);
-
-        if (!smr_unassociated_settings_)
-            generateSubConfigurableFromConfig("SMRUnassociatedInspectorSettings",
-                                              "SMRUnassociatedInspectorSettings0");
-        traced_assert(smr_unassociated_settings_);
-#endif
-        return;
-    }
-
-    if (!data_item_settings_)
-        generateSubConfigurableFromConfig("MLATDataItemInspectorSettings",
-                                          "MLATDataItemInspectorSettings0");
-    traced_assert(data_item_settings_);
-
-    if (!coverage_settings_)
-        generateSubConfigurableFromConfig("MLATCoverageInspectorSettings",
-                                          "MLATCoverageInspectorSettings0");
-    traced_assert(coverage_settings_);
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    if (!accuracy_settings_)
-        generateSubConfigurableFromConfig("MLATAccuracyInspectorSettings",
-                                          "MLATAccuracyInspectorSettings0");
-    traced_assert(accuracy_settings_);
-
-    if (!ru_coverage_settings_)
-        generateSubConfigurableFromConfig("MLATRUCoverageInspectorSettings",
-                                          "MLATRUCoverageInspectorSettings0");
-    traced_assert(ru_coverage_settings_);
-
-    if (!ru_effect_settings_)
-        generateSubConfigurableFromConfig("MLATRUEffectInspectorSettings",
-                                          "MLATRUEffectInspectorSettings0");
-    traced_assert(ru_effect_settings_);
-#endif
 }
 
 void AnalyzeDataSourceTask::initTask()
@@ -382,37 +335,17 @@ void AnalyzeDataSourceTask::registerInspectors()
 {
     inspectors_.clear();
 
-    if (ds_type_ == "ADSB")
+    // registry order = slot order => the inspectors of this DS type in dialog / report order
+    for (const auto& slot : inspectorRegistry().keys())
     {
-        inspectors_.emplace_back(new ADSBDataItemInspector(*this, *adsb_data_item_settings_));
-        inspectors_.emplace_back(new ADSBCoverageInspector(*this, *adsb_coverage_settings_));
+        if (slotDSType(slot) != ds_type_)
+            continue;
 
-#if USE_EXPERIMENTAL_SOURCE == true
-        inspectors_.emplace_back(new ADSBAccuracyInspector(*this, *adsb_accuracy_settings_));
-#endif
-        return;
+        const auto& entry = inspectorRegistry().creator(slot);
+        traced_assert(inspector_settings_.count(entry.settings_class));
+
+        inspectors_.push_back(entry.creator(*this, *inspector_settings_.at(entry.settings_class)));
     }
-
-    if (ds_type_ == "SMR")
-    {
-        inspectors_.emplace_back(new SMRDataItemInspector(*this, *smr_data_item_settings_));
-        inspectors_.emplace_back(new SMRCoverageInspector(*this, *smr_coverage_settings_));
-
-#if USE_EXPERIMENTAL_SOURCE == true
-        inspectors_.emplace_back(new SMRAccuracyInspector(*this, *smr_accuracy_settings_));
-        inspectors_.emplace_back(new SMRUnassociatedInspector(*this, *smr_unassociated_settings_));
-#endif
-        return;
-    }
-
-    inspectors_.emplace_back(new MLATDataItemInspector(*this, *data_item_settings_));
-    inspectors_.emplace_back(new MLATCoverageInspector(*this, *coverage_settings_));
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    inspectors_.emplace_back(new MLATAccuracyInspector(*this, *accuracy_settings_));
-    inspectors_.emplace_back(new MLATRUCoverageInspector(*this, *ru_coverage_settings_));
-    inspectors_.emplace_back(new MLATRUEffectInspector(*this, *ru_effect_settings_));
-#endif
 }
 
 bool AnalyzeDataSourceTask::useDataSource(unsigned int ds_id) const
@@ -714,80 +647,6 @@ DataSourceInspectorBase* AnalyzeDataSourceTask::inspector(const std::string& cla
             return ins.get();
     return nullptr;
 }
-
-MLATDataItemInspectorSettings& AnalyzeDataSourceTask::dataItemSettings() const
-{
-    traced_assert(data_item_settings_);
-    return *data_item_settings_;
-}
-
-MLATCoverageInspectorSettings& AnalyzeDataSourceTask::coverageSettings() const
-{
-    traced_assert(coverage_settings_);
-    return *coverage_settings_;
-}
-
-ADSBDataItemInspectorSettings& AnalyzeDataSourceTask::adsbDataItemSettings() const
-{
-    traced_assert(adsb_data_item_settings_);
-    return *adsb_data_item_settings_;
-}
-
-ADSBCoverageInspectorSettings& AnalyzeDataSourceTask::adsbCoverageSettings() const
-{
-    traced_assert(adsb_coverage_settings_);
-    return *adsb_coverage_settings_;
-}
-
-SMRDataItemInspectorSettings& AnalyzeDataSourceTask::smrDataItemSettings() const
-{
-    traced_assert(smr_data_item_settings_);
-    return *smr_data_item_settings_;
-}
-
-SMRCoverageInspectorSettings& AnalyzeDataSourceTask::smrCoverageSettings() const
-{
-    traced_assert(smr_coverage_settings_);
-    return *smr_coverage_settings_;
-}
-
-#if USE_EXPERIMENTAL_SOURCE == true
-SMRAccuracyInspectorSettings& AnalyzeDataSourceTask::smrAccuracySettings() const
-{
-    traced_assert(smr_accuracy_settings_);
-    return *smr_accuracy_settings_;
-}
-
-SMRUnassociatedInspectorSettings& AnalyzeDataSourceTask::smrUnassociatedSettings() const
-{
-    traced_assert(smr_unassociated_settings_);
-    return *smr_unassociated_settings_;
-}
-
-MLATAccuracyInspectorSettings& AnalyzeDataSourceTask::accuracySettings() const
-{
-    traced_assert(accuracy_settings_);
-    return *accuracy_settings_;
-}
-
-MLATRUCoverageInspectorSettings& AnalyzeDataSourceTask::ruCoverageSettings() const
-{
-    traced_assert(ru_coverage_settings_);
-    return *ru_coverage_settings_;
-}
-
-MLATRUEffectInspectorSettings& AnalyzeDataSourceTask::ruEffectSettings() const
-{
-    traced_assert(ru_effect_settings_);
-    return *ru_effect_settings_;
-}
-
-ADSBAccuracyInspectorSettings& AnalyzeDataSourceTask::adsbAccuracySettings() const
-{
-    traced_assert(adsb_accuracy_settings_);
-    return *adsb_accuracy_settings_;
-}
-#endif
 
 bool AnalyzeDataSourceTask::professionalLicenseEnabled() const
 {

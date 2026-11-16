@@ -20,8 +20,10 @@
 #include "reportdefs.h"
 #include "configurable.h"
 
+#include "creatorregistry.h"
 #include "result.h"
 
+#include <functional>
 #include <map>
 #include <string>
 #include <memory>
@@ -47,6 +49,14 @@ class ReportExport : public QObject, public Configurable
 {
     Q_OBJECT
 public:
+    typedef std::function<std::unique_ptr<ReportExporter>(const ReportExport* report_export,
+                                                          const std::string& fn,
+                                                          const std::string& resource_dir,
+                                                          bool interaction_mode)> ExporterCreator;
+
+    /// exporters of the modes that are not built in, added by plugins (e.g. DocX)
+    DECLARE_CREATOR_REGISTRY(exporterRegistry, ReportExportMode, ExporterCreator)
+
     // ReportExport(const std::string& class_name,
     //              const std::string& instance_name,
     //              TaskManager* task_manager);

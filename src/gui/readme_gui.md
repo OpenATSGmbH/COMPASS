@@ -228,7 +228,7 @@ If you need to register a new tool, follow the existing widget classes in `src/c
 
 ## 10. Views
 
-A View is a tab in the Main Viewbar showing one visualization of the loaded dataset. Existing views: TableView, ScatterPlotView, HistogramView, GridView, ViewPoints, GeographicView (closed-source). The framework lives in [src/view/viewbase/](../view/viewbase/); the concrete views live in `src/view/<name>/` and `experimental_src/view/geographicview/`.
+A View is a tab in the Main Viewbar showing one visualization of the loaded dataset. Existing views: TableView, ScatterPlotView, HistogramView, GridView, ViewPoints, GeographicView (closed-source). The framework lives in [src/view/viewbase/](../view/viewbase/); the concrete views live in `src/view/<name>/` and `experimental_src/plugins/geoview/geographicview/`.
 
 A View is the right surface when:
 - The output is a visualization of the **loaded dataset** (the in-memory cross-DBContent buffers), refreshed on Load.
@@ -386,7 +386,7 @@ When adding a new View:
 
 - All persistent settings are registered as `Configurable` parameters in the View class, not in the data / config widgets.
 - The data widget reads from the View; the config widget writes to it through the View's setters.
-- Sub-configurables (e.g. one config block per axis) follow the standard `generateSubConfigurable` / `checkSubConfigurables` pattern.
+- Sub-configurables (e.g. one config block per axis) follow the standard `generateSubConfigurable_impl` / `checkSubConfigurables` pattern.
 
 ## 11. Reusable helpers
 

@@ -366,7 +366,7 @@ void JSONObjectParserWidget::addNewMappingSlot()
     child_json[Configuration::ParameterSection]["json_key"] = Configuration::getInstanceName(child_json);
     child_json[Configuration::ParameterSection]["dbcontent_name"] = parser_->dbContentName();
 
-    parser_->generateSubConfigurable(child_json);
+    parser_->createSubConfigurable(child_json);
 
     updateMappingsGrid();
 }

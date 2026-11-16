@@ -81,12 +81,12 @@ VariableOrderedSet::VariableOrderedSet(nlohmann::json& config, DBContentManager&
 
 VariableOrderedSet::~VariableOrderedSet() = default;
 
-void VariableOrderedSet::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult VariableOrderedSet::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     logdbg << "class_name " << class_name;
 
-    throw std::runtime_error("VariableOrderedSet: generateSubConfigurable: unknown class_name " + class_name);
+    return GenerateResult::Unknown;
 }
 
 void VariableOrderedSet::checkSubConfigurables() {}

@@ -48,8 +48,6 @@ public:
     TableView(nlohmann::json& config, ViewContainer* parent);
     virtual ~TableView() override;
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     /// @brief Returns the used data source
     TableViewDataSource* getDataSource()
     {
@@ -75,6 +73,8 @@ public:
 
 protected:
     friend class LatexVisitor;
+
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
 
     virtual void checkSubConfigurables() override;
     virtual void updateSelection_impl() override;

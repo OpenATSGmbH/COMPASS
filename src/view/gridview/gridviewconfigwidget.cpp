@@ -38,10 +38,7 @@
 #include "dbcontent.h"
 
 #include "variableselectionwidget.h"
-
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geographicview.h"
-#endif
+#include "geoimagesink.h"
 
 #include "colorscaleselection.h"
 #include "propertyvalueedit.h"
@@ -229,10 +226,12 @@ void GridViewConfigWidget::attachExportMenu()
     //attach export menu
     QMenu* menu = new QMenu(export_button_);
 
-#if USE_EXPERIMENTAL_SOURCE == true
-    auto export_geoview_action = menu->addAction("Export to GeographicView");
-    connect(export_geoview_action, &QAction::triggered, this, &GridViewConfigWidget::exportToGeographicView);
-#endif
+    // only if a view accepting geo images exists (checked once, when the menu is created)
+    if (!view_->viewManager().viewsOfType<GeoImageSink>().empty())
+    {
+        auto export_geoview_action = menu->addAction("Export to GeographicView");
+        connect(export_geoview_action, &QAction::triggered, this, &GridViewConfigWidget::exportToGeographicView);
+    }
 
     auto export_geotiff_action = menu->addAction("Export to GeoTIFF");
     connect(export_geotiff_action, &QAction::triggered, this, &GridViewConfigWidget::exportToGeoTiff);
@@ -531,13 +530,12 @@ void GridViewConfigWidget::checkRanges()
         range_info_label_->setText("Please enter a valid range");
 }
 
-#if USE_EXPERIMENTAL_SOURCE == true
 namespace
 {
     struct ExportGeoViewConfig
     {
-        GeographicView* view = nullptr;
-        std::string     item_name;
+        GeoImageSink* view = nullptr;
+        std::string   item_name;
     };
 
     /**
@@ -546,7 +544,8 @@ namespace
                                                                 const std::string& default_name,
                                                                 ViewManager& view_manager)
     {
-        auto geo_views = view_manager.viewsOfType<GeographicView>();
+        // views accepting geo images (e.g. GeographicView)
+        auto geo_views = view_manager.viewsOfType<GeoImageSink>();
 
         QDialog dlg(parent);
         dlg.setWindowTitle("Export to GeographicView");
@@ -559,7 +558,12 @@ namespace
 
         auto view_sel = new QComboBox;
         for (auto v : geo_views)
-            view_sel->addItem(QString::fromStdString(v->getName()));
+        {
+            auto view = dynamic_cast<const View*>(v);
+            traced_assert(view);
+
+            view_sel->addItem(QString::fromStdString(view->getName()));
+        }
         if (view_sel->count() > 0)
             view_sel->setCurrentIndex(0);
 
@@ -604,7 +608,6 @@ namespace
         return config;
     }
 }
-#endif
 
 /**
 */
@@ -624,8 +627,6 @@ std::string GridViewConfigWidget::exportName() const
 */
 void GridViewConfigWidget::exportToGeographicView()
 {
-#if USE_EXPERIMENTAL_SOURCE == true
-
     const auto& data_widget = dynamic_cast<const GridView*>(view_)->getDataWidget();
 
     auto geo_image = data_widget->currentGeoImage();
@@ -657,9 +658,6 @@ void GridViewConfigWidget::exportToGeographicView()
     anno.toJSON(j);
 
     export_config->view->addInternalAnnotation(j);
-#else
-    QMessageBox::critical(this, "Error", "Geographic View not part of installation");
-#endif
 }
 
 /**

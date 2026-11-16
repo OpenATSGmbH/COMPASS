@@ -97,8 +97,6 @@ public:
 
     void deleteFilter(const std::string& name);
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     // resets all filters
     void reset();
 
@@ -120,6 +118,8 @@ public:
     IDBVariableResolver& variableResolver() { return var_resolver_; }
 
 protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     DBContentManager&                dbcontent_man_;
     DBContentManagerVariableResolver var_resolver_;
 

@@ -216,7 +216,7 @@ FilterClause DBFilter::getClause(const std::string& dbcontent_name)
     return (condition_logic_ == filter_op::logic_or) ? combineOr(parts) : combineAnd(parts);
 }
 
-void DBFilter::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult DBFilter::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -242,7 +242,9 @@ void DBFilter::generateSubConfigurable(nlohmann::json& child_json)
         }
     }
     else
-        throw std::runtime_error("DBFilter: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 DBFilterWidget* DBFilter::createWidget()

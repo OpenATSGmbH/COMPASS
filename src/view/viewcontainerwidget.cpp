@@ -102,7 +102,7 @@ ViewContainerWidget::~ViewContainerWidget()
     loginf << "done";
 }
 
-void ViewContainerWidget::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult ViewContainerWidget::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -115,15 +115,16 @@ void ViewContainerWidget::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(view_container_);
     }
     else
-        throw std::runtime_error("ViewContainerWidget: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 void ViewContainerWidget::checkSubConfigurables()
 {
     if (!view_container_)
     {
-        generateSubConfigurableFromConfig("ViewContainer", instanceName() + "ViewContainer0");
+        createSubConfigurableFromConfig("ViewContainer", instanceName() + "ViewContainer0");
         traced_assert(view_container_);
     }
 }

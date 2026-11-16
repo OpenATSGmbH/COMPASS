@@ -45,8 +45,6 @@ public:
     ASTERIXJSONParser& parser(unsigned int);
     void removeParser(unsigned int);
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
     std::string name() const;
     void name(const std::string& name);
 
@@ -59,6 +57,7 @@ private:
     std::map<unsigned int, std::unique_ptr<ASTERIXJSONParser>> parsers_;
 
   protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     void checkSubConfigurables() override {}
 
 };

@@ -62,7 +62,7 @@ JSONObjectParser::JSONObjectParser(nlohmann::json& config, JSONParsingSchema* pa
     traced_assert(!override_data_source_); // TODO reimplement
 }
 
-void JSONObjectParser::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult JSONObjectParser::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -72,7 +72,9 @@ void JSONObjectParser::generateSubConfigurable(nlohmann::json& child_json)
         data_mappings_.emplace_back(mapping);
     }
     else
-        throw std::runtime_error("JSONObjectParser: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 DBContent& JSONObjectParser::dbContent() const
@@ -572,7 +574,7 @@ void JSONObjectParser::checkIfKeysExistsInMappings(const std::string& location,
         ss << "Type " << j.type_name() << ", value " << j.dump();
         child_json[Configuration::ParameterSection]["comment"] = ss.str();
 
-        generateSubConfigurable(child_json);
+        createSubConfigurable(child_json);
     }
 }
 

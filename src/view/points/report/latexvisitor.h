@@ -22,14 +22,13 @@
 #include <string>
 
 class ViewPoint;
+class View;
 class TableView;
 class HistogramView;
-#if USE_EXPERIMENTAL_SOURCE == true
-class GeographicView;
-#endif
 class ScatterPlotView;
 class GridView;
 class LatexDocument;
+class LatexSection;
 
 namespace ResultReport
 {
@@ -56,13 +55,19 @@ public:
     virtual void visit(const ViewPoint* e);
     virtual void visit(TableView* e);
     virtual void visit(HistogramView* e);
-#if USE_EXPERIMENTAL_SOURCE == true
-    virtual void visit(GeographicView* e);
-#endif
     virtual void visit(ScatterPlotView* e);
     virtual void visit(GridView* e);
+    virtual void visit(View* e); // views without their own visit(): delegates to View::visitLatex()
 
     void imagePrefix(const std::string& image_prefix);
+
+    // for views exporting themselves in View::visitLatex() (e.g. the geographic view of the GeoView plugin)
+    std::string screenshotFolder();
+    LatexSection& currentSection();
+    const std::string& imagePrefix() const { return image_prefix_; }
+    bool addOverviewScreenshot() const { return add_overview_screenshot_; }
+    bool waitOnMapLoading() const { return wait_on_map_loading_; }
+    std::string graphicsPath(const std::string& file) const;
 
 protected:
     LatexDocument& report_;

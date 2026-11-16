@@ -127,8 +127,6 @@ public:
 
     virtual ~TaskManager();
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
     void init();
     void shutdown();
 
@@ -199,6 +197,7 @@ public:
     static const bool CleanupDBIfNeeded;
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     virtual void checkSubConfigurables() override;
 
     void addTask(const std::string& class_name, Task* task);

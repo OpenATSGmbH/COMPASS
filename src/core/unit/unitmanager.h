@@ -39,9 +39,9 @@ class UnitManager : public Configurable
     }
     const std::map<std::string, Dimension*>& dimensions() { return dimensions_; }
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
   protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     std::map<std::string, Dimension*> dimensions_;
 
     void checkSubConfigurables() override;

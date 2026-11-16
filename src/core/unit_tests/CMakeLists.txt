@@ -1,6 +1,7 @@
 target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_cpp17.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_number.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_creator_registry.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_projection.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_nullablevector.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_buffer.cpp

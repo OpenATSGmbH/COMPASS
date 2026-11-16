@@ -102,8 +102,6 @@ public:
     ASTERIXImportTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ASTERIXImportTask();
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
     void asterixFileFraming(const std::string& asterix_framing);
     void asterixDecoderConfig(const std::string& asterix_decoder_cfg);
 
@@ -153,6 +151,7 @@ public:
     void testFileDecoding();
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     virtual void checkSubConfigurables() override;
 
     void reset();

@@ -269,7 +269,7 @@ ASTERIXImportTask::~ASTERIXImportTask()
 
 /**
 */
-void ASTERIXImportTask::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult ASTERIXImportTask::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -277,6 +277,7 @@ void ASTERIXImportTask::generateSubConfigurable(nlohmann::json& child_json)
     {
         loginf << "skipping legacy ASTERIXCategoryConfig '"
                << instance_name << "' - now managed by DBContextManager";
+        return GenerateResult::Skipped;
     }
     else if (class_name == "ASTERIXJSONParsingSchema")
     {
@@ -292,8 +293,10 @@ void ASTERIXImportTask::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw std::runtime_error("ASTERIXImportTask: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
     }
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -414,7 +417,7 @@ void ASTERIXImportTask::checkSubConfigurables()
     {
         auto& child_json = addNewSubConfiguration("ASTERIXJSONParsingSchema", "JSONParsingSchemajASTERIX0");
         child_json[Configuration::ParameterSection]["name"] = "jASTERIX";
-        generateSubConfigurable(child_json);
+        createSubConfigurable(child_json);
     }
 }
 

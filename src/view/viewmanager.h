@@ -190,8 +190,6 @@ class ViewManager : public QObject, public Configurable, public IViewProvider, p
     void deleteContainerWidget(std::string instance_name);
     void removeContainerWidget(std::string instance_name);
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     void viewShutdown(View* view, const std::string& err = "");
 
     std::map<std::string, ViewContainer*> getContainers() { return containers_; }
@@ -300,6 +298,7 @@ class ViewManager : public QObject, public Configurable, public IViewProvider, p
     }
 
 protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     virtual void checkSubConfigurables();
 
     void enableStoredReadSets();
@@ -394,8 +393,6 @@ protected:
     bool view_point_data_selected_ {false};
 
     unsigned int container_count_{0};
-
-    std::map<std::string, std::string> view_class_list_; // class name -> name (without appended number)
 
     bool use_tmp_stored_readset_ {false};
     std::map<std::string, dbContent::VariableSet> tmp_stored_readset_;

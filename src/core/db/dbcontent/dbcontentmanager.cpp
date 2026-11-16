@@ -244,7 +244,7 @@ IEvalProvider& DBContentManager::evalProvider()
 
 /**
  */
-void DBContentManager::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult DBContentManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     logdbg << "class_name " << class_name;
@@ -276,8 +276,9 @@ void DBContentManager::generateSubConfigurable(nlohmann::json& child_json)
             std::forward_as_tuple(meta_var));  // args for mapped value
     }
     else
-        throw std::runtime_error("DBContentManager: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -949,7 +950,7 @@ void DBContentManager::resetToStartupConfiguration()
 
     //        label_generator_ = nullptr;
 
-    //        generateSubConfigurable("DBContentLabelGenerator", "DBContentLabelGenerator0");
+    //        createSubConfigurableFromConfig("DBContentLabelGenerator", "DBContentLabelGenerator0");
     //        traced_assert(label_generator_);
     //    }
 }

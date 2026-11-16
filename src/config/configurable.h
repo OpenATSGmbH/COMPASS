@@ -28,9 +28,23 @@
 
 #include "json_fwd.hpp"
 
+class SubConfigurableFactoryBase;
+enum class SubConfigurableDefaults;
+
+/**
+ * Result of creating a sub-configurable from its config entry.
+ */
+enum class GenerateResult
+{
+    Generated, // created and taken over by the parent
+    Skipped,   // deliberately not created, e.g. a plugin type whose plugin is not present (logged)
+    Unknown    // class unknown to the parent (error, throws)
+};
+
 class Configurable
 {
     friend class Configuration;  // Configuration::reconfigure_internal needs access to configuration_
+    friend class SubConfigurableFactoryAttacher;  // attaches factories declared by DECLARE_SUBCONFIGURABLE_FACTORY
 
 public:
     typedef Configuration::JSONExportType       JSONExportType;
@@ -82,16 +96,21 @@ public:
     /// Returns a reference to the sub-config entry, creating it if it doesn't exist yet.
     nlohmann::json& ensureSubConfig(const std::string& class_name,
                                     const std::string& instance_name);
-    /// Creates an empty sub-config entry and calls generateSubConfigurable() on it.
-    void generateSubConfigurableFromConfig(const std::string& class_name,
-                                           const std::string& instance_name);
+    /// Creates an empty sub-config entry and calls createSubConfigurable() on it.
+    GenerateResult createSubConfigurableFromConfig(const std::string& class_name,
+                                                   const std::string& instance_name);
     /// Clones the given configurable's JSON representation, merges additional_data,
     /// adds it as a sub-config entry under the given unique instance name, and
     /// generates the child configurable from it. The instance name must be unique
     /// among the existing sub-configurables of the same class.
-    void generateSubConfigurableFromJSON(const Configurable& configurable,
-                                         const std::string& new_instance_name,
-                                         const nlohmann::json& additional_data = nlohmann::json());
+    GenerateResult createSubConfigurableFromJSON(const Configurable& configurable,
+                                                 const std::string& new_instance_name,
+                                                 const nlohmann::json& additional_data = nlohmann::json());
+    /// Creates the child from an attached sub-configurable factory (handed to childCreated()),
+    /// otherwise via generateSubConfigurable_impl(). The entry point for creating children: throws on Unknown,
+    /// throws on Skipped if must_exist, otherwise logs it (must_exist = false only when reading a config,
+    /// where skipped entries are expected, e.g. legacy classes or plugin types whose plugin is not present).
+    GenerateResult createSubConfigurable(nlohmann::json& child_json, bool must_exist = true);
     bool hasSubConfigurable(const std::string& class_name, const std::string& instance_name) const;
     /// Walks a dot-separated path of instance/class names to find a descendant.
     std::pair<rtcommand::FindObjectErrCode, Configurable*> findSubConfigurablePath(const std::string& path);
@@ -144,11 +163,18 @@ public:
     static const char ConfigurablePathSeparator;
 
 protected:
-    /// Override to instantiate the correct subclass from a child's JSON config.
-    /// Called by createSubConfigurables() for each entry in sub_config_storage_.
-    virtual void generateSubConfigurable(nlohmann::json& child_json);
-    /// Iterates sub_config_storage_ and calls generateSubConfigurable() for each entry.
-    /// Finishes with checkSubConfigurables().
+    /// Override to instantiate the correct subclass from a child's JSON config, returns Unknown for classes it
+    /// does not create. Called only by createSubConfigurable(), for class names unknown to the attached factories.
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json);
+    /// Attaches a sub-configurable factory (see subconfigurablefactory.h), call before createSubConfigurables().
+    /// The factory must outlive this configurable. Done automatically by DECLARE_SUBCONFIGURABLE_FACTORY.
+    void addSubConfigurableFactory(const SubConfigurableFactoryBase& factory,
+                                   SubConfigurableDefaults defaults);
+    /// Called for every child created by an attached factory. The override takes ownership of the child.
+    virtual void childCreated(Configurable* child);
+    /// Iterates sub_config_storage_ and calls createSubConfigurable() for each entry.
+    /// Then creates the default instances of the attached factories (SubConfigurableDefaults),
+    /// finishes with checkSubConfigurables().
     void createSubConfigurables();
 
     template <typename T>
@@ -194,7 +220,20 @@ protected:
     }
 
 private:
+    /// Attached sub-configurable factory with its default instance mode.
+    struct AttachedFactory
+    {
+        const SubConfigurableFactoryBase* factory {nullptr};
+        SubConfigurableDefaults           defaults;
+    };
+
     void configurationChanged(const std::vector<std::string>& changed_params);
+
+    /// Creates <class_name>0 for every class of the OnePerClass factories without a child of that class.
+    void createDefaultSubConfigurables();
+    /// Creates a child not known to the attached factories via generateSubConfigurable_impl() (only used by
+    /// createSubConfigurable()).
+    GenerateResult generateSubConfigurable(nlohmann::json& child_json);
 
     Configuration& configuration()
     {
@@ -213,6 +252,8 @@ private:
     bool tmp_disable_remove_config_on_delete_ {false};
 
     std::vector<Configurable*> children_vec_;       ///< Non-owning pointers to json-backed children
+
+    std::vector<AttachedFactory> sub_config_factories_; ///< Attached factories, non-owning
 
     boost::signals2::connection changed_connection_;
 };

@@ -28,6 +28,15 @@ cp -r /usr/lib/x86_64-linux-gnu/osgPlugins-3.6.5 appimage/appdir/lib/ 2>/dev/nul
 cp -r /usr/lib64/osgPlugins-3.6.5/ appimage/appdir/lib/ 2>/dev/null || true
 cp /usr/lib64/libosgEarth* appimage/appdir/lib/ 2>/dev/null || true
 
+# plugin modules: nothing has them as DT_NEEDED, so linuxdeploy does not find them; copied in here, their
+# dependencies are bundled via --deploy-deps-only below
+LINUXDEPLOY_PLUGINS=()
+if [[ -d /usr/lib/compass_plugins ]]; then
+    mkdir -p appimage/appdir/usr/lib/
+    cp -r /usr/lib/compass_plugins appimage/appdir/usr/lib/
+    LINUXDEPLOY_PLUGINS+=(--deploy-deps-only=${WORKSPACE_BASE:-/app/workspace}/compass/appimage/appdir/usr/lib/compass_plugins)
+fi
+
 mkdir -p appimage/appdir/compass/
 cp -r data appimage/appdir/compass/
 cp -r conf appimage/appdir/compass/
@@ -61,7 +70,7 @@ if [[ $ASAN -eq 1 ]]; then
 fi
 
 cd ${WORKSPACE_BASE:-/app/workspace}/compass/docker/linuxdeploy/
-./linuxdeploy-x86_64.AppImage --appdir ${WORKSPACE_BASE:-/app/workspace}/compass/appimage/appdir --executable=/usr/bin/compass_handler --executable=/usr/bin/compass_client --desktop-file=${WORKSPACE_BASE:-/app/workspace}/compass/appimage/compass.desktop --plugin qt --plugin gtk --icon-file ${WORKSPACE_BASE:-/app/workspace}/compass/appimage/ats.png --output appimage "${LINUXDEPLOY_EXTRA[@]}"
+./linuxdeploy-x86_64.AppImage --appdir ${WORKSPACE_BASE:-/app/workspace}/compass/appimage/appdir --executable=/usr/bin/compass_handler --executable=/usr/bin/compass_client --desktop-file=${WORKSPACE_BASE:-/app/workspace}/compass/appimage/compass.desktop --plugin qt --plugin gtk --icon-file ${WORKSPACE_BASE:-/app/workspace}/compass/appimage/ats.png --output appimage "${LINUXDEPLOY_PLUGINS[@]}" "${LINUXDEPLOY_EXTRA[@]}"
 
 mv COMPASS-x86_64.AppImage ${WORKSPACE_BASE:-/app/workspace}/compass/COMPASS_$OS_NAME-x86_64.AppImage
 

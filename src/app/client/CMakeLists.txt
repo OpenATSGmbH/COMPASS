@@ -48,7 +48,6 @@ target_link_libraries ( compass_client
     compass_config compass_core compass_reconstruction
     compass_gui compass_filter compass_task
     compass_eval compass_view compass_result
-    ${jASTERIX_LIBRARIES}
     ${Boost_LIBRARIES}
     Qt5::Widgets Qt5::Core Qt5::OpenGL Qt5::Charts Qt5::Test
     ${OPENSCENEGRAPH_LIBRARIES}
@@ -57,11 +56,7 @@ target_link_libraries ( compass_client
 
 if(EXPERIMENTAL_SRC)
     target_link_libraries(compass_client
-        compass_osg_utils compass_docx compass_reconst_adv
-        compass_geo_view compass_rtcmd_ext compass_test_lab
-    )
-    target_include_directories(compass_app PRIVATE
-        "${CMAKE_SOURCE_DIR}/experimental_src/rtcommand"
+        compass_osg_utils compass_rtcmd_ext compass_test_lab
     )
 endif()
 

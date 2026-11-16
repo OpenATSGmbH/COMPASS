@@ -19,7 +19,6 @@
 #include "report/reportexporter.h"
 #include "report/reportexporterjson.h"
 #include "report/reportexporterlatex.h"
-#include "report/reportexporterdocx.h"
 
 #include "itaskprovider.h"
 #include "viewmanager.h"
@@ -31,6 +30,15 @@
 
 namespace ResultReport
 {
+
+/**
+ * Notice: out of line, so there is one registry per process (also on Windows).
+*/
+ReportExport::exporterRegistryType& ReportExport::exporterRegistry()
+{
+    static exporterRegistryType registry;
+    return registry;
+}
 
 /**
  */
@@ -150,10 +158,10 @@ std::unique_ptr<ReportExporter> ReportExport::createExporter(ReportExportMode mo
     {
         return std::unique_ptr<ReportExporter>(new ReportExporterLatexPDF(this, fn, resource_dir, interaction_mode));
     }
-    else if (mode == ReportExportMode::DOCX)
-    {
-        return std::unique_ptr<ReportExporter>(new ReportExporterDocxFile(this, fn, resource_dir, interaction_mode));
-    }
+
+    // modes added by plugins (e.g. DocX), none registered => the caller fails with "exporter could not be created"
+    if (exporterRegistry().has(mode))
+        return exporterRegistry().creator(mode)(this, fn, resource_dir, interaction_mode);
 
     return std::unique_ptr<ReportExporter>();
 }

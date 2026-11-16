@@ -53,8 +53,6 @@ public:
 
     EvaluationCalculator* parentConfigurable() const;
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
     std::string name() const;
     void name(const std::string &name);
 
@@ -107,6 +105,8 @@ public:
     std::string targetIgnoreReason(const EvaluationTargetData& target) const;
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     EvaluationCalculator& calculator_;
     std::string name_;
 

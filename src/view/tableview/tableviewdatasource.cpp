@@ -57,7 +57,7 @@ TableViewDataSource::~TableViewDataSource()
     unshowViewPoint(nullptr); // removes tmps TODO not done yet
 }
 
-void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult TableViewDataSource::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -79,9 +79,10 @@ void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw std::runtime_error(
-            "TableViewDataSource: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
     }
+
+    return GenerateResult::Generated;
 }
 
 void TableViewDataSource::checkSubConfigurables()
@@ -90,7 +91,7 @@ void TableViewDataSource::checkSubConfigurables()
 
     if (!set_)
     {
-        generateSubConfigurableFromConfig("VariableOrderedSet", DEFAULT_SET_NAME);
+        createSubConfigurableFromConfig("VariableOrderedSet", DEFAULT_SET_NAME);
         traced_assert(set_);
         addDefaultVariables(*set_.get());
     }
@@ -99,7 +100,7 @@ void TableViewDataSource::checkSubConfigurables()
 //    {
 //        DBContent& cat021_cont = dbcont_man.dbContent("CAT021");
 
-//        generateSubConfigurable("VariableOrderedSet", "ADS-B Quality");
+//        createSubConfigurableFromConfig("VariableOrderedSet", "ADS-B Quality");
 //        traced_assert(hasSet("ADS-B Quality"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("ADS-B Quality");
@@ -121,7 +122,7 @@ void TableViewDataSource::checkSubConfigurables()
 
 //    if (!hasSet("Horizontal Movement"))
 //    {
-//        generateSubConfigurable("VariableOrderedSet", "Horizontal Movement");
+//        createSubConfigurableFromConfig("VariableOrderedSet", "Horizontal Movement");
 //        traced_assert(hasSet("Horizontal Movement"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("Horizontal Movement");
@@ -140,7 +141,7 @@ void TableViewDataSource::checkSubConfigurables()
 
 //    if (!hasSet("Mode A/C Info"))
 //    {
-//        generateSubConfigurable("VariableOrderedSet", "Mode A/C Info");
+//        createSubConfigurableFromConfig("VariableOrderedSet", "Mode A/C Info");
 //        traced_assert(hasSet("Mode A/C Info"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("Mode A/C Info");
@@ -165,7 +166,7 @@ void TableViewDataSource::checkSubConfigurables()
 
 //    if (!hasSet("Track Lifetime"))
 //    {
-//        generateSubConfigurable("VariableOrderedSet", "Track Lifetime");
+//        createSubConfigurableFromConfig("VariableOrderedSet", "Track Lifetime");
 //        traced_assert(hasSet("Track Lifetime"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("Track Lifetime");

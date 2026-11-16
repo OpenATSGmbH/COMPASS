@@ -75,12 +75,6 @@
 
 #include "logwidget.h"
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geo_view_api.h"
-#include "test_lab.h"
-#include "extra_commands.h"
-#endif
-
 #include <QApplication>
 #include <QFileDialog>
 #include <QCloseEvent>
@@ -132,10 +126,9 @@ MainWindow::MainWindow(CompassRoot& root)
     //init ui related commands
     ui_test::initUITestCommands(cmd_registry);
 
-    //init extra commands, also in the AppImage and the Windows package
-#if USE_EXPERIMENTAL_SOURCE == true
-    extra::init_extra_commands(cmd_registry, root_);
-#endif
+    //init extra commands
+    if (root_.appHooks().register_commands)
+        root_.appHooks().register_commands(cmd_registry, root_);
 
     main_window::init_commands(cmd_registry, root_);
 }
@@ -205,6 +198,11 @@ void MainWindow::createUI()
 
     //init some components before using their widgets
     root_.evaluationManager().init();
+
+    //plugins add their UI parts (e.g. views) before the view containers are created
+    for (auto plugin : root_.appHooks().plugins)
+        plugin->initUI(root_);
+
     root_.viewManager().init(tab_widget_);
 
     // initialize toolbox
@@ -562,7 +560,9 @@ void MainWindow::updateMenus()
 
     traced_assert(import_menu_);
 
-    traced_assert(license_action_);
+#if USE_EXPERIMENTAL_SOURCE == true
+    traced_assert(license_action_); // only created with experimental source
+#endif
 
     bool in_live_running        = compass_.appState().appMode() == AppMode::LiveRunning;
     bool in_live_paused         = compass_.appState().appMode() == AppMode::LivePaused;
@@ -1230,10 +1230,6 @@ void MainWindow::resetViewsMenuSlot()
 
         root_.filterManager().resetToStartupConfiguration();
 
-#if USE_EXPERIMENTAL_SOURCE == true
-        geo_view::clearHiddenLayers();
-#endif
-
         root_.viewManager().resetToStartupConfiguration();
 
         // set AppMode
@@ -1655,11 +1651,12 @@ void MainWindow::createDebugMenu()
     auto debug_menu = menuBar()->addMenu("Debug");
 
         //add test lab entries
-#if USE_EXPERIMENTAL_SOURCE == true
-    {
-        TestLabCollection().appendTestLabs(debug_menu, compass_, root_.taskManager(), root_.viewManager());
-    }
-#endif
+    if (root_.appHooks().add_debug_menu_entries)
+        root_.appHooks().add_debug_menu_entries(debug_menu, root_);
+
+        //add plugin entries (e.g. their test labs)
+    for (auto plugin : root_.appHooks().plugins)
+        plugin->addDebugMenuEntries(debug_menu);
 
         //add command shell
     {

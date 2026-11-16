@@ -228,7 +228,7 @@ std::string COMPASS::getPath() const
     return "";
 }
 
-void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult COMPASS::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -237,11 +237,13 @@ void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
     {
         // legacy - DataSourceManager replaced by DBContextManager, ignore config
         loginf << "ignoring legacy DataSourceManager config";
+        return GenerateResult::Skipped;
     }
     else if (class_name == "FFTManager")
     {
         // legacy - FFTManager replaced by DBContextManager, ignore config
         loginf << "ignoring legacy FFTManager config";
+        return GenerateResult::Skipped;
     }
     else
     {
@@ -255,10 +257,10 @@ void COMPASS::generateSubConfigurable(nlohmann::json& child_json)
             creator.create(child_json);
             creator.created = true;
 
-            return;
+            return GenerateResult::Generated;
         }
 
-        throw std::runtime_error("COMPASS: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
     }
 }
 
@@ -272,7 +274,7 @@ void COMPASS::checkSubConfigurables()
         if (creator.created)
             continue;
 
-        generateSubConfigurableFromConfig(creator.class_name, creator.instance_id);
+        createSubConfigurableFromConfig(creator.class_name, creator.instance_id);
         traced_assert(creator.created);
     }
 }

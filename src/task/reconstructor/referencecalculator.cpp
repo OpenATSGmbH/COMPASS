@@ -1022,12 +1022,7 @@ void ReferenceCalculator::reconstructMeasurements(TargetReferences& refs)
     //configure and init estimator
     reconstruction::KalmanEstimator estimator;
     estimator.settings() = settings_.kalmanEstimatorSettings();
-
-#if USE_EXPERIMENTAL_SOURCE == false
-    traced_assert(settings_.kalman_type_final == kalman::KalmanType::UMKalman2D);
-#endif
-
-    estimator.init(settings_.kalman_type_final);
+    estimator.init(reconstructor_.createKalmanInterface(settings_.kalman_type_final, estimator.settings()));
 
     //try to init
     auto res = initReconstruction(refs);
@@ -1069,7 +1064,7 @@ void ReferenceCalculator::reconstructMeasurements(TargetReferences& refs)
             settings_.kalman_type_final == kalman::KalmanType::IMMKalman2D ? kalman::KalmanType::AMKalman2D : settings_.kalman_type_final;
 
         estimator_resample.settings() = settings_.kalmanEstimatorSettings();
-        estimator_resample.init(type_resample);
+        estimator_resample.init(reconstructor_.createKalmanInterface(type_resample, estimator_resample.settings()));
 
         //interpolate measurements
         size_t num_failed_steps;

@@ -1,4 +1,4 @@
-add_library(compass_view "")
+add_library(compass_view SHARED "")
 
 include("${CMAKE_CURRENT_LIST_DIR}/tableview/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/histogramview/CMakeLists.txt")
@@ -34,24 +34,5 @@ target_link_libraries(compass_view
         compass_gui
         compass_filter
 )
-
-if(EXPERIMENTAL_SRC)
-    target_include_directories(compass_view PRIVATE
-        "${CMAKE_SOURCE_DIR}/experimental_src/view"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/annotations"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/drawable"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/ffts"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/geometry"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/map"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/measurement"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/overlay"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/radars"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/remoteunits"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/sector"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/style"
-        "${CMAKE_SOURCE_DIR}/experimental_src/view/geographicview/style/rule"
-    )
-endif()
 
 compass_automoc(compass_view)

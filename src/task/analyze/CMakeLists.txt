@@ -33,26 +33,3 @@ target_sources(compass_task
 include("${CMAKE_CURRENT_LIST_DIR}/mlat/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/adsb/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/smr/CMakeLists.txt")
-
-if(EXPERIMENTAL_SRC)
-    target_include_directories(compass_task PRIVATE
-        "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat"
-        "${CMAKE_SOURCE_DIR}/experimental_src/analysis/adsb"
-        "${CMAKE_SOURCE_DIR}/experimental_src/analysis/smr"
-    )
-    target_sources(compass_task
-        PRIVATE
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat/mlataccuracyinspector.h"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat/mlataccuracyinspector.cpp"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat/mlatrucoverageinspector.h"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat/mlatrucoverageinspector.cpp"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat/mlatrueffectinspector.h"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/mlat/mlatrueffectinspector.cpp"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/adsb/adsbaccuracyinspector.h"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/adsb/adsbaccuracyinspector.cpp"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/smr/smraccuracyinspector.h"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/smr/smraccuracyinspector.cpp"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/smr/smrunassociatedinspector.h"
-            "${CMAKE_SOURCE_DIR}/experimental_src/analysis/smr/smrunassociatedinspector.cpp"
-    )
-endif()

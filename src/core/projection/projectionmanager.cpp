@@ -116,7 +116,7 @@ context::DBContextManager& ProjectionManager::dbContextManager()
     return *ctx_man_;
 }
 
-void ProjectionManager::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult ProjectionManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -130,12 +130,16 @@ void ProjectionManager::generateSubConfigurable(nlohmann::json& child_json)
     }
     else if (class_name == "OGRProjection")
     {
+        return GenerateResult::Skipped;
     }
     else if (class_name == "GeoProjection")
     {
+        return GenerateResult::Skipped;
     }
     else
-        throw runtime_error("DBContent: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 void ProjectionManager::checkSubConfigurables()
@@ -144,7 +148,7 @@ void ProjectionManager::checkSubConfigurables()
     {
         auto& child_json = addNewSubConfiguration("RS2GProjection", "RS2GProjection0");
         child_json[Configuration::ParameterSection]["name"] = RS2G_NAME;
-        generateSubConfigurable(child_json);
+        createSubConfigurable(child_json);
     }
 
     // if (!projections_.count(OGR_NAME))
@@ -152,7 +156,7 @@ void ProjectionManager::checkSubConfigurables()
     //     auto configuration = Configuration::create("OGRProjection");
 
     //     configuration->addParameter<string>("name", OGR_NAME);
-    //     generateSubConfigurableFromConfig(std::move(configuration));
+    //     createSubConfigurableFromConfig(std::move(configuration));
     // }
 
     // if (!projections_.count(GEO_NAME))
@@ -160,7 +164,7 @@ void ProjectionManager::checkSubConfigurables()
     //     auto configuration = Configuration::create("GeoProjection");
 
     //     configuration->addParameter<string>("name", GEO_NAME);
-    //     generateSubConfigurableFromConfig(std::move(configuration));
+    //     createSubConfigurableFromConfig(std::move(configuration));
     // }
 }
 

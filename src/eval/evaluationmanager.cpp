@@ -188,7 +188,7 @@ ITaskProvider& EvaluationManager::taskProvider()
 
 /**
 */
-void EvaluationManager::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult EvaluationManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -206,8 +206,10 @@ void EvaluationManager::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw std::runtime_error("EvaluationManager: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
     }
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -216,14 +218,14 @@ void EvaluationManager::checkSubConfigurables()
 {
     if (!target_filter_)
     {
-        generateSubConfigurableFromConfig("EvaluationTargetFilter", "EvaluationTargetFilter0");
+        createSubConfigurableFromConfig("EvaluationTargetFilter", "EvaluationTargetFilter0");
         traced_assert(target_filter_);
     }
 
     if (!calculator_)
     {
         //generate default calculator
-        generateSubConfigurableFromConfig("EvaluationCalculator", "EvaluationCalculator0");
+        createSubConfigurableFromConfig("EvaluationCalculator", "EvaluationCalculator0");
         traced_assert(calculator_);
     }
 }

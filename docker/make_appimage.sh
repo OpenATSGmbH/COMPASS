@@ -13,3 +13,4 @@ fi
 ./build_jasterix.sh $CLEAN
 ./build_compass.sh $CLEAN
 ./deploy_compass.sh
+./check_appimage.sh ../COMPASS_$OS_NAME-x86_64.AppImage ../build_$OS_NAME

@@ -186,11 +186,7 @@ class Logger : public Singleton
     Logger();
 
   public:
-    static Logger& getInstance()
-    {
-        static Logger instance;
-        return instance;
-    }
+    static Logger& getInstance(); // out of line: one instance across all shared libraries
 
     void init(const std::string& log_config_filename, bool enable_event_log = false);
 

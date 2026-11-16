@@ -1,4 +1,4 @@
-add_library(compass_app "")
+add_library(compass_app SHARED "")
 
 # Disable AUTOMOC: compass_app links libraries (compass_view, compass_eval, etc.)
 # whose PUBLIC include dirs expose Q_OBJECT headers. AUTOMOC would re-MOC those
@@ -17,11 +17,15 @@ include("${CMAKE_CURRENT_LIST_DIR}/watchdog/CMakeLists.txt")
 
 target_sources(compass_app
     PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/apphooks.h"
         "${CMAKE_CURRENT_LIST_DIR}/compass.h"
         "${CMAKE_CURRENT_LIST_DIR}/compassroot.h"
+        "${CMAKE_CURRENT_LIST_DIR}/plugin/plugin.h"
+        "${CMAKE_CURRENT_LIST_DIR}/plugin/pluginmanager.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/compass.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/compassroot.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/plugin/pluginmanager.cpp"
 )
 
 target_include_directories(compass_app PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
@@ -46,13 +50,19 @@ target_link_libraries(compass_app
         ${OSGEARTH_LIBRARY}
 )
 
-if(EXPERIMENTAL_SRC)
-    # No experimental libraries are linked here - only by compass_client.
-    # Linking them would propagate their PUBLIC include dirs into compass_app,
-    # causing AUTOMOC to discover Q_OBJECT headers and generate duplicate moc
-    # symbols (already defined in the component libraries).
-    # Only the geo_view_api.h facade header is needed (no Q_OBJECT).
-    target_include_directories(compass_app PRIVATE
-        "${CMAKE_CURRENT_LIST_DIR}/../../experimental_src/view"
-    )
-endif()
+# No experimental libraries are linked here, only by compass_client: they extend the
+# application through AppHooks (incl. the plugin objects), set in compass_client's main.cpp.
+
+# compass_plugin_sdk: the host libraries a plugin may link (readme_plugins.md). Plugins link this
+# target instead of the libraries, so the set can change (e.g. a core/UI split) without touching
+# the plugins' CMake files. compass_app: the Plugin interface (plugin/plugin.h)
+add_library(compass_plugin_sdk INTERFACE)
+target_link_libraries(compass_plugin_sdk INTERFACE
+    compass_core
+    compass_reconstruction
+    compass_gui
+    compass_view
+    compass_result
+    compass_task
+    compass_app
+)

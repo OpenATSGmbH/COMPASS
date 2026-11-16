@@ -47,11 +47,13 @@ namespace reconstruction
 {
 struct Measurement;
 class KalmanChainPredictors;
+class KalmanInterface;
 }
 
 class Buffer;
 class ReconstructorTask;
 class ReconstructorAssociatorBase;
+class QWidget;
 
 struct AltitudeState;
 
@@ -311,6 +313,7 @@ public:
 
     const dbContent::TargetReportAccessor& accessor(const dbContent::targetReport::ReconstructorInfo& tr) const;
 
+    virtual QWidget* createWidget() = 0; // configuration widget, ownership by caller
     virtual void updateWidgets() = 0;
 
     ReconstructorTask& task() const;
@@ -382,6 +385,10 @@ public:
     bool isVehicleACAD(unsigned int value);
 
     reconstruction::KalmanEstimator::Settings assocChainEstimatorSettings() const;
+
+    // creates the kalman interface of the given type: built-in types here, further types in derived reconstructors
+    virtual std::unique_ptr<reconstruction::KalmanInterface> createKalmanInterface(kalman::KalmanType ktype,
+                                                                                   const reconstruction::KalmanEstimator::Settings& settings) const;
 
     std::unique_ptr<reconstruction::KalmanChain> createConfiguredAssocChain(bool dynamic_insertions) const;
     std::unique_ptr<reconstruction::KalmanEstimator> createConfiguredAssocEstimator(bool extract_wgs84_pos) const;
