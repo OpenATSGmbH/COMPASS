@@ -1155,6 +1155,7 @@ void ViewPresetItemListWidget::updateMinSize()
  ********************************************************************************************/
 
 const std::string ViewPresetWidget::NumPresetsKey = "num_presets";
+const std::string ViewPresetWidget::PresetsKey    = "presets";
 
 /**
 */
@@ -1331,12 +1332,29 @@ boost::optional<QString> ViewPresetWidget::uiGet(const QString& what) const
 }
 
 /**
- * @TODO: improve.
+ * Returns the number of presets and per preset its name and whether it was deployed with COMPASS,
+ * in the order of the indices taken by uiSet().
  */
 nlohmann::json ViewPresetWidget::uiGetJSON(const QString& what) const
 {
+    const auto& presets = view_->viewManager().viewPresets().presets();
+
+    nlohmann::json preset_infos = nlohmann::json::array();
+
+    for (const auto& key : preset_list_->keys())
+    {
+        const auto& preset = presets.at(key);
+
+        nlohmann::json preset_info;
+        preset_info[ "name"     ] = preset.name;
+        preset_info[ "deployed" ] = preset.isDeployed();
+
+        preset_infos.push_back(preset_info);
+    }
+
     nlohmann::json j;
     j[ NumPresetsKey ] = preset_list_->count();
+    j[ PresetsKey    ] = preset_infos;
 
     return j;
 }

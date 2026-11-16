@@ -211,6 +211,7 @@ public:
     nlohmann::json viewInfoJSON() const override final;
 
     static const std::string NumPresetsKey;
+    static const std::string PresetsKey;
 
 protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}

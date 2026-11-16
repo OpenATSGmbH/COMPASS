@@ -17,8 +17,6 @@
                     "parameters": {
                         "auto_label": true,
                         "auto_lod": true,
-                        "blend_mode_name": "contour",
-                        "connect_height_none": false,
                         "connect_last_layer": false,
                         "current_lod": 1.0,
                         "declutter_labels": true,
@@ -39,6 +37,7 @@
                         "groundspeed_period": 1,
                         "height_offset_factor": 0.0,
                         "height_scale_factor": 2.0,
+                        "item_grouping": "Aircraft Address",
                         "label_bg_color": "#000000",
                         "label_config": {
                             "CAT001": {
@@ -190,7 +189,6 @@
                                 "show_layers": {}
                             }
                         },
-                        "layer_mode": "DBContent:DS ID:Line ID:Aircraft Address",
                         "map_name": "minimal_2d.earth",
                         "map_opacity": 0.0,
                         "name": "Geographic View 0",

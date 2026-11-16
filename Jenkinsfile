@@ -277,6 +277,7 @@ pipeline {
                                 --tags='${tagsStr}' \
                                 --deps=tests \
                                 --no-prompt \
+                                --ui \
                                 --mem-interval=${MEM_SAMPLE_INTERVAL_SEC} \
                                 --mem-warn=${MEM_WARN_MB} \
                                 --cfg-override=none ; \
