@@ -1,18 +1,18 @@
 #!/bin/bash
 #
 # Deploys the Windows build of COMPASS, the Python test framework and test datasets to the
-# Windows test PC crunch_win (ssh alias, user HomeZ, PowerShell as SSH shell).
+# Windows test PC potato_win (ssh alias, user HomeZ, PowerShell as SSH shell).
 #
-# Layout on crunch_win:
+# Layout on potato_win:
 #   C:\compass\COMPASS_<version>_win64   package (from build_win/COMPASS_<version>_win64.zip)
 #   C:\compass\py                        experimental_src/py (test framework and tests)
 #   C:\data\test\<dataset>               test datasets, without temp/ and results/
 #   C:\Users\HomeZ\.compass              test config (conf/test, data_contexts, license)
 #   C:\tmp                               for tests that write to /tmp (resolves to C:\tmp)
 #   C:\compass\gdb                       gdb from WinLibs (stacks on quit timeout and crash)
-#   C:\compass\crash                     crash stacks, written by crunch_win_crash_gdb.bat
+#   C:\compass\crash                     crash stacks, written by potato_win_crash_gdb.bat
 #
-# Usage: crunch_win_deploy.sh [package] [debug] [py] [config] [data <dataset> ...] [gdb]
+# Usage: potato_win_deploy.sh [package] [debug] [py] [config] [data <dataset> ...] [gdb]
 #   no arguments: package debug py config data at_20230422
 #   debug: compass_client.exe.debug (debug information, not in the zip) into the package folder
 #   gdb:   one time - gdb with its DLLs and Python library, the crash script, the AeDebug
@@ -21,10 +21,10 @@
 
 set -e
 
-HOST=crunch_win
+HOST=potato_win
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPASS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-STAGE="$HOME/tmp/crunch_win"
+STAGE="$HOME/tmp/potato_win"
 VERSION=$(grep -oP 'CPACK_PACKAGE_VERSION_(MAJOR|MINOR|PATCH) "\K[0-9]+' "$COMPASS_DIR/CMakeLists.txt" | paste -sd.)
 NAME="COMPASS_${VERSION}_win64"
 
@@ -82,14 +82,14 @@ while [ $i -lt ${#STEPS[@]} ]; do
             for dll in $GDB_DLLS; do cp "$STAGE/winlibs/mingw64/bin/$dll" "$STAGE/gdb/bin/"; done
             cp -r "$STAGE/winlibs/mingw64/share" "$STAGE/gdb/"
             cp -r "$STAGE/winlibs/mingw64/lib/python3.9" "$STAGE/gdb/lib/"
-            cp "$SCRIPT_DIR/crunch_win_crash_gdb.bat" "$STAGE/gdb/"
+            cp "$SCRIPT_DIR/potato_win_crash_gdb.bat" "$STAGE/gdb/"
             docker run --rm --user "$(id -u):$(id -g)" -v "$SCRIPT_DIR:/w:ro" -v "$STAGE/gdb:/o" compass/build_win_deb12 \
-                x86_64-w64-mingw32-gcc -O2 -static -o /o/crunch_win_set_event.exe /w/crunch_win_set_event.c
+                x86_64-w64-mingw32-gcc -O2 -static -o /o/potato_win_set_event.exe /w/potato_win_set_event.c
             tar -cf "$STAGE/gdb.tar" -C "$STAGE/gdb" .
             rm -rf "$STAGE/winlibs" "$STAGE/gdb"
             remote "if (Test-Path 'C:\\compass\\gdb') { Remove-Item -Recurse -Force 'C:\\compass\\gdb' }"
             put_tar "$STAGE/gdb.tar" 'C:\compass\gdb'
-            remote "\$k = 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug'; Set-ItemProperty -Path \$k -Name Debugger -Value 'cmd.exe /c C:\\compass\\gdb\\crunch_win_crash_gdb.bat %ld %ld'; Set-ItemProperty -Path \$k -Name Auto -Value '1'"
+            remote "\$k = 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug'; Set-ItemProperty -Path \$k -Name Debugger -Value 'cmd.exe /c C:\\compass\\gdb\\potato_win_crash_gdb.bat %ld %ld'; Set-ItemProperty -Path \$k -Name Auto -Value '1'"
             remote "\$k = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting'; Set-ItemProperty -Path \$k -Name Disabled -Value 0 -Type DWord; Set-ItemProperty -Path \$k -Name DontShowUI -Value 1 -Type DWord"
             remote "& 'C:\\compass\\gdb\\bin\\gdb.exe' -batch -nx -ex 'show version' | Select-Object -First 1"
             ;;

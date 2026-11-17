@@ -1,19 +1,19 @@
 #!/bin/bash
 #
-# Collects the logs of a test run on the Windows test PC crunch_win into
-# ~/tmp/crunch_win_logs/<date_time>:
+# Collects the logs of a test run on the Windows test PC potato_win into
+# ~/tmp/potato_win_logs/<date_time>:
 #   suite logs     C:\compass\*.log
 #   test logs      C:\data\test\<dataset>\temp\<module>\*_log.txt, *_client_log.txt,
 #                  *_client_log_quit_stacks.txt (gdb stacks of an instance that did not quit)
-#   crash stacks   C:\compass\crash\* (crunch_win_crash_gdb.bat)
+#   crash stacks   C:\compass\crash\* (potato_win_crash_gdb.bat)
 #
-# Usage: crunch_win_collect.sh [dataset]   (default at_20230422)
+# Usage: potato_win_collect.sh [dataset]   (default at_20230422)
 
 set -e
 
-HOST=crunch_win
+HOST=potato_win
 DATASET=${1:-at_20230422}
-OUT="$HOME/tmp/crunch_win_logs/$(date +%Y%m%d_%H%M%S)"
+OUT="$HOME/tmp/potato_win_logs/$(date +%Y%m%d_%H%M%S)"
 
 #runs a PowerShell command on the test PC
 remote() {

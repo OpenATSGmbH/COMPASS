@@ -2,7 +2,7 @@
 # sessions have no desktop and end their child processes at logout). Output goes to the log
 # file. Returns at once; poll the log file or Get-ScheduledTask for the state.
 #
-# Usage: powershell -File crunch_win_run.ps1 -Name <task name> -Command "<cmd line>" -Log <file>
+# Usage: powershell -File potato_win_run.ps1 -Name <task name> -Command "<cmd line>" -Log <file>
 param([string]$Name, [string]$Command, [string]$Log)
 
 $action    = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument "/c $Command > `"$Log`" 2>&1"

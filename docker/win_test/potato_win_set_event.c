@@ -17,10 +17,10 @@
 
 /*
  * Sets the AeDebug event (inherited handle, given as decimal number) on the Windows test PC.
- * crunch_win_crash_gdb.bat calls it from gdb after the attach: the crashed process then
+ * potato_win_crash_gdb.bat calls it from gdb after the attach: the crashed process then
  * continues, and the exception goes to gdb at the crash location.
  *
- * Build: x86_64-w64-mingw32-gcc -O2 -static -o crunch_win_set_event.exe crunch_win_set_event.c
+ * Build: x86_64-w64-mingw32-gcc -O2 -static -o potato_win_set_event.exe potato_win_set_event.c
  */
 
 #include <windows.h>

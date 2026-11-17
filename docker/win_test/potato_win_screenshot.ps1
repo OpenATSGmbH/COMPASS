@@ -1,5 +1,5 @@
 # Saves a screenshot of the whole desktop (all screens) to the given file. Must run in the
-# desktop session (crunch_win_run.ps1), not in an SSH session.
+# desktop session (potato_win_run.ps1), not in an SSH session.
 param([string]$Out = 'C:\compass\screenshot.png')
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 $b = [System.Windows.Forms.SystemInformation]::VirtualScreen
