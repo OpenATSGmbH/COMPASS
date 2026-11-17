@@ -398,7 +398,7 @@ RUN wget -q -O GeographicLib-1.52.tar.gz https://sourceforge.net/projects/geogra
   && rm -rf GeographicLib-* geographiclib-build
 
 # NemaTode (bump NEMATODE_REV when hpuhr/NemaTode master changes, as in the Linux build)
-ARG NEMATODE_REV=15aad38
+ARG NEMATODE_REV=11650f3
 RUN wget -q -O nematode.zip https://github.com/hpuhr/NemaTode/archive/refs/heads/master.zip \
   && unzip -q nematode.zip \
   && cmake ${WIN_CMAKE} -S NemaTode-master -B nematode-build \
