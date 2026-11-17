@@ -214,6 +214,7 @@ protected:
     std::map<std::string, std::shared_ptr<Buffer>>              accumulated_buffers_;
     std::vector<std::map<std::string, std::shared_ptr<Buffer>>> queued_insert_buffers_;
 
+    boost::posix_time::ptime import_date_; // UTC day of the running import, set in run()
     boost::posix_time::ptime start_time_;
     boost::posix_time::ptime last_insert_time_;
     boost::posix_time::ptime last_file_progress_time_;
