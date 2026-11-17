@@ -26,8 +26,6 @@
 
 class ChartView;
 
-class QHBoxLayout;
-
 /**
  * Base class of the render widgets that show a chart. Holds the chart view and offers the mouse services
  * of the tools.
@@ -73,10 +71,13 @@ protected:
     void toolChanged(int id) override;
 
 private:
+    /// The chart view of createChartView() with the settings that are the same for all charts.
+    /// for_image: the chart is drawn into an image that must not depend on the screen.
+    std::unique_ptr<ChartView> buildChartView(bool& has_content, bool for_image);
+
     void deliverRectangle(const QRectF& chart_rect);
     void releaseChartView();
 
-    QHBoxLayout*               main_layout_ = nullptr;
     std::unique_ptr<ChartView> chart_view_;
 
     bool drag_enabled_ = false;

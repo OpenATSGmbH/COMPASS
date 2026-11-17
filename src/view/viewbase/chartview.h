@@ -18,7 +18,11 @@
 #pragma once
 
 #include <QChartView>
+#include <QFont>
 #include <QGraphicsSimpleTextItem>
+#include <QPalette>
+
+#include <boost/optional.hpp>
 
 #include <memory>
 
@@ -60,6 +64,22 @@ public:
     void addLegendOnlyItem(const QString& name, const QColor& color);
     void setXAxisLabel(const QString& label);
 
+    /// Shows the legend at the right side of the chart, as a vertical list with one entry per series.
+    /// The entries that do not fit in the height are hidden, the last entry then tells their count
+    /// ("... (n more)"). Qt Charts alone cuts off such entries without a mark.
+    void showLegendAtRightSide();
+
+    /// The chart is drawn with this palette and does not follow the application palette any more.
+    void setFixedPalette(const QPalette& palette);
+
+    /// Gives all texts of the chart a font with a pixel size of the same height, and the given hinting.
+    /// With a fixed hinting (not the default) the drawn text does not depend on the display scaling,
+    /// as an image for a report needs it. The default hinting keeps the look of the screen.
+    void usePixelSizeFonts(QFont::HintingPreference hinting = QFont::PreferDefaultHinting);
+
+    /// The chart does not use the mouse wheel, so a scroll area around it scrolls.
+    void setWheelIgnored(bool ignored) { wheel_ignored_ = ignored; }
+
     /// Lays out the chart and the items of the view for the given size, for a view that is never
     /// shown. A hidden widget gets no resize event, which does this for a view on the screen.
     void layoutForSize(const QSize& size);
@@ -91,6 +111,7 @@ public slots:
 
 protected:
     virtual void resizeEvent(QResizeEvent* event) override;
+    virtual bool viewportEvent(QEvent* event) override;
     virtual void paintEvent(QPaintEvent* e) override final;
     virtual void mousePressEvent(QMouseEvent* event) override final;
     virtual void mouseMoveEvent(QMouseEvent* event) override final;
@@ -131,7 +152,11 @@ protected:
 private:
     void createDisplayElements(QtCharts::QChart* chart);
     void updateXAxisLabelPosition();
-    void applyPaletteTheme();
+    void applyPaletteTheme(const QPalette& palette);
+    QPalette themePalette() const;
+    void updateLegendOverflow();
+    void layoutLegendNow();
+    QFont pixelSizeFont(const QFont& font) const;
 
     void clearSelection();
     void updateSelectionBox(const QRectF& region);
@@ -155,4 +180,11 @@ private:
     // QAbstractAxis::setTitleText() which gets truncated by Qt Charts' internal
     // layout when tick labels are rotated (e.g. 85 degrees).
     QGraphicsSimpleTextItem*     x_axis_label_item_ = nullptr;
+
+    QtCharts::QLineSeries*       legend_more_series_ = nullptr; // carries the legend entry "... (n more)"
+
+    boost::optional<QPalette>    fixed_palette_;
+    bool                         pixel_size_fonts_ = false;
+    QFont::HintingPreference     font_hinting_     = QFont::PreferDefaultHinting;
+    bool                         wheel_ignored_    = false;
 };

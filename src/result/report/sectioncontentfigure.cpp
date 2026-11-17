@@ -24,6 +24,9 @@
 
 #include "itaskprovider.h"
 #include "viewpointgenerator.h"
+#include "reportfigure.h"
+#include "viewrenderwidget.h"
+#include "ui_test_common.h"
 
 #include "logger.h"
 #include "stringconv.h"
@@ -101,20 +104,63 @@ void SectionContentFigure::addContentUI(QVBoxLayout* layout,
     if (isLocked())
     {
         layout->addWidget(lockStatePlaceholderWidget());
+        return;
     }
-    else
+
+    QLabel* label = new QLabel(("Figure: " + name()).c_str());
+
+    QPushButton* view_button = new QPushButton("View");
+    view_button->setIcon(QIcon());
+    view_button->setToolTip("Show the figure in the views");
+    UI_TEST_OBJ_NAME(view_button, QString::fromStdString("Figure " + name() + " View Button"));
+
+    QObject::connect (view_button, &QPushButton::clicked, [ this ] () { this->view(); });
+
+    const auto entries = renderEntries();
+
+    if (entries.empty())
     {
         QHBoxLayout* fig_layout = new QHBoxLayout();
 
-        fig_layout->addWidget(new QLabel(("Figure: " + name()).c_str()));
+        fig_layout->addWidget(label);
         fig_layout->addStretch();
-
-        QPushButton* view_button = new QPushButton("View");
-        QObject::connect (view_button, &QPushButton::clicked, [ this ] () { this->view(); });
         fig_layout->addWidget(view_button);
 
         layout->addLayout(fig_layout);
+        return;
     }
+
+    layout->addWidget(label);
+
+    for (const auto& entry : entries)
+    {
+        ViewRenderWidget* render_widget = report_figure::createRenderWidget(entry).release();
+        UI_TEST_OBJ_NAME(render_widget, QString::fromStdString("Figure " + name() + " " + entry.image_name));
+
+        layout->addWidget(render_widget);
+    }
+
+    QHBoxLayout* button_layout = new QHBoxLayout();
+
+    button_layout->addStretch();
+    button_layout->addWidget(view_button);
+
+    layout->addLayout(button_layout);
+}
+
+/**
+ */
+std::vector<report_figure::RenderEntry> SectionContentFigure::renderEntries() const
+{
+    //the content of an on-demand figure is not built only to draw it, such a figure stays with the views
+    if (isOnDemand())
+        return {};
+
+    auto content = viewableContent();
+    if (!content)
+        return {};
+
+    return report_figure::selectRenderEntries(nlohmann::json(*content));
 }
 
 /**

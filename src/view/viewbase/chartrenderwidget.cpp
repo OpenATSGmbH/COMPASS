@@ -20,7 +20,7 @@
 #include "viewtoolswitcher.h"
 #include "traced_assert.h"
 
-#include <QHBoxLayout>
+#include <QBoxLayout>
 #include <QImage>
 #include <QPainter>
 
@@ -28,16 +28,16 @@
 
 #include <cmath>
 
+namespace
+{
+    const int DotsPerMeter96Dpi = 3780; // 96 / 0.0254
+}
+
 /**
  */
 ChartRenderWidget::ChartRenderWidget(QWidget* parent)
 :   ViewRenderWidget(parent)
 {
-    main_layout_ = new QHBoxLayout();
-    main_layout_->setMargin(0);
-
-    setLayout(main_layout_);
-
     // queued: the callback can build the chart again, which must not happen during the mouse event
     // of the chart view that reports the rectangle
     connect(this, &ChartRenderWidget::rectangleFinishedSignal,
@@ -56,14 +56,32 @@ void ChartRenderWidget::redraw()
 
     bool has_content = false;
 
-    chart_view_ = createChartView(has_content);
+    chart_view_ = buildChartView(has_content, false);
     traced_assert(chart_view_);
 
     chart_view_->setObjectName("chart_view");
 
-    main_layout_->addWidget(chart_view_.get());
+    contentLayout()->addWidget(chart_view_.get());
 
     setDrawState(has_content ? DrawState::DrawnContent : DrawState::Drawn);
+}
+
+/**
+ */
+std::unique_ptr<ChartView> ChartRenderWidget::buildChartView(bool& has_content, bool for_image)
+{
+    auto view = createChartView(has_content);
+    if (!view)
+        return view;
+
+    //no hinting, as Qt draws on a scaled display: the image has more pixels than its layout
+    view->usePixelSizeFonts(for_image ? QFont::PreferNoHinting : QFont::PreferDefaultHinting);
+    view->setWheelIgnored(wheelIgnored());
+
+    if (fixedPalette())
+        view->setFixedPalette(*fixedPalette());
+
+    return view;
 }
 
 /**
@@ -87,7 +105,7 @@ void ChartRenderWidget::releaseChartView()
     if (!widget)
         return;
 
-    main_layout_->removeWidget(widget);
+    contentLayout()->removeWidget(widget);
 
     widget->setParent(nullptr);
     widget->hide();
@@ -96,6 +114,9 @@ void ChartRenderWidget::releaseChartView()
 
 /**
  * Draws a new chart view, which is never shown, so the chart on the screen keeps its size.
+ *
+ * The image is created here with an explicit device pixel ratio and resolution, and the chart is drawn
+ * from its scene. QWidget::grab() takes both from the screen, so its image depends on the display scaling.
  */
 bool ChartRenderWidget::render(QImage& image, const QSize& size, double scale)
 {
@@ -104,7 +125,7 @@ bool ChartRenderWidget::render(QImage& image, const QSize& size, double scale)
 
     bool has_content = false;
 
-    auto view = createChartView(has_content);
+    auto view = buildChartView(has_content, true);
     if (!view || !view->chart() || !view->scene())
         return false;
 
@@ -114,6 +135,8 @@ bool ChartRenderWidget::render(QImage& image, const QSize& size, double scale)
 
     image = QImage(size_px, QImage::Format_ARGB32_Premultiplied);
     image.setDevicePixelRatio(scale);
+    image.setDotsPerMeterX(DotsPerMeter96Dpi);
+    image.setDotsPerMeterY(DotsPerMeter96Dpi);
     image.fill(Qt::white);
 
     const QRectF rect(QPointF(0, 0), QSizeF(size));

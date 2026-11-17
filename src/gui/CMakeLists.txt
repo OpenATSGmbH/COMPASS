@@ -2,6 +2,7 @@ add_library(compass_gui SHARED "")
 
 target_sources(compass_gui
     PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/apppalette.h"
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/invalidqlineedit.h"
         "${CMAKE_CURRENT_LIST_DIR}/formatselectionwidget.h"
@@ -19,6 +20,7 @@ target_sources(compass_gui
         "${CMAKE_CURRENT_LIST_DIR}/styledlabel.h"
         "${CMAKE_CURRENT_LIST_DIR}/test_plot.h"
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/apppalette.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/formatselectionwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datatypeformatselectionwidget.cpp"

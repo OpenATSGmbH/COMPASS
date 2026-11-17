@@ -28,6 +28,7 @@
 #include "dbcontentdataengine.h"
 #include "viewmanager.h"
 #include "view.h"
+#include "reportfigure.h"
 
 #include "timeconv.h"
 #include "logger.h"
@@ -1023,6 +1024,24 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
         return std::vector<std::pair<QImage, std::string>>();
 
     std::vector<std::pair<QImage, std::string>> renderings;
+
+    //a figure with render widgets is drawn without the views: one image per annotation
+    const auto render_entries = figure.renderEntries();
+
+    if (!render_entries.empty())
+    {
+        for (const auto& entry : render_entries)
+        {
+            QImage image;
+
+            if (report_figure::renderExportImage(entry, image))
+                renderings.emplace_back(image, entry.image_name);
+            else
+                logerr << "figure '" << figure.name() << "': image '" << entry.image_name << "' could not be rendered";
+        }
+
+        return renderings;
+    }
 
     DBContentManager& dbcont_man = task_manager_.dbContentManager();
     ViewManager&      view_man   = task_manager_.viewManager();

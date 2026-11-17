@@ -1,6 +1,6 @@
 # View Models and View Render Widgets
 
-Status: all seven steps planned and agreed (2026-11-17), sections 7.1 to 7.6. No code written. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
+Status: all seven steps planned and agreed (2026-11-17), sections 7.1 to 7.6. Steps 1 and 2 are implemented and committed (2026-11-17), steps 3 to 7 are open. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
 Audience: the agent that implements this. Read `CLAUDE.md` first (library layering, code conventions).
 
 This document is the current specification. It holds no superseded text. The decision history is in the handover, section 10.
@@ -464,7 +464,7 @@ Code state (checked 2026-11-17):
 | Palette | `ChartView::applyPaletteTheme` uses the application palette. A dark application gives dark report images. This is the same today. |
 | Library layering | `compass_result` (layer 7) can use `compass_view` (layer 6) directly. The selection function and the factory go into `compass_view`. |
 
-Not checked: what the export gives today when no Histogram View is open.
+Checked in step 2: before step 2 the export gave no image for a histogram figure when no Histogram View was open. Now it gives one image per annotation.
 
 Figure selection rule for step 2 (agreed 2026-11-17):
 - One function decides per figure: render widgets, or today's label and "View" button.
@@ -482,7 +482,7 @@ Images per figure and image names (agreed 2026-11-17):
 - Image name: the figure kind plus the annotation index, for example `histogram_0`, `histogram_1`. The names are unique inside one figure, so the image files do not overwrite each other.
 - The annotation title goes into the image as chart title, as in the view.
 - Figures on the view path keep the view instance name, as today.
-- Tests that read image names from the JSON export of histogram figures can need new reference values. Not checked which tests do that.
+- Checked in step 2: no existing test reads image names from the JSON export.
 
 Image size at export (agreed 2026-11-17):
 - Facts: LaTeX places each image with a width of 18 cm (`src/core/latex/lateximage.cpp`). DOCX limits the width to 16 cm (`src/result/report/reportexporterdocx.cpp`).
@@ -494,7 +494,7 @@ Image size at export (agreed 2026-11-17):
 - Requirement: the exported image does not depend on the display scaling of the operating system. The same report gives the same image on a screen with 100 % and with 200 % scaling.
   - The font DPI is not part of the requirement (decided by the user 2026-11-17, section 12.1). A system with another font DPI can give a layout that differs by some pixels.
   - Approach: `render()` creates the QImage itself and sets its device pixel ratio (the scale factor) and its resolution (dots per meter for 96 dpi) explicitly. It does not use `QWidget::grab()`, which takes the factor of the screen.
-  - Risk: Qt Charts can compute the text layout with the font metrics of the screen and paint with the metrics of the image. Checked with a prototype, see section 12.1. Fonts with a pixel size solve the display scaling.
+  - Risk: Qt Charts can compute the text layout with the font metrics of the screen and paint with the metrics of the image. Checked with a prototype, see section 12.1. Fonts with a pixel size and without hinting (`QFont::PreferNoHinting`, set in `render()` only) solve the display scaling.
   - Check at implementation time: export the same figure with `QT_SCALE_FACTOR=1` and `QT_SCALE_FACTOR=2`. The images must be equal. If they are not, fix it in `render()` before the step is done.
   - Known case: on the CI machine crunch the AppImage scales by 2 because of the monitor data (see the `test_ci` skill).
 - Cost: larger image files than today. The JSON export holds them as PNG data, so its size grows too.
@@ -503,7 +503,7 @@ Palette (agreed 2026-11-17):
 - Exported images always use the light palette. A report then looks the same for every user.
 - The render widget in the report GUI and in the view follows the application palette, as today.
 - The palette is an input of the drawing: `ChartView::applyPaletteTheme` takes the palette in place of `QApplication::palette()`. Unit tests can set it.
-- Not checked: where the application defines its light palette. Find it at implementation time and use the same one.
+- The light palette is `app_palette::light()` (`src/gui/apppalette.h`). The client and the export use it.
 
 Report GUI layout (agreed 2026-11-17):
 - The content of a section is built when the user opens the section. No extra rule for the creation time is necessary.
@@ -525,7 +525,7 @@ New unit tests for step 2 (agreed 2026-11-17):
 
 | File | Checks |
 |---|---|
-| `src/view/unit_tests/test_figure_selection.cpp` | The selection function, one `SECTION` per case: histogram only (render widget), data load (view path), other feature (view path), histogram plus other feature (view path), three histogram annotations (three entries, names `histogram_0` to `histogram_2`, stored order). |
+| `src/view/unit_tests/test_figure_selection.cpp` | The selection function, one `SECTION` per case: histogram only (render widget), data load (view path), other feature (view path), histogram plus other feature (view path), three histogram annotations (three entries, names `histogram_0` to `histogram_2`, order of the view). Note: the view finds separate annotations in reverse stored order, and the features of one annotation in stored order. |
 | `src/view/histogramview/unit_tests/test_histogram_render.cpp` (additions) | `render()` with size 1200 x 800 and scale 2 gives 2400 x 1600 pixels. With the light palette, a background pixel has the light color while the application palette is dark. |
 | `src/view/unit_tests/test_figure_factory.cpp` | The factory builds the render widget from a view point JSON with a histogram annotation, without a model object. The display data that it sets has the expected series and title. |
 | Height rule (in the test file of the render widget) | Widths that give a height below the minimum, inside the range, and above the maximum. |
@@ -540,7 +540,8 @@ New integration tests for step 2 (Python, `experimental_src/py/tests/`):
 | Report export | JSON export of a report with histogram figures, with no Histogram View open. Each image exists, has 2400 x 1600 pixels, is not blank, and has the name `histogram_<n>`. The export opened no view. |
 | Display scaling | The same export with `QT_SCALE_FACTOR=1` and `QT_SCALE_FACTOR=2`. The images are equal. |
 
-- Source of the histogram figures: proposal is the report of `analyze/analyze_report_variable_histogram.py`. This test is not read yet. Check if its report fits.
+- Source of the histogram figures: the ADS-B analysis report of `analyze_adsb_all`, figure "Update Interval Histogram" in "Report:Results:Sensor Coverage". The same section has grid figures for the view path case.
+- The display scaling integration test runs on the offscreen platform and finds an export that depends on the screen factor. It does not find font differences. For these, run `python3 scripts/check_image_display_scaling.py --build-dir build --platform wayland`.
 - The runtime command `get_report_figure` returns the stored view point of a report figure. The tests can use it.
 - Read `experimental_src/py/readme_test_writing.md` first. Register each test, run it targeted, export reports into the DB folder.
 
@@ -1019,6 +1020,7 @@ Results:
 Consequences for step 2:
 - `render()` builds its own QImage and renders the chart from the scene. No `grab()`.
 - The render widgets set all chart fonts with a pixel size, in the view and in the report.
+- Finding of step 2 (Wayland, image 2400 x 1600, `QT_SCALE_FACTOR` 1 against 2): pixel size fonts alone are not sufficient. Pixel size 13 gives 0 different pixels, 12 gives 1321, 15 gives 673 (rotated y axis title). Pixel size fonts with `QFont::PreferNoHinting` give 0 for 12, 15 and 17. `render()` sets this preference. The chart on the screen keeps the default hinting.
 - Font DPI (decided by the user 2026-11-17): the requirement is limited to the display scaling (`QT_SCALE_FACTOR`). There is no check with `QT_FONT_DPI`. `Qt::AA_Use96Dpi` is not set.
 
 ### 12.2 Legend With Many Series (Section 7.4)

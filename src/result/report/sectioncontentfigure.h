@@ -24,6 +24,11 @@
 
 #include "json_fwd.hpp"
 
+namespace report_figure
+{
+    struct RenderEntry;
+}
+
 namespace ResultReport
 {
 
@@ -72,6 +77,10 @@ public:
 
     /// stored view point of the figure, loads on-demand content if needed (empty pointer if none)
     std::shared_ptr<nlohmann::json::object_t> viewableContent() const;
+
+    /// The render widgets that draw the figure in the report GUI and in the export, one per annotation.
+    /// Empty: the views show the figure ("View" button, image of each view with content).
+    std::vector<report_figure::RenderEntry> renderEntries() const;
 
     static const std::string FieldFigureType;
     static const std::string FieldCaption;

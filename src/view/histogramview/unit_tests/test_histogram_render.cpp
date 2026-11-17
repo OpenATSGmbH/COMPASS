@@ -20,23 +20,34 @@
 #include "histogramdisplaydata.h"
 #include "chartview.h"
 #include "viewtoolswitcher.h"
+#include "apppalette.h"
 
 #include "json.hpp"
 
 #include <QApplication>
 #include <QGraphicsSimpleTextItem>
+#include <QLabel>
 #include <QMouseEvent>
 #include <QImage>
+#include <QPushButton>
+#include <QScrollArea>
+#include <QScrollBar>
+#include <QStackedWidget>
 #include <QTest>
+#include <QVBoxLayout>
+#include <QWheelEvent>
 
 #include <QtCharts/QChart>
 #include <QtCharts/QAbstractBarSeries>
 #include <QtCharts/QBarSet>
 #include <QtCharts/QBarCategoryAxis>
 #include <QtCharts/QLegend>
+#include <QtCharts/QLegendMarker>
 #include <QtCharts/QLogValueAxis>
 #include <QtCharts/QValueAxis>
 
+#include <cmath>
+#include <cstdlib>
 #include <memory>
 #include <set>
 #include <vector>
@@ -149,6 +160,70 @@ namespace
 
         return o;
     }
+
+    HistogramRenderOptions legendAtRightSide()
+    {
+        HistogramRenderOptions o;
+        o.legend_mode = HistogramLegendMode::RightSide;
+
+        return o;
+    }
+
+    /// the labels of the legend entries that are shown, in the order of the legend
+    QStringList shownLegendEntries(HistogramViewRenderWidget& render_widget)
+    {
+        QStringList labels;
+
+        for (auto marker : chartOf(render_widget)->legend()->markers())
+            if (marker->isVisible())
+                labels << marker->label();
+
+        return labels;
+    }
+
+    /// bounding rectangle of the pixels that differ from the background (the pixel at the top left)
+    QRect contentRect(const QImage& image)
+    {
+        const QRgb background = image.pixel(0, 0);
+
+        QRect rect;
+
+        for (int y = 0; y < image.height(); ++y)
+            for (int x = 0; x < image.width(); ++x)
+                if (image.pixel(x, y) != background)
+                    rect = rect.united(QRect(x, y, 1, 1));
+
+        return rect;
+    }
+
+    QPalette darkPalette()
+    {
+        QPalette palette;
+        palette.setColor(QPalette::Window    , QColor(40, 40, 40));
+        palette.setColor(QPalette::WindowText, Qt::white);
+        palette.setColor(QPalette::Base      , QColor(20, 20, 20));
+        palette.setColor(QPalette::Text      , Qt::white);
+        palette.setColor(QPalette::Mid       , QColor(120, 120, 120));
+
+        return palette;
+    }
+
+    /// sets the application palette, the destructor sets the palette from before again
+    struct ApplicationPaletteGuard
+    {
+        explicit ApplicationPaletteGuard(const QPalette& palette)
+        :   palette_before(QApplication::palette())
+        {
+            QApplication::setPalette(palette);
+        }
+
+        ~ApplicationPaletteGuard()
+        {
+            QApplication::setPalette(palette_before);
+        }
+
+        QPalette palette_before;
+    };
 }
 
 TEST_CASE("histogram chart shows the series of the display data", "[view][histogram][histogramrender]")
@@ -268,6 +343,134 @@ TEST_CASE("histogram legend is shown up to 8 series", "[view][histogram][histogr
 
         CHECK(barSetsOf(render_widget).size() == (int)num_series);
         CHECK(!chartOf(render_widget)->legend()->isVisible());
+    }
+}
+
+TEST_CASE("histogram legend at the right side lists the series", "[view][histogram][histogramrender]")
+{
+    HistogramViewRenderWidget render_widget;
+
+    const QSize layout_size(1200, 800);
+
+    SECTION("few series, all entries are shown")
+    {
+        render_widget.setDisplayData(makeData(4, 3), legendAtRightSide());
+        render_widget.chartView()->layoutForSize(layout_size);
+
+        auto legend = chartOf(render_widget)->legend();
+
+        CHECK(legend->isVisible());
+        CHECK(legend->alignment() == Qt::AlignRight);
+        CHECK(shownLegendEntries(render_widget) == QStringList({ "series0", "series1", "series2", "series3" }));
+    }
+
+    SECTION("more than 8 series are shown too")
+    {
+        render_widget.setDisplayData(makeData(12, 3), legendAtRightSide());
+        render_widget.chartView()->layoutForSize(layout_size);
+
+        CHECK(chartOf(render_widget)->legend()->isVisible());
+        CHECK(shownLegendEntries(render_widget).size() == 12);
+    }
+
+    SECTION("many series, the last entry tells the count of the series that do not fit")
+    {
+        const int num_series = 100;
+
+        render_widget.setDisplayData(makeData(num_series, 3), legendAtRightSide());
+        render_widget.chartView()->layoutForSize(layout_size);
+
+        const QStringList entries = shownLegendEntries(render_widget);
+
+        REQUIRE(entries.size() > 2);
+        REQUIRE(entries.size() < num_series);
+
+        const int num_shown = entries.size() - 1;
+
+        for (int i = 0; i < num_shown; ++i)
+            CHECK(entries[ i ] == QString("series%1").arg(i));
+
+        CHECK(entries.last() == QString("... (%1 more)").arg(num_series - num_shown));
+    }
+
+    SECTION("the number of entries follows the height")
+    {
+        render_widget.setDisplayData(makeData(100, 3), legendAtRightSide());
+
+        render_widget.chartView()->layoutForSize(layout_size);
+        const QStringList entries = shownLegendEntries(render_widget);
+
+        render_widget.chartView()->layoutForSize(QSize(1200, 400));
+        const QStringList entries_low = shownLegendEntries(render_widget);
+
+        CHECK(entries_low.size() < entries.size());
+        CHECK(entries_low.size() > 1);
+
+        render_widget.chartView()->layoutForSize(layout_size);
+        CHECK(shownLegendEntries(render_widget) == entries);
+    }
+
+    SECTION("the chart without data has no legend")
+    {
+        render_widget.setDisplayData({}, legendAtRightSide());
+
+        CHECK(!chartOf(render_widget)->legend()->isVisible());
+    }
+
+    SECTION("the view info counts the data series only")
+    {
+        render_widget.setDisplayData(makeData(100, 3), legendAtRightSide());
+
+        nlohmann::json info;
+        render_widget.viewInfoJSON(info);
+
+        CHECK(info[ "chart" ][ "num_series" ] == 1);
+        CHECK(info[ "chart" ][ "series" ].size() == 1);
+        CHECK(info[ "chart" ][ "series" ][ 0 ][ "num_sets" ] == 100);
+    }
+}
+
+TEST_CASE("histogram render draws the legend at the right side", "[view][histogram][histogramrender]")
+{
+    HistogramViewRenderWidget render_widget;
+
+    /// number of pixels with a series color in the columns right of the plot area
+    auto numLegendPixels = [ & ] (const HistogramRenderOptions& render_options, size_t num_series)
+    {
+        render_widget.setDisplayData(makeData(num_series, 5), render_options);
+
+        QImage image;
+        REQUIRE(render_widget.render(image, QSize(1200, 800)));
+
+        render_widget.chartView()->layoutForSize(QSize(1200, 800));
+        const int plot_right = (int)std::ceil(chartOf(render_widget)->plotArea().right());
+
+        REQUIRE(plot_right < image.width() - 1);
+
+        size_t num_pixels = 0;
+
+        for (int y = 0; y < image.height(); ++y)
+            for (int x = plot_right + 1; x < image.width(); ++x)
+                for (const auto& c : SeriesColors)
+                    if (image.pixel(x, y) == c.rgb())
+                        ++num_pixels;
+
+        return num_pixels;
+    };
+
+    SECTION("few series")
+    {
+        CHECK(numLegendPixels(legendAtRightSide(), 3) > 0);
+    }
+
+    SECTION("many series")
+    {
+        CHECK(numLegendPixels(legendAtRightSide(), 100) > 0);
+    }
+
+    SECTION("the legend of the view is not at the right side")
+    {
+        CHECK(numLegendPixels({}, 3) == 0);
     }
 }
 
@@ -462,6 +665,321 @@ TEST_CASE("histogram render gives the requested image", "[view][histogram][histo
         REQUIRE(render_widget.render(image, QSize(1200, 800)));
         CHECK(image.size() == QSize(1200, 800));
     }
+}
+
+TEST_CASE("histogram render scales the pixels and keeps the layout", "[view][histogram][histogramrender]")
+{
+    HistogramViewRenderWidget render_widget;
+    render_widget.setDisplayData(makeData(3, 5), {});
+
+    QImage image;
+    REQUIRE(render_widget.render(image, QSize(1200, 800), 2.0));
+
+    SECTION("size 1200 x 800 and scale 2 give 2400 x 1600 pixels")
+    {
+        CHECK(image.size() == QSize(2400, 1600));
+        CHECK(image.devicePixelRatio() == Approx(2.0));
+    }
+
+    SECTION("the resolution of the image is 96 dpi")
+    {
+        CHECK(image.dotsPerMeterX() == 3780);
+        CHECK(image.dotsPerMeterY() == 3780);
+    }
+
+    SECTION("the content has the same place as without scale")
+    {
+        QImage image_unscaled;
+        REQUIRE(render_widget.render(image_unscaled, QSize(1200, 800)));
+
+        const QRect rect          = contentRect(image);
+        const QRect rect_unscaled = contentRect(image_unscaled);
+
+        REQUIRE(!rect.isEmpty());
+        REQUIRE(!rect_unscaled.isEmpty());
+
+        const int tolerance = 3;
+
+        CHECK(std::abs(rect.left()   - 2 * rect_unscaled.left()  ) <= tolerance);
+        CHECK(std::abs(rect.top()    - 2 * rect_unscaled.top()   ) <= tolerance);
+        CHECK(std::abs(rect.right()  - 2 * rect_unscaled.right() ) <= tolerance);
+        CHECK(std::abs(rect.bottom() - 2 * rect_unscaled.bottom()) <= tolerance);
+    }
+}
+
+TEST_CASE("histogram render uses the fixed palette", "[view][histogram][histogramrender]")
+{
+    const QPalette dark  = darkPalette();
+    const QPalette light = app_palette::light();
+
+    REQUIRE(light.color(QPalette::Window).rgb() != dark.color(QPalette::Window).rgb());
+
+    ApplicationPaletteGuard guard(dark);
+
+    HistogramViewRenderWidget render_widget;
+    render_widget.setDisplayData(makeData(3, 5), {});
+
+    QImage image;
+
+    SECTION("without a fixed palette the image follows the application palette")
+    {
+        REQUIRE(render_widget.render(image, QSize(1200, 800)));
+
+        CHECK(image.pixel(1, 1) == dark.color(QPalette::Window).rgb());
+    }
+
+    SECTION("with the light palette the background is light while the application is dark")
+    {
+        render_widget.setFixedPalette(light);
+
+        REQUIRE(render_widget.render(image, QSize(1200, 800)));
+
+        CHECK(image.pixel(1, 1) == light.color(QPalette::Window).rgb());
+    }
+
+    SECTION("the chart in the widget uses the fixed palette too")
+    {
+        CHECK(chartOf(render_widget)->backgroundBrush().color() == dark.color(QPalette::Window));
+
+        render_widget.setFixedPalette(light);
+
+        CHECK(chartOf(render_widget)->backgroundBrush().color() == light.color(QPalette::Window));
+
+        //also after new display data
+        render_widget.setDisplayData(makeData(2, 4), {});
+
+        CHECK(chartOf(render_widget)->backgroundBrush().color() == light.color(QPalette::Window));
+    }
+}
+
+TEST_CASE("histogram chart texts have fonts with a pixel size", "[view][histogram][histogramrender]")
+{
+    HistogramViewRenderWidget render_widget;
+    render_widget.setDisplayData(makeData(3, 5), {});
+
+    auto chart = chartOf(render_widget);
+
+    CHECK(chart->titleFont().pixelSize() > 0);
+    CHECK(chart->legend()->font().pixelSize() > 0);
+
+    for (auto axis : chart->axes())
+    {
+        CHECK(axis->labelsFont().pixelSize() > 0);
+        CHECK(axis->titleFont().pixelSize() > 0);
+    }
+
+    bool has_axis_label_item = false;
+
+    for (auto item : chart->childItems())
+    {
+        if (auto text_item = dynamic_cast<QGraphicsSimpleTextItem*>(item))
+        {
+            has_axis_label_item = true;
+            CHECK(text_item->font().pixelSize() > 0);
+        }
+    }
+
+    CHECK(has_axis_label_item);
+}
+
+TEST_CASE("histogram chart fonts take the hinting of an image", "[view][histogram][histogramrender]")
+{
+    HistogramViewRenderWidget render_widget;
+    render_widget.setDisplayData(makeData(3, 5), {});
+
+    auto chart = chartOf(render_widget);
+
+    auto checkHinting = [ & ] (QFont::HintingPreference hinting)
+    {
+        CHECK(chart->titleFont().hintingPreference() == hinting);
+        CHECK(chart->legend()->font().hintingPreference() == hinting);
+
+        for (auto axis : chart->axes())
+        {
+            CHECK(axis->labelsFont().hintingPreference() == hinting);
+            CHECK(axis->titleFont().hintingPreference() == hinting);
+        }
+
+        for (auto item : chart->childItems())
+            if (auto text_item = dynamic_cast<QGraphicsSimpleTextItem*>(item))
+                CHECK(text_item->font().hintingPreference() == hinting);
+    };
+
+    //the chart on the screen keeps the hinting of the screen
+    checkHinting(QFont::PreferDefaultHinting);
+
+    render_widget.chartView()->usePixelSizeFonts(QFont::PreferNoHinting);
+
+    checkHinting(QFont::PreferNoHinting);
+}
+
+TEST_CASE("render widget height follows the width inside the limits", "[view][histogram][histogramrender]")
+{
+    const double ratio      = 2.0 / 3.0;
+    const int    min_height = 400;
+
+    SECTION("the height rule")
+    {
+        //below the minimum
+        CHECK(ViewRenderWidget::limitedHeightForWidth(300, ratio, min_height, 700) == 400);
+        //inside the range
+        CHECK(ViewRenderWidget::limitedHeightForWidth(900, ratio, min_height, 700) == 600);
+        //above the maximum
+        CHECK(ViewRenderWidget::limitedHeightForWidth(1800, ratio, min_height, 700) == 700);
+        //the minimum wins over the maximum
+        CHECK(ViewRenderWidget::limitedHeightForWidth(900, ratio, min_height, 300) == 400);
+    }
+
+    SECTION("a render widget of a view reports no height for a width")
+    {
+        HistogramViewRenderWidget render_widget;
+        render_widget.setDisplayData(makeData(3, 5), {});
+
+        CHECK(!render_widget.hasHeightForWidth());
+    }
+
+    SECTION("the widget reports the height of the rule, without a scroll area there is no maximum")
+    {
+        HistogramViewRenderWidget render_widget;
+        render_widget.setDisplayData(makeData(3, 5), {});
+        render_widget.setHeightForWidth(ratio, min_height);
+
+        CHECK(render_widget.hasHeightForWidth());
+        CHECK(render_widget.heightForWidth(300) == 400);
+        CHECK(render_widget.heightForWidth(900) == 600);
+        CHECK(render_widget.heightForWidth(3000) == 2000);
+    }
+}
+
+namespace
+{
+    /**
+     * A render widget in a scroll area, with the widget structure of a report section:
+     * scroll area, stack of the sections, section with label, render widget, button and stretch.
+     */
+    struct FigureInScrollArea
+    {
+        FigureInScrollArea()
+        {
+            render_widget = new HistogramViewRenderWidget;
+            render_widget->setDisplayData(makeData(3, 5), {});
+            render_widget->setHeightForWidth(2.0 / 3.0, 400);
+            render_widget->setWheelIgnored(true);
+
+            section = new QWidget;
+
+            auto layout = new QVBoxLayout;
+            layout->addWidget(new QLabel("Figure: Test"));
+            layout->addWidget(render_widget);
+            layout->addWidget(new QPushButton("View"));
+            layout->addStretch();
+
+            section->setLayout(layout);
+
+            auto stack = new QStackedWidget;
+            stack->addWidget(section);
+
+            scroll_area.setWidgetResizable(true);
+            scroll_area.setWidget(stack);
+        }
+
+        void showWithSize(const QSize& size)
+        {
+            scroll_area.resize(size);
+            scroll_area.show();
+
+            REQUIRE(QTest::qWaitForWindowExposed(&scroll_area));
+
+            for (int i = 0; i < 10; ++i)
+                QApplication::processEvents();
+        }
+
+        int expectedHeight() const
+        {
+            return ViewRenderWidget::limitedHeightForWidth(render_widget->width(), 2.0 / 3.0, 400,
+                                                           scroll_area.viewport()->height());
+        }
+
+        QScrollArea                scroll_area;
+        QWidget*                   section       = nullptr;
+        HistogramViewRenderWidget* render_widget = nullptr;
+    };
+}
+
+TEST_CASE("render widget in a scroll area has the full width and the height of the rule", "[view][histogram][histogramrender]")
+{
+    FigureInScrollArea figure;
+
+    auto checkSize = [ & ] (const QSize& size)
+    {
+        INFO("scroll area " << size.width() << " x " << size.height());
+
+        figure.showWithSize(size);
+
+        CHECK(figure.render_widget->width() == figure.section->layout()->contentsRect().width());
+        CHECK(figure.render_widget->height() == figure.expectedHeight());
+    };
+
+    SECTION("narrow, the height is the minimum")
+    {
+        checkSize(QSize(500, 900));
+        CHECK(figure.render_widget->height() == 400);
+    }
+
+    SECTION("the height is the width * 2 / 3")
+    {
+        checkSize(QSize(900, 900));
+        CHECK(figure.render_widget->height() > 400);
+        CHECK(figure.render_widget->height() < figure.scroll_area.viewport()->height());
+    }
+
+    SECTION("wide, the height is the visible height of the scroll area")
+    {
+        checkSize(QSize(1800, 600));
+        CHECK(figure.render_widget->height() == figure.scroll_area.viewport()->height());
+    }
+
+    SECTION("the height follows a new height of the scroll area")
+    {
+        checkSize(QSize(1800, 600));
+        checkSize(QSize(1800, 800));
+        checkSize(QSize(1800, 500));
+    }
+
+    SECTION("the chart fills the widget")
+    {
+        checkSize(QSize(900, 900));
+        CHECK(figure.render_widget->chartView()->size() == figure.render_widget->size());
+    }
+}
+
+TEST_CASE("mouse wheel over a render widget that ignores it scrolls the scroll area", "[view][histogram][histogramrender]")
+{
+    FigureInScrollArea figure;
+
+    auto wheelOverChart = [ & ] ()
+    {
+        figure.showWithSize(QSize(900, 300));
+
+        auto scroll_bar = figure.scroll_area.verticalScrollBar();
+        REQUIRE(scroll_bar->maximum() > 0);
+        REQUIRE(scroll_bar->value() == 0);
+
+        auto viewport = figure.render_widget->chartView()->viewport();
+
+        const QPointF pos(viewport->width() / 2.0, 20.0);
+
+        QWheelEvent event(pos, viewport->mapToGlobal(pos.toPoint()), QPoint(), QPoint(0, -120),
+                          Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+
+        //as a wheel event of the user: Qt gives only these on to the parent widgets
+        QSpontaneKeyEvent::setSpontaneous(&event);
+        qApp->notify(viewport, &event);
+
+        return scroll_bar->value();
+    };
+
+    CHECK(wheelOverChart() > 0);
 }
 
 TEST_CASE("histogram rectangle gives the bins with their center inside", "[view][histogram][histogramrender]")
@@ -665,4 +1183,21 @@ TEST_CASE("histogram view info lists the chart content", "[view][histogram][hist
     CHECK(set1[ "name"   ] == "series1");
     CHECK(set1[ "counts" ] == nlohmann::json({ 2, 4, 6 }));
     CHECK(set1[ "color"  ] == "#00ff00");
+}
+
+// Not run by default. Writes the image of a histogram chart to the file in COMPASS_TEST_IMAGE_FILE.
+// scripts/check_image_display_scaling.py runs it with the display scaling 1 and 2 and compares the images.
+// The check needs a platform with real font settings (wayland, xcb): on the offscreen platform of the
+// unit tests the images are equal also with fonts that depend on the display scaling.
+TEST_CASE("histogram image for the display scaling check", "[.][displayscaling]")
+{
+    const QString file = qEnvironmentVariable("COMPASS_TEST_IMAGE_FILE");
+    REQUIRE(!file.isEmpty());
+
+    HistogramViewRenderWidget render_widget;
+    render_widget.setDisplayData(makeData(4, 6), legendAtRightSide());
+
+    QImage image;
+    REQUIRE(render_widget.render(image, QSize(1200, 800), 2.0));
+    REQUIRE(image.save(file));
 }

@@ -22,6 +22,8 @@
 #include "plotmetadata.h"
 
 #include <memory>
+#include <set>
+#include <string>
 #include <vector>
 
 class ViewVariable;
@@ -58,6 +60,12 @@ public:
 
     VariableView(nlohmann::json& config, ViewContainer* parent);
     virtual ~VariableView();
+
+    /// The annotations of a view point with the given feature types, in the order the views show them:
+    /// groups sorted by the plot group name, inside a group in the order found.
+    /// The report figures use the same order (report_figure::selectRenderEntries()).
+    static std::vector<AnnotationGroup> scanForAnnotations(const nlohmann::json& view_point,
+                                                           const std::set<std::string>& feature_types);
 
     virtual void loadingDone() override final;
 

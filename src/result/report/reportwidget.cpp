@@ -68,12 +68,14 @@ ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
         button_layout->addStretch();
 
         sections_button_ = new QPushButton("Sections");
+        sections_button_->setObjectName("report_sections_button");
         button_layout->addWidget(sections_button_);
 
         main_layout->addLayout(button_layout);
     }
 
     tree_view_ = new QTreeView;
+    tree_view_->setObjectName("report_section_tree");
     tree_view_->setModel(&tree_model_);
     tree_view_->setRootIsDecorated(false);
     tree_view_->expandToDepth(3);
@@ -88,6 +90,7 @@ ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
 
     // results stack
     QScrollArea* scroll_area = new QScrollArea();
+    scroll_area->setObjectName("report_scroll_area");
     scroll_area->setWidgetResizable(true);
 
     results_widget_ = new QStackedWidget();
@@ -331,6 +334,13 @@ void ReportWidget::showResultWidget(Section* section,
     }
 
     auto widget = section->getContentWidget(preload_ondemand_contents);
+
+    // Only the section shown stays in the stack. For a section with figures the stack reports the
+    // largest height for a width of all its pages, so a hidden section with more figures would give
+    // its height to the section shown.
+    for (int i = results_widget_->count() - 1; i >= 0; --i)
+        if (results_widget_->widget(i) != widget)
+            results_widget_->removeWidget(results_widget_->widget(i));
 
     if (results_widget_->indexOf(widget) < 0)
         results_widget_->addWidget(widget);

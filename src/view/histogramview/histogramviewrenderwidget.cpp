@@ -312,10 +312,12 @@ std::unique_ptr<ChartView> HistogramViewRenderWidget::createChartView(bool& has_
     // legend when there are too many entries to be useful - the layer panel
     // carries per-layer identity in that case.
     {
-        const bool show_legend = has_data
-                              && chart_series->count() > 0
-                              && chart_series->count() <= MaxLegendEntries;
-        chart->legend()->setVisible(show_legend);
+        const bool has_series = has_data && chart_series->count() > 0;
+
+        if (has_series && options_.legend_mode == HistogramLegendMode::RightSide)
+            chart_view->showLegendAtRightSide();
+        else
+            chart->legend()->setVisible(has_series && chart_series->count() <= MaxLegendEntries);
     }
 
     //    connect (chart_series_, &QBarSeries::clicked,
@@ -343,7 +345,13 @@ void HistogramViewRenderWidget::viewInfoJSON(nlohmann::json& info) const
     chart_info[ "x_axis_label" ] = data_ ? data_->x_axis_label : std::string();
     chart_info[ "y_axis_label" ] = chart_view->chart()->axes(Qt::Vertical).first()->titleText().toStdString();
     chart_info[ "y_axis_log"   ] = y_axis_log;
-    chart_info[ "num_series"   ] = chart_view->chart()->series().count();
+    //the data series only, a legend at the right side adds a series for its last entry
+    QList<QAbstractBarSeries*> bar_series_list;
+    for (auto s : chart_view->chart()->series())
+        if (auto bar_series = dynamic_cast<QAbstractBarSeries*>(s))
+            bar_series_list << bar_series;
+
+    chart_info[ "num_series"   ] = bar_series_list.count();
 
     //the bin labels as the axis really shows them
     nlohmann::json tick_labels = nlohmann::json::array();
@@ -360,12 +368,8 @@ void HistogramViewRenderWidget::viewInfoJSON(nlohmann::json& info) const
 
     //std::vector<size_t> total_counts(histogram_generator_->currentBins(), 0);
 
-    auto series = chart_view->chart()->series();
-    for (auto s : series)
+    for (auto bar_series : bar_series_list)
     {
-        QAbstractBarSeries* bar_series = dynamic_cast<QAbstractBarSeries*>(s);
-        traced_assert(bar_series);
-
         nlohmann::json series_info;
         series_info[ "name"     ] = bar_series->name().toStdString();
         series_info[ "num_sets" ] = bar_series->count();

@@ -20,12 +20,16 @@
 #include "viewtool.h"
 #include "json_fwd.hpp"
 
+#include <QPalette>
 #include <QWidget>
+
+#include <boost/optional.hpp>
 
 #include <memory>
 
 class ViewToolSwitcher;
 
+class QBoxLayout;
 class QImage;
 class QSize;
 
@@ -56,6 +60,22 @@ public:
     bool isDrawn() const;
     bool hasContent() const;
 
+    /// The display and the rendered images use this palette in place of the application palette.
+    /// A report export sets the light palette, so its images do not depend on the mode of the application.
+    void setFixedPalette(const QPalette& palette);
+    const boost::optional<QPalette>& fixedPalette() const { return fixed_palette_; }
+
+    /// The widget then reports its height for a width (heightForWidth()), for a figure in a report section:
+    /// width * ratio, not below min_height and not above the visible height of the scroll area around it.
+    void setHeightForWidth(double ratio, int min_height);
+    bool heightFollowsWidth() const { return height_ratio_.has_value(); }
+    /// The height rule. The minimum wins over the maximum.
+    static int limitedHeightForWidth(int width, double ratio, int min_height, int max_height);
+
+    /// The widget does not use the mouse wheel, so a scroll area around it scrolls.
+    void setWheelIgnored(bool ignored);
+    bool wheelIgnored() const { return wheel_ignored_; }
+
     /// The display stays, but does not count as drawn. For the display a view shows before its first load.
     void resetDrawState();
 
@@ -71,11 +91,29 @@ protected:
 
     void setDrawState(DrawState state) { draw_state_ = state; }
 
+    /// the layout of the widget, the derived class adds its display to it
+    QBoxLayout* contentLayout() { return content_layout_; }
+
+    bool eventFilter(QObject* watched, QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+
     /// another mode tool became the current tool
     virtual void toolChanged(int id) {}
 
 private:
+    class ContentLayout;
+
+    int heightForWidthRule(int width) const;
+    QWidget* scrollViewport() const;
+
     std::unique_ptr<ViewToolSwitcher> tool_switcher_;
+    QBoxLayout*                       content_layout_ = nullptr;
 
     DrawState draw_state_ = DrawState::NotDrawn;
+
+    boost::optional<QPalette> fixed_palette_;
+
+    boost::optional<double> height_ratio_; // set: the height follows the width
+    int                     height_min_   = 0;
+    bool                    wheel_ignored_ = false;
 };

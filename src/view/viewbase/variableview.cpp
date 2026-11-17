@@ -437,19 +437,11 @@ void VariableView::clearAnnotations()
 
 /**
  */
-void VariableView::scanViewPointForAnnotations()
+std::vector<VariableView::AnnotationGroup> VariableView::scanForAnnotations(const nlohmann::json& view_point,
+                                                                            const std::set<std::string>& feature_types)
 {
-    clearAnnotations();
-
-    if (!current_view_point_)
-        return;
-
-    const auto& j = current_view_point_->data();
-
     //scan view point for annotation features
-    auto features = ViewPointGenVP::scanForFeatures(j, acceptedAnnotationFeatureTypes());
-    if (features.empty())
-        return;
+    auto features = ViewPointGenVP::scanForFeatures(view_point, feature_types);
 
     std::map<std::string, AnnotationGroup> groups;
 
@@ -470,14 +462,30 @@ void VariableView::scanViewPointForAnnotations()
         group.annotations.push_back(anno);
     }
 
-    for (const auto& g : groups)
-        annotations_.push_back(g.second);
+    std::vector<AnnotationGroup> annotations;
 
-    if (!annotations_.empty())
-    {
-        current_annotation_group_idx_ = 0;
-        current_annotation_idx_       = 0;
-    }
+    for (const auto& g : groups)
+        annotations.push_back(g.second);
+
+    return annotations;
+}
+
+/**
+ */
+void VariableView::scanViewPointForAnnotations()
+{
+    clearAnnotations();
+
+    if (!current_view_point_)
+        return;
+
+    annotations_ = scanForAnnotations(current_view_point_->data(), acceptedAnnotationFeatureTypes());
+
+    if (annotations_.empty())
+        return;
+
+    current_annotation_group_idx_ = 0;
+    current_annotation_idx_       = 0;
 
     emit annotationsChangedSignal();
 }

@@ -33,10 +33,17 @@ struct HistogramDisplayData
     bool                   valid = false; // false: the render widget shows the empty chart
 };
 
+enum class HistogramLegendMode
+{
+    Bottom,   // below the chart, hidden if the chart has too many series (Histogram View)
+    RightSide // right of the chart as a list, the last entry tells the count of the series that do not fit (report)
+};
+
 /**
- * Settings of the histogram drawing that come from the view, not from the data.
+ * Settings of the histogram drawing that come from the owner of the render widget, not from the data.
  */
 struct HistogramRenderOptions
 {
-    bool use_log_scale = false; // used if the display data carries no log scale
+    bool                use_log_scale = false; // used if the display data carries no log scale
+    HistogramLegendMode legend_mode   = HistogramLegendMode::Bottom;
 };
