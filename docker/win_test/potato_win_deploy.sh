@@ -4,7 +4,7 @@
 # Windows test PC potato_win (ssh alias, user HomeZ, PowerShell as SSH shell).
 #
 # Layout on potato_win:
-#   C:\compass\COMPASS_<version>_win64   package (from build_win/COMPASS_<version>_win64.zip)
+#   C:\compass\COMPASS_<version>_win64   package (from build_win_deb12/COMPASS_<version>_win64.zip)
 #   C:\compass\py                        experimental_src/py (test framework and tests)
 #   C:\data\test\<dataset>               test datasets, without temp/ and results/
 #   C:\Users\HomeZ\.compass              test config (conf/test, data_contexts, license)
@@ -14,7 +14,7 @@
 #
 # Usage: potato_win_deploy.sh [package] [debug] [py] [config] [data <dataset> ...] [gdb]
 #   no arguments: package debug py config data at_20230422
-#   debug: compass_client.exe.debug and compass_*.dll.debug (debug information, not in the zip)
+#   debug: compass_client.exe.debug and libcompass_*.dll.debug (debug information, not in the zip)
 #          into the package folder
 #   gdb:   one time - gdb with its DLLs and Python library, the crash script, the AeDebug
 #          registry key that starts the crash script on a crash, and Windows Error Reporting
@@ -62,13 +62,13 @@ while [ $i -lt ${#STEPS[@]} ]; do
         package)
             echo "package $NAME"
             remote "if (Test-Path 'C:\\compass\\$NAME') { Remove-Item -Recurse -Force 'C:\\compass\\$NAME' }"
-            scp -q -o BatchMode=yes "$COMPASS_DIR/build_win/$NAME.zip" "$HOST:C:/compass/$NAME.zip"
+            scp -q -o BatchMode=yes "$COMPASS_DIR/build_win_deb12/$NAME.zip" "$HOST:C:/compass/$NAME.zip"
             remote "tar -xf 'C:\\compass\\$NAME.zip' -C 'C:\\compass'; Remove-Item 'C:\\compass\\$NAME.zip'"
             ;;
         debug)
             echo "debug information $NAME"
-            # compass_client.exe.debug and compass_*.dll.debug (one DLL per module)
-            scp -q -o BatchMode=yes "$COMPASS_DIR"/build_win/compass_deploy/*.debug "$HOST:C:/compass/$NAME/"
+            # compass_client.exe.debug and libcompass_*.dll.debug (one DLL per module)
+            scp -q -o BatchMode=yes "$COMPASS_DIR"/build_win_deb12/compass_deploy/*.debug "$HOST:C:/compass/$NAME/"
             ;;
         gdb)
             echo "gdb"

@@ -9,5 +9,5 @@ set PYTHONWARNINGS=ignore
 "C:\Program Files\Python314\python.exe" -u C:\compass\py\test_infra\test_suite.py --no-prompt ^
   --binary=C:\compass\COMPASS_1.1.0_win64\compass_client.exe ^
   --data=C:\data\test\at_20230422 --manifest=C:\data\test\at_20230422\at_20230422_05h.json ^
-  --mem-interval 0 %*
+  --mem-interval 0 --gui %*
 echo suite exit %ERRORLEVEL%
