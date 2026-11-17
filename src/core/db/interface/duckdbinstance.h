@@ -81,8 +81,8 @@ protected:
         //duckdb supports in-memory db
         config.supports_in_mem = true;
 
-        //duckdb supports zstd compression per column (used only in files of storage version v1.2.0 or newer,
-        //see DuckDBSettings::StorageCompatibilityVersion, older files store the column uncompressed)
+        //duckdb supports zstd compression per column (needs storage version v1.2.0 or newer,
+        //see DuckDBSettings::StorageCompatibilityVersion)
         config.supports_column_zstd = true;
 
         return config;

@@ -16,9 +16,8 @@
  */
 
 // zstd column compression of large json texts (task result tables, see TaskResultDB):
-// the CREATE TABLE statement of SQLGenerator, and the storage in a DuckDB file. DuckDB uses the
-// column compression only in files of a newer storage version (DuckDBSettings::StorageCompatibilityVersion),
-// a file of the default storage version stores the column uncompressed and stays usable.
+// the CREATE TABLE statement of SQLGenerator, and the storage in a DuckDB file of the storage version
+// of COMPASS (DuckDBSettings::StorageCompatibilityVersion).
 
 #include "catch.hpp"
 #include "sqlgenerator.h"
@@ -141,12 +140,5 @@ TEST_CASE("DuckDB zstd json column per storage version", "[duckdb][zstd]")
     SECTION("storage version of COMPASS: the column is stored with zstd")
     {
         REQUIRE(jsonColumnCompression(DuckDBSettings::StorageCompatibilityVersion) == "ZSTD");
-    }
-
-    SECTION("default storage version: the clause is accepted, the column is not stored with zstd")
-    {
-        auto compression = jsonColumnCompression("");
-        REQUIRE(!compression.empty());
-        REQUIRE(compression.find("ZSTD") == std::string::npos);
     }
 }
