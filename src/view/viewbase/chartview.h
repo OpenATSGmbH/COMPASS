@@ -25,6 +25,7 @@
 #include <boost/optional.hpp>
 
 #include <memory>
+#include <set>
 
 class QRubberBand;
 
@@ -68,6 +69,10 @@ public:
     /// The entries that do not fit in the height are hidden, the last entry then tells their count
     /// ("... (n more)"). Qt Charts alone cuts off such entries without a mark.
     void showLegendAtRightSide();
+
+    /// The series gets no entry in the legend at the right side, e.g. a series that is no data.
+    /// To call before showLegendAtRightSide().
+    void excludeFromLegend(const QtCharts::QAbstractSeries* series);
 
     /// The chart is drawn with this palette and does not follow the application palette any more.
     void setFixedPalette(const QPalette& palette);
@@ -182,6 +187,7 @@ private:
     QGraphicsSimpleTextItem*     x_axis_label_item_ = nullptr;
 
     QtCharts::QLineSeries*       legend_more_series_ = nullptr; // carries the legend entry "... (n more)"
+    std::set<const QtCharts::QAbstractSeries*> legend_excluded_; // see excludeFromLegend()
 
     boost::optional<QPalette>    fixed_palette_;
     bool                         pixel_size_fonts_ = false;

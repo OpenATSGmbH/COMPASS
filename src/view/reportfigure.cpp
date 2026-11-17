@@ -18,6 +18,8 @@
 #include "reportfigure.h"
 #include "histogramviewmodel.h"
 #include "histogramviewrenderwidget.h"
+#include "scatterplotviewmodel.h"
+#include "scatterplotviewrenderwidget.h"
 #include "variableview.h"
 #include "viewpointgenerator.h"
 #include "viewpointkeys.h"
@@ -29,6 +31,8 @@
 
 #include <QImage>
 
+#include <algorithm>
+
 namespace report_figure
 {
 
@@ -37,29 +41,51 @@ const double ExportScale      = 2.0;
 
 namespace
 {
-    const std::string ImageNameHistogram = "histogram";
+    /// The kinds in the order of their render widgets in a figure, with the feature type of their
+    /// annotations and the prefix of their image names.
+    struct KindInfo
+    {
+        Kind        kind;
+        std::string feature_type;
+        std::string image_name;
+    };
+
+    const std::vector<KindInfo>& kindInfos()
+    {
+        static const std::vector<KindInfo> infos =
+        {
+            { Kind::Histogram  , ViewPointGenFeatureHistogram::FeatureName    , "histogram"   },
+            { Kind::Scatterplot, ViewPointGenFeatureScatterSeries::FeatureName, "scatterplot" }
+        };
+
+        return infos;
+    }
 
     //in a narrow window the chart stays readable
     const int WidgetMinHeight = 400;
 
     /**
      * The settings of a report figure. They are set before the display data, so the widget draws once.
-     * palette: set for an image, empty pointer for the report GUI (application palette).
+     * image_palette: set for a widget that draws an image of the export. It then builds no display.
+     * Empty pointer: widget of the report GUI, with the application palette.
      */
-    void configure(ViewRenderWidget& widget, const QPalette* palette)
+    void configure(ViewRenderWidget& widget, const QPalette* image_palette)
     {
         widget.setWheelIgnored(true);
         widget.setHeightForWidth(ExportLayoutSize.height() / (double)ExportLayoutSize.width(), WidgetMinHeight);
 
-        if (palette)
-            widget.setFixedPalette(*palette);
+        if (image_palette)
+        {
+            widget.setFixedPalette(*image_palette);
+            widget.setImageOnly(true);
+        }
     }
 
     /**
      */
     std::unique_ptr<ViewRenderWidget> createHistogramWidget(const RenderEntry& entry,
                                                             QWidget* parent,
-                                                            const QPalette* palette)
+                                                            const QPalette* image_palette)
     {
         std::string error;
 
@@ -72,7 +98,7 @@ namespace
 
         auto widget = std::make_unique<HistogramViewRenderWidget>(parent);
 
-        configure(*widget, palette);
+        configure(*widget, image_palette);
         widget->setDisplayData(data, options);
 
         return widget;
@@ -80,14 +106,45 @@ namespace
 
     /**
      */
-    std::unique_ptr<ViewRenderWidget> createWidget(const RenderEntry& entry, QWidget* parent, const QPalette* palette)
+    std::unique_ptr<ViewRenderWidget> createScatterplotWidget(const RenderEntry& entry,
+                                                              QWidget* parent,
+                                                              const QPalette* image_palette)
+    {
+        std::string error;
+
+        auto data = ScatterPlotViewModel::displayDataFromAnnotation(*entry.feature, entry.metadata, &error);
+        if (!data)
+            logwrn << "malformed scatter series annotation of figure image '" << entry.image_name << "': " << error;
+
+        //a report draws with the CPU only, a section with several figures creates no OpenGL surfaces
+        ScatterPlotRenderOptions options;
+        options.use_opengl  = false;
+        options.legend_mode = ScatterPlotLegendMode::RightSide;
+
+        auto widget = std::make_unique<ScatterPlotViewRenderWidget>(parent);
+
+        configure(*widget, image_palette);
+
+        //the navigate tool of the widget moves the chart with the mouse, a report figure has no interaction
+        widget->setDragEnabled(false);
+
+        widget->setDisplayData(data, options);
+
+        return widget;
+    }
+
+    /**
+     */
+    std::unique_ptr<ViewRenderWidget> createWidget(const RenderEntry& entry, QWidget* parent, const QPalette* image_palette)
     {
         traced_assert(entry.feature);
 
         switch (entry.kind)
         {
             case Kind::Histogram:
-                return createHistogramWidget(entry, parent, palette);
+                return createHistogramWidget(entry, parent, image_palette);
+            case Kind::Scatterplot:
+                return createScatterplotWidget(entry, parent, image_palette);
         }
 
         traced_assert(false);
@@ -122,31 +179,44 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
     if (!loadsNoData(view_point))
         return {};
 
-    //histogram annotations only
+    //only annotations of the kinds that have a render widget
     const auto features = ViewPointGenVP::scanForFeatures(view_point);
     if (features.empty())
         return {};
 
     for (const auto& f : features)
-        if (f.feature_json.at(ViewPointGenFeature::FeatureTypeFieldType) != ViewPointGenFeatureHistogram::FeatureName)
-            return {};
+    {
+        const auto& type = f.feature_json.at(ViewPointGenFeature::FeatureTypeFieldType);
 
-    const auto groups = VariableView::scanForAnnotations(view_point, { ViewPointGenFeatureHistogram::FeatureName });
+        const bool has_render_widget = std::any_of(kindInfos().begin(), kindInfos().end(),
+            [ & ] (const KindInfo& info) { return type == info.feature_type; });
+
+        if (!has_render_widget)
+            return {};
+    }
 
     std::vector<RenderEntry> entries;
 
-    for (const auto& group : groups)
+    for (const auto& info : kindInfos())
     {
-        for (const auto& annotation : group.annotations)
-        {
-            RenderEntry entry;
-            entry.kind             = Kind::Histogram;
-            entry.annotation_index = (unsigned int)entries.size();
-            entry.image_name       = ImageNameHistogram + "_" + std::to_string(entry.annotation_index);
-            entry.feature          = std::make_shared<const nlohmann::json>(annotation.feature_json);
-            entry.metadata         = annotation.metadata;
+        //the order of the view of this kind
+        const auto groups = VariableView::scanForAnnotations(view_point, { info.feature_type });
 
-            entries.push_back(entry);
+        unsigned int annotation_index = 0;
+
+        for (const auto& group : groups)
+        {
+            for (const auto& annotation : group.annotations)
+            {
+                RenderEntry entry;
+                entry.kind             = info.kind;
+                entry.annotation_index = annotation_index++;
+                entry.image_name       = info.image_name + "_" + std::to_string(entry.annotation_index);
+                entry.feature          = std::make_shared<const nlohmann::json>(annotation.feature_json);
+                entry.metadata         = annotation.metadata;
+
+                entries.push_back(entry);
+            }
         }
     }
 

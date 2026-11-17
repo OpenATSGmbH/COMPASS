@@ -587,8 +587,8 @@ OpenGL (agreed 2026-11-17):
   - The drawing order is the order of the series in the display data. The selection series is on top. A report figure has no selection.
   - A zoom or a resize draws the image again.
 - With OpenGL (view): as today. Qt Charts orders the series by pointer value, and the code sorts for that. The selection series stays on top.
-- Not known: the point counts of the report scatterplots (reconstruction debug figures).
-- Check at implementation time: the draw time of the largest report scatterplot with the image drawing, inside a chart. Report it to the user.
+- Checked in step 3 (dataset at_20230422, 05h manifest): the reconstruction debug figures have few points. "Avg. Unused Scatterplot" and "Avg. Error Scatterplot": 22 series, 198 points. "Radar Biases Scatterplot": one figure per radar, 3 annotations of 1 series with 9 points.
+- Checked in step 3: draw time of one export image (2400 x 1600, new chart each time, offscreen platform). Largest debug figure: 15 ms, of which 0.5 ms for the points image. Synthetic, 10 series: 10000 points 12 ms, 100000 points 37 ms, 1000000 points 278 ms. Below about 10000 points the chart (axes, title, legend) sets the time, above it the points image (about 0.3 microseconds per point).
 
 Existing tests:
 - `experimental_src/py/tests/ui/scatterplotview/`: 11 tests (open, close, presets, connection lines, selection, zoom, zoom with variable change, axis labels, variable selection).

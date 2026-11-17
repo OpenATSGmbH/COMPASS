@@ -25,6 +25,7 @@
 #include "json.hpp"
 
 #include <QApplication>
+#include <QDir>
 #include <QGraphicsSimpleTextItem>
 #include <QLabel>
 #include <QMouseEvent>
@@ -1185,19 +1186,19 @@ TEST_CASE("histogram view info lists the chart content", "[view][histogram][hist
     CHECK(set1[ "color"  ] == "#00ff00");
 }
 
-// Not run by default. Writes the image of a histogram chart to the file in COMPASS_TEST_IMAGE_FILE.
+// Not run by default. Writes the image of a histogram chart into the directory in COMPASS_TEST_IMAGE_DIR.
 // scripts/check_image_display_scaling.py runs it with the display scaling 1 and 2 and compares the images.
 // The check needs a platform with real font settings (wayland, xcb): on the offscreen platform of the
 // unit tests the images are equal also with fonts that depend on the display scaling.
 TEST_CASE("histogram image for the display scaling check", "[.][displayscaling]")
 {
-    const QString file = qEnvironmentVariable("COMPASS_TEST_IMAGE_FILE");
-    REQUIRE(!file.isEmpty());
+    const QString dir = qEnvironmentVariable("COMPASS_TEST_IMAGE_DIR");
+    REQUIRE(!dir.isEmpty());
 
     HistogramViewRenderWidget render_widget;
     render_widget.setDisplayData(makeData(4, 6), legendAtRightSide());
 
     QImage image;
     REQUIRE(render_widget.render(image, QSize(1200, 800), 2.0));
-    REQUIRE(image.save(file));
+    REQUIRE(image.save(QDir(dir).filePath("histogram.png")));
 }

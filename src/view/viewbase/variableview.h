@@ -67,7 +67,7 @@ public:
     static std::vector<AnnotationGroup> scanForAnnotations(const nlohmann::json& view_point,
                                                            const std::set<std::string>& feature_types);
 
-    virtual void loadingDone() override final;
+    virtual void loadingDone() override;
 
     ViewVariable& variable(int idx);
     const ViewVariable& variable(int idx) const;

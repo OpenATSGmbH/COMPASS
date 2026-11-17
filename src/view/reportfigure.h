@@ -40,7 +40,8 @@ namespace report_figure
 
 enum class Kind
 {
-    Histogram
+    Histogram,
+    Scatterplot
 };
 
 /**
@@ -49,7 +50,7 @@ enum class Kind
 struct RenderEntry
 {
     Kind                                  kind             = Kind::Histogram;
-    unsigned int                          annotation_index = 0; // position in the order of the views
+    unsigned int                          annotation_index = 0; // position in the order of the view of this kind
     std::string                           image_name;           // "<kind>_<annotation index>", unique inside one figure
     std::shared_ptr<const nlohmann::json> feature;              // annotation feature, never empty
     PlotMetadata                          metadata;
@@ -65,16 +66,18 @@ bool loadsNoData(const nlohmann::json& view_point);
 
 /**
  * Decides how a report figure with this view point is drawn.
- * Entries: one render widget per entry, in the order of the views.
+ * Entries: one render widget per entry. The histograms first, then the scatterplots, each kind in the
+ * order of its view.
  * Empty: the figure is shown by the views ("View" button, image of each view with content).
  *
- * A figure gets render widgets if its view point loads no data and holds histogram annotations only.
- * The caller leaves out the figures that are locked or built on demand.
+ * A figure gets render widgets if its view point loads no data and holds histogram and scatter series
+ * annotations only. The caller leaves out the figures that are locked or built on demand.
  */
 std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point);
 
-/// The render widget of an entry, with the display of a report figure: legend at the right side, mouse
-/// wheel ignored, and the height follows the width with the ratio of the export image.
+/// The render widget of an entry, with the display of a report figure: legend at the right side, no
+/// interaction (mouse wheel ignored, no tools), no OpenGL, and the height follows the width with the
+/// ratio of the export image.
 /// Created without a model object, a view or a manager.
 std::unique_ptr<ViewRenderWidget> createRenderWidget(const RenderEntry& entry, QWidget* parent = nullptr);
 

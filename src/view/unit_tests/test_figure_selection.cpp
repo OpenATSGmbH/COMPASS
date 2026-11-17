@@ -45,6 +45,17 @@ namespace
                                              PlotMetadata(name + " Title", "", "Value", "Count", plot_group)));
     }
 
+    /// adds an annotation with one scatter series feature, the series name is the name of the annotation
+    void addScatter(ViewPointGenVP& vp, const std::string& name, const std::string& plot_group = "")
+    {
+        ScatterSeries series;
+        series.points = { { 1.0, 2.0 }, { 3.0, 4.0 } };
+
+        vp.annotations().getOrCreateAnnotation(name)->addFeature(
+            new ViewPointGenFeatureScatterSeries(series, name, Qt::red, 8.0, boost::optional<bool>(),
+                                                 PlotMetadata(name + " Title", "", "X", "Y", plot_group)));
+    }
+
     void addText(ViewPointGenVP& vp, const std::string& name)
     {
         vp.annotations().getOrCreateAnnotation(name)->addFeature(new ViewPointGenFeatureText("text", 1.0, 2.0));
@@ -135,6 +146,107 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         addText(*vp, "Label");
 
         CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+    }
+
+    SECTION("scatter series only gives one render widget")
+    {
+        auto vp = viewPoint();
+        addScatter(*vp, "Bias");
+
+        const auto entries = report_figure::selectRenderEntries(toJSON(*vp));
+
+        REQUIRE(entries.size() == 1);
+
+        CHECK(entries[ 0 ].kind == report_figure::Kind::Scatterplot);
+        CHECK(entries[ 0 ].annotation_index == 0);
+        CHECK(entries[ 0 ].image_name == "scatterplot_0");
+        CHECK(entries[ 0 ].metadata.title_ == "Bias Title");
+
+        REQUIRE(entries[ 0 ].feature);
+        CHECK(entries[ 0 ].feature->at("type") == "scatterseries");
+        CHECK(entries[ 0 ].feature->contains("scatterseries"));
+    }
+
+    SECTION("a scatter series in a view point that loads data uses the view path")
+    {
+        ViewPointGenVP vp("Figure", 0, "Scatterplot");
+        addScatter(vp, "Bias");
+
+        CHECK(report_figure::selectRenderEntries(toJSON(vp)).empty());
+    }
+
+    SECTION("a scatter series plus another feature uses the view path")
+    {
+        auto vp = viewPoint();
+        addScatter(*vp, "Bias");
+        addText(*vp, "Label");
+
+        CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+    }
+
+    SECTION("several scatter annotations give the entries in the order of the Scatterplot View")
+    {
+        auto vp = viewPoint();
+        addScatter(*vp, "A", "Group 2");
+        addScatter(*vp, "B", "Group 1");
+        addScatter(*vp, "C", "Group 2");
+
+        const nlohmann::json j = toJSON(*vp);
+
+        const auto entries = report_figure::selectRenderEntries(j);
+
+        REQUIRE(entries.size() == 3);
+
+        for (unsigned int i = 0; i < 3; ++i)
+        {
+            CHECK(entries[ i ].kind == report_figure::Kind::Scatterplot);
+            CHECK(entries[ i ].annotation_index == i);
+            CHECK(entries[ i ].image_name == "scatterplot_" + std::to_string(i));
+        }
+
+        std::vector<std::string> view_titles;
+        for (const auto& group : VariableView::scanForAnnotations(j, { "scatterseries" }))
+            for (const auto& annotation : group.annotations)
+                view_titles.push_back(annotation.metadata.title_);
+
+        CHECK(titles(entries) == view_titles);
+
+        REQUIRE(view_titles.size() == 3);
+        CHECK(view_titles[ 0 ] == "B Title");
+    }
+
+    SECTION("histograms and scatter series give the render widgets of both kinds, the histograms first")
+    {
+        auto vp = viewPoint();
+        addScatter(*vp, "S1");
+        addHistogram(*vp, "H1");
+        addScatter(*vp, "S2");
+        addHistogram(*vp, "H2");
+
+        const auto entries = report_figure::selectRenderEntries(toJSON(*vp));
+
+        REQUIRE(entries.size() == 4);
+
+        CHECK(entries[ 0 ].kind == report_figure::Kind::Histogram);
+        CHECK(entries[ 1 ].kind == report_figure::Kind::Histogram);
+        CHECK(entries[ 2 ].kind == report_figure::Kind::Scatterplot);
+        CHECK(entries[ 3 ].kind == report_figure::Kind::Scatterplot);
+
+        //the index counts per kind, so the names are unique inside the figure
+        CHECK(entries[ 0 ].image_name == "histogram_0");
+        CHECK(entries[ 1 ].image_name == "histogram_1");
+        CHECK(entries[ 2 ].image_name == "scatterplot_0");
+        CHECK(entries[ 3 ].image_name == "scatterplot_1");
+
+        CHECK(entries[ 2 ].annotation_index == 0);
+        CHECK(entries[ 3 ].annotation_index == 1);
+
+        SECTION("with another feature the figure uses the view path")
+        {
+            addText(*vp, "Label");
+
+            CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+        }
     }
 
     SECTION("a view point without annotations uses the view path")

@@ -110,6 +110,8 @@ void VariableView::updateModelAnnotation()
 
     const auto& anno = currentAnnotation();
 
+    model_->setAnnotationIndices(currentAnnotationGroupIdx(), currentAnnotationIdx());
+
     std::string error;
     if (!model_->setAnnotation(anno.feature_json, anno.metadata, &error) && hasViewPoint())
         viewPoint().reportError(getName(), "annotation error: " + error);

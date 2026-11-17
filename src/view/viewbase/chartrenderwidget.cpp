@@ -52,6 +52,9 @@ ChartRenderWidget::~ChartRenderWidget() = default;
  */
 void ChartRenderWidget::redraw()
 {
+    if (imageOnly())
+        return;
+
     releaseChartView();
 
     bool has_content = false;
@@ -80,6 +83,8 @@ std::unique_ptr<ChartView> ChartRenderWidget::buildChartView(bool& has_content, 
 
     if (fixedPalette())
         view->setFixedPalette(*fixedPalette());
+
+    finishChartView(*view);
 
     return view;
 }

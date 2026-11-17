@@ -54,6 +54,14 @@ ViewVariable& VariableViewModel::variable(int var_idx) const
 
 /**
 */
+void VariableViewModel::setAnnotationIndices(int group_idx, int annotation_idx)
+{
+    annotation_group_idx_ = group_idx;
+    annotation_idx_       = annotation_idx;
+}
+
+/**
+*/
 void VariableViewModel::clearAnnotation()
 {
     annotation_active_ = false;

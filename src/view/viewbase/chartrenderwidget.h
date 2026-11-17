@@ -67,6 +67,9 @@ protected:
     /// Builds a new chart view from the current display data and render options.
     /// has_content: the chart shows data, not the empty display.
     virtual std::unique_ptr<ChartView> createChartView(bool& has_content) = 0;
+    /// Called when the new chart view has its final fonts and palette, which are set after
+    /// createChartView(). For a layout that depends on the fonts, e.g. margins from label widths.
+    virtual void finishChartView(ChartView& chart_view) {}
 
     void toolChanged(int id) override;
 

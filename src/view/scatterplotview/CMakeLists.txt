@@ -9,7 +9,10 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotview.h"
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewconfigwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewchartview.h"
-        "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewdatawidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewrenderwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/scatterplotpointsitem.h"
+        "${CMAKE_CURRENT_LIST_DIR}/scatterplotdisplaydata.h"
+        "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewmodel.h"
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/scatterseries.h"
     PRIVATE
@@ -17,7 +20,9 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewdatasource.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewconfigwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewchartview.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewdatawidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewrenderwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/scatterplotpointsitem.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewmodel.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/scatterplotviewwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/scatterseries.cpp"
 )

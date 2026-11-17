@@ -34,7 +34,9 @@
 #include "histogramviewmodel.h"
 #include "chartview.h"
 #include "scatterplotview.h"
-#include "scatterplotviewdatawidget.h"
+#include "scatterplotviewwidget.h"
+#include "scatterplotviewrenderwidget.h"
+#include "scatterplotviewmodel.h"
 #include "gridview.h"
 #include "gridviewdatawidget.h"
 
@@ -312,20 +314,25 @@ void LatexVisitor::visit(ScatterPlotView* e)
 
     e->showInTabWidget();
 
-    ScatterPlotViewDataWidget* data_widget = e->getDataWidget();
-    traced_assert(data_widget);
+    const ScatterPlotViewModel& model = e->model();
+
+    ScatterPlotViewRenderWidget* render_widget = e->widget_->renderWidget();
+    traced_assert(render_widget);
+
+    const bool has_visible_content = (model.hasData() || model.hasAnnotation()) && render_widget->hasContent();
 
     loginf << "start" << e->instanceName() 
-           << " has visible content: " << data_widget->hasVisibleContent()
-           << " has data " << data_widget->hasData()
-           << " has annotations " << data_widget->hasAnnotations()
-           << " is drawn " << data_widget->isDrawn();
+           << " has visible content: " << has_visible_content
+           << " has data " << model.hasData()
+           << " has annotations " << model.hasAnnotation()
+           << " is drawn " << render_widget->isDrawn();
 
-    if (!data_widget->hasVisibleContent())
+    if (!has_visible_content)
         return;
 
     // normal screenshot
-    QPixmap pmap = data_widget->renderPixmap();
+    traced_assert(render_widget->chartView());
+    QPixmap pmap = render_widget->chartView()->grab();
 
     QImage screenshot = pmap.toImage();
 

@@ -44,6 +44,12 @@ public:
     void setVariables(const std::vector<ViewVariable*>& variables);
     size_t numVariables() const { return variables_.size(); }
 
+    /// Position of the annotation that setAnnotation() gets next, in the annotation list of the view.
+    /// For display data that tells annotations apart (ScatterPlotDisplayData::domain_id).
+    void setAnnotationIndices(int group_idx, int annotation_idx);
+    int annotationGroupIdx() const { return annotation_group_idx_; }
+    int annotationIdx() const { return annotation_idx_; }
+
     void clearAnnotation() override;
     bool hasAnnotation() const override final { return shows_annotation_; }
 
@@ -96,4 +102,7 @@ private:
 
     bool annotation_active_ = false; // an annotation is set, see setAnnotationActive()
     bool shows_annotation_  = false; // the display data shows the annotation
+
+    int annotation_group_idx_ = -1; // see setAnnotationIndices()
+    int annotation_idx_       = -1;
 };

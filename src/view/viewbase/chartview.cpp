@@ -292,6 +292,10 @@ void ChartView::showLegendAtRightSide()
     legend->setAlignment(Qt::AlignRight);
     legend->setVisible(true);
 
+    //the rectangle of a selection is no data
+    if (selectionSeries())
+        legend_excluded_.insert(selectionSeries());
+
     if (!legend_more_series_)
     {
         legend_more_series_ = new QtCharts::QLineSeries;
@@ -301,6 +305,13 @@ void ChartView::showLegendAtRightSide()
     }
 
     updateLegendOverflow();
+}
+
+/**
+ */
+void ChartView::excludeFromLegend(const QtCharts::QAbstractSeries* series)
+{
+    legend_excluded_.insert(series);
 }
 
 /**
@@ -321,6 +332,8 @@ void ChartView::updateLegendOverflow()
     {
         if (marker->series() == legend_more_series_)
             more_entry = marker;
+        else if (legend_excluded_.count(marker->series()))
+            marker->setVisible(false);
         else if (!marker->label().isEmpty())
             entries << marker;
     }

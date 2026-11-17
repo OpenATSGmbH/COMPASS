@@ -24,8 +24,9 @@
 #include "dbcontent/variable/metavariable.h"
 //#include "scatterplotviewconfigwidget.h"
 #include "scatterplotviewdatasource.h"
-#include "scatterplotviewdatawidget.h"
+#include "scatterplotviewmodel.h"
 #include "scatterplotviewwidget.h"
+#include "viewdatawidget.h"
 #include "logger.h"
 #include "latexvisitor.h"
 #include "viewpointgenerator.h"
@@ -37,6 +38,8 @@ using namespace std;
 using namespace dbContent;
 
 const std::string ScatterPlotView::ParamUseConnectionLines = "use_connection_lines";
+
+const int ScatterPlotView::ConnectLinesDataCountMax = 100000;
 
 /**
 */
@@ -64,6 +67,20 @@ ScatterPlotView::ScatterPlotView(nlohmann::json& config, ViewContainer* parent)
 
     addVariable("data_var_x", "X", "x", META_OBJECT_NAME, dbcontent_vars::meta_var_longitude_.name(), true, true, false, valid_types);
     addVariable("data_var_y", "Y", "y", META_OBJECT_NAME, dbcontent_vars::meta_var_latitude_.name() , true, true, false, valid_types);
+
+    model_.reset(new ScatterPlotViewModel(viewManager().dbContentManager(),
+                                          viewManager().dbContextManager(),
+                                          viewManager().appState()));
+    model_->setObjectName(QString::fromStdString(instanceName()));
+    model_->setVariables(variable(0), variable(1));
+    model_->setReloadNeededFunc([ this ] () { return reloadNeeded(); });
+
+    setModel(model_.get());
+
+    connect(model_.get(), &ViewModel::displayDataChangedSignal, this, &ScatterPlotView::displayDataChanged);
+
+    //note: triggers a view update, otherwise a manual update would be needed
+    connect(model_.get(), &ViewModel::selectionChangedSignal, this, &View::emitSelectionChange);
 
     // create sub done in init
 }
@@ -96,30 +113,6 @@ bool ScatterPlotView::init_impl()
     createSubConfigurables();
 
     traced_assert(data_source_);
-
-//    connect(data_source_, &ScatterPlotViewDataSource::loadingStartedSignal, widget_->getDataWidget(),
-//            &ScatterPlotViewDataWidget::loadingStartedSlot);
-//    connect(data_source_, &ScatterPlotViewDataSource::updateDataSignal, widget_->getDataWidget(),
-//            &ScatterPlotViewDataWidget::updateDataSlot);
-
-//    connect(widget_->configWidget(), &ScatterPlotViewConfigWidget::exportSignal,
-//            widget_->getDataWidget(), &ScatterPlotViewDataWidget::exportDataSlot);
-//    connect(widget_->getDataWidget(), &ScatterPlotViewDataWidget::exportDoneSignal,
-//            widget_->configWidget(), &ScatterPlotViewConfigWidget::exportDoneSlot);
-
-//    connect(data_source_, &ScatterPlotViewDataSource::loadingStartedSignal, widget_->configWidget(),
-//            &ScatterPlotViewConfigWidget::loadingStartedSlot);
-
-    //    connect(this, &ScatterPlotView::showOnlySelectedSignal, widget_->getDataWidget(),
-    //            &ScatterPlotViewDataWidget::showOnlySelectedSlot);
-    //    connect(this, &ScatterPlotView::usePresentationSignal, widget_->getDataWidget(),
-    //            &ScatterPlotViewDataWidget::usePresentationSlot);
-    //    connect(this, &ScatterPlotView::showAssociationsSignal, widget_->getDataWidget(),
-    //            &ScatterPlotViewDataWidget::showAssociationsSlot);
-
-    //    widget_->getDataWidget()->showOnlySelectedSlot(show_only_selected_);
-    //    widget_->getDataWidget()->usePresentationSlot(use_presentation_);
-    //    widget_->getDataWidget()->showAssociationsSlot(show_associations_);
 
     return true;
 }
@@ -161,10 +154,42 @@ void ScatterPlotView::checkSubConfigurables()
 
 /**
 */
-ScatterPlotViewDataWidget* ScatterPlotView::getDataWidget()
+ScatterPlotRenderOptions ScatterPlotView::renderOptions() const
 {
-    traced_assert(widget_);
-    return widget_->getViewDataWidget();
+    ScatterPlotRenderOptions options;
+    options.use_connection_lines = settings_.use_connection_lines;
+
+    return options;
+}
+
+/**
+*/
+void ScatterPlotView::displayDataChanged()
+{
+    auto data = model_->displayData();
+
+    if (!data || !data->series.useConnectionLines().has_value())
+        return;
+
+    useConnectionLines(data->series.useConnectionLines().value(), false);
+    updateComponents();
+}
+
+/**
+ * Before the model computes the display data of the load.
+*/
+void ScatterPlotView::loadingDone()
+{
+    // disable connection lines?
+    if (useConnectionLines() && model_->loadedDataCount() > (unsigned int)ConnectLinesDataCountMax)
+    {
+        loginf << "loaded data items >" << ConnectLinesDataCountMax << ", disabling connection lines";
+
+        //no redraw, happens later anyway
+        useConnectionLines(false, false);
+    }
+
+    VariableView::loadingDone();
 }
 
 /**

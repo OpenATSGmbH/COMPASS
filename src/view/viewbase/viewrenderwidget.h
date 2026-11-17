@@ -76,6 +76,11 @@ public:
     void setWheelIgnored(bool ignored);
     bool wheelIgnored() const { return wheel_ignored_; }
 
+    /// The widget is used for render() only: redraw() builds no display, so the widget is never drawn.
+    /// A report export sets this, it would build each display twice otherwise.
+    void setImageOnly(bool image_only) { image_only_ = image_only; }
+    bool imageOnly() const { return image_only_; }
+
     /// The display stays, but does not count as drawn. For the display a view shows before its first load.
     void resetDrawState();
 
@@ -116,4 +121,5 @@ private:
     boost::optional<double> height_ratio_; // set: the height follows the width
     int                     height_min_   = 0;
     bool                    wheel_ignored_ = false;
+    bool                    image_only_    = false;
 };
