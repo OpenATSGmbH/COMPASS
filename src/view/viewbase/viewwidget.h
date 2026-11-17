@@ -39,6 +39,7 @@ class ViewInfoWidget;
 
 class QSplitter;
 class QLayout;
+class QHBoxLayout;
 
 /**
 @brief Base class for a views "display" component.
@@ -85,6 +86,8 @@ ViewToolWidget: A toolbar located above the ViewDataWidget, holding the view's n
 This is a generic class which doesn't need to be derived, but is rather filled in the derived ViewWidget's constructor and
 provided with all needed callbacks. Interacts with the ViewDataWidget to switch the view's active tool and handles tool
 interaction like activating, deactivating and canceling tools.
+The toolbar is created in setDataWidget(), from the tool switcher of the data widget's render widget if it has one
+(see ViewDataWidget::renderToolSwitcher()), else from a tool switcher of the ViewWidget.
 
 ViewLoadStateWidget: A widget located below the configuration area. Provides state information for the view
 and means to update the view manually. Interacts with the ViewWidget and the ViewDataWidget to e.g.issue reloads and redraws,
@@ -157,11 +160,14 @@ public:
     static const int DataWidgetStretch;
     static const int ConfigWidgetStretch;
 
+    static const int ToolScreenshot;
+    static const int ToolConfigPanel;
+
 protected:
     ViewToolWidget* getViewToolWidget() { traced_assert(tool_widget_); return tool_widget_; }
     const ViewToolWidget* getViewToolWidget() const { traced_assert(tool_widget_); return tool_widget_; }
-    ViewToolSwitcher* getViewToolSwitcher() { traced_assert(tool_switcher_); return tool_switcher_.get(); }
-    const ViewToolSwitcher* getViewToolSwitcher() const { traced_assert(tool_switcher_); return tool_switcher_.get(); }
+    ViewToolSwitcher* getViewToolSwitcher() { traced_assert(tool_switcher_); return tool_switcher_; }
+    const ViewToolSwitcher* getViewToolSwitcher() const { traced_assert(tool_switcher_); return tool_switcher_; }
     ViewLoadStateWidget* getViewLoadStateWidget() { traced_assert(state_widget_); return state_widget_; }
     const ViewLoadStateWidget* getViewLoadStateWidget() const { traced_assert(state_widget_); return state_widget_; }
     ViewPresetWidget* getViewPresetWidget() { return preset_widget_; }
@@ -196,6 +202,7 @@ protected:
 private:
     void createStandardLayout();
     void connectWidgets();
+    void registerHostTools();
 
     /// the data widget finished asynchronous processing - emits the deferred
     /// viewRefreshed() edge (see loadingDone)
@@ -212,6 +219,7 @@ private:
     View* view_ = nullptr;
 
     //containers
+    QHBoxLayout*    top_layout_              = nullptr;
     QSplitter*      main_splitter_           = nullptr;
     QWidget*        data_widget_container_   = nullptr;
     QWidget*        config_widget_container_ = nullptr;
@@ -228,7 +236,13 @@ private:
     
     QWidget*             lower_widget_  = nullptr;
 
-    std::unique_ptr<ViewToolSwitcher> tool_switcher_;
+    /// the switcher the toolbar shows: of the render widget, or the own one
+    ViewToolSwitcher*                 tool_switcher_ = nullptr;
+    /// for data widgets without a render widget (Table View, Geographic View, not ported views)
+    std::unique_ptr<ViewToolSwitcher> own_tool_switcher_;
 
     bool init_ = false;
+
+    /// state of the config widget toggle in the toolbar
+    bool config_widget_shown_ = true;
 };

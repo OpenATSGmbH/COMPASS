@@ -32,6 +32,7 @@
 #include <QBarCategoryAxis>
 #include <QtCharts/QCategoryAxis>
 #include <QFontMetricsF>
+#include <QGraphicsLayout>
 #include <QtMath>
 
 const QColor ChartView::SelectionColor = Qt::red;
@@ -281,6 +282,22 @@ void ChartView::reserveHorizontalLabelMargins(QtCharts::QChart* chart)
 
     if (margins != chart->margins())
         chart->setMargins(margins);
+}
+
+/**
+ */
+void ChartView::layoutForSize(const QSize& size)
+{
+    resize(size);
+
+    chart()->resize(size);
+
+    if (chart()->layout())
+        chart()->layout()->activate();
+
+    setSceneRect(chart()->geometry());
+
+    updateXAxisLabelPosition();
 }
 
 /**

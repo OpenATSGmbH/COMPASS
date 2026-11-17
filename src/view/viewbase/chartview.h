@@ -60,6 +60,10 @@ public:
     void addLegendOnlyItem(const QString& name, const QColor& color);
     void setXAxisLabel(const QString& label);
 
+    /// Lays out the chart and the items of the view for the given size, for a view that is never
+    /// shown. A hidden widget gets no resize event, which does this for a view on the screen.
+    void layoutForSize(const QSize& size);
+
     /// Widens the chart margins so the outermost labels of a horizontal
     /// category axis are not cut off. Qt centers such a label on its tick, so
     /// half of it reaches past the plot area, and the default margin is

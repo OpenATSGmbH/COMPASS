@@ -70,17 +70,24 @@ public:
 
     void setToolSwitcher(ViewToolSwitcher* tool_switcher);
 
-    void loadingStarted();
-    void loadingDone();
-    void updateFromSource(const DBContentDataSet& source,
-                          const std::vector<std::string>& names, bool reset, bool last);
-    void clearData();
-    ViewDrawState redrawData(bool recompute, bool notify = false);
-    void liveReload();
+    /// The tool switcher of the render widget, if the data widget has one (ViewDataWidgetAdapter).
+    /// Then the view widget builds its toolbar from it and does not call setToolSwitcher().
+    virtual ViewToolSwitcher* renderToolSwitcher() { return nullptr; }
+
+    // Notice: the functions below are virtual for ViewDataWidgetAdapter only, which forwards them
+    // to a view model and a render widget
+
+    virtual void loadingStarted();
+    virtual void loadingDone();
+    virtual void updateFromSource(const DBContentDataSet& source,
+                                  const std::vector<std::string>& names, bool reset, bool last);
+    virtual void clearData();
+    virtual ViewDrawState redrawData(bool recompute, bool notify = false);
+    virtual void liveReload();
 
     /// a reload follows: the layer tree keeps its data rows (stale, detached from their payloads)
     /// until the reloaded data updates them, instead of being emptied by the clear
-    void beginDataReload();
+    virtual void beginDataReload();
 
     // Optional item provider, registered by a derived widget which OWNS it (the
     // provider's lifetime is tied to the derived widget's, whose teardown may be
@@ -93,7 +100,7 @@ public:
     bool hasItemProvider() const { return item_provider_ != nullptr; }
     DBContentItemProvider* itemProvider() { return item_provider_; }
 
-    bool hasData() const;
+    virtual bool hasData() const;
     bool hasAnnotations() const;
     bool hasContent() const;
     bool hasVisibleContent() const;
@@ -103,10 +110,10 @@ public:
     // the widget still processes data asynchronously (a worker task is outstanding or
     // load-done work is deferred on one); processingFinishedSignal is emitted once done.
     // Drives ViewManager's deferred load-done edge via the owning View.
-    bool hasPendingProcessing() const;
+    virtual bool hasPendingProcessing() const;
 
     void databaseOpened();
-    void databaseClosed();
+    virtual void databaseClosed();
 
     /// The view's layer panel tree model, if any. Lets the base class manage
     /// per-database-session layer state (e.g. forget hidden layers on close).
@@ -115,7 +122,7 @@ public:
 
     /// The layer panel model of the view (owned by the config widget's panel): its data rows follow the
     /// view's layer snapshots (updateLayerTree()), visibility and color mode changes reach the hooks.
-    void attachLayerPanel(ViewLayerTreeModel* layer_model);
+    virtual void attachLayerPanel(ViewLayerTreeModel* layer_model);
 
     virtual void isExporting(bool ok) { is_exporting_ = ok; }
     bool isExporting() const { return is_exporting_; }
@@ -124,7 +131,7 @@ public:
 
     unsigned int loadedDataCount();
 
-    bool isVariableSetLoaded() const;
+    virtual bool isVariableSetLoaded() const;
 
     virtual void appModeSwitch(AppMode app_mode) {} //reacts on switching the application mode
     virtual void configChanged() {}                 //reacts on configuration changes
@@ -199,6 +206,8 @@ protected:
     virtual void databaseClosed_impl() {}                  //implements behavior on closing a database
 
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
+    /// the buffers listed in the view info
+    virtual const BufferData& viewInfoBuffers() const { return data_; }
 
     void addNullCount(size_t n);
     void addNanCount(size_t n);

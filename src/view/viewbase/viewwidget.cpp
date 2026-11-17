@@ -21,6 +21,8 @@
 #include "viewdatawidget.h"
 #include "viewconfigwidget.h"
 #include "viewtoolswitcher.h"
+#include "viewtool.h"
+#include "viewscreenshotdialog.h"
 #include "viewloadstatewidget.h"
 #include "viewpresetwidget.h"
 #include "viewinfowidget.h"
@@ -32,11 +34,16 @@
 
 #include <QVBoxLayout>
 #include <QSplitter>
+#include <QAction>
+#include <QSignalBlocker>
 #include <QSettings>
 #include <QPainter>
 
 const int ViewWidget::DataWidgetStretch   = 3;
 const int ViewWidget::ConfigWidgetStretch = 1;
+
+const int ViewWidget::ToolScreenshot  = ViewTool::HostIdBase;
+const int ViewWidget::ToolConfigPanel = ViewTool::HostIdBase + 1;
 
 ViewWidget::ViewWidget(View* view, QWidget* parent)
     : QWidget(parent),
@@ -46,8 +53,6 @@ ViewWidget::ViewWidget(View* view, QWidget* parent)
     UI_TEST_OBJ_NAME(this, QString::fromStdString(view->instanceName()))
 
     setContentsMargins(0, 0, 0, 0);
-
-    tool_switcher_.reset(new ViewToolSwitcher);
 
     createStandardLayout();
 }
@@ -82,12 +87,12 @@ void ViewWidget::createStandardLayout()
     setLayout(main_layout);
 
     //create top layout
-    QHBoxLayout* top_layout = new QHBoxLayout;
-    top_layout->setContentsMargins(0, 0, 0, 0);
-    top_layout->setSpacing(0);
-    top_layout->setMargin(0);
+    top_layout_ = new QHBoxLayout;
+    top_layout_->setContentsMargins(0, 0, 0, 0);
+    top_layout_->setSpacing(0);
+    top_layout_->setMargin(0);
 
-    main_layout->addLayout(top_layout);
+    main_layout->addLayout(top_layout_);
 
     //create preset selection
     if (view_->viewManager().viewPresetsEnabled())
@@ -95,17 +100,11 @@ void ViewWidget::createStandardLayout()
         preset_widget_ = new ViewPresetWidget(view_, this);
         preset_widget_->setFixedWidth(PresetSelectionWidth);
 
-        top_layout->addWidget(preset_widget_);
-        top_layout->addSpacerItem(new QSpacerItem(PresetSelectionSpacer, 1, QSizePolicy::Fixed, QSizePolicy::Preferred));
+        top_layout_->addWidget(preset_widget_);
+        top_layout_->addSpacerItem(new QSpacerItem(PresetSelectionSpacer, 1, QSizePolicy::Fixed, QSizePolicy::Preferred));
     }
 
-    //create tool widget
-    {
-        tool_widget_ = new ViewToolWidget(this, tool_switcher_.get(), this);
-        tool_widget_->setContentsMargins(0, 0, 0, 0);
-
-        top_layout->addWidget(tool_widget_);
-    }
+    //the tool widget follows in setDataWidget(), it needs the tool switcher
 
     //central layout
     QHBoxLayout* central_layout = new QHBoxLayout;
@@ -232,11 +231,8 @@ void ViewWidget::init()
     traced_assert(state_widget_);
     traced_assert(info_widget_);
 
-    //add screenshot button
-    tool_widget_->addScreenshotButton();
-
-    //add toggle button for config widget
-    tool_widget_->addConfigWidgetToggle();
+    //add screenshot button and toggle button for config widget
+    registerHostTools();
 
     //set info widget visibility
     info_widget_->setVisible(showInfoWidget());
@@ -277,7 +273,26 @@ void ViewWidget::setDataWidget(ViewDataWidget* w)
     layout->addWidget(w);
 
     data_widget_ = w;
-    data_widget_->setToolSwitcher(tool_switcher_.get());
+
+    //a render widget owns its tools, the other data widgets get the switcher from here
+    tool_switcher_ = data_widget_->renderToolSwitcher();
+
+    if (!tool_switcher_)
+    {
+        own_tool_switcher_.reset(new ViewToolSwitcher);
+        tool_switcher_ = own_tool_switcher_.get();
+    }
+
+    //create tool widget
+    {
+        tool_widget_ = new ViewToolWidget(tool_switcher_, this);
+        tool_widget_->setContentsMargins(0, 0, 0, 0);
+
+        top_layout_->addWidget(tool_widget_);
+    }
+
+    if (own_tool_switcher_)
+        data_widget_->setToolSwitcher(own_tool_switcher_.get());
 
     connect(data_widget_, &ViewDataWidget::redrawStarted, this, &ViewWidget::redrawStarted);
     connect(data_widget_, &ViewDataWidget::redrawDone, this, &ViewWidget::redrawDone);
@@ -286,6 +301,46 @@ void ViewWidget::setDataWidget(ViewDataWidget* w)
 
     //try to connect
     connectWidgets();
+}
+
+/**
+ * Registers the tools of the view widget itself: the screenshot button and the toggle button of the
+ * config widget.
+ */
+void ViewWidget::registerHostTools()
+{
+    ViewTool screenshot;
+    screenshot.id       = ToolScreenshot;
+    screenshot.name     = "Save Screenshot";
+    screenshot.icon     = getIcon("camera.png");
+    screenshot.kind     = ViewTool::Kind::Trigger;
+    screenshot.callback = [ this ] (bool)
+    {
+        ViewScreenshotDialog dlg(view_, tool_widget_);
+        dlg.exec();
+    };
+
+    tool_widget_->addSpacerIfNone();
+    tool_widget_->addSeparatorIfValid();
+    tool_switcher_->registerTool(screenshot);
+
+    ViewTool config_panel;
+    config_panel.id       = ToolConfigPanel;
+    config_panel.name     = "Toggle Configuration Panel";
+    config_panel.key      = Qt::Key_C;
+    config_panel.icon     = getIcon("configuration.png");
+    config_panel.kind     = ViewTool::Kind::Toggle;
+    config_panel.callback = [ this ] (bool) { toggleConfigWidget(); };
+    config_panel.update   = [ this ] (QAction* action)
+    {
+        //the state without the callback, it would toggle the panel again
+        QSignalBlocker blocker(action);
+        action->setChecked(config_widget_shown_);
+    };
+
+    tool_widget_->addSpacerIfNone();
+    tool_widget_->addSeparatorIfValid();
+    tool_switcher_->registerTool(config_panel);
 }
 
 /**
@@ -371,6 +426,8 @@ void ViewWidget::toggleConfigWidget()
 
     bool vis = right_widget_->isVisible();
     right_widget_->setVisible(!vis);
+
+    config_widget_shown_ = !vis;
 }
 
 /**

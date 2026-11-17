@@ -18,7 +18,6 @@
 #include "histogramviewconfigwidget.h"
 #include "viewmanager.h"
 #include "histogramviewwidget.h"
-#include "histogramviewdatawidget.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 #include "histogramview.h"

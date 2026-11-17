@@ -17,11 +17,13 @@
 
 #include "histogramviewwidget.h"
 #include "histogramviewconfigwidget.h"
-#include "histogramviewdatawidget.h"
+#include "histogramviewrenderwidget.h"
+#include "histogramviewmodel.h"
+#include "viewdatawidgetadapter.h"
 //#include "files.h"
-#include "viewtoolswitcher.h"
 #include "viewtoolwidget.h"
 
+#include <QAction>
 #include <QHBoxLayout>
 #include <QSettings>
 #include <QSplitter>
@@ -34,59 +36,129 @@
 HistogramViewWidget::HistogramViewWidget(HistogramView* view, QWidget* parent)
 :   VariableViewWidget(view, parent)
 {
-    auto data_widget = new HistogramViewDataWidget(this);
+    auto model = &view->model();
+
+    render_widget_ = new HistogramViewRenderWidget;
+
+    auto render_widget = render_widget_;
+
+    auto update_display = [ render_widget, view ] ()
+    {
+        render_widget->setDisplayData(view->model().displayData(), view->renderOptions());
+    };
+
+    auto data_widget = new ViewDataWidgetAdapter(this, model, render_widget, update_display);
+
+    //the chart is listed only together with a result of the buffers
+    data_widget->setViewInfoFunc([ render_widget, model ] (nlohmann::json& info)
+    {
+        model->viewInfoJSON(info);
+
+        if (model->hasValidResult())
+            render_widget->viewInfoJSON(info);
+    });
+
     setDataWidget(data_widget);
 
     auto config_widget = new HistogramViewConfigWidget(this);
     setConfigWidget(config_widget);
 
-    typedef HistogramViewDataTool Tool;
+    registerTools(view);
+}
 
-    auto activeIfVariableDataShownCB = [ data_widget, view ] (QAction* a)
+/**
+ * The tools that need the model. The render widget has registered the navigate tool.
+ */
+void HistogramViewWidget::registerTools(HistogramView* view)
+{
+    auto model         = &view->model();
+    auto render_widget = render_widget_;
+
+    auto activeIfVariableDataShownCB = [ render_widget, view ] (QAction* a)
     {
-        a->setEnabled(data_widget->isDrawn() && view->showsVariables());
+        a->setEnabled(render_widget->isDrawn() && view->showsVariables());
     };
 
-    getViewToolSwitcher()->addTool(Tool::HG_DEFAULT_TOOL, "", {}, QIcon(), Qt::ArrowCursor);
-    getViewToolSwitcher()->addTool(Tool::HG_SELECT_TOOL, "Select", Qt::Key_S, getIcon("select_action.png"), Qt::CrossCursor);
-    getViewToolSwitcher()->addTool(Tool::HG_ZOOM_TOOL, "Zoom", Qt::Key_Z, getIcon("zoom_select_action.png"), Qt::CrossCursor);
-    getViewToolSwitcher()->setDefaultTool(Tool::HG_DEFAULT_TOOL);
+    ViewTool select;
+    select.id       = HG_SELECT_TOOL;
+    select.name     = "Select";
+    select.key      = Qt::Key_S;
+    select.icon     = getIcon("select_action.png");
+    select.cursor   = Qt::CrossCursor;
+    select.kind     = ViewTool::Kind::Mode;
+    select.update   = activeIfVariableDataShownCB;
+    select.callback = [ render_widget, model ] (bool on)
+    {
+        if (!on)
+            return;
 
-    //we could add the default action if we wanted
-    getViewToolWidget()->addTool(Tool::HG_SELECT_TOOL, activeIfVariableDataShownCB);
-    getViewToolWidget()->addTool(Tool::HG_ZOOM_TOOL, activeIfVariableDataShownCB);
+        render_widget->requestRectangle([ render_widget, model ] (const QRectF& rect)
+        {
+            if (auto bins = render_widget->binRange(rect))
+                model->selectBins(bins->first, bins->second);
+        });
+    };
+
+    ViewTool zoom;
+    zoom.id       = HG_ZOOM_TOOL;
+    zoom.name     = "Zoom";
+    zoom.key      = Qt::Key_Z;
+    zoom.icon     = getIcon("zoom_select_action.png");
+    zoom.cursor   = Qt::CrossCursor;
+    zoom.kind     = ViewTool::Kind::Mode;
+    zoom.update   = activeIfVariableDataShownCB;
+    zoom.callback = [ render_widget, model ] (bool on)
+    {
+        if (!on)
+            return;
+
+        render_widget->requestRectangle([ render_widget, model ] (const QRectF& rect)
+        {
+            if (auto bins = render_widget->binRange(rect))
+                model->zoomToBins(bins->first, bins->second);
+        });
+    };
+
+    ViewTool invert_selection;
+    invert_selection.id       = HG_INVERT_SELECTION_TOOL;
+    invert_selection.name     = "Invert Selection";
+    invert_selection.icon     = getIcon("select_invert.png");
+    invert_selection.kind     = ViewTool::Kind::Trigger;
+    invert_selection.update   = activeIfVariableDataShownCB;
+    invert_selection.callback = [ model ] (bool) { model->invertSelection(); };
+
+    ViewTool delete_selection;
+    delete_selection.id       = HG_DELETE_SELECTION_TOOL;
+    delete_selection.name     = "Delete Selection";
+    delete_selection.icon     = getIcon("select_delete.png");
+    delete_selection.kind     = ViewTool::Kind::Trigger;
+    delete_selection.update   = activeIfVariableDataShownCB;
+    delete_selection.callback = [ model ] (bool) { model->clearSelection(); };
+
+    ViewTool zoom_home;
+    zoom_home.id       = HG_ZOOM_HOME_TOOL;
+    zoom_home.name     = "Zoom to Home";
+    zoom_home.key      = Qt::Key_Space;
+    zoom_home.icon     = getIcon("zoom_home.png");
+    zoom_home.kind     = ViewTool::Kind::Trigger;
+    zoom_home.callback = [ model ] (bool) { model->resetZoom(); };
+
+    render_widget->registerTool(select);
+    render_widget->registerTool(zoom);
 
     getViewToolWidget()->addSpacer();
 
-    getViewToolWidget()->addActionCallback("Invert Selection", [=] () { data_widget->invertSelectionSlot(); }, activeIfVariableDataShownCB, getIcon("select_invert.png"));
-    getViewToolWidget()->addActionCallback("Delete Selection", [=] () { data_widget->clearSelectionSlot(); }, activeIfVariableDataShownCB, getIcon("select_delete.png"));
+    render_widget->registerTool(invert_selection);
+    render_widget->registerTool(delete_selection);
 
     getViewToolWidget()->addSpacer();
 
-    getViewToolWidget()->addActionCallback("Zoom to Home", [=] () { data_widget->resetZoomSlot(); }, {}, getIcon("zoom_home.png"), Qt::Key_Space);
+    render_widget->registerTool(zoom_home);
 }
 
 /**
  */
 HistogramViewWidget::~HistogramViewWidget() = default;
-
-/**
- */
-HistogramViewDataWidget* HistogramViewWidget::getViewDataWidget()
-{
-    auto w = dynamic_cast<HistogramViewDataWidget*>(ViewWidget::getViewDataWidget());
-    traced_assert(w);
-    return w;
-}
-
-/**
- */
-const HistogramViewDataWidget* HistogramViewWidget::getViewDataWidget() const
-{
-    auto w =  dynamic_cast<const HistogramViewDataWidget*>(ViewWidget::getViewDataWidget());
-    traced_assert(w);
-    return w;
-}
 
 /**
  */

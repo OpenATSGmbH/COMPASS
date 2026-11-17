@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "viewtool.h"
+
 #include <QString>
 #include <QIcon>
 #include <QCursor>
@@ -24,6 +26,7 @@
 
 #include <functional>
 #include <map>
+#include <vector>
 
 class QWidget;
 class QShortcut;
@@ -32,6 +35,9 @@ class QShortcut;
  * Class for registering and switching view 'tools'.
  * A tool consists of various attributes e.g. an id, an icon, a keyboard shortcut, a mouse cursor etc.
  * A default tool can be set, which is used when the currend tool is ended via endCurrentTool().
+ *
+ * registerTool() stores tools of all three kinds (ViewTool). The first registered mode tool is the default tool.
+ * A mode tool gets its callback with true when it becomes the current tool, and with false when it is left.
  */
 class ViewToolSwitcher : public QObject
 {
@@ -58,6 +64,10 @@ public:
                  const QKeySequence& key_combination = QKeySequence(), 
                  const QIcon& icon = QIcon(), 
                  const QCursor& cursor = QCursor());
+
+    void registerTool(const ViewTool& tool);
+    const std::vector<ViewTool>& registeredTools() const { return registered_tools_; }
+    const ViewTool* registeredTool(int id) const;
     
     void setCurrentTool(int id, bool force_update = false);
     void endCurrentTool();
@@ -76,9 +86,13 @@ public:
 
 signals:
     void toolChanged(int id, const QCursor& cursor);
+    void toolRegisteredSignal(int id);
 
 private:
+    void notifyModeTool(int id, bool active);
+
     std::map<int, Tool> tools_;
+    std::vector<ViewTool> registered_tools_; // in the order of registration
 
     int current_tool_ = -1;
     int default_tool_ = -1;

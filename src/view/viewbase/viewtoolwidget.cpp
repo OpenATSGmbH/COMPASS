@@ -17,9 +17,7 @@
 
 #include "viewtoolwidget.h"
 #include "viewtoolswitcher.h"
-#include "viewwidget.h"
-#include "view.h"
-#include "viewscreenshotdialog.h"
+#include "viewtool.h"
 #include "timeconv.h"
 
 #include "ui_test_common.h"
@@ -33,19 +31,55 @@
 
 /**
  */
-ViewToolWidget::ViewToolWidget(ViewWidget* view_widget, 
-                               ViewToolSwitcher* tool_switcher, 
+ViewToolWidget::ViewToolWidget(ViewToolSwitcher* tool_switcher, 
                                QWidget* parent)
 :   QToolBar      (parent)
-,   view_widget_  (view_widget)
 ,   tool_switcher_(tool_switcher)
 {
-    traced_assert(view_widget_);
     traced_assert(tool_switcher_);
 
     connect(tool_switcher_, &ViewToolSwitcher::toolChanged, this, &ViewToolWidget::toolSwitched);
 
     setObjectName("toolbar");
+
+    //tools registered before the toolbar existed (e.g. by a render widget), then the later ones
+    for (const auto& tool : tool_switcher_->registeredTools())
+        addRegisteredTool(tool);
+
+    connect(tool_switcher_, &ViewToolSwitcher::toolRegisteredSignal, this, [ this ] (int id)
+    {
+        auto tool = tool_switcher_->registeredTool(id);
+        traced_assert(tool);
+
+        addRegisteredTool(*tool);
+    });
+}
+
+/**
+ * Adds the toolbar action of a registered tool.
+ */
+void ViewToolWidget::addRegisteredTool(const ViewTool& tool)
+{
+    //e.g. the navigate tool
+    if (tool.icon.isNull())
+        return;
+
+    const auto callback = tool.callback;
+
+    if (tool.kind == ViewTool::Kind::Mode)
+    {
+        addTool(tool.id, tool.update);
+    }
+    else if (tool.kind == ViewTool::Kind::Trigger)
+    {
+        Callback cb = [ callback ] () { if (callback) callback(true); };
+        addActionCallback(tool.id, tool.name, cb, tool.update, tool.icon, tool.key);
+    }
+    else
+    {
+        ToggleCallback cb = [ callback ] (bool on) { if (callback) callback(on); };
+        addActionCallback(tool.id, tool.name, cb, tool.update, tool.icon, tool.key, false);
+    }
 }
 
 /**
@@ -268,6 +302,15 @@ void ViewToolWidget::addActionCallback(int id,
 }
 
 /**
+ * Adds a spacer item if the toolbar has none yet.
+ */
+void ViewToolWidget::addSpacerIfNone()
+{
+    if (spacers_.empty())
+        addSpacer();
+}
+
+/**
  * Adds a separator only if it makes sense (e.g. not adding a separator twice etc.).
 */
 void ViewToolWidget::addSeparatorIfValid()
@@ -276,44 +319,6 @@ void ViewToolWidget::addSeparatorIfValid()
         return;
 
     addSeparator();
-}
-
-/**
- * Adds a button for toggling the config widget, that is part of the ViewWidget.
-*/
-void ViewToolWidget::addScreenshotButton()
-{
-    //add spacer if no spacer yet
-    if (spacers_.empty())
-        addSpacer();
-
-    //add separator if needed
-    addSeparatorIfValid();
-
-    auto screener_cb = [ = ] ()
-    {
-        ViewScreenshotDialog dlg(view_widget_->getView(), this);
-        dlg.exec();
-    };
-
-    //add callback
-    addActionCallback("Save Screenshot", screener_cb, {}, ViewWidget::getIcon("camera.png"), QKeySequence());
-}
-
-/**
- * Adds a button for toggling the config widget, that is part of the ViewWidget.
-*/
-void ViewToolWidget::addConfigWidgetToggle()
-{
-    //add spacer if no spacer yet
-    if (spacers_.empty())
-        addSpacer();
-
-    //add separator if needed
-    addSeparatorIfValid();
-
-    //add toggle callback
-    addActionCallback("Toggle Configuration Panel", [=] (bool on) { view_widget_->toggleConfigWidget(); }, {}, ViewWidget::getIcon("configuration.png"), Qt::Key_C, true);
 }
 
 /**

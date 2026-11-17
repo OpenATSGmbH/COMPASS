@@ -20,7 +20,7 @@
 #include "variableviewwidget.h"
 
 class HistogramView;
-class HistogramViewDataWidget;
+class HistogramViewRenderWidget;
 class HistogramViewConfigWidget;
 
 class QSplitter;
@@ -33,11 +33,15 @@ class HistogramViewWidget : public VariableViewWidget
     /// @brief Destructor
     virtual ~HistogramViewWidget();
     
-    HistogramViewDataWidget* getViewDataWidget();
-    const HistogramViewDataWidget* getViewDataWidget() const;
+    HistogramViewRenderWidget* renderWidget() { return render_widget_; }
     HistogramViewConfigWidget* getViewConfigWidget();
     const HistogramViewConfigWidget* getViewConfigWidget() const;
 
     /// @brief Returns the basis view
     HistogramView* getView();
+
+  private:
+    void registerTools(HistogramView* view);
+
+    HistogramViewRenderWidget* render_widget_ = nullptr; // owned by the data widget (adapter)
 };

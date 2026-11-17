@@ -15,7 +15,8 @@
  */
 
 #include "histogramviewchartview.h"
-#include "histogramviewdatawidget.h"
+#include "histogramviewchartview.h"
+#include "histogramviewrenderwidget.h"
 #include "logger.h"
 #include "traced_assert.h"
 
@@ -30,15 +31,15 @@ namespace QtCharts
 
 /**
  */
-HistogramViewChartView::HistogramViewChartView(HistogramViewDataWidget* data_widget, 
+HistogramViewChartView::HistogramViewChartView(HistogramViewRenderWidget* render_widget, 
                                                QChart* chart, 
                                                QWidget* parent)
-:   ChartView   (chart, ChartView::SelectionStyle::RubberBand, parent)
-,   data_widget_(data_widget)
+:   ChartView     (chart, ChartView::SelectionStyle::RubberBand, parent)
+,   render_widget_(render_widget)
 {
     setSelectionAxes(SelectionAxes::X);
 
-    traced_assert(data_widget_);
+    traced_assert(render_widget_);
 }
 
 /**
@@ -51,10 +52,7 @@ bool HistogramViewChartView::handleMousePress(Qt::MouseButtons buttons, const QP
 {
     if (buttons & Qt::LeftButton)
     {
-        auto tool = data_widget_->selectedTool();
-
-        if (tool == HG_SELECT_TOOL ||
-            tool == HG_ZOOM_TOOL)
+        if (render_widget_->rectangleRequested())
         {
             logdbg << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -81,10 +79,7 @@ bool HistogramViewChartView::handleMouseMove(Qt::MouseButtons buttons, const QPo
 {
     if (buttons & Qt::LeftButton)
     {
-        auto tool = data_widget_->selectedTool();
-
-        if (tool == HG_SELECT_TOOL ||
-            tool == HG_ZOOM_TOOL)
+        if (render_widget_->rectangleRequested())
         {
             if (isSelectionEnabled())
             {
@@ -111,10 +106,7 @@ bool HistogramViewChartView::handleMouseRelease(Qt::MouseButtons buttons, const 
 {
     if (buttons & Qt::LeftButton)
     {
-        auto tool = data_widget_->selectedTool();
-
-        if (tool == HG_SELECT_TOOL ||
-            tool == HG_ZOOM_TOOL)
+        if (render_widget_->rectangleRequested())
         {
             if (isSelectionEnabled())
             {
@@ -132,7 +124,7 @@ bool HistogramViewChartView::handleMouseRelease(Qt::MouseButtons buttons, const 
                 logdbg << "region p1 " << p1_data_.x() << "," << p1_data_.y() << " p2 " << p2_data_.x() << "," << p2_data_.y();
 
                 updateSelection(p1_, p2_, p1_data_, p2_data_);
-                sendSelectedBins();
+                sendSelectedRegion();
                 endSelection();
 
                 return true;
@@ -143,38 +135,16 @@ bool HistogramViewChartView::handleMouseRelease(Qt::MouseButtons buttons, const 
 }
 
 /**
+ * Reports the selected region to the render widget. A region that covers no bin center is not
+ * reported, the user can draw the rectangle again.
  */
-void HistogramViewChartView::sendSelectedBins()
+void HistogramViewChartView::sendSelectedRegion()
 {
-    const int bins = (int)data_widget_->numBins();
+    auto region = selectedChartRegion();
 
-    if (bins > 0)
-    {
-        auto clampBinToRange = [ & ] (int& bin) 
-        {
-            //bin == binmax is the zero value bin, so clamp to [0, numbins]
-            bin = std::max(0, std::min(bin, bins));
-        };
-
-        auto region = selectedChartRegion();
-
-        //determine which bin centers are inside the numeric range (bin centers are at full integers, 0, 1, 2, and so on)
-        int bin_min = (int)std::ceil(region.left());
-        int bin_max = (int)std::floor(region.right());
-
-        //clamp bin ids for safety
-        clampBinToRange(bin_min);
-        clampBinToRange(bin_max);
-
-        logdbg << "bin range [" << bin_min << "," << bin_max << "] bins = " << bins;
-
-        //only send range when valid
-        if (bin_min <= bin_max)
-        {
-            // do stuff
-            emit rectangleSelectedSignal(bin_min, bin_max);
-        }
-    } 
+    //only send range when valid
+    if (render_widget_->binRange(region).has_value())
+        render_widget_->rectangleSelected(region);
 }
 
 /**

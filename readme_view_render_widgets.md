@@ -1,6 +1,6 @@
 # View Models and View Render Widgets
 
-Status: all six steps planned and agreed (2026-11-17), sections 7.1 to 7.5. No code written. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
+Status: all seven steps planned and agreed (2026-11-17), sections 7.1 to 7.6. No code written. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
 Audience: the agent that implements this. Read `CLAUDE.md` first (library layering, code conventions).
 
 This document is the current specification. It holds no superseded text. The decision history is in the handover, section 10.
@@ -33,8 +33,8 @@ Related documents:
 8. The tool description holds nothing about the mouse. The mouse handling is a service of the render widget.
 9. Table View and Geographic View are special cases:
    - They need no render widget for the report.
-   - They are not ported in the first iteration.
-10. First iteration: an adapter class keeps `View`, `ViewWidget` and `ViewLoadStateWidget` unchanged (section 6).
+   - They get a minimal port in step 7, with listed exceptions from the rules of section 4 (section 7.6).
+10. Steps 1 to 6: an adapter class keeps `View`, `ViewWidget` and `ViewLoadStateWidget` unchanged (section 6). Step 7 removes the adapter and `ViewDataWidget`.
 
 ## 3. Assembly Today
 
@@ -87,6 +87,7 @@ Rules:
   - In a report the owner is the factory function (section 6).
   - The data is a `std::shared_ptr<const ...DisplayData>`. A change of the options calls again with the same pointer. Nothing is copied.
 - Signals go from the model to the adapter. Tool callbacks go into the model. The view registers them (section 5).
+- These rules are for the three chart views. The Table View and the Geographic View have exceptions (section 7.6).
 
 Classes per view:
 
@@ -341,13 +342,13 @@ Example, the Select tool of the Scatterplot View:
 - `kind = Mode`.
 - `callback`: on activation it calls `requestRectangle(...)` with a callback into the selection function of the model.
 
-## 6. Changes to the Existing Classes, First Iteration
+## 6. Changes to the Existing Classes, Steps 1 to 6
 
 | Class | Change |
 |---|---|
 | `View`, `VariableView` | Stay. The view creates its model and fills the render options from its settings. `VariableView` keeps the annotation list and gives the current annotation to the model. |
 | `ViewWidget` | Stays, same layout. |
-| `ViewDataWidget` | Stays. Table View and Geographic View use it without change. |
+| `ViewDataWidget` | Stays until step 7. Table View and Geographic View use it without change until then. |
 | New: `ViewDataWidgetAdapter : ViewDataWidget` | Adapter. Holds the render widget and a pointer to the model of the view. Forwards the base functions (`updateFromSource`, `redrawData`, `clearData`, ...) to them. Gives the display data of the model and the render options of the view to the render widget (`setDisplayData`). `View`, `ViewWidget` and `ViewLoadStateWidget` need no second code path. |
 | `HistogramViewDataWidget`, `ScatterPlotViewDataWidget`, `GridViewDataWidget` | Removed. Each is split into model and render widget. |
 | `VariableViewDataWidget`, `VariableViewStashDataWidget` | Removed when the third view is ported. |
@@ -372,9 +373,9 @@ In the report:
 - No `View`, no `ViewWidget`, no adapter, no model object.
 - The factory gets the `DBContextManager` only for the sector lines of geographic grids (section 7.5).
 
-Later iteration:
-- Port Table View and Geographic View.
-- Then `ViewWidget` talks to model and render widget directly. The adapter and `ViewDataWidget` go away.
+Step 7 (section 7.6):
+- Minimal port of the Table View and the Geographic View.
+- Then `ViewWidget` talks to model and render widget directly. The adapter and `ViewDataWidget` are removed.
 
 ## 7. Class Names, Tool Owner, Order of the Work
 
@@ -387,7 +388,7 @@ A1, owner of the tools and the toolbar (agreed 2026-11-16):
 - The host decides if it shows a toolbar:
   - View: `ViewWidget` builds its toolbar (`ViewToolWidget`) from the switcher of the render widget, at the same place as today.
   - Report: no toolbar.
-  - Table View and Geographic View: `ViewWidget` creates its own switcher, as today.
+  - Table View and Geographic View: `ViewWidget` creates its own switcher, as today. In step 7 their render widgets own it, as for the other views.
 - `ViewToolWidget` loses its `ViewWidget*` argument. It uses it only for the screenshot button and the configuration panel toggle (added in `viewwidget.cpp`, `addScreenshotButton`, `addConfigWidgetToggle`). `ViewWidget` registers these two as normal tools.
 
 A2, order of the work (agreed 2026-11-16). Do the steps one at a time. The existing view UI tests must pass after each step.
@@ -397,12 +398,14 @@ A2, order of the work (agreed 2026-11-16). Do the steps one at a time. The exist
 4. The complete Grid View, and report figures for grids with other axes (section 7.5).
 5. Report figures for geographic grids: background set from the view point, sectors, text labels (section 7.5).
 6. Report figure background in the task dialogs of the evaluation and the data source analysis (section 7.5).
+7. Minimal port of the Table View and the Geographic View. `ViewDataWidget` and the adapter are removed (section 7.6).
 
 Reasons for this order:
 - The histogram is the smallest data widget and needs no stash model.
 - Its zoom tool needs the model. It tests `registerTool` completely.
 - Step 2 tests the annotation input of the model, the factory function and `render(QImage&, QSize)` early.
 - The grid background is the hardest part. It comes when the base classes are stable.
+- Step 7 is last. It changes nothing for the user, and steps 1 to 6 do not need it.
 
 ## 7.1 Step 1: Base Classes, Adapter, Histogram View (Agreed 2026-11-17)
 
@@ -445,7 +448,7 @@ Done criteria:
 - `python3 scripts/check_layering.py --build-dir build` reports no new violations.
 - `HistogramViewDataWidget` is removed.
 - Scatterplot View, Grid View, Table View and Geographic View are not changed, except for the toolbar change (A1).
-- Changes reported per repository. No commit.
+- Changes reported per repository. Commit after the step is done, per repository (section 11).
 
 ## 7.2 Step 2: Histogram Figures in the Report GUI and in the Export (Agreed 2026-11-17)
 
@@ -547,7 +550,7 @@ Done criteria for step 2:
 - All existing integration tests of step 1 pass. Reference values change only for image names of histogram figures.
 - The display scaling check gives equal images.
 - `python3 scripts/check_layering.py --build-dir build` reports no new violations.
-- Changes reported per repository. No commit.
+- Changes reported per repository. Commit after the step is done, per repository (section 11).
 
 ## 7.3 Step 3: Scatterplot View and Its Report Figures (Agreed 2026-11-17)
 
@@ -651,7 +654,7 @@ Done criteria for step 3:
 - The draw time of the largest report scatterplot without OpenGL (image drawing) is measured and reported to the user.
 - `ScatterPlotViewDataWidget` is removed. Grid View, Table View and Geographic View are not changed.
 - `python3 scripts/check_layering.py --build-dir build` reports no new violations.
-- Changes reported per repository (the reconstruction figures are in `experimental_src`). No commit.
+- Changes reported per repository (the reconstruction figures are in `experimental_src`). Commit after the step is done, per repository (section 11).
 
 ## 7.4 Legend in Report Figures (Agreed 2026-11-17)
 
@@ -887,12 +890,63 @@ Done criteria for steps 4, 5 and 6, each step:
 - The build has no errors. `compass_tests` passes with the new tests.
 - The existing and the new integration tests pass on the local build.
 - `python3 scripts/check_layering.py --build-dir build` reports no new violations.
-- Changes reported per repository. No commit.
+- Changes reported per repository. Commit after the step is done, per repository (section 11).
 
 In addition:
 - Step 4: `GridViewDataWidget`, `VariableViewDataWidget`, `VariableViewStashDataWidget` and `SimpleGridViewChart` are removed. Table View and Geographic View are not changed.
 - Step 5: the check of the dropped sector overview cache is reported to the user.
 - Step 6: the user manual sections of the two tasks describe the new fields (load the `documentation` skill first).
+
+## 7.6 Step 7: Table View and Geographic View, Minimal Port (Agreed 2026-11-17)
+
+Goal: no `ViewDataWidget` and no adapter are left. The two data widgets become render widgets with the smallest possible change. Their behavior does not change.
+
+Code state (checked 2026-11-17):
+- `TableViewDataWidget` (`src/view/tableview/`): 477 lines. 6 files name it, all in `src/view/tableview/`.
+- `GeographicViewDataWidget` (`experimental_src/plugins/geoview/geographicview/`): 4097 lines. 29 files of the plugin name it. Its code is not read yet, only the references are counted.
+- Both derive from `ViewDataWidget` directly and implement its hooks (`updateFromSource_impl`, `loadingStarted_impl`, `loadingDone_impl`, `clearData_impl`, `redrawData_impl`, `liveReload_impl`, `toolChanged_impl`).
+
+New classes:
+
+| View | Model | Model base | Render widget | Render widget base |
+|---|---|---|---|---|
+| Table | `TableViewModel` | `ViewModel` | `TableViewRenderWidget` | `ViewRenderWidget` |
+| Geographic | `GeographicViewModel` | `ViewModel` | `GeographicViewRenderWidget` | `ViewRenderWidget` |
+
+- The two models are thin. They hold only what the base `ViewModel` holds: buffers, layer aggregates and snapshots, hidden layer ids, null/NaN counts, asynchronous processor.
+- The two render widgets are today's data widgets with a new name and a new base class.
+- The `_impl` hooks become slots of the render widget. The view connects them to the signals of the model.
+- Tools: `registerTool`, as for the other views (section 5). `toolChanged_impl` goes away.
+- `ViewWidget` talks to the model and the render widget for all five views. `ViewDataWidget` and `ViewDataWidgetAdapter` are removed.
+
+Allowed exceptions from the rules of section 4, for these two views only:
+1. The render widget holds a pointer to its model.
+2. The render widget reads the buffers and does the data processing (table rows, OSG layers). There is no display data struct and no `setDisplayData()`.
+3. The render widget reads the view settings. There is no render options struct.
+4. There is no static annotation function. The Geographic View reads its annotations as today.
+5. `render(QImage&, QSize, scale)` gives today's screenshot. It does not work without a view. The report does not use it (section 2, decision 9).
+
+- No other exception. If the port needs one, ask the user first.
+- The exceptions are not a pattern for new views.
+
+Constraints:
+- The UI tests address the widget as `last_view.datawidget`. Both render widgets keep the object name `datawidget`. Not checked: other object paths in the Table View and Geographic View tests.
+- Destruction order: the asynchronous tasks of the Table View write into the widget (`launchAsyncPrepare`, `commitLoadedData`), and the processor is in the model after the port. Keep the rule that the processor is shut down before the widget part is destroyed (`shutdownAsyncProcessor()`). Define the place at implementation time.
+- The tool classes of the Geographic View (`MeasureTool`, `SectorEditTool`, ...) take the data widget by reference. They get the render widget.
+
+Order inside the step: the Table View first, with its tests. Then the Geographic View. Then the removal of `ViewDataWidget` and the adapter.
+
+Tests:
+- Existing integration tests that must pass with unchanged reference results (`experimental_src/py/tests/`): `ui/tableview/` (6 tests), `ui/geographicview/` (12 tests), `view_points/geographicview/` (14 tests), `ui/views/ui_open_views.py`, and all view tests of steps 1 to 4.
+- No new integration test. The behavior does not change.
+- Unit tests: the tests of `ViewModel` and `ViewRenderWidget` from step 1 stay valid. Tests of the adapter are removed with the adapter.
+
+Done criteria for step 7:
+- The build has no errors. `compass_tests` passes.
+- The listed integration tests pass on the local build, references unchanged.
+- `ViewDataWidget`, `ViewDataWidgetAdapter`, `TableViewDataWidget` and `GeographicViewDataWidget` are removed.
+- `python3 scripts/check_layering.py --build-dir build` reports no new violations.
+- Changes reported per repository (the Geographic View is in `experimental_src`). Commit after the step is done, per repository (section 11).
 
 ## 8. Risks
 
@@ -902,6 +956,7 @@ In addition:
 - The asynchronous processing moves to the model. The rule for the destructor stays (`shutdownAsyncProcessor()` before the derived part is destroyed).
 - `View` and the config widgets call the data widgets directly, and the data widgets have friends. These calls are not counted yet.
 - The views must look and behave the same after each step.
+- Step 7: `GeographicViewDataWidget` is large and its code is not read yet. The port can find base class functions that the plugin uses and that are not in the lists of section 4.3.
 
 ## 9. Planning Questions (All Answered)
 
@@ -933,7 +988,7 @@ The questions are from `handover_view_render_widgets_20261116.md`, section 7. Th
 
 ## 11. Rules
 
-- Do not commit. The user commits.
+- Commit after each step, when its done criteria are met, per repository (decided by the user 2026-11-17). No commit in the middle of a step. No push.
 - `experimental_src/` is a separate git repository. Report changes there separately.
 - Write all text in ASD-STE100 (short sentences, active voice, lists), American English, no em-dash, no semicolons.
 - After the work: `python3 scripts/check_layering.py --build-dir build` must report no new violations.

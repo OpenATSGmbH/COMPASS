@@ -819,10 +819,12 @@ nlohmann::json ViewDataWidget::viewInfoJSON() const
     info[ "drawn_content"       ] = isContentDrawn();
     info[ "has_visible_content" ] = hasVisibleContent();
 
-    info[ "num_buffers" ] = data_.size();
+    const auto& buffers = viewInfoBuffers();
+
+    info[ "num_buffers" ] = buffers.size();
 
     nlohmann::json buffer_infos = nlohmann::json::array();
-    for (const auto& dbc_data : data_)
+    for (const auto& dbc_data : buffers)
     {
         nlohmann::json buffer_info;
         buffer_info[ "dbcontent" ] = dbc_data.first;
