@@ -1,11 +1,15 @@
 # View Models and View Render Widgets
 
-Status: all six steps planned and agreed (2026-11-17), sections 7.1 to 7.5. No code written. All planning questions P1 to P13 are answered (section 9). Open: the items marked "not checked" or "not known", they are checks at implementation time.
-Audience: the agent that continues the planning or implements this. Read `CLAUDE.md` first (library layering, code conventions).
+Status: all six steps planned and agreed (2026-11-17), sections 7.1 to 7.5. No code written. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
+Audience: the agent that implements this. Read `CLAUDE.md` first (library layering, code conventions).
+
+This document is the current specification. It holds no superseded text. The decision history is in the handover, section 10.
 
 Related documents:
-- `handover_view_render_widgets_20261116.md`: task, agreed report behavior, open planning questions P1 to P13.
-- `readme_report_figures.md`: earlier draft for the report figures (figure kinds, figure sources, tests). Parts are out of date, see the handover, section 5.
+- `handover_view_render_widgets_20261116.md`: task, agreed report behavior, the first proposals for P1 to P13, decision history. Where it differs from this document, this document is valid:
+  - Section 3, item 5 ("Geographic grid background, set in the report export") and proposal P8 for the background: the background is a setting of the report generation tasks (section 7.5).
+- `readme_report_figures.md`: earlier draft for the report figures (figure kinds, figure sources, tests). Parts are out of date, see the handover, section 5. In addition:
+  - Decision 4.1, item 4 ("Overlays: points, circles, text") and the "overlays only" figure kind: the grid render widget shows text labels only (section 7.5).
 - `handover_grid_display_20261116.md`: the grid feature work that is done.
 
 ## 1. Goal
@@ -21,8 +25,8 @@ Related documents:
 
 1. The design is a model / render widget framework.
 2. `ViewModel` and `ViewRenderWidget` are base classes. Each view derives its own classes from them.
-3. The view specific render widget is a light class. It talks to its view specific model directly.
-4. The view specific model holds most of the data processing that the view data widgets do today.
+3. The view specific render widget is a light class. It does not know the model. Its owner gives it the display data and the render options in one call (section 4.2).
+4. The view specific model holds most of the data processing that the view data widgets do today. It builds the display data, from the buffers or from an annotation.
 5. A render widget can have a toolbar. The toolbar can be empty (report).
 6. Tools are registered with one generalized function, `registerTool`, with `std::function` callbacks (section 5).
 7. A tool has a kind with three values: `Trigger`, `Toggle`, `Mode`.
@@ -66,18 +70,23 @@ Location: `src/view/viewbase/` (library `compass_view`). The view specific class
 | `ViewModel` | QObject | Buffers, asynchronous processing, layer aggregates and snapshots, null/NaN counts, selection. Signals: display data changed, processing started, processing finished. | The data part of `ViewDataWidget` |
 | `VariableViewModel` | `ViewModel` | Variable states, compute steps | `VariableViewDataWidget` |
 | `VariableViewStashModel` | `VariableViewModel` | Stash | `VariableViewStashDataWidget` |
-| `ViewRenderWidget` | QWidget | `setModel()`, `registerTool()`, `render(QImage&, QSize)`, draw state | The drawing part of `ViewDataWidget` |
+| `ViewRenderWidget` | QWidget | `registerTool()`, `redraw()`, `render(QImage&, QSize, scale)`, draw state. `setDisplayData(data, options)` is in the view specific class (section 4.2). | The drawing part of `ViewDataWidget` |
 | `ChartRenderWidget` | `ViewRenderWidget` | Holds the `ChartView`. Mouse services: drag, `requestRectangle()`. Delayed chart release. | Code that is three times in the data widgets today |
 | `ViewTool` | struct | Section 5 | New |
 
 Rules:
-- A model is not a widget. Then the report export can use model and render widget without a view.
+- A model is not a widget. A render widget does not know the model. Then the report can use the render widget without a view and without a model object.
 - A model has two inputs and one output:
-  - Input in a view: buffers, processed as today.
-  - Input in a report: annotation data, no processing.
-  - Output for both: the display data, plus render options.
+  - Input 1: buffers, processed as today. This is the main path in the views. It needs the managers (section 4.4).
+  - Input 2: an annotation, when a view shows a view point. No processing, no manager.
+  - Output for both: the display data.
+- The annotation path is a static function of the model class (section 4.2). The model calls it in `setAnnotation()`. The report calls it without a model object.
 - A render widget reads only the display data and the render options. It does not read buffers or view settings.
-- Signals go from the model to the widgets. Tool callbacks go from the render widget to the model.
+- The owner gives both to the render widget in one call, `setDisplayData(data, options)`:
+  - In a view the owner is the adapter (section 6).
+  - In a report the owner is the factory function (section 6).
+  - The data is a `std::shared_ptr<const ...DisplayData>`. A change of the options calls again with the same pointer. Nothing is copied.
+- Signals go from the model to the adapter. Tool callbacks go into the model. The view registers them (section 5).
 
 Classes per view:
 
@@ -93,11 +102,11 @@ Split of today's data widget content:
 
 | View | Model | Render widget | Render options |
 |---|---|---|---|
-| Histogram | `HistogramGenerator`, row layer index, bin zoom (`saved_zoom_range_`), selection by bins, colors, hidden layers, title, axis name | Chart from the display data, rectangle to bin indices | Log scale |
-| Scatterplot | Stash processing to the series, bounds, selection by rectangle | Chart, axis ticks, date/time format, axis zoom | Connection lines, axis data type and representation, hidden layers, title, axis names |
-| Grid | Stash to `Grid2D` / `Grid2DLayers`, value range | Rendering, legend, chart, background, user view and zoom limits | `Grid2DRenderSettings`, grid opacity, background settings, sectors |
+| Histogram | `HistogramGenerator`, row layer index, bin zoom (`saved_zoom_range_`), selection by bins, colors, hidden layers, title, axis name | Chart from the display data, rectangle to bin indices | Log scale, legend mode |
+| Scatterplot | Stash processing to the series, bounds, selection by rectangle, hidden layers, title, axis names, axis data type and representation, `domain_id` | Chart, axis ticks, date/time format, axis zoom | Connection lines, OpenGL, legend mode |
+| Grid | Stash to `Grid2D` / `Grid2DLayers`, value type, grid resolution, hidden layers, title, axis names, geographic flag, database extent, sector lines, `domain_id` | Rendering, legend, chart, background drawing, user view and zoom limits | `Grid2DRenderSettings`, grid opacity, background settings (with the sector selection), legend mode |
 
-This table comes from the class declarations. The Histogram row is checked and agreed (section 4.1). The complete list for the Scatterplot View and the Grid View is open (section 9, P4).
+This table is a summary. The complete lists are in section 4.1 (histogram), section 7.3 (scatterplot) and section 7.5 (grid).
 
 ### 4.1 Histogram: Display Data and Render Options (Agreed 2026-11-16)
 
@@ -180,10 +189,41 @@ public:
 };
 ```
 
-- `HistogramViewModel` adds: `displayData()`, `zoomToBins(first, last)`, `resetZoom()`, `selectBins(first, last)`, `viewInfo()`.
-- `HistogramViewRenderWidget` adds: `setModel(HistogramViewModel*)`, `setOptions(const HistogramRenderOptions&)`.
-- The model gets `DBContentManager&`, `DBContextManager&` and `AppState&` in its constructor.
-- In the report the model gets only an annotation. The buffer functions are never called there.
+View specific additions, with the histogram as example:
+
+```cpp
+class HistogramViewModel : public VariableViewModel
+{
+public:
+    HistogramViewModel(DBContentManager& dbcont_man, DBContextManager& ctx_man, AppState& app_state);
+
+    // annotation path, no model object and no manager necessary. Empty pointer: malformed annotation.
+    static std::shared_ptr<const HistogramDisplayData> displayDataFromAnnotation(const nlohmann::json& feature,
+                                                                                const PlotMetadata& metadata);
+
+    bool setAnnotation(const nlohmann::json& feature, const PlotMetadata& metadata) override; // calls the static function
+
+    std::shared_ptr<const HistogramDisplayData> displayData() const; // from the buffers or from the annotation
+
+    void zoomToBins(unsigned int first, unsigned int last);
+    void resetZoom();
+    void selectBins(unsigned int first, unsigned int last);
+    ViewInfos viewInfo() const;
+};
+
+class HistogramViewRenderWidget : public ChartRenderWidget
+{
+public:
+    void setDisplayData(std::shared_ptr<const HistogramDisplayData> data, const HistogramRenderOptions& options);
+};
+```
+
+- The argument types are examples. Take the exact types from today's functions.
+- The model gets `DBContentManager&`, `DBContextManager&` and `AppState&` in its constructor. Only the buffer path uses them (section 4.4).
+- The render widget has no `setModel()` and no separate `setOptions()`. One call gives one redraw, and data and options always fit together.
+- In a view, the adapter calls `setDisplayData(model.displayData(), options)` on `displayDataChangedSignal` and on each change of a render option.
+- The report creates no model object. The factory calls `displayDataFromAnnotation()` and then `setDisplayData()`.
+- The Scatterplot View and the Grid View use the same pattern. The static function of `GridViewModel` takes the sector lines as an extra input (section 7.5).
 
 ### 4.3 Histogram: Calls Into the Data Widget (Checked 2026-11-17)
 
@@ -227,6 +267,29 @@ Group 3: what the data widget takes from outside. The model needs these as input
 Notes:
 - The histogram config widget does not call the data widget.
 - `exportDataSlot`, `exportDoneSlot` and `exportDoneSignal` exist in the data widget. Their connections in `histogramview.cpp` are commented out. Other users are not checked.
+- The adapter connects `displayDataChangedSignal` of the model to `setDisplayData()` of the render widget.
+
+### 4.4 Manager Use of the Three Views (Checked 2026-11-17)
+
+Checked in `src/view` for the Histogram View, the Scatterplot View, the Grid View and their base data widgets.
+
+| Manager | Used for | Path |
+|---|---|---|
+| `DBContentManager` | Layer scan of the buffers (`viewdatawidget.cpp`, `makeScanInput`) | Buffers |
+| | Histogram generator (`histogramviewdatawidget.cpp`) | Buffers |
+| | Variable names for data source and line in the stash, selection (`variableviewstashdatawidget.cpp`) | Buffers |
+| | Position extent of the database for the empty grid chart (`GridViewDataWidget::databasePositionExtent`). Not used when an annotation is shown. | Buffers |
+| `DBContextManager` | Layer scan, layer colors (`viewdatawidget.cpp`, `resolveSeriesColor`) | Buffers |
+| | Series colors of the scatterplot (`ScatterPlotViewDataWidget::processStash`) | Buffers |
+| | Sector polygons and sector change signals (`gridbackgroundrenderer.cpp`, `gridviewdatawidget.cpp`) | Buffers and annotation |
+| | Sector editing in the layer panel (`gridbackgrounditems.cpp`) | View UI only |
+| `AppState` | Application mode, selects the asynchronous processing (histogram, stash) | Buffers |
+| | Color mode and its change signal (histogram, scatterplot, base) | Buffers |
+| | Last used path, color mode label (config widgets) | View UI only |
+
+- The buffer path is the main path of the views. The model object of a view needs all three managers.
+- The annotation path uses no manager in the three views. The three `updateFromAnnotations()` functions contain no manager call.
+- The only exception is the sectors of a geographic grid. The model reads them and puts them into the display data as lines (section 7.5). The render widget needs no manager.
 
 ## 5. Tools
 
@@ -260,8 +323,8 @@ void ViewRenderWidget::registerTool(const ViewTool& tool);
   - `requestRectangle(std::function<void(const QRectF&)>)`: the next rectangle (chart coordinates) goes to this callback. Then the default mode tool becomes active again, as `endTool()` does today.
 - The base calls the rectangle callback queued. Today `rectangleSelectedSignal` uses a queued connection, because the callback can build the chart again during its own mouse event. Keep this.
 - Who registers:
-  - The render widget registers its display tools (navigate, zoom to rectangle, zoom to home).
-  - The view registers the tools that need the model, with callbacks into the model.
+  - The render widget registers the tools that do not need the model (see the table below). These are navigate for all three views, and zoom to rectangle and zoom to home for the Scatterplot View and the Grid View.
+  - The view registers the tools that need the model, with callbacks into the model. These are the selection tools, and zoom to rectangle and zoom to home of the Histogram View.
   - The report registers nothing. The toolbar is empty.
 
 Tools today:
@@ -285,7 +348,7 @@ Example, the Select tool of the Scatterplot View:
 | `View`, `VariableView` | Stay. The view creates its model and fills the render options from its settings. `VariableView` keeps the annotation list and gives the current annotation to the model. |
 | `ViewWidget` | Stays, same layout. |
 | `ViewDataWidget` | Stays. Table View and Geographic View use it without change. |
-| New: `ViewDataWidgetAdapter : ViewDataWidget` | Adapter. Holds model and render widget. Forwards the base functions (`updateFromSource`, `redrawData`, `clearData`, ...) to them. `View`, `ViewWidget` and `ViewLoadStateWidget` need no second code path. |
+| New: `ViewDataWidgetAdapter : ViewDataWidget` | Adapter. Holds the render widget and a pointer to the model of the view. Forwards the base functions (`updateFromSource`, `redrawData`, `clearData`, ...) to them. Gives the display data of the model and the render options of the view to the render widget (`setDisplayData`). `View`, `ViewWidget` and `ViewLoadStateWidget` need no second code path. |
 | `HistogramViewDataWidget`, `ScatterPlotViewDataWidget`, `GridViewDataWidget` | Removed. Each is split into model and render widget. |
 | `VariableViewDataWidget`, `VariableViewStashDataWidget` | Removed when the third view is ported. |
 | `ChartView` and its three subclasses | Stay. They get the render widget in place of the data widget. The tool checks in the mouse handlers go away. |
@@ -299,19 +362,21 @@ View
 +- <View>Model                          created by the view
 +- ViewWidget
    +- ViewDataWidgetAdapter             adapter
-   |  +- <View>RenderWidget             reads the model
+   |  +- <View>RenderWidget             gets display data and options from the adapter
    +- ViewConfigWidget, ...             as today
 ```
 
 In the report:
-- `SectionContentFigure` gets model and render widget from one factory function in `compass_view`.
-- No `View`, no `ViewWidget`, no adapter.
+- `SectionContentFigure` gets the render widget from one factory function in `compass_view`.
+- The factory builds the display data with the static function of the model class and calls `setDisplayData()`.
+- No `View`, no `ViewWidget`, no adapter, no model object.
+- The factory gets the `DBContextManager` only for the sector lines of geographic grids (section 7.5).
 
 Later iteration:
 - Port Table View and Geographic View.
 - Then `ViewWidget` talks to model and render widget directly. The adapter and `ViewDataWidget` go away.
 
-## 7. Agreed After the First Draft
+## 7. Class Names, Tool Owner, Order of the Work
 
 A3, class names (agreed 2026-11-16):
 - The names in section 4 and section 6.
@@ -329,7 +394,7 @@ A2, order of the work (agreed 2026-11-16). Do the steps one at a time. The exist
 1. Base classes, adapter, and the Histogram View.
 2. Histogram figures in the report GUI and in the export.
 3. Scatterplot View, then its report figures.
-4. The complete Grid View, and report figures for grids with other axes (content agreed later, section 7.5).
+4. The complete Grid View, and report figures for grids with other axes (section 7.5).
 5. Report figures for geographic grids: background set from the view point, sectors, text labels (section 7.5).
 6. Report figure background in the task dialogs of the evaluation and the data source analysis (section 7.5).
 
@@ -362,7 +427,7 @@ New unit tests (Catch2, registered in the `unit_tests/CMakeLists.txt` of the dir
 | `src/view/viewbase/unit_tests/test_viewtool.cpp` | `registerTool` for the three kinds. `Trigger`: callback once. `Toggle`: on and off. `Mode`: exclusive, callback on and off, default tool. The `update` callback sets the enabled state. |
 | `src/view/viewbase/unit_tests/test_chartrenderwidget.cpp` | `requestRectangle`: one injected rectangle calls the callback once, queued, in chart coordinates. Then the default mode tool is active. No callback without a request. |
 | `src/view/histogramview/unit_tests/test_histogram_render.cpp` | From a `HistogramDisplayData`: number of bar sets, bin labels, colors, title, x axis label. Log axis from the option. The log scale of the display data wins over the option. Legend shown up to 8 series, hidden above. Invalid data gives the empty chart. `render()`: requested size, not blank, same input gives the same image twice. |
-| `src/view/histogramview/unit_tests/test_histogram_model.cpp` | Annotation input: a histogram feature JSON gives the expected display data (series, title, axis label, log scale). Malformed JSON returns false and gives invalid display data. |
+| `src/view/histogramview/unit_tests/test_histogram_model.cpp` | Annotation input through the static function, without a model object and without managers: a histogram feature JSON gives the expected display data (series, title, axis label, log scale). Malformed JSON gives no display data. |
 
 - Patterns: `src/view/viewbase/unit_tests/test_chartselection.cpp`, `test_chartmargins.cpp` (real charts in unit tests).
 - Buffer input of the model: the generator needs `DBContentManager` and `DBContextManager`. It is not known if they can be built in a unit test. The existing UI tests cover this path. Check at implementation time if a unit test is possible.
@@ -421,12 +486,13 @@ Image size at export (agreed 2026-11-17):
 - Qt Charts draws text with a fixed font size. More pixels alone make the text smaller relative to the chart. So the size has two parts:
   - Layout size: 1200 x 800.
   - Scale factor for the pixels: 2. The image has 2400 x 1600 pixels with the same layout.
-- Both are constants in step 2. They become export settings in step 6.
+- Both are constants. An export setting for the image size is not planned (section 7.5).
 - Signature: `render(QImage& image, const QSize& size, double scale = 1.0)`.
 - Requirement: the exported image does not depend on the display scaling of the operating system. The same report gives the same image on a screen with 100 % and with 200 % scaling.
+  - The font DPI is not part of the requirement (decided by the user 2026-11-17, section 12.1). A system with another font DPI can give a layout that differs by some pixels.
   - Approach: `render()` creates the QImage itself and sets its device pixel ratio (the scale factor) and its resolution (dots per meter for 96 dpi) explicitly. It does not use `QWidget::grab()`, which takes the factor of the screen.
-  - Risk, not checked: Qt Charts can compute the text layout with the font metrics of the screen and paint with the metrics of the image. Then labels can be cut off or misplaced when the two differ.
-  - Check at implementation time: export the same figure with `QT_SCALE_FACTOR=1` and `QT_SCALE_FACTOR=2`, and with `QT_FONT_DPI=96` and `QT_FONT_DPI=144`. The images must be equal. If they are not, fix it in `render()` before the step is done.
+  - Risk: Qt Charts can compute the text layout with the font metrics of the screen and paint with the metrics of the image. Checked with a prototype, see section 12.1. Fonts with a pixel size solve the display scaling.
+  - Check at implementation time: export the same figure with `QT_SCALE_FACTOR=1` and `QT_SCALE_FACTOR=2`. The images must be equal. If they are not, fix it in `render()` before the step is done.
   - Known case: on the CI machine crunch the AppImage scales by 2 because of the monitor data (see the `test_ci` skill).
 - Cost: larger image files than today. The JSON export holds them as PNG data, so its size grows too.
 
@@ -458,7 +524,7 @@ New unit tests for step 2 (agreed 2026-11-17):
 |---|---|
 | `src/view/unit_tests/test_figure_selection.cpp` | The selection function, one `SECTION` per case: histogram only (render widget), data load (view path), other feature (view path), histogram plus other feature (view path), three histogram annotations (three entries, names `histogram_0` to `histogram_2`, stored order). |
 | `src/view/histogramview/unit_tests/test_histogram_render.cpp` (additions) | `render()` with size 1200 x 800 and scale 2 gives 2400 x 1600 pixels. With the light palette, a background pixel has the light color while the application palette is dark. |
-| `src/view/unit_tests/test_figure_factory.cpp` | The factory builds model and render widget from a view point JSON with a histogram annotation. The display data has the expected series and title. |
+| `src/view/unit_tests/test_figure_factory.cpp` | The factory builds the render widget from a view point JSON with a histogram annotation, without a model object. The display data that it sets has the expected series and title. |
 | Height rule (in the test file of the render widget) | Widths that give a height below the minimum, inside the range, and above the maximum. |
 
 - The locked and on-demand cases of the selection rule sit in `SectionContentFigure`. Not checked if `compass_result` has unit tests where this fits. If not, the report GUI test covers them.
@@ -509,9 +575,16 @@ OpenGL (agreed 2026-11-17):
 - Render option `use_opengl`.
   - View: on, as today. The views can show millions of points.
   - Report GUI and export: off. The report draws with the CPU only, and a section with several figures creates no OpenGL surfaces.
-- The drawing order differs. With OpenGL, Qt Charts orders the series by pointer value, and the code sorts for that. Without OpenGL the order is the order of adding. The render widget handles both. The selection series stays on top.
-- Not known: the draw time without OpenGL for large series, and the point counts of the report scatterplots (reconstruction debug figures).
-- Check at implementation time: the draw time of the largest report scatterplot without OpenGL. If it is too slow, a point limit or a reduction for the report is necessary. Ask the user then.
+- Drawing without OpenGL (decided by the user 2026-11-17):
+  - `QScatterSeries` without OpenGL is too slow above about 10000 points (prototype, section 12.3). The render widget does not use it for the points.
+  - The render widget draws the points with `QPainter` into an image inside the plot area. The Grid View shows its grid image in the chart in the same way.
+  - The chart draws the axes, the title and the legend. Each series is still in the chart, without points, so that the axes and the legend entries exist.
+  - The connection lines are drawn into the same image.
+  - The drawing order is the order of the series in the display data. The selection series is on top. A report figure has no selection.
+  - A zoom or a resize draws the image again.
+- With OpenGL (view): as today. Qt Charts orders the series by pointer value, and the code sorts for that. The selection series stays on top.
+- Not known: the point counts of the report scatterplots (reconstruction debug figures).
+- Check at implementation time: the draw time of the largest report scatterplot with the image drawing, inside a chart. Report it to the user.
 
 Existing tests:
 - `experimental_src/py/tests/ui/scatterplotview/`: 11 tests (open, close, presets, connection lines, selection, zoom, zoom with variable change, axis labels, variable selection).
@@ -559,7 +632,7 @@ New unit tests for step 3 (agreed 2026-11-17):
 
 | File | Checks |
 |---|---|
-| `src/view/scatterplotview/unit_tests/test_scatter_render.cpp` | From a `ScatterPlotDisplayData`: number of series, colors, marker sizes, hidden series not drawn, title, axis labels. Date/time axis when the flag is set. Connection lines from the option, and the value of the display data wins. With and without OpenGL: the selection series is on top. Invalid data gives the empty chart. |
+| `src/view/scatterplotview/unit_tests/test_scatter_render.cpp` | From a `ScatterPlotDisplayData`: number of series, colors, marker sizes, hidden series not drawn, title, axis labels. Date/time axis when the flag is set. Connection lines from the option, and the value of the display data wins. With and without OpenGL: the selection series is on top. Without OpenGL: the points are in the image of the plot area (pixel color at a known point position, background color at a position without a point), and a later series covers an earlier one. Invalid data gives the empty chart. |
 | Same file | Zoom rule: the same `domain_id` keeps the axis ranges over a redraw. Another `domain_id` gives the data bounds. The first draw with content gives the data bounds. |
 | Same file | `render()` without OpenGL: requested size, not blank, same input gives the same image twice. Legend: few series, many series ("... (n more)"), no entry for "Selected". |
 | `src/view/scatterplotview/unit_tests/test_scatter_model.cpp` | Annotation input: a scatter series feature JSON gives the expected display data (series, labels, date/time flags, bounds, connection lines, `domain_id`). Malformed JSON returns false. |
@@ -575,7 +648,7 @@ Integration tests for step 3 (`experimental_src/py/tests/`):
 Done criteria for step 3:
 - The build has no errors. `compass_tests` passes with the new tests.
 - The existing and the new integration tests pass on the local build.
-- The draw time of the largest report scatterplot without OpenGL is measured and reported to the user.
+- The draw time of the largest report scatterplot without OpenGL (image drawing) is measured and reported to the user.
 - `ScatterPlotViewDataWidget` is removed. Grid View, Table View and Geographic View are not changed.
 - `python3 scripts/check_layering.py --build-dir build` reports no new violations.
 - Changes reported per repository (the reconstruction figures are in `experimental_src`). No commit.
@@ -593,7 +666,7 @@ Done criteria for step 3:
   - Position: right of the chart, as a vertical list. More entries fit there than below the chart, and the grid legend is at the same side.
   - Many series: the legend shows as many entries as fit in the height. The last entry is then "... (n more)".
   - The scatterplot selection series ("Selected") gets no entry. A report figure has no selection.
-  - Not known: how the Qt Charts legend behaves with too many entries. Check at implementation time. If the chart legend cannot do this, draw an own legend.
+  - The Qt Charts legend cuts off the entries that do not fit. Hidden markers and one placeholder entry give the "... (n more)" rule, see section 12.2. An own legend is not necessary.
 - Grid in the report:
   - The color legend (colors and values from `Grid2DRenderSettings::legend()`) at the right side.
   - The legend is a part of the grid render widget. `render()` draws it into the exported image. The Grid View uses the same legend.
@@ -620,15 +693,21 @@ Values that the grid drawing reads today:
 | Color scale, number of steps, log scale, minimum, maximum | `GridView::Settings` (`render_color_*`) | Render options (`Grid2DRenderSettings`) |
 | Grid opacity | `GridView::Settings::grid_opacity` | Render option |
 | Background: show, color, map show, map file, map opacity, borders, sectors, hidden sector layers, hidden sectors | `GridView::Settings` (`background_*`) | Render options (one background settings struct) |
+| Sector lines (polygon, color, layer name, sector name) | `GridBackgroundRenderer` reads the sectors from the `DBContextManager` (`gridbackgroundrenderer.cpp`, about line 403) | Display data |
 | Zoom and position of the user (`user_view_`), zoom limits | Data widget and `GridViewChart` | State of the render widget, with the `domain_id` rule of section 7.3 |
 | Rendered image, legend, color map | Data widget | Render widget |
 
 Background:
 - `GridBackgroundRenderer` uses its `GridView&` for three things only: the background settings, the hidden sector lists, and the `DBContextManager` (sectors).
-- New: it takes a background settings struct and `DBContextManager&`. No view.
+- New: it takes a background settings struct and the sector lines of the display data. No view, no manager.
+- Sectors (agreed 2026-11-17):
+  - The sectors are simple colored lines. The model builds them as display data.
+  - `GridViewModel` reads the sectors of all layers from the `DBContextManager` and builds the lines (polygon, color, layer name, sector name). A static function does this, so that the report can use it.
+  - The model listens to the sector signals of the `DBContextManager` (`sectorsChangedSignal`, `activeContextChangedSignal`, `sectorLayerRenamedSignal`), builds the lines again and emits `displayDataChangedSignal`.
+  - The background settings select the visible sectors (show sectors, hidden sector layers, hidden sectors), as today.
 - `prepareExport()` exists: it updates the map image for a viewport and waits for the tiles. `render()` of the grid render widget uses it.
 - The background items of the layer panel (`GridBackgroundItem` and subclasses) keep their checked states in the `GridView` settings. They stay with the view. The view gives the changed settings to the render widget as render options (today: `backgroundSettingsChanged()`).
-- In the report the factory needs the `DBContextManager` for the sectors.
+- In the report the factory gets the `DBContextManager`. It builds the sector lines with the static function of `GridViewModel` and gives them to the display data function.
 
 Calls into `GridViewDataWidget` from outside:
 
@@ -652,14 +731,14 @@ P11, evaluation sector overview (checked):
 
 Annotations:
 - The Grid View accepts only grid features (`GridView::acceptedAnnotationFeatureTypes`). Points, error ellipses and text are not read there. Only the Geographic View draws them.
-- `VariableView::scanViewPointForAnnotations` makes a flat list of the accepted features, in groups by the plot group name. The relation between a grid and its overlay features in the annotation tree is lost there. The overlays (P6) need this relation. Not checked yet how the producers place the overlay features in the tree.
+- `VariableView::scanViewPointForAnnotations` makes a flat list of the accepted features, in groups by the plot group name. The relation between a grid and its overlay features in the annotation tree is lost there. The text labels do not need it, see "Overlays" below.
 
 Existing tests:
 - `experimental_src/py/tests/ui/gridview/`: 11 tests.
 - `experimental_src/py/tests/view_points/gridview/`: 10 tests (background, legend, render settings, large grid, malformed data, ...).
 - Unit tests in `src/view/unit_tests/`: `test_grid_*.cpp`, `test_gridbackground.cpp`.
 
-Content of the two steps (agreed 2026-11-17):
+Content of step 4 (agreed 2026-11-17):
 - The Grid View has the background already. Its port cannot leave the background out.
 - Step 4: port the complete Grid View.
   - `GridViewModel` (base `VariableViewStashModel`), `GridViewRenderWidget`.
@@ -667,11 +746,8 @@ Content of the two steps (agreed 2026-11-17):
   - The legend inside the render widget (section 7.4).
   - Report figures for grids with other axes than longitude / latitude.
   - `GridViewDataWidget`, `VariableViewDataWidget`, `VariableViewStashDataWidget` and `SimpleGridViewChart` are removed.
-- Step 5: report figures for geographic grids. Report work only.
-  - Background and sectors in the report.
-  - Text labels.
-  - The evaluation sector overview.
 - Step 4 is the largest step.
+- Step 5 and step 6: see "Content of step 5 and step 6" below.
 
 Overlays (P6, decided by the user 2026-11-17):
 - The grid render widget shows text labels as the only additional annotation content. No points, no circles, no lines.
@@ -685,14 +761,12 @@ Overlays (P6, decided by the user 2026-11-17):
 - Consequences:
   - Points and circles (for example the yellow circle at the RU position, the RU points of the MLAT RU effect figure) are not in the grid render widget. A figure with a grid and such features still gets the render widget, without them. The "View" button opens the views, and the Geographic View shows all features.
   - A figure with points only and no grid (SMR "Unassociated Reports") gets no render widget. It stays on the view path.
-- This replaces decision 4.1, item 4 ("Overlays: points, circles, text") and the "overlays only" figure kind of `readme_report_figures.md`.
 
 Background and sectors of geographic grids in the report (decided by the user 2026-11-17):
 - One set of background values for all geographic figures of a report. The report GUI and the report export use the same set.
 - The set is configurable in the report generation. These are the tasks that create the report: the evaluation and the data source analysis (Analyze Data Source task). It is not a setting of the report export.
 - So the user sets the background before the task runs. The task stores the set with the report. The report GUI and every export of this report use the stored set.
 - The background settings are one struct after step 4 (color, map on/off, map file, map opacity, borders, sectors, hidden sectors). The report set uses this struct.
-- This replaces the handover item "Geographic grid background, set in the report export" (section 3, item 5) and proposal P8 for the background. The image size stays an export topic.
 - Not checked: where the two tasks have their settings GUI, and where a report stores task wide values.
 - Not checked: if the tile source of the map needs an internet connection or reads a local cache.
 
@@ -727,7 +801,7 @@ Fields of the background set (agreed 2026-11-17). One group "Report Figure Backg
 - The CLI options and the runtime commands of both tasks can set the values, so that tests can use them. Check the existing parameter interfaces first (`--evaluate`, `--analyze_parameters`, see the `cli_rtcmd` skill).
 - GUI conventions: load the `gui` skill before the dialog work.
 
-Content of step 5 and step 6 (agreed 2026-11-17, replaces the first content of step 5 above and "export settings" as step 6):
+Content of step 5 and step 6 (agreed 2026-11-17):
 - Step 5: report figures for geographic grids.
   - The render widget reads the background set from the view point. A figure without a set uses the defaults.
   - The evaluation and the data source analysis write the set into their geographic figures, with the defaults and the sector selection of the task.
@@ -754,6 +828,7 @@ struct GridDisplayData           // output of GridViewModel
     PropertyDataType                      legend_data_type;
     dbContent::Representation             legend_repr;
     QRectF                                database_extent;  // empty chart and zoom limits
+    std::vector<GridSectorLine>           sectors;          // all sectors of the DB context, as lines
     std::vector<GridTextLabel>            labels;           // text labels, step 5
     boost::optional<GridBackgroundSettings> background;     // from the view point, step 5
     std::string                           domain_id;
@@ -772,6 +847,7 @@ struct GridRenderOptions
 - Rule for the two optional values in the display data (`render_settings`, `background`): the value of the display data wins over the render option. This is the same rule as for the log scale and the connection lines.
 - Value type, grid resolution and hidden layers are inputs of the model, not render options. They change the grid, not the drawing.
 - `GridBackgroundSettings` is the new struct for `GridBackgroundRenderer` (in place of `GridView&`). It has a JSON form (`toJSON` / `fromJSON`). This is also the form of the background set in the view point. The field name in the view point is defined at implementation time, next to the grid feature fields (`ViewPointGenFeatureGrid`).
+- `GridSectorLine`: polygon (longitude, latitude), color, layer name, sector name. It replaces `SectorLine` of `GridBackgroundRenderer`.
 - `GridTextLabel`: position (longitude, latitude), text, color. Read from `ViewPointGenFeatureText`. Check its fields at implementation time.
 
 Tests for step 4 (agreed 2026-11-17):
@@ -780,7 +856,7 @@ Tests for step 4 (agreed 2026-11-17):
 |---|---|
 | Unit, new | `src/view/unit_tests/test_grid_render_widget.cpp`: pixel color per cell from a small grid, null cells, minimum and maximum, the render settings of the display data win over the options, grid opacity, axis labels, color legend drawn into the image, zoom rule with `domain_id`, `render()` size and equal images. |
 | Unit, new | `src/view/unit_tests/test_grid_model.cpp`: a grid feature JSON gives the expected display data (layer, render settings, geographic flag). Malformed JSON returns false. |
-| Unit, changed | `src/view/unit_tests/test_gridbackground.cpp`: the renderer works from a `GridBackgroundSettings` without a view. JSON round trip of the settings. |
+| Unit, changed | `src/view/unit_tests/test_gridbackground.cpp`: the renderer works from a `GridBackgroundSettings` and sector lines, without a view and without a manager. JSON round trip of the settings. |
 | Unit, additions | `src/view/unit_tests/test_figure_selection.cpp`: grid with other axes (render widget, name `grid_<n>`), geographic grid (view path until step 5). |
 | Integration, existing | `ui/gridview/` (11 tests), `view_points/gridview/` (10 tests), `ui/views/ui_open_views.py`, unchanged references. |
 | Integration, new | Analysis report with grids with other axes: render widget in the report GUI, images in the JSON export. |
@@ -820,16 +896,16 @@ In addition:
 
 ## 8. Risks
 
-- `GridBackgroundRenderer` takes a `GridView&` today. It must work from render options and the DB context manager, without a view.
-- The layer panel items of the grid background live in the data widget today.
+- `GridBackgroundRenderer` takes a `GridView&` today. It must work from the background settings and the sector lines of the display data, without a view and without a manager.
+- The data widget creates the layer panel items of the grid background today (`GridBackgroundRootItem`, `GridBackgroundSectorsItem`, with `GridView&`). Their checked states are in the `GridView` settings. In step 4 the view creates them (section 7.5).
 - The layer panel tree items point into the layer snapshots. The snapshots move to the model. The update rules stay (main thread only, see `ViewDataWidget::updateLayerTree`).
 - The asynchronous processing moves to the model. The rule for the destructor stays (`shutdownAsyncProcessor()` before the derived part is destroyed).
 - `View` and the config widgets call the data widgets directly, and the data widgets have friends. These calls are not counted yet.
 - The views must look and behave the same after each step.
 
-## 9. Open Planning Questions
+## 9. Planning Questions (All Answered)
 
-From `handover_view_render_widgets_20261116.md`, section 7.
+The questions are from `handover_view_render_widgets_20261116.md`, section 7. This table shows where the answer is.
 
 | # | Question | State |
 |---|---|---|
@@ -839,8 +915,8 @@ From `handover_view_render_widgets_20261116.md`, section 7.
 | P4 | Values that move from the view into the render options | Agreed for all three views: histogram (section 4.1), scatterplot (section 7.3), grid (section 7.5). |
 | P5 | Number of images per figure at export | Agreed, section 7.2 |
 | P6 | Overlays on geographic grids | Decided: text labels only (section 7.5) |
-| P7 | Figure selection rule | Agreed for histogram figures, section 7.2. Other kinds open. |
-| P8 | Export settings | Background and sectors: decided, they are settings of the report generation tasks and stored in each figure (section 7.5). Image size: constants in step 2, export setting open. |
+| P7 | Figure selection rule | Agreed, section 7.2. The scatterplot and grid figures use the same rule. Their cases are in the figure selection tests of section 7.3 and section 7.5. |
+| P8 | Export settings | Background and sectors: decided, they are settings of the report generation tasks and stored in each figure (section 7.5). Image size: constants (section 7.2), no export setting planned. |
 | P9 | Report GUI: widget size, creation time | Agreed, section 7.2 |
 | P10 | Legend with many series | Agreed, section 7.4 |
 | P11 | Does the evaluation sector overview load target reports? | Checked: no. The content is stored as annotations in the report (section 7.5). |
@@ -861,3 +937,62 @@ From `handover_view_render_widgets_20261116.md`, section 7.
 - `experimental_src/` is a separate git repository. Report changes there separately.
 - Write all text in ASD-STE100 (short sentences, active voice, lists), American English, no em-dash, no semicolons.
 - After the work: `python3 scripts/check_layering.py --build-dir build` must report no new violations.
+
+## 12. Prototype Results (2026-11-17)
+
+A throwaway program answered three Qt Charts questions before step 1. Qt 5.15.18, local machine, Wayland, release build. The program is not part of the repository. Each value is from one run.
+
+### 12.1 Export Image and Display Scaling (Section 7.2)
+
+Test: a histogram chart with 4 series, layout 1200 x 800, scale 2, rendered under different environment settings. The number is the count of different pixels against the run without settings (image 2400 x 1600).
+
+| Render method | Fonts | `QT_SCALE_FACTOR=2` | `QT_FONT_DPI=144` |
+|---|---|---|---|
+| `QWidget::grab()` (today) | Point size | Image size changes (1200 x 800 to 2400 x 1600) | 253456 |
+| `QGraphicsScene::render()` into an own QImage, no widget | Point size | 673 | 990122 |
+| `QGraphicsScene::render()` into an own QImage, no widget | Pixel size | 0 | 586929 |
+| `QChartView::render()` into an own QImage | Pixel size | 0 | 403218 |
+| `QGraphicsScene::render()`, application attribute `Qt::AA_Use96Dpi` | Pixel size | 0 | 0 |
+
+Results:
+- An own QImage with an explicit device pixel ratio gives the requested size at each display scaling. `grab()` does not.
+- The chart renders from a `QGraphicsScene` without a widget.
+- Fonts with a pixel size (`QFont::setPixelSize`) for the title, the axis labels, the axis titles and the legend give equal images at display scaling 1 and 2.
+- A different font DPI moves the layout by some pixels, also with pixel size fonts. The text size is equal. The dots per meter of the image have no effect.
+- `Qt::AA_Use96Dpi` removes this difference. It is a setting of the complete application and must be set before the `QApplication` exists. It changes the font size of the complete GUI for users with another font DPI.
+
+Consequences for step 2:
+- `render()` builds its own QImage and renders the chart from the scene. No `grab()`.
+- The render widgets set all chart fonts with a pixel size, in the view and in the report.
+- Font DPI (decided by the user 2026-11-17): the requirement is limited to the display scaling (`QT_SCALE_FACTOR`). There is no check with `QT_FONT_DPI`. `Qt::AA_Use96Dpi` is not set.
+
+### 12.2 Legend With Many Series (Section 7.4)
+
+Test: the same chart with the legend at the right side and 4, 12, 40 and 100 series.
+
+Results:
+- The legend at the right side takes the full chart height and about 190 pixels of the width.
+- With 40 and 100 series the legend cuts off the entries that do not fit. There is no mark for the missing entries.
+- Solution, tested with 100 series: hide the markers that do not fit (`QLegendMarker::setVisible(false)`) and add one empty series with the name "... (n more)" and a transparent color. The image shows 27 entries and "... (73 more)".
+- The row height is not available from the public interface. The prototype used a measured value (24.5 pixels at a font pixel size of 13). The implementation must compute it or measure it once from a test chart.
+
+### 12.3 Scatterplot Without OpenGL (Section 7.3)
+
+Test: 10 series, marker size 8, image 2400 x 1600. Time for the first render.
+
+| Points | `QScatterSeries`, circle | `QScatterSeries`, rectangle | Own drawing with `QPainter` (rectangles, no antialiasing) |
+|---|---|---|---|
+| 10000 | 0.2 s | 0.1 s | 0.01 s |
+| 100000 | 4.8 s | 3.8 s | 0.06 s |
+| 1000000 | More than 300 s (stopped) | More than 300 s (stopped) | 0.56 s |
+
+Results:
+- `QScatterSeries` without OpenGL is usable up to about 10000 points. The time grows faster than the point count. The cause was not examined.
+- The own drawing is linear in the point count.
+- The own drawing in the prototype has no chart around it. The time for axes and legend is not included, and its markers are not antialiased.
+
+Consequences for step 3:
+- A point limit alone is not sufficient if a report scatterplot has more than about 10000 points.
+- Decided by the user 2026-11-17: without OpenGL, the scatterplot render widget draws the points with `QPainter` into an image inside the plot area (section 7.3).
+- Still to do in step 3: get the point counts of the reconstruction debug figures, and measure the image drawing inside a chart.
+
