@@ -38,7 +38,10 @@
 #include "scatterplotviewrenderwidget.h"
 #include "scatterplotviewmodel.h"
 #include "gridview.h"
-#include "gridviewdatawidget.h"
+#include "gridviewwidget.h"
+#include "gridviewrenderwidget.h"
+#include "gridviewmodel.h"
+#include "viewdatawidget.h"
 
 #include "logger.h"
 #include "stringconv.h"
@@ -380,20 +383,25 @@ void LatexVisitor::visit(GridView* e)
 
     e->showInTabWidget();
 
-    GridViewDataWidget* data_widget = e->getDataWidget();
-    traced_assert(data_widget);
+    const GridViewModel& model = e->model();
+
+    traced_assert(e->widget_);
+    GridViewRenderWidget* render_widget = e->widget_->renderWidget();
+    traced_assert(render_widget);
+
+    const bool has_visible_content = (model.hasData() || model.hasAnnotation()) && render_widget->hasContent();
 
     loginf << "start" << e->instanceName() 
-           << " has visible content: " << data_widget->hasVisibleContent()
-           << " has data " << data_widget->hasData()
-           << " has annotations " << data_widget->hasAnnotations()
-           << " is drawn " << data_widget->isDrawn();
+           << " has visible content: " << has_visible_content
+           << " has data " << model.hasData()
+           << " has annotations " << model.hasAnnotation()
+           << " is drawn " << render_widget->isDrawn();
 
-    if (!data_widget->hasVisibleContent())
+    if (!has_visible_content)
         return;
 
-    // normal screenshot
-    auto screenshot = data_widget->renderData();
+    // normal screenshot of the chart with its legend
+    auto screenshot = e->widget_->getViewDataWidget()->renderData();
 
     std::string image_path = screenshot_path+"/"+image_prefix_+"_"+e->instanceName()+".jpg";
     traced_assert(!screenshot.isNull());

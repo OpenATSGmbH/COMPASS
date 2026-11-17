@@ -18,6 +18,7 @@
 #pragma once
 
 #include "gridbackground_defs.h"
+#include "gridbackgroundsettings.h"
 #include "gridbackgroundtilesource.h"
 
 #include <QColor>
@@ -35,13 +36,14 @@
 #include <string>
 #include <vector>
 
-class GridView;
 class QPainter;
 
 /**
  * Background of the Grid View for longitude / latitude grids:
  * - below the grid: background color, map (osgEarth tiles, see GridBackgroundTileSource)
  * - above the grid: national borders, sectors (outlines)
+ *
+ * Draws from its settings and the sector lines it is given, it knows no view and no manager.
  *
  * Map images are requested on a worker thread a short time after the last viewport change.
  * Until the new image is ready, the old image is drawn at its own area (moved and scaled).
@@ -53,21 +55,24 @@ class GridBackgroundRenderer : public QObject
 signals:
     /// the display changed (e.g. a map image arrived)
     void updateSignal();
+    /// available() changed
+    void availableChangedSignal();
 
 public:
-    explicit GridBackgroundRenderer(GridView& view, QObject* parent = nullptr);
+    explicit GridBackgroundRenderer(QObject* parent = nullptr);
     ~GridBackgroundRenderer() override;
 
-    /// the grid is a longitude / latitude grid, set by the data widget
+    /// the grid is a longitude / latitude grid
     void setAvailable(bool available);
     bool available() const { return available_; }
     /// available and switched on
     bool active() const;
 
-    /// the view's background settings changed
-    void settingsChanged();
-    /// the sectors of the data context changed
-    void sectorsChanged();
+    void setSettings(const GridBackgroundSettings& settings);
+    const GridBackgroundSettings& settings() const { return settings_; }
+
+    /// the outlines of all sectors, the settings select the drawn ones
+    void setSectors(std::shared_ptr<const std::vector<GridSectorLine>> sectors);
 
     /// background color and map, requests a new map image if the viewport changed
     void paintBelow(QPainter& painter, const QRectF& plot_rect, const QRectF& lonlat);
@@ -86,14 +91,6 @@ public:
 private:
     struct Guard;
 
-    struct SectorLine
-    {
-        gridbackground::LonLatLine line;
-        QColor                     color;
-        std::string                layer;
-        unsigned int               id = 0;
-    };
-
     bool mapShown() const;
     bool ensureTileSource();
     void requestMap(const QRectF& lonlat, const QSize& size);
@@ -101,10 +98,9 @@ private:
     void mapRequestDone(unsigned int generation, const GridBackgroundTileSource::Result& result);
     void cancelMapRequest();
 
-    void updateSectors();
     void paintAboveImage(QImage& image, const QRectF& lonlat);
 
-    GridView& view_;
+    GridBackgroundSettings settings_;
 
     bool available_ = false;
 
@@ -128,7 +124,7 @@ private:
 
     // vectors
     std::optional<std::vector<gridbackground::LonLatLine>> borders_;
-    std::optional<std::vector<SectorLine>>                 sectors_;
+    std::shared_ptr<const std::vector<GridSectorLine>>     sectors_;
 
     // cached image of the layers above the grid
     QImage       above_image_;

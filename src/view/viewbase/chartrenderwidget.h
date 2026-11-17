@@ -19,12 +19,15 @@
 
 #include "viewrenderwidget.h"
 
+#include <QImage>
 #include <QRectF>
 
 #include <functional>
 #include <memory>
 
 class ChartView;
+
+class QPainter;
 
 /**
  * Base class of the render widgets that show a chart. Holds the chart view and offers the mouse services
@@ -70,6 +73,13 @@ protected:
     /// Called when the new chart view has its final fonts and palette, which are set after
     /// createChartView(). For a layout that depends on the fonts, e.g. margins from label widths.
     virtual void finishChartView(ChartView& chart_view) {}
+    /// Called when the chart view of an image has the layout of the image, before it is drawn.
+    virtual void chartImageLaidOut(ChartView& chart_view) {}
+
+    /// image of size * scale pixels with the layout of the given size, independent of the screen
+    static QImage createImage(const QSize& size, double scale);
+    /// draws a new chart view with the layout of the given size into the painter, at the origin
+    bool drawChartImage(QPainter& painter, const QSize& size);
 
     void toolChanged(int id) override;
 

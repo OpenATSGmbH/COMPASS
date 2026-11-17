@@ -496,3 +496,13 @@ void ViewModel::snapshotHiddenLayerIds()
 {
     hidden_layer_ids_ = layer_model_ ? layer_model_->state().hiddenIds() : std::set<std::string>{};
 }
+
+/**
+ */
+bool ViewModel::hiddenLayerIdsChanged() const
+{
+    const std::set<std::string> empty;
+    const auto& current = layer_model_ ? layer_model_->state().hiddenIds() : empty;
+
+    return current != hidden_layer_ids_;
+}

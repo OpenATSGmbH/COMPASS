@@ -25,6 +25,7 @@
 
 class GridViewWidget;
 class GridView;
+class GridViewRenderWidget;
 
 class ColorScaleSelection;
 class PropertyValueEdit;
@@ -87,7 +88,8 @@ protected:
     void exportToGeographicView();
     void exportToGeoTiff();
 
-    GridView* view_ = nullptr;
+    GridView*             view_          = nullptr;
+    GridViewRenderWidget* render_widget_ = nullptr;
 
     QComboBox*           value_type_combo_             = nullptr;
     QLabel*              value_type_placeh_label_      = nullptr;

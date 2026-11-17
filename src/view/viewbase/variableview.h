@@ -27,7 +27,6 @@
 #include <vector>
 
 class ViewVariable;
-class VariableViewDataWidget;
 class VariableViewConfigWidget;
 class VariableViewModel;
 class ViewableDataConfig;
@@ -135,7 +134,6 @@ protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const override;
 
 private:
-    VariableViewDataWidget* getDataWidget();
     VariableViewConfigWidget* getConfigWidget();
 
     void clearAnnotations();

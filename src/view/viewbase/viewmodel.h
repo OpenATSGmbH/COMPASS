@@ -192,6 +192,8 @@ protected:
     /// which may run on a worker - workers read hiddenLayerIds(), never the model
     void snapshotHiddenLayerIds();
     const std::set<std::string>& hiddenLayerIds() const { return hidden_layer_ids_; }
+    /// the hidden ids of the layer panel differ from the snapshot
+    bool hiddenLayerIdsChanged() const;
 
 private:
     void notifyProcessingFinished();

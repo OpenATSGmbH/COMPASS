@@ -1,6 +1,6 @@
 # View Models and View Render Widgets
 
-Status: all seven steps planned and agreed (2026-11-17), sections 7.1 to 7.6. Steps 1 and 2 are implemented and committed (2026-11-17), steps 3 to 7 are open. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
+Status: all seven steps planned and agreed (2026-11-17), sections 7.1 to 7.6. Steps 1 to 4 are implemented and committed (2026-11-17), steps 5 to 7 are open. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
 Audience: the agent that implements this. Read `CLAUDE.md` first (library layering, code conventions).
 
 This document is the current specification. It holds no superseded text. The decision history is in the handover, section 10.
@@ -851,7 +851,7 @@ struct GridRenderOptions
 - Rule for the two optional values in the display data (`render_settings`, `background`): the value of the display data wins over the render option. This is the same rule as for the log scale and the connection lines.
 - Value type, grid resolution and hidden layers are inputs of the model, not render options. They change the grid, not the drawing.
 - `GridBackgroundSettings` is the new struct for `GridBackgroundRenderer` (in place of `GridView&`). It has a JSON form (`toJSON` / `fromJSON`). This is also the form of the background set in the view point. The field name in the view point is defined at implementation time, next to the grid feature fields (`ViewPointGenFeatureGrid`).
-- `GridSectorLine`: polygon (longitude, latitude), color, layer name, sector name. It replaces `SectorLine` of `GridBackgroundRenderer`.
+- `GridSectorLine`: polygon (longitude, latitude), color, layer name, sector name, sector id (the hidden sectors are stored by id). It replaces `SectorLine` of `GridBackgroundRenderer`.
 - `GridTextLabel`: position (longitude, latitude), text, color. Read from `ViewPointGenFeatureText`. Check its fields at implementation time.
 
 Tests for step 4 (agreed 2026-11-17):
@@ -864,6 +864,16 @@ Tests for step 4 (agreed 2026-11-17):
 | Unit, additions | `src/view/unit_tests/test_figure_selection.cpp`: grid with other axes (render widget, name `grid_<n>`), geographic grid (view path until step 5). |
 | Integration, existing | `ui/gridview/` (11 tests), `view_points/gridview/` (10 tests), `ui/views/ui_open_views.py`, unchanged references. |
 | Integration, new | Analysis report with grids with other axes: render widget in the report GUI, images in the JSON export. |
+
+Findings of step 4 (2026-11-17), inputs for step 5:
+- Zoom rule of the Grid View: the user zoom stays over a draw without content of the same `domain_id` (for example during a load). A draw with content of another domain, Zoom to Home or closing the database drops it. This keeps the behavior of the Grid View before step 4.
+- Mixed figures: render widgets for all kinds, numbered per kind, order histogram, scatterplot, grid. A geographic grid anywhere in the view point sends the whole figure to the view path until step 5.
+- `GridBackgroundRenderer::paintAbove` caches the borders and sectors as an image at layout size. An export at scale 2 then draws them blurred. Step 5 draws them at device resolution.
+- The view and the export share one `GridBackgroundRenderer`. `prepareExport()` can block up to 10 s per figure when the map is on.
+- The report factory has no `DBContextManager` yet. `createRenderWidget`, `renderExportImage` and their callers in `compass_result` need a way to get the sector lines.
+- `GridBackgroundSettings` has the Grid View defaults. The report defaults (section "Fields of the background set") need their own values.
+- `GridTextLabel` exists, nothing fills or draws it yet.
+- A fixed legend with more than about 30 entries may not fit the image height of 800.
 
 Tests for step 5 (agreed 2026-11-17):
 

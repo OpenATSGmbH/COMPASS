@@ -89,6 +89,10 @@ public:
     /// shown. A hidden widget gets no resize event, which does this for a view on the screen.
     void layoutForSize(const QSize& size);
 
+    /// Paints the items the view paints above its chart (paintCustomItems()) into an image of the
+    /// chart. The painter has the coordinates of the chart.
+    void paintImageItems(QPainter& painter) { paintCustomItems(nullptr, painter); }
+
     /// Widens the chart margins so the outermost labels of a horizontal
     /// category axis are not cut off. Qt centers such a label on its tick, so
     /// half of it reaches past the plot area, and the default margin is

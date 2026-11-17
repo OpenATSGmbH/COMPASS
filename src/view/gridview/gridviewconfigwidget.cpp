@@ -18,7 +18,8 @@
 #include "gridviewconfigwidget.h"
 #include "appstate.h"
 #include "gridviewwidget.h"
-#include "gridviewdatawidget.h"
+#include "gridviewmodel.h"
+#include "gridviewrenderwidget.h"
 #include "gridview.h"
 
 #include "geotiff.h"
@@ -72,7 +73,8 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
                                            QWidget* parent)
 :   VariableViewConfigWidget(view_widget, view_widget->getView(), parent)
 {
-    view_ = view_widget->getView();
+    view_          = view_widget->getView();
+    render_widget_ = view_widget->renderWidget();
     traced_assert(view_);
 
     auto config_layout = configLayout();
@@ -308,7 +310,7 @@ void GridViewConfigWidget::updateExport()
     traced_assert(const_view);
 
     //no valid grid no export
-    if (!const_view->isInit() || !const_view->getDataWidget()->hasValidGrid())
+    if (!const_view->isInit() || !const_view->model().hasValidGrid())
     {
         export_button_->setEnabled(false);
         export_button_->setToolTip("No grid data available");
@@ -521,12 +523,12 @@ void GridViewConfigWidget::checkRanges()
 
     range_info_label_->setText("");
 
-    if (!const_view->isInit() || !const_view->getDataWidget()->hasValidGrid())
+    if (!const_view->isInit() || !const_view->model().hasValidGrid())
         return;
 
     if (const_view->isInit() && 
-        const_view->getDataWidget()->hasValidGrid() && 
-        const_view->getDataWidget()->customRangeInvalid())
+        const_view->model().hasValidGrid() && 
+        render_widget_->customRangeInvalid())
         range_info_label_->setText("Please enter a valid range");
 }
 
@@ -627,10 +629,8 @@ std::string GridViewConfigWidget::exportName() const
 */
 void GridViewConfigWidget::exportToGeographicView()
 {
-    const auto& data_widget = dynamic_cast<const GridView*>(view_)->getDataWidget();
-
     //grid with its render settings: the Geographic View renders it and can change its coloring
-    auto grid = data_widget->currentGrid();
+    auto grid = render_widget_->currentGrid();
     if (!grid.has_value())
     {
         QMessageBox::critical(this, "Error", "No grid available to send");
@@ -663,9 +663,7 @@ void GridViewConfigWidget::exportToGeographicView()
 */
 void GridViewConfigWidget::exportToGeoTiff()
 {
-    const auto& data_widget = dynamic_cast<const GridView*>(view_)->getDataWidget();
-
-    auto geo_image = data_widget->currentGeoImage();
+    auto geo_image = render_widget_->currentGeoImage();
     if (!geo_image.has_value())
     {
         QMessageBox::critical(this, "Error", "No grid available to send");

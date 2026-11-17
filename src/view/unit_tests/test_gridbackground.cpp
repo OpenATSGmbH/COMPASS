@@ -18,9 +18,14 @@
 #include "catch.hpp"
 
 #include "gridbackground_defs.h"
+#include "gridbackgroundsettings.h"
+#include "gridbackgroundrenderer.h"
+
+#include "json.hpp"
 
 #include <QColor>
 #include <QImage>
+#include <QPainter>
 
 #include <cmath>
 #include <set>
@@ -270,4 +275,188 @@ TEST_CASE("GridBackground national borders", "[gridbackground]")
     }
 
     REQUIRE(vienna_inside);
+}
+
+namespace
+{
+    /// square outline of a sector, lon/lat
+    GridSectorLine sectorLine(const QRectF& area, const QColor& color, const std::string& layer, unsigned int id)
+    {
+        QPolygonF poly;
+        poly << area.topLeft() << area.topRight() << area.bottomRight() << area.bottomLeft() << area.topLeft();
+
+        GridSectorLine line;
+        line.line        = makeLine(poly);
+        line.color       = color;
+        line.layer_name  = layer;
+        line.sector_name = "Sector " + std::to_string(id);
+        line.sector_id   = id;
+
+        return line;
+    }
+
+    /// background of a 100 x 100 pixel plot that shows lon 10..20, lat 40..50, no national borders
+    QImage paintBackground(GridBackgroundRenderer& renderer)
+    {
+        QImage image(100, 100, QImage::Format_ARGB32);
+        image.fill(Qt::black);
+
+        const QRectF plot(0, 0, 100, 100);
+        const QRectF lonlat(10.0, 40.0, 10.0, 10.0);
+
+        QPainter painter(&image);
+        renderer.paintBelow(painter, plot, lonlat);
+        renderer.paintAbove(painter, plot, lonlat);
+
+        return image;
+    }
+}
+
+TEST_CASE("GridBackground renderer from settings and sector lines", "[gridbackground]")
+{
+    GridBackgroundSettings settings;
+    settings.color        = "#204060";
+    settings.borders_show = false;
+
+    auto sectors = std::make_shared<std::vector<GridSectorLine>>();
+    sectors->push_back(sectorLine(QRectF(12.0, 42.0, 2.0, 2.0), Qt::red, "Layer A", 1));
+    sectors->push_back(sectorLine(QRectF(16.0, 46.0, 2.0, 2.0), Qt::green, "Layer B", 2));
+
+    //no view and no manager
+    GridBackgroundRenderer renderer;
+    renderer.setAvailable(true);
+    renderer.setSettings(settings);
+    renderer.setSectors(sectors);
+
+    //left border of sector 1 at x 20, between y 60 and 80; of sector 2 at x 60, between y 20 and 40
+    const QPoint on_sector_1(20, 70);
+    const QPoint on_sector_2(60, 30);
+    const QPoint free_area(90, 90);
+
+    SECTION("background color and the sector outlines in their colors")
+    {
+        CHECK(renderer.active());
+
+        const QImage image = paintBackground(renderer);
+
+        CHECK(image.pixelColor(free_area) == QColor("#204060"));
+        CHECK(image.pixelColor(on_sector_1).red() > 200);
+        CHECK(image.pixelColor(on_sector_2).green() > 200);
+    }
+
+    SECTION("a hidden sector layer is not drawn")
+    {
+        settings.hidden_sector_layers = { "Layer A" };
+        renderer.setSettings(settings);
+
+        const QImage image = paintBackground(renderer);
+
+        CHECK(image.pixelColor(on_sector_1) == QColor("#204060"));
+        CHECK(image.pixelColor(on_sector_2).green() > 200);
+    }
+
+    SECTION("a hidden sector is not drawn")
+    {
+        settings.hidden_sectors = { 2 };
+        renderer.setSettings(settings);
+
+        const QImage image = paintBackground(renderer);
+
+        CHECK(image.pixelColor(on_sector_1).red() > 200);
+        CHECK(image.pixelColor(on_sector_2) == QColor("#204060"));
+    }
+
+    SECTION("sectors switched off")
+    {
+        settings.sectors_show = false;
+        renderer.setSettings(settings);
+
+        const QImage image = paintBackground(renderer);
+
+        CHECK(image.pixelColor(on_sector_1) == QColor("#204060"));
+        CHECK(image.pixelColor(on_sector_2) == QColor("#204060"));
+    }
+
+    SECTION("new sector lines are drawn")
+    {
+        auto moved = std::make_shared<std::vector<GridSectorLine>>();
+        moved->push_back(sectorLine(QRectF(16.0, 46.0, 2.0, 2.0), Qt::red, "Layer A", 1));
+
+        paintBackground(renderer);
+        renderer.setSectors(moved);
+
+        const QImage image = paintBackground(renderer);
+
+        CHECK(image.pixelColor(on_sector_1) == QColor("#204060"));
+        CHECK(image.pixelColor(on_sector_2).red() > 200);
+    }
+
+    SECTION("background switched off: no color, the sectors stay")
+    {
+        settings.show = false;
+        renderer.setSettings(settings);
+
+        CHECK(!renderer.active());
+
+        const QImage image = paintBackground(renderer);
+
+        CHECK(image.pixelColor(free_area) == QColor(Qt::black));
+        CHECK(image.pixelColor(on_sector_1).red() > 200);
+    }
+
+    SECTION("not available: nothing is drawn")
+    {
+        renderer.setAvailable(false);
+
+        CHECK(!renderer.active());
+
+        const QImage image = paintBackground(renderer);
+
+        CHECK(image.pixelColor(free_area) == QColor(Qt::black));
+        CHECK(image.pixelColor(on_sector_1) == QColor(Qt::black));
+    }
+}
+
+TEST_CASE("GridBackground settings JSON", "[gridbackground]")
+{
+    SECTION("round trip")
+    {
+        GridBackgroundSettings settings;
+        settings.show                 = false;
+        settings.color                = "#000000";
+        settings.map_show             = true;
+        settings.map_file             = "other.earth";
+        settings.map_opacity          = 50;
+        settings.borders_show         = false;
+        settings.sectors_show         = false;
+        settings.hidden_sector_layers = { "Layer A", "Layer B" };
+        settings.hidden_sectors       = { 3, 7 };
+
+        GridBackgroundSettings read;
+        REQUIRE(read.fromJSON(settings.toJSON()));
+
+        CHECK(read == settings);
+    }
+
+    SECTION("missing fields keep the defaults")
+    {
+        GridBackgroundSettings read;
+        REQUIRE(read.fromJSON(nlohmann::json::object({ { GridBackgroundSettings::TagColor, "#000000" } })));
+
+        GridBackgroundSettings expected;
+        expected.color = "#000000";
+
+        CHECK(read == expected);
+    }
+
+    SECTION("malformed JSON is not read")
+    {
+        GridBackgroundSettings read;
+        read.color = "#123456";
+
+        CHECK(!read.fromJSON(nlohmann::json::array()));
+        CHECK(!read.fromJSON(nlohmann::json::object({ { GridBackgroundSettings::TagMapOpacity, "half" } })));
+
+        CHECK(read.color == "#123456");
+    }
 }

@@ -20,6 +20,8 @@
 #include "histogramviewrenderwidget.h"
 #include "scatterplotviewrenderwidget.h"
 #include "scatterplotviewmodel.h"
+#include "gridviewrenderwidget.h"
+#include "grid2d.h"
 #include "scatterplotpointsitem.h"
 #include "viewtoolswitcher.h"
 #include "chartview.h"
@@ -344,6 +346,145 @@ TEST_CASE("report figure export image of a scatterplot", "[view][reportfigure]")
     CHECK(hasColor(image, QColor("#0080ff")));
 
     CHECK(image == image_again);
+}
+
+namespace
+{
+    /// view point of a report figure with one grid annotation over longitude and altitude, loads no data
+    nlohmann::json gridViewPoint()
+    {
+        Grid2DLayer layer;
+        layer.name = "pd";
+        layer.data.resize(2, 3);
+        layer.data << 0.0, 0.5,                  1.0,
+                      1.0, Grid2D::InvalidValue, 0.0;
+
+        layer.ref.srs              = "";
+        layer.ref.img_origin_x     = 16.0;
+        layer.ref.img_origin_y     = 4000.0;
+        layer.ref.img_pixel_size_x = 0.1;
+        layer.ref.img_pixel_size_y = 1000.0;
+        layer.ref.is_north_up      = true;
+
+        Grid2DRenderSettings rs;
+        rs.color_map.create(QColor("#ff0000"), QColor("#00ff00"), 2, ColorMap::Type::Binary);
+        rs.min_value = 0.0;
+        rs.max_value = 1.0;
+
+        ViewPointGenVP vp("PD - Altitude/Longitude", 0, "Grid");
+        vp.noDataLoaded(true);
+        vp.annotations().getOrCreateAnnotation("PD")->addFeature(
+            new ViewPointGenFeatureGrid(layer, rs, PlotMetadata("PD - Altitude/Longitude", "", "Longitude (deg)", "Altitude (ft)")));
+
+        nlohmann::json j;
+        vp.toJSON(j);
+
+        return j;
+    }
+}
+
+TEST_CASE("report figure factory builds the grid render widget", "[view][reportfigure]")
+{
+    const auto entries = report_figure::selectRenderEntries(gridViewPoint());
+    REQUIRE(entries.size() == 1);
+    REQUIRE(entries[ 0 ].kind == report_figure::Kind::Grid);
+    CHECK(entries[ 0 ].image_name == "grid_0");
+
+    auto widget = report_figure::createRenderWidget(entries[ 0 ]);
+    REQUIRE(widget);
+
+    auto grid_widget = dynamic_cast<GridViewRenderWidget*>(widget.get());
+    REQUIRE(grid_widget);
+
+    CHECK(grid_widget->isDrawn());
+    CHECK(grid_widget->hasContent());
+
+    REQUIRE(grid_widget->chartView());
+    auto chart = grid_widget->chartView()->chart();
+
+    SECTION("the chart shows the title and the axis labels of the annotation, no background")
+    {
+        CHECK(chart->title() == "PD - Altitude/Longitude");
+        CHECK(chart->axes(Qt::Horizontal).first()->titleText() == "Longitude (deg)");
+        CHECK(chart->axes(Qt::Vertical).first()->titleText() == "Altitude (ft)");
+
+        CHECK(!grid_widget->background().available());
+    }
+
+    SECTION("the color legend of the annotation")
+    {
+        CHECK(grid_widget->currentLegend().entries().size() == 2);
+    }
+
+    SECTION("the figure has no interaction")
+    {
+        CHECK(widget->wheelIgnored());
+        CHECK(!grid_widget->dragEnabled());
+
+        //only the navigate tool of the widget, which has no shortcut and no toolbar entry
+        const auto& tools = grid_widget->toolSwitcher().registeredTools();
+
+        REQUIRE(tools.size() == 1);
+        CHECK(tools.front().key.isEmpty());
+        CHECK(tools.front().icon.isNull());
+    }
+
+    SECTION("the height follows the width")
+    {
+        CHECK(widget->heightFollowsWidth());
+    }
+}
+
+TEST_CASE("report figure export image of a grid", "[view][reportfigure]")
+{
+    const auto entries = report_figure::selectRenderEntries(gridViewPoint());
+    REQUIRE(entries.size() == 1);
+
+    const QPalette palette_before = QApplication::palette();
+
+    QPalette dark;
+    dark.setColor(QPalette::Window, QColor(40, 40, 40));
+    dark.setColor(QPalette::Base  , QColor(20, 20, 20));
+
+    QApplication::setPalette(dark);
+
+    QImage image;
+    const bool ok = report_figure::renderExportImage(entries[ 0 ], image);
+
+    QImage image_again;
+    const bool ok_again = report_figure::renderExportImage(entries[ 0 ], image_again);
+
+    QApplication::setPalette(palette_before);
+
+    REQUIRE(ok);
+    REQUIRE(ok_again);
+
+    CHECK(image.size() == QSize(2400, 1600));
+    CHECK(image.pixel(1, 1) == app_palette::light().color(QPalette::Window).rgb());
+
+    //the cells of both colors
+    CHECK(hasColor(image, QColor("#ff0000")));
+    CHECK(hasColor(image, QColor("#00ff00")));
+
+    CHECK(image == image_again);
+}
+
+TEST_CASE("report figure factory shows the empty chart for a malformed grid annotation", "[view][reportfigure]")
+{
+    report_figure::RenderEntry entry;
+    entry.kind       = report_figure::Kind::Grid;
+    entry.image_name = "grid_0";
+    entry.feature    = std::make_shared<const nlohmann::json>(nlohmann::json::object({ { "type", "grid" } }));
+
+    auto widget = report_figure::createRenderWidget(entry);
+    REQUIRE(widget);
+
+    CHECK(widget->isDrawn());
+    CHECK(!widget->hasContent());
+
+    QImage image;
+    CHECK(report_figure::renderExportImage(entry, image));
+    CHECK(image.size() == QSize(2400, 1600));
 }
 
 namespace

@@ -19,6 +19,7 @@
 #include "reportfigure.h"
 #include "variableview.h"
 #include "viewpointgenerator.h"
+#include "grid2dlayer.h"
 
 #include "json.hpp"
 
@@ -54,6 +55,26 @@ namespace
         vp.annotations().getOrCreateAnnotation(name)->addFeature(
             new ViewPointGenFeatureScatterSeries(series, name, Qt::red, 8.0, boost::optional<bool>(),
                                                  PlotMetadata(name + " Title", "", "X", "Y", plot_group)));
+    }
+
+    /// adds an annotation with one grid feature. srs "wgs84": longitude / latitude grid, "": other axes
+    void addGrid(ViewPointGenVP& vp, const std::string& name, const std::string& srs, const std::string& plot_group = "")
+    {
+        Grid2DLayer layer;
+        layer.name = name;
+        layer.data.resize(1, 2);
+        layer.data << 0.0, 1.0;
+
+        layer.ref.srs              = srs;
+        layer.ref.img_origin_x     = 16.0;
+        layer.ref.img_origin_y     = 2000.0;
+        layer.ref.img_pixel_size_x = 0.1;
+        layer.ref.img_pixel_size_y = 1000.0;
+        layer.ref.is_north_up      = true;
+
+        vp.annotations().getOrCreateAnnotation(name)->addFeature(
+            new ViewPointGenFeatureGrid(layer, boost::optional<Grid2DRenderSettings>(),
+                                        PlotMetadata(name + " Title", "", "X", "Y", plot_group)));
     }
 
     void addText(ViewPointGenVP& vp, const std::string& name)
@@ -307,5 +328,85 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
 
         REQUIRE(view_titles.size() == 3);
         CHECK(view_titles[ 0 ] == "B Title");
+    }
+
+    SECTION("a grid over other axes gives one render widget")
+    {
+        auto vp = viewPoint();
+        addGrid(*vp, "PD - Altitude/Longitude", "");
+
+        const auto entries = report_figure::selectRenderEntries(toJSON(*vp));
+
+        REQUIRE(entries.size() == 1);
+
+        CHECK(entries[ 0 ].kind == report_figure::Kind::Grid);
+        CHECK(entries[ 0 ].annotation_index == 0);
+        CHECK(entries[ 0 ].image_name == "grid_0");
+        CHECK(entries[ 0 ].metadata.title_ == "PD - Altitude/Longitude Title");
+
+        REQUIRE(entries[ 0 ].feature);
+        CHECK(entries[ 0 ].feature->at("type") == "grid");
+    }
+
+    SECTION("a geographic grid uses the view path")
+    {
+        auto vp = viewPoint();
+        addGrid(*vp, "PD - Horizontal", "wgs84");
+
+        CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+    }
+
+    SECTION("a geographic grid next to a grid over other axes uses the view path")
+    {
+        auto vp = viewPoint();
+        addGrid(*vp, "PD - Altitude/Longitude", "");
+        addGrid(*vp, "PD - Horizontal", "wgs84");
+
+        CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+    }
+
+    SECTION("a grid plus another feature uses the view path")
+    {
+        auto vp = viewPoint();
+        addGrid(*vp, "PD - Altitude/Longitude", "");
+        addText(*vp, "Label");
+
+        CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+    }
+
+    SECTION("several grids give the entries in the order of the Grid View, after the other kinds")
+    {
+        auto vp = viewPoint();
+        addGrid(*vp, "G1", "", "Group 2");
+        addHistogram(*vp, "H1");
+        addGrid(*vp, "G2", "", "Group 1");
+        addScatter(*vp, "S1");
+
+        const nlohmann::json j = toJSON(*vp);
+
+        const auto entries = report_figure::selectRenderEntries(j);
+
+        REQUIRE(entries.size() == 4);
+
+        CHECK(entries[ 0 ].kind == report_figure::Kind::Histogram);
+        CHECK(entries[ 1 ].kind == report_figure::Kind::Scatterplot);
+        CHECK(entries[ 2 ].kind == report_figure::Kind::Grid);
+        CHECK(entries[ 3 ].kind == report_figure::Kind::Grid);
+
+        CHECK(entries[ 0 ].image_name == "histogram_0");
+        CHECK(entries[ 1 ].image_name == "scatterplot_0");
+        CHECK(entries[ 2 ].image_name == "grid_0");
+        CHECK(entries[ 3 ].image_name == "grid_1");
+
+        std::vector<std::string> view_titles;
+        for (const auto& group : VariableView::scanForAnnotations(j, { "grid" }))
+            for (const auto& annotation : group.annotations)
+                view_titles.push_back(annotation.metadata.title_);
+
+        REQUIRE(view_titles.size() == 2);
+        CHECK(view_titles[ 0 ] == "G2 Title");
+
+        CHECK(entries[ 2 ].metadata.title_ == view_titles[ 0 ]);
+        CHECK(entries[ 3 ].metadata.title_ == view_titles[ 1 ]);
     }
 }

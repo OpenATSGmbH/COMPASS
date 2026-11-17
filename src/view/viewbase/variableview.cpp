@@ -18,7 +18,7 @@
 #include "variableview.h"
 #include "viewvariable.h"
 #include "viewwidget.h"
-#include "variableviewdatawidget.h"
+#include "viewdatawidget.h"
 #include "variableviewconfigwidget.h"
 #include "variableviewmodel.h"
 #include "viewlayertreemodel.h"
@@ -40,18 +40,6 @@ VariableView::VariableView(nlohmann::json& config, ViewContainer* parent)
 */
 VariableView::~VariableView()
 {
-}
-
-/**
- */
-VariableViewDataWidget* VariableView::getDataWidget()
-{
-    traced_assert(widget_);
-
-    auto data_widget = dynamic_cast<VariableViewDataWidget*>(widget_->getViewDataWidget());
-    traced_assert(data_widget);
-
-    return data_widget;
 }
 
 /**

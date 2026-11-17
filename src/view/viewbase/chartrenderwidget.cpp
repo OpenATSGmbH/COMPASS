@@ -64,7 +64,8 @@ void ChartRenderWidget::redraw()
 
     chart_view_->setObjectName("chart_view");
 
-    contentLayout()->addWidget(chart_view_.get());
+    //first, the derived class can add widgets right of the chart
+    contentLayout()->insertWidget(0, chart_view_.get());
 
     setDrawState(has_content ? DrawState::DrawnContent : DrawState::Drawn);
 }
@@ -128,6 +129,34 @@ bool ChartRenderWidget::render(QImage& image, const QSize& size, double scale)
     if (size.isEmpty() || scale <= 0.0)
         return false;
 
+    image = createImage(size, scale);
+
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    return drawChartImage(painter, size);
+}
+
+/**
+ */
+QImage ChartRenderWidget::createImage(const QSize& size, double scale)
+{
+    const QSize size_px((int)std::lround(size.width() * scale), (int)std::lround(size.height() * scale));
+
+    QImage image(size_px, QImage::Format_ARGB32_Premultiplied);
+    image.setDevicePixelRatio(scale);
+    image.setDotsPerMeterX(DotsPerMeter96Dpi);
+    image.setDotsPerMeterY(DotsPerMeter96Dpi);
+    image.fill(Qt::white);
+
+    return image;
+}
+
+/**
+ * The items the chart view paints itself (e.g. the grid) are drawn above the scene, as on the screen.
+ */
+bool ChartRenderWidget::drawChartImage(QPainter& painter, const QSize& size)
+{
     bool has_content = false;
 
     auto view = buildChartView(has_content, true);
@@ -136,20 +165,12 @@ bool ChartRenderWidget::render(QImage& image, const QSize& size, double scale)
 
     view->layoutForSize(size);
 
-    const QSize size_px((int)std::lround(size.width() * scale), (int)std::lround(size.height() * scale));
-
-    image = QImage(size_px, QImage::Format_ARGB32_Premultiplied);
-    image.setDevicePixelRatio(scale);
-    image.setDotsPerMeterX(DotsPerMeter96Dpi);
-    image.setDotsPerMeterY(DotsPerMeter96Dpi);
-    image.fill(Qt::white);
+    chartImageLaidOut(*view);
 
     const QRectF rect(QPointF(0, 0), QSizeF(size));
 
-    QPainter painter(&image);
-    painter.setRenderHint(QPainter::Antialiasing);
-
     view->scene()->render(&painter, rect, rect);
+    view->paintImageItems(painter);
 
     return true;
 }

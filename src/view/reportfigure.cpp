@@ -20,6 +20,9 @@
 #include "histogramviewrenderwidget.h"
 #include "scatterplotviewmodel.h"
 #include "scatterplotviewrenderwidget.h"
+#include "gridviewmodel.h"
+#include "gridviewrenderwidget.h"
+#include "grid2dlayer.h"
 #include "variableview.h"
 #include "viewpointgenerator.h"
 #include "viewpointkeys.h"
@@ -55,10 +58,32 @@ namespace
         static const std::vector<KindInfo> infos =
         {
             { Kind::Histogram  , ViewPointGenFeatureHistogram::FeatureName    , "histogram"   },
-            { Kind::Scatterplot, ViewPointGenFeatureScatterSeries::FeatureName, "scatterplot" }
+            { Kind::Scatterplot, ViewPointGenFeatureScatterSeries::FeatureName, "scatterplot" },
+            { Kind::Grid       , ViewPointGenFeatureGrid::FeatureName         , "grid"        }
         };
 
         return infos;
+    }
+
+    /**
+     * True for a grid feature over longitude / latitude. Reads the reference only, not the values.
+     * A grid without a readable reference is no geographic grid, its render widget shows the empty chart.
+     */
+    bool isGeographicGrid(const nlohmann::json& feature)
+    {
+        const auto grid_it = feature.find(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid);
+        if (grid_it == feature.end() || !grid_it->is_object())
+            return false;
+
+        const auto ref_it = grid_it->find(Grid2DLayer::TagRef);
+        if (ref_it == grid_it->end())
+            return false;
+
+        RasterReference ref;
+        if (!ref.fromJSON(*ref_it))
+            return false;
+
+        return Grid2DLayer::isGeographicSRS(ref.srs);
     }
 
     //in a narrow window the chart stays readable
@@ -135,6 +160,31 @@ namespace
 
     /**
      */
+    std::unique_ptr<ViewRenderWidget> createGridWidget(const RenderEntry& entry,
+                                                       QWidget* parent,
+                                                       const QPalette* image_palette)
+    {
+        std::string error;
+
+        //grids over other axes have no sectors
+        auto data = GridViewModel::displayDataFromAnnotation(*entry.feature, entry.metadata, {}, &error);
+        if (!data)
+            logwrn << "malformed grid annotation of figure image '" << entry.image_name << "': " << error;
+
+        auto widget = std::make_unique<GridViewRenderWidget>(parent);
+
+        configure(*widget, image_palette);
+
+        //the navigate tool of the widget moves the chart with the mouse, a report figure has no interaction
+        widget->setDragEnabled(false);
+
+        widget->setDisplayData(data, GridRenderOptions());
+
+        return widget;
+    }
+
+    /**
+     */
     std::unique_ptr<ViewRenderWidget> createWidget(const RenderEntry& entry, QWidget* parent, const QPalette* image_palette)
     {
         traced_assert(entry.feature);
@@ -145,6 +195,8 @@ namespace
                 return createHistogramWidget(entry, parent, image_palette);
             case Kind::Scatterplot:
                 return createScatterplotWidget(entry, parent, image_palette);
+            case Kind::Grid:
+                return createGridWidget(entry, parent, image_palette);
         }
 
         traced_assert(false);
@@ -192,6 +244,10 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
             [ & ] (const KindInfo& info) { return type == info.feature_type; });
 
         if (!has_render_widget)
+            return {};
+
+        //the background of geographic grids is not in the report figures yet, the views show them
+        if (type == ViewPointGenFeatureGrid::FeatureName && isGeographicGrid(f.feature_json))
             return {};
     }
 

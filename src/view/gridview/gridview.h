@@ -23,14 +23,17 @@
 #include "grid2d_defs.h"
 #include "colormap_defs.h"
 #include "gridbackground_defs.h"
+#include "gridbackgroundsettings.h"
+#include "griddisplaydata.h"
 
 #include <boost/optional.hpp>
 
+#include <memory>
 #include <set>
 
 class GridViewWidget;
-class GridViewDataSource;
-class GridViewDataWidget;
+class GridViewModel;
+class GridViewRenderWidget;
 class ViewContainer;
 
 /**
@@ -104,6 +107,14 @@ public:
     bool backgroundSectorShown(unsigned int sector_id) const;
     std::set<std::string>  backgroundHiddenSectorLayers() const;
     std::set<unsigned int> backgroundHiddenSectors() const;
+    /// the background settings of the view
+    GridBackgroundSettings backgroundSettings() const;
+
+    GridViewModel& model() { return *model_; }
+    const GridViewModel& model() const { return *model_; }
+
+    /// the render options of the render widget, from the settings of the view
+    GridRenderOptions renderOptions() const;
 
     /// true if the grid is computed over longitude (x) and latitude (y) of the variables
     bool hasLonLatAxes();
@@ -123,11 +134,7 @@ public:
     virtual bool canShowAnnotations() const override final { return true; }
     virtual std::set<std::string> acceptedAnnotationFeatureTypes() const override;
 
-    const GridViewDataWidget* getDataWidget() const;
-
     const Settings& settings() const { return settings_; }
-
-    static const int DecimalsDefault;
 
 protected:
     friend class LatexVisitor;
@@ -142,6 +149,9 @@ protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const override;
     virtual void onConfigurationChanged_impl(const std::vector<std::string>& changed_params) override;
 
+    virtual void databaseOpened_impl() override;
+    virtual void databaseClosed_impl() override;
+
     void backgroundChanged();
 
     virtual dbContent::VariableSet getBaseSet(const std::string& dbcontent_name) override;
@@ -149,7 +159,8 @@ protected:
     void updateSettingsFromVariable();
     void updateSettings(const std::string& dbcont, const std::string& name);
 
-    GridViewDataWidget* getDataWidget();
+    /// For data processing, lives longer than the widget
+    std::unique_ptr<GridViewModel> model_;
 
     GridViewWidget* widget_ = nullptr;
 
