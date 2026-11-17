@@ -94,6 +94,9 @@ public:
     double gridCellWidth() const;
     unsigned int gridOpacity() const { return options_.grid_opacity; }
 
+    /// the text labels of the display data, in the plot showing the lon/lat viewport
+    void paintLabels(QPainter& painter, const QRectF& plot_rect, const QRectF& lonlat) const;
+
     /// zoom / position changed by the user (axis ranges), kept over a new chart of the same domain
     void setUserView(const QRectF& view);
     /// back to the data bounds (zoom to home, database closed)

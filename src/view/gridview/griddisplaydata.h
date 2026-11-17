@@ -33,13 +33,24 @@
 #include <vector>
 
 /**
- * Text label on a geographic grid.
+ * Text label on a geographic grid, from a text feature of the view point.
  */
 struct GridTextLabel
 {
-    QPointF     position; // x = longitude, y = latitude
+    /// side of the position the text is drawn to, as the text feature defines it
+    enum class Direction
+    {
+        RightUp = 0,
+        RightDown,
+        LeftUp,
+        LeftDown
+    };
+
+    QPointF     position;            // x = longitude, y = latitude
     std::string text;
-    QColor      color;
+    QColor      color     = Qt::black;
+    double      font_size = 10.0;    // pixels of the layout
+    Direction   direction = Direction::RightUp;
 };
 
 /**
@@ -66,8 +77,8 @@ struct GridDisplayData
 
     QRectF                                  database_extent; // empty chart and zoom limits, empty if not used
     std::vector<GridSectorLine>             sectors;         // all sectors of the data context, as lines
-    std::vector<GridTextLabel>              labels;          // text labels (step 5)
-    boost::optional<GridBackgroundSettings> background;      // from the view point, wins over the options (step 5)
+    std::vector<GridTextLabel>              labels;          // text labels of a geographic grid
+    boost::optional<GridBackgroundSettings> background;      // from the view point, wins over the options
 
     // Identity of the value domain of the axes. The render widget keeps the zoom of the user
     // while the id stays the same.

@@ -35,6 +35,7 @@ namespace
     //as in the minimal 2D map of the Geographic View (minimal_2d.earth)
     const QColor BorderColor(255, 255, 0);
     const double BorderWidth = 2.0;
+    const double SectorWidth = 2.0;
 
     /// pixel rectangle of a lon/lat area in the plot showing the lon/lat viewport
     QRectF lonLatToPlot(const QRectF& area, const QRectF& plot_rect, const QRectF& lonlat)
@@ -392,7 +393,9 @@ void GridBackgroundRenderer::paintAboveImage(QImage& image, const QRectF& lonlat
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setBrush(Qt::NoBrush);
 
-    const QTransform t = lonLatTransform(image.size(), lonlat);
+    //the painter of an image with a device pixel ratio works in layout pixels
+    const double     dpr = image.devicePixelRatioF();
+    const QTransform t   = lonLatTransform(QSizeF(image.size()) / dpr, lonlat);
 
     if (settings_.show && settings_.borders_show)
     {
@@ -407,7 +410,7 @@ void GridBackgroundRenderer::paintAboveImage(QImage& image, const QRectF& lonlat
         }
 
         QPen pen(BorderColor);
-        pen.setWidthF(BorderWidth);
+        pen.setWidthF(BorderWidth * dpr); // a cosmetic width is in device pixels
         pen.setCosmetic(true);
         painter.setPen(pen);
 
@@ -427,7 +430,7 @@ void GridBackgroundRenderer::paintAboveImage(QImage& image, const QRectF& lonlat
                 continue;
 
             QPen pen(sector.color);
-            pen.setWidthF(2.0);
+            pen.setWidthF(SectorWidth * dpr);
             pen.setCosmetic(true);
             painter.setPen(pen);
 
@@ -453,12 +456,19 @@ void GridBackgroundRenderer::paintAbove(QPainter& painter, const QRectF& plot_re
     if (size.isEmpty())
         return;
 
+    //the pixels of the painted device, e.g. an export image with a scale factor: lines drawn at layout size
+    //and scaled up would be blurred
+    const double dpr     = painter.device() ? painter.device()->devicePixelRatioF() : 1.0;
+    const QSize  size_px = (QSizeF(size) * dpr).toSize();
+
     //redrawn only on changes of viewport, size, settings or sectors
-    if (above_image_.size() != size || above_lonlat_ != lonlat || above_revision_ != revision_)
+    if (above_image_.size() != size_px || above_image_.devicePixelRatioF() != dpr ||
+        above_lonlat_ != lonlat || above_revision_ != revision_)
     {
         auto t0 = boost::posix_time::microsec_clock::local_time();
 
-        above_image_ = QImage(size, QImage::Format_ARGB32_Premultiplied);
+        above_image_ = QImage(size_px, QImage::Format_ARGB32_Premultiplied);
+        above_image_.setDevicePixelRatio(dpr);
         above_image_.fill(Qt::transparent);
 
         paintAboveImage(above_image_, lonlat);

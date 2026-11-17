@@ -24,6 +24,8 @@
 
 #include "json.hpp"
 
+#include <algorithm>
+
 namespace
 {
     /// 2 rows, 3 columns, one cell without value. srs "": a grid over other axes (e.g. altitude)
@@ -142,25 +144,25 @@ TEST_CASE("grid model display data from an annotation", "[view][gridmodel]")
     {
         std::string error;
 
-        CHECK(!GridViewModel::displayDataFromAnnotation(nlohmann::json::array(), Metadata, {}, &error));
+        CHECK(!GridViewModel::displayDataFromAnnotation(nlohmann::json::array(), Metadata, {}, {}, boost::none, &error));
         CHECK(error == "missing 'grid' field");
 
         auto no_grid = feature(makeLayer(""), {});
         no_grid.erase(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid);
 
-        CHECK(!GridViewModel::displayDataFromAnnotation(no_grid, Metadata, {}, &error));
+        CHECK(!GridViewModel::displayDataFromAnnotation(no_grid, Metadata, {}, {}, boost::none, &error));
         CHECK(error == "missing 'grid' field");
 
         auto bad_grid = feature(makeLayer(""), {});
         bad_grid[ ViewPointGenFeatureGrid::FeatureGridFieldNameGrid ] = nlohmann::json::object();
 
-        CHECK(!GridViewModel::displayDataFromAnnotation(bad_grid, Metadata, {}, &error));
+        CHECK(!GridViewModel::displayDataFromAnnotation(bad_grid, Metadata, {}, {}, boost::none, &error));
         CHECK(error == "could not read grid layer");
 
         Grid2DLayer empty_layer = makeLayer("");
         empty_layer.data.resize(0, 0);
 
-        CHECK(!GridViewModel::displayDataFromAnnotation(feature(empty_layer, {}), Metadata, {}, &error));
+        CHECK(!GridViewModel::displayDataFromAnnotation(feature(empty_layer, {}), Metadata, {}, {}, boost::none, &error));
         CHECK(error == "grid layer empty");
     }
 
@@ -173,5 +175,110 @@ TEST_CASE("grid model display data from an annotation", "[view][gridmodel]")
         REQUIRE(data);
 
         CHECK(!data->render_settings.has_value());
+    }
+}
+
+namespace
+{
+    /// view point with a geographic grid annotation and a text annotation with two labels
+    nlohmann::json labelViewPoint()
+    {
+        ViewPointGenVP vp("labels", 0, "Grid");
+        vp.noDataLoaded(true);
+
+        vp.annotations().getOrCreateAnnotation("grid")->addFeature(new ViewPointGenFeatureGrid(makeLayer("wgs84")));
+
+        auto text_anno = vp.annotations().getOrCreateAnnotation("RU position");
+
+        auto ru = new ViewPointGenFeatureText("RU 1", 48.5, 16.25, 12.0f);
+        ru->setColor(QColor("#00FFFF"));
+        text_anno->addFeature(ru);
+
+        //a text in a child annotation is a label as well
+        auto child = text_anno->addAnnotation("child");
+        child->addFeature(new ViewPointGenFeatureText("RU 2", 48.0, 16.5, 8.0f,
+                                                      ViewPointGenFeatureText::TextDirection::LeftDown));
+
+        nlohmann::json j;
+        vp.toJSON(j);
+
+        return j;
+    }
+}
+
+TEST_CASE("grid model labels and background of the view point", "[view][gridmodel]")
+{
+    SECTION("text features of the view point give the labels")
+    {
+        auto labels = GridViewModel::textLabels(labelViewPoint());
+        REQUIRE(labels.size() == 2);
+
+        std::sort(labels.begin(), labels.end(),
+                  [] (const GridTextLabel& a, const GridTextLabel& b) { return a.text < b.text; });
+
+        //longitude is x, latitude is y
+        CHECK(labels[ 0 ].text == "RU 1");
+        CHECK(labels[ 0 ].position.x() == Approx(16.25));
+        CHECK(labels[ 0 ].position.y() == Approx(48.5));
+        CHECK(labels[ 0 ].color.rgb() == QColor("#00FFFF").rgb());
+        CHECK(labels[ 0 ].font_size == Approx(12.0));
+        CHECK(labels[ 0 ].direction == GridTextLabel::Direction::RightUp);
+
+        CHECK(labels[ 1 ].text == "RU 2");
+        CHECK(labels[ 1 ].font_size == Approx(8.0));
+        CHECK(labels[ 1 ].direction == GridTextLabel::Direction::LeftDown);
+    }
+
+    SECTION("a malformed text feature is skipped")
+    {
+        auto vp = labelViewPoint();
+        auto features = ViewPointGenVP::scanForFeatures(vp, { ViewPointGenFeatureText::FeatureName });
+        REQUIRE(features.size() == 2);
+
+        //first annotation is the grid, the second holds the first text
+        auto& text_feature = vp[ ViewPointGenVP::ViewPointFieldAnnotations ][ 1 ][ ViewPointGenAnnotation::AnnotationFieldFeatures ][ 0 ];
+        text_feature[ ViewPointGenFeatureText::FeatureTextFieldNamePos ] = "nowhere";
+
+        const auto labels = GridViewModel::textLabels(vp);
+        REQUIRE(labels.size() == 1);
+        CHECK(labels[ 0 ].text == "RU 2");
+    }
+
+    SECTION("the labels and the background apply to a geographic grid only")
+    {
+        const auto labels = GridViewModel::textLabels(labelViewPoint());
+
+        GridBackgroundSettings background = GridBackgroundSettings::reportDefaults();
+        background.borders_show = false;
+
+        auto geo = GridViewModel::displayDataFromAnnotation(feature(makeLayer("wgs84"), {}), Metadata, {}, labels, background);
+        REQUIRE(geo);
+        CHECK(geo->labels.size() == 2);
+        REQUIRE(geo->background.has_value());
+        CHECK(!geo->background->borders_show);
+
+        auto other = GridViewModel::displayDataFromAnnotation(feature(makeLayer(""), {}), Metadata, {}, labels, background);
+        REQUIRE(other);
+        CHECK(other->labels.empty());
+        CHECK(!other->background.has_value());
+    }
+
+    SECTION("the background set of the view point")
+    {
+        auto vp = labelViewPoint();
+        CHECK(!GridViewModel::backgroundFromViewPoint(vp).has_value());
+
+        GridBackgroundSettings background;
+        background.color                = "#000000";
+        background.hidden_sector_layers = { "TMA" };
+
+        vp[ ViewPointGenFeatureGrid::ViewPointFieldNameBackground ] = background.toJSON();
+
+        auto read = GridViewModel::backgroundFromViewPoint(vp);
+        REQUIRE(read.has_value());
+        CHECK(*read == background);
+
+        vp[ ViewPointGenFeatureGrid::ViewPointFieldNameBackground ] = "black";
+        CHECK(!GridViewModel::backgroundFromViewPoint(vp).has_value());
     }
 }

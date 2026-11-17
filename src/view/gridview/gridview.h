@@ -109,6 +109,7 @@ public:
     std::set<unsigned int> backgroundHiddenSectors() const;
     /// the background settings of the view
     GridBackgroundSettings backgroundSettings() const;
+    void setBackgroundSettings(const GridBackgroundSettings& settings);
 
     GridViewModel& model() { return *model_; }
     const GridViewModel& model() const { return *model_; }
@@ -151,6 +152,8 @@ protected:
 
     virtual void databaseOpened_impl() override;
     virtual void databaseClosed_impl() override;
+
+    virtual void showViewPoint(ViewableDataConfig* vp) override;
 
     void backgroundChanged();
 

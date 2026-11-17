@@ -208,6 +208,32 @@ A view point can restrict the sector layers that the Geographic View shows with 
 - Read: `GeographicViewDataWidget::loadingDone_impl()` in `geographicviewdatawidget.cpp`
 - Apply: `OSGSectorRootTreeItem::showSectors()` in `sector/osgsectorroottreeitem.cpp`, returns the unknown names
 
+## Grid Background (`grid_background`)
+
+A view point with a longitude / latitude grid can carry the background of its grids with the `"grid_background"` key (`ViewPointGenFeatureGrid::ViewPointFieldNameBackground`). The key is in the view point, next to `annotations`, not in the grid feature. The value is the JSON form of `GridBackgroundSettings` (`src/view/gridview/gridbackgroundsettings.h`). A missing field keeps its default.
+
+```json
+{
+    "grid_background": {
+        "show": true,
+        "color": "#000000",
+        "map_show": false,
+        "map_file": "arcgis_2d.earth",
+        "map_opacity": 50,
+        "borders_show": true,
+        "sectors_show": true,
+        "hidden_sector_layers": ["TMA"],
+        "hidden_sectors": []
+    }
+}
+```
+
+- Writers: the evaluation (`Base::createViewable()`, the evaluated sector layer of the result shown) and the data source analysis (`AnalyzeDataSourceTask`, no sector shown). They write the key only into view points with a longitude / latitude grid (`report_figure::hasGeographicGrid()`).
+- Report figures: the grid render widget draws the background of the key. A figure without the key uses `GridBackgroundSettings::reportDefaults()` (national borders on black, map off, all sectors).
+- Grid View: showing the view point copies the background into the settings of the view (`GridView::showViewPoint()`), so the layer panel shows it and the user can change it.
+- Text features (`text`) of a view point are the labels of each longitude / latitude grid of that view point, in the report figure and in the Grid View. Grids over other axes get no labels.
+- An unreadable value is ignored with a warning, the defaults apply.
+
 ## Collection Content Version
 
 A view point collection file carries `"content_type": "view_points"` and `"content_version"`. `ViewPoint::isValidJSON()` compares the version against `ViewPoint::VP_COLLECTION_CONTENT_VERSION` in `viewpoint.cpp` and accepts that value only. The current value is **0.4**. An older file fails the import with `current data content version is not supported`, so a generator script has to be updated when the constant changes.

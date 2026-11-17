@@ -1544,7 +1544,20 @@ std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForEv
 
 /**
  */
-std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForEvaluation (unsigned int utn, 
+GridBackgroundSettings EvaluationCalculator::reportFigureBackground(const std::string& sector_layer_name)
+{
+    GridBackgroundSettings background = GridBackgroundSettings::reportDefaults();
+
+    for (const auto& layer : eval_man_.dbContextManager().sectorLayers())
+        if (layer->name() != sector_layer_name)
+            background.hidden_sector_layers.insert(layer->name());
+
+    return background;
+}
+
+/**
+ */
+std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForEvaluation (unsigned int utn,
                                                                                           const std::string& req_grp_id, 
                                                                                           const std::string& result_id) const
 {

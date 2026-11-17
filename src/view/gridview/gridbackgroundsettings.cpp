@@ -105,3 +105,20 @@ bool GridBackgroundSettings::fromJSON(const nlohmann::json& obj)
 
     return true;
 }
+
+/**
+ */
+GridBackgroundSettings GridBackgroundSettings::reportDefaults()
+{
+    GridBackgroundSettings settings;
+
+    settings.color       = "#000000";
+    settings.map_show    = false;
+    settings.map_opacity = 50;
+
+    const auto map_files = gridbackground::eligibleMapFiles(gridbackground::mapDirectory());
+    if (!map_files.empty())
+        settings.map_file = map_files.front().file_name;
+
+    return settings;
+}

@@ -27,6 +27,7 @@
 #include "property_templates.h"
 
 #include "viewpointgenerator.h"
+#include "viewabledataconfig.h"
 
 #include "dbcontent.h"
 #include "dbcontentmanager.h"
@@ -132,6 +133,10 @@ GridView::GridView(nlohmann::json& config, ViewContainer* parent)
         settings.lonlat_axes      = hasLonLatAxes();
 
         return settings;
+    });
+    model_->setLabelsFunc([ this ] ()
+    {
+        return hasViewPoint() ? GridViewModel::textLabels(viewPoint().data()) : std::vector<GridTextLabel>();
     });
     model_->setVariables(variable(0), variable(1), variable(2));
 
@@ -524,6 +529,40 @@ GridBackgroundSettings GridView::backgroundSettings() const
     settings.hidden_sectors       = backgroundHiddenSectors();
 
     return settings;
+}
+
+/**
+ */
+void GridView::setBackgroundSettings(const GridBackgroundSettings& settings)
+{
+    if (settings == backgroundSettings())
+        return;
+
+    setParameter(settings_.background_show, settings.show);
+    setParameter(settings_.background_color, settings.color);
+    setParameter(settings_.background_map_show, settings.map_show);
+    setParameter(settings_.background_map_file, settings.map_file);
+    setParameter(settings_.background_map_opacity, settings.map_opacity);
+    setParameter(settings_.background_borders_show, settings.borders_show);
+    setParameter(settings_.background_sectors_show, settings.sectors_show);
+    setParameter(settings_.background_sectors_hidden_layers, nlohmann::json(settings.hidden_sector_layers).dump());
+    setParameter(settings_.background_sectors_hidden, nlohmann::json(settings.hidden_sectors).dump());
+
+    backgroundChanged();
+}
+
+/**
+ * The background set of a report figure becomes the background of the view, as in the report. The layer
+ * panel shows it, the user can change it.
+ */
+void GridView::showViewPoint(ViewableDataConfig* vp)
+{
+    if (!vp)
+        return;
+
+    auto background = GridViewModel::backgroundFromViewPoint(vp->data());
+    if (background.has_value())
+        setBackgroundSettings(background.value());
 }
 
 /**

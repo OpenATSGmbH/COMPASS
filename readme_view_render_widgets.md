@@ -1,6 +1,6 @@
 # View Models and View Render Widgets
 
-Status: all seven steps planned and agreed (2026-11-17), sections 7.1 to 7.6. Steps 1 to 4 are implemented and committed (2026-11-17), steps 5 to 7 are open. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
+Status: all seven steps planned and agreed (2026-11-17), sections 7.1 to 7.6. Steps 1 to 5 are implemented and committed (2026-11-17, 2026-11-18), steps 6 and 7 are open. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
 Audience: the agent that implements this. Read `CLAUDE.md` first (library layering, code conventions).
 
 This document is the current specification. It holds no superseded text. The decision history is in the handover, section 10.
@@ -874,6 +874,18 @@ Findings of step 4 (2026-11-17), inputs for step 5:
 - `GridBackgroundSettings` has the Grid View defaults. The report defaults (section "Fields of the background set") need their own values.
 - `GridTextLabel` exists, nothing fills or draws it yet.
 - A fixed legend with more than about 30 entries may not fit the image height of 800.
+
+Results of step 5 (2026-11-17):
+- View point field of the background set: `grid_background` (`ViewPointGenFeatureGrid::ViewPointFieldNameBackground`), documented in `src/view/points/readme_view_points.md`. Report defaults: `GridBackgroundSettings::reportDefaults()`.
+- The sector selection is stored as a list of hidden layers. The evaluation hides all layers except the evaluated one, the analysis hides all layers. A layer added later is shown.
+- A figure without a set draws all sectors. The figure does not record its task, so the task specific default of the table above cannot apply.
+- View path: `GridView::showViewPoint` copies the set of the view point into the view settings. So the layer panel shows it and the user can change it.
+- Borders, sectors and labels are drawn at device resolution. The map image is still fetched at layout size, so it has half the resolution of the export.
+- Map tiles: http tile sources with an osgEarth file cache (`~/.compass/osgearth_cache`, 14 days). Uncached tiles need the internet. The repository has no tiles.
+- Export time of a geographic figure (2400 x 1600): map off 65 ms, map on 0.2 to 1.7 s for the first export (tile download), 80 to 110 ms from the cache.
+- P11 (code reading): a change of the target usage drops the cached sector overview content. The rebuild runs while the report is stored again, under the "Updating Results" dialog. Opening a section afterwards starts no build.
+- Fix: `HistogramViewModel::hasValidResult()` returns false while a recompute runs. The view info widget read the generator while the worker replaced it (crash).
+- Risk for step 7: the workers of the stash models (scatterplot, grid) write the stash and the grid, and `viewInfoJSON()` of the models reads them. Only the test commands call it. The old data widgets had the same exposure.
 
 Tests for step 5 (agreed 2026-11-17):
 

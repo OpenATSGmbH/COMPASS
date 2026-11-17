@@ -34,6 +34,7 @@
 
 #include "viewpoint.h"
 #include "viewpointgenerator.h"
+#include "reportfigure.h"
 #include "histograminitializer.h"
 #include "grid2d_defs.h"
 #include "grid2d.h"
@@ -342,6 +343,11 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
 
     //add annotations
     createAnnotations(result_anno_array, options);
+
+    //a report figure draws a geographic grid with this background, the Grid View takes it over
+    if (report_figure::hasGeographicGrid(vp_anno_array))
+        (*viewable_ptr)[ViewPointGenFeatureGrid::ViewPointFieldNameBackground] =
+            calculator_.reportFigureBackground(sector_layer_.name()).toJSON();
 
     return viewable_ptr;
 }

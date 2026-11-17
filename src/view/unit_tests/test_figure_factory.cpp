@@ -31,6 +31,7 @@
 #include "json.hpp"
 
 #include <QApplication>
+#include <QDir>
 #include <QElapsedTimer>
 #include <QImage>
 
@@ -469,6 +470,138 @@ TEST_CASE("report figure export image of a grid", "[view][reportfigure]")
     CHECK(image == image_again);
 }
 
+namespace
+{
+    /// view point of a report figure with a longitude / latitude grid over Austria and a text label
+    nlohmann::json geoGridViewPoint(const boost::optional<GridBackgroundSettings>& background)
+    {
+        Grid2DLayer layer;
+        layer.name = "pd";
+        layer.data.resize(2, 2);
+        layer.data << 0.0,                  1.0,
+                      Grid2D::InvalidValue, 0.0;
+
+        layer.ref.srs              = "wgs84";
+        layer.ref.img_origin_x     = 14.0;
+        layer.ref.img_origin_y     = 49.0;
+        layer.ref.img_pixel_size_x = 1.5;
+        layer.ref.img_pixel_size_y = 1.5;
+        layer.ref.is_north_up      = true;
+
+        Grid2DRenderSettings rs;
+        rs.color_map.create(QColor("#0000c0"), QColor("#000080"), 2, ColorMap::Type::Binary);
+        rs.min_value = 0.0;
+        rs.max_value = 1.0;
+
+        ViewPointGenVP vp("PD - Horizontal", 0, "Grid");
+        vp.noDataLoaded(true);
+        vp.annotations().getOrCreateAnnotation("PD")->addFeature(
+            new ViewPointGenFeatureGrid(layer, rs, PlotMetadata("PD - Horizontal", "", "Longitude (deg)", "Latitude (deg)")));
+
+        auto text = new ViewPointGenFeatureText("RU 1", 47.5, 15.5, 30.0f);
+        text->setColor(QColor("#00ffff"));
+        vp.annotations().getOrCreateAnnotation("RU position")->addFeature(text);
+
+        nlohmann::json j;
+        vp.toJSON(j);
+
+        if (background.has_value())
+            j[ ViewPointGenFeatureGrid::ViewPointFieldNameBackground ] = background->toJSON();
+
+        return j;
+    }
+
+    size_t numPixels(const QImage& image, const QColor& color)
+    {
+        const QImage img = image.convertToFormat(QImage::Format_ARGB32);
+
+        size_t n = 0;
+        for (int y = 0; y < img.height(); ++y)
+            for (int x = 0; x < img.width(); ++x)
+                if (img.pixel(x, y) == color.rgb())
+                    ++n;
+
+        return n;
+    }
+}
+
+TEST_CASE("report figure export image of a geographic grid", "[view][reportfigure]")
+{
+    SECTION("without a background set: the report defaults, national borders on black")
+    {
+        const auto defaults = GridBackgroundSettings::reportDefaults();
+
+        CHECK(defaults.color == "#000000");
+        CHECK(!defaults.map_show);
+        CHECK(defaults.map_opacity == 50);
+        CHECK(defaults.borders_show);
+        CHECK(defaults.sectors_show);
+        CHECK(defaults.hidden_sector_layers.empty());
+        CHECK(!defaults.map_file.empty());
+
+        const auto entries = report_figure::selectRenderEntries(geoGridViewPoint(boost::none));
+        REQUIRE(entries.size() == 1);
+
+        QImage image;
+        REQUIRE(report_figure::renderExportImage(entries[ 0 ], image));
+
+        CHECK(image.size() == QSize(2400, 1600));
+        CHECK(numPixels(image, Qt::black) > 10000);
+        CHECK(numPixels(image, QColor(255, 255, 0)) > 100);
+
+        //the label of the text feature
+        CHECK(numPixels(image, QColor("#00ffff")) > 50);
+    }
+
+    SECTION("points, lines and circles of the view point are not drawn")
+    {
+        auto with_overlays = geoGridViewPoint(boost::none);
+
+        //yellow as the RU position circle of the MLAT RU coverage, the color of the national borders
+        ViewPointGenAnnotation marker("RU marker");
+        marker.addFeature(new ViewPointGenFeatureErrEllipses(3.0f, 32, { Eigen::Vector2d(47.5, 15.5) },
+                                                             { QColor("#FFFF00") },
+                                                             { Eigen::Vector3d(20000.0, 20000.0, 0.0) }));
+        marker.addFeature(new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Circle, 12.0f,
+                                                        { Eigen::Vector2d(47.0, 16.0) }, { QColor("#FF00FF") }));
+        marker.addFeature(new ViewPointGenFeatureLines(3.0f, ViewPointGenFeatureStyledLine::LineStyle::Solid,
+                                                       { Eigen::Vector2d(47.0, 14.5), Eigen::Vector2d(48.5, 16.5) },
+                                                       { QColor("#FF00FF") }));
+
+        nlohmann::json marker_json;
+        marker.toJSON(marker_json);
+        with_overlays[ ViewPointGenVP::ViewPointFieldAnnotations ].push_back(marker_json);
+
+        const auto entries          = report_figure::selectRenderEntries(geoGridViewPoint(boost::none));
+        const auto overlays_entries = report_figure::selectRenderEntries(with_overlays);
+
+        REQUIRE(entries.size() == 1);
+        REQUIRE(overlays_entries.size() == 1);
+
+        QImage image, image_overlays;
+        REQUIRE(report_figure::renderExportImage(entries[ 0 ], image));
+        REQUIRE(report_figure::renderExportImage(overlays_entries[ 0 ], image_overlays));
+
+        CHECK(image == image_overlays);
+    }
+
+    SECTION("the background set of the view point")
+    {
+        GridBackgroundSettings background = GridBackgroundSettings::reportDefaults();
+        background.color        = "#102030";
+        background.borders_show = false;
+
+        const auto entries = report_figure::selectRenderEntries(geoGridViewPoint(background));
+        REQUIRE(entries.size() == 1);
+
+        QImage image;
+        REQUIRE(report_figure::renderExportImage(entries[ 0 ], image));
+
+        CHECK(numPixels(image, QColor("#102030")) > 10000);
+        CHECK(numPixels(image, QColor(255, 255, 0)) == 0);
+    }
+}
+
 TEST_CASE("report figure factory shows the empty chart for a malformed grid annotation", "[view][reportfigure]")
 {
     report_figure::RenderEntry entry;
@@ -612,4 +745,51 @@ TEST_CASE("report scatterplot draw time", "[.][scatterdrawtime]")
 
     for (size_t num_points : { 1000, 10000, 100000, 1000000 })
         measureScatterDrawTime(largeScatterViewPoint(num_points), "synthetic");
+}
+
+// Not run by default. Export time of a geographic grid figure with the map on, for each map file of
+// COMPASS_TEST_MAP_FILES (comma separated, default openstreetmap_2d.earth). The map tiles come from the tile
+// cache of the map file or from the network, the export waits for them up to
+// gridbackground::DefaultExportWaitTime. The first export loads the tiles, the second finds them in the cache.
+TEST_CASE("report geographic grid export time with the map", "[.][geomapexporttime]")
+{
+    QString files = qEnvironmentVariable("COMPASS_TEST_MAP_FILES");
+    if (files.isEmpty())
+        files = "openstreetmap_2d.earth";
+
+    auto exportTime = [] (const boost::optional<GridBackgroundSettings>& background, QImage& image)
+    {
+        const auto entries = report_figure::selectRenderEntries(geoGridViewPoint(background));
+        REQUIRE(entries.size() == 1);
+
+        QElapsedTimer timer;
+        timer.start();
+
+        REQUIRE(report_figure::renderExportImage(entries[ 0 ], image));
+
+        return timer.elapsed();
+    };
+
+    QImage image;
+    for (int run = 0; run < 2; ++run)
+        WARN("map off run " << run << ": " << exportTime(boost::none, image) << " ms");
+
+    for (const auto& file : files.split(','))
+    {
+        GridBackgroundSettings background = GridBackgroundSettings::reportDefaults();
+        background.map_show    = true;
+        background.map_file    = file.trimmed().toStdString();
+        background.map_opacity = 100;
+
+        for (int run = 0; run < 2; ++run)
+        {
+            const qint64 ms = exportTime(background, image);
+
+            WARN(file.toStdString() << " run " << run << ": " << ms << " ms, black pixels " << numPixels(image, Qt::black));
+
+            const QString dir = qEnvironmentVariable("COMPASS_TEST_IMAGE_DIR");
+            if (!dir.isEmpty())
+                image.save(QDir(dir).filePath(file.trimmed() + ".png"));
+        }
+    }
 }

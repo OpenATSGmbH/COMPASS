@@ -48,6 +48,10 @@ struct GridBackgroundSettings
     /// A missing field keeps its default. Returns false if obj is no object or a field has a wrong type.
     bool fromJSON(const nlohmann::json& obj);
 
+    /// The background of a report figure without its own background set: national borders on black,
+    /// map off (the first map file of the maps folder), all sectors.
+    static GridBackgroundSettings reportDefaults();
+
     static const std::string TagShow;
     static const std::string TagColor;
     static const std::string TagMapShow;

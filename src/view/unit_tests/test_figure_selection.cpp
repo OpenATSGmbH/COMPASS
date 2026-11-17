@@ -348,21 +348,112 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(entries[ 0 ].feature->at("type") == "grid");
     }
 
-    SECTION("a geographic grid uses the view path")
+    SECTION("a geographic grid gives one render widget, without labels and background set")
     {
         auto vp = viewPoint();
         addGrid(*vp, "PD - Horizontal", "wgs84");
 
-        CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+        const auto entries = report_figure::selectRenderEntries(toJSON(*vp));
+
+        REQUIRE(entries.size() == 1);
+        CHECK(entries[ 0 ].kind == report_figure::Kind::Grid);
+        CHECK(entries[ 0 ].image_name == "grid_0");
+        CHECK(entries[ 0 ].labels.empty());
+        CHECK(!entries[ 0 ].background.has_value());
     }
 
-    SECTION("a geographic grid next to a grid over other axes uses the view path")
+    SECTION("a geographic grid next to a grid over other axes gives two render widgets")
     {
         auto vp = viewPoint();
         addGrid(*vp, "PD - Altitude/Longitude", "");
         addGrid(*vp, "PD - Horizontal", "wgs84");
 
+        CHECK(report_figure::selectRenderEntries(toJSON(*vp)).size() == 2);
+    }
+
+    SECTION("a geographic grid plus a text gives the render widget with the label")
+    {
+        auto vp = viewPoint();
+        addGrid(*vp, "PD - Horizontal", "wgs84");
+        addText(*vp, "RU position");
+
+        const auto entries = report_figure::selectRenderEntries(toJSON(*vp));
+
+        REQUIRE(entries.size() == 1);
+        REQUIRE(entries[ 0 ].labels.size() == 1);
+        CHECK(entries[ 0 ].labels[ 0 ].text == "text");
+    }
+
+    SECTION("a geographic grid plus points and circles gives the render widget without them")
+    {
+        auto vp = viewPoint();
+        addGrid(*vp, "PD - Horizontal", "wgs84");
+
+        auto marker = vp->annotations().getOrCreateAnnotation("RU position");
+        marker->addFeature(new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Circle, 6.0f,
+                                                         { Eigen::Vector2d(48.0, 16.0) }));
+        marker->addFeature(new ViewPointGenFeatureErrEllipses(3.0f, 32, { Eigen::Vector2d(48.0, 16.0) }, {},
+                                                              { Eigen::Vector3d(1000.0, 1000.0, 0.0) }));
+
+        const auto entries = report_figure::selectRenderEntries(toJSON(*vp));
+
+        REQUIRE(entries.size() == 1);
+        CHECK(entries[ 0 ].kind == report_figure::Kind::Grid);
+        CHECK(entries[ 0 ].labels.empty());
+    }
+
+    SECTION("points only use the view path")
+    {
+        auto vp = viewPoint();
+        vp->annotations().getOrCreateAnnotation("Unassociated Reports")->addFeature(
+            new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Square, 6.0f,
+                                          { Eigen::Vector2d(48.0, 16.0) }));
+
         CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+    }
+
+    SECTION("a geographic image is no overlay")
+    {
+        auto vp = viewPoint();
+        addGrid(*vp, "PD - Horizontal", "wgs84");
+
+        RasterReference ref;
+        vp->annotations().getOrCreateAnnotation("Image")->addFeature(
+            new ViewPointGenFeatureGeoImage(QImage(2, 2, QImage::Format_ARGB32), ref));
+
+        CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+    }
+
+    SECTION("the background set of the view point goes to the grid entries")
+    {
+        auto vp = viewPoint();
+        addHistogram(*vp, "H1");
+        addGrid(*vp, "PD - Horizontal", "wgs84");
+
+        auto j = toJSON(*vp);
+
+        CHECK(report_figure::hasGeographicGrid(j.at(ViewPointGenVP::ViewPointFieldAnnotations)));
+
+        GridBackgroundSettings background = GridBackgroundSettings::reportDefaults();
+        background.hidden_sector_layers = { "TMA" };
+
+        j[ ViewPointGenFeatureGrid::ViewPointFieldNameBackground ] = background.toJSON();
+
+        const auto entries = report_figure::selectRenderEntries(j);
+
+        REQUIRE(entries.size() == 2);
+        CHECK(!entries[ 0 ].background.has_value());
+        REQUIRE(entries[ 1 ].background.has_value());
+        CHECK(*entries[ 1 ].background == background);
+    }
+
+    SECTION("only a longitude / latitude grid is a geographic grid")
+    {
+        auto vp = viewPoint();
+        addGrid(*vp, "PD - Altitude/Longitude", "");
+        addHistogram(*vp, "H1");
+
+        CHECK(!report_figure::hasGeographicGrid(toJSON(*vp).at(ViewPointGenVP::ViewPointFieldAnnotations)));
     }
 
     SECTION("a grid plus another feature uses the view path")

@@ -411,6 +411,10 @@ public:
     static const std::string FeatureGridFieldNameGrid;
     static const std::string FeatureGridFieldNameRenderSettings;
 
+    /// Field of the view point (next to its annotations, not of the feature): the background of its
+    /// longitude / latitude grids (GridBackgroundSettings JSON)
+    static const std::string ViewPointFieldNameBackground;
+
 protected:
     virtual void toJSON_impl(nlohmann::json& j, bool write_binary_if_possible) const override;
 

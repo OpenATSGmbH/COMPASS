@@ -120,6 +120,91 @@ std::vector<GridSectorLine> GridViewModel::sectorLines(const context::DBContextM
 }
 
 /**
+ * Malformed text features are skipped with a warning, the Geographic View reports them.
+ */
+std::vector<GridTextLabel> GridViewModel::textLabels(const nlohmann::json& view_point)
+{
+    std::vector<GridTextLabel> labels;
+
+    const auto features = ViewPointGenVP::scanForFeatures(view_point, { ViewPointGenFeatureText::FeatureName });
+
+    for (const auto& f : features)
+    {
+        const auto& feature = f.feature_json;
+
+        try
+        {
+            GridTextLabel label;
+            label.text = feature.at(ViewPointGenFeatureText::FeatureTextFieldNameText).get<std::string>();
+
+            //latitude first, as the Geographic View reads it
+            const auto& pos = feature.at(ViewPointGenFeatureText::FeatureTextFieldNamePos);
+            if (!pos.is_array() || pos.size() < 2)
+                throw std::runtime_error("position is no coordinate");
+
+            label.position = QPointF(pos.at(1).get<double>(), pos.at(0).get<double>());
+
+            auto props_it = feature.find(ViewPointGenFeature::FeatureFieldNameProps);
+            if (props_it != feature.end() && props_it->is_object())
+            {
+                const auto& props = *props_it;
+
+                if (props.contains(ViewPointGenFeature::FeatureFieldNamePropColor))
+                {
+                    QColor color(QString::fromStdString(props.at(ViewPointGenFeature::FeatureFieldNamePropColor).get<std::string>()));
+                    if (color.isValid())
+                        label.color = color;
+                }
+
+                if (props.contains(ViewPointGenFeatureText::FeatureTextFieldNameFontSize))
+                    label.font_size = props.at(ViewPointGenFeatureText::FeatureTextFieldNameFontSize).get<double>();
+
+                if (props.contains(ViewPointGenFeatureText::FeatureTextFieldNameDir))
+                {
+                    const std::string dir = props.at(ViewPointGenFeatureText::FeatureTextFieldNameDir).get<std::string>();
+
+                    if (dir == ViewPointGenFeatureText::TextDirNameRightDown)
+                        label.direction = GridTextLabel::Direction::RightDown;
+                    else if (dir == ViewPointGenFeatureText::TextDirNameLeftUp)
+                        label.direction = GridTextLabel::Direction::LeftUp;
+                    else if (dir == ViewPointGenFeatureText::TextDirNameLeftDown)
+                        label.direction = GridTextLabel::Direction::LeftDown;
+                }
+            }
+
+            labels.push_back(label);
+        }
+        catch (const std::exception& e)
+        {
+            logwrn << "text feature '" << f.name << "' skipped: " << e.what();
+        }
+    }
+
+    return labels;
+}
+
+/**
+ */
+boost::optional<GridBackgroundSettings> GridViewModel::backgroundFromViewPoint(const nlohmann::json& view_point)
+{
+    if (!view_point.is_object())
+        return {};
+
+    auto it = view_point.find(ViewPointGenFeatureGrid::ViewPointFieldNameBackground);
+    if (it == view_point.end())
+        return {};
+
+    GridBackgroundSettings settings;
+    if (!settings.fromJSON(*it))
+    {
+        logwrn << "grid background of the view point not readable, ignored";
+        return {};
+    }
+
+    return settings;
+}
+
+/**
 */
 void GridViewModel::sectorsChanged()
 {
@@ -623,15 +708,22 @@ GridViewModel::DataPtr GridViewModel::dataFromAnnotation(const nlohmann::json& f
 
 /**
 */
-std::shared_ptr<const GridDisplayData> GridViewModel::displayDataFromAnnotation(const nlohmann::json& feature,
-                                                                               const PlotMetadata& metadata,
-                                                                               const std::vector<GridSectorLine>& sectors,
-                                                                               std::string* error)
+std::shared_ptr<const GridDisplayData> GridViewModel::displayDataFromAnnotation(
+    const nlohmann::json& feature,
+    const PlotMetadata& metadata,
+    const std::vector<GridSectorLine>& sectors,
+    const std::vector<GridTextLabel>& labels,
+    const boost::optional<GridBackgroundSettings>& background,
+    std::string* error)
 {
     auto data = dataFromAnnotation(feature, metadata, error);
 
-    if (data)
-        data->sectors = sectors;
+    if (data && data->is_geographic)
+    {
+        data->sectors    = sectors;
+        data->labels     = labels;
+        data->background = background;
+    }
 
     return data;
 }
@@ -645,6 +737,10 @@ bool GridViewModel::setAnnotation(const nlohmann::json& feature, const PlotMetad
     auto data = dataFromAnnotation(feature, metadata, error);
 
     const bool valid = data != nullptr;
+
+    //the text features of the view point are read only for a grid that shows them
+    if (valid && data->is_geographic && labels_func_)
+        data->labels = labels_func_();
 
     if (!valid)
     {

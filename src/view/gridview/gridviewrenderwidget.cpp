@@ -36,6 +36,7 @@
 #include <QAction>
 #include <QBoxLayout>
 #include <QFontInfo>
+#include <QFontMetricsF>
 #include <QGraphicsLayout>
 #include <QPainter>
 
@@ -337,6 +338,54 @@ double GridViewRenderWidget::gridCellWidth() const
     const auto cols = data_->layer->data.cols();
 
     return cols > 0 ? grid_roi_.width() / cols : 0.0;
+}
+
+/**
+ * Fonts with a pixel size and without hinting, so the label looks the same at every display scaling.
+ */
+void GridViewRenderWidget::paintLabels(QPainter& painter, const QRectF& plot_rect, const QRectF& lonlat) const
+{
+    if (!data_ || data_->labels.empty() || plot_rect.isEmpty() || lonlat.width() <= 0.0 || lonlat.height() <= 0.0)
+        return;
+
+    //distance of the text from its position
+    const double offset = 3.0;
+
+    painter.save();
+    painter.setClipRect(plot_rect);
+
+    for (const auto& label : data_->labels)
+    {
+        if (!lonlat.contains(label.position))
+            continue;
+
+        const QPointF p(plot_rect.left() + (label.position.x() - lonlat.left()) / lonlat.width() * plot_rect.width(),
+                        plot_rect.top() + (lonlat.bottom() - label.position.y()) / lonlat.height() * plot_rect.height());
+
+        QFont font = painter.font();
+        font.setPixelSize(std::max(1, (int)std::lround(label.font_size)));
+        font.setHintingPreference(QFont::PreferNoHinting);
+
+        painter.setFont(font);
+        painter.setPen(label.color);
+
+        const QString text = QString::fromStdString(label.text);
+        const QSizeF  size = QFontMetricsF(font, painter.device()).boundingRect(text).size();
+
+        const bool left = label.direction == GridTextLabel::Direction::LeftUp ||
+                          label.direction == GridTextLabel::Direction::LeftDown;
+        const bool down = label.direction == GridTextLabel::Direction::RightDown ||
+                          label.direction == GridTextLabel::Direction::LeftDown;
+
+        const QRectF rect(left ? p.x() - offset - size.width() : p.x() + offset,
+                          down ? p.y() + offset : p.y() - offset - size.height(),
+                          size.width(),
+                          size.height());
+
+        painter.drawText(rect, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextDontClip, text);
+    }
+
+    painter.restore();
 }
 
 /**
@@ -852,6 +901,8 @@ void GridViewRenderWidget::viewInfoJSON(nlohmann::json& info) const
     //background map: available for longitude / latitude grids, active if also switched on
     info[ "background_available" ] = background_.available();
     info[ "background_active"    ] = background_.active();
+    info[ "background_settings"  ] = background_.settings().toJSON();
+    info[ "num_labels"           ] = data_ ? data_->labels.size() : (size_t)0;
 
     const auto axis_ranges = axisRanges();
     const bool has_axes    = axis_ranges.has_value();

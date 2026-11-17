@@ -29,6 +29,11 @@ namespace report_figure
     struct RenderEntry;
 }
 
+namespace context
+{
+    class DBContextManager;
+}
+
 namespace ResultReport
 {
 
@@ -81,6 +86,8 @@ public:
     /// The render widgets that draw the figure in the report GUI and in the export, one per annotation.
     /// Empty: the views show the figure ("View" button, image of each view with content).
     std::vector<report_figure::RenderEntry> renderEntries() const;
+    /// the sectors the geographic grids of the render widgets draw, nullptr without a task result
+    const context::DBContextManager* sectorSource();
 
     static const std::string FieldFigureType;
     static const std::string FieldCaption;

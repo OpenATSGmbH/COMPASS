@@ -35,6 +35,7 @@
 #include <QImage>
 
 #include <algorithm>
+#include <set>
 
 namespace report_figure
 {
@@ -84,6 +85,94 @@ namespace
             return false;
 
         return Grid2DLayer::isGeographicSRS(ref.srs);
+    }
+
+    /// Features a geographic grid can have next to it. Only the texts are drawn (labels), the Geographic View
+    /// shows the others.
+    bool isGeographicOverlay(const std::string& type)
+    {
+        static const std::set<std::string> types =
+        {
+            ViewPointGenFeaturePoints::FeatureName,
+            ViewPointGenFeatureLineString::FeatureName,
+            ViewPointGenFeatureLineString::FeatureNameInterp,
+            ViewPointGenFeatureLines::FeatureName,
+            ViewPointGenFeatureErrEllipses::FeatureName,
+            ViewPointGenFeatureText::FeatureName
+        };
+
+        return types.count(type) > 0;
+    }
+
+    /// walks the annotation tree without copying the features
+    bool annotationHasGeographicGrid(const nlohmann::json& annotation)
+    {
+        if (!annotation.is_object())
+            return false;
+
+        auto features_it = annotation.find(ViewPointGenAnnotation::AnnotationFieldFeatures);
+        if (features_it != annotation.end() && features_it->is_array())
+        {
+            for (const auto& f : *features_it)
+            {
+                if (!f.is_object())
+                    continue;
+
+                auto type_it = f.find(ViewPointGenFeature::FeatureTypeFieldType);
+                if (type_it != f.end() && *type_it == ViewPointGenFeatureGrid::FeatureName && isGeographicGrid(f))
+                    return true;
+            }
+        }
+
+        auto children_it = annotation.find(ViewPointGenAnnotation::AnnotationFieldAnnotations);
+        if (children_it != annotation.end() && children_it->is_array())
+            for (const auto& c : *children_it)
+                if (annotationHasGeographicGrid(c))
+                    return true;
+
+        return false;
+    }
+
+    void collectFeatureTypes(const nlohmann::json& annotation, std::set<std::string>& types)
+    {
+        if (!annotation.is_object())
+        {
+            types.insert(std::string());
+            return;
+        }
+
+        auto features_it = annotation.find(ViewPointGenAnnotation::AnnotationFieldFeatures);
+        if (features_it != annotation.end() && features_it->is_array())
+        {
+            for (const auto& f : *features_it)
+            {
+                auto type_it = f.is_object() ? f.find(ViewPointGenFeature::FeatureTypeFieldType) : f.end();
+
+                //a feature without a type is no known feature
+                types.insert(f.is_object() && type_it != f.end() && type_it->is_string() ? type_it->get<std::string>()
+                                                                                         : std::string());
+            }
+        }
+
+        auto children_it = annotation.find(ViewPointGenAnnotation::AnnotationFieldAnnotations);
+        if (children_it != annotation.end() && children_it->is_array())
+            for (const auto& c : *children_it)
+                collectFeatureTypes(c, types);
+    }
+
+    /// the feature types of the view point, without copying the features
+    std::set<std::string> featureTypes(const nlohmann::json& view_point)
+    {
+        std::set<std::string> types;
+
+        auto annotations_it = view_point.find(ViewPointGenVP::ViewPointFieldAnnotations);
+        if (annotations_it == view_point.end() || !annotations_it->is_array())
+            return types;
+
+        for (const auto& a : *annotations_it)
+            collectFeatureTypes(a, types);
+
+        return types;
     }
 
     //in a narrow window the chart stays readable
@@ -161,15 +250,24 @@ namespace
     /**
      */
     std::unique_ptr<ViewRenderWidget> createGridWidget(const RenderEntry& entry,
+                                                       const context::DBContextManager* ctx_man,
                                                        QWidget* parent,
                                                        const QPalette* image_palette)
     {
         std::string error;
 
-        //grids over other axes have no sectors
-        auto data = GridViewModel::displayDataFromAnnotation(*entry.feature, entry.metadata, {}, &error);
+        //only a geographic grid uses the sectors, the labels and the background
+        const auto sectors = entry.geographic && ctx_man ? GridViewModel::sectorLines(*ctx_man)
+                                                         : std::vector<GridSectorLine>();
+
+        auto data = GridViewModel::displayDataFromAnnotation(*entry.feature, entry.metadata, sectors,
+                                                             entry.labels, entry.background, &error);
         if (!data)
             logwrn << "malformed grid annotation of figure image '" << entry.image_name << "': " << error;
+
+        //the background set of the view point wins over these
+        GridRenderOptions options;
+        options.background = GridBackgroundSettings::reportDefaults();
 
         auto widget = std::make_unique<GridViewRenderWidget>(parent);
 
@@ -178,14 +276,17 @@ namespace
         //the navigate tool of the widget moves the chart with the mouse, a report figure has no interaction
         widget->setDragEnabled(false);
 
-        widget->setDisplayData(data, GridRenderOptions());
+        widget->setDisplayData(data, options);
 
         return widget;
     }
 
     /**
      */
-    std::unique_ptr<ViewRenderWidget> createWidget(const RenderEntry& entry, QWidget* parent, const QPalette* image_palette)
+    std::unique_ptr<ViewRenderWidget> createWidget(const RenderEntry& entry,
+                                                   const context::DBContextManager* ctx_man,
+                                                   QWidget* parent,
+                                                   const QPalette* image_palette)
     {
         traced_assert(entry.feature);
 
@@ -196,7 +297,7 @@ namespace
             case Kind::Scatterplot:
                 return createScatterplotWidget(entry, parent, image_palette);
             case Kind::Grid:
-                return createGridWidget(entry, parent, image_palette);
+                return createGridWidget(entry, ctx_man, parent, image_palette);
         }
 
         traced_assert(false);
@@ -231,24 +332,34 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
     if (!loadsNoData(view_point))
         return {};
 
-    //only annotations of the kinds that have a render widget
-    const auto features = ViewPointGenVP::scanForFeatures(view_point);
-    if (features.empty())
-        return {};
+    auto annotations_it = view_point.find(ViewPointGenVP::ViewPointFieldAnnotations);
 
-    for (const auto& f : features)
+    const bool geographic = annotations_it != view_point.end() && hasGeographicGrid(*annotations_it);
+
+    //only annotations of the kinds that have a render widget, and the overlays of a geographic grid
+    bool has_render_kind = false;
+
+    for (const auto& type : featureTypes(view_point))
     {
-        const auto& type = f.feature_json.at(ViewPointGenFeature::FeatureTypeFieldType);
-
         const bool has_render_widget = std::any_of(kindInfos().begin(), kindInfos().end(),
             [ & ] (const KindInfo& info) { return type == info.feature_type; });
 
-        if (!has_render_widget)
-            return {};
+        has_render_kind |= has_render_widget;
 
-        //the background of geographic grids is not in the report figures yet, the views show them
-        if (type == ViewPointGenFeatureGrid::FeatureName && isGeographicGrid(f.feature_json))
+        if (!has_render_widget && !(geographic && isGeographicOverlay(type)))
             return {};
+    }
+
+    if (!has_render_kind)
+        return {};
+
+    std::vector<GridTextLabel>              labels;
+    boost::optional<GridBackgroundSettings> background;
+
+    if (geographic)
+    {
+        labels     = GridViewModel::textLabels(view_point);
+        background = GridViewModel::backgroundFromViewPoint(view_point);
     }
 
     std::vector<RenderEntry> entries;
@@ -271,6 +382,13 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
                 entry.feature          = std::make_shared<const nlohmann::json>(annotation.feature_json);
                 entry.metadata         = annotation.metadata;
 
+                if (info.kind == Kind::Grid && isGeographicGrid(annotation.feature_json))
+                {
+                    entry.geographic = true;
+                    entry.labels     = labels;
+                    entry.background = background;
+                }
+
                 entries.push_back(entry);
             }
         }
@@ -281,18 +399,34 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
 
 /**
  */
-std::unique_ptr<ViewRenderWidget> createRenderWidget(const RenderEntry& entry, QWidget* parent)
+std::unique_ptr<ViewRenderWidget> createRenderWidget(const RenderEntry& entry,
+                                                     const context::DBContextManager* ctx_man,
+                                                     QWidget* parent)
 {
-    return createWidget(entry, parent, nullptr);
+    return createWidget(entry, ctx_man, parent, nullptr);
 }
 
 /**
  */
-bool renderExportImage(const RenderEntry& entry, QImage& image)
+bool renderExportImage(const RenderEntry& entry, QImage& image, const context::DBContextManager* ctx_man)
 {
     const QPalette palette = app_palette::light();
 
-    return createWidget(entry, nullptr, &palette)->render(image, ExportLayoutSize, ExportScale);
+    return createWidget(entry, ctx_man, nullptr, &palette)->render(image, ExportLayoutSize, ExportScale);
+}
+
+/**
+ */
+bool hasGeographicGrid(const nlohmann::json& annotations)
+{
+    if (!annotations.is_array())
+        return false;
+
+    for (const auto& a : annotations)
+        if (annotationHasGeographicGrid(a))
+            return true;
+
+    return false;
 }
 
 }

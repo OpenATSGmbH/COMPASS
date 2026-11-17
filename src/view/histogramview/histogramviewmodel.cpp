@@ -521,7 +521,8 @@ void HistogramViewModel::resetZoom()
  */
 bool HistogramViewModel::hasValidResult() const
 {
-    return histogram_generator_ && histogram_generator_->hasValidResult();
+    //a recompute worker replaces the generator, the main thread must not read it meanwhile
+    return !hasPendingAsyncWork() && histogram_generator_ && histogram_generator_->hasValidResult();
 }
 
 /**

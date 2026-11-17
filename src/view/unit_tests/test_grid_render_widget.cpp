@@ -414,6 +414,300 @@ TEST_CASE("grid render widget image", "[view][gridrender]")
     }
 }
 
+namespace
+{
+    const QColor GeoLow     ("#0000C0");
+    const QColor GeoHigh    ("#000080");
+    const QColor SectorColor("#FF00FF");
+    const QColor LabelColor ("#00FFFF");
+    const QColor BorderColor(255, 255, 0);
+
+    /// 3 x 3 cells of 1 degree over Austria (longitude 14 to 17, latitude 46 to 49), the middle cell without value
+    Grid2DLayer geoLayer()
+    {
+        Grid2DLayer layer;
+        layer.name = "geo";
+        layer.data.resize(3, 3);
+        layer.data << 0.0, 1.0, 0.0,
+                      1.0, Grid2D::InvalidValue, 1.0,
+                      0.0, 1.0, 0.0;
+
+        layer.ref.srs              = "wgs84";
+        layer.ref.img_origin_x     = 14.0;
+        layer.ref.img_origin_y     = 49.0;
+        layer.ref.img_pixel_size_x = 1.0;
+        layer.ref.img_pixel_size_y = 1.0;
+        layer.ref.is_north_up      = true;
+
+        return layer;
+    }
+
+    /// a diamond inside the middle cell
+    GridSectorLine sectorLine()
+    {
+        QPolygonF poly;
+        poly << QPointF(15.5, 47.2) << QPointF(15.8, 47.5) << QPointF(15.5, 47.8) << QPointF(15.2, 47.5) << QPointF(15.5, 47.2);
+
+        GridSectorLine line;
+        line.line        = gridbackground::makeLine(poly);
+        line.color       = SectorColor;
+        line.layer_name  = "TMA";
+        line.sector_name = "TMA 1";
+        line.sector_id   = 7;
+
+        return line;
+    }
+
+    /// borders off, a background color no other part has, the sector shown
+    GridBackgroundSettings geoBackground()
+    {
+        GridBackgroundSettings background;
+        background.color        = "#102030";
+        background.borders_show = false;
+
+        return background;
+    }
+
+    std::shared_ptr<GridDisplayData> makeGeoData(const boost::optional<GridBackgroundSettings>& background = geoBackground())
+    {
+        Grid2DRenderSettings rs;
+        rs.color_map.create(GeoLow, GeoHigh, 2, ColorMap::Type::Binary);
+        rs.min_value = 0.0;
+        rs.max_value = 1.0;
+
+        auto data = std::make_shared<GridDisplayData>();
+        data->layer           = geoLayer();
+        data->render_settings = rs;
+        data->is_geographic   = true;
+        data->title           = "PD - Horizontal";
+        data->x_axis_label    = "Longitude (deg)";
+        data->y_axis_label    = "Latitude (deg)";
+        data->sectors         = { sectorLine() };
+        data->background      = background;
+        data->domain_id       = "annotation";
+        data->valid           = true;
+
+        return data;
+    }
+
+    GridTextLabel label(double lon, double lat)
+    {
+        GridTextLabel l;
+        l.position  = QPointF(lon, lat);
+        l.text      = "RU";
+        l.color     = LabelColor;
+        l.font_size = 24.0;
+
+        return l;
+    }
+
+    QImage renderGeo(const std::shared_ptr<GridDisplayData>& data,
+                     const GridRenderOptions& options = GridRenderOptions(),
+                     double scale = 1.0)
+    {
+        GridViewRenderWidget widget;
+        widget.setFixedPalette(app_palette::light());
+        widget.setImageOnly(true);
+        widget.setDisplayData(data, options);
+
+        QImage image;
+        REQUIRE(widget.render(image, QSize(600, 400), scale));
+
+        return image.convertToFormat(QImage::Format_ARGB32);
+    }
+
+    template <typename Pred>
+    size_t countPixels(const QImage& image, Pred pred)
+    {
+        size_t n = 0;
+        for (int y = 0; y < image.height(); ++y)
+            for (int x = 0; x < image.width(); ++x)
+                if (pred(image.pixelColor(x, y)))
+                    ++n;
+
+        return n;
+    }
+
+    size_t countColor(const QImage& image, const QColor& color)
+    {
+        return countPixels(image, [ & ] (const QColor& c) { return c.rgb() == color.rgb(); });
+    }
+
+    /// the pixel is mainly the sector color, also at an antialiased edge
+    bool isSectorPixel(const QColor& c)
+    {
+        return c.red() > 150 && c.blue() > 150 && c.green() < 100;
+    }
+
+    /// mean x of the pixels of a color
+    double meanX(const QImage& image, const QColor& color)
+    {
+        double sum = 0.0;
+        size_t n   = 0;
+
+        for (int y = 0; y < image.height(); ++y)
+            for (int x = 0; x < image.width(); ++x)
+                if (image.pixelColor(x, y).rgb() == color.rgb())
+                {
+                    sum += x;
+                    ++n;
+                }
+
+        return n > 0 ? sum / n : -1.0;
+    }
+}
+
+TEST_CASE("grid render widget background of a geographic grid", "[view][gridrender]")
+{
+    SECTION("the background of the display data wins over the options")
+    {
+        GridRenderOptions options;
+        options.background.color = "#203040";
+
+        const QImage image = renderGeo(makeGeoData(), options);
+
+        CHECK(countColor(image, QColor("#102030")) > 100);
+        CHECK(countColor(image, QColor("#203040")) == 0);
+    }
+
+    SECTION("without a background in the display data the options apply")
+    {
+        GridRenderOptions options;
+        options.background.color        = "#203040";
+        options.background.borders_show = false;
+
+        const QImage image = renderGeo(makeGeoData(boost::none), options);
+
+        CHECK(countColor(image, QColor("#203040")) > 100);
+        CHECK(countColor(image, QColor("#102030")) == 0);
+    }
+
+    SECTION("national borders")
+    {
+        auto background = geoBackground();
+
+        //Austria borders on Czechia, Slovakia, Hungary and Slovenia inside the grid
+        background.borders_show = true;
+        const QImage with = renderGeo(makeGeoData(background));
+
+        background.borders_show = false;
+        const QImage without = renderGeo(makeGeoData(background));
+
+        CHECK(countColor(with, BorderColor) > 50);
+        CHECK(countColor(without, BorderColor) == 0);
+    }
+
+    SECTION("a shown sector draws its outline, a hidden one does not")
+    {
+        auto background = geoBackground();
+
+        CHECK(countPixels(renderGeo(makeGeoData(background)), isSectorPixel) > 50);
+
+        background.hidden_sector_layers = { "TMA" };
+        CHECK(countPixels(renderGeo(makeGeoData(background)), isSectorPixel) == 0);
+
+        background = geoBackground();
+        background.hidden_sectors = { 7 };
+        CHECK(countPixels(renderGeo(makeGeoData(background)), isSectorPixel) == 0);
+
+        background = geoBackground();
+        background.sectors_show = false;
+        CHECK(countPixels(renderGeo(makeGeoData(background)), isSectorPixel) == 0);
+    }
+
+    SECTION("a text label changes the pixels at its position")
+    {
+        auto data = makeGeoData();
+        CHECK(countColor(renderGeo(data), LabelColor) == 0);
+
+        auto west = makeGeoData();
+        west->labels = { label(14.5, 47.5) };
+
+        auto east = makeGeoData();
+        east->labels = { label(16.5, 47.5) };
+
+        const QImage image_west = renderGeo(west);
+        const QImage image_east = renderGeo(east);
+
+        CHECK(countColor(image_west, LabelColor) > 10);
+        CHECK(countColor(image_east, LabelColor) > 10);
+
+        //a degree of longitude is more than 50 pixels here
+        CHECK(meanX(image_east, LabelColor) - meanX(image_west, LabelColor) > 100.0);
+    }
+
+    SECTION("a text label is drawn above the sectors")
+    {
+        //a large label from the lower left edge of the diamond covers parts of its outline
+        auto data = makeGeoData();
+        data->labels = { label(15.3, 47.3) };
+        data->labels[ 0 ].font_size = 40.0;
+        data->labels[ 0 ].text      = "MMM";
+
+        CHECK(countPixels(renderGeo(data), isSectorPixel) < countPixels(renderGeo(makeGeoData()), isSectorPixel));
+    }
+
+    SECTION("labels of a grid over other axes are not drawn")
+    {
+        auto data = makeData({ 0.0, 1.0 });
+        data->labels = { label(0.5, 1500.0) };
+
+        GridViewRenderWidget widget;
+        widget.setFixedPalette(app_palette::light());
+        widget.setDisplayData(data, GridRenderOptions());
+
+        CHECK(countColor(renderImage(widget), LabelColor) == 0);
+    }
+}
+
+TEST_CASE("grid render widget draws borders and sectors at the pixels of the image", "[view][gridrender]")
+{
+    const QImage image_1 = renderGeo(makeGeoData(), GridRenderOptions(), 1.0);
+    const QImage image_2 = renderGeo(makeGeoData(), GridRenderOptions(), 2.0);
+
+    REQUIRE(image_2.size() == QSize(1200, 800));
+
+    SECTION("the lines have the same look: twice as long and twice as wide")
+    {
+        const double ratio = countPixels(image_2, isSectorPixel) / (double)countPixels(image_1, isSectorPixel);
+
+        CHECK(ratio > 3.0);
+        CHECK(ratio < 5.0);
+    }
+
+    SECTION("the lines are drawn at the resolution of the image, not scaled up")
+    {
+        //an image drawn at layout size and scaled up by 2 has columns in identical pairs
+        size_t pairs     = 0;
+        size_t identical = 0;
+
+        auto column = [ & ] (int x)
+        {
+            std::vector<int> rows;
+            for (int y = 0; y < image_2.height(); ++y)
+                if (isSectorPixel(image_2.pixelColor(x, y)))
+                    rows.push_back(y);
+            return rows;
+        };
+
+        for (int x = 0; x + 1 < image_2.width(); ++x)
+        {
+            const auto c0 = column(x);
+            const auto c1 = column(x + 1);
+
+            if (c0.empty() || c1.empty())
+                continue;
+
+            ++pairs;
+            if (c0 == c1)
+                ++identical;
+        }
+
+        REQUIRE(pairs > 20);
+        CHECK(identical / (double)pairs < 0.3);
+    }
+}
+
 // Not run by default. Writes a grid image with its color legend into the directory
 // COMPASS_TEST_IMAGE_DIR. scripts/check_image_display_scaling.py runs it with the display scaling 1 and 2
 // and compares the images.
@@ -442,4 +736,28 @@ TEST_CASE("grid image for the display scaling check", "[.][displayscaling]")
     QImage image;
     REQUIRE(widget.render(image, QSize(1200, 800), 2.0));
     REQUIRE(image.save(QDir(dir).filePath("grid.png")));
+}
+
+// Not run by default. Writes a geographic grid image with national borders, a sector and a text label into
+// the directory COMPASS_TEST_IMAGE_DIR, see the test above.
+TEST_CASE("geographic grid image for the display scaling check", "[.][displayscaling]")
+{
+    const QString dir = qEnvironmentVariable("COMPASS_TEST_IMAGE_DIR");
+    REQUIRE(!dir.isEmpty());
+
+    auto background = geoBackground();
+    background.borders_show = true;
+
+    auto data = makeGeoData(background);
+    data->labels = { label(16.2, 47.6) };
+    data->labels[ 0 ].font_size = 13.0;
+
+    GridViewRenderWidget widget;
+    widget.setFixedPalette(app_palette::light());
+    widget.setImageOnly(true);
+    widget.setDisplayData(data, GridRenderOptions());
+
+    QImage image;
+    REQUIRE(widget.render(image, QSize(1200, 800), 2.0));
+    REQUIRE(image.save(QDir(dir).filePath("grid_geo.png")));
 }

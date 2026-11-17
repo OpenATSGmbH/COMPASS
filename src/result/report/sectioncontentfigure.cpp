@@ -23,6 +23,7 @@
 #include "taskresult.h"
 
 #include "itaskprovider.h"
+#include "viewmanager.h"
 #include "viewpointgenerator.h"
 #include "reportfigure.h"
 #include "viewrenderwidget.h"
@@ -38,6 +39,8 @@
 #include <QApplication>
 #include <QThread>
 #include <QImage>
+
+#include <algorithm>
 
 namespace ResultReport
 {
@@ -132,9 +135,14 @@ void SectionContentFigure::addContentUI(QVBoxLayout* layout,
 
     layout->addWidget(label);
 
+    const bool geographic = std::any_of(entries.begin(), entries.end(),
+                                        [] (const report_figure::RenderEntry& e) { return e.geographic; });
+
+    const auto* ctx_man = geographic ? sectorSource() : nullptr;
+
     for (const auto& entry : entries)
     {
-        ViewRenderWidget* render_widget = report_figure::createRenderWidget(entry).release();
+        ViewRenderWidget* render_widget = report_figure::createRenderWidget(entry, ctx_man).release();
         UI_TEST_OBJ_NAME(render_widget, QString::fromStdString("Figure " + name() + " " + entry.image_name));
 
         layout->addWidget(render_widget);
@@ -146,6 +154,17 @@ void SectionContentFigure::addContentUI(QVBoxLayout* layout,
     button_layout->addWidget(view_button);
 
     layout->addLayout(button_layout);
+}
+
+/**
+ */
+const context::DBContextManager* SectionContentFigure::sectorSource()
+{
+    auto result = taskResult();
+    if (!result)
+        return nullptr;
+
+    return &result->taskManager().viewManager().dbContextManager();
 }
 
 /**

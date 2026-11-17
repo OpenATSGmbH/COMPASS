@@ -51,6 +51,10 @@
 #include "stringconv.h"
 #include "system.h"
 #include "taskresult.h"
+#include "sectioncontentfigure.h"
+#include "reportfigure.h"
+#include "viewpointgenerator.h"
+#include "viewpointkeys.h"
 #include "traced_assert.h"
 
 #include "json.hpp"
@@ -1113,6 +1117,8 @@ void AnalyzeDataSourceTask::run()
         logRAM("inspector " + ins->name() + " after writeReport");
     }
 
+    addReportFigureBackground(root);
+
     advanceStep("Saving result...");
     tm.endTaskResultWriting(true, false);
 
@@ -1129,4 +1135,47 @@ void AnalyzeDataSourceTask::run()
     // the freshly written report so the user lands on it without an extra
     // click. See MainWindow::showResult / showEvaluationResult.
     manager().mainWindow().showResult(result_name);
+}
+
+/**
+ */
+GridBackgroundSettings AnalyzeDataSourceTask::reportFigureBackground() const
+{
+    GridBackgroundSettings background = GridBackgroundSettings::reportDefaults();
+
+    for (const auto& layer : manager().dbContextManager().sectorLayers())
+        background.hidden_sector_layers.insert(layer->name());
+
+    return background;
+}
+
+/**
+ * The inspectors write their figures as view points with annotations, the background set is added here for
+ * all of them. The report GUI and the export draw the geographic grids with it.
+ */
+void AnalyzeDataSourceTask::addReportFigureBackground(ResultReport::Section& section) const
+{
+    const nlohmann::json background = reportFigureBackground().toJSON();
+
+    unsigned int num_figures = 0;
+
+    for (const auto& content : section.recursiveContent(true))
+    {
+        auto figure = std::dynamic_pointer_cast<ResultReport::SectionContentFigure>(content);
+        if (!figure || figure->isOnDemand())
+            continue;
+
+        auto view_point = figure->viewableContent();
+        if (!view_point)
+            continue;
+
+        auto annotations_it = view_point->find(ViewPointKeys::VP_ANNOTATION_KEY);
+        if (annotations_it == view_point->end() || !report_figure::hasGeographicGrid(annotations_it->second))
+            continue;
+
+        (*view_point)[ ViewPointGenFeatureGrid::ViewPointFieldNameBackground ] = background;
+        ++num_figures;
+    }
+
+    loginf << "background set written into " << num_figures << " figures";
 }

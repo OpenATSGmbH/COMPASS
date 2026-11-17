@@ -22,6 +22,7 @@
 #include "subconfigurablefactory.h"
 #include "task.h"
 #include "global.h"
+#include "gridbackgroundsettings.h"
 
 #include "creatorregistry.h"
 #include "json_fwd.hpp"
@@ -277,6 +278,12 @@ protected:
 
 private:
     void registerInspectors();
+
+    /// Background set of the report figures with longitude / latitude grids: the report defaults, no
+    /// sector layer shown
+    GridBackgroundSettings reportFigureBackground() const;
+    /// writes the background set into the report figures below the section that have a geographic grid
+    void addReportFigureBackground(ResultReport::Section& section) const;
 
     std::string ds_type_;
 

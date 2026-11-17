@@ -47,12 +47,16 @@ public:
         bool                      lonlat_axes      = false; // x and y are longitude and latitude
     };
     typedef std::function<Settings()> SettingsFunc;
+    /// the text labels of the shown view point, see textLabels()
+    typedef std::function<std::vector<GridTextLabel>()> LabelsFunc;
 
     GridViewModel(DBContentManager& dbcont_man, context::DBContextManager& ctx_man, AppState& app_state);
     virtual ~GridViewModel();
 
     /// read on the main thread before each computation of the display data from the buffers
     void setSettingsFunc(const SettingsFunc& func) { settings_func_ = func; }
+    /// called when a geographic grid annotation is set
+    void setLabelsFunc(const LabelsFunc& func) { labels_func_ = func; }
 
     /// the variables of x, y and the distributed value, NOT owned
     void setVariables(ViewVariable& variable_x, ViewVariable& variable_y, ViewVariable& variable_z);
@@ -60,12 +64,22 @@ public:
     /// the outlines of all sectors of the data context
     static std::vector<GridSectorLine> sectorLines(const context::DBContextManager& ctx_man);
 
-    /// Annotation path, no model object and no manager necessary. sectors: see sectorLines().
+    /// the text features of the view point, the labels of each geographic grid of it
+    static std::vector<GridTextLabel> textLabels(const nlohmann::json& view_point);
+    /// the background set of the view point (ViewPointGenFeatureGrid::ViewPointFieldNameBackground),
+    /// no value if it has none or it is not readable
+    static boost::optional<GridBackgroundSettings> backgroundFromViewPoint(const nlohmann::json& view_point);
+
+    /// Annotation path, no model object and no manager necessary. sectors: see sectorLines(). The sectors,
+    /// labels and background apply to a geographic grid only.
     /// Empty pointer: malformed annotation, error then holds the reason.
-    static std::shared_ptr<const GridDisplayData> displayDataFromAnnotation(const nlohmann::json& feature,
-                                                                           const PlotMetadata& metadata,
-                                                                           const std::vector<GridSectorLine>& sectors = {},
-                                                                           std::string* error = nullptr);
+    static std::shared_ptr<const GridDisplayData> displayDataFromAnnotation(
+        const nlohmann::json& feature,
+        const PlotMetadata& metadata,
+        const std::vector<GridSectorLine>& sectors = {},
+        const std::vector<GridTextLabel>& labels = {},
+        const boost::optional<GridBackgroundSettings>& background = boost::none,
+        std::string* error = nullptr);
 
     bool setAnnotation(const nlohmann::json& feature, const PlotMetadata& metadata,
                        std::string* error = nullptr) override;
@@ -128,6 +142,7 @@ private:
 
     SettingsFunc settings_func_;
     Settings     settings_; // read on the main thread, see readSettings()
+    LabelsFunc   labels_func_;
 
     std::unique_ptr<Grid2D>       grid_;       // of the stash, for the view info
     boost::optional<Grid2DLayer>  grid_layer_; // of the stash
