@@ -3,7 +3,7 @@
 # exit when any command fails
 set -e
 
-OS=${1:-deb10}
+OS=${1:-alma8}
 CLEAN=${2:+"$2"}
 
 echo "os: '$OS'"
