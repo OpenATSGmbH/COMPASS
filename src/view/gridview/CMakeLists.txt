@@ -17,6 +17,11 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/gridviewdatawidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/gridviewchart.h"
 
+        "${CMAKE_CURRENT_LIST_DIR}/gridbackground_defs.h"
+        "${CMAKE_CURRENT_LIST_DIR}/gridbackgroundtilesource.h"
+        "${CMAKE_CURRENT_LIST_DIR}/gridbackgroundrenderer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/gridbackgrounditems.h"
+
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/grid2d_defs.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/grid2d.cpp"
@@ -29,4 +34,9 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/gridviewconfigwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/gridviewdatawidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/gridviewchart.cpp"
+
+        "${CMAKE_CURRENT_LIST_DIR}/gridbackground_defs.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/gridbackgroundtilesource.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/gridbackgroundrenderer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/gridbackgrounditems.cpp"
 )

@@ -522,8 +522,20 @@ void ViewVariable::configureWidget(dbContent::VariableSelectionWidget& selection
  */
 void ViewVariable::updateWidget(dbContent::VariableSelectionWidget& selection)
 {
-    if (!hasVariable())
+    //the widget always shows the stored variable, the one the view uses
+    if (isEmpty())
+    {
+        if (selection.showEmptyVariable())
+            selection.selectEmptyVariable();
         return;
+    }
+
+    //stored, but not in this database (e.g. a Report Variable of a report this database does not hold)
+    if (!hasVariable())
+    {
+        selection.selectedUnavailableVariable(settings_.data_var_dbcont, settings_.data_var_name);
+        return;
+    }
 
     if (isMetaVariable())
         selection.selectedMetaVariable(metaVariable());

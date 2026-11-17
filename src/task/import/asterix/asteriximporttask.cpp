@@ -971,6 +971,15 @@ void ASTERIXImportTask::run() // , bool create_mapping_stubs
     //reset state before new run
     reset();
 
+    // network data is received now, so it starts at the current UTC day. The day set for a file
+    // import (dialog or --date) does not apply, and stays set for the next file import.
+    if (source_.isNetworkType())
+        import_date_ = boost::posix_time::ptime(boost::gregorian::day_clock::universal_day());
+    else
+        import_date_ = settings_.date_;
+
+    loginf << "import date " << Time::toDateString(import_date_);
+
     float free_ram = System::getFreeRAMinGB();
 
     loginf << "filenames " << source_.filesAsString() << " free RAM " << free_ram << " GB";
@@ -1211,7 +1220,7 @@ void ASTERIXImportTask::mapJSONDoneSlot()
         check_future_ts = false;
 
     ts_calculator_.calculate(source_name,
-                             settings_.date_, settings_.reset_date_between_files_,
+                             import_date_, settings_.reset_date_between_files_,
                              settings_.override_tod_active_, settings_.override_tod_offset_,
                              settings_.ignore_time_jumps_, check_future_ts,
                              manager().appState(),

@@ -27,6 +27,7 @@
 
 #include <QMainWindow>
 #include <QDialog>
+#include <QPixmap>
 
 namespace ui_test
 {
@@ -182,6 +183,26 @@ bool RTCommandUIGet::run_impl()
         //retrieve the style sheet, e.g. to check invalid-input coloring
         result_string = receiver.second->styleSheet().toStdString();
         result        = result_string;
+    }
+    else if (what.startsWith("grab:"))
+    {
+        //save an image of the widget as rendered by the application (no desktop screenshot needed)
+        const QString path = what.mid(5);
+
+        QPixmap pixmap = receiver.second->grab();
+        if (pixmap.isNull() || !pixmap.save(path))
+        {
+            setResultMessage("Image of object '" + obj.toStdString() + "' could not be saved to '" + path.toStdString() + "'");
+            return false;
+        }
+
+        nlohmann::json v;
+        v[ "file"   ] = path.toStdString();
+        v[ "width"  ] = pixmap.width();
+        v[ "height" ] = pixmap.height();
+
+        result        = v;
+        result_string = path.toStdString();
     }
     else
     {

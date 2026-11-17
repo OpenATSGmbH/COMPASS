@@ -24,6 +24,9 @@
 #include "db_context_manager.h"
 #include "taskmanager.h"
 #include "taskresult.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontentfigure.h"
 #include "evaluationmanager.h"
 #include "dbcontentmanager.h"
 #include "radarplotpositioncalculatortask.h"
@@ -101,6 +104,7 @@ void init_commands(rtcommand::RTCommandRegistry& registry,
     registry.registerCommand<main_window::RTCommandExportReport>(root);
     registry.registerCommand<main_window::RTCommandGetExistingReports>(root);
     registry.registerCommand<main_window::RTCommandGetReport>(root);
+    registry.registerCommand<main_window::RTCommandGetReportFigure>(root);
 
     registry.registerCommand<main_window::RTCommandGetEvents>();
     registry.registerCommand<main_window::RTCommandReconfigure>(root);
@@ -934,6 +938,120 @@ void RTCommandGetReport::assignVariables_impl(const VariablesMap &vars)
 {
     RTCOMMAND_GET_VAR_OR_THROW(vars, "report" , std::string, result_name)
     RTCOMMAND_GET_VAR_OR_THROW(vars, "section", std::string, section    )
+}
+
+// get_report_figure
+
+/**
+*/
+RTCommandGetReportFigure::RTCommandGetReportFigure(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
+rtcommand::IsValid RTCommandGetReportFigure::valid() const
+{
+    CHECK_RTCOMMAND_INVALID_CONDITION(result_name.empty(), "Report name missing")
+    CHECK_RTCOMMAND_INVALID_CONDITION(section.empty(), "Section missing")
+
+    return rtcommand::RTCommand::valid();
+}
+
+/**
+ * Returns the stored view point (viewable) of each figure in the section, or of the named figure.
+*/
+bool RTCommandGetReportFigure::run_impl()
+{
+    if (!root_.compass().dbOpened())
+    {
+        setResultMessage("Database not opened");
+        return false;
+    }
+
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
+    {
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
+        return false;
+    }
+
+    auto& task_manager = root_.taskManager();
+
+    if (!task_manager.hasResult(result_name))
+    {
+        setResultMessage("Report '" + result_name + "' not available");
+        return false;
+    }
+
+    auto report = task_manager.result(result_name)->report();
+
+    if (!report->hasSection(section))
+    {
+        setResultMessage("Section '" + section + "' not found in report");
+        return false;
+    }
+
+    auto& sec = report->getSection(section);
+
+    if (!figure.empty() && !sec.hasFigure(figure))
+    {
+        setResultMessage("Figure '" + figure + "' not found in section '" + section + "'");
+        return false;
+    }
+
+    nlohmann::json figures = nlohmann::json::array();
+
+    for (auto fig : sec.getFigures())
+    {
+        if (!figure.empty() && fig->name() != figure)
+            continue;
+
+        if (fig->isLocked())
+        {
+            setResultMessage("Figure '" + fig->name() + "' is locked");
+            return false;
+        }
+
+        auto content = fig->viewableContent();
+
+        nlohmann::json jfig;
+        jfig[ "name"       ] = fig->name();
+        jfig[ "caption"    ] = fig->caption();
+        jfig[ "view_point" ] = content ? nlohmann::json(*content) : nlohmann::json::object();
+
+        figures.push_back(jfig);
+    }
+
+    nlohmann::json j;
+    j[ "figures" ] = figures;
+
+    setJSONReply(j);
+
+    return true;
+}
+
+/**
+ */
+void RTCommandGetReportFigure::collectOptions_impl(OptionsDescription &options,
+                                                   PosOptionsDescription &positional)
+{
+    ADD_RTCOMMAND_OPTIONS(options)
+        ("report", po::value<std::string>()->required(), "name of the report, e.g. 'EUROCAE ED-87E Evaluation'")
+        ("section", po::value<std::string>()->required(), "path of the section, e.g. 'Report:Results:Overview:Results'")
+        ("figure", po::value<std::string>()->default_value(""), "optional name of a figure in the section, all figures if not set");
+
+    ADD_RTCOMMAND_POS_OPTION(positional, "report" )
+    ADD_RTCOMMAND_POS_OPTION(positional, "section")
+    ADD_RTCOMMAND_POS_OPTION(positional, "figure" )
+}
+
+/**
+ */
+void RTCommandGetReportFigure::assignVariables_impl(const VariablesMap &vars)
+{
+    RTCOMMAND_GET_VAR_OR_THROW(vars, "report" , std::string, result_name)
+    RTCOMMAND_GET_VAR_OR_THROW(vars, "section", std::string, section    )
+    RTCOMMAND_GET_VAR_OR_THROW(vars, "figure" , std::string, figure     )
 }
 
 // get_events

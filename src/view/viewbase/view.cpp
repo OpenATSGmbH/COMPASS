@@ -158,6 +158,8 @@ bool View::init()
 */
 void View::databaseOpened()
 {
+    adaptConfigToDatabase();
+
     if (widget_)
         widget_->databaseOpened();
 

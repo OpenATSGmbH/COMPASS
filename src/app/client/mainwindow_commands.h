@@ -248,6 +248,30 @@ private:
     DECLARE_RTCOMMAND_OPTIONS
 };
 
+/**
+ * get_report_figure
+ */
+struct RTCommandGetReportFigure : public rtcommand::RTCommand
+{
+public:
+    explicit RTCommandGetReportFigure(CompassRoot& root);
+
+    virtual rtcommand::IsValid valid() const override;
+
+    std::string result_name;
+    std::string section;
+    std::string figure;
+
+protected:
+    virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
+
+    DECLARE_RTCOMMAND(get_report_figure, "obtain the stored view points of the figures in a report section")
+    DECLARE_RTCOMMAND_OPTIONS
+};
+
 // get_events
 struct RTCommandGetEvents : public rtcommand::RTCommand
 {

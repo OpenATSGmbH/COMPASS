@@ -46,7 +46,8 @@ struct DuckDBSettings
     static std::string sortOrderAsString(SortOrder order);
 
     // storage version of newly created database files (existing files keep their version), needs
-    // DuckDB v1.5.0 or newer to open them, enables e.g. zstd column compression
+    // DuckDB v2.0.0 or newer to open them, enables e.g. zstd column compression and the reuse of
+    // deleted rows in tables with a primary key (checkpoint vacuum with ART indexes)
     static const std::string StorageCompatibilityVersion;
 
     AccessMode   access_mode        = AccessMode::ReadWrite;

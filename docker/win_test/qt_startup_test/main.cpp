@@ -16,7 +16,7 @@
  */
 
 // Windows build test: rare crash in the QApplication constructor (QWindowsContextPrivate)
-// at COMPASS startup on crunch_win. Does the same steps as the COMPASS main() up to the
+// at COMPASS startup on potato_win. Does the same steps as the COMPASS main() up to the
 // QApplication constructor, without the COMPASS libraries. If this program also crashes in
 // a restart loop, the cause is in Qt, the driver or Windows, not in COMPASS.
 // Command line arguments are ignored (the restart loop passes the COMPASS arguments).

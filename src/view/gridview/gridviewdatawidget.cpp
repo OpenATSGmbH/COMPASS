@@ -42,11 +42,21 @@
 #include "viewlayertreemodel.h"
 #include "annotationsrootitem.h"
 
+#include "gridbackgroundrenderer.h"
+#include "gridbackgrounditems.h"
+
+#include "viewmanager.h"
+#include "db_context_manager.h"
+#include "dbcontentmanager.h"
+#include "dbcontentdataengine.h"
+
 #include "logger.h"
 
+#include <QAction>
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMenu>
 
 #include <QChart>
 #include <QGraphicsLayout>
@@ -71,6 +81,39 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
     view_ = view_widget->getView();
     traced_assert(view_);
 
+    background_.reset(new GridBackgroundRenderer(*view_));
+
+    connect(background_.get(), &GridBackgroundRenderer::updateSignal, this, [ this ] ()
+    {
+        //e.g. the map item shows whether the map is available
+        if (auto root = backgroundRootItem())
+            root->syncFromSettings();
+        if (auto sectors = sectorsRootItem())
+            sectors->syncFromSettings();
+
+        if (grid_chart_)
+            grid_chart_->viewport()->update();
+    });
+
+    //the sector layers below the background item
+    auto& ctx_man = view_->viewManager().dbContextManager();
+
+    auto sectorsChanged = [ this ] ()
+    {
+        if (auto sectors = sectorsRootItem())
+            sectors->update();
+    };
+
+    connect(&ctx_man, &context::DBContextManager::sectorsChangedSignal, this, sectorsChanged);
+    connect(&ctx_man, &context::DBContextManager::activeContextChangedSignal, this, sectorsChanged);
+
+    //a renamed layer keeps its checked state (emitted before the sectorsChangedSignal of the rename)
+    connect(&ctx_man, &context::DBContextManager::sectorLayerRenamedSignal, this,
+            [ this ] (const std::string& old_name, const std::string& new_name)
+            {
+                view_->renameBackgroundSectorLayer(old_name, new_name);
+            });
+
     main_layout_ = new QHBoxLayout();
     main_layout_->setMargin(0);
 
@@ -78,8 +121,6 @@ GridViewDataWidget::GridViewDataWidget(GridViewWidget* view_widget,
 
     legend_ = new ColorLegendWidget(this);
     legend_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    legend_->showSelectionColor(true);
-    legend_->showNullColor(false);
 
     main_layout_->addWidget(legend_);
 
@@ -111,9 +152,8 @@ void GridViewDataWidget::resetGridChart()
 {
     colormap_.reset();
 
-    legend_->setColorMap(ColorMap());
+    legend_->clear();
     legend_->setVisible(false);
-    legend_->showSelectionColor(false);
 
     // deleteLater, not a synchronous reset, see releaseWidgetLater()
     releaseWidgetLater(grid_chart_.release(), layout());
@@ -265,7 +305,13 @@ void GridViewDataWidget::buildGridFromStash()
                      data_ranges[ 1 ].has_value() &&
                      data_ranges[ 2 ].has_value());
     if (!has_data)
+    {
+        loginf << "no grid data, has data " << hasData() << " stash data " << getStash().hasData()
+               << " variables ok " << variablesOk()
+               << " ranges " << data_ranges[ 0 ].has_value() << data_ranges[ 1 ].has_value() << data_ranges[ 2 ].has_value()
+               << " groups " << getStash().groupedStashes().size();
         return;
+    }
 
     auto bounds = getXYVariableBounds(true);
     if (!bounds.has_value() || bounds->isEmpty())
@@ -435,6 +481,10 @@ void GridViewDataWidget::layerVisibilityChanged()
     if (view_->showsAnnotation())
         return;
 
+    // e.g. a background item (no data layer ids) => no re-aggregation
+    if (!hiddenLayerIdsChanged())
+        return;
+
     // a recompute worker fills the stash and the grid => its commit picks up the toggle
     if (hasPendingAsyncWork_impl())
         return;
@@ -562,6 +612,11 @@ GridViewDataTool GridViewDataWidget::selectedTool() const
 QPixmap GridViewDataWidget::renderPixmap()
 {
     traced_assert(grid_chart_);
+
+    //map tiles of the exported viewport, default waiting until the export dialogs set it
+    if (backgroundActive())
+        background_->prepareExport(grid_chart_->viewLonLat(), grid_chart_->chart()->plotArea().size().toSize());
+
     return grid_chart_->grab();
 }
 
@@ -716,6 +771,12 @@ ViewDataWidget::ViewDrawState GridViewDataWidget::updateGridChart()
 
     main_layout_->insertWidget(0, grid_chart_.get());
 
+    updateBackgroundAvailable();
+
+    //zoom / position of the user kept (e.g. across a load)
+    if (user_view_.has_value() && !view_->showsAnnotation())
+        grid_chart_->setView(*user_view_);
+
     if (colormap_.has_value())
     {
         auto dtype = view_->currentLegendDataType();
@@ -734,14 +795,28 @@ ViewDataWidget::ViewDrawState GridViewDataWidget::updateGridChart()
                                                   repr,
                                                   (int)std::max((size_t)2, colormap_->numColors())).style.decimals;
 
+        legend_decimals_ = style.decimals;
+
         //update legend widget
         auto decoratorFunc = [ = ] (double v)
         {
             return axis_ticks::label(v, dtype, repr, style);
         };
 
-        legend_->setColorMap(colormap_.value());
-        legend_->setDecorator(decoratorFunc);
+        //legend from the render settings: color map with the active range, legend fields of the
+        //annotation if set (order, precision, unit)
+        Grid2DRenderSettings legend_settings;
+        legend_settings.color_map = colormap_.value();
+
+        if (view_->showsAnnotation() && annotation_render_settings_.has_value())
+        {
+            legend_settings.legend_order     = annotation_render_settings_->legend_order;
+            legend_settings.legend_precision = annotation_render_settings_->legend_precision;
+            legend_settings.legend_unit      = annotation_render_settings_->legend_unit;
+            legend_settings.legend_entries   = annotation_render_settings_->legend_entries;
+        }
+
+        legend_->setLegend(legend_settings.legend(false, false, decoratorFunc));
         legend_->setVisible(true);
     }
 
@@ -756,6 +831,7 @@ void GridViewDataWidget::updateRendering()
 
     custom_range_invalid_ = false;
     colormap_.reset();
+    render_settings_      = {};
 
     //no valid grid no rendering
     if (!hasValidGrid())
@@ -817,72 +893,60 @@ void GridViewDataWidget::updateRendering()
 
         loginf << "combined range min = " << range.first << " max = " << range.second;
 
-        auto dtype = view_->currentLegendDataType();
+        const bool annotation_color_map = annotation_render_settings_.has_value()
+                                          && annotation_render_settings_->color_map.valid();
 
-        //color scale: annotation override -> view setting
-        int active_color_scale = settings.render_color_scale;
-        if (annotation_render_settings_.has_value()
-            && annotation_render_settings_->color_map.valid())
+        if (annotation_color_map)
         {
-            active_color_scale = static_cast<int>(
-                annotation_render_settings_->color_map.colorScale());
-        }
-
-        //number of color steps: annotation override -> derived from ui
-        size_t num_steps = 0;
-        if (annotation_render_settings_.has_value()
-            && annotation_render_settings_->color_map.valid())
-        {
-            num_steps = annotation_render_settings_->color_map.colorSteps();
+            //annotation: its color map as suggested by the producer (colors, type, log scale), with the
+            //combined range
+            render_settings.color_map = annotation_render_settings_->color_map;
+            render_settings.color_map.setValueRange(range);
         }
         else
         {
-            num_steps = property_templates::suggestedNumColorSteps(
+            auto dtype = view_->currentLegendDataType();
+
+            //color scale and steps from the view settings
+            int    active_color_scale = settings.render_color_scale;
+            size_t num_steps          = property_templates::suggestedNumColorSteps(
                 dtype, range.first, range.second, settings.render_color_num_steps);
-        }
 
-        loginf << "suggested color steps = " << num_steps;
+            loginf << "suggested color steps = " << num_steps;
 
-        //create color map
-        if (num_steps == 1)
-        {
-            //single value
-            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
-                                            1,
-                                            ColorMap::Type::LinearSamples,
-                                            range);
-        }
-        else if (num_steps == 2)
-        {
-            //binary
-            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
-                                            2,
-                                            ColorMap::Type::Binary,
-                                            range);
-        }
-        else if (num_steps > 0)
-        {
-            //multi-value
-            render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
-                                            num_steps,
-                                            ColorMap::Type::LinearSamples,
-                                            range);
-        }
+            //create color map
+            if (num_steps == 1)
+            {
+                //single value
+                render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
+                                                1,
+                                                ColorMap::Type::LinearSamples,
+                                                range);
+            }
+            else if (num_steps == 2)
+            {
+                //binary
+                render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
+                                                2,
+                                                ColorMap::Type::Binary,
+                                                range);
+            }
+            else if (num_steps > 0)
+            {
+                //multi-value
+                render_settings.color_map.create((colorscale::ColorScale)active_color_scale,
+                                                num_steps,
+                                                ColorMap::Type::LinearSamples,
+                                                range);
+            }
 
-        //logarithmic scale: annotation override -> view setting
-        if (annotation_render_settings_.has_value()
-            && annotation_render_settings_->color_map.valid())
-        {
-            render_settings.color_map.setLogScale(annotation_render_settings_->color_map.logScale(),
-                                                  annotation_render_settings_->color_map.logFloor());
-        }
-        else
-        {
             render_settings.color_map.setLogScale(settings.render_color_log_scale);
         }
 
         colormap_ = render_settings.color_map;
     }
+
+    render_settings_ = render_settings;
 
     //render grid
     auto rendering = Grid2DLayerRenderer::render(layer, render_settings);
@@ -1003,17 +1067,36 @@ ViewDataWidget::ViewDrawState GridViewDataWidget::updateChart(QtCharts::QChart* 
         chart->legend()->setVisible(false);
 
         QtCharts::QScatterSeries* series = new QtCharts::QScatterSeries;
+
+        //longitude / latitude => the background shows the position extent of the database
+        const QRectF db_extent = (!view_->showsAnnotation() && view_->hasLonLatAxes()) ? databasePositionExtent() : QRectF();
+
+        if (!db_extent.isEmpty())
+        {
+            series->setMarkerSize(0.1);
+            series->setColor(Qt::white);
+
+            series->append(db_extent.topLeft());
+            series->append(db_extent.topRight());
+            series->append(db_extent.bottomRight());
+            series->append(db_extent.bottomLeft());
+        }
+
         chart->addSeries(series);
 
         createAxes();
 
-        chart->axes(Qt::Horizontal).at(0)->setLabelsVisible(false);
-        chart->axes(Qt::Horizontal).at(0)->setGridLineVisible(false);
-        chart->axes(Qt::Horizontal).at(0)->setMinorGridLineVisible(false);
+        //with the database extent the axes keep their labels
+        if (db_extent.isEmpty())
+        {
+            chart->axes(Qt::Horizontal).at(0)->setLabelsVisible(false);
+            chart->axes(Qt::Horizontal).at(0)->setGridLineVisible(false);
+            chart->axes(Qt::Horizontal).at(0)->setMinorGridLineVisible(false);
 
-        chart->axes(Qt::Vertical).at(0)->setLabelsVisible(false);
-        chart->axes(Qt::Vertical).at(0)->setGridLineVisible(false);
-        chart->axes(Qt::Vertical).at(0)->setMinorGridLineVisible(false);
+            chart->axes(Qt::Vertical).at(0)->setLabelsVisible(false);
+            chart->axes(Qt::Vertical).at(0)->setGridLineVisible(false);
+            chart->axes(Qt::Vertical).at(0)->setMinorGridLineVisible(false);
+        }
 
         draw_state = ViewDataWidget::ViewDrawState::Drawn;
     }
@@ -1029,6 +1112,10 @@ void GridViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 {
     //!call base!
     VariableViewStashDataWidget::viewInfoJSON_impl(info);
+
+    //background map: available for longitude / latitude grids, active if also switched on
+    info[ "background_available" ] = background_->available();
+    info[ "background_active"    ] = background_->active();
 
     info[ "num_valid"   ] = getStash().valid_count_;
     info[ "num_selected"] = getStash().selected_count_;
@@ -1155,5 +1242,321 @@ const ColorLegend& GridViewDataWidget::currentLegend() const
 {
     traced_assert(legend_);
     return legend_->currentLegend();
+}
+
+/**
+ * The legend fields of the annotation if one is shown. Else (or without its own precision) the
+ * number of decimals of the shown legend, if it gives the same texts (plain numbers). Otherwise
+ * (e.g. times) the shown legend as fixed entries.
+ */
+boost::optional<std::pair<Grid2DLayer, Grid2DRenderSettings>> GridViewDataWidget::currentGrid() const
+{
+    if (!hasValidGrid() || !colormap_.has_value() || grid_rendering_.isNull() || !legend_)
+        return {};
+
+    Grid2DRenderSettings settings = render_settings_;
+
+    //the JSON of the render settings keeps min / max only, not the value range of the color map
+    if ((!settings.min_value.has_value() || !settings.max_value.has_value()) && settings.color_map.canSampleValues())
+    {
+        settings.min_value = settings.color_map.valueRange()->first;
+        settings.max_value = settings.color_map.valueRange()->second;
+    }
+
+    if (view_->showsAnnotation() && annotation_render_settings_.has_value())
+    {
+        settings.legend_order     = annotation_render_settings_->legend_order;
+        settings.legend_precision = annotation_render_settings_->legend_precision;
+        settings.legend_unit      = annotation_render_settings_->legend_unit;
+        settings.legend_entries   = annotation_render_settings_->legend_entries;
+    }
+
+    if (settings.legend_entries.empty())
+    {
+        const ColorLegend& shown = legend_->currentLegend();
+
+        auto texts = [] (const ColorLegend& legend)
+        {
+            std::vector<std::string> t;
+            for (const auto& e : legend.entries())
+                t.push_back(e.second);
+            return t;
+        };
+
+        //number of decimals giving the shown texts: the one of the shown legend first, whole numbers
+        //(integer data types) ignore it
+        std::vector<int> candidates;
+        if (settings.legend_precision.has_value())
+            candidates.push_back(settings.legend_precision.value());
+        else
+        {
+            if (legend_decimals_ >= 0)
+                candidates.push_back(legend_decimals_);
+            for (int d = 0; d <= 6; ++d)
+                if (d != legend_decimals_)
+                    candidates.push_back(d);
+        }
+
+        bool found = false;
+        for (int d : candidates)
+        {
+            Grid2DRenderSettings with_decimals = settings;
+            with_decimals.legend_precision = d;
+
+            if (texts(with_decimals.legend()) == texts(shown))
+            {
+                settings = with_decimals;
+                found    = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            //numbers (e.g. whole numbers cut instead of rounded): their number of decimals, the last
+            //digit may differ by the rounding; other texts (e.g. times): fixed entries, the coloring
+            //cannot be changed then
+            bool numeric = true;
+            int  decimals = 0;
+
+            for (const auto& t : texts(shown))
+            {
+                const QString s = QString::fromStdString(t).trimmed();
+
+                bool ok;
+                s.toDouble(&ok);
+                if (!ok)
+                {
+                    numeric = false;
+                    break;
+                }
+
+                const int dot = s.indexOf('.');
+                if (dot >= 0)
+                    decimals = std::max(decimals, (int)s.size() - dot - 1);
+            }
+
+            if (numeric)
+            {
+                settings.legend_precision = decimals;
+            }
+            else
+            {
+                loginf << "legend texts are no numbers, sent as fixed entries";
+                settings.legend_entries = shown;
+            }
+        }
+    }
+
+    return std::make_pair(grid_layers_.layer(0), settings);
+}
+
+/**
+*/
+bool GridViewDataWidget::backgroundActive() const
+{
+    return background_ && background_->active();
+}
+
+/**
+*/
+double GridViewDataWidget::gridCellWidth() const
+{
+    if (grid_layers_.numLayers() == 0 || grid_roi_.isEmpty())
+        return 0.0;
+
+    const auto cols = grid_layers_.layer(0).data.cols();
+
+    return cols > 0 ? grid_roi_.width() / cols : 0.0;
+}
+
+/**
+ * Minimum / maximum position of the database (data engine), empty if not known.
+ */
+QRectF GridViewDataWidget::databasePositionExtent() const
+{
+    const auto& engine = view_->viewManager().dbContentManager().dataEngine();
+
+    if (!engine.hasMinMaxPosition())
+        return {};
+
+    const auto lat = engine.minMaxLatitude();
+    const auto lon = engine.minMaxLongitude();
+
+    QRectF r(lon.first, lat.first, lon.second - lon.first, lat.second - lat.first);
+
+    //a single position => a small area around it
+    const double min_size = 0.01;
+
+    if (r.width() < min_size || r.height() < min_size)
+        r = QRectF(r.center().x() - min_size / 2.0, r.center().y() - min_size / 2.0, min_size, min_size)
+            .united(r);
+
+    return r;
+}
+
+/**
+*/
+QRectF GridViewDataWidget::backgroundExtent() const
+{
+    if (!grid_roi_.isEmpty())
+        return grid_roi_;
+
+    return databasePositionExtent();
+}
+
+/**
+*/
+GridBackgroundRootItem* GridViewDataWidget::backgroundRootItem() const
+{
+    //the model belongs to the layer panel, which may be gone
+    if (!background_model_)
+        return nullptr;
+
+    return background_root_;
+}
+
+/**
+*/
+GridBackgroundSectorsItem* GridViewDataWidget::sectorsRootItem() const
+{
+    //the model belongs to the layer panel, which may be gone
+    if (!background_model_)
+        return nullptr;
+
+    return sectors_root_;
+}
+
+/**
+ * True if the shown annotation is a longitude / latitude grid: its grid layer is georeferenced in WGS84.
+ * Grids over other axes (e.g. altitude) have no spatial reference system.
+ */
+bool GridViewDataWidget::annotationHasLonLatGrid() const
+{
+    if (!view_->showsAnnotation() || !hasValidGrid())
+        return false;
+
+    return grid_layers_.layer(0).hasGeographicReference();
+}
+
+/**
+ * The background is available for longitude / latitude variables, also without loaded data, and for
+ * longitude / latitude grid annotations.
+ */
+void GridViewDataWidget::updateBackgroundAvailable()
+{
+    const bool available = view_->showsAnnotation() ? annotationHasLonLatGrid() : view_->hasLonLatAxes();
+
+    if (available == background_->available())
+        return;
+
+    background_->setAvailable(available);
+
+    if (auto root = backgroundRootItem())
+        root->notifySubtreeChanged();
+    if (auto sectors = sectorsRootItem())
+        sectors->notifySubtreeChanged();
+}
+
+/**
+*/
+void GridViewDataWidget::backgroundSettingsChanged()
+{
+    updateBackgroundAvailable();
+
+    background_->settingsChanged();
+
+    //e.g. a preset applied
+    if (auto root = backgroundRootItem())
+        root->syncFromSettings();
+    if (auto sectors = sectorsRootItem())
+        sectors->syncFromSettings();
+
+    if (grid_chart_)
+    {
+        //aspect ratio and limits depend on the background
+        grid_chart_->applyViewLimits();
+        grid_chart_->viewport()->update();
+    }
+}
+
+/**
+ * The empty chart was built before the database was open => without axis ranges, where zoom and pan
+ * do nothing. Rebuilt with the position extent of the database.
+ */
+void GridViewDataWidget::databaseOpened_impl()
+{
+    if (!hasValidGrid())
+        updateGridChart();
+}
+
+/**
+*/
+void GridViewDataWidget::databaseClosed_impl()
+{
+    clearUserView();
+
+    if (!hasValidGrid())
+        updateGridChart();
+}
+
+/**
+ * Notice: not for annotations, which bring their own axes.
+ */
+void GridViewDataWidget::setUserView(const QRectF& view)
+{
+    if (view_->showsAnnotation())
+        return;
+
+    user_view_ = view;
+}
+
+/**
+*/
+void GridViewDataWidget::clearUserView()
+{
+    user_view_.reset();
+}
+
+/**
+*/
+void GridViewDataWidget::layerPanelAttached()
+{
+    auto* model = layerTreeModel();
+    if (!model)
+        return;
+
+    //grid opacity in the context menu of the data item, in steps as the map opacity
+    if (auto* data_root = model->dbContentRootItem())
+    {
+        GridView* view = view_;
+
+        data_root->setMenuExtension([ view ] (QMenu& menu)
+        {
+            menu.addSection("Grid");
+
+            QMenu* opacity_menu = menu.addMenu("Opacity");
+
+            for (unsigned int i = 0; i <= 100; i += 10)
+            {
+                QAction* act = opacity_menu->addAction(QString::number(i) + "%");
+                act->setCheckable(true);
+                act->setChecked(view->settings().grid_opacity == i);
+
+                QObject::connect(act, &QAction::triggered, view, [ view, i ] () { view->setGridOpacity(i); });
+            }
+        });
+    }
+
+    //sectors as a top level item (as in the Geographic View), above the Background Map
+    auto sectors = std::make_unique<GridBackgroundSectorsItem>(*view_, *background_);
+
+    sectors_root_ = static_cast<GridBackgroundSectorsItem*>(model->addRootItem(std::move(sectors)));
+    sectors_root_->update();
+
+    auto root = std::make_unique<GridBackgroundRootItem>(*view_, *background_);
+
+    background_root_  = static_cast<GridBackgroundRootItem*>(model->addRootItem(std::move(root)));
+    background_model_ = model;
 }
 

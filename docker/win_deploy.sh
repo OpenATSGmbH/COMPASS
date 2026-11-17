@@ -114,7 +114,7 @@ if [ $ZIP == 1 ]; then
     rm -rf "$STAGE" "/out/$NAME.zip"
     mkdir -p "$STAGE"
     ln -s "$DEPLOY" "$STAGE/$NAME"
-    # without the debug file (about 2 GB), crunch_win_deploy.sh copies it separately
+    # without the debug file (about 2 GB), potato_win_deploy.sh copies it separately
     (cd "$STAGE" && 7z a -tzip -mx=7 -l "-xr!*.debug" "/out/$NAME.zip" "$NAME" > /dev/null)
     rm -rf "$STAGE"
     echo "zip file /out/$NAME.zip"

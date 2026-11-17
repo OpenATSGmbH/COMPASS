@@ -106,6 +106,7 @@ class VariableSelectionDialog : public QDialog
     void createContentStrip();
     void updateContentStrip();
     void updateModel();
+    void addEmptyVariableRow();
     void updateSelectButton();
     void storeSettings();
 

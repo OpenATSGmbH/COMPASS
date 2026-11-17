@@ -408,13 +408,13 @@ RUN wget -q -O nematode.zip https://github.com/hpuhr/NemaTode/archive/refs/heads
   && mkdir -p /opt/win64/lib/cmake/NemaTode \
   && echo 'include(${CMAKE_CURRENT_LIST_DIR}/../NemaTodeConfig.cmake)' > /opt/win64/lib/cmake/NemaTode/NemaTodeConfig.cmake
 
-# DuckDB 1.5.5 (official Windows DLL, C API), GNU ld links the MSVC import library duckdb.lib directly
-# (gendef does not finish on this DLL)
-RUN wget -q https://github.com/duckdb/duckdb/releases/download/v1.5.5/libduckdb-windows-amd64.zip \
-  && mkdir duckdb && unzip -q libduckdb-windows-amd64.zip -d duckdb \
+# DuckDB 2.0.0 (official Windows DLL, C API), GNU ld links the MSVC import library duckdb.lib directly
+# (gendef does not finish on this DLL). Since 2.0.0 the release assets are .tar.gz archives with new names.
+RUN wget -q https://github.com/duckdb/duckdb/releases/download/v2.0.0/duckdb-shared-libs-windows-amd64.tar.gz \
+  && mkdir duckdb && tar xzf duckdb-shared-libs-windows-amd64.tar.gz -C duckdb \
   && cp duckdb/duckdb.h /opt/win64/include/ && cp duckdb/duckdb.dll /opt/win64/bin/ \
   && cp duckdb/duckdb.lib /opt/win64/lib/ \
-  && rm -rf duckdb libduckdb-windows-amd64.zip
+  && rm -rf duckdb duckdb-shared-libs-windows-amd64.tar.gz
 
 # CMake 3.28 (as in the Linux build), jASTERIX and COMPASS need 3.28, Debian 12 has 3.25.
 # Installed last, the dependencies above are built with the Debian CMake.

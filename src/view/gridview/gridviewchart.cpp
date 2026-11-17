@@ -17,8 +17,20 @@
 
 #include "gridviewchart.h"
 #include "gridviewdatawidget.h"
+#include "gridbackgroundrenderer.h"
+#include "gridbackground_defs.h"
 #include "grid2d.h"
 #include "gridview.h"
+
+#include "logger.h"
+
+#include <QtCharts/QValueAxis>
+
+#include <QTimer>
+
+#include "boost/date_time/posix_time/posix_time.hpp"
+
+#include <cmath>
 
 /**
 */
@@ -81,6 +93,25 @@ GridViewChart::GridViewChart(GridViewDataWidget* data_widget,
 ,   data_widget_(data_widget)
 {
     traced_assert(data_widget_);
+
+    //e.g. a resize => aspect ratio of the background
+    //Notice: never inside the chart layout (a range change re-runs the layout => recursion), so deferred and coalesced
+    connect(chart, &QChart::plotAreaChanged, this, [ this ] (const QRectF&)
+    {
+        if (limits_pending_)
+            return;
+
+        limits_pending_ = true;
+
+        QTimer::singleShot(0, this, [ this ] ()
+        {
+            limits_pending_ = false;
+
+            //the user view stays as the user set it: the aspect correction for a changed plot size (e.g. the
+            //legend hidden during a load) is applied again on every rebuild, so it must not accumulate
+            applyViewLimits();
+        });
+    });
 }
 
 /**
@@ -155,6 +186,8 @@ bool GridViewChart::handleMouseMove(Qt::MouseButtons buttons, const QPointF& wid
             {
                 auto dPos = widget_pos - drag_data_;
                 chart()->scroll(-dPos.x(), dPos.y());
+                applyViewLimits();
+                userViewChanged();
             }
 
             drag_data_      = widget_pos;
@@ -243,6 +276,8 @@ void GridViewChart::wheelEvent(QWheelEvent* event)
 
     qreal factor = event->angleDelta().y() > 0 ? ZoomFactorIn : ZoomFactorOut;
     chart()->zoom(factor);
+    applyViewLimits();
+    userViewChanged();
 
     event->accept();
 
@@ -289,14 +324,47 @@ namespace
  */
 void GridViewChart::paintCustomItems(QPaintEvent* event, QPainter& painter)
 {
+    const auto plot_area  = chart()->plotArea();
+    const bool background = data_widget_->backgroundActive();
+    const auto lonlat     = viewLonLat();
+
+    auto t0 = boost::posix_time::microsec_clock::local_time();
+
+    //background color and map below the grid
+    if (background)
+        data_widget_->background().paintBelow(painter, plot_area, lonlat);
+
+    auto t1 = boost::posix_time::microsec_clock::local_time();
+
+    painter.save();
+    painter.setOpacity(data_widget_->getView()->settings().grid_opacity / 100.0);
+    paintGrid(painter, plot_area);
+    painter.restore();
+
+    auto t2 = boost::posix_time::microsec_clock::local_time();
+
+    //borders and sectors above the grid (sectors also without the Background Map)
+    if (data_widget_->background().available())
+        data_widget_->background().paintAbove(painter, plot_area, lonlat);
+
+    auto t3 = boost::posix_time::microsec_clock::local_time();
+
+    if (background)
+        logdbg << "background " << (t1 - t0).total_milliseconds()
+               << " ms grid " << (t2 - t1).total_milliseconds()
+               << " ms borders and sectors " << (t3 - t2).total_milliseconds() << " ms";
+}
+
+/**
+ */
+void GridViewChart::paintGrid(QPainter& painter, const QRectF& plot_area)
+{
     const auto& grid_bounds    = data_widget_->gridBounds();
     const auto& grid_rendering = data_widget_->gridRendering();
     bool        grid_north_up  = data_widget_->gridIsNorthUp();
 
     if (grid_bounds.isEmpty() || grid_rendering.isNull())
         return;
-
-    auto plot_area = chart()->plotArea();
 
     QRectF grid_bounds_cropped;
     QRect  grid_region_cropped;
@@ -343,12 +411,18 @@ void GridViewChart::resetZoom()
 {
     if (chart() && !chart()->axes(Qt::Horizontal).isEmpty() && !chart()->axes(Qt::Vertical).isEmpty())
     {
-        const auto& bounds = data_widget_->gridBounds();
+        //without a grid, the background shows the position extent of the database
+        const QRectF bounds = data_widget_->backgroundActive() ? data_widget_->backgroundExtent() : data_widget_->gridBounds();
 
         if (!bounds.isEmpty())
         {
             chart()->axes(Qt::Horizontal).first()->setRange(bounds.x(), bounds.x() + bounds.width());
             chart()->axes(Qt::Vertical).first()->setRange(bounds.y(), bounds.y() + bounds.height());
+
+            applyViewLimits();
+
+            //home => following the data again
+            data_widget_->clearUserView();
         }
     }
 }
@@ -361,7 +435,112 @@ void GridViewChart::zoom(const QPointF& p1, const QPointF& p2)
     {
         chart()->axes(Qt::Horizontal).first()->setRange(std::min(p1.x(), p2.x()), std::max(p1.x(), p2.x()));
         chart()->axes(Qt::Vertical).first()->setRange(std::min(p1.y(), p2.y()), std::max(p1.y(), p2.y()));
+
+        applyViewLimits();
+        userViewChanged();
     }
+}
+
+/**
+ */
+QRectF GridViewChart::viewLonLat() const
+{
+    if (!chart() || chart()->axes(Qt::Horizontal).isEmpty() || chart()->axes(Qt::Vertical).isEmpty())
+        return {};
+
+    auto x_axis = dynamic_cast<QValueAxis*>(chart()->axes(Qt::Horizontal).first());
+    auto y_axis = dynamic_cast<QValueAxis*>(chart()->axes(Qt::Vertical).first());
+
+    if (!x_axis || !y_axis)
+        return {};
+
+    return QRectF(x_axis->min(), y_axis->min(), x_axis->max() - x_axis->min(), y_axis->max() - y_axis->min());
+}
+
+/**
+ */
+void GridViewChart::setAxisRanges(const QRectF& r)
+{
+    chart()->axes(Qt::Horizontal).first()->setRange(r.left(), r.right());
+    chart()->axes(Qt::Vertical).first()->setRange(r.top(), r.bottom()); // top() = minimum latitude
+}
+
+/**
+ * Notice: a range change may change the plot area (axis labels), which calls this again.
+ */
+void GridViewChart::applyViewLimits()
+{
+    if (applying_limits_ || !data_widget_->backgroundActive())
+        return;
+
+    const QRectF view = viewLonLat();
+    const QSizeF plot = chart()->plotArea().size();
+
+    auto finite = [] (const QRectF& rect)
+    {
+        return std::isfinite(rect.left()) && std::isfinite(rect.top()) &&
+               std::isfinite(rect.width()) && std::isfinite(rect.height());
+    };
+
+    if (!finite(view) || view.width() <= 0.0 || view.height() <= 0.0 || plot.width() <= 0.0 || plot.height() <= 0.0)
+        return;
+
+    namespace vp = gridbackground::viewport;
+
+    //aspect only corrected above a tolerance: the plot size depends on the axis labels, which depend on the
+    //ranges => small corrections would never settle
+    const double aspect_tolerance = 0.01;
+
+    const double lon_scale_view = std::max(0.01, std::cos(view.center().y() * M_PI / 180.0));
+    const double aspect_error   = (view.width() * lon_scale_view / view.height()) / (plot.width() / plot.height()) - 1.0;
+
+    QRectF r = std::fabs(aspect_error) > aspect_tolerance ? vp::adjustAspect(view, plot) : view;
+
+    const double lon_scale  = std::max(0.01, std::cos(r.center().y() * M_PI / 180.0));
+    const double min_width  = vp::minWidth(data_widget_->gridCellWidth(), plot.width());
+    const double min_height = min_width * lon_scale * plot.height() / plot.width();
+
+    r = vp::clamp(r, vp::maxExtent(data_widget_->backgroundExtent(), plot), min_width, min_height);
+
+    if (!finite(r))
+        return;
+
+    //only real changes, so that a label width change converges
+    const double eps = 1e-9 * std::max(view.width(), view.height());
+
+    if (std::fabs(r.left()   - view.left())   < eps &&
+        std::fabs(r.right()  - view.right())  < eps &&
+        std::fabs(r.top()    - view.top())    < eps &&
+        std::fabs(r.bottom() - view.bottom()) < eps)
+        return;
+
+    applying_limits_ = true;
+    setAxisRanges(r);
+    applying_limits_ = false;
+}
+
+/**
+ */
+void GridViewChart::setView(const QRectF& r)
+{
+    if (!chart() || chart()->axes(Qt::Horizontal).isEmpty() || chart()->axes(Qt::Vertical).isEmpty())
+        return;
+
+    if (r.width() <= 0.0 || r.height() <= 0.0)
+        return;
+
+    setAxisRanges(r);
+    applyViewLimits();
+}
+
+/**
+ */
+void GridViewChart::userViewChanged()
+{
+    const QRectF view = viewLonLat();
+
+    if (view.width() > 0.0 && view.height() > 0.0)
+        data_widget_->setUserView(view);
 }
 
 }

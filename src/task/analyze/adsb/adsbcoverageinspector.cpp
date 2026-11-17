@@ -40,10 +40,8 @@
 #include "coveragepdwalk.h"
 
 #include "grid2dlayer.h"
-#include "grid2dlayerrenderer.h"
 #include "grid2drendersettings.h"
 #include "colormap.h"
-#include "colorlegend.h"
 
 #include "viewpointgenerator.h"
 #include "histogram_raw.h"
@@ -731,6 +729,10 @@ void attachPDFigure(ResultReport::Section& section,
     rs.min_value = settings.pd_unacceptable_below_;
     rs.max_value = settings.pd_acceptable_above_;
 
+    // good end of the color map at the top of the legend
+    rs.legend_order     = Grid2DRenderSettings::LegendOrder::Reversed;
+    rs.legend_precision = 2;
+
     PlotMetadata meta("Sensor Coverage", fig_name,
                       proj.x_axis_label, proj.y_axis_label);
 
@@ -739,29 +741,13 @@ void attachPDFigure(ResultReport::Section& section,
 
     auto* anno = vp->annotations().getOrCreateAnnotation("PD");
 
+    anno->addFeature(new ViewPointGenFeatureGrid(*proj.layer, rs, meta));
+
     if (proj.x_axis_label == "Longitude (deg)" && proj.y_axis_label == "Latitude (deg)")
     {
-        auto rendered = Grid2DLayerRenderer::render(*proj.layer, rs);
-
-        auto raw = rs.color_map.colorLegend(
-            /*add_sel_color=*/false,
-            /*add_null_color=*/false,
-            [](double v) { return Utils::String::doubleToStringPrecision(v, 2); });
-        ColorLegend legend;
-        const auto& entries = raw.entries();
-        for (auto it = entries.rbegin(); it != entries.rend(); ++it)
-            legend.addEntry(it->first, it->second);
-
-        anno->addFeature(new ViewPointGenFeatureGeoImage(rendered.first, rendered.second, legend));
-
-        QRectF vp_roi = Grid2DLayerRenderer::geoROIOfOpaquePixels(
-            rendered.first, rendered.second);
+        QRectF vp_roi = proj.layer->geoROIOfValidCells();
         if (!vp_roi.isEmpty())
             vp->setROI(vp_roi);
-    }
-    else
-    {
-        anno->addFeature(new ViewPointGenFeatureGrid(*proj.layer, rs, meta));
     }
 
     nlohmann::json vp_json;

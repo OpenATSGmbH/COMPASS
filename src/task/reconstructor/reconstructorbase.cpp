@@ -50,7 +50,6 @@
 #include "viewpointgenerator.h"
 #include "grid2d.h"
 #include "grid2dlayer.h"
-#include "grid2dlayerrenderer.h"
 #include "grid2drendersettings.h"
 
 #include "sector/sectorlayer.h"
@@ -1167,8 +1166,9 @@ void ReconstructorBase::createTargetReports()
         //grow once for this buffer instead of rehashing repeatedly while inserting
         target_reports_.reserve(target_reports_.size() + buffer_size);
 
-        std::vector<bool> position_usable;
-        position_usable.resize(buffer_size);
+        //one byte per flag: std::vector<bool> packs flags into shared words,
+        //the parallel writes below would then lose flags (data race)
+        std::vector<unsigned char> position_usable(buffer_size, 0);
 
         tbb::parallel_for(uint(0), buffer_size, [&](unsigned int cnt)
             {
@@ -1937,10 +1937,13 @@ void ReconstructorBase::doUnassociatedAnalysis()
 
     rsettings.color_map.create(ColorMap::ColorScale::Green2Red, 2);
 
-    auto result = Grid2DLayerRenderer::render(layers.layer(0), rsettings);
+    anno->addFeature(new ViewPointGenFeatureGrid(
+        layers.layer(0), rsettings,
+        PlotMetadata("Reconstruction", "Unassociated Grid", "Longitude (deg)", "Latitude (deg)")));
 
-    auto f = new ViewPointGenFeatureGeoImage(result.first, result.second);
-    anno->addFeature(f);
+    QRectF vp_roi = layers.layer(0).geoROIOfValidCells();
+    if (!vp_roi.isEmpty())
+        vp->setROI(vp_roi);
 
     if (!section.hasTable("Unassociated Target Reports"))
         section.addTable("Unassociated Target Reports", 8,

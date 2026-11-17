@@ -62,6 +62,13 @@ public:
     void resetZoom();
     void zoom(const QPointF& p1, const QPointF& p2);
 
+    /// current axis ranges (x = first axis, y = second axis), empty without axes
+    QRectF viewLonLat() const;
+    /// with an active background: aspect ratio of the plot and zoom / pan limits applied to the axis ranges
+    void applyViewLimits();
+    /// sets the axis ranges (x = first axis, y = second axis), limits applied
+    void setView(const QRectF& r);
+
 signals:
     void rectangleSelectedSignal (QPointF p1, QPointF p2);
 
@@ -76,7 +83,15 @@ protected:
 
     virtual void paintCustomItems(QPaintEvent* e, QPainter& painter) override;
 
+    void paintGrid(QPainter& painter, const QRectF& plot_area);
+    void setAxisRanges(const QRectF& r);
+    /// the user changed zoom or position => kept by the data widget (e.g. across a load)
+    void userViewChanged();
+
     GridViewDataWidget* data_widget_ {nullptr};
+
+    bool applying_limits_ = false;
+    bool limits_pending_  = false; // applyViewLimits() scheduled after a plot area change
 
     QPoint  p1_;
     QPointF p1_data_;

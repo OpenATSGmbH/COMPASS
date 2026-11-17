@@ -62,6 +62,11 @@ class VariableSelectionWidget : public QFrame, public ui_test::UITestable
     ReportVariable& selectedReportVariable() const;
     void selectedReportVariable(ReportVariable& variable);
 
+    /// a stored selection whose variable does not exist in the database (e.g. a Report Variable of a report
+    /// this database does not hold): shown with its names, marked as not available, no selection flag set
+    void selectedUnavailableVariable(const std::string& obj_name, const std::string& var_name);
+    bool hasUnavailableVariable() const { return unavailable_variable_selected_; }
+
     std::pair<std::string, std::string> selectionAsString() const;
 
     bool showMetaVariables() const;
@@ -108,6 +113,7 @@ class VariableSelectionWidget : public QFrame, public ui_test::UITestable
     bool variable_selected_{false};
     bool meta_variable_selected_{false};
     bool report_variable_selected_{false};
+    bool unavailable_variable_selected_{false}; // see selectedUnavailableVariable()
 
     bool show_empty_variable_{true};
 

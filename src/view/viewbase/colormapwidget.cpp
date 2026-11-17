@@ -38,42 +38,18 @@ ColorLegendWidget::~ColorLegendWidget() = default;
 
 /**
 */
-void ColorLegendWidget::setColorMap(const ColorMap& colormap)
+void ColorLegendWidget::setLegend(const ColorLegend& legend)
 {
-    colormap_ = colormap;
+    legend_ = legend;
 
     updateUI();
 }
 
 /**
 */
-void ColorLegendWidget::setDecorator(const ColorMap::ValueDecorator& d)
+void ColorLegendWidget::clear()
 {
-    decorator_ = d;
-
-    updateUI();
-}
-
-/**
-*/
-void ColorLegendWidget::showSelectionColor(bool ok)
-{
-    if (show_selection_col_ == ok)
-        return;
-
-    show_selection_col_ = ok;
-
-    updateUI();
-}
-
-/**
-*/
-void ColorLegendWidget::showNullColor(bool ok)
-{
-    if (show_null_col_ == ok)
-        return;
-    
-    show_null_col_ = ok;
+    legend_.clear();
 
     updateUI();
 }
@@ -96,7 +72,7 @@ void ColorLegendWidget::updateUI()
         widget_ = nullptr;
     }
 
-    if (colormap_.numColors() < 1)
+    if (legend_.empty())
         return;
 
     widget_ = new QWidget;
@@ -110,9 +86,6 @@ void ColorLegendWidget::updateUI()
     layout->addLayout(layout_grid);
     layout->addStretch(1);
 
-    legend_ = colormap_.colorLegend(show_selection_col_, 
-                                    show_null_col_, 
-                                    decorator_);
     int row = 0;
     for (const auto& entry : legend_.entries())
     {

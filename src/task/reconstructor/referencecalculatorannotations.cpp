@@ -678,11 +678,10 @@ void ReferenceCalculatorAnnotations::createAnnotations(ViewPointGenAnnotation* a
                 rsettings.max_value       = 10.0;
 
                 rsettings.color_map.create(ColorMap::ColorScale::Green2Red, 10);
-                
-                auto result = Grid2DLayerRenderer::render(layers.layer(0), rsettings);
 
-                auto f = new ViewPointGenFeatureGeoImage(result.first, result.second);
-                anno->addFeature(f);
+                anno->addFeature(new ViewPointGenFeatureGrid(
+                    layers.layer(0), rsettings,
+                    PlotMetadata("Reconstruction", "Accuracy Grid", "Longitude (deg)", "Latitude (deg)")));
 #endif
             }
         }

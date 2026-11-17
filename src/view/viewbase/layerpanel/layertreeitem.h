@@ -145,10 +145,16 @@ public:
 
     QColor color() const { return color_; }
     void setColor(const QColor& color);
+    /// a click on the icon, true if handled (e.g. an item owning its color opens a color dialog)
+    virtual bool iconClicked() { return false; }
 
     // ---- visibility --------------------------------------------------------
 
     virtual bool canHide() const { return true; }
+    /// the checkbox column is kept (empty if the item cannot hide), aligns the icon with checkable siblings
+    virtual bool reservesCheckboxSpace() const { return canHide(); }
+    /// false => shown greyed out, the checkbox and the item's context menu are inactive
+    virtual bool isEnabled() const { return true; }
     bool hidden() const { return hidden_; }
     /// self or any ancestor hidden
     bool effectiveHidden() const;

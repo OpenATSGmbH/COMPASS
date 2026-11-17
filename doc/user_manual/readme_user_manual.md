@@ -272,6 +272,7 @@ X/Y scatter plot of any two numeric DBContent variables. Configurable axes, log 
 
 ### Grid View (`sec:grid_view`)
 2D grid display: one numeric variable (Z) over two others (X/Y). Configurable color map, data range clamping, resolution.
+Background Map (`sec:grid_background`) for longitude / latitude grids: background color, map tiles of the 2D `.earth` files, national borders, sectors of the active Data Context (Delete / Delete All change the Data Context), grid opacity in the 'Data' item context menu, navigation limits.
 
 ---
 

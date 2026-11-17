@@ -38,7 +38,17 @@ struct Grid2DLayer
 
     boost::optional<std::pair<double, double>> range() const;
 
-    nlohmann::json toJSON(bool binary = false) const;
+    /// Geographic region of the cells with a value (not Grid2D::InvalidValue), in the
+    /// convention of the view point region: x = latitude, y = longitude.
+    /// Returns an empty rectangle if no cell has a value.
+    QRectF geoROIOfValidCells() const;
+
+    /// The grid is a longitude / latitude grid: its spatial reference system is WGS84.
+    /// Grids over other axes (e.g. altitude) have none.
+    bool hasGeographicReference() const { return isGeographicSRS(ref.srs); }
+    static bool isGeographicSRS(const std::string& srs);
+
+    nlohmann::json toJSON() const;
     bool fromJSON(const nlohmann::json& obj);
 
     static const std::string TagName;
@@ -81,7 +91,7 @@ public:
     std::vector<const Grid2DLayer*> layers(const std::string& name) const;
     bool hasLayer(const std::string& name) const;
 
-    nlohmann::json toJSON(bool binary = false) const;
+    nlohmann::json toJSON() const;
     bool fromJSON(const nlohmann::json& obj);
 
     static const std::string TagLayers;

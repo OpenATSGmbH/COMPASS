@@ -31,8 +31,21 @@ The 'Show' and 'Hide' submenus list only annotation names that exist more than o
   \caption{Geographic View 'View Point' node operations}
 \end{figure}
 
-\paragraph*{Grids} Grid data imported into Geographic View. Grid data can be imported into 
+A RMB click on a View Point annotation that contains a grid (e.g. an evaluation or Data Source Analysis figure) opens a context menu containing the following operation:
+
+\begin{table}[H]
+    \center
+    \begin{tabular}{ | l | l |}
+      \hline
+      \textbf{Operation} & \textbf{Description} \\ \hline
+      Edit Coloring & Changes the colors of the grid, see \nameref{sec:geo_grid_coloring} \\ \hline
+    \end{tabular}
+\end{table}
+
+\paragraph*{Grids} Grid data imported into Geographic View. Grid data can be imported into
 Geographic View either by sending it from a Grid View (see \nameref{sec:grid_export_geographic}), or as an external GeoTIFF file (see \nameref{sec:geo_geotiff_import}). \\
+
+A grid sent from a Grid View contains its cell values, so its colors can be changed. A GeoTIFF file is imported as an image, so its colors cannot be changed. \\
 
 Imported grid items persist in a Geographic View until COMPASS is closed. \\
 
@@ -65,15 +78,60 @@ A RMB click on an imported grid item opens a context menu containing the followi
       Rename & Renames the grid item to a specified name \\ \hline
       Export & Exports the grid item to a GeoTIFF file \\ \hline
       Opacity & Sets the opacity of a grid item \\ \hline
+      Edit Coloring & Changes the colors of the grid, see \nameref{sec:geo_grid_coloring} \\ \hline
       Remove & Removes the grid item from the view \\ \hline
     \end{tabular}
 \end{table}
+
+'Edit Coloring' is only listed for grids sent from a Grid View, not for GeoTIFF imports. \\
 
 \begin{figure}[H]
     \centering
     \hspace*{-2.5cm}
     \includegraphics[width=6cm,frame]{figures/geoview_gridops_grid.png}
   \caption{Geographic View grid item operations}
+\end{figure}
+\ \\
+
+\textcolor{red}{TODO: update the screenshot above with the 'Edit Coloring' entry.} \\
+
+\paragraph*{Edit Coloring}
+\label{sec:geo_grid_coloring}
+
+'Edit Coloring' opens the 'Grid Coloring' dialog, which changes the colors of a grid in this Geographic View. The dialog contains the following settings:
+
+\begin{itemize}
+ \item Color Scale: Colors used for the cell values
+ \item Color Steps: Number of colors taken from the color scale
+ \item Logarithmic Scale: Maps the values to the colors on a logarithmic scale
+ \item Minimum Value: Value shown with the first color
+ \item Maximum Value: Value shown with the last color
+\end{itemize}
+
+If both 'Minimum Value' and 'Maximum Value' are empty, the value range of the grid data is used. \\
+
+The dialog has the following buttons:
+
+\begin{itemize}
+ \item Cancel: Closes the dialog without changes
+ \item Reset: Restores the coloring stored with the grid
+ \item OK: Shows the grid with the set coloring
+\end{itemize}
+
+The legend in the 'Layers' tab and the legends in exported images show the changed colors and values. \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that:}
+\begin{itemize}
+ \item The changed coloring of a View Point grid applies only while the View Point is active. The View Point and the report figure keep the stored coloring.
+ \item 'Edit Coloring' is disabled for grids with named categories (e.g. 'Dominant RU'), since their colors identify the categories.
+ \item For grids with two colors (e.g. passed and failed cells), only the color scale can be changed.
+\end{itemize}
+\ \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: 'Grid Coloring' dialog, opened by 'Edit Coloring' on an evaluation grid of a View Point]}}\vspace{1.5cm}}}
+  \caption{Geographic View 'Grid Coloring' dialog}
 \end{figure}
 \ \\
 

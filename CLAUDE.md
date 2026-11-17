@@ -6,7 +6,7 @@ OpenATS COMPASS is a C++ application for air traffic surveillance data inspectio
 
 - **OS**: Linux 64-bit (x86_64) only - no Windows or macOS support
 - **Tested distributions**: Debian 10+, Ubuntu 18.04+, Linux Mint 18.3+
-- **Distribution format**: AppImage - single self-contained executable, no installation required. Downloaded from GitHub releases. The AppImage is built on Debian 10 (Buster) via Docker to maximize glibc compatibility across distributions.
+- **Distribution format**: AppImage - single self-contained executable, no installation required. Downloaded from GitHub releases. The AppImage is built on AlmaLinux 8 via Docker (glibc 2.28, as Debian 10) to maximize glibc compatibility across distributions.
 - **Plugins**: ProbIMM reconstruction, the Geographic View, the DocX report export and the pro analysis inspectors (ExtraAnalysis) are closed-source plugins in a separate repository (`experimental_src/plugins/<name>/`), only published in the AppImage binary, not in source builds. Each implements the `Plugin` interface (`src/app/plugin/plugin.h`, init steps called by `CompassRoot` / `MainWindow`). `compass_client`'s `main.cpp` loads the plugin modules (`MODULE` targets in `build/lib/compass_plugins/`, nothing links them) with `plugin_manager::loadPlugins()` (`src/app/plugin/pluginmanager.h`) from the list of expected plugins (all or none: none without `experimental_src`). A plugin is declared with the CMake macro `compass_add_plugin(<Name> <dir> [LIBRARIES <lib>...])` (top-level `CMakeLists.txt`, called in `experimental_src/CMakeLists.txt`, call order = load order): its sources are an `OBJECT` library (`compass_plugin_<name>_obj`, links `compass_plugin_sdk` and the `LIBRARIES`), linked by its `MODULE` and by `compass_tests`; the entry symbol (`COMPASS_DECLARE_PLUGIN`) is in `<dir>/<name>plugin_entry.cpp`, compiled only into the `MODULE`; the name reaches `main.cpp` as `COMPASS_EXPECTED_PLUGINS`. Plan: `readme_plugins.md`.
 - **Licensing**: Source code is GPL-3.0; AppImage binary is CC BY 4.0; Geographic View is closed-source (AppImage only). Free for all use including commercial.
 - **Hardware requirements**: Minimum 2+ physical CPU cores, dedicated NVidia or ATI GPU (native drivers, OpenGL 3.0+), 8 GB RAM. Recommended: Intel i5+, 16 GB+ RAM. Large datasets (>1M reports/hour): 32 GB RAM.
@@ -63,7 +63,7 @@ Build output goes to `build/bin/` (executables) and `build/lib/` (libraries).
 
 Third-party libraries linked into the COMPASS libraries must be shared or built with `-fPIC`: jASTERIX and NemaTode (hpuhr fork) are built shared (their default), see `docker/build_jasterix.sh` and the Dockerfiles.
 
-**C++ standard**: The project uses **C++17** (`-std=c++17`). The AppImage is built inside a Debian 10 Docker container (see `docker/Dockerfile_deb10`) using GCC 8.3. C++17 features such as structured bindings (`auto [x, y] = ...`), `std::optional`, `std::variant`, `if constexpr`, `std::string_view`, and `std::any` are available and may be used freely.
+**C++ standard**: The project uses **C++17** (`-std=c++17`). The AppImage is built inside an AlmaLinux 8 Docker container (see `docker/Dockerfile_alma8`) using GCC 13 (gcc-toolset-13). C++17 features such as structured bindings (`auto [x, y] = ...`), `std::optional`, `std::variant`, `if constexpr`, `std::string_view`, and `std::any` are available and may be used freely.
 
 **Targets:**
 - `compass_util` ... `compass_task`, `compass_app` - the libraries, see Library layering

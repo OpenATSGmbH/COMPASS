@@ -410,6 +410,15 @@ void ColorMap::create(ColorScale scale,
 
 /**
 */
+void ColorMap::setValueRange(const OValueRange& value_range)
+{
+    traced_assert(!value_range.has_value() || value_range.value().first <= value_range.value().second);
+
+    value_range_ = value_range;
+}
+
+/**
+*/
 void ColorMap::setSpecialColor(SpecialColor type, const QColor& color)
 {
     special_colors_.at(type) = color;

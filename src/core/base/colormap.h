@@ -93,12 +93,15 @@ public:
 
     ColorScale colorScale() const;
     size_t colorSteps() const;
+    Type type() const { return type_; }
 
     size_t numColors() const;
     const QColor& getColor(size_t idx) const;
     const std::vector<QColor>& getColors() const { return colors_; }
 
     const OValueRange& valueRange() const { return value_range_; }
+    /// Sets the value range, colors and type stay unchanged.
+    void setValueRange(const OValueRange& value_range);
 
     void create(const std::vector<QColor>& colors,
                 Type type = Type::LinearSamples,

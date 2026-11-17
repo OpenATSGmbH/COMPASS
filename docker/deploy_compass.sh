@@ -58,6 +58,12 @@ export NO_STRIP=1
 # Resolve the actual path via ldd on the built binary - authoritative across any
 # GCC version (8 → libasan.so.5, 10 → .so.6, 12+ → .so.8).
 LINUXDEPLOY_EXTRA=()
+
+# jASTERIX installs its shared library to /usr/lib in the container (during the build, after
+# the image was created). On AlmaLinux /usr/lib is not a default library path and the ldconfig
+# cache of the image does not contain the library, so linuxdeploy would not find it.
+export LD_LIBRARY_PATH=/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+
 if [[ $ASAN -eq 1 ]]; then
     LIBASAN_PATH=$(ldd /usr/bin/compass_client 2>/dev/null | awk '/libasan/ {print $3; exit}')
     if [[ -n "$LIBASAN_PATH" && -f "$LIBASAN_PATH" ]]; then

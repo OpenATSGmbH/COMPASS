@@ -182,7 +182,7 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
 
     range_info_label_ = new QLabel;
     range_info_label_->setStyleSheet("QLabel { color : red; }");
-    
+
     layout->addRow("", range_info_label_);
 
     export_button_ = new QPushButton("Export");
@@ -629,14 +629,13 @@ void GridViewConfigWidget::exportToGeographicView()
 {
     const auto& data_widget = dynamic_cast<const GridView*>(view_)->getDataWidget();
 
-    auto geo_image = data_widget->currentGeoImage();
-    if (!geo_image.has_value())
+    //grid with its render settings: the Geographic View renders it and can change its coloring
+    auto grid = data_widget->currentGrid();
+    if (!grid.has_value())
     {
         QMessageBox::critical(this, "Error", "No grid available to send");
         return;
     }
-
-    const auto& legend = data_widget->currentLegend();
 
     std::string name = exportName();
 
@@ -649,10 +648,10 @@ void GridViewConfigWidget::exportToGeographicView()
 
     ViewPointGenAnnotation anno(export_config->item_name);
 
-    auto geo_image_feat = new ViewPointGenFeatureGeoImage(geo_image->first,
-                                                          geo_image->second,
-                                                          legend);
-    anno.addFeature(geo_image_feat);
+    Grid2DLayer layer = grid->first;
+    layer.name = export_config->item_name;
+
+    anno.addFeature(new ViewPointGenFeatureGrid(layer, grid->second));
 
     nlohmann::json j;
     anno.toJSON(j);

@@ -53,7 +53,7 @@ void LayerTreeItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem&
     traced_assert(item);
 
     const bool stale   = item->isStale();
-    const bool greyed  = stale && (stale_indication_ & StaleGreyed);
+    const bool greyed  = (stale && (stale_indication_ & StaleGreyed)) || !item->isEnabled();
     const bool spinner = stale && (stale_indication_ & StaleSpinner);
 
     if (index.column() != 0)
@@ -90,8 +90,9 @@ void LayerTreeItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem&
         cbOpt.rect  = QRect(x, y + (row_h - cbox_w) / 2, cbox_w, cbox_w);
         cbOpt.state = item->hidden() ? QStyle::State_Off : QStyle::State_On;
         QApplication::style()->drawControl(QStyle::CE_CheckBox, &cbOpt, painter);
-        x += cbox_w + kSpace;
     }
+    if (item->reservesCheckboxSpace())
+        x += cbox_w + kSpace;
 
     if (reserve_icon_column_)
     {
@@ -154,7 +155,7 @@ bool LayerTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* /*mod
     auto* item = static_cast<LayerTreeItem*>(index.internalPointer());
     traced_assert(item);
 
-    if (item->canHide())
+    if (item->canHide() && item->isEnabled())
     {
         const QRect cbox_rect(x, y + (row_h - cbox_w) / 2, cbox_w, cbox_w);
         if (cbox_rect.contains(clickX, clickY))
@@ -164,8 +165,17 @@ bool LayerTreeItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* /*mod
         }
     }
 
-    // Color icon is intentionally not clickable - colors are owned by the
-    // data context and cannot be edited from the tree.
+    // Color icons are not clickable - colors are owned by the data context and cannot be
+    // edited from the tree. Exception: items that handle the click (iconClicked()).
+    if (item->reservesCheckboxSpace())
+        x += cbox_w + kSpace;
+
+    if (reserve_icon_column_ && item->isEnabled())
+    {
+        const QRect icon_rect(x, y + (row_h - kIconH) / 2, kIconW, kIconH);
+        if (icon_rect.contains(clickX, clickY) && item->iconClicked())
+            return true;
+    }
 
     return true;
 }

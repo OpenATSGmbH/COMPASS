@@ -195,7 +195,7 @@ void LayerPanelWidget::onContextMenuRequested(const QPoint& pos)
     QMenu menu(this);
     menu.setToolTipsVisible(true);
 
-    if (item)
+    if (item && item->isEnabled())
     {
         item->buildContextMenu(menu);
         model_->buildCustomItemContextMenu(menu, item);

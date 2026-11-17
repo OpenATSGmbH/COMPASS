@@ -23,7 +23,7 @@
 
 using namespace std;
 
-const std::string DuckDBSettings::StorageCompatibilityVersion = "v1.5.0";
+const std::string DuckDBSettings::StorageCompatibilityVersion = "v2.0.0";
 
 /**
  */

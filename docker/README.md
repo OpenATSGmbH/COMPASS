@@ -4,8 +4,8 @@ Dockerfiles and scripts for building COMPASS AppImages inside Debian and AlmaLin
 
 ## Dockerfiles
 
-- **Dockerfile_deb10** - Debian 10 (Buster) build environment (primary)
-- **Dockerfile_alma8** - AlmaLinux 8 build environment (glibc 2.28 as Debian 10, Qt 5.15, gcc-toolset-13)
+- **Dockerfile_alma8** - AlmaLinux 8 build environment (primary, glibc 2.28 as Debian 10, Qt 5.15, gcc-toolset-13)
+- **Dockerfile_deb10** - Debian 10 (Buster) build environment
 - **Dockerfile_deb9** - Debian 9 (Stretch) build environment (deprecated)
 
 Each Dockerfile bakes in an `OS_NAME` env var (`deb10` / `alma8` / `deb9`) used by the build scripts.
@@ -14,9 +14,9 @@ Each Dockerfile bakes in an `OS_NAME` env var (`deb10` / `alma8` / `deb9`) used 
 
 | Script | Description |
 |---|---|
-| `build_docker.sh <os>` | Build the Docker image, e.g. `./build_docker.sh deb10` |
+| `build_docker.sh <os>` | Build the Docker image, e.g. `./build_docker.sh alma8` |
 | `run_docker.sh <os>` | Start an interactive shell inside the container (requires X11) |
-| `run_make_appimage.sh [os] [--clean]` | Non-interactive AppImage build. Defaults to `deb10`. Pass `--clean` for a clean rebuild. Works over SSH without a TTY. |
+| `run_make_appimage.sh [os] [--clean]` | Non-interactive AppImage build. Defaults to `alma8`. Pass `--clean` for a clean rebuild. Works over SSH without a TTY. |
 
 ## In-container scripts (run inside the Docker container)
 
@@ -36,13 +36,13 @@ Each Dockerfile bakes in an `OS_NAME` env var (`deb10` / `alma8` / `deb9`) used 
 ### First-time setup
 
 ```bash
-./build_docker.sh deb10
+./build_docker.sh alma8
 ```
 
 ### Interactive build (local, with X11)
 
 ```bash
-./run_docker.sh deb10
+./run_docker.sh alma8
 # inside container:
 ./make_appimage.sh
 ```
@@ -50,9 +50,9 @@ Each Dockerfile bakes in an `OS_NAME` env var (`deb10` / `alma8` / `deb9`) used 
 ### Non-interactive build (remote / SSH)
 
 ```bash
-./run_make_appimage.sh              # incremental deb10 build
-./run_make_appimage.sh deb10 --clean  # clean deb10 build
-./run_make_appimage.sh alma8        # incremental alma8 build
+./run_make_appimage.sh              # incremental alma8 build
+./run_make_appimage.sh alma8 --clean  # clean alma8 build
+./run_make_appimage.sh deb10        # incremental deb10 build
 ./run_make_appimage.sh deb9         # incremental deb9 build
 ```
 

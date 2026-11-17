@@ -1,6 +1,6 @@
 @echo off
-rem Runs the Python integration test suite on crunch_win against the deployed Windows package.
-rem Start it in the desktop session with crunch_win_run.ps1. Extra arguments (e.g. --tags=db)
+rem Runs the Python integration test suite on potato_win against the deployed Windows package.
+rem Start it in the desktop session with potato_win_run.ps1. Extra arguments (e.g. --tags=db)
 rem are passed on to test_suite.py.
 rem   dataset:  C:\data\test\at_20230422 (manifest at_20230422_05h.json)
 rem   results:  C:\data\test\at_20230422\results
