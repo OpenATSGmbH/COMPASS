@@ -67,7 +67,7 @@ void ChartRenderWidget::redraw()
     //first, the derived class can add widgets right of the chart
     contentLayout()->insertWidget(0, chart_view_.get());
 
-    setDrawState(has_content ? DrawState::DrawnContent : DrawState::Drawn);
+    setDrawState(has_content ? RenderState::DrawnContent : RenderState::Drawn);
 }
 
 /**
@@ -96,7 +96,7 @@ void ChartRenderWidget::clear()
 {
     releaseChartView();
 
-    setDrawState(DrawState::NotDrawn);
+    setDrawState(RenderState::NotDrawn);
 }
 
 /**

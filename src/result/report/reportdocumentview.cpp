@@ -467,12 +467,12 @@ void ReportDocumentView::releaseFarEntries()
 
     auto range = entryRange(2 * viewport()->height());
 
-    std::vector<size_t> far;
+    std::vector<size_t> far_entries;
     for (const auto& b : built_)
         if (b.first < range.first || b.first > range.second)
-            far.push_back(b.first);
+            far_entries.push_back(b.first);
 
-    for (size_t i : far)
+    for (size_t i : far_entries)
         releaseEntry(i);
 }
 

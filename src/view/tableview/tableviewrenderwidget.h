@@ -80,7 +80,7 @@ public:
 
 private:
     /// shows the rows of the buffers, returns the new draw state
-    DrawState redrawData(bool recompute);
+    RenderState redrawData(bool recompute);
 
     /// main-thread commit of the asynchronously prepared load data: layer tree, model
     /// row data, selection, draw state
