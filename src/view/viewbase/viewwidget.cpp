@@ -46,6 +46,7 @@
 #include <QSettings>
 #include <QPainter>
 #include <QScopedValueRollback>
+#include <QResizeEvent>
 
 const int ViewWidget::DataWidgetStretch   = 3;
 const int ViewWidget::ConfigWidgetStretch = 1;
@@ -74,7 +75,8 @@ ViewWidget::~ViewWidget()
     if (model_)
         model_->disconnect(this);
 
-    if (main_splitter_)
+    //a hidden panel has the size 0 in the splitter state, the last state with the panel is kept
+    if (main_splitter_ && !right_widget_->isHidden())
     {
         traced_assert(view_);
 
@@ -166,6 +168,9 @@ void ViewWidget::createStandardLayout()
         data_widget_container_ = new QWidget;
         data_widget_container_->setSizePolicy(size_policy);
         data_widget_container_->setContentsMargins(0, 0, 0, 0);
+
+        //an explicit minimum replaces the minimum size hints of the render widgets in the layout
+        data_widget_container_->setMinimumWidth(DataMinWidth);
 
         left_layout->addWidget(data_widget_container_);
     }
@@ -346,12 +351,15 @@ void ViewWidget::registerHostTools()
     config_panel.key      = Qt::Key_C;
     config_panel.icon     = getIcon("configuration.png");
     config_panel.kind     = ViewTool::Kind::Toggle;
-    config_panel.callback = [ this ] (bool) { toggleConfigWidget(); };
+    config_panel.callback = [ this ] (bool on)
+    {
+        updateConfigPanel(on ? config_panel::UserAction::Open : config_panel::UserAction::Close);
+    };
     config_panel.update   = [ this ] (QAction* action)
     {
         //the state without the callback, it would toggle the panel again
         QSignalBlocker blocker(action);
-        action->setChecked(config_widget_shown_);
+        action->setChecked(config_panel::isShown(config_panel_state_));
     };
 
     tool_widget_->addSpacerIfNone();
@@ -430,20 +438,43 @@ void ViewWidget::setLowerWidget(QWidget* w)
 
     layout->addWidget(lower_widget_);
 
-    lower_widget_container_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    //the lower widget must not set the minimum width of the view, in a narrow view its right end is cut off
+    lower_widget_container_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
     lower_widget_container_->setVisible(true);
 }
 
 /**
  */
-void ViewWidget::toggleConfigWidget()
+void ViewWidget::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+
+    updateConfigPanel(config_panel::UserAction::None);
+}
+
+/**
+ * Applies the config panel state for the current view width and the given user action.
+ */
+void ViewWidget::updateConfigPanel(config_panel::UserAction action)
 {
     traced_assert(right_widget_);
 
-    bool vis = right_widget_->isVisible();
-    right_widget_->setVisible(!vis);
+    const auto thresholds = config_panel::thresholdsFor(right_widget_->minimumSizeHint().width());
+    const auto state      = config_panel::nextState(config_panel_state_, config_panel_view_width_, width(),
+                                                    thresholds, action);
 
-    config_widget_shown_ = !vis;
+    config_panel_view_width_ = width();
+
+    if (state == config_panel_state_)
+        return;
+
+    logdbg << "config panel " << config_panel::toString(state) << " view width " << width();
+
+    config_panel_state_ = state;
+
+    right_widget_->setVisible(config_panel::isShown(config_panel_state_));
+
+    updateToolWidget();
 }
 
 /**
@@ -688,6 +719,8 @@ nlohmann::json ViewWidget::viewInfoJSON() const
     info[ "toolbar"    ] = getViewToolWidget()->viewInfoJSON();
     info[ "presets"    ] = getViewPresetWidget() ? getViewPresetWidget()->viewInfoJSON() : nlohmann::json();
     info[ "info"       ] = getViewInfoWidget()->viewInfoJSON();
+
+    info[ "config_panel" ] = config_panel::toString(config_panel_state_);
 
     //add view-specific widget information
     viewInfoJSON_impl(info);

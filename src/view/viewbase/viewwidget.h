@@ -25,10 +25,13 @@
 #include <QWidget>
 
 #include "appmode.h"
+#include "configpanelstate.h"
 #include "ui_test_testable.h"
 #include "traced_assert.h"
 
 #include <boost/optional.hpp>
+
+#include <limits>
 
 //class EventProcessor;
 class View;
@@ -121,8 +124,6 @@ public:
 
     ViewWidget(View* view, QWidget* parent = nullptr);
     virtual ~ViewWidget();
-
-    void toggleConfigWidget();
 
     void updateToolWidget();
     void updateLoadState();
@@ -259,10 +260,14 @@ protected:
     void setConfigWidget(ViewConfigWidget* w);
     void setLowerWidget(QWidget* w);
 
+    void resizeEvent(QResizeEvent* event) override;
+
 private:
     void createStandardLayout();
     void connectWidgets();
     void registerHostTools();
+
+    void updateConfigPanel(config_panel::UserAction action);
 
     /// the model has new display data, e.g. from the commit of an asynchronous recompute
     void displayDataChanged();
@@ -281,6 +286,7 @@ private:
 
     static const int PresetSelectionWidth  = 200;
     static const int PresetSelectionSpacer = 20;
+    static const int DataMinWidth          = 250;
 
     /// The view the widget is part of
     View* view_ = nullptr;
@@ -312,6 +318,7 @@ private:
 
     bool init_ = false;
 
-    /// state of the config widget toggle in the toolbar
-    bool config_widget_shown_ = true;
+    config_panel::State config_panel_state_ = config_panel::State::Expanded;
+    /// no width yet counts as wide, so the first width can collapse the panel
+    int config_panel_view_width_ = std::numeric_limits<int>::max();
 };

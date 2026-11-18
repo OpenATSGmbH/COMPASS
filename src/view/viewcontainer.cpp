@@ -92,6 +92,8 @@ ViewContainer::ViewContainer(nlohmann::json& config,
         tab_widget_->setCornerWidget(add_button);
     }
 
+    connect(tab_widget_, &QTabWidget::currentChanged, this, &ViewContainer::updateTabSizePolicies);
+
     createSubConfigurables();
 }
 
@@ -183,6 +185,8 @@ void ViewContainer::addView(View* view)
     int index = tab_widget_->addTab(w, view_name);
     w->setUpdatesEnabled(true);
 
+    updateTabSizePolicies();
+
     QPushButton* manage_button = new QPushButton();
     UI_TEST_OBJ_NAME(manage_button, view_name + " Manager"); //manage buttons can be reached via e.g. window1.geographicview2_manager
 
@@ -253,6 +257,21 @@ void ViewContainer::addNewViewSlot()
     }
     else
         logerr << "unknown location '" << location << "'";
+}
+
+/**
+ * A stacked widget takes the minimum size of its largest page, so a narrow view could not be narrower than the
+ * widest view in another tab. Only the shown view counts.
+ */
+void ViewContainer::updateTabSizePolicies()
+{
+    for (int i = 0; i < tab_widget_->count(); ++i)
+    {
+        const auto policy = i == tab_widget_->currentIndex() ? QSizePolicy::Preferred : QSizePolicy::Ignored;
+        tab_widget_->widget(i)->setSizePolicy(policy, policy);
+    }
+
+    tab_widget_->updateGeometry();
 }
 
 const std::vector<std::unique_ptr<View>>& ViewContainer::getViews() const { return views_; }

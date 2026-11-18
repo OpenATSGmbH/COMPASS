@@ -90,4 +90,5 @@ class ViewContainer : public QObject, public Configurable
     virtual void checkSubConfigurables();
     virtual void childCreated(Configurable* child) override;
     void addView(View* view);
+    void updateTabSizePolicies();
 };

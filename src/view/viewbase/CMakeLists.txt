@@ -22,6 +22,7 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/viewlayerscan.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewlayersnapshot.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewconfigwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/configpanelstate.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewtoolswitcher.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewloadstatewidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewinfowidget.h"

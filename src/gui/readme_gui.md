@@ -255,8 +255,9 @@ Every View widget extends `ViewWidget` ([viewwidget.h:40-74](../view/viewbase/vi
 +----------------------------------------------------------+
 ```
 
-- The data widget is the central, dominant region. It claims the remaining space.
-- The config widget docks on the right. Min width 400 px ([viewconfigwidget.h:70-85](../view/viewbase/viewconfigwidget.h#L70-L85)). It is collapsible via the toolbar's Toggle Configuration Panel action.
+- The data widget is the central, dominant region. It claims the remaining space. Its minimum width is 250 px, set by `ViewWidget` for all views. Render widgets do not set a minimum width.
+- The config widget docks on the right. Min width 400 px ([viewconfigwidget.h](../view/viewbase/viewconfigwidget.h)). It is collapsible via the toolbar's Toggle Configuration Panel action. It also collapses by itself when the view gets narrower than its minimum width plus 600 px, and expands again 50 px above that. A collapse by the user stays until the user opens it ([configpanelstate.h](../view/viewbase/configpanelstate.h)).
+- Only the shown view tab counts for the minimum width of the view area (`ViewContainer::updateTabSizePolicies()`).
 - The toolbar is **optional**: a View that is entirely passive (e.g. TableView) may omit it. Once a View has any interactive tool (Select, Zoom, ...), the toolbar is required.
 - The status row ([viewloadstatewidget.h:37-99](../view/viewbase/viewloadstatewidget.h#L37-L99)) is mandatory; it is the only legitimate channel for "no data", "loading", "reload required" feedback.
 
