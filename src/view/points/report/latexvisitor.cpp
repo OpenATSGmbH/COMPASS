@@ -248,7 +248,7 @@ void LatexVisitor::visit(HistogramView* e)
         screenshot_folder_created_ = true;
     }
 
-    e->showInTabWidget();
+    e->showInViewDeck();
 
     const HistogramViewModel& model = e->model();
 
@@ -314,7 +314,7 @@ void LatexVisitor::visit(ScatterPlotView* e)
         screenshot_folder_created_ = true;
     }
 
-    e->showInTabWidget();
+    e->showInViewDeck();
 
     const ScatterPlotViewModel& model = e->model();
 
@@ -380,7 +380,7 @@ void LatexVisitor::visit(GridView* e)
         screenshot_folder_created_ = true;
     }
 
-    e->showInTabWidget();
+    e->showInViewDeck();
 
     const GridViewModel& model = e->model();
 

@@ -37,6 +37,7 @@
 
 #include <set>
 
+#include "files.h"
 #include "logger.h"
 #include "latexvisitor.h"
 
@@ -217,6 +218,20 @@ dbContent::VariableSet GridView::getBaseSet(const std::string& dbcontent_name)
 void GridView::accept(LatexVisitor& v)
 {
     v.visit(this);
+}
+
+/**
+*/
+std::string GridView::deckNamePrefix() const
+{
+    return "Grid";
+}
+
+/**
+*/
+QIcon GridView::deckIcon() const
+{
+    return Utils::Files::IconProvider::getIcon("view_grid.png");
 }
 
 /**

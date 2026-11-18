@@ -11,4 +11,5 @@ target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_grid_render_widget.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_figure_selection.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_figure_factory.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_view_deck.cpp
 )

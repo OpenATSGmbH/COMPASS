@@ -28,7 +28,6 @@
 
 class QLabel;
 class QPushButton;
-class QTabWidget;
 class QCheckBox;
 class QMenu;
 class QPushButton;
@@ -40,6 +39,7 @@ class DBSchemaManagerWidget;
 class DBContentManagerWidget;
 class MainLoadWidget;
 class ToolBox;
+class ViewDeck;
 
 class COMPASS;
 class CompassRoot;
@@ -92,7 +92,6 @@ public slots:
     void analyzeSMRDataSourceSlot();
 
     void quitRequestedSlot();
-    void showAddViewMenuSlot();
 
     void resetViewsMenuSlot();
 
@@ -149,9 +148,7 @@ protected:
     void showEvaluationResult();
 
     QWidget* main_widget_{nullptr};
-    QTabWidget* tab_widget_{nullptr};
-
-    QPushButton* add_view_button_{nullptr};
+    ViewDeck* view_deck_{nullptr};
 
     bool save_configuration_{true};
 

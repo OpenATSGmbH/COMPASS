@@ -17,6 +17,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/waitspinner.h"
         "${CMAKE_CURRENT_LIST_DIR}/toolboxwidth.h"
         "${CMAKE_CURRENT_LIST_DIR}/toolboxwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/deckbutton.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/rangeedit.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rangeslider.cpp"
@@ -25,4 +26,5 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/dialogs.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/waitspinner.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/toolboxwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/deckbutton.cpp"
 )

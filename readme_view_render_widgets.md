@@ -763,7 +763,7 @@ Overlays (P6, decided by the user 2026-11-17):
 - Drawing order: background, grid, national borders and sectors, text labels, legend.
 - The text labels get no legend entry.
 - The grid render widget is the same in the Grid View and in the report. So the Grid View shows the text labels too.
-  - The feature types that a view accepts select the views that open for a figure (`acceptedAnnotationFeatureTypes`, `ViewManager::activateCompatibleViewTabs`). This set stays "grid only" for the Grid View. Else the Grid View opens for every figure with a text feature.
+  - The feature types that a view accepts select the views that open for a figure (`acceptedAnnotationFeatureTypes`, `ViewManager::activateCompatibleViews`). This set stays "grid only" for the Grid View. Else the Grid View opens for every figure with a text feature.
   - The text features are read in a second scan, only when a grid annotation is shown.
 - Consequences:
   - Points and circles (for example the yellow circle at the RU position, the RU points of the MLAT RU effect figure) are not in the grid render widget. A figure with a grid and such features still gets the render widget, without them. The "View" button opens the views, and the Geographic View shows all features.

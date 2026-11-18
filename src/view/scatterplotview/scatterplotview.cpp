@@ -26,6 +26,7 @@
 #include "scatterplotviewdatasource.h"
 #include "scatterplotviewmodel.h"
 #include "scatterplotviewwidget.h"
+#include "files.h"
 #include "logger.h"
 #include "latexvisitor.h"
 #include "viewpointgenerator.h"
@@ -218,6 +219,20 @@ VariableSet ScatterPlotView::getBaseSet(const std::string& dbcontent_name)
 void ScatterPlotView::accept(LatexVisitor& v)
 {
     v.visit(this);
+}
+
+/**
+*/
+std::string ScatterPlotView::deckNamePrefix() const
+{
+    return "Scatter";
+}
+
+/**
+*/
+QIcon ScatterPlotView::deckIcon() const
+{
+    return Utils::Files::IconProvider::getIcon("view_scatterplot.png");
 }
 
 /**

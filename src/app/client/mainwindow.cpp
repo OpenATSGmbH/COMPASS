@@ -54,6 +54,7 @@
 #include "licensemanager.h"
 #include "toolbox.h"
 #include "toolboxwidget.h"
+#include "viewdeck.h"
 #include "viewpointswidget.h"
 #include "taskresultswidget.h"
 
@@ -80,7 +81,6 @@
 #include <QCloseEvent>
 #include <QSettings>
 #include <QStackedWidget>
-#include <QTabWidget>
 #include <QLocale>
 #include <QInputDialog>
 #include <QLineEdit>
@@ -173,28 +173,7 @@ void MainWindow::createUI()
 
     main_layout->addLayout(content_layout);
 
-    // initialize tabs
-    tab_widget_ = new QTabWidget();
-    tab_widget_->setObjectName("container0");
-
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
-    //tab_widget_->setCurrentIndex(0);
-
-    QApplication::restoreOverrideCursor();
-
-    const QString tool_tip = "Add view";
-
-    add_view_button_ = new QPushButton();
-    UI_TEST_OBJ_NAME(add_view_button_, tool_tip);
-    add_view_button_->setIcon(Files::IconProvider::getIcon("crosshair_fat.png"));
-    add_view_button_->setFixedSize(UI_ICON_SIZE);
-    add_view_button_->setFlat(UI_ICON_BUTTON_FLAT);
-    add_view_button_->setToolTip(tr(tool_tip.toStdString().c_str()));
-    add_view_button_->setDisabled(compass_.appState().settings().disable_add_remove_views);
-
-    connect(add_view_button_, &QPushButton::clicked, this, &MainWindow::showAddViewMenuSlot);
-    tab_widget_->setCornerWidget(add_view_button_);
+    view_deck_ = new ViewDeck();
 
     //init some components before using their widgets
     root_.evaluationManager().init();
@@ -203,7 +182,7 @@ void MainWindow::createUI()
     for (auto plugin : root_.appHooks().plugins)
         plugin->initUI(root_);
 
-    root_.viewManager().init(tab_widget_);
+    root_.viewManager().init(view_deck_);
 
     // initialize toolbox
     tool_box_ = new ToolBox(this);
@@ -222,19 +201,17 @@ void MainWindow::createUI()
     tool_log_     = tool_box_->addTool(new LogWidget(compass_.logStore())); // 6
 
     //@TODO: !handle filter check box!
-    //QTabBar *tabBar = tab_widget_->tabBar();
-    //tabBar->setTabButton(1, QTabBar::LeftSide, root_.filterManager().widget()->filtersCheckBox());
-    //tabBar->setTabButton(0, QTabBar::RightSide, new QLabel("label0");
 
-    tool_box_->setMainContent(tab_widget_);
+    tool_box_->setViewDeck(view_deck_);
     tool_box_->finalize();
     tool_box_->selectTool("Data Sources");
 
     //disable sensor status by default (only available in live mode)
     tool_box_->disableTools({ tool_sstatus_ });
 
-    // add toolbox and view tab widget
+    // Flight Deck icon column and splitter (tool panel, view area) in the tool box, View Deck icon bar at the right edge
     content_layout->addWidget(tool_box_);
+    content_layout->addWidget(view_deck_);
 
     // bottom widget
     QWidget* bottom_widget = new QWidget();
@@ -1186,14 +1163,6 @@ void MainWindow::quitRequestedSlot()
     QApplication::quit();
 }
 
-void MainWindow::showAddViewMenuSlot()
-{
-    loginf;
-
-    traced_assert(!compass_.appState().settings().disable_add_remove_views);
-    root_.viewManager().showMainViewContainerAddView();
-}
-
 void MainWindow::resetViewsMenuSlot()
 {
     loginf;
@@ -1206,7 +1175,7 @@ void MainWindow::resetViewsMenuSlot()
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-    traced_assert(tab_widget_);
+    traced_assert(view_deck_);
 
     {
         QMessageBox msg_box;
@@ -1485,10 +1454,10 @@ void MainWindow::shutdown()
 
     compass_.shutdown();
 
-    if (tab_widget_)
+    if (view_deck_)
     {
-        delete tab_widget_;
-        tab_widget_ = nullptr;
+        delete view_deck_;
+        view_deck_ = nullptr;
     }
 }
 

@@ -16,6 +16,7 @@
  */
 
 #include "histogramview.h"
+#include "files.h"
 
 #include <QApplication>
 
@@ -177,6 +178,20 @@ VariableSet HistogramView::getBaseSet(const std::string& dbcontent_name)
 void HistogramView::accept(LatexVisitor& v)
 {
     v.visit(this);
+}
+
+/**
+ */
+std::string HistogramView::deckNamePrefix() const
+{
+    return "Histo";
+}
+
+/**
+ */
+QIcon HistogramView::deckIcon() const
+{
+    return Utils::Files::IconProvider::getIcon("view_histogram.png");
 }
 
 /**

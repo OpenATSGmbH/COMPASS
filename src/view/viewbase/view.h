@@ -26,6 +26,7 @@
 #include "viewpresets.h"
 #include "viewinfo.h"
 
+#include <QIcon>
 #include <QObject>
 
 #include <memory>
@@ -54,7 +55,7 @@ derived from a similar group of coherent classes. For example a new view based o
 a model based on a DBViewModel and a widget based on a DBViewWidget.
 
 A view always has a center widget, in which the ViewWidget is embedded. The central widget will then
-again always be embedded inside a ViewContainerWidget, which shows the specific views in tabs.
+again always be embedded inside the View Deck of a window, which shows the selected view.
  */
 class View : public QObject, public Configurable
 {
@@ -116,8 +117,14 @@ public:
     /// @brief Returns the view's central widget
     QWidget* getCentralWidget() { return central_widget_; }
 
-    void enableInTabWidget(bool value);
-    void showInTabWidget();
+    void enableInViewDeck(bool value);
+    void showInViewDeck();
+
+    /// prefix of the short name under the View Deck icon, e.g. "Table" for "Table 0"
+    virtual std::string deckNamePrefix() const = 0;
+    virtual QIcon deckIcon() const = 0;
+    /// short name under the View Deck icon: the prefix and the number of the instance name
+    std::string deckName() const;
 
     virtual dbContent::VariableSet getSet(const std::string& dbcontent_name) = 0;
 

@@ -17,6 +17,7 @@
 
 #include "tableview.h"
 #include "viewcontainer.h"
+#include "files.h"
 
 #include <QApplication>
 
@@ -199,6 +200,16 @@ void TableView::ignoreNonTargetReports(bool value)
 void TableView::accept(LatexVisitor& v)
 {
     v.visit(this);
+}
+
+std::string TableView::deckNamePrefix() const
+{
+    return "Table";
+}
+
+QIcon TableView::deckIcon() const
+{
+    return Utils::Files::IconProvider::getIcon("view_table.png");
 }
 
 void TableView::updateSelection_impl()

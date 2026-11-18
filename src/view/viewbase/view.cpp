@@ -26,6 +26,7 @@
 #include "viewmodel.h"
 #include "viewconfigwidget.h"
 #include "config.h"
+#include "stringconv.h"
 #include "timeconv.h"
 
 #include <QVBoxLayout>
@@ -184,18 +185,25 @@ const std::string& View::getName() const { return name_; }
 
 /**
 */
-void View::enableInTabWidget(bool value)
+void View::enableInViewDeck(bool value)
 {
     traced_assert(container_);
-    container_->enableViewTab(getCentralWidget(), value);
+    container_->enableView(getCentralWidget(), value);
 }
 
 /**
 */
-void View::showInTabWidget()
+void View::showInViewDeck()
 {
     traced_assert(container_);
     container_->showView(getCentralWidget());
+}
+
+/**
+*/
+std::string View::deckName() const
+{
+    return deckNamePrefix() + " " + std::to_string(Utils::String::getAppendedInt(instanceName()));
 }
 
 /**

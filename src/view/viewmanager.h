@@ -60,7 +60,7 @@ class ViewPointsWidget;
 class ViewPointsReportGenerator;
 
 class QWidget;
-class QTabWidget;
+class ViewDeck;
 class LoadController;
 class LiveController;
 
@@ -153,7 +153,7 @@ class ViewManager : public QObject, public Configurable, public IViewProvider, p
 
     unsigned int liveImportBacklogSize() const; // ASTERIX packets in processing
 
-    void init(QTabWidget* main_tab_widget);
+    void init(ViewDeck* main_view_deck);
     void close();
 
     void clearDataInViews() override;
@@ -235,17 +235,15 @@ class ViewManager : public QObject, public Configurable, public IViewProvider, p
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
 
-    /// For each view container, if the currently-selected tab's view does
+    /// For each view container, if the view selected in its View Deck does
     /// not accept any annotation feature type present in `viewable`, switch
     /// the container to the first view (in container order) that does. No
     /// switch occurs when the current view is already compatible, when no
-    /// container holds a compatible view, or when the viewable has no
-    /// annotation features.
-    void activateCompatibleViewTabs(const ViewableDataConfig* viewable);
+    /// container holds a compatible view, when the viewable has no
+    /// annotation features, or when the View Deck is collapsed.
+    void activateCompatibleViews(const ViewableDataConfig* viewable);
 
     void selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix_time::ptime ts_max);
-
-    void showMainViewContainerAddView();
 
     std::map<std::string, std::string> viewClassList() const;
 
@@ -370,7 +368,7 @@ protected:
     bool loading_done_dispatched_ = false;
     std::string current_dispatch_;
 
-    QTabWidget* main_tab_widget_{nullptr};
+    ViewDeck* main_view_deck_{nullptr};
 
     std::map<std::string, ViewContainer*> containers_;
     std::map<std::string, ViewContainerWidget*> container_widgets_;
