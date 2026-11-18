@@ -856,6 +856,15 @@ void TaskManager::databaseOpenedSlot()
 }
 
 /**
+ * The report document may still read section contents from the database, also in a worker thread.
+ */
+void TaskManager::databaseAboutToCloseSlot()
+{
+    if (widget_)
+        widget_->releaseReportDocument();
+}
+
+/**
  */
 void TaskManager::databaseClosedSlot()
 {

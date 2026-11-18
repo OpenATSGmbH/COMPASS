@@ -39,6 +39,10 @@ class SectionContent;
 class Report : public QObject, public TreeItem
 {
     Q_OBJECT
+signals:
+    // emitted before clear() deletes all sections, while they still exist
+    void aboutToClearSignal();
+
 public:
     Report(TaskResult* result);
     virtual ~Report();

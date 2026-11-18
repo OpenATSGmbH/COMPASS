@@ -425,6 +425,8 @@ void CompassRoot::connectManagers()
 
     QObject::connect(compass, &COMPASS::databaseOpenedSignal,
                      task_manager_.get(), &TaskManager::databaseOpenedSlot);
+    QObject::connect(compass, &COMPASS::databaseAboutToCloseSignal,
+                     task_manager_.get(), &TaskManager::databaseAboutToCloseSlot);
     QObject::connect(compass, &COMPASS::databaseClosedSignal,
                      task_manager_.get(), &TaskManager::databaseClosedSlot);
 
@@ -498,6 +500,8 @@ void CompassRoot::shutdown()
     }
 
     traced_assert(task_manager_);
+    // the database is closed below without COMPASS::closeDB(), stop the report reads as it does
+    task_manager_->databaseAboutToCloseSlot();
     task_manager_->shutdown();
     task_manager_ = nullptr;
 

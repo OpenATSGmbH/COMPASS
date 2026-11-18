@@ -18,8 +18,11 @@
 #include "report/treemodel.h"
 #include "report/treeitem.h"
 #include "report/report.h"
+#include "report/section.h"
+#include "report/reportdocumentlayout.h"
 
 #include "logger.h"
+#include "ui_test_common.h"
 
 namespace ResultReport
 {
@@ -74,6 +77,19 @@ QVariant TreeModel::data(const QModelIndex &index, int role) const
     traced_assert(item);
 
     if (role == Qt::DisplayRole)
+    {
+        auto section = dynamic_cast<const Section*>(item);
+        if (!section)
+            return item->data(index.column());
+
+        //numbered as the document headings
+        const std::string number = ReportDocumentLayout::sectionNumber(*section);
+        if (number.empty())
+            return item->data(index.column());
+
+        return QString::fromStdString(number + " " + section->heading());
+    }
+    if (role == ui_test::ItemNameRole)
         return item->data(index.column());
     if (role == Qt::UserRole)
         return item->id().c_str();

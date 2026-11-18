@@ -174,6 +174,8 @@ public:
     Result finalizeResult();
 
     bool loadOnDemandContent(ResultReport::SectionContent* content) const;
+    /// true if the on-demand data of the content may be loaded on a worker thread, see SectionContent::loadOnDemandOffMainThread()
+    virtual bool loadOnDemandOffMainThread(const ResultReport::SectionContent& content) const { return false; }
     bool loadOnDemandViewable(const ResultReport::SectionContent& content,
                               ResultReport::SectionContentViewable& viewable, 
                               const QVariant& index,

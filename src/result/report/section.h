@@ -86,7 +86,13 @@ public:
     std::string relativeID(const std::string& id) const;
 
     QWidget* getContentWidget(bool preload_ondemand_contents);
+    void releaseContentWidget();
     void updateContents(bool recursive);
+
+    bool allContentLoaded() const;
+    void loadAllContent() const;
+    std::vector<std::pair<size_t, unsigned int>> unloadedContentIDs() const; // content index and content ID
+    void adoptLoadedContent(size_t idx, const std::shared_ptr<SectionContent>& content);
 
     bool hasText (const std::string& name);
     SectionContentText& getText (const std::string& name);

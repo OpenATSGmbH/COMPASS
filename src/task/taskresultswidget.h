@@ -54,6 +54,8 @@ public:
     void storeBackupSection();
     void restoreBackupSection();
 
+    void releaseReportDocument();
+
     //ToolBoxWidget
     QIcon toolIcon() const override final;
     std::string toolName() const override final;

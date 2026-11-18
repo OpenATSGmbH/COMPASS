@@ -87,6 +87,7 @@ signals:
 
 public slots:
     void databaseOpenedSlot();
+    void databaseAboutToCloseSlot();
     void databaseClosedSlot();
 
 public:

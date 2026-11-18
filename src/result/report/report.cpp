@@ -68,6 +68,8 @@ ITaskProvider& Report::taskManager()
  */
 void Report::clear()
 {
+    emit aboutToClearSignal();
+
     root_section_ = std::make_shared<Section>(SectionID::SectionResults, "", this, this);
 }
 

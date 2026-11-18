@@ -30,6 +30,8 @@
 #include <QApplication>
 #include <QThread>
 
+#include <algorithm>
+
 namespace ResultReport
 {
 
@@ -146,7 +148,14 @@ QVariant Section::data(int column) const
 */
 int Section::row() const
 {
-    return 0;
+    auto parent = parentSection();
+    if (!parent)
+        return 0;
+
+    auto it = parent->sub_section_indexes_.find(heading_);
+    traced_assert(it != parent->sub_section_indexes_.end());
+
+    return (int)it->second;
 }
 
 /**
@@ -266,6 +275,60 @@ QWidget* Section::getContentWidget(bool preload_ondemand_contents)
     }
 
     return content_widget_container_.get();
+}
+
+/**
+ * Deletes the content widget, the next getContentWidget() creates it again.
+*/
+void Section::releaseContentWidget()
+{
+    content_widget_                  = nullptr;
+    content_widget_container_layout_ = nullptr;
+
+    //deferred, the release may run inside an event handler of one of its child widgets
+    if (content_widget_container_)
+        content_widget_container_.release()->deleteLater();
+}
+
+/**
+*/
+bool Section::allContentLoaded() const
+{
+    return std::all_of(content_.begin(), content_.end(), [] (const std::shared_ptr<SectionContent>& c) { return c != nullptr; });
+}
+
+/**
+*/
+void Section::loadAllContent() const
+{
+    for (size_t i = 0; i < content_.size(); ++i)
+        loadOrGetContent(i, false);
+}
+
+/**
+*/
+std::vector<std::pair<size_t, unsigned int>> Section::unloadedContentIDs() const
+{
+    std::vector<std::pair<size_t, unsigned int>> ids;
+
+    for (size_t i = 0; i < content_.size(); ++i)
+        if (!content_[ i ])
+            ids.emplace_back(i, content_ids_.at(i));
+
+    return ids;
+}
+
+/**
+ * Installs a content which was loaded outside of the section. A slot which was filled in the meantime
+ * keeps its content, other code may already refer to it.
+*/
+void Section::adoptLoadedContent(size_t idx, const std::shared_ptr<SectionContent>& content)
+{
+    traced_assert(content);
+    traced_assert(content->contentID() == content_ids_.at(idx));
+
+    if (!content_.at(idx))
+        content_[ idx ] = content;
 }
 
 /**
@@ -815,16 +878,17 @@ void Section::recreateContentUI(bool force_ui_reset,
     QVBoxLayout* layout = new QVBoxLayout();
 
     //preload all needed contents as async task with dialog
-    auto cb = [ this ] (const AsyncTaskState&, AsyncTaskProgressWrapper&) 
-    { 
-        for (size_t i = 0; i < this->content_.size(); ++i)
-            this->loadOrGetContent(i, false);
+    if (!allContentLoaded())
+    {
+        auto cb = [ this ] (const AsyncTaskState&, AsyncTaskProgressWrapper&)
+        {
+            this->loadAllContent();
+            return true;
+        };
 
-        return true;
-    };
-
-    AsyncFuncTask task(cb, "Loading", "Loading section contents", false);
-    task.runAsyncDialog();
+        AsyncFuncTask task(cb, "Loading", "Loading section contents", false);
+        task.runAsyncDialog();
+    }
 
     //preload some on-demand resources if desired
     //note: not possible on other thread because it e.g. might trigger ui stuff on reload

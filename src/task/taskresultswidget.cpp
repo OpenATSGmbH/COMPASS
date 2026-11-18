@@ -606,6 +606,13 @@ void TaskResultsWidget::restoreBackupSection()
         return;
 
     report_widget_->selectID(current_section_name_backup_, false, current_section_config_backup_);
-    
+
     loginf << "restored section '" << current_section_name_backup_ << "'";
+}
+
+/**
+ */
+void TaskResultsWidget::releaseReportDocument()
+{
+    report_widget_->releaseDocument();
 }

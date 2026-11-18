@@ -65,6 +65,7 @@ class COMPASS : public QObject, public Configurable, public rtcommand::IRTComman
 
 signals:
     void databaseOpenedSignal();
+    void databaseAboutToCloseSignal(); // last chance to stop reads in other threads
     void databaseClosedSignal();
 
     // relayed from AppState, for the libraries above core

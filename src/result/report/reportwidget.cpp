@@ -21,6 +21,7 @@
 #include "report/section.h"
 #include "report/sectioncontentfigure.h"
 #include "report/sectioncontenttable.h"
+#include "report/reportdocumentview.h"
 #include "files.h"
 #include "logger.h"
 #include "popupmenu.h"
@@ -28,7 +29,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QScrollArea>
+#include <QSplitter>
 #include <QPushButton>
 #include <QSettings>
 #include <QMenu>
@@ -36,6 +37,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QScrollBar>
+#include <QSignalBlocker>
 
 #include <osg/Group>
 
@@ -47,10 +49,20 @@ namespace ResultReport
 const std::string ReportWidget::FieldConfigScrollPosV = "container_scroll_pos_v";
 const std::string ReportWidget::FieldConfigScrollPosH = "container_scroll_pos_h";
 
+namespace
+{
+    const QString SettingSidebarVisible = "sidebar_visible";
+    const int     SidebarMinWidth       = 180;
+    const int     SidebarDefaultWidth   = 280;
+}
+
 ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
     : QWidget(nullptr), task_result_widget_(task_result_widget)
 {
     QVBoxLayout* main_layout = new QVBoxLayout();
+
+    QSettings settings("COMPASS", "ReportWidget");
+    const bool sidebar_visible = settings.value(SettingSidebarVisible, true).toBool();
 
     { // button layout
         QHBoxLayout* button_layout = new QHBoxLayout();
@@ -66,6 +78,15 @@ ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
         button_layout->addWidget(current_section_label_);
 
         button_layout->addStretch();
+
+        sidebar_button_ = new QPushButton("Sidebar");
+        sidebar_button_->setIcon(QIcon());
+        sidebar_button_->setToolTip("Show or hide the section sidebar");
+        sidebar_button_->setObjectName("report_sidebar_button");
+        sidebar_button_->setCheckable(true);
+        sidebar_button_->setChecked(sidebar_visible);
+        connect (sidebar_button_, &QPushButton::toggled, this, &ReportWidget::sidebarToggledSlot);
+        button_layout->addWidget(sidebar_button_);
 
         sections_button_ = new QPushButton("Sections");
         sections_button_->setObjectName("report_sections_button");
@@ -88,36 +109,34 @@ ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
 
     sections_menu_.reset(new PopupMenu(sections_button_, tree_view_));
 
-    // results stack
-    QScrollArea* scroll_area = new QScrollArea();
-    scroll_area->setObjectName("report_scroll_area");
-    scroll_area->setWidgetResizable(true);
+    sidebar_view_ = new QTreeView;
+    sidebar_view_->setObjectName("report_section_sidebar");
+    sidebar_view_->setModel(&tree_model_);
+    sidebar_view_->setHeaderHidden(true);
+    sidebar_view_->setRootIsDecorated(false);
+    sidebar_view_->setMinimumWidth(SidebarMinWidth);
+    sidebar_view_->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+    sidebar_view_->setVisible(sidebar_visible);
 
-    results_widget_ = new QStackedWidget();
+    connect (sidebar_view_, &QTreeView::clicked, this, &ReportWidget::itemClickedSlot);
+    connect (sidebar_view_, &QTreeView::customContextMenuRequested, this, &ReportWidget::contextMenuSlot);
+    connect (sidebar_view_, &QTreeView::expanded, this, &ReportWidget::sidebarExpansionChangedSlot);
+    connect (sidebar_view_, &QTreeView::collapsed, this, &ReportWidget::sidebarExpansionChangedSlot);
 
-    // A QStackedWidget sizes to the largest page, so after a large section has
-    // been opened every other page (e.g. a single-figure sub-section) inherits
-    // that height, and a page with a wide table pins the minimum width of all
-    // later pages (pushing right-aligned buttons out of view). Make only the
-    // current page contribute to the size hint, so the scroll area tracks the
-    // page actually shown.
-    connect(results_widget_, &QStackedWidget::currentChanged, this, [this](int idx) {
-        for (int i = 0; i < results_widget_->count(); ++i)
-        {
-            QWidget* w = results_widget_->widget(i);
-            if (!w)
-                continue;
-            w->setSizePolicy(i == idx ? QSizePolicy::Preferred : QSizePolicy::Ignored,
-                             i == idx ? QSizePolicy::Preferred : QSizePolicy::Ignored);
-        }
-        if (QWidget* cur = results_widget_->widget(idx))
-            cur->adjustSize();
-        results_widget_->adjustSize();
-    });
+    document_view_ = new ReportDocumentView;
 
-    scroll_area->setWidget(results_widget_);
+    connect (document_view_, &ReportDocumentView::currentSectionChangedSignal,
+             this, &ReportWidget::currentSectionChangedSlot);
 
-    main_layout->addWidget(scroll_area);
+    splitter_ = new QSplitter(Qt::Horizontal);
+    splitter_->setChildrenCollapsible(false);
+    splitter_->addWidget(sidebar_view_);
+    splitter_->addWidget(document_view_);
+    splitter_->setStretchFactor(0, 0);
+    splitter_->setStretchFactor(1, 1);
+    splitter_->setSizes({ SidebarDefaultWidth, 4 * SidebarDefaultWidth });
+
+    main_layout->addWidget(splitter_);
 
     setContentsMargins(0, 0, 0, 0);
     setLayout(main_layout);
@@ -127,16 +146,30 @@ ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
 
 ReportWidget::~ReportWidget()
 {
+    //the document holds widgets of the sections of the report, release them while the report exists
+    document_view_->clear();
+
+    QObject::disconnect(report_clear_connection_);
 }
 
 void ReportWidget::setReport(const std::shared_ptr<Report>& report)
 {
+    document_view_->clear();
+
+    QObject::disconnect(report_clear_connection_);
+
     tree_model_.setReport(report);
+    report_ = report;
+
+    report_clear_connection_ = connect(report.get(), &Report::aboutToClearSignal,
+                                       this, &ReportWidget::reportAboutToClearSlot);
 
     tree_view_->setRootIsDecorated(false);
     tree_view_->expandToDepth(3);
     tree_view_->setFixedSize(500, 1000);
 
+    expandSidebarInitially();
+
     id_history_.clear();
 
     current_section_ = nullptr;
@@ -145,12 +178,20 @@ void ReportWidget::setReport(const std::shared_ptr<Report>& report)
     updateBackButton();
     updateCurrentSectionLabel();
 
-    showResultWidget(nullptr, false);
+    document_view_->setRootSection(report->rootSection().get(), collapsedSections());
+    document_outdated_ = false;
 }
 
 void ReportWidget::clear()
 {
+    document_view_->clear();
+
+    QObject::disconnect(report_clear_connection_);
+
     tree_model_.clear();
+    report_.reset();
+    document_outdated_ = false;
+
     id_history_.clear();
 
     current_section_ = nullptr;
@@ -158,6 +199,65 @@ void ReportWidget::clear()
 
     updateBackButton();
     updateCurrentSectionLabel();
+}
+
+/**
+ * Stops all reads of the document from the database (built sections, preload), e.g. before the
+ * database closes. The document is built again with the next jump to a section.
+ */
+void ReportWidget::releaseDocument()
+{
+    document_view_->clear();
+    document_outdated_ = true;
+}
+
+/**
+ * The report is about to delete all its sections. Drops all widgets and tree indexes which refer to
+ * them. The document is built again with the next jump to a section.
+ */
+void ReportWidget::reportAboutToClearSlot()
+{
+    document_view_->clear();
+    document_outdated_ = true;
+
+    tree_model_.beginReset();
+    tree_model_.endReset();
+
+    id_history_.clear();
+
+    current_section_ = nullptr;
+
+    updateBackButton();
+    updateCurrentSectionLabel();
+}
+
+void ReportWidget::currentSectionChangedSlot(Section* section)
+{
+    current_section_ = section;
+
+    updateCurrentSectionLabel();
+
+    if (section)
+        selectInTrees(modelIndex(section));
+}
+
+void ReportWidget::sidebarToggledSlot(bool visible)
+{
+    sidebar_view_->setVisible(visible);
+
+    QSettings settings("COMPASS", "ReportWidget");
+    settings.setValue(SettingSidebarVisible, visible);
+}
+
+/**
+ * The document holds the sections whose parents are all expanded in the sidebar.
+ */
+void ReportWidget::sidebarExpansionChangedSlot()
+{
+    if (document_outdated_)
+        return;
+
+    document_view_->setCollapsedSections(collapsedSections());
 }
 
 void ReportWidget::expand()
@@ -181,13 +281,7 @@ void ReportWidget::selectID(const std::string& id,
         return;
     }
 
-    traced_assert(tree_view_);
-    tree_view_->selectionModel()->clear();
-
-    expandAllParents(index);
-
-    tree_view_->selectionModel()->select(index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-    tree_view_->scrollTo(index);
+    selectInTrees(index);
 
     bool show_id_figure = always_show_section_figure_ || show_figure;
 
@@ -230,19 +324,25 @@ void ReportWidget::triggerItem (const QModelIndex& index,
 
     loginf << "name " << item->name() << " id " << item->id();
 
-    if (dynamic_cast<ResultReport::Report*>(item))
+    if (document_outdated_ && report_)
     {
-        loginf << "root report";
-        showResultWidget(nullptr, preload_ondemand_contents);
-    }
-    else if (dynamic_cast<ResultReport::Section*>(item))
-    {
-        ResultReport::Section* section = dynamic_cast<ResultReport::Section*>(item);
-        traced_assert(section);
+        expandSidebarInitially();
 
-        loginf << "section " << section->name();
-        showResultWidget(section, preload_ondemand_contents);
+        document_view_->setRootSection(report_->rootSection().get(), collapsedSections());
+        document_outdated_ = false;
     }
+
+    Section* section = dynamic_cast<ResultReport::Section*>(item);
+
+    //the report item itself shows the document from the top
+    if (!section && report_)
+        section = report_->rootSection().get();
+
+    //puts the section into the document
+    expandAllParents(sidebar_view_, index);
+
+    if (section)
+        document_view_->scrollToSection(section, 0, preload_ondemand_contents);
 
     updateBackButton();
     updateCurrentSectionLabel();
@@ -262,7 +362,11 @@ void ReportWidget::itemDblClickedSlot(const QModelIndex& index)
 
 void ReportWidget::contextMenuSlot(const QPoint& pos)
 {
-    auto index = tree_view_->indexAt(pos);
+    QTreeView* view = qobject_cast<QTreeView*>(sender());
+    if (!view)
+        view = tree_view_;
+
+    auto index = view->indexAt(pos);
     if (!index.isValid())
         return;
 
@@ -276,7 +380,7 @@ void ReportWidget::contextMenuSlot(const QPoint& pos)
     connect(action_copy_id, &QAction::triggered, 
         [ section ] () { qApp->clipboard()->setText(QString::fromStdString(section->id())); });
 
-    menu.exec(tree_view_->mapToGlobal(pos));
+    menu.exec(view->viewport()->mapToGlobal(pos));
 }
 
 void ReportWidget::showFigure(const QModelIndex& index)
@@ -318,37 +422,7 @@ void ReportWidget::stepBackSlot()
     updateCurrentSectionLabel();
 }
 
-void ReportWidget::showResultWidget(Section* section, 
-                                    bool preload_ondemand_contents)
-{
-    traced_assert(results_widget_);
-
-    current_section_ = section;
-
-    if (!section)
-    {
-        while (results_widget_->count() > 0)  // remove all widgets
-            results_widget_->removeWidget(results_widget_->widget(0));
-
-        return;
-    }
-
-    auto widget = section->getContentWidget(preload_ondemand_contents);
-
-    // Only the section shown stays in the stack. For a section with figures the stack reports the
-    // largest height for a width of all its pages, so a hidden section with more figures would give
-    // its height to the section shown.
-    for (int i = results_widget_->count() - 1; i >= 0; --i)
-        if (results_widget_->widget(i) != widget)
-            results_widget_->removeWidget(results_widget_->widget(i));
-
-    if (results_widget_->indexOf(widget) < 0)
-        results_widget_->addWidget(widget);
-
-    results_widget_->setCurrentWidget(widget);
-}
-
-void ReportWidget::expandAllParents (QModelIndex index)
+void ReportWidget::expandAllParents (QTreeView* view, QModelIndex index)
 {
     if (!index.isValid()) {
         return;
@@ -358,9 +432,101 @@ void ReportWidget::expandAllParents (QModelIndex index)
 
     for (parent_index = index.parent(); parent_index.isValid(); parent_index = parent_index.parent())
     {
-        if (!tree_view_->isExpanded(parent_index))
-            tree_view_->expand(parent_index);
+        if (!view->isExpanded(parent_index))
+            view->expand(parent_index);
     }
+}
+
+/**
+ * Expands all sections in the sidebar except the per-target sections, the caller builds the document.
+ */
+void ReportWidget::expandSidebarInitially()
+{
+    QSignalBlocker blocker(sidebar_view_);
+
+    std::vector<QModelIndex> stack = { tree_model_.index(0, 0) };
+
+    while (!stack.empty())
+    {
+        QModelIndex index = stack.back();
+        stack.pop_back();
+
+        const int num_rows = tree_model_.rowCount(index);
+        if (!index.isValid() || num_rows == 0)
+            continue;
+
+        auto section = dynamic_cast<Section*>(static_cast<TreeItem*>(index.internalPointer()));
+        if (!section || section->perTargetSection())
+            continue;
+
+        sidebar_view_->expand(index);
+
+        for (int row = 0; row < num_rows; ++row)
+            stack.push_back(tree_model_.index(row, 0, index));
+    }
+}
+
+/**
+ * The sections with sub-sections which are collapsed in the sidebar and whose parents are all expanded.
+ */
+ReportDocumentLayout::SectionSet ReportWidget::collapsedSections() const
+{
+    ReportDocumentLayout::SectionSet collapsed;
+
+    std::vector<QModelIndex> stack = { tree_model_.index(0, 0) };
+
+    while (!stack.empty())
+    {
+        QModelIndex index = stack.back();
+        stack.pop_back();
+
+        const int num_rows = tree_model_.rowCount(index);
+        if (!index.isValid() || num_rows == 0)
+            continue;
+
+        if (!sidebar_view_->isExpanded(index))
+        {
+            collapsed.insert(dynamic_cast<const Section*>(static_cast<TreeItem*>(index.internalPointer())));
+            continue;
+        }
+
+        for (int row = 0; row < num_rows; ++row)
+            stack.push_back(tree_model_.index(row, 0, index));
+    }
+
+    return collapsed;
+}
+
+/**
+ * Selects the item in the popup tree and in the sidebar, without a jump in the document.
+ */
+void ReportWidget::selectInTrees(const QModelIndex& index)
+{
+    if (!index.isValid())
+        return;
+
+    for (QTreeView* view : { tree_view_, sidebar_view_ })
+    {
+        expandAllParents(view, index);
+
+        view->selectionModel()->setCurrentIndex(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        view->scrollTo(index);
+    }
+}
+
+/**
+ */
+QModelIndex ReportWidget::modelIndex(Section* section) const
+{
+    if (!section)
+        return {};
+
+    //the root section is the only child of the report
+    Section* parent = section->parentSection();
+    if (!parent)
+        return tree_model_.index(0, 0);
+
+    return tree_model_.index(section->row(), 0, modelIndex(parent));
 }
 
 void ReportWidget::updateBackButton ()
@@ -389,8 +555,8 @@ nlohmann::json ReportWidget::currentSectionConfig() const
     if (!config.is_object() || config.empty())
         return {};
 
-    config[ FieldConfigScrollPosV ] = tree_view_->verticalScrollBar()->isVisible() ? tree_view_->verticalScrollBar()->value() : -1;
-    config[ FieldConfigScrollPosH ] = tree_view_->horizontalScrollBar()->isVisible() ? tree_view_->horizontalScrollBar()->value() : -1;
+    config[ FieldConfigScrollPosV ] = document_view_->offsetInCurrentSection();
+    config[ FieldConfigScrollPosH ] = document_view_->horizontalScrollBar()->value();
 
     return config;
 }
@@ -410,15 +576,18 @@ bool ReportWidget::configureSection(const nlohmann::json& config)
     int scroll_pos_v = config[FieldConfigScrollPosV].get<int>();
     int scroll_pos_h = config[FieldConfigScrollPosH].get<int>();
 
-    //restore widget scroll positions
-    if (scroll_pos_v >= 0 && tree_view_->verticalScrollBar()->isVisible())
-        tree_view_->verticalScrollBar()->setValue(scroll_pos_v);
+    Section* section = current_section_;
 
-    if (scroll_pos_h >= 0 && tree_view_->horizontalScrollBar()->isVisible())
-        tree_view_->horizontalScrollBar()->setValue(scroll_pos_h);
+    //configure the contents first, the scroll position belongs to the configured layout
+    bool ok = section->configure(config);
 
-    //configure section
-    return current_section_->configure(config);
+    if (scroll_pos_v >= 0)
+        document_view_->scrollToSection(section, scroll_pos_v, false);
+
+    if (scroll_pos_h >= 0)
+        document_view_->horizontalScrollBar()->setValue(scroll_pos_h);
+
+    return ok;
 }
 
 }
