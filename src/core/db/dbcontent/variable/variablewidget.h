@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <QWidget>
 
 #include <map>
@@ -36,7 +38,7 @@ namespace dbContent
 class Variable;
 class VariableDataTypeComboBox;
 
-class VariableWidget : public QWidget
+class COMPASS_CORE_API VariableWidget : public QWidget
 {
     Q_OBJECT
 

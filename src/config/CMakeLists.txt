@@ -1,5 +1,11 @@
 add_library(compass_config SHARED "")
 
+# COMPASS_CONFIG_API for the classes with signals (top-level CMakeLists.txt)
+generate_export_header(compass_config
+    EXPORT_MACRO_NAME COMPASS_CONFIG_API
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/compass_config_export.h")
+target_include_directories(compass_config PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+
 target_sources(compass_config
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/configurable.h"

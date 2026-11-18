@@ -16,6 +16,8 @@
  */
 
 #pragma once
+
+#include "compass_app_export.h"
 #include "appmode.h"
 #include "autoresumedialog.h"
 #include "imainwindow.h"
@@ -44,7 +46,7 @@ class ToolBox;
 class COMPASS;
 class CompassRoot;
 
-class MainWindow : public QMainWindow, public IMainWindow
+class COMPASS_APP_API MainWindow : public QMainWindow, public IMainWindow
 {
     Q_OBJECT
 signals:

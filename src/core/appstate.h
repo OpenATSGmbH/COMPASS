@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "appmode.h"
 
 #include "json.hpp"
@@ -32,7 +34,7 @@
  * - settings, persisted as config parameters of COMPASS (registered there, config files unchanged)
  * - owned by COMPASS, which forwards its functions for the libraries above core
  */
-class AppState : public QObject
+class COMPASS_CORE_API AppState : public QObject
 {
     Q_OBJECT
 

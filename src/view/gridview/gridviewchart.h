@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "chartview.h"
 
 #include <QLabel>
@@ -48,7 +50,7 @@ namespace QtCharts
 
 /**
  */
-class GridViewChart : public ChartView
+class COMPASS_VIEW_API GridViewChart : public ChartView
 {
     Q_OBJECT
 public:

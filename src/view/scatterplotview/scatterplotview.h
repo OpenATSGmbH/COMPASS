@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "variableview.h"
 
 class QColor;
@@ -27,7 +29,7 @@ class ScatterPlotViewDataWidget;
 
 /**
 */
-class ScatterPlotView : public VariableView
+class COMPASS_VIEW_API ScatterPlotView : public VariableView
 {
     Q_OBJECT
 

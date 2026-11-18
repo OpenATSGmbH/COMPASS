@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 //#include "property/property.h"
 
 #include <iostream>
@@ -272,7 +274,7 @@ namespace rangeedit
  * Represents a range edit consisting of a two-fold slider.
  * Type specific behavior is added in child class.
  */
-class RangeEditBase : public QWidget
+class COMPASS_CORE_API RangeEditBase : public QWidget
 {
     Q_OBJECT
 public:

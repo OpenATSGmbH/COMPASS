@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "property.h"
 #include "test/ui_test_testable.h"
 
@@ -34,7 +36,7 @@ class Variable;
 class MetaVariable;
 class ReportVariable;
 
-class VariableSelectionWidget : public QFrame, public ui_test::UITestable
+class COMPASS_CORE_API VariableSelectionWidget : public QFrame, public ui_test::UITestable
 {
     Q_OBJECT
 

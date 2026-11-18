@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <QObject>
 
 #include "configurable.h"
@@ -70,7 +72,7 @@ namespace ResultReport
     class ReportExport;
 }
 
-class TaskManager : public QObject, public Configurable, public ITaskProvider, public IManager
+class COMPASS_TASK_API TaskManager : public QObject, public Configurable, public ITaskProvider, public IManager
 {
     Q_OBJECT
 

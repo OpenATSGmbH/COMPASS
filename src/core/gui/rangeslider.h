@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <QSlider>
 
 namespace qxt
@@ -107,7 +109,7 @@ class RangeSliderPrivate;
 
 /**
  */
-class RangeSlider : public QSlider
+class COMPASS_CORE_API RangeSlider : public QSlider
 {
     Q_OBJECT
     QXT_DECLARE_PRIVATE(RangeSlider)

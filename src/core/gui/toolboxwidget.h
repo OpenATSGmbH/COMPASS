@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "toolboxdefs.h"
 
 #include <string>
@@ -32,7 +34,7 @@ class QToolBar;
 /**
  * Base class for widgets which are part of the toolbox.
  */
-class ToolBoxWidget : public QWidget
+class COMPASS_CORE_API ToolBoxWidget : public QWidget
 {
     Q_OBJECT
 

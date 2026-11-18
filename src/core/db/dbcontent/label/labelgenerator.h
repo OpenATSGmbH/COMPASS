@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "labelgeneratorconfig.h"
 #include "json_fwd.hpp"
 #include "labeldirection.h"
@@ -47,7 +49,7 @@ class VariableSet;
 
 /**
 */
-class LabelGenerator : public QObject, public LabelSettings
+class COMPASS_CORE_API LabelGenerator : public QObject, public LabelSettings
 {
     Q_OBJECT
 

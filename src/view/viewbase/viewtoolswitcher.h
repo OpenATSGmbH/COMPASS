@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <QString>
 #include <QIcon>
 #include <QCursor>
@@ -33,7 +35,7 @@ class QShortcut;
  * A tool consists of various attributes e.g. an id, an icon, a keyboard shortcut, a mouse cursor etc.
  * A default tool can be set, which is used when the currend tool is ended via endCurrentTool().
  */
-class ViewToolSwitcher : public QObject
+class COMPASS_VIEW_API ViewToolSwitcher : public QObject
 {
     Q_OBJECT
 public:

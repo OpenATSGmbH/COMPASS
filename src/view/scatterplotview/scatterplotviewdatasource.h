@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <QObject>
 
 //#include "buffer.h"
@@ -28,7 +30,7 @@ class Job;
 class ScatterPlotView;
 class ViewableDataConfig;
 
-class ScatterPlotViewDataSource : public QObject, public Configurable
+class COMPASS_VIEW_API ScatterPlotViewDataSource : public QObject, public Configurable
 {
     Q_OBJECT
   public slots:

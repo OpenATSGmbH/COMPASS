@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <QObject>
 
 #include <boost/optional.hpp>
@@ -42,7 +44,7 @@
  * 1 byte recording day, 3 bytes frame time (LSB 0.01 s),
  * content (frame length - 12 bytes), 4 bytes padding.
  */
-class ASTERIXNetworkReplaySender : public QObject
+class COMPASS_TASK_API ASTERIXNetworkReplaySender : public QObject
 {
     Q_OBJECT
 

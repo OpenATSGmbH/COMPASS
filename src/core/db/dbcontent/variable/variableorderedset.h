@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "configurable.h"
 #include "dbcontent/variable/variable.h"
 
@@ -30,7 +32,7 @@ class VariableSet;
 class VariableOrderedSet;
 class VariableOrderedSetWidget;
 
-class VariableOrderedSet : public QObject, public Configurable
+class COMPASS_CORE_API VariableOrderedSet : public QObject, public Configurable
 {
     Q_OBJECT
 

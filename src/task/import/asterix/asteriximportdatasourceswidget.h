@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "asteriximportprobeaggregator.h"
 
 #include <QWidget>
@@ -46,7 +48,7 @@ namespace context { class DataSource; }
  * Right: stacked widget - DataSourceEditWidget on DS click,
  *        items table on Category click, placeholder otherwise.
  */
-class ASTERIXImportDataSourcesWidget : public QWidget
+class COMPASS_TASK_API ASTERIXImportDataSourcesWidget : public QWidget
 {
     Q_OBJECT
 

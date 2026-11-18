@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "dbcontentdataset.h"
 #include "loadspec.h"
 #include "result.h"
@@ -26,7 +28,7 @@ class DBContentManager;
 // One-shot load: constraints in (LoadSpec), buffers out. Single-use, issuer-owned.
 // The DBContentDataEngine drives it (fills buffers, advances state); observers
 // connect to startedSignal/finishedSignal and read buffers()/index() when done.
-class LoadOperation : public DBContentDataSet
+class COMPASS_CORE_API LoadOperation : public DBContentDataSet
 {
     Q_OBJECT
 

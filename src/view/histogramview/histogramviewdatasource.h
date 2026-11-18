@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <QObject>
 
 #include "buffer.h"
@@ -29,7 +31,7 @@ class ViewableDataConfig;
 class HistogramView;
 class DBContentManager;
 
-class HistogramViewDataSource : public QObject, public Configurable
+class COMPASS_VIEW_API HistogramViewDataSource : public QObject, public Configurable
 {
     Q_OBJECT
   public slots:

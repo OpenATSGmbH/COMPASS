@@ -17,13 +17,15 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include "requirement/base/baseconfigwidget.h"
 
 namespace EvaluationRequirement {
 
 class ProbabilityBaseConfig;
 
-class ProbabilityBaseConfigWidget : public BaseConfigWidget
+class COMPASS_EVAL_API ProbabilityBaseConfigWidget : public BaseConfigWidget
 {
     Q_OBJECT
 

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_app_export.h"
+
 #include "toolboxdefs.h"
 #include "ui_test_testable.h"
 
@@ -44,7 +46,7 @@ class QFrame;
 
 /**
  */
-class ToolButton : public QToolButton
+class COMPASS_APP_API ToolButton : public QToolButton
 {
     Q_OBJECT
 public:
@@ -69,7 +71,7 @@ protected:
  
 /**
  */
-class ToolBox : public QWidget, public ui_test::UITestable
+class COMPASS_APP_API ToolBox : public QWidget, public ui_test::UITestable
 {
     Q_OBJECT
 public:

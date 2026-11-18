@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "asterixjsonparser.h"
 
 #include <QWidget>
@@ -36,7 +38,7 @@ namespace dbContent
 class VariableSelectionWidget;
 }
 
-class ASTERIXJSONParserDetailWidget : public QWidget
+class COMPASS_TASK_API ASTERIXJSONParserDetailWidget : public QWidget
 {
     Q_OBJECT
 

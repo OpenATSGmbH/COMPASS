@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <cstdint>
 #include "configurable.h"
 #include "dbcontent/variable/variableset.h"
@@ -56,7 +58,7 @@ a model based on a DBViewModel and a widget based on a DBViewWidget.
 A view always has a center widget, in which the ViewWidget is embedded. The central widget will then
 again always be embedded inside a ViewContainerWidget, which shows the specific views in tabs.
  */
-class View : public QObject, public Configurable
+class COMPASS_VIEW_API View : public QObject, public Configurable
 {
     Q_OBJECT
 public:

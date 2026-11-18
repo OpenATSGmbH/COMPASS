@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewconfigwidget.h"
 //#include "dbcontent/variable/variable.h"
 //#include "appmode.h"
@@ -38,7 +40,7 @@ class QPushButton;
  * @brief Widget with configuration elements for a TableView
  *
  */
-class TableViewConfigWidget : public TabStyleViewConfigWidget
+class COMPASS_VIEW_API TableViewConfigWidget : public TabStyleViewConfigWidget
 {
     Q_OBJECT
 public:

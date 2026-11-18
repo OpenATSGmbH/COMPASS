@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <QWidget>
 
 class QTableView;
@@ -24,7 +26,7 @@ class BaseBufferTableModel;
 class TableView;
 class TableViewDataSource;
 
-class BaseBufferTableWidget : public QWidget
+class COMPASS_VIEW_API BaseBufferTableWidget : public QWidget
 {
     Q_OBJECT
 

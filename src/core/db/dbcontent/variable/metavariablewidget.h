@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <QWidget>
 #include <map>
 
@@ -33,7 +35,7 @@ class MetaVariable;
 class VariableSelectionWidget;
 
 
-class MetaVariableWidget : public QWidget
+class COMPASS_CORE_API MetaVariableWidget : public QWidget
 {
     Q_OBJECT
 

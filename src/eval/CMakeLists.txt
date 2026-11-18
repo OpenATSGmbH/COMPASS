@@ -1,5 +1,11 @@
 add_library(compass_eval SHARED "")
 
+# COMPASS_EVAL_API for the classes with signals (top-level CMakeLists.txt)
+generate_export_header(compass_eval
+    EXPORT_MACRO_NAME COMPASS_EVAL_API
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/compass_eval_export.h")
+target_include_directories(compass_eval PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+
 include("${CMAKE_CURRENT_LIST_DIR}/data/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/requirement/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/results/CMakeLists.txt")

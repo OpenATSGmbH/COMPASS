@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include <QWidget>
 
 class QLineEdit;
@@ -31,7 +33,7 @@ namespace EvaluationRequirement
 class BaseConfig;
 class ComparisonTypeComboBox;
 
-class BaseConfigWidget : public QWidget
+class COMPASS_EVAL_API BaseConfigWidget : public QWidget
 {
     Q_OBJECT
 

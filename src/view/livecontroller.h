@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "liveoverloaddetector.h"
 
 #include <QObject>
@@ -56,7 +58,7 @@ class Buffer;
  * So the distributed buffers only change inside a tick that is distributed synchronously,
  * views never see buffers ahead of their own data.
  */
-class LiveController : public QObject
+class COMPASS_VIEW_API LiveController : public QObject
 {
     Q_OBJECT
 

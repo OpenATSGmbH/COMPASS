@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_gui_export.h"
+
 #include "property.h"
 #include "property_templates.h"
 
@@ -29,7 +31,7 @@ class QValidator;
 
 /**
  */
-class PropertyValueEdit : public QWidget
+class COMPASS_GUI_API PropertyValueEdit : public QWidget
 {
     Q_OBJECT
 public:

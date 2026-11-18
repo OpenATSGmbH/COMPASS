@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewcomponent.h"
 #include "viewlayerscan.h"
 #include "appmode.h"
@@ -52,7 +54,7 @@ namespace dbContent
  * Used to display data in a view specific way, e.g. as a graph.
  * Derive and reimplement as needed.
  */
-class ViewDataWidget : public QWidget, public ViewComponent 
+class COMPASS_VIEW_API ViewDataWidget : public QWidget, public ViewComponent 
 {
     Q_OBJECT
 public:

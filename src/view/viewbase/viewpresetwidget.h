@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewcomponent.h"
 #include "viewpresets.h"
 #include "json_fwd.hpp"
@@ -89,7 +91,7 @@ private:
 
 /**
 */
-class ViewPresetItemWidget : public QWidget
+class COMPASS_VIEW_API ViewPresetItemWidget : public QWidget
 {
     Q_OBJECT
 public:
@@ -152,7 +154,7 @@ private:
 
 /**
 */
-class ViewPresetItemListWidget : public QWidget
+class COMPASS_VIEW_API ViewPresetItemListWidget : public QWidget
 {
     Q_OBJECT
 public:

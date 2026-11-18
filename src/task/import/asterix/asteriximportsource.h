@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "json.hpp"
 
 #include <map>
@@ -153,7 +155,7 @@ private:
  * - Enum describing type of data - what to import
  * - List of files to import - where to get it
 */
-class ASTERIXImportSource : public QObject
+class COMPASS_TASK_API ASTERIXImportSource : public QObject
 {
     Q_OBJECT
 public:

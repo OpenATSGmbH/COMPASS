@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_util_export.h"
+
 #include "logstream.h"
 
 #include "json.hpp"
@@ -35,7 +37,7 @@
 
 enum class LogStreamType { Info, Warning, Error };
 
-class LogStore : public QAbstractItemModel
+class COMPASS_UTIL_API LogStore : public QAbstractItemModel
 {
     Q_OBJECT
 

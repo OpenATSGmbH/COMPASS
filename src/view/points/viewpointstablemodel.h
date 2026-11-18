@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewpoint.h"
 
 #include <QAbstractItemModel>
@@ -45,7 +47,7 @@ typedef boost::multi_index_container<
         > >
     ViewPointCache;
 
-class ViewPointsTableModel : public QAbstractItemModel
+class COMPASS_VIEW_API ViewPointsTableModel : public QAbstractItemModel
 {
     Q_OBJECT
 

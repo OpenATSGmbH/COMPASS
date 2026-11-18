@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <QDialog>
 
 class DBContentManager;
@@ -48,7 +50,7 @@ class VariableDetailWidget;
  * Available regardless of DB-open state: all data shown comes from
  * the DBContentManager configuration loaded at startup.
  */
-class DBContentEditDialog : public QDialog
+class COMPASS_CORE_API DBContentEditDialog : public QDialog
 {
     Q_OBJECT
 

@@ -17,12 +17,14 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <QObject>
 
 class TaskManager;
 class TaskWidget;
 
-class Task : public QObject
+class COMPASS_TASK_API Task : public QObject
 {
     Q_OBJECT
 

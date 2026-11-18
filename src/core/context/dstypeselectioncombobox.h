@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "data_source.h"
 #include "logger.h"
 #include "traced_assert.h"
@@ -25,7 +27,7 @@
 
 #include <algorithm>
 
-class DSTypeSelectionComboBox : public QComboBox
+class COMPASS_CORE_API DSTypeSelectionComboBox : public QComboBox
 {
     Q_OBJECT
 

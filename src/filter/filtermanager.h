@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_filter_export.h"
+
 #include "configurable.h"
 #include "ifilterprovider.h"
 #include "imanager.h"
@@ -46,7 +48,7 @@ class VariableSet;
 
 }
 
-class FilterManager : public QObject, public Configurable, public IFilterProvider, public IManager
+class COMPASS_FILTER_API FilterManager : public QObject, public Configurable, public IFilterProvider, public IManager
 {
     Q_OBJECT
 signals:

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 //#include "global.h"
 //#include "nullablevector.h"
 //#include "dbcontent/variable/variable.h"
@@ -59,7 +61,7 @@ enum HistogramViewDataTool
  * @brief Widget with tab containing BufferTableWidgets in HistogramView
  *
  */
-class HistogramViewDataWidget : public VariableViewDataWidget
+class COMPASS_VIEW_API HistogramViewDataWidget : public VariableViewDataWidget
 {
     Q_OBJECT
 public:

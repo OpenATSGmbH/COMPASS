@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "gridbackground_defs.h"
 #include "gridbackgroundtilesource.h"
 
@@ -47,7 +49,7 @@ class QPainter;
  * Until the new image is ready, the old image is drawn at its own area (moved and scaled).
  * Results of older requests are discarded (generation counter).
  */
-class GridBackgroundRenderer : public QObject
+class COMPASS_VIEW_API GridBackgroundRenderer : public QObject
 {
     Q_OBJECT
 signals:

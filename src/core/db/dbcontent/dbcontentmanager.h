@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <cstdint>
 #include "configurable.h"
 #include "imanager.h"
@@ -73,7 +75,7 @@ namespace dbContent
 
 /**
  */
-class DBContentManager : public QObject, public Configurable, public IManager
+class COMPASS_CORE_API DBContentManager : public QObject, public Configurable, public IManager
 {
     Q_OBJECT
 

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewdatawidget.h"
 #include "viewlayerscan.h"
 #include "allbuffertablemodel.h"
@@ -33,7 +35,7 @@ class AllBufferTableWidget;
 class Buffer;
 class DBContent;
 
-class TableViewDataWidget : public ViewDataWidget
+class COMPASS_VIEW_API TableViewDataWidget : public ViewDataWidget
 {
     Q_OBJECT
 

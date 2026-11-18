@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <QWidget>
 
 #include <map>
@@ -34,7 +36,7 @@ class DBContent;
 /**
  * @brief Edit widget for a DBContent
  */
-class DBContentWidget : public QWidget
+class COMPASS_CORE_API DBContentWidget : public QWidget
 {
     Q_OBJECT
 

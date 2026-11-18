@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <cstdint>
 #include "configurable.h"
 #include "subconfigurablefactory.h"
@@ -47,7 +49,7 @@ class MetaVariable;
 
 class QProgressDialog;
 
-class ReconstructorTask : public Task, public Configurable
+class COMPASS_TASK_API ReconstructorTask : public Task, public Configurable
 {
     Q_OBJECT
 

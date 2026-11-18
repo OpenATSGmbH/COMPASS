@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <QAbstractTableModel>
 
 #include <memory>
@@ -38,7 +40,7 @@ namespace dbContent {
 class Variable;
 }
 
-class BaseBufferTableModel : public QAbstractTableModel
+class COMPASS_VIEW_API BaseBufferTableModel : public QAbstractTableModel
 {
     Q_OBJECT
 

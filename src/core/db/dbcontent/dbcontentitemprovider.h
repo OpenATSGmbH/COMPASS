@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "dbcontentitem.h"
 #include "dbcontentdataindex.h"
 
@@ -48,7 +50,7 @@ namespace context
  * fed from the current DBContentDataSet (set via setSource + applyChange by the
  * view framework).
  */
-class DBContentItemProvider : public QObject
+class COMPASS_CORE_API DBContentItemProvider : public QObject
 {
     Q_OBJECT
 

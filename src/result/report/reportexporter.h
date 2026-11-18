@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_result_export.h"
+
 #include "reportdefs.h"
 
 #include "result.h"
@@ -48,7 +50,7 @@ class ReportExport;
 
 /**
  */
-class ReportExporter : public QObject
+class COMPASS_RESULT_API ReportExporter : public QObject
 {
     Q_OBJECT
 public:

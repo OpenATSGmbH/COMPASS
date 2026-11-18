@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "target.h"
 #include "json_fwd.hpp"
 
@@ -49,7 +51,7 @@ typedef boost::multi_index_container<
         > >
     TargetCache;
 
-class TargetModel : public QAbstractItemModel
+class COMPASS_CORE_API TargetModel : public QAbstractItemModel
 {
     Q_OBJECT
 

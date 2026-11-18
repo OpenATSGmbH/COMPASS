@@ -1,5 +1,11 @@
 add_library(compass_reconstruction SHARED "")
 
+# COMPASS_RECONSTRUCTION_API for the classes with signals (top-level CMakeLists.txt)
+generate_export_header(compass_reconstruction
+    EXPORT_MACRO_NAME COMPASS_RECONSTRUCTION_API
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/compass_reconstruction_export.h")
+target_include_directories(compass_reconstruction PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+
 target_sources(compass_reconstruction
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/kalman_defs.h"

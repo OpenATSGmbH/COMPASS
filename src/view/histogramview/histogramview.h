@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "variableview.h"
 #include "histogram_raw.h"
 
@@ -32,7 +34,7 @@ namespace dbContent
 
 /**
 */
-class HistogramView : public VariableView
+class COMPASS_VIEW_API HistogramView : public VariableView
 {
     Q_OBJECT
 public:

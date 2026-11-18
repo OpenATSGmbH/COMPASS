@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "job/job.h"
 
 #include <list>
@@ -35,7 +37,7 @@ class DBTable;
  *
  * Writes dbcontent buffer data contents to a database table.
  */
-class DBContentInsertDBJob : public Job
+class COMPASS_CORE_API DBContentInsertDBJob : public Job
 {
     Q_OBJECT
 

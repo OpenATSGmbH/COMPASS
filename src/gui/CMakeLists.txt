@@ -1,5 +1,11 @@
 add_library(compass_gui SHARED "")
 
+# COMPASS_GUI_API for the classes with signals (top-level CMakeLists.txt)
+generate_export_header(compass_gui
+    EXPORT_MACRO_NAME COMPASS_GUI_API
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/compass_gui_export.h")
+target_include_directories(compass_gui PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+
 target_sources(compass_gui
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.h"

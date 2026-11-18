@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "db_context.h"
 #include "db_context_diff.h"
 #include "radar_accuracy_defs.h"
@@ -56,7 +58,7 @@ namespace context
  * Also provides all data source and FFT query/lookup methods that were
  * previously in DataSourceManager and FFTManager.
  */
-class DBContextManager : public QObject, public IDataSourceProvider
+class COMPASS_CORE_API DBContextManager : public QObject, public IDataSourceProvider
 {
     Q_OBJECT
 

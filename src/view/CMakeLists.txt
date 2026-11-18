@@ -1,5 +1,11 @@
 add_library(compass_view SHARED "")
 
+# COMPASS_VIEW_API for the classes with signals (top-level CMakeLists.txt)
+generate_export_header(compass_view
+    EXPORT_MACRO_NAME COMPASS_VIEW_API
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/compass_view_export.h")
+target_include_directories(compass_view PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+
 include("${CMAKE_CURRENT_LIST_DIR}/tableview/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/histogramview/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/scatterplotview/CMakeLists.txt")

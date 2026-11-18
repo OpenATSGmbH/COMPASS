@@ -1,5 +1,11 @@
 add_library(compass_filter SHARED "")
 
+# COMPASS_FILTER_API for the classes with signals (top-level CMakeLists.txt)
+generate_export_header(compass_filter
+    EXPORT_MACRO_NAME COMPASS_FILTER_API
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/compass_filter_export.h")
+target_include_directories(compass_filter PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+
 target_sources(compass_filter
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/dbfilter.h"

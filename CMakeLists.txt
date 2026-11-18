@@ -42,6 +42,10 @@ add_custom_target(compass_windows_rc DEPENDS "${COMPASS_WINDOWS_RC}")
 
 # M_PI etc. (math.h), no min/max macros and fewer other macros (windows.h, included by TBB)
 add_definitions(-D_USE_MATH_DEFINES -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+
+# export all symbols of the DLLs: ld stops doing so on its own once a DLL contains a dllexport
+# (COMPASS_<LIB>_API on the classes with signals)
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--export-all-symbols")
 ENDIF()
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
@@ -264,7 +268,11 @@ IF (EXPERIMENTAL_SRC)
     ENDIF()
 ENDIF()
 
-# Component libraries (order matters: dependencies first)
+# Component libraries (order matters: dependencies first). Each one generates its export macro
+# COMPASS_<LIB>_API (<target>_export.h), set on the classes with signals: on Windows a member
+# function pointer to a signal taken in another DLL is that DLL's import thunk without dllimport,
+# and the pointer-based QObject::connect() then does not find the signal
+include(GenerateExportHeader)
 add_subdirectory(src/util)
 add_subdirectory(src/config)
 add_subdirectory(src/core)
