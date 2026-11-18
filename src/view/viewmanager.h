@@ -224,14 +224,16 @@ class ViewManager : public QObject, public Configurable, public IViewProvider, p
     void addViewPoints(const std::vector <nlohmann::json>& viewpoints);
 
     void setCurrentViewPoint (ViewableDataConfig* viewable,
-                              bool load_blocking = false);
+                              bool load_blocking = false,
+                              bool open_view_deck = false);
     /// Same, but takes shared ownership. Use this whenever the caller cannot
     /// guarantee that the viewable outlives the load it starts - the
     /// set_view_point command is destroyed before its load completes, which
     /// would leave current_viewable_ (and the views' current_view_point_)
     /// dangling in doViewPointAfterLoad().
     void setCurrentViewPoint (std::shared_ptr<ViewableDataConfig> viewable,
-                              bool load_blocking = false) override;
+                              bool load_blocking = false,
+                              bool open_view_deck = false) override;
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
 
@@ -240,8 +242,10 @@ class ViewManager : public QObject, public Configurable, public IViewProvider, p
     /// the container to the first view (in container order) that does. No
     /// switch occurs when the current view is already compatible, when no
     /// container holds a compatible view, when the viewable has no
-    /// annotation features, or when the View Deck is collapsed.
-    void activateCompatibleViews(const ViewableDataConfig* viewable);
+    /// annotation features, or when the View Deck is collapsed and
+    /// open_view_deck is false. With open_view_deck, a collapsed View Deck
+    /// opens and shows a compatible view.
+    void activateCompatibleViews(const ViewableDataConfig* viewable, bool open_view_deck);
 
     void selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix_time::ptime ts_max);
 

@@ -509,7 +509,8 @@ void ViewManager::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
 /**
 */
 void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
-                                       bool load_blocking)
+                                       bool load_blocking,
+                                       bool open_view_deck)
 {
     if (current_viewable_)
         unsetCurrentViewPoint();
@@ -527,7 +528,7 @@ void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
     // annotation), bring a compatible view to the front. Switching before
     // the signal would make a not-yet-shown widget try to render mid-setup
     // (the GridView duplicates its legend / skips the chart on that path).
-    activateCompatibleViews(current_viewable_);
+    activateCompatibleViews(current_viewable_, open_view_deck);
 
     reload(load_blocking);
 }
@@ -535,7 +536,8 @@ void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
 /**
 */
 void ViewManager::setCurrentViewPoint (std::shared_ptr<ViewableDataConfig> viewable,
-                                       bool load_blocking)
+                                       bool load_blocking,
+                                       bool open_view_deck)
 {
     traced_assert(viewable);
 
@@ -543,14 +545,14 @@ void ViewManager::setCurrentViewPoint (std::shared_ptr<ViewableDataConfig> viewa
     // unsetCurrentViewPoint(), which would immediately release the reference
     // again. The by-value parameter keeps the viewable alive meanwhile, which
     // also covers a blocking load completing inside the call.
-    setCurrentViewPoint(viewable.get(), load_blocking);
+    setCurrentViewPoint(viewable.get(), load_blocking, open_view_deck);
 
     current_viewable_owned_ = std::move(viewable);
 }
 
 /**
 */
-void ViewManager::activateCompatibleViews(const ViewableDataConfig* viewable)
+void ViewManager::activateCompatibleViews(const ViewableDataConfig* viewable, bool open_view_deck)
 {
     if (!viewable)
         return;
@@ -588,13 +590,19 @@ void ViewManager::activateCompatibleViews(const ViewableDataConfig* viewable)
         if (!container)
             continue;
 
-        // the user hid the views, a view point does not bring them back
-        if (container->viewDeckCollapsed())
+        const bool collapsed = container->viewDeckCollapsed();
+
+        // the user hid the views, only an explicit request brings them back
+        if (collapsed && !open_view_deck)
             continue;
 
         View* current = container->currentView();
         if (current && supports(current))
+        {
+            if (collapsed)
+                current->showInViewDeck();
             continue;
+        }
 
         for (const auto& v : container->getViews())
         {

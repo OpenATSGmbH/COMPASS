@@ -117,7 +117,7 @@ void SectionContentFigure::addContentUI(QVBoxLayout* layout,
     view_button->setToolTip("Show the figure in the views");
     UI_TEST_OBJ_NAME(view_button, QString::fromStdString("Figure " + name() + " View Button"));
 
-    QObject::connect (view_button, &QPushButton::clicked, [ this ] () { this->view(); });
+    QObject::connect (view_button, &QPushButton::clicked, [ this ] () { this->view(false, true); });
 
     const auto entries = renderEntries();
 
@@ -184,7 +184,7 @@ std::vector<report_figure::RenderEntry> SectionContentFigure::renderEntries() co
 
 /**
  */
-bool SectionContentFigure::view(bool load_blocking) const
+bool SectionContentFigure::view(bool load_blocking, bool open_view_deck) const
 {
     loginf << "viewing figure '" << name() << "'";
 
@@ -204,7 +204,7 @@ bool SectionContentFigure::view(bool load_blocking) const
 
     //view content
     logdbg << "content: " << nlohmann::json(*content).dump(4);
-    report_->setCurrentViewable(*content, load_blocking);
+    report_->setCurrentViewable(*content, load_blocking, open_view_deck);
 
     return true;
 }

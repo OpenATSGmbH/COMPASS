@@ -71,7 +71,8 @@ public:
     virtual void addContentUI(QVBoxLayout* layout,
                               bool force_ui_reset) override;
 
-    bool view (bool load_blocking = false) const;
+    /// open_view_deck: a collapsed View Deck opens to show the figure (View button)
+    bool view (bool load_blocking = false, bool open_view_deck = false) const;
     void executeRenderDelay() const;
 
     FigureType figureType() const { return fig_type_; }

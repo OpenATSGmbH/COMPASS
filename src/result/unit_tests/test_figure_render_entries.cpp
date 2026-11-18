@@ -58,7 +58,7 @@ namespace
         void resultHeaderChanged(const TaskResult&) override { unexpected(); }
         void resultContentChanged(const TaskResult&) override { unexpected(); }
 
-        void setViewableDataConfig(const nlohmann::json::object_t&, bool) override { unexpected(); }
+        void setViewableDataConfig(const nlohmann::json::object_t&, bool, bool) override { unexpected(); }
         void unsetViewableDataConfig() override { unexpected(); }
 
         std::shared_ptr<ResultReport::SectionContent> loadContent(ResultReport::Section*, unsigned int, bool) const override { unexpected(); }

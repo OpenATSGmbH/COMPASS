@@ -874,11 +874,12 @@ void TaskManager::databaseClosedSlot()
 /**
  */
 void TaskManager::setViewableDataConfig(const nlohmann::json::object_t& data,
-                                        bool load_blocking)
+                                        bool load_blocking,
+                                        bool open_view_deck)
 {
     viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 
-    viewManager().setCurrentViewPoint(viewable_data_cfg_, load_blocking);
+    viewManager().setCurrentViewPoint(viewable_data_cfg_, load_blocking, open_view_deck);
 }
 
 /**
