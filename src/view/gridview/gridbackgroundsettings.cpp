@@ -30,6 +30,8 @@ const std::string GridBackgroundSettings::TagSectorsShow        = "sectors_show"
 const std::string GridBackgroundSettings::TagHiddenSectorLayers = "hidden_sector_layers";
 const std::string GridBackgroundSettings::TagHiddenSectors      = "hidden_sectors";
 
+const std::string ReportFigureBackground::ParameterName = "report_figure_background";
+
 /**
  */
 bool GridBackgroundSettings::operator==(const GridBackgroundSettings& other) const
@@ -66,7 +68,7 @@ nlohmann::json GridBackgroundSettings::toJSON() const
 
 /**
  */
-bool GridBackgroundSettings::fromJSON(const nlohmann::json& obj)
+bool GridBackgroundSettings::fromJSON(const nlohmann::json& obj, const GridBackgroundSettings& base)
 {
     if (!obj.is_object())
     {
@@ -74,7 +76,7 @@ bool GridBackgroundSettings::fromJSON(const nlohmann::json& obj)
         return false;
     }
 
-    GridBackgroundSettings read;
+    GridBackgroundSettings read = base;
 
     try
     {
@@ -121,4 +123,60 @@ GridBackgroundSettings GridBackgroundSettings::reportDefaults()
         settings.map_file = map_files.front().file_name;
 
     return settings;
+}
+
+/**
+ */
+nlohmann::json ReportFigureBackground::toJSON() const
+{
+    nlohmann::json obj = settings.toJSON();
+
+    if (hidden_sector_layers.has_value())
+        obj[ GridBackgroundSettings::TagHiddenSectorLayers ] = hidden_sector_layers.value();
+    else
+        obj.erase(GridBackgroundSettings::TagHiddenSectorLayers);
+
+    return obj;
+}
+
+/**
+ */
+bool ReportFigureBackground::fromJSON(const nlohmann::json& obj)
+{
+    GridBackgroundSettings read;
+    if (!read.fromJSON(obj.is_null() ? nlohmann::json::object() : obj, GridBackgroundSettings::reportDefaults()))
+        return false;
+
+    hidden_sector_layers.reset();
+    if (obj.is_object() && obj.contains(GridBackgroundSettings::TagHiddenSectorLayers))
+        hidden_sector_layers = read.hidden_sector_layers;
+
+    read.hidden_sector_layers.clear();
+    settings = read;
+
+    return true;
+}
+
+/**
+ */
+GridBackgroundSettings ReportFigureBackground::resolve(const std::set<std::string>& default_hidden_layers) const
+{
+    GridBackgroundSettings resolved = settings;
+    resolved.hidden_sector_layers   = hidden_sector_layers.value_or(default_hidden_layers);
+
+    return resolved;
+}
+
+/**
+ */
+std::string ReportFigureBackground::checkParameter(const nlohmann::json& params, const std::string& key)
+{
+    if (!params.is_object() || !params.contains(key))
+        return "";
+
+    ReportFigureBackground background;
+    if (!background.fromJSON(params.at(key)))
+        return "'" + key + "' is no valid background set";
+
+    return "";
 }

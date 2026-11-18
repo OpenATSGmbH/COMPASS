@@ -75,25 +75,6 @@ namespace
         });
     }
 
-    /// the polygon icon in the sector color (as in the Geographic View)
-    QIcon sectorIcon(const std::string& color)
-    {
-        QPixmap     pixmap;
-        std::string filename = Utils::Files::getIconFilepath("polygon.png");
-
-        if (!QPixmapCache::find(filename.c_str(), &pixmap))
-        {
-            pixmap.load(filename.c_str());
-            QPixmapCache::insert(filename.c_str(), pixmap);
-        }
-
-        QBitmap mask = pixmap.createMaskFromColor(Qt::black, Qt::MaskOutColor);
-        pixmap.fill(QColor(color.c_str()));
-        pixmap.setMask(mask);
-
-        return QIcon(pixmap);
-    }
-
     /**
      * Asks for a name until it is not empty and does not exist, false on cancel.
      */
@@ -133,6 +114,26 @@ namespace
             return true;
         }
     }
+}
+
+/**
+ */
+QIcon gridBackgroundSectorIcon(const std::string& color)
+{
+    QPixmap     pixmap;
+    std::string filename = Utils::Files::getIconFilepath("polygon.png");
+
+    if (!QPixmapCache::find(filename.c_str(), &pixmap))
+    {
+        pixmap.load(filename.c_str());
+        QPixmapCache::insert(filename.c_str(), pixmap);
+    }
+
+    QBitmap mask = pixmap.createMaskFromColor(Qt::black, Qt::MaskOutColor);
+    pixmap.fill(QColor(color.c_str()));
+    pixmap.setMask(mask);
+
+    return QIcon(pixmap);
 }
 
 /********************************************************************************************
@@ -712,7 +713,7 @@ bool GridBackgroundSectorItem::refresh()
 
     if (color != icon_color_)
     {
-        icon_       = sectorIcon(color);
+        icon_       = gridBackgroundSectorIcon(color);
         icon_color_ = color;
         changed     = true;
     }

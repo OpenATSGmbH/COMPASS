@@ -898,6 +898,16 @@ Tests for step 5 (agreed 2026-11-17):
 | Integration, new | Analysis report (MLAT): geographic grids exported. The RU coverage figure has no circle in the image. |
 | Integration, new | The "View" button of a geographic figure: the Grid View shows the background of the figure. |
 
+Results of step 6 (2026-11-18):
+- Task set: `ReportFigureBackground` (`src/view/gridview/gridbackgroundsettings.h`): `GridBackgroundSettings` with the report defaults, plus the optional hidden sector layers. Without them the task default applies.
+- JSON form: the form of `GridBackgroundSettings`. A missing field gets its report default. A missing `hidden_sector_layers` gives the task default.
+- Configuration parameter `report_figure_background` of `EvaluationCalculator` and `AnalyzeDataSourceTask`. `--evaluation_parameters`, `--analyze_parameters` and the `config` of the runtime commands `evaluate` and `analyze_data_source` set it. A value that is not readable is rejected (`applyJSONParameters` of both).
+- Group: `ReportFigureBackgroundWidget` (`src/view/gridview/`, compass_view). Evaluation: tab "Results Config", below the form. Analysis: page "Report", below the report form (the output page of the dialog, it holds the report settings).
+- Sector selection: the tree shows the task default until the user changes a sector checkbox. Then the shown selection is stored as hidden layers and hidden sectors. A layer added later is shown, a removed layer has no effect.
+- Evaluation figure of sector layer L: the stored or default selection, and the other evaluated sector layers hidden. With the defaults this is the result of step 5.
+- `Select All` / `Select None` below the sector tree, as in the selectable-list pattern of the GUI readme.
+- Open test finding: `calculate/calculate_report_scatter.py` failed in 2 of 5 full runs with "adding command failed" (exception in `_addCommand` of `py/client/compass_interface.py`). COMPASS did not crash, there was no OOM. The test passed in the 3 other runs and in a targeted rerun with results equal to the baseline. The cause is not known.
+
 Tests for step 6 (agreed 2026-11-17):
 
 | Kind | Tests |

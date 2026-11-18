@@ -195,6 +195,8 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     registerParameter("limit_by_sectors",           &limit_by_sectors_,           limit_by_sectors_);
     registerParameter("used_sectors",               &used_sectors_,               nlohmann::json::object());
 
+    registerParameter(ReportFigureBackground::ParameterName, &report_figure_background_, nlohmann::json::object());
+
     tooltip_ = "Analyze a chosen data source from multiple angles "
                "(data items, sensor coverage / PD, position accuracy).";
 
@@ -257,6 +259,10 @@ Result AnalyzeDataSourceTask::applyJSONParameters(const nlohmann::json& params_j
 
     if (!params_json.is_object())
         return Configurable::applyJSONParameters(params_json);
+
+    const std::string background_error = ReportFigureBackground::checkParameter(params_json);
+    if (!background_error.empty())
+        return Result::failed(background_error);
 
     if (!params_json.contains(kInspectorSettingsKey))
         return Configurable::applyJSONParameters(params_json);
@@ -1139,14 +1145,32 @@ void AnalyzeDataSourceTask::run()
 
 /**
  */
-GridBackgroundSettings AnalyzeDataSourceTask::reportFigureBackground() const
+ReportFigureBackground AnalyzeDataSourceTask::reportFigureBackgroundConfig() const
 {
-    GridBackgroundSettings background = GridBackgroundSettings::reportDefaults();
-
-    for (const auto& layer : manager().dbContextManager().sectorLayers())
-        background.hidden_sector_layers.insert(layer->name());
+    ReportFigureBackground background;
+    if (!background.fromJSON(report_figure_background_))
+        logerr << "stored report figure background not readable, using the defaults";
 
     return background;
+}
+
+/**
+ */
+void AnalyzeDataSourceTask::reportFigureBackgroundConfig(const ReportFigureBackground& background)
+{
+    report_figure_background_ = background.toJSON();
+}
+
+/**
+ */
+std::set<std::string> AnalyzeDataSourceTask::reportFigureDefaultHiddenLayers() const
+{
+    std::set<std::string> hidden;
+
+    for (const auto& layer : manager().dbContextManager().sectorLayers())
+        hidden.insert(layer->name());
+
+    return hidden;
 }
 
 /**
@@ -1155,7 +1179,8 @@ GridBackgroundSettings AnalyzeDataSourceTask::reportFigureBackground() const
  */
 void AnalyzeDataSourceTask::addReportFigureBackground(ResultReport::Section& section) const
 {
-    const nlohmann::json background = reportFigureBackground().toJSON();
+    const nlohmann::json background =
+        reportFigureBackgroundConfig().resolve(reportFigureDefaultHiddenLayers()).toJSON();
 
     unsigned int num_figures = 0;
 

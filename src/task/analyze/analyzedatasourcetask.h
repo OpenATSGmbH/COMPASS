@@ -270,6 +270,13 @@ public:
     /// True if the active license enables Professional features.
     bool professionalLicenseEnabled() const;
 
+    /// Stored background set of the report figures, edited in the dialog. The default sector selection hides
+    /// all sector layers.
+    ReportFigureBackground reportFigureBackgroundConfig() const;
+    void reportFigureBackgroundConfig(const ReportFigureBackground& background);
+    /// Sector layers that are hidden in the default sector selection: all
+    std::set<std::string> reportFigureDefaultHiddenLayers() const;
+
 protected:
     /// Takes over the inspector settings created by inspectorSettingsFactory().
     void childCreated(Configurable* child) override;
@@ -279,10 +286,7 @@ protected:
 private:
     void registerInspectors();
 
-    /// Background set of the report figures with longitude / latitude grids: the report defaults, no
-    /// sector layer shown
-    GridBackgroundSettings reportFigureBackground() const;
-    /// writes the background set into the report figures below the section that have a geographic grid
+    /// writes the stored background set into the report figures below the section that have a geographic grid
     void addReportFigureBackground(ResultReport::Section& section) const;
 
     std::string ds_type_;
@@ -310,6 +314,8 @@ private:
 
     bool           limit_by_sectors_ = false;
     nlohmann::json used_sectors_;     // sector-layer name -> bool (unlisted = true)
+
+    nlohmann::json report_figure_background_; // ReportFigureBackground
 
     std::map<std::string, std::unique_ptr<InspectorSettingsBase>> inspector_settings_; // settings class -> settings
 

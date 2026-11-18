@@ -24,6 +24,7 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/gridbackgroundtilesource.h"
         "${CMAKE_CURRENT_LIST_DIR}/gridbackgroundrenderer.h"
         "${CMAKE_CURRENT_LIST_DIR}/gridbackgrounditems.h"
+        "${CMAKE_CURRENT_LIST_DIR}/reportfigurebackgroundwidget.h"
 
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/grid2d_defs.cpp"
@@ -44,4 +45,5 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/gridbackgroundtilesource.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/gridbackgroundrenderer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/gridbackgrounditems.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/reportfigurebackgroundwidget.cpp"
 )

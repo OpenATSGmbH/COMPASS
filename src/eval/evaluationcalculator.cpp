@@ -258,6 +258,9 @@ void EvaluationCalculator::readSettings()
     // histogram generation
     registerParameter("histogram_num_bins", &settings_.histogram_num_bins, Settings().histogram_num_bins);
 
+    // background set of the geographic report figures
+    registerParameter(ReportFigureBackground::ParameterName, &settings_.report_figure_background_, nlohmann::json::object());
+
     // eval task result calculator specific
     if (!is_default_calculator_)
     {
@@ -1544,15 +1547,59 @@ std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForEv
 
 /**
  */
-GridBackgroundSettings EvaluationCalculator::reportFigureBackground(const std::string& sector_layer_name)
+GridBackgroundSettings EvaluationCalculator::reportFigureBackground(const std::string& sector_layer_name) const
 {
-    GridBackgroundSettings background = GridBackgroundSettings::reportDefaults();
+    GridBackgroundSettings background = reportFigureBackgroundConfig().resolve(reportFigureDefaultHiddenLayers());
 
-    for (const auto& layer : eval_man_.dbContextManager().sectorLayers())
-        if (layer->name() != sector_layer_name)
-            background.hidden_sector_layers.insert(layer->name());
+    for (const auto& name : usedSectorLayerNames())
+        if (name != sector_layer_name)
+            background.hidden_sector_layers.insert(name);
 
     return background;
+}
+
+/**
+ */
+ReportFigureBackground EvaluationCalculator::reportFigureBackgroundConfig() const
+{
+    ReportFigureBackground background;
+    if (!background.fromJSON(settings_.report_figure_background_))
+        logerr << "stored report figure background not readable, using the defaults";
+
+    return background;
+}
+
+/**
+ */
+void EvaluationCalculator::reportFigureBackgroundConfig(const ReportFigureBackground& background)
+{
+    settings_.report_figure_background_ = background.toJSON();
+}
+
+/**
+ */
+std::set<std::string> EvaluationCalculator::reportFigureDefaultHiddenLayers() const
+{
+    const auto used = usedSectorLayerNames();
+
+    std::set<std::string> hidden;
+
+    for (const auto& layer : eval_man_.dbContextManager().sectorLayers())
+        if (std::find(used.begin(), used.end(), layer->name()) == used.end())
+            hidden.insert(layer->name());
+
+    return hidden;
+}
+
+/**
+ */
+Result EvaluationCalculator::applyJSONParameters(const nlohmann::json& params_json)
+{
+    const std::string error = ReportFigureBackground::checkParameter(params_json);
+    if (!error.empty())
+        return Result::failed(error);
+
+    return Configurable::applyJSONParameters(params_json);
 }
 
 /**

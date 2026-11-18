@@ -460,3 +460,88 @@ TEST_CASE("GridBackground settings JSON", "[gridbackground]")
         CHECK(read.color == "#123456");
     }
 }
+
+TEST_CASE("Report figure background set of a task", "[gridbackground]")
+{
+    const std::set<std::string> task_default = { "Layer A", "Layer B" };
+
+    SECTION("an empty configuration gives the report defaults and the task default sector layers")
+    {
+        for (const auto& obj : std::vector<nlohmann::json>{ nlohmann::json(), nlohmann::json::object() })
+        {
+            ReportFigureBackground background;
+            REQUIRE(background.fromJSON(obj));
+
+            CHECK(!background.hidden_sector_layers.has_value());
+
+            GridBackgroundSettings expected = GridBackgroundSettings::reportDefaults();
+            expected.hidden_sector_layers   = task_default;
+
+            CHECK(background.resolve(task_default) == expected);
+        }
+    }
+
+    SECTION("a missing field takes its report default, not the Grid View default")
+    {
+        ReportFigureBackground background;
+        REQUIRE(background.fromJSON(nlohmann::json::object({ { GridBackgroundSettings::TagBordersShow, false } })));
+
+        GridBackgroundSettings expected = GridBackgroundSettings::reportDefaults();
+        expected.borders_show           = false;
+        expected.hidden_sector_layers   = task_default;
+
+        CHECK(background.resolve(task_default) == expected);
+    }
+
+    SECTION("stored hidden sector layers replace the task default, an empty list shows all layers")
+    {
+        ReportFigureBackground background;
+        REQUIRE(background.fromJSON(nlohmann::json::object({ { GridBackgroundSettings::TagHiddenSectorLayers,
+                                                               nlohmann::json::array({ "Layer C" }) } })));
+
+        REQUIRE(background.hidden_sector_layers.has_value());
+        CHECK(background.resolve(task_default).hidden_sector_layers == std::set<std::string>{ "Layer C" });
+
+        REQUIRE(background.fromJSON(nlohmann::json::object({ { GridBackgroundSettings::TagHiddenSectorLayers,
+                                                               nlohmann::json::array() } })));
+
+        CHECK(background.resolve(task_default).hidden_sector_layers.empty());
+    }
+
+    SECTION("round trip keeps the task default and an own selection apart")
+    {
+        ReportFigureBackground background;
+        background.settings.color          = "#202020";
+        background.settings.map_show       = true;
+        background.settings.map_opacity    = 30;
+        background.settings.hidden_sectors = { 4 };
+
+        nlohmann::json obj = background.toJSON();
+        CHECK(!obj.contains(GridBackgroundSettings::TagHiddenSectorLayers));
+
+        ReportFigureBackground read;
+        REQUIRE(read.fromJSON(obj));
+        CHECK(read.settings == background.settings);
+        CHECK(!read.hidden_sector_layers.has_value());
+
+        background.hidden_sector_layers = std::set<std::string>{ "Layer B" };
+
+        REQUIRE(read.fromJSON(background.toJSON()));
+        CHECK(read.settings == background.settings);
+        CHECK(read.hidden_sector_layers == background.hidden_sector_layers);
+    }
+
+    SECTION("a malformed parameter is rejected and the values stay")
+    {
+        CHECK(ReportFigureBackground::checkParameter(nlohmann::json::object(), "bg").empty());
+        CHECK(ReportFigureBackground::checkParameter(nlohmann::json::object({ { "bg", { { "map_opacity", 30 } } } }), "bg").empty());
+        CHECK(!ReportFigureBackground::checkParameter(nlohmann::json::object({ { "bg", "black" } }), "bg").empty());
+        CHECK(!ReportFigureBackground::checkParameter(nlohmann::json::object({ { "bg", { { "borders_show", "yes" } } } }), "bg").empty());
+
+        ReportFigureBackground background;
+        background.settings.color = "#123456";
+
+        CHECK(!background.fromJSON(nlohmann::json::array()));
+        CHECK(background.settings.color == "#123456");
+    }
+}

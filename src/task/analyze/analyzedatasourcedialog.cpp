@@ -23,6 +23,8 @@
 #include "db_context_manager.h"
 #include "sectorlayer.h"
 #include "data_source.h"
+#include "reportfigurebackgroundwidget.h"
+#include "ui_test_common.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -55,6 +57,7 @@ AnalyzeDataSourceDialog::AnalyzeDataSourceDialog(AnalyzeDataSourceTask& task, QW
     auto* splitter = new QSplitter(Qt::Horizontal, this);
 
     tree_ = new QTreeWidget(splitter);
+    UI_TEST_OBJ_NAME(tree_, "page_tree");
     tree_->setHeaderHidden(true);
     tree_->setColumnCount(2);
     tree_->setRootIsDecorated(false);
@@ -485,7 +488,9 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
 QWidget* AnalyzeDataSourceDialog::buildReportWidget()
 {
     auto* w = new QWidget();
-    auto* form = new QFormLayout(w);
+    auto* outer = new QVBoxLayout(w);
+    auto* form = new QFormLayout();
+    outer->addLayout(form);
 
     report_name_edit_ = new QLineEdit();
     report_name_edit_->setText(QString::fromStdString(task_.reportName()));
@@ -533,6 +538,15 @@ QWidget* AnalyzeDataSourceDialog::buildReportWidget()
                 task_.setMaxCellsPerAxis(static_cast<unsigned int>(v));
             });
     form->addRow("Max cells per axis", max_spin);
+
+    auto* background = new ReportFigureBackgroundWidget(
+        task_.manager().dbContextManager(),
+        [ this ] () { return task_.reportFigureDefaultHiddenLayers(); });
+    background->setBackground(task_.reportFigureBackgroundConfig());
+    connect(background, &ReportFigureBackgroundWidget::backgroundChangedSignal, this,
+            [ this, background ] () { task_.reportFigureBackgroundConfig(background->background()); });
+    outer->addWidget(background);
+    outer->addStretch(1);
 
     return w;
 }

@@ -22,6 +22,7 @@
 
 #include <QColor>
 
+#include <optional>
 #include <set>
 #include <string>
 
@@ -46,7 +47,9 @@ struct GridBackgroundSettings
 
     nlohmann::json toJSON() const;
     /// A missing field keeps its default. Returns false if obj is no object or a field has a wrong type.
-    bool fromJSON(const nlohmann::json& obj);
+    bool fromJSON(const nlohmann::json& obj) { return fromJSON(obj, GridBackgroundSettings()); }
+    /// A missing field takes its value from base.
+    bool fromJSON(const nlohmann::json& obj, const GridBackgroundSettings& base);
 
     /// The background of a report figure without its own background set: national borders on black,
     /// map off (the first map file of the maps folder), all sectors.
@@ -61,6 +64,31 @@ struct GridBackgroundSettings
     static const std::string TagSectorsShow;
     static const std::string TagHiddenSectorLayers;
     static const std::string TagHiddenSectors;
+};
+
+/**
+ * Background set of the report figures as a task (evaluation, data source analysis) stores it in its configuration.
+ * The JSON form is the form of GridBackgroundSettings. A missing field takes its report default. Without the field
+ * of the hidden sector layers, the task applies its default sector layer selection.
+ */
+struct ReportFigureBackground
+{
+    GridBackgroundSettings               settings = GridBackgroundSettings::reportDefaults(); // hidden sector layers not used
+    std::optional<std::set<std::string>> hidden_sector_layers;                                // none: task default
+
+    nlohmann::json toJSON() const;
+    /// null is the same as an empty object. Returns false and keeps the values if obj is not readable.
+    bool fromJSON(const nlohmann::json& obj);
+
+    /// The set of the figures. default_hidden_layers are the hidden sector layers of the task default.
+    GridBackgroundSettings resolve(const std::set<std::string>& default_hidden_layers) const;
+
+    /// Checks the value of the configuration parameter key in the parameters, if they hold it. Returns an error text
+    /// if the value is not readable, else an empty string.
+    static std::string checkParameter(const nlohmann::json& params, const std::string& key = ParameterName);
+
+    /// name of the configuration parameter of the tasks
+    static const std::string ParameterName;
 };
 
 /**

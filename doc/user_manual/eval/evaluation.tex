@@ -349,6 +349,51 @@ The following settings can be used to configure the content of the generated res
 \end{itemize}
 \ \\
 
+\subsubsection{Report Figure Background}
+\label{sec:eval_report_figure_background}
+
+The 'Report Figure Background' group sets the background of the report figures with a grid over longitude and latitude (e.g. the sector overview figures).
+The report shows and exports these figures with this background, and the 'View' button gives it to the Grid View.
+The values are the same as the background items of the Grid View, see \nameref{sec:grid_background}. \\
+
+\begin{figure}[H]
+  \center
+    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: figures/eval\_report\_figure\_background.png - 'Results Config' tab of the evaluation dialog with the 'Report Figure Background' group, sector layers expanded]}}\vspace{1.5cm}}}
+  \caption{Evaluation Report Figure Background}
+\end{figure}
+
+\begin{itemize}
+\item Background Color: Color below the map and the grid, black by default. 'Select Color' opens the color dialog.
+\item Show Map: Draws the map below the grid, off by default
+\begin{itemize}
+\item Map tiles that are not in the cache need an internet connection
+\end{itemize}
+\item Map: Map file of the maps folder, the first map file by default
+\item Map Opacity: Opacity of the map in percent, 50\% by default
+\item Show National Borders: Draws the national borders above the grid, on by default
+\item Show Sectors: Draws the selected sectors above the grid, on by default
+\item Sectors: One checkbox per sector layer and per sector of the active Data Context
+\begin{itemize}
+\item By default, the evaluated sector layers are selected (the sector layers with a used requirement group)
+\item 'Select All' selects all sector layers and all sectors, 'Select None' deselects all sector layers
+\end{itemize}
+\end{itemize}
+\ \\
+
+The sector selection applies as follows:
+
+\begin{itemize}
+\item A figure of a sector layer draws its own sector layer, if it is selected
+\item The other evaluated sector layers are not drawn in this figure
+\item The sector layers that are not evaluated are drawn in all figures, if they are selected
+\item The default selection follows the evaluated sector layers, until a sector checkbox is changed
+\item After a change, the selection is stored. A sector layer that is added to the Data Context later is selected.
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that the background is written into the figures when the evaluation runs.
+A changed background applies to the next evaluation, not to existing reports.} \\
+
 \subsection{Evaluation}
 \label{sec:eval_run_eval} 
 
