@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include "toolboxdefs.h"
 #include "ui_test_testable.h"
 
 #include <vector>
@@ -25,8 +24,6 @@
 #include <QWidget>
 #include <QToolButton>
 #include <QMouseEvent>
-
-#include <boost/optional.hpp>
 
 #include <memory>
 #include <set>
@@ -41,6 +38,7 @@ class QLabel;
 class QMenu;
 class QToolBar;
 class QFrame;
+class QSplitter;
 
 /**
  */
@@ -94,8 +92,6 @@ public:
 
     bool isExpanded() const;
 
-    boost::optional<toolbox::ScreenRatio> currentScreenRatio() const;
-
     void loadingStarted();
     void loadingDone();
 
@@ -117,6 +113,7 @@ private:
         ToolBoxWidget* widget = nullptr;
         ToolButton*    button = nullptr;
         bool           hidden = false;
+        int            width_percent = 0;
     };
 
     void createUI();
@@ -125,7 +122,9 @@ private:
     void updateButtons();
     void toolActivated(int idx);
 
-    void screenRatioChanged(toolbox::ScreenRatio screen_ratio);
+    void setWidthPercent(int percent);
+    void applyWidthPercent();
+    void splitterMovedSlot();
     void shrink();
     void grow();
     void toggleExpansion();
@@ -144,6 +143,7 @@ private:
     QAction*        expand_action_        = nullptr;
     QToolBar*       tool_bar_default_     = nullptr;
     QToolBar*       tool_bar_             = nullptr;
+    QSplitter*      splitter_             = nullptr;
     QWidget*        main_widget_          = nullptr;
     QVBoxLayout*    main_layout_          = nullptr;
     QWidget*        main_content_widget_  = nullptr;

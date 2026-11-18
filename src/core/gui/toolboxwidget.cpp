@@ -19,8 +19,6 @@
 
 #include <QHBoxLayout>
 
-const toolbox::ScreenRatio ToolBoxWidget::ScreenRatioDefault = toolbox::ScreenRatio::Ratio_35Percent;
-
 /**
 */
 ToolBoxWidget::ToolBoxWidget(QWidget* parent)
@@ -40,7 +38,7 @@ WrappedToolBoxWidget::WrappedToolBoxWidget(QWidget* w,
                                            const std::vector<std::string>& labels,
                                            const QIcon& icon,
                                            bool checkable,
-                                           toolbox::ScreenRatio screen_ratio_default,
+                                           int default_width_percent,
                                            const std::function<void(QMenu*)>& addToConfigMenu_cb,
                                            const std::function<void(QToolBar*)>& addToToolBar_cb,
                                            QWidget* parent)
@@ -50,7 +48,7 @@ WrappedToolBoxWidget::WrappedToolBoxWidget(QWidget* w,
 ,   labels_              (labels              )
 ,   icon_                (icon                )
 ,   checkable_           (checkable           )
-,   screen_ratio_default_(screen_ratio_default)
+,   default_width_percent_(default_width_percent)
 ,   addToConfigMenu_cb_  (addToConfigMenu_cb  )
 ,   addToToolBar_cb_     (addToToolBar_cb     )
 {
@@ -96,9 +94,9 @@ std::vector<std::string> WrappedToolBoxWidget::toolLabels() const
 
 /**
 */
-toolbox::ScreenRatio WrappedToolBoxWidget::defaultScreenRatio() const
+int WrappedToolBoxWidget::defaultWidthPercent() const
 {
-    return screen_ratio_default_;
+    return default_width_percent_;
 }
 
 /**

@@ -529,9 +529,9 @@ std::vector<std::string> TaskResultsWidget::toolLabels() const
 
 /**
  */
-toolbox::ScreenRatio TaskResultsWidget::defaultScreenRatio() const
+int TaskResultsWidget::defaultWidthPercent() const
 {
-    return ToolBoxWidget::defaultScreenRatio();
+    return 50;
 }
 
 /**

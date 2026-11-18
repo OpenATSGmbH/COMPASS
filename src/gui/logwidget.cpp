@@ -139,9 +139,9 @@ std::vector<std::string> LogWidget::toolLabels() const
 
 /**
  */
-toolbox::ScreenRatio LogWidget::defaultScreenRatio() const
+int LogWidget::defaultWidthPercent() const
 {
-    return ToolBoxWidget::defaultScreenRatio();
+    return 40;
 }
 
 /**

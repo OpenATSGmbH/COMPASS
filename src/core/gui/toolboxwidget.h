@@ -17,14 +17,12 @@
 
 #pragma once
 
-#include "toolboxdefs.h"
-
+#include <functional>
 #include <string>
+#include <vector>
 
 #include <QWidget>
 #include <QIcon>
-
-#include <boost/optional.hpp>
 
 class QMenu;
 class QToolBar;
@@ -44,9 +42,6 @@ public:
     ToolBoxWidget(QWidget* parent = nullptr);
     virtual ~ToolBoxWidget();
 
-    void setScreenRatio(toolbox::ScreenRatio screen_ratio) { screen_ratio_custom_ = screen_ratio; }
-    toolbox::ScreenRatio screenRatio() const { return screen_ratio_custom_.has_value() ? screen_ratio_custom_.value() : defaultScreenRatio(); }
-
     /// returns the tool's button icon
     virtual QIcon toolIcon() const = 0;
 
@@ -59,8 +54,8 @@ public:
     /// returns the the tool's button label devided into spearate rows (e.g. { "Data", "Source" })
     virtual std::vector<std::string> toolLabels() const = 0;
 
-    /// returns the tool's default screen ratio
-    virtual toolbox::ScreenRatio defaultScreenRatio() const { return ScreenRatioDefault; };
+    /// returns the tool's default width in percent (see toolboxwidth.h)
+    virtual int defaultWidthPercent() const = 0;
 
     virtual bool checkable() const { return false; }
 
@@ -76,11 +71,6 @@ public:
     /// react on data loading
     virtual void loadingStarted() {}
     virtual void loadingDone() {}
-
-    static const toolbox::ScreenRatio ScreenRatioDefault;
-    
-private:
-    boost::optional<toolbox::ScreenRatio> screen_ratio_custom_;
 };
 
 /**
@@ -96,7 +86,7 @@ public:
                          const std::vector<std::string>& labels,
                          const QIcon& icon,
                          bool checkable,
-                         toolbox::ScreenRatio screen_ratio_default = ToolBoxWidget::ScreenRatioDefault,
+                         int default_width_percent,
                          const std::function<void(QMenu*)>& addToConfigMenu_cb = std::function<void(QMenu*)>(),
                          const std::function<void(QToolBar*)>& addToToolBar_cb = std::function<void(QToolBar*)>(),
                          QWidget* parent = nullptr);
@@ -106,7 +96,7 @@ public:
     std::string toolName() const override final;
     std::string toolInfo() const override final;
     std::vector<std::string> toolLabels() const override final;
-    toolbox::ScreenRatio defaultScreenRatio() const override final;
+    int defaultWidthPercent() const override final;
     bool checkable() const override final;
     void addToConfigMenu(QMenu* menu) override final;
     void addToToolBar(QToolBar* tool_bar) override final;
@@ -117,7 +107,7 @@ private:
     std::vector<std::string>       labels_;
     QIcon                          icon_;
     bool                           checkable_;
-    toolbox::ScreenRatio           screen_ratio_default_;
+    int                            default_width_percent_;
     std::function<void(QMenu*)>    addToConfigMenu_cb_;
     std::function<void(QToolBar*)> addToToolBar_cb_;
 };

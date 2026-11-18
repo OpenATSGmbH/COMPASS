@@ -17,6 +17,7 @@
 
 #include "toolbox.h"
 #include "toolboxwidget.h"
+#include "toolboxwidth.h"
 
 #include "popupmenu.h"
 
@@ -34,6 +35,18 @@
 #include <QFontMetrics>
 #include <QMenu>
 #include <QToolBar>
+#include <QSplitter>
+#include <QSettings>
+
+#include <cmath>
+
+namespace
+{
+    QString widthSettingsKey(const std::string& tool_name)
+    {
+        return "WidthPercent/" + QString::fromStdString(tool_name);
+    }
+}
 
 const int   ToolBox::ToolIconSize      = 50;
 const int   ToolBox::ToolNameFontSize  = 12;
@@ -88,8 +101,16 @@ void ToolBox::createUI()
     
     layout->addLayout(icon_bar_layout);
 
+    splitter_ = new QSplitter(Qt::Horizontal);
+    splitter_->setChildrenCollapsible(false);
+
+    connect(splitter_, &QSplitter::splitterMoved, this, &ToolBox::splitterMovedSlot);
+
+    layout->addWidget(splitter_);
+
     //panel
     panel_widget_ = new QWidget;
+    panel_widget_->setObjectName("toolbox_panel");
     panel_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     panel_widget_->setVisible(false); //initially invisible
 
@@ -142,6 +163,7 @@ void ToolBox::createUI()
     shrink_action_->setShortcut(Qt::Key_Minus);
 
     connect(shrink_action_, &QAction::triggered, this, &ToolBox::shrink);
+    tool_bar_default_->widgetForAction(shrink_action_)->setObjectName("toolbox_shrink_button");
 
     grow_action_ = tool_bar_default_->addAction("Increase Width");
     grow_action_->setIcon(Utils::Files::IconProvider::getIcon("arrow_to_right.png"));
@@ -149,6 +171,7 @@ void ToolBox::createUI()
     grow_action_->setShortcut(Qt::Key_Plus);
 
     connect(grow_action_, &QAction::triggered, this, &ToolBox::grow);
+    tool_bar_default_->widgetForAction(grow_action_)->setObjectName("toolbox_grow_button");
 
     expand_action_ = tool_bar_default_->addAction("Expand");
     expand_action_->setShortcut(Qt::Key_NumberSign);
@@ -168,10 +191,11 @@ void ToolBox::createUI()
     panel_content_layout->addLayout(top_layout);
     panel_content_layout->addWidget(widget_stack_);
 
-    layout->addWidget(panel_widget_);
+    splitter_->addWidget(panel_widget_);
 
     //main content
     main_widget_ = new QWidget;
+    main_widget_->setObjectName("toolbox_views");
     main_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     main_layout_ = new QVBoxLayout;
@@ -180,7 +204,7 @@ void ToolBox::createUI()
 
     main_widget_->setLayout(main_layout_);
 
-    layout->addWidget(main_widget_);
+    splitter_->addWidget(main_widget_);
 
     updateToolBar();
     updateButtons();
@@ -197,32 +221,6 @@ void ToolBox::updateMenu()
 
     // tool specific custom part
     tools_.at(active_tool_idx_).widget->addToConfigMenu(config_menu_.get());
-
-    if (config_menu_->actions().size() > 0)
-        config_menu_->addSeparator();
-
-    //screen ratio selection
-    {
-        auto sr_menu = config_menu_->addMenu("Screen Ratio");
-
-        QActionGroup* screen_ratio_group = new QActionGroup(config_menu_.get());
-        screen_ratio_group->setExclusive(true);
-
-        auto sr = currentScreenRatio();
-
-        auto addSRAction = [ & ] (const std::string& label, toolbox::ScreenRatio screen_ratio)
-        {
-            auto action = sr_menu->addAction(QString::fromStdString(label));
-            screen_ratio_group->addAction(action);
-
-            action->setCheckable(true);
-            action->setChecked(sr.has_value() && sr.value() == screen_ratio);
-            connect(action, &QAction::triggered, [ this, screen_ratio] () { this->screenRatioChanged(screen_ratio); });
-        };
-
-        for (int i = 0; i < (int)toolbox::ScreenRatio::RatioMax; ++i)
-            addSRAction(toolbox::toString((toolbox::ScreenRatio)i), (toolbox::ScreenRatio)i);
-    }
 }
 
 /**
@@ -281,10 +279,15 @@ unsigned int ToolBox::addTool(ToolBoxWidget* tool)
 
     unsigned int idx = (unsigned int)tools_.size();
 
+    bool saved_ok = false;
+    int  saved    = QSettings("COMPASS", "ToolBox").value(widthSettingsKey(name)).toInt(&saved_ok);
+
     Tool t;
-    t.idx    = tool_idx;
-    t.widget = tool;
-    t.button = button;
+    t.idx           = tool_idx;
+    t.widget        = tool;
+    t.button        = button;
+    t.width_percent = toolbox::widthPercentOrDefault(saved_ok ? std::optional<int>(saved) : std::nullopt,
+                                                     tool->defaultWidthPercent());
 
     tools_.push_back(t);
     widget_stack_->addWidget(tool);
@@ -379,6 +382,16 @@ void ToolBox::toolActivated(int idx)
 
         active_tool_idx_ = idx;
         widget_stack_->setCurrentIndex(idx);
+
+        //a stacked widget takes the minimum width of its widest page, so a narrow tool could not be
+        //narrower than the widest tool. Only the shown tool counts.
+        for (int i = 0; i < widget_stack_->count(); ++i)
+        {
+            const auto policy = i == idx ? QSizePolicy::Preferred : QSizePolicy::Ignored;
+            widget_stack_->widget(i)->setSizePolicy(policy, policy);
+        }
+        widget_stack_->updateGeometry();
+
         panel_widget_->setVisible(true);
         panel_content_widget_->setVisible(true);
 
@@ -396,6 +409,9 @@ void ToolBox::toolActivated(int idx)
     updateToolBar();
     updateButtons();
     adjustSizings();
+
+    updateMenu();
+    config_button_->setVisible(!config_menu_->actions().isEmpty());
 
     emit toolChanged();
 }
@@ -437,52 +453,79 @@ void ToolBox::finalize()
  */
 void ToolBox::adjustSizings()
 {
+    applyWidthPercent();
+
     if (expanded_)
     {
         const int x0 = tools_.empty() ? 0 : tools_.at(0).button->width();
 
         panel_content_widget_->setGeometry(x0, 0, width() * ExpansionFactor, height());
     }
-    else
-    {
-        std::pair<int, int> stretches(0, 1);
-
-        auto screen_ratio = currentScreenRatio();
-        if (screen_ratio.has_value())
-            stretches = toolbox::toParts(screen_ratio.value());
-
-        QSizePolicy policy_toolbox(screen_ratio.has_value() ? QSizePolicy::Expanding : QSizePolicy::Preferred, QSizePolicy::Expanding);
-        policy_toolbox.setHorizontalStretch(stretches.first);
-
-        QSizePolicy policy_tabwidget(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        policy_tabwidget.setHorizontalStretch(stretches.second);
-
-        panel_widget_->setSizePolicy(policy_toolbox);
-        main_widget_->setSizePolicy(policy_tabwidget);
-    }
 }
 
 /**
+ * Sets the splitter to the width of the active tool. QSplitter distributes its width
+ * in proportion to the given sizes, so the percent values can be passed directly.
  */
-boost::optional<toolbox::ScreenRatio> ToolBox::currentScreenRatio() const
-{
-    if (active_tool_idx_ < 0)
-        return boost::optional<toolbox::ScreenRatio>();
-
-    return tools_.at(active_tool_idx_).widget->screenRatio();
-}
-
-/**
- */
-void ToolBox::screenRatioChanged(toolbox::ScreenRatio screen_ratio)
+void ToolBox::applyWidthPercent()
 {
     if (active_tool_idx_ < 0)
         return;
-    
-    tools_.at(active_tool_idx_).widget->setScreenRatio(screen_ratio);
+
+    const int percent = tools_.at(active_tool_idx_).width_percent;
+
+    const int total = splitter_->width() - splitter_->handleWidth();
+    if (total <= 0)
+        return;
+
+    //QSplitter does not keep the given ratio if it violates a minimum width, it then falls back to
+    //the size hints. So the pixel width is computed here, within the minimum widths of both sides.
+    const int panel_min = std::max(panel_widget_->minimumSizeHint().width(), panel_widget_->minimumWidth());
+    const int views_min = std::max(main_widget_->minimumSizeHint().width(), main_widget_->minimumWidth());
+
+    int panel_width = (int)std::lround(total * percent / 100.0);
+    panel_width = std::min(panel_width, total - views_min);
+    panel_width = std::max(panel_width, panel_min);
+
+    splitter_->setSizes({ panel_width, std::max(0, total - panel_width) });
+}
+
+/**
+ */
+void ToolBox::setWidthPercent(int percent)
+{
+    if (active_tool_idx_ < 0)
+        return;
+
+    auto& tool = tools_.at(active_tool_idx_);
+
+    tool.width_percent = toolbox::clampWidthPercent(percent);
+
+    QSettings("COMPASS", "ToolBox").setValue(widthSettingsKey(tool.widget->toolName()), tool.width_percent);
 
     updateButtons();
-    adjustSizings();
+}
+
+/**
+ * The dragged width is kept as is within the limits. It is only reset to the limit
+ * when dragged beyond it, so the handle does not jump in 1 percent steps while dragging.
+ */
+void ToolBox::splitterMovedSlot()
+{
+    if (expanded_ || active_tool_idx_ < 0)
+        return;
+
+    const auto sizes = splitter_->sizes();
+    const int  total = sizes.value(0) + sizes.value(1);
+    if (total <= 0)
+        return;
+
+    const int dragged_percent = (int)std::lround(100.0 * sizes.value(0) / total);
+
+    setWidthPercent(dragged_percent);
+
+    if (dragged_percent != tools_.at(active_tool_idx_).width_percent)
+        applyWidthPercent();
 }
 
 /**
@@ -492,10 +535,8 @@ void ToolBox::shrink()
     if (expanded_ || active_tool_idx_ < 0)
         return;
 
-    auto sr = tools_.at(active_tool_idx_).widget->screenRatio();
-
-    if ((int)sr > 0)
-        screenRatioChanged((toolbox::ScreenRatio)((int)sr - 1));
+    setWidthPercent(toolbox::widthPercentStepDown(tools_.at(active_tool_idx_).width_percent));
+    applyWidthPercent();
 }
 
 /**
@@ -505,10 +546,8 @@ void ToolBox::grow()
     if (expanded_ || active_tool_idx_ < 0)
         return;
 
-    auto sr = tools_.at(active_tool_idx_).widget->screenRatio();
-
-    if ((int)sr < (int)toolbox::ScreenRatio::RatioMax - 1)
-        screenRatioChanged((toolbox::ScreenRatio)((int)sr + 1));
+    setWidthPercent(toolbox::widthPercentStepUp(tools_.at(active_tool_idx_).width_percent));
+    applyWidthPercent();
 }
 
 /**
@@ -520,10 +559,10 @@ void ToolBox::updateButtons()
 
     if (active_tool_idx_ >= 0)
     {
-        auto sr = tools_.at(active_tool_idx_).widget->screenRatio();
+        const int percent = tools_.at(active_tool_idx_).width_percent;
 
-        shrink_enabled = (int)sr > 0;
-        grow_enabled   = (int)sr < (int)toolbox::ScreenRatio::RatioMax - 1;
+        shrink_enabled = percent > toolbox::WidthMinPercent;
+        grow_enabled   = percent < toolbox::WidthMaxPercent;
     }
 
     shrink_action_->setEnabled(shrink_enabled && !expanded_);
@@ -602,6 +641,5 @@ void ToolBox::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
 
-    if (expanded_)
-        adjustSizings();
+    adjustSizings();
 }

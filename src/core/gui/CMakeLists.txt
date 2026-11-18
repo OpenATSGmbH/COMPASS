@@ -15,7 +15,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/questiondialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/dialogs.h"
         "${CMAKE_CURRENT_LIST_DIR}/waitspinner.h"
-        "${CMAKE_CURRENT_LIST_DIR}/toolboxdefs.h"
+        "${CMAKE_CURRENT_LIST_DIR}/toolboxwidth.h"
         "${CMAKE_CURRENT_LIST_DIR}/toolboxwidget.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/rangeedit.cpp"
