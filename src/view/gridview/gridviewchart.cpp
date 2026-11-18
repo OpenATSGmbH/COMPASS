@@ -16,11 +16,10 @@
  */
 
 #include "gridviewchart.h"
-#include "gridviewdatawidget.h"
+#include "gridviewrenderwidget.h"
 #include "gridbackgroundrenderer.h"
 #include "gridbackground_defs.h"
 #include "grid2d.h"
-#include "gridview.h"
 
 #include "logger.h"
 
@@ -32,67 +31,18 @@
 
 #include <cmath>
 
-/**
-*/
-SimpleGridViewChart::SimpleGridViewChart(QWidget* parent)
-:   QLabel(parent)
-{
-    setAlignment(Qt::AlignCenter);
-
-    updateChart();
-}
-
-/**
-*/
-SimpleGridViewChart::~SimpleGridViewChart() = default;
-
-/**
-*/
-void SimpleGridViewChart::setGrid(const QImage& grid_rendering)
-{
-    grid_rendering_ = QPixmap::fromImage(grid_rendering);
-
-    updateChart();
-}
-
-/**
-*/
-void SimpleGridViewChart::resizeEvent(QResizeEvent* evt)
-{
-    updateChart();
-}
-
-/**
-*/
-void SimpleGridViewChart::updateChart()
-{
-    if (grid_rendering_.isNull())
-    {
-        setPixmap(QPixmap());
-        setText("No Data");
-        return;
-    }
-
-    setText("");
-    setPixmap(grid_rendering_.scaled(size(), Qt::IgnoreAspectRatio, Qt::TransformationMode::FastTransformation));
-}
-
-/**************************************************************************************************
- * GridViewChart
- **************************************************************************************************/
-
 namespace QtCharts
 {
 
 /**
  */
-GridViewChart::GridViewChart(GridViewDataWidget* data_widget, 
-                             QChart* chart, 
+GridViewChart::GridViewChart(GridViewRenderWidget* render_widget,
+                             QChart* chart,
                              QWidget* parent)
-:   ChartView   (chart, ChartView::SelectionStyle::RubberBand, parent)
-,   data_widget_(data_widget)
+:   ChartView     (chart, ChartView::SelectionStyle::RubberBand, parent)
+,   render_widget_(render_widget)
 {
-    traced_assert(data_widget_);
+    traced_assert(render_widget_);
 
     //e.g. a resize => aspect ratio of the background
     //Notice: never inside the chart layout (a range change re-runs the layout => recursion), so deferred and coalesced
@@ -106,6 +56,9 @@ GridViewChart::GridViewChart(GridViewDataWidget* data_widget,
         QTimer::singleShot(0, this, [ this ] ()
         {
             limits_pending_ = false;
+
+            if (!render_widget_)
+                return;
 
             //the user view stays as the user set it: the aspect correction for a changed plot size (e.g. the
             //legend hidden during a load) is applied again on every rebuild, so it must not accumulate
@@ -135,9 +88,7 @@ bool GridViewChart::handleMousePress(Qt::MouseButtons buttons, const QPointF& wi
 {
     if (buttons & Qt::LeftButton)
     {
-        GridViewDataTool tool = data_widget_->selectedTool();
-
-        if (tool == GV_NAVIGATE_TOOL)
+        if (render_widget_->dragEnabled())
         {
             logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -146,7 +97,7 @@ bool GridViewChart::handleMousePress(Qt::MouseButtons buttons, const QPointF& wi
 
             return true;
         }
-        else if (tool == GV_ZOOM_RECT_TOOL || tool == GV_SELECT_TOOL)
+        else if (render_widget_->rectangleRequested())
         {
             loginf << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -176,9 +127,7 @@ bool GridViewChart::handleMouseMove(Qt::MouseButtons buttons, const QPointF& wid
 {
     if (buttons & Qt::LeftButton)
     {
-        GridViewDataTool tool = data_widget_->selectedTool();
-
-        if (tool == GV_NAVIGATE_TOOL)
+        if (render_widget_->dragEnabled())
         {
             logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y() << " drag_data_init " << drag_data_init_;
 
@@ -195,7 +144,7 @@ bool GridViewChart::handleMouseMove(Qt::MouseButtons buttons, const QPointF& wid
 
             return true;
         }
-        else if ((tool == GV_ZOOM_RECT_TOOL || tool == GV_SELECT_TOOL) && isSelectionEnabled())
+        else if (render_widget_->rectangleRequested() && isSelectionEnabled())
         {
             logdbg << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -220,9 +169,7 @@ bool GridViewChart::handleMouseRelease(Qt::MouseButtons buttons, const QPointF& 
 {
     if (buttons & Qt::LeftButton)
     {
-        GridViewDataTool tool = data_widget_->selectedTool();
-
-        if (tool == GV_NAVIGATE_TOOL)
+        if (render_widget_->dragEnabled())
         {
             logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -230,7 +177,7 @@ bool GridViewChart::handleMouseRelease(Qt::MouseButtons buttons, const QPointF& 
 
             return true;
         }
-        else if ((tool == GV_ZOOM_RECT_TOOL || tool == GV_SELECT_TOOL) && isSelectionEnabled())
+        else if (render_widget_->rectangleRequested() && isSelectionEnabled())
         {
             loginf << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -262,9 +209,7 @@ bool GridViewChart::handleMouseRelease(Qt::MouseButtons buttons, const QPointF& 
  */
 void GridViewChart::sendSelectedRegion()
 {
-    auto region = selectedChartRegion();
-
-    emit rectangleSelectedSignal(region.topLeft(), region.bottomRight());
+    render_widget_->rectangleSelected(selectedChartRegion());
 }
 
 /**
@@ -325,27 +270,30 @@ namespace
 void GridViewChart::paintCustomItems(QPaintEvent* event, QPainter& painter)
 {
     const auto plot_area  = chart()->plotArea();
-    const bool background = data_widget_->backgroundActive();
+    const bool background = render_widget_->backgroundActive();
     const auto lonlat     = viewLonLat();
 
     auto t0 = boost::posix_time::microsec_clock::local_time();
 
     //background color and map below the grid
     if (background)
-        data_widget_->background().paintBelow(painter, plot_area, lonlat);
+        render_widget_->background().paintBelow(painter, plot_area, lonlat);
 
     auto t1 = boost::posix_time::microsec_clock::local_time();
 
     painter.save();
-    painter.setOpacity(data_widget_->getView()->settings().grid_opacity / 100.0);
+    painter.setOpacity(render_widget_->gridOpacity() / 100.0);
     paintGrid(painter, plot_area);
     painter.restore();
 
     auto t2 = boost::posix_time::microsec_clock::local_time();
 
-    //borders and sectors above the grid (sectors also without the Background Map)
-    if (data_widget_->background().available())
-        data_widget_->background().paintAbove(painter, plot_area, lonlat);
+    //borders and sectors above the grid (sectors also without the Background Map), the labels on top
+    if (render_widget_->background().available())
+    {
+        render_widget_->background().paintAbove(painter, plot_area, lonlat);
+        render_widget_->paintLabels(painter, plot_area, lonlat);
+    }
 
     auto t3 = boost::posix_time::microsec_clock::local_time();
 
@@ -359,9 +307,9 @@ void GridViewChart::paintCustomItems(QPaintEvent* event, QPainter& painter)
  */
 void GridViewChart::paintGrid(QPainter& painter, const QRectF& plot_area)
 {
-    const auto& grid_bounds    = data_widget_->gridBounds();
-    const auto& grid_rendering = data_widget_->gridRendering();
-    bool        grid_north_up  = data_widget_->gridIsNorthUp();
+    const auto& grid_bounds    = render_widget_->gridBounds();
+    const auto& grid_rendering = render_widget_->gridRendering();
+    bool        grid_north_up  = render_widget_->gridIsNorthUp();
 
     if (grid_bounds.isEmpty() || grid_rendering.isNull())
         return;
@@ -412,7 +360,7 @@ void GridViewChart::resetZoom()
     if (chart() && !chart()->axes(Qt::Horizontal).isEmpty() && !chart()->axes(Qt::Vertical).isEmpty())
     {
         //without a grid, the background shows the position extent of the database
-        const QRectF bounds = data_widget_->backgroundActive() ? data_widget_->backgroundExtent() : data_widget_->gridBounds();
+        const QRectF bounds = render_widget_->backgroundActive() ? render_widget_->backgroundExtent() : render_widget_->gridBounds();
 
         if (!bounds.isEmpty())
         {
@@ -422,7 +370,7 @@ void GridViewChart::resetZoom()
             applyViewLimits();
 
             //home => following the data again
-            data_widget_->clearUserView();
+            render_widget_->clearUserView();
         }
     }
 }
@@ -470,7 +418,7 @@ void GridViewChart::setAxisRanges(const QRectF& r)
  */
 void GridViewChart::applyViewLimits()
 {
-    if (applying_limits_ || !data_widget_->backgroundActive())
+    if (applying_limits_ || !render_widget_->backgroundActive())
         return;
 
     const QRectF view = viewLonLat();
@@ -497,10 +445,10 @@ void GridViewChart::applyViewLimits()
     QRectF r = std::fabs(aspect_error) > aspect_tolerance ? vp::adjustAspect(view, plot) : view;
 
     const double lon_scale  = std::max(0.01, std::cos(r.center().y() * M_PI / 180.0));
-    const double min_width  = vp::minWidth(data_widget_->gridCellWidth(), plot.width());
+    const double min_width  = vp::minWidth(render_widget_->gridCellWidth(), plot.width());
     const double min_height = min_width * lon_scale * plot.height() / plot.width();
 
-    r = vp::clamp(r, vp::maxExtent(data_widget_->backgroundExtent(), plot), min_width, min_height);
+    r = vp::clamp(r, vp::maxExtent(render_widget_->backgroundExtent(), plot), min_width, min_height);
 
     if (!finite(r))
         return;
@@ -540,7 +488,7 @@ void GridViewChart::userViewChanged()
     const QRectF view = viewLonLat();
 
     if (view.width() > 0.0 && view.height() > 0.0)
-        data_widget_->setUserView(view);
+        render_widget_->setUserView(view);
 }
 
 }

@@ -1,6 +1,6 @@
 # View Models and View Render Widgets
 
-Status: all six steps planned and agreed (2026-11-17), sections 7.1 to 7.5. No code written. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
+Status: all seven steps planned and agreed (2026-11-17), sections 7.1 to 7.6. Steps 1 to 6 are implemented and committed (2026-11-17, 2026-11-18). Step 7 is implemented (2026-11-18, results in section 7.6), not committed yet. `ViewDataWidget` and the adapter are removed. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
 Audience: the agent that implements this. Read `CLAUDE.md` first (library layering, code conventions).
 
 This document is the current specification. It holds no superseded text. The decision history is in the handover, section 10.
@@ -33,10 +33,12 @@ Related documents:
 8. The tool description holds nothing about the mouse. The mouse handling is a service of the render widget.
 9. Table View and Geographic View are special cases:
    - They need no render widget for the report.
-   - They are not ported in the first iteration.
-10. First iteration: an adapter class keeps `View`, `ViewWidget` and `ViewLoadStateWidget` unchanged (section 6).
+   - They get a minimal port in step 7, with listed exceptions from the rules of section 4 (section 7.6).
+10. Steps 1 to 6: an adapter class keeps `View`, `ViewWidget` and `ViewLoadStateWidget` unchanged (section 6). Step 7 removes the adapter and `ViewDataWidget`.
 
-## 3. Assembly Today
+## 3. Assembly Before Step 1
+
+This section shows the code before step 1. Section 6 shows the assembly after step 7.
 
 ```
 View (QObject, Configurable)            settings, load and update control
@@ -83,10 +85,11 @@ Rules:
 - The annotation path is a static function of the model class (section 4.2). The model calls it in `setAnnotation()`. The report calls it without a model object.
 - A render widget reads only the display data and the render options. It does not read buffers or view settings.
 - The owner gives both to the render widget in one call, `setDisplayData(data, options)`:
-  - In a view the owner is the adapter (section 6).
+  - In a view the owner is the `ViewWidget` (section 6).
   - In a report the owner is the factory function (section 6).
   - The data is a `std::shared_ptr<const ...DisplayData>`. A change of the options calls again with the same pointer. Nothing is copied.
-- Signals go from the model to the adapter. Tool callbacks go into the model. The view registers them (section 5).
+- Signals go from the model to the `ViewWidget`. Tool callbacks go into the model. The view registers them (section 5).
+- These rules are for the three chart views. The Table View and the Geographic View have exceptions (section 7.6).
 
 Classes per view:
 
@@ -221,7 +224,7 @@ public:
 - The argument types are examples. Take the exact types from today's functions.
 - The model gets `DBContentManager&`, `DBContextManager&` and `AppState&` in its constructor. Only the buffer path uses them (section 4.4).
 - The render widget has no `setModel()` and no separate `setOptions()`. One call gives one redraw, and data and options always fit together.
-- In a view, the adapter calls `setDisplayData(model.displayData(), options)` on `displayDataChangedSignal` and on each change of a render option.
+- In a view, the `ViewWidget` calls `setDisplayData(model.displayData(), options)` (the update function of the view widget) on `displayDataChangedSignal` and on each redraw without recompute.
 - The report creates no model object. The factory calls `displayDataFromAnnotation()` and then `setDisplayData()`.
 - The Scatterplot View and the Grid View use the same pattern. The static function of `GridViewModel` takes the sector lines as an extra input (section 7.5).
 
@@ -341,14 +344,14 @@ Example, the Select tool of the Scatterplot View:
 - `kind = Mode`.
 - `callback`: on activation it calls `requestRectangle(...)` with a callback into the selection function of the model.
 
-## 6. Changes to the Existing Classes, First Iteration
+## 6. Changes to the Existing Classes, Steps 1 to 6
 
 | Class | Change |
 |---|---|
 | `View`, `VariableView` | Stay. The view creates its model and fills the render options from its settings. `VariableView` keeps the annotation list and gives the current annotation to the model. |
 | `ViewWidget` | Stays, same layout. |
-| `ViewDataWidget` | Stays. Table View and Geographic View use it without change. |
-| New: `ViewDataWidgetAdapter : ViewDataWidget` | Adapter. Holds the render widget and a pointer to the model of the view. Forwards the base functions (`updateFromSource`, `redrawData`, `clearData`, ...) to them. Gives the display data of the model and the render options of the view to the render widget (`setDisplayData`). `View`, `ViewWidget` and `ViewLoadStateWidget` need no second code path. |
+| `ViewDataWidget` | Removed in step 7. Until then the Table View and the Geographic View used it without change. |
+| `ViewDataWidgetAdapter : ViewDataWidget` | Steps 1 to 6 only, removed in step 7. It held the render widget and a pointer to the model, forwarded the base functions to them and gave the display data and the render options to the render widget. Since step 7 these flows are in `ViewWidget` (section 7.6, results). |
 | `HistogramViewDataWidget`, `ScatterPlotViewDataWidget`, `GridViewDataWidget` | Removed. Each is split into model and render widget. |
 | `VariableViewDataWidget`, `VariableViewStashDataWidget` | Removed when the third view is ported. |
 | `ChartView` and its three subclasses | Stay. They get the render widget in place of the data widget. The tool checks in the mouse handlers go away. |
@@ -360,11 +363,12 @@ Assembly of a ported view:
 ```
 View
 +- <View>Model                          created by the view
-+- ViewWidget
-   +- ViewDataWidgetAdapter             adapter
-   |  +- <View>RenderWidget             gets display data and options from the adapter
-   +- ViewConfigWidget, ...             as today
++- ViewWidget                           runs the data flows on the model and the render widget
+   +- <View>RenderWidget                object name "datawidget", gets display data and options from the view widget
+   +- ViewConfigWidget, ...             as before
 ```
+
+Steps 1 to 6 had the adapter (`ViewDataWidgetAdapter`) between `ViewWidget` and the render widget.
 
 In the report:
 - `SectionContentFigure` gets the render widget from one factory function in `compass_view`.
@@ -372,9 +376,9 @@ In the report:
 - No `View`, no `ViewWidget`, no adapter, no model object.
 - The factory gets the `DBContextManager` only for the sector lines of geographic grids (section 7.5).
 
-Later iteration:
-- Port Table View and Geographic View.
-- Then `ViewWidget` talks to model and render widget directly. The adapter and `ViewDataWidget` go away.
+Step 7 (section 7.6):
+- Minimal port of the Table View and the Geographic View.
+- Then `ViewWidget` talks to model and render widget directly. The adapter and `ViewDataWidget` are removed.
 
 ## 7. Class Names, Tool Owner, Order of the Work
 
@@ -387,7 +391,7 @@ A1, owner of the tools and the toolbar (agreed 2026-11-16):
 - The host decides if it shows a toolbar:
   - View: `ViewWidget` builds its toolbar (`ViewToolWidget`) from the switcher of the render widget, at the same place as today.
   - Report: no toolbar.
-  - Table View and Geographic View: `ViewWidget` creates its own switcher, as today.
+  - Table View and Geographic View: `ViewWidget` creates its own switcher, as today. In step 7 their render widgets own it, as for the other views.
 - `ViewToolWidget` loses its `ViewWidget*` argument. It uses it only for the screenshot button and the configuration panel toggle (added in `viewwidget.cpp`, `addScreenshotButton`, `addConfigWidgetToggle`). `ViewWidget` registers these two as normal tools.
 
 A2, order of the work (agreed 2026-11-16). Do the steps one at a time. The existing view UI tests must pass after each step.
@@ -397,12 +401,14 @@ A2, order of the work (agreed 2026-11-16). Do the steps one at a time. The exist
 4. The complete Grid View, and report figures for grids with other axes (section 7.5).
 5. Report figures for geographic grids: background set from the view point, sectors, text labels (section 7.5).
 6. Report figure background in the task dialogs of the evaluation and the data source analysis (section 7.5).
+7. Minimal port of the Table View and the Geographic View. `ViewDataWidget` and the adapter are removed (section 7.6).
 
 Reasons for this order:
 - The histogram is the smallest data widget and needs no stash model.
 - Its zoom tool needs the model. It tests `registerTool` completely.
 - Step 2 tests the annotation input of the model, the factory function and `render(QImage&, QSize)` early.
 - The grid background is the hardest part. It comes when the base classes are stable.
+- Step 7 is last. It changes nothing for the user, and steps 1 to 6 do not need it.
 
 ## 7.1 Step 1: Base Classes, Adapter, Histogram View (Agreed 2026-11-17)
 
@@ -445,7 +451,7 @@ Done criteria:
 - `python3 scripts/check_layering.py --build-dir build` reports no new violations.
 - `HistogramViewDataWidget` is removed.
 - Scatterplot View, Grid View, Table View and Geographic View are not changed, except for the toolbar change (A1).
-- Changes reported per repository. No commit.
+- Changes reported per repository. Commit after the step is done, per repository (section 11).
 
 ## 7.2 Step 2: Histogram Figures in the Report GUI and in the Export (Agreed 2026-11-17)
 
@@ -461,7 +467,7 @@ Code state (checked 2026-11-17):
 | Palette | `ChartView::applyPaletteTheme` uses the application palette. A dark application gives dark report images. This is the same today. |
 | Library layering | `compass_result` (layer 7) can use `compass_view` (layer 6) directly. The selection function and the factory go into `compass_view`. |
 
-Not checked: what the export gives today when no Histogram View is open.
+Checked in step 2: before step 2 the export gave no image for a histogram figure when no Histogram View was open. Now it gives one image per annotation.
 
 Figure selection rule for step 2 (agreed 2026-11-17):
 - One function decides per figure: render widgets, or today's label and "View" button.
@@ -479,7 +485,7 @@ Images per figure and image names (agreed 2026-11-17):
 - Image name: the figure kind plus the annotation index, for example `histogram_0`, `histogram_1`. The names are unique inside one figure, so the image files do not overwrite each other.
 - The annotation title goes into the image as chart title, as in the view.
 - Figures on the view path keep the view instance name, as today.
-- Tests that read image names from the JSON export of histogram figures can need new reference values. Not checked which tests do that.
+- Checked in step 2: no existing test reads image names from the JSON export.
 
 Image size at export (agreed 2026-11-17):
 - Facts: LaTeX places each image with a width of 18 cm (`src/core/latex/lateximage.cpp`). DOCX limits the width to 16 cm (`src/result/report/reportexporterdocx.cpp`).
@@ -491,7 +497,7 @@ Image size at export (agreed 2026-11-17):
 - Requirement: the exported image does not depend on the display scaling of the operating system. The same report gives the same image on a screen with 100 % and with 200 % scaling.
   - The font DPI is not part of the requirement (decided by the user 2026-11-17, section 12.1). A system with another font DPI can give a layout that differs by some pixels.
   - Approach: `render()` creates the QImage itself and sets its device pixel ratio (the scale factor) and its resolution (dots per meter for 96 dpi) explicitly. It does not use `QWidget::grab()`, which takes the factor of the screen.
-  - Risk: Qt Charts can compute the text layout with the font metrics of the screen and paint with the metrics of the image. Checked with a prototype, see section 12.1. Fonts with a pixel size solve the display scaling.
+  - Risk: Qt Charts can compute the text layout with the font metrics of the screen and paint with the metrics of the image. Checked with a prototype, see section 12.1. Fonts with a pixel size and without hinting (`QFont::PreferNoHinting`, set in `render()` only) solve the display scaling.
   - Check at implementation time: export the same figure with `QT_SCALE_FACTOR=1` and `QT_SCALE_FACTOR=2`. The images must be equal. If they are not, fix it in `render()` before the step is done.
   - Known case: on the CI machine crunch the AppImage scales by 2 because of the monitor data (see the `test_ci` skill).
 - Cost: larger image files than today. The JSON export holds them as PNG data, so its size grows too.
@@ -500,7 +506,7 @@ Palette (agreed 2026-11-17):
 - Exported images always use the light palette. A report then looks the same for every user.
 - The render widget in the report GUI and in the view follows the application palette, as today.
 - The palette is an input of the drawing: `ChartView::applyPaletteTheme` takes the palette in place of `QApplication::palette()`. Unit tests can set it.
-- Not checked: where the application defines its light palette. Find it at implementation time and use the same one.
+- The light palette is `app_palette::light()` (`src/gui/apppalette.h`). The client and the export use it.
 
 Report GUI layout (agreed 2026-11-17):
 - The content of a section is built when the user opens the section. No extra rule for the creation time is necessary.
@@ -522,7 +528,7 @@ New unit tests for step 2 (agreed 2026-11-17):
 
 | File | Checks |
 |---|---|
-| `src/view/unit_tests/test_figure_selection.cpp` | The selection function, one `SECTION` per case: histogram only (render widget), data load (view path), other feature (view path), histogram plus other feature (view path), three histogram annotations (three entries, names `histogram_0` to `histogram_2`, stored order). |
+| `src/view/unit_tests/test_figure_selection.cpp` | The selection function, one `SECTION` per case: histogram only (render widget), data load (view path), other feature (view path), histogram plus other feature (view path), three histogram annotations (three entries, names `histogram_0` to `histogram_2`, order of the view). Note: the view finds separate annotations in reverse stored order, and the features of one annotation in stored order. |
 | `src/view/histogramview/unit_tests/test_histogram_render.cpp` (additions) | `render()` with size 1200 x 800 and scale 2 gives 2400 x 1600 pixels. With the light palette, a background pixel has the light color while the application palette is dark. |
 | `src/view/unit_tests/test_figure_factory.cpp` | The factory builds the render widget from a view point JSON with a histogram annotation, without a model object. The display data that it sets has the expected series and title. |
 | Height rule (in the test file of the render widget) | Widths that give a height below the minimum, inside the range, and above the maximum. |
@@ -537,7 +543,8 @@ New integration tests for step 2 (Python, `experimental_src/py/tests/`):
 | Report export | JSON export of a report with histogram figures, with no Histogram View open. Each image exists, has 2400 x 1600 pixels, is not blank, and has the name `histogram_<n>`. The export opened no view. |
 | Display scaling | The same export with `QT_SCALE_FACTOR=1` and `QT_SCALE_FACTOR=2`. The images are equal. |
 
-- Source of the histogram figures: proposal is the report of `analyze/analyze_report_variable_histogram.py`. This test is not read yet. Check if its report fits.
+- Source of the histogram figures: the ADS-B analysis report of `analyze_adsb_all`, figure "Update Interval Histogram" in "Report:Results:Sensor Coverage". The same section has grid figures for the view path case.
+- The display scaling integration test runs on the offscreen platform and finds an export that depends on the screen factor. It does not find font differences. For these, run `python3 scripts/check_image_display_scaling.py --build-dir build --platform wayland`.
 - The runtime command `get_report_figure` returns the stored view point of a report figure. The tests can use it.
 - Read `experimental_src/py/readme_test_writing.md` first. Register each test, run it targeted, export reports into the DB folder.
 
@@ -547,7 +554,7 @@ Done criteria for step 2:
 - All existing integration tests of step 1 pass. Reference values change only for image names of histogram figures.
 - The display scaling check gives equal images.
 - `python3 scripts/check_layering.py --build-dir build` reports no new violations.
-- Changes reported per repository. No commit.
+- Changes reported per repository. Commit after the step is done, per repository (section 11).
 
 ## 7.3 Step 3: Scatterplot View and Its Report Figures (Agreed 2026-11-17)
 
@@ -583,8 +590,8 @@ OpenGL (agreed 2026-11-17):
   - The drawing order is the order of the series in the display data. The selection series is on top. A report figure has no selection.
   - A zoom or a resize draws the image again.
 - With OpenGL (view): as today. Qt Charts orders the series by pointer value, and the code sorts for that. The selection series stays on top.
-- Not known: the point counts of the report scatterplots (reconstruction debug figures).
-- Check at implementation time: the draw time of the largest report scatterplot with the image drawing, inside a chart. Report it to the user.
+- Checked in step 3 (dataset at_20230422, 05h manifest): the reconstruction debug figures have few points. "Avg. Unused Scatterplot" and "Avg. Error Scatterplot": 22 series, 198 points. "Radar Biases Scatterplot": one figure per radar, 3 annotations of 1 series with 9 points.
+- Checked in step 3: draw time of one export image (2400 x 1600, new chart each time, offscreen platform). Largest debug figure: 15 ms, of which 0.5 ms for the points image. Synthetic, 10 series: 10000 points 12 ms, 100000 points 37 ms, 1000000 points 278 ms. Below about 10000 points the chart (axes, title, legend) sets the time, above it the points image (about 0.3 microseconds per point).
 
 Existing tests:
 - `experimental_src/py/tests/ui/scatterplotview/`: 11 tests (open, close, presets, connection lines, selection, zoom, zoom with variable change, axis labels, variable selection).
@@ -651,7 +658,7 @@ Done criteria for step 3:
 - The draw time of the largest report scatterplot without OpenGL (image drawing) is measured and reported to the user.
 - `ScatterPlotViewDataWidget` is removed. Grid View, Table View and Geographic View are not changed.
 - `python3 scripts/check_layering.py --build-dir build` reports no new violations.
-- Changes reported per repository (the reconstruction figures are in `experimental_src`). No commit.
+- Changes reported per repository (the reconstruction figures are in `experimental_src`). Commit after the step is done, per repository (section 11).
 
 ## 7.4 Legend in Report Figures (Agreed 2026-11-17)
 
@@ -756,7 +763,7 @@ Overlays (P6, decided by the user 2026-11-17):
 - Drawing order: background, grid, national borders and sectors, text labels, legend.
 - The text labels get no legend entry.
 - The grid render widget is the same in the Grid View and in the report. So the Grid View shows the text labels too.
-  - The feature types that a view accepts select the views that open for a figure (`acceptedAnnotationFeatureTypes`, `ViewManager::activateCompatibleViewTabs`). This set stays "grid only" for the Grid View. Else the Grid View opens for every figure with a text feature.
+  - The feature types that a view accepts select the views that open for a figure (`acceptedAnnotationFeatureTypes`, `ViewManager::activateCompatibleViews`). This set stays "grid only" for the Grid View. Else the Grid View opens for every figure with a text feature.
   - The text features are read in a second scan, only when a grid annotation is shown.
 - Consequences:
   - Points and circles (for example the yellow circle at the RU position, the RU points of the MLAT RU effect figure) are not in the grid render widget. A figure with a grid and such features still gets the render widget, without them. The "View" button opens the views, and the Geographic View shows all features.
@@ -847,7 +854,7 @@ struct GridRenderOptions
 - Rule for the two optional values in the display data (`render_settings`, `background`): the value of the display data wins over the render option. This is the same rule as for the log scale and the connection lines.
 - Value type, grid resolution and hidden layers are inputs of the model, not render options. They change the grid, not the drawing.
 - `GridBackgroundSettings` is the new struct for `GridBackgroundRenderer` (in place of `GridView&`). It has a JSON form (`toJSON` / `fromJSON`). This is also the form of the background set in the view point. The field name in the view point is defined at implementation time, next to the grid feature fields (`ViewPointGenFeatureGrid`).
-- `GridSectorLine`: polygon (longitude, latitude), color, layer name, sector name. It replaces `SectorLine` of `GridBackgroundRenderer`.
+- `GridSectorLine`: polygon (longitude, latitude), color, layer name, sector name, sector id (the hidden sectors are stored by id). It replaces `SectorLine` of `GridBackgroundRenderer`.
 - `GridTextLabel`: position (longitude, latitude), text, color. Read from `ViewPointGenFeatureText`. Check its fields at implementation time.
 
 Tests for step 4 (agreed 2026-11-17):
@@ -861,6 +868,28 @@ Tests for step 4 (agreed 2026-11-17):
 | Integration, existing | `ui/gridview/` (11 tests), `view_points/gridview/` (10 tests), `ui/views/ui_open_views.py`, unchanged references. |
 | Integration, new | Analysis report with grids with other axes: render widget in the report GUI, images in the JSON export. |
 
+Findings of step 4 (2026-11-17), inputs for step 5:
+- Zoom rule of the Grid View: the user zoom stays over a draw without content of the same `domain_id` (for example during a load). A draw with content of another domain, Zoom to Home or closing the database drops it. This keeps the behavior of the Grid View before step 4.
+- Mixed figures: render widgets for all kinds, numbered per kind, order histogram, scatterplot, grid. A geographic grid anywhere in the view point sends the whole figure to the view path until step 5.
+- `GridBackgroundRenderer::paintAbove` caches the borders and sectors as an image at layout size. An export at scale 2 then draws them blurred. Step 5 draws them at device resolution.
+- The view and the export share one `GridBackgroundRenderer`. `prepareExport()` can block up to 10 s per figure when the map is on.
+- The report factory has no `DBContextManager` yet. `createRenderWidget`, `renderExportImage` and their callers in `compass_result` need a way to get the sector lines.
+- `GridBackgroundSettings` has the Grid View defaults. The report defaults (section "Fields of the background set") need their own values.
+- `GridTextLabel` exists, nothing fills or draws it yet.
+- A fixed legend with more than about 30 entries may not fit the image height of 800.
+
+Results of step 5 (2026-11-17):
+- View point field of the background set: `grid_background` (`ViewPointGenFeatureGrid::ViewPointFieldNameBackground`), documented in `src/view/points/readme_view_points.md`. Report defaults: `GridBackgroundSettings::reportDefaults()`.
+- The sector selection is stored as a list of hidden layers. The evaluation hides all layers except the evaluated one, the analysis hides all layers. A layer added later is shown.
+- A figure without a set draws all sectors. The figure does not record its task, so the task specific default of the table above cannot apply.
+- View path: `GridView::showViewPoint` copies the set of the view point into the view settings. So the layer panel shows it and the user can change it.
+- Borders, sectors and labels are drawn at device resolution. The map image is still fetched at layout size, so it has half the resolution of the export.
+- Map tiles: http tile sources with an osgEarth file cache (`~/.compass/osgearth_cache`, 14 days). Uncached tiles need the internet. The repository has no tiles.
+- Export time of a geographic figure (2400 x 1600): map off 65 ms, map on 0.2 to 1.7 s for the first export (tile download), 80 to 110 ms from the cache.
+- P11 (code reading): a change of the target usage drops the cached sector overview content. The rebuild runs while the report is stored again, under the "Updating Results" dialog. Opening a section afterwards starts no build.
+- Fix: `HistogramViewModel::hasValidResult()` returns false while a recompute runs. The view info widget read the generator while the worker replaced it (crash).
+- Risk for step 7: the workers of the stash models (scatterplot, grid) write the stash and the grid, and `viewInfoJSON()` of the models reads them. Only the test commands call it. The old data widgets had the same exposure.
+
 Tests for step 5 (agreed 2026-11-17):
 
 | Kind | Tests |
@@ -871,6 +900,16 @@ Tests for step 5 (agreed 2026-11-17):
 | Integration, new | Evaluation report: the sector overview figures have a render widget and exported images, with no view open. The stored view point holds the background set with the evaluated sector layer (runtime command `get_report_figure`). |
 | Integration, new | Analysis report (MLAT): geographic grids exported. The RU coverage figure has no circle in the image. |
 | Integration, new | The "View" button of a geographic figure: the Grid View shows the background of the figure. |
+
+Results of step 6 (2026-11-18):
+- Task set: `ReportFigureBackground` (`src/view/gridview/gridbackgroundsettings.h`): `GridBackgroundSettings` with the report defaults, plus the optional hidden sector layers. Without them the task default applies.
+- JSON form: the form of `GridBackgroundSettings`. A missing field gets its report default. A missing `hidden_sector_layers` gives the task default.
+- Configuration parameter `report_figure_background` of `EvaluationCalculator` and `AnalyzeDataSourceTask`. `--evaluation_parameters`, `--analyze_parameters` and the `config` of the runtime commands `evaluate` and `analyze_data_source` set it. A value that is not readable is rejected (`applyJSONParameters` of both).
+- Group: `ReportFigureBackgroundWidget` (`src/view/gridview/`, compass_view). Evaluation: tab "Results Config", below the form. Analysis: page "Report", below the report form (the output page of the dialog, it holds the report settings).
+- Sector selection: the tree shows the task default until the user changes a sector checkbox. Then the shown selection is stored as hidden layers and hidden sectors. A layer added later is shown, a removed layer has no effect.
+- Evaluation figure of sector layer L: the stored or default selection, and the other evaluated sector layers hidden. With the defaults this is the result of step 5.
+- `Select All` / `Select None` below the sector tree, as in the selectable-list pattern of the GUI readme.
+- Open test finding: `calculate/calculate_report_scatter.py` failed in 2 of 5 full runs with "adding command failed" (exception in `_addCommand` of `py/client/compass_interface.py`). COMPASS did not crash, there was no OOM. The test passed in the 3 other runs and in a targeted rerun with results equal to the baseline. The cause is not known.
 
 Tests for step 6 (agreed 2026-11-17):
 
@@ -887,21 +926,106 @@ Done criteria for steps 4, 5 and 6, each step:
 - The build has no errors. `compass_tests` passes with the new tests.
 - The existing and the new integration tests pass on the local build.
 - `python3 scripts/check_layering.py --build-dir build` reports no new violations.
-- Changes reported per repository. No commit.
+- Changes reported per repository. Commit after the step is done, per repository (section 11).
 
 In addition:
 - Step 4: `GridViewDataWidget`, `VariableViewDataWidget`, `VariableViewStashDataWidget` and `SimpleGridViewChart` are removed. Table View and Geographic View are not changed.
 - Step 5: the check of the dropped sector overview cache is reported to the user.
 - Step 6: the user manual sections of the two tasks describe the new fields (load the `documentation` skill first).
 
+## 7.6 Step 7: Table View and Geographic View, Minimal Port (Agreed 2026-11-17)
+
+Goal: no `ViewDataWidget` and no adapter are left. The two data widgets become render widgets with the smallest possible change. Their behavior does not change.
+
+Code state (checked 2026-11-17):
+- `TableViewDataWidget` (`src/view/tableview/`): 477 lines. 6 files name it, all in `src/view/tableview/`.
+- `GeographicViewDataWidget` (`experimental_src/plugins/geoview/geographicview/`): 4097 lines. 29 files of the plugin name it. Its code is not read yet, only the references are counted.
+- Both derive from `ViewDataWidget` directly and implement its hooks (`updateFromSource_impl`, `loadingStarted_impl`, `loadingDone_impl`, `clearData_impl`, `redrawData_impl`, `liveReload_impl`, `toolChanged_impl`).
+
+New classes:
+
+| View | Model | Model base | Render widget | Render widget base |
+|---|---|---|---|---|
+| Table | `TableViewModel` | `ViewModel` | `TableViewRenderWidget` | `ViewRenderWidget` |
+| Geographic | `GeographicViewModel` | `ViewModel` | `GeographicViewRenderWidget` | `ViewRenderWidget` |
+
+- The two models are thin. They hold only what the base `ViewModel` holds: buffers, layer aggregates and snapshots, hidden layer ids, null/NaN counts, asynchronous processor.
+- The two render widgets are today's data widgets with a new name and a new base class.
+- The `_impl` hooks become slots of the render widget. The view connects them to the signals of the model.
+- Tools: `registerTool`, as for the other views (section 5). `toolChanged_impl` goes away.
+- `ViewWidget` talks to the model and the render widget for all five views. `ViewDataWidget` and `ViewDataWidgetAdapter` are removed.
+
+Allowed exceptions from the rules of section 4, for these two views only:
+1. The render widget holds a pointer to its model.
+2. The render widget reads the buffers and does the data processing (table rows, OSG layers). There is no display data struct and no `setDisplayData()`.
+3. The render widget reads the view settings. There is no render options struct.
+4. There is no static annotation function. The Geographic View reads its annotations as today.
+5. `render(QImage&, QSize, scale)` gives today's screenshot. It does not work without a view. The report does not use it (section 2, decision 9).
+
+- No other exception. If the port needs one, ask the user first.
+- The exceptions are not a pattern for new views.
+
+Constraints:
+- The UI tests address the widget as `last_view.datawidget`. Both render widgets keep the object name `datawidget`. Not checked: other object paths in the Table View and Geographic View tests.
+- Destruction order: the asynchronous tasks of the Table View write into the widget (`launchAsyncPrepare`, `commitLoadedData`), and the processor is in the model after the port. Keep the rule that the processor is shut down before the widget part is destroyed (`shutdownAsyncProcessor()`). Define the place at implementation time.
+- The tool classes of the Geographic View (`MeasureTool`, `SectorEditTool`, ...) take the data widget by reference. They get the render widget.
+
+Order inside the step: the Table View first, with its tests. Then the Geographic View. Then the removal of `ViewDataWidget` and the adapter.
+
+Tests:
+- Existing integration tests that must pass with unchanged reference results (`experimental_src/py/tests/`): `ui/tableview/` (6 tests), `ui/geographicview/` (12 tests), `view_points/geographicview/` (14 tests), `ui/views/ui_open_views.py`, and all view tests of steps 1 to 4.
+- No new integration test. The behavior does not change.
+- Unit tests: the tests of `ViewModel` and `ViewRenderWidget` from step 1 stay valid. Tests of the adapter are removed with the adapter.
+
+Done criteria for step 7:
+- The build has no errors. `compass_tests` passes.
+- The listed integration tests pass on the local build, references unchanged.
+- `ViewDataWidget`, `ViewDataWidgetAdapter`, `TableViewDataWidget` and `GeographicViewDataWidget` are removed.
+- `python3 scripts/check_layering.py --build-dir build` reports no new violations.
+- Changes reported per repository (the Geographic View is in `experimental_src`). Commit after the step is done, per repository (section 11).
+
+Results of step 7 (2026-11-18):
+- New classes: `TableViewModel`, `TableViewRenderWidget` (`src/view/tableview/`), `GeographicViewModel`, `GeographicViewRenderWidget` (`experimental_src/plugins/geoview/geographicview/`). The two render widgets are the old data widgets with a new name and the base `ViewRenderWidget`. The tool classes of the Geographic View take the render widget (renamed by script).
+- Removed: `ViewDataWidget`, `ViewDataWidgetAdapter`, `TableViewDataWidget`, `GeographicViewDataWidget`. Adapter unit tests did not exist, so none were removed.
+- `ViewWidget` runs the data flows of the adapter for all five views: `setRenderWidget(model, render_widget, update_display, initial_display)` replaces `setDataWidget()`. It holds the model (owned by the view) and the render widget, and it builds the `data` view info with the same keys. The draw state comes from the render widget. The render widget gets the object name `datawidget`.
+- `ViewModel` base: the parts of the old `ViewDataWidget` base that the two views need, with the old call order:
+  - Borrowed item provider (`setItemProvider()`): fed in `updateFromSource()`, reset in `clearData()`, `finishPendingRefresh()` at the load end, `clearItemStates()` on database close.
+  - `layerTreeModel()` (virtual, the Geographic View has its own layer model), `hasPendingAsyncWork()` (virtual, the geometry builds), `notifyProcessingFinished()` (protected).
+  - Hooks `loadingStarted_impl()`, `loadingDone_impl()` (default: `recompute()`), `databaseOpened()`, `databaseClosed()`, `liveReload()`.
+  - The constants `MarkerSizePx`, `MarkerSizeSelectedPx`, `ColorSelected` moved from `ViewDataWidget` to `ViewModel`.
+- The two models emit a signal from each hook. The view widgets connect the signals to the slots of the render widgets (`clearDataSlot`, `loadingDoneSlot`, `recomputeSlot`, ...). A render widget reports a display change outside a redraw (asynchronous commit, coalesced recompute) with `displayChangedSignal()`, the view widget forwards it to the components.
+- Geographic View specific functions go through overrides in `GeographicViewWidget`: `hasAnnotations()`, `hasScreenshotContent()`, `renderData()`, `prepareForRender()`, `setExporting()`, `appModeSwitch()`. The render widget has no pointer to its view widget: it signals tool state changes and the enabled state of the tool buttons.
+- Tools: the Geographic View registers all tools and actions with `registerTool()` (`GeographicViewWidget::registerTools()`). The actions get the ids 100 to 108. The Table View has no tools.
+- Processor shutdown: `~TableViewRenderWidget()` calls `TableViewModel::shutdownAsyncProcessor()`. The commits of the model's tasks write into the render widget and are discarded after that. `~ViewWidget()` disconnects the model from the view widget first. The views own the models and delete the view widget first.
+
+Use of the five exceptions:
+1. Model pointer: `TableViewRenderWidget::model_`, `GeographicViewRenderWidget::model_`.
+2. Buffers and processing in the render widget: table rows (`launchAsyncPrepare()`, `redrawData()`, on the asynchronous processor of the model), geometry (`updateFromSourceSlot()`, `redrawGeometry()`, the geometry item provider of the render widget).
+3. View settings: `TableView` (show only selected, presentation), `GeographicView` (all display settings).
+4. No static annotation function: `GeographicViewModel::setAnnotation()` returns false. The render widget reads the annotations as before (`updateAnnotations()`).
+5. `render()`: the Table View gives the widget screenshot, the Geographic View gives `renderData()` (framebuffer and overlay).
+
+Deviations and findings:
+- Order: `ViewWidget::clearData()` and `loadingStarted()` clear the render widget before the model (the adapter did it after). The old base set "not drawn" before `clearData_impl()`, and the Geographic View draws in it. The chart models emit no display data change in their clear.
+- The Geographic View runs its load start work (`loadingStartedSlot()`) before the redraw without recompute of the load start (before: after it). After the clear that redraw does nothing.
+- `ViewWidget::configChanged()` and `runPostInit()` no longer call `configChanged()` / `onInit()` of the data widget. No data widget implemented them.
+- The Table View no longer sets the arrow cursor on all its child widgets at the start (before: a tool switch to "no tool" from `setToolSwitcher()`). It has no tools.
+- Not used and removed with `ViewDataWidget`: `Color_CAT*`, `colorForGroupName()`, `dbContentColors()`, `releaseWidgetLater()`.
+- Three tests of `ui/geographicview/` do not run with the manifest `at_20230422_05h.json`: `ui_geographicview_contrib_sensors_style`, `ui_geographicview_style_modes`, `ui_geographicview_track_age_variables` (tag `tracker_contrib`).
+- Verification (2026-11-18, local build):
+  - Build without errors. `compass_tests`: all passed (840 test cases). `check_layering.py --build-dir build`: 0 in all categories.
+  - Table View and Geographic View tests alone (29 runnable of 32): 31 of 31 succeeded with the dependencies. Against a baseline of HEAD (step 6): 17 equal, 13 without results, 1 difference (`import_asterix`, data source colors, different in every run).
+  - Together with the view tests of steps 1 to 6: 107 of 107 succeeded. Differences against the step 6 baseline only in the data source colors, in the date of the run (`ui_open_views` table line, the time axis bounds of `ui_scatterplotview_select_cat048_modec_over_time` move by exactly one day), and in the Table View and Geographic View tests from the extra RefTraj buffer (`calculate_references` ran before them in that run).
+
 ## 8. Risks
 
 - `GridBackgroundRenderer` takes a `GridView&` today. It must work from the background settings and the sector lines of the display data, without a view and without a manager.
 - The data widget creates the layer panel items of the grid background today (`GridBackgroundRootItem`, `GridBackgroundSectorsItem`, with `GridView&`). Their checked states are in the `GridView` settings. In step 4 the view creates them (section 7.5).
-- The layer panel tree items point into the layer snapshots. The snapshots move to the model. The update rules stay (main thread only, see `ViewDataWidget::updateLayerTree`).
+- The layer panel tree items point into the layer snapshots. The snapshots move to the model. The update rules stay (main thread only, see `ViewModel::updateLayerTree`).
 - The asynchronous processing moves to the model. The rule for the destructor stays (`shutdownAsyncProcessor()` before the derived part is destroyed).
 - `View` and the config widgets call the data widgets directly, and the data widgets have friends. These calls are not counted yet.
 - The views must look and behave the same after each step.
+- Step 7: `GeographicViewDataWidget` is large and its code is not read yet. The port can find base class functions that the plugin uses and that are not in the lists of section 4.3.
 
 ## 9. Planning Questions (All Answered)
 
@@ -933,7 +1057,7 @@ The questions are from `handover_view_render_widgets_20261116.md`, section 7. Th
 
 ## 11. Rules
 
-- Do not commit. The user commits.
+- Commit after each step, when its done criteria are met, per repository (decided by the user 2026-11-17). No commit in the middle of a step. No push.
 - `experimental_src/` is a separate git repository. Report changes there separately.
 - Write all text in ASD-STE100 (short sentences, active voice, lists), American English, no em-dash, no semicolons.
 - After the work: `python3 scripts/check_layering.py --build-dir build` must report no new violations.
@@ -964,6 +1088,7 @@ Results:
 Consequences for step 2:
 - `render()` builds its own QImage and renders the chart from the scene. No `grab()`.
 - The render widgets set all chart fonts with a pixel size, in the view and in the report.
+- Finding of step 2 (Wayland, image 2400 x 1600, `QT_SCALE_FACTOR` 1 against 2): pixel size fonts alone are not sufficient. Pixel size 13 gives 0 different pixels, 12 gives 1321, 15 gives 673 (rotated y axis title). Pixel size fonts with `QFont::PreferNoHinting` give 0 for 12, 15 and 17. `render()` sets this preference. The chart on the screen keeps the default hinting.
 - Font DPI (decided by the user 2026-11-17): the requirement is limited to the display scaling (`QT_SCALE_FACTOR`). There is no check with `QT_FONT_DPI`. `Qt::AA_Use96Dpi` is not set.
 
 ### 12.2 Legend With Many Series (Section 7.4)

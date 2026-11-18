@@ -34,7 +34,7 @@
 #include "stringconv.h"
 #include "tableview.h"
 #include "tableviewdatasource.h"
-#include "viewdatawidget.h"
+#include "viewmodel.h"
 
 #include <QBrush>
 #include <QPainter>
@@ -254,7 +254,7 @@ QIcon AllBufferTableModel::iconFor(const std::string& layer_id, bool selected) c
         // Selection yellow wins over the layer's own color, even for layers
         // that would otherwise render blank (non-target-report) - so
         // selection is always visible.
-        color = ViewDataWidget::ColorSelected;
+        color = ViewModel::ColorSelected;
     }
     else
     {

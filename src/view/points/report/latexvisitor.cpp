@@ -26,14 +26,21 @@
 
 #include "viewpoint.h"
 #include "tableview.h"
-#include "tableviewdatawidget.h"
+#include "tableviewrenderwidget.h"
 #include "allbuffertablewidget.h"
 #include "histogramview.h"
-#include "histogramviewdatawidget.h"
+#include "histogramviewwidget.h"
+#include "histogramviewrenderwidget.h"
+#include "histogramviewmodel.h"
+#include "chartview.h"
 #include "scatterplotview.h"
-#include "scatterplotviewdatawidget.h"
+#include "scatterplotviewwidget.h"
+#include "scatterplotviewrenderwidget.h"
+#include "scatterplotviewmodel.h"
 #include "gridview.h"
-#include "gridviewdatawidget.h"
+#include "gridviewwidget.h"
+#include "gridviewrenderwidget.h"
+#include "gridviewmodel.h"
 
 #include "logger.h"
 #include "stringconv.h"
@@ -178,7 +185,7 @@ void LatexVisitor::visit(TableView* e)
     if (ignore_table_views_)
         return;
 
-    AllBufferTableWidget* allbuf = e->getDataWidget()->getAllBufferTableWidget();
+    AllBufferTableWidget* allbuf = e->getRenderWidget()->getAllBufferTableWidget();
     traced_assert(allbuf);
 
     // bound the scraped table: a view point selection can hold hundreds of thousands of
@@ -241,22 +248,27 @@ void LatexVisitor::visit(HistogramView* e)
         screenshot_folder_created_ = true;
     }
 
-    e->showInTabWidget();
+    e->showInViewDeck();
 
-    HistogramViewDataWidget* data_widget = e->getDataWidget();
-    traced_assert(data_widget);
+    const HistogramViewModel& model = e->model();
+
+    HistogramViewRenderWidget* render_widget = e->widget_->renderWidget();
+    traced_assert(render_widget);
+
+    const bool has_visible_content = (model.hasData() || model.hasAnnotation()) && render_widget->hasContent();
 
     loginf << "start" << e->instanceName() 
-           << " has visible content: " << data_widget->hasVisibleContent()
-           << " has data " << data_widget->hasData()
-           << " has annotations " << data_widget->hasAnnotations()
-           << " is drawn " << data_widget->isDrawn();
+           << " has visible content: " << has_visible_content
+           << " has data " << model.hasData()
+           << " has annotations " << model.hasAnnotation()
+           << " is drawn " << render_widget->isDrawn();
 
-    if (!data_widget->hasVisibleContent())
+    if (!has_visible_content)
         return;
 
     // normal screenshot
-    QPixmap pmap = data_widget->renderPixmap();
+    traced_assert(render_widget->chartView());
+    QPixmap pmap = render_widget->chartView()->grab();
 
     QImage screenshot = pmap.toImage();
 
@@ -302,22 +314,27 @@ void LatexVisitor::visit(ScatterPlotView* e)
         screenshot_folder_created_ = true;
     }
 
-    e->showInTabWidget();
+    e->showInViewDeck();
 
-    ScatterPlotViewDataWidget* data_widget = e->getDataWidget();
-    traced_assert(data_widget);
+    const ScatterPlotViewModel& model = e->model();
+
+    ScatterPlotViewRenderWidget* render_widget = e->widget_->renderWidget();
+    traced_assert(render_widget);
+
+    const bool has_visible_content = (model.hasData() || model.hasAnnotation()) && render_widget->hasContent();
 
     loginf << "start" << e->instanceName() 
-           << " has visible content: " << data_widget->hasVisibleContent()
-           << " has data " << data_widget->hasData()
-           << " has annotations " << data_widget->hasAnnotations()
-           << " is drawn " << data_widget->isDrawn();
+           << " has visible content: " << has_visible_content
+           << " has data " << model.hasData()
+           << " has annotations " << model.hasAnnotation()
+           << " is drawn " << render_widget->isDrawn();
 
-    if (!data_widget->hasVisibleContent())
+    if (!has_visible_content)
         return;
 
     // normal screenshot
-    QPixmap pmap = data_widget->renderPixmap();
+    traced_assert(render_widget->chartView());
+    QPixmap pmap = render_widget->chartView()->grab();
 
     QImage screenshot = pmap.toImage();
 
@@ -363,22 +380,27 @@ void LatexVisitor::visit(GridView* e)
         screenshot_folder_created_ = true;
     }
 
-    e->showInTabWidget();
+    e->showInViewDeck();
 
-    GridViewDataWidget* data_widget = e->getDataWidget();
-    traced_assert(data_widget);
+    const GridViewModel& model = e->model();
+
+    traced_assert(e->widget_);
+    GridViewRenderWidget* render_widget = e->widget_->renderWidget();
+    traced_assert(render_widget);
+
+    const bool has_visible_content = (model.hasData() || model.hasAnnotation()) && render_widget->hasContent();
 
     loginf << "start" << e->instanceName() 
-           << " has visible content: " << data_widget->hasVisibleContent()
-           << " has data " << data_widget->hasData()
-           << " has annotations " << data_widget->hasAnnotations()
-           << " is drawn " << data_widget->isDrawn();
+           << " has visible content: " << has_visible_content
+           << " has data " << model.hasData()
+           << " has annotations " << model.hasAnnotation()
+           << " is drawn " << render_widget->isDrawn();
 
-    if (!data_widget->hasVisibleContent())
+    if (!has_visible_content)
         return;
 
-    // normal screenshot
-    auto screenshot = data_widget->renderData();
+    // normal screenshot of the chart with its legend
+    auto screenshot = e->widget_->renderData();
 
     std::string image_path = screenshot_path+"/"+image_prefix_+"_"+e->instanceName()+".jpg";
     traced_assert(!screenshot.isNull());

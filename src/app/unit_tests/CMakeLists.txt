@@ -17,6 +17,8 @@ endforeach()
 
 target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_plugin_manager.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_deck_layout.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_toolbox_decks.cpp
 )
 
 target_compile_definitions(compass_tests PRIVATE COMPASS_TEST_PLUGIN_DIR="${COMPASS_TEST_PLUGIN_DIR}")

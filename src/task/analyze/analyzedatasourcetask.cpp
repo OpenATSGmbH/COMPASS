@@ -51,6 +51,10 @@
 #include "stringconv.h"
 #include "system.h"
 #include "taskresult.h"
+#include "sectioncontentfigure.h"
+#include "reportfigure.h"
+#include "viewpointgenerator.h"
+#include "viewpointkeys.h"
 #include "traced_assert.h"
 
 #include "json.hpp"
@@ -191,6 +195,8 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     registerParameter("limit_by_sectors",           &limit_by_sectors_,           limit_by_sectors_);
     registerParameter("used_sectors",               &used_sectors_,               nlohmann::json::object());
 
+    registerParameter(ReportFigureBackground::ParameterName, &report_figure_background_, nlohmann::json::object());
+
     tooltip_ = "Analyze a chosen data source from multiple angles "
                "(data items, sensor coverage / PD, position accuracy).";
 
@@ -253,6 +259,10 @@ Result AnalyzeDataSourceTask::applyJSONParameters(const nlohmann::json& params_j
 
     if (!params_json.is_object())
         return Configurable::applyJSONParameters(params_json);
+
+    const std::string background_error = ReportFigureBackground::checkParameter(params_json);
+    if (!background_error.empty())
+        return Result::failed(background_error);
 
     if (!params_json.contains(kInspectorSettingsKey))
         return Configurable::applyJSONParameters(params_json);
@@ -1113,6 +1123,8 @@ void AnalyzeDataSourceTask::run()
         logRAM("inspector " + ins->name() + " after writeReport");
     }
 
+    addReportFigureBackground(root);
+
     advanceStep("Saving result...");
     tm.endTaskResultWriting(true, false);
 
@@ -1129,4 +1141,66 @@ void AnalyzeDataSourceTask::run()
     // the freshly written report so the user lands on it without an extra
     // click. See MainWindow::showResult / showEvaluationResult.
     manager().mainWindow().showResult(result_name);
+}
+
+/**
+ */
+ReportFigureBackground AnalyzeDataSourceTask::reportFigureBackgroundConfig() const
+{
+    ReportFigureBackground background;
+    if (!background.fromJSON(report_figure_background_))
+        logerr << "stored report figure background not readable, using the defaults";
+
+    return background;
+}
+
+/**
+ */
+void AnalyzeDataSourceTask::reportFigureBackgroundConfig(const ReportFigureBackground& background)
+{
+    report_figure_background_ = background.toJSON();
+}
+
+/**
+ */
+std::set<std::string> AnalyzeDataSourceTask::reportFigureDefaultHiddenLayers() const
+{
+    std::set<std::string> hidden;
+
+    for (const auto& layer : manager().dbContextManager().sectorLayers())
+        hidden.insert(layer->name());
+
+    return hidden;
+}
+
+/**
+ * The inspectors write their figures as view points with annotations, the background set is added here for
+ * all of them. The report GUI and the export draw the geographic grids with it.
+ */
+void AnalyzeDataSourceTask::addReportFigureBackground(ResultReport::Section& section) const
+{
+    const nlohmann::json background =
+        reportFigureBackgroundConfig().resolve(reportFigureDefaultHiddenLayers()).toJSON();
+
+    unsigned int num_figures = 0;
+
+    for (const auto& content : section.recursiveContent(true))
+    {
+        auto figure = std::dynamic_pointer_cast<ResultReport::SectionContentFigure>(content);
+        if (!figure || figure->isOnDemand())
+            continue;
+
+        auto view_point = figure->viewableContent();
+        if (!view_point)
+            continue;
+
+        auto annotations_it = view_point->find(ViewPointKeys::VP_ANNOTATION_KEY);
+        if (annotations_it == view_point->end() || !report_figure::hasGeographicGrid(annotations_it->second))
+            continue;
+
+        (*view_point)[ ViewPointGenFeatureGrid::ViewPointFieldNameBackground ] = background;
+        ++num_figures;
+    }
+
+    loginf << "background set written into " << num_figures << " figures";
 }

@@ -134,6 +134,7 @@ public:
     bool isLoading() const;
     bool isComplete() const;
     bool loadOnDemandIfNeeded();
+    bool loadOnDemandOffMainThread();
     bool forceReload();
 
     void clearOnDemandContent();

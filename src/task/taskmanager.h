@@ -89,6 +89,7 @@ signals:
 
 public slots:
     void databaseOpenedSlot();
+    void databaseAboutToCloseSlot();
     void databaseClosedSlot();
 
 public:
@@ -182,7 +183,8 @@ public:
     void resultContentChanged(const TaskResult& result) override;
 
     void setViewableDataConfig(const nlohmann::json::object_t& data,
-                               bool load_blocking = false) override;
+                               bool load_blocking = false,
+                               bool open_view_deck = false) override;
     void unsetViewableDataConfig() override;
 
     std::shared_ptr<ResultReport::SectionContent> loadContent(ResultReport::Section* section,

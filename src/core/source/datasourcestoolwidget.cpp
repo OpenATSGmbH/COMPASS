@@ -170,9 +170,9 @@ std::vector<std::string> DataSourcesToolWidget::toolLabels() const
 
 /**
  */
-toolbox::ScreenRatio DataSourcesToolWidget::defaultScreenRatio() const 
+int DataSourcesToolWidget::defaultWidthPercent() const
 {
-    return ToolBoxWidget::defaultScreenRatio();
+    return 30;
 }
 
 /**

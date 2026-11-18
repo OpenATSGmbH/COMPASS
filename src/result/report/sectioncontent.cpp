@@ -275,6 +275,19 @@ bool SectionContent::loadOnDemandIfNeeded()
 }
 
 /**
+ * Loads the on-demand data on a worker thread if the task result allows it. Only for a content which
+ * the caller owns alone, before it is installed into its section: it has no widget, so the widget
+ * handling of the derived loadOnDemand() is skipped. Returns true if the data was loaded.
+ */
+bool SectionContent::loadOnDemandOffMainThread()
+{
+    if (!isOnDemand() || isComplete() || isLocked() || !taskResult()->loadOnDemandOffMainThread(*this))
+        return false;
+
+    return SectionContent::loadOnDemand();
+}
+
+/**
  */
 bool SectionContent::loadOnDemand()
 {

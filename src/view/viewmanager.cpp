@@ -63,7 +63,6 @@
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QScopedValueRollback>
-#include <QTabWidget>
 #include <QTimer>
 
 
@@ -202,15 +201,15 @@ unsigned int ViewManager::liveImportBacklogSize() const
 
 /**
 */
-void ViewManager::init(QTabWidget* main_tab_widget)
+void ViewManager::init(ViewDeck* main_view_deck)
 {
     logdbg;
 
-    traced_assert(main_tab_widget);
-    traced_assert(!main_tab_widget_);
+    traced_assert(main_view_deck);
+    traced_assert(!main_view_deck_);
     traced_assert(!initialized_);
 
-    main_tab_widget_ = main_tab_widget;
+    main_view_deck_ = main_view_deck;
 
     // app mode switches: connected by the composition root (CompassRoot::mainWindow())
 
@@ -316,7 +315,7 @@ GenerateResult ViewManager::generateSubConfigurable_impl(nlohmann::json& child_j
     if (class_name == "ViewContainer")
     {
         ViewContainer* container =
-                new ViewContainer(child_json, *this, this, main_tab_widget_, 0);
+                new ViewContainer(child_json, *this, this, main_view_deck_, 0);
         traced_assert(containers_.count(instance_name) == 0);
         containers_.insert(std::pair<std::string, ViewContainer*>(instance_name, container));
 
@@ -510,7 +509,8 @@ void ViewManager::addViewPoints(const std::vector <nlohmann::json>& viewpoints)
 /**
 */
 void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
-                                       bool load_blocking)
+                                       bool load_blocking,
+                                       bool open_view_deck)
 {
     if (current_viewable_)
         unsetCurrentViewPoint();
@@ -528,7 +528,7 @@ void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
     // annotation), bring a compatible view to the front. Switching before
     // the signal would make a not-yet-shown widget try to render mid-setup
     // (the GridView duplicates its legend / skips the chart on that path).
-    activateCompatibleViewTabs(current_viewable_);
+    activateCompatibleViews(current_viewable_, open_view_deck);
 
     reload(load_blocking);
 }
@@ -536,7 +536,8 @@ void ViewManager::setCurrentViewPoint (ViewableDataConfig* viewable,
 /**
 */
 void ViewManager::setCurrentViewPoint (std::shared_ptr<ViewableDataConfig> viewable,
-                                       bool load_blocking)
+                                       bool load_blocking,
+                                       bool open_view_deck)
 {
     traced_assert(viewable);
 
@@ -544,14 +545,14 @@ void ViewManager::setCurrentViewPoint (std::shared_ptr<ViewableDataConfig> viewa
     // unsetCurrentViewPoint(), which would immediately release the reference
     // again. The by-value parameter keeps the viewable alive meanwhile, which
     // also covers a blocking load completing inside the call.
-    setCurrentViewPoint(viewable.get(), load_blocking);
+    setCurrentViewPoint(viewable.get(), load_blocking, open_view_deck);
 
     current_viewable_owned_ = std::move(viewable);
 }
 
 /**
 */
-void ViewManager::activateCompatibleViewTabs(const ViewableDataConfig* viewable)
+void ViewManager::activateCompatibleViews(const ViewableDataConfig* viewable, bool open_view_deck)
 {
     if (!viewable)
         return;
@@ -589,16 +590,26 @@ void ViewManager::activateCompatibleViewTabs(const ViewableDataConfig* viewable)
         if (!container)
             continue;
 
+        const bool collapsed = container->viewDeckCollapsed();
+
+        // the user hid the views, only an explicit request brings them back
+        if (collapsed && !open_view_deck)
+            continue;
+
         View* current = container->currentView();
         if (current && supports(current))
+        {
+            if (collapsed)
+                current->showInViewDeck();
             continue;
+        }
 
         for (const auto& v : container->getViews())
         {
             if (supports(v.get()))
             {
                 View* view_to_show = v.get();
-                view_to_show->showInTabWidget();
+                view_to_show->showInViewDeck();
 
                 // QtCharts occasionally leaves the chart unrendered on a
                 // tab's first show this session - the user then sees the
@@ -822,14 +833,6 @@ void ViewManager::selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix
         loginf << "selection changed";
         emit selectionChangedSignal();
     }
-}
-
-/**
-*/
-void ViewManager::showMainViewContainerAddView()
-{
-    traced_assert(containers_.count("ViewContainer0"));
-    containers_.at("ViewContainer0")->showAddViewMenuSlot();
 }
 
 /**
@@ -1797,7 +1800,7 @@ void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode
         {
             bool follows_live = view_it.second->followsLiveData();
 
-            view_it.second->enableInTabWidget(follows_live);
+            view_it.second->enableInViewDeck(follows_live);
 
             // views not following the live ticks would keep showing data of the previous source (e.g. the
             // table view with row indices into buffers the ticks change) => empty until the next offline
@@ -1807,7 +1810,7 @@ void ViewManager::appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode
         }
         else
         {
-            view_it.second->enableInTabWidget(true);
+            view_it.second->enableInViewDeck(true);
         }
     }
 

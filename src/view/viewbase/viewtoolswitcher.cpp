@@ -97,6 +97,51 @@ void ViewToolSwitcher::addTool(int id,
 }
 
 /**
+ * Registers a tool of any kind. A mode tool is also a tool of the switcher (see addTool()).
+ */
+void ViewToolSwitcher::registerTool(const ViewTool& tool)
+{
+    if (registeredTool(tool.id))
+        throw std::runtime_error("ViewToolSwitcher::registerTool: duplicate id");
+
+    if (tool.kind == ViewTool::Kind::Mode)
+        addTool(tool.id, tool.name, tool.key, tool.icon, tool.cursor);
+
+    registered_tools_.push_back(tool);
+
+    //one mode tool is always active
+    if (tool.kind == ViewTool::Kind::Mode && default_tool_ < 0)
+    {
+        default_tool_ = tool.id;
+        setCurrentTool(tool.id);
+    }
+
+    emit toolRegisteredSignal(tool.id);
+}
+
+/**
+ * Returns the registered tool of the given id, or nullptr if the id wasn't registered.
+ */
+const ViewTool* ViewToolSwitcher::registeredTool(int id) const
+{
+    for (const auto& t : registered_tools_)
+        if (t.id == id)
+            return &t;
+
+    return nullptr;
+}
+
+/**
+ */
+void ViewToolSwitcher::notifyModeTool(int id, bool active)
+{
+    auto tool = registeredTool(id);
+
+    if (tool && tool->kind == ViewTool::Kind::Mode && tool->callback)
+        tool->callback(active);
+}
+
+/**
  * Sets the current tool.
  */
 void ViewToolSwitcher::setCurrentTool(int id, bool force_update)
@@ -104,6 +149,8 @@ void ViewToolSwitcher::setCurrentTool(int id, bool force_update)
     //return if the new tool is the same as the old one?
     if (!force_update && current_tool_ == id)
         return;
+
+    const int previous_tool = current_tool_;
 
     if (id < 0)
     {
@@ -119,8 +166,16 @@ void ViewToolSwitcher::setCurrentTool(int id, bool force_update)
 
     auto c = currentCursor();
 
+    const bool changed = previous_tool != current_tool_;
+
+    if (changed)
+        notifyModeTool(previous_tool, false);
+
     //inform receivers on tool change
     emit toolChanged(id, c);
+
+    if (changed)
+        notifyModeTool(current_tool_, true);
 }
 
 /**

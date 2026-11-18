@@ -315,7 +315,8 @@ namespace ui_test
     inline nlohmann::json getUIElementValueJSON(QTreeView* widget, const QString& what)
     {
         //list the tree contents as nested {name, value, children} objects,
-        //name = column 0 display text, value = column 1 display text (if present)
+        //name = column 0 display text, value = column 1 display text (if present),
+        //item_name = name for tree paths (if the model has one, see ItemNameRole)
         if (what == "entries" && widget->model())
         {
             QAbstractItemModel* model = widget->model();
@@ -334,6 +335,10 @@ namespace ui_test
 
                     nlohmann::json item;
                     item[ "name" ] = idx.data(Qt::DisplayRole).toString().toStdString();
+
+                    QVariant item_name = idx.data(ItemNameRole);
+                    if (item_name.isValid())
+                        item[ "item_name" ] = item_name.toString().toStdString();
 
                     if (model->columnCount(parent) > 1)
                     {

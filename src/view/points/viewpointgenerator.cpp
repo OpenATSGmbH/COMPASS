@@ -726,6 +726,7 @@ QRectF ViewPointGenFeatureGeoImage::roi() const
 const std::string ViewPointGenFeatureGrid::FeatureName                        = "grid";
 const std::string ViewPointGenFeatureGrid::FeatureGridFieldNameGrid           = "grid";
 const std::string ViewPointGenFeatureGrid::FeatureGridFieldNameRenderSettings = "render_settings";
+const std::string ViewPointGenFeatureGrid::ViewPointFieldNameBackground       = "grid_background";
 
 /**
 */

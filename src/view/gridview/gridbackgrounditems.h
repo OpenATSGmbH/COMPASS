@@ -29,6 +29,9 @@
 class GridView;
 class GridBackgroundRenderer;
 
+/// the polygon icon in the sector color (as in the Geographic View)
+QIcon gridBackgroundSectorIcon(const std::string& color);
+
 /**
  * Layer tree items of the Grid View background, list and sector style as in the Geographic View:
  *

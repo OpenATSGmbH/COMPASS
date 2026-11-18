@@ -12,6 +12,7 @@ target_sources(compass_app
         "${CMAKE_CURRENT_LIST_DIR}/mainwindow_commands_file.h"
         "${CMAKE_CURRENT_LIST_DIR}/mainwindow_commands_import.h"
         "${CMAKE_CURRENT_LIST_DIR}/toolbox.h"
+        "${CMAKE_CURRENT_LIST_DIR}/decklayout.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/client.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/crashbreadcrumbs.cpp"

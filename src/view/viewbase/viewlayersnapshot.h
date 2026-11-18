@@ -26,7 +26,7 @@
  * Layer of a view's data as shown in the layer panel's data subtree: a snapshot of the
  * values the view computed for it, no reference into the view's data.
  *
- * - owned by ViewDataWidget (see ViewDataWidget::updateLayerTree()), its data tree leaf
+ * - owned by ViewModel (see ViewModel::updateLayerTree()), its data tree leaf
  *   points at it until the next update
  * - visibility toggles are stored here, the view reads them (visible()) when drawing
  * - persistenceId() is the layer key ("<ds_type>:<ds_name>:L<n>:<dbcontent>")

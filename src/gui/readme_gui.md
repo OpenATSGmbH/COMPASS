@@ -255,8 +255,9 @@ Every View widget extends `ViewWidget` ([viewwidget.h:40-74](../view/viewbase/vi
 +----------------------------------------------------------+
 ```
 
-- The data widget is the central, dominant region. It claims the remaining space.
-- The config widget docks on the right. Min width 400 px ([viewconfigwidget.h:70-85](../view/viewbase/viewconfigwidget.h#L70-L85)). It is collapsible via the toolbar's Toggle Configuration Panel action.
+- The data widget is the central, dominant region. It claims the remaining space. Its minimum width is 250 px, set by `ViewWidget` for all views. Render widgets do not set a minimum width.
+- The config widget docks on the right. Min width 400 px ([viewconfigwidget.h](../view/viewbase/viewconfigwidget.h)). It is collapsible via the toolbar's Toggle Configuration Panel action. It also collapses by itself when the view gets narrower than its minimum width plus 600 px, and expands again 50 px above that. A collapse by the user stays until the user opens it ([configpanelstate.h](../view/viewbase/configpanelstate.h)).
+- Only the shown view tab counts for the minimum width of the view area (`ViewContainer::updateTabSizePolicies()`).
 - The toolbar is **optional**: a View that is entirely passive (e.g. TableView) may omit it. Once a View has any interactive tool (Select, Zoom, ...), the toolbar is required.
 - The status row ([viewloadstatewidget.h:37-99](../view/viewbase/viewloadstatewidget.h#L37-L99)) is mandatory; it is the only legitimate channel for "no data", "loading", "reload required" feedback.
 
@@ -357,7 +358,7 @@ A View opts into annotations by extending `VariableView` and constructing its `V
 
 - `VariableView::currentAnnotation()` returns the user-selected annotation; the data widget reads it and overlays it (time markers, regions, ...).
 - The annotation subtree is radio-style single-select: when annotations are present, exactly one is always shown. Clicking another leaf swaps the active annotation; the active leaf cannot be unchecked. There is no "show variables instead" escape hatch in the UI - on view-point unshow, the framework reverts to variable display automatically.
-- The flat 2-level structure (group -> annotation) is built by `AnnotationsRootItem::update(...)` ([annotationsrootitem.h](../view/viewbase/layerpanel/annotationsrootitem.h)) from `VariableView::annotations()`. Data widgets connect to `VariableView::annotationsChangedSignal` and call `annotationsRootItem()->update(...)` on every change. See [scatterplotviewdatawidget.cpp](../view/scatterplotview/scatterplotviewdatawidget.cpp), [histogramviewdatawidget.cpp](../view/histogramview/histogramviewdatawidget.cpp), [gridviewdatawidget.cpp](../view/gridview/gridviewdatawidget.cpp) for the wiring.
+- The flat 2-level structure (group -> annotation) is built by `AnnotationsRootItem::update(...)` ([annotationsrootitem.h](../view/viewbase/layerpanel/annotationsrootitem.h)) from `VariableView::annotations()`. The update runs on every `VariableView::annotationsChangedSignal`. The view does it itself (`VariableView::updateAnnotationsTree`, [variableview.cpp](../view/viewbase/variableview.cpp)).
 - A View that does not support annotations returns `false` from `canShowAnnotations()`. The `Annotations` subtree is then never created. Do not silently accept annotation calls and ignore them.
 - **Saving** the current visualization as a view point is not a per-View action. The Flight Deck's `View Points` tool ([viewpointswidget.h:34-101](../view/points/viewpointswidget.h#L34-L101)) handles export / import / management.
 

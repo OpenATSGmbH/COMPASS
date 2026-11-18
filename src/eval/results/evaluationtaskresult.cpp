@@ -425,6 +425,17 @@ std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetView
 }
 
 /**
+ * The target report details table only reads the rows of its target from the database and the const
+ * report table catalog. The target overview figure and the targets table use the calculator, which is
+ * created on first use and holds the evaluation data.
+ */
+bool EvaluationTaskResult::loadOnDemandOffMainThread(const ResultReport::SectionContent& content) const
+{
+    return content.contentType() == ResultReport::SectionContentType::Table &&
+           content.name() == EvaluationRequirementResult::Single::TRDetailsTableName;
+}
+
+/**
  */
 bool EvaluationTaskResult::loadOnDemandFigure_impl(ResultReport::SectionContentFigure* figure) const
 {

@@ -762,8 +762,9 @@ bool injectMenuEvent(QWidget* root,
 }
 
 /**
- * Resolves a tree item via a path of display texts, expanding the parents on the
- * way and scrolling to the item. Returns an invalid index if a part is not found.
+ * Resolves a tree item via a path of display texts (or item names, see ItemNameRole),
+ * expanding the parents on the way and scrolling to the item. Returns an invalid
+ * index if a part is not found.
  */
 static QModelIndex resolveTreeItem(QTreeView* tree, const QStringList& path_to_item)
 {
@@ -780,14 +781,17 @@ static QModelIndex resolveTreeItem(QTreeView* tree, const QStringList& path_to_i
 
         QModelIndex found;
         int nrows = model->rowCount(current);
-        for (int r = 0; r < nrows; ++r)
+        for (int role : { (int)Qt::DisplayRole, ItemNameRole })
         {
-            QModelIndex idx = model->index(r, 0, current);
-            if (idx.isValid() && idx.data(Qt::DisplayRole).toString().trimmed() == part)
+            for (int r = 0; r < nrows && !found.isValid(); ++r)
             {
-                found = idx;
-                break;
+                QModelIndex idx = model->index(r, 0, current);
+                if (idx.isValid() && idx.data(role).toString().trimmed() == part)
+                    found = idx;
             }
+
+            if (found.isValid())
+                break;
         }
 
         if (!found.isValid())

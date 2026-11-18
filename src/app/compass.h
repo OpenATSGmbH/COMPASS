@@ -67,6 +67,7 @@ class COMPASS_APP_API COMPASS : public QObject, public Configurable, public rtco
 
 signals:
     void databaseOpenedSignal();
+    void databaseAboutToCloseSignal(); // last chance to stop reads in other threads
     void databaseClosedSignal();
 
     // relayed from AppState, for the libraries above core

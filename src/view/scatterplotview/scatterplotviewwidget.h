@@ -20,9 +20,8 @@
 #include "variableviewwidget.h"
 
 class ScatterPlotView;
-class ScatterPlotViewDataToolWidget;
+class ScatterPlotViewRenderWidget;
 class ScatterPlotViewConfigWidget;
-class ScatterPlotViewDataWidget;
 
 class QSplitter;
 class QTabWidget;
@@ -42,11 +41,15 @@ public:
     /// @brief Destructor
     virtual ~ScatterPlotViewWidget();
 
-    ScatterPlotViewDataWidget* getViewDataWidget();
-    const ScatterPlotViewDataWidget* getViewDataWidget() const;
+    ScatterPlotViewRenderWidget* renderWidget() { return render_widget_; }
     ScatterPlotViewConfigWidget* getViewConfigWidget();
     const ScatterPlotViewConfigWidget* getViewConfigWidget() const;
 
     /// @brief Returns the basis view
     ScatterPlotView* getView();
+
+private:
+    void registerTools(ScatterPlotView* view);
+
+    ScatterPlotViewRenderWidget* render_widget_ = nullptr; // owned by the view widget (Qt parent)
 };

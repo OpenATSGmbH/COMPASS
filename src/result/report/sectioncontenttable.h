@@ -29,6 +29,7 @@
 #include <QTimer>
 #include <QWidget>
 #include <QVariant>
+#include <QPointer>
 
 #include <vector>
 #include <functional>
@@ -349,7 +350,8 @@ protected:
     ColumnGroups  column_groups_;
     unsigned int  latex_ref_column_ = 0;
 
-    mutable SectionContentTableWidget* table_widget_ {nullptr};
+    // null once the section widget which holds the table widget was deleted
+    mutable QPointer<SectionContentTableWidget> table_widget_;
 
     std::map<std::string, std::function<void()>> callback_map_;
 };
@@ -411,6 +413,7 @@ public:
     bool configure(const nlohmann::json& j);
 
     static const int DoubleClickCheckIntervalMSecs;
+    static const int MaxVisibleRows;
 
     static const std::string FieldConfigSortColumn;
     static const std::string FieldConfigSortOrder;

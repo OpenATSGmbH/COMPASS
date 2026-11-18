@@ -18,24 +18,26 @@
 #pragma once
 
 #include "report/treemodel.h"
+#include "report/reportdocumentlayout.h"
 #include "json_fwd.hpp"
 
 #include <boost/optional.hpp>
 
 #include <QWidget>
 #include <QTreeView>
-#include <QStackedWidget>
 
 class TaskResultsWidget;
 class PopupMenu;
 
 class QPushButton;
 class QLabel;
+class QSplitter;
 
 namespace ResultReport
 {
 
 class Section;
+class ReportDocumentView;
 
 class ReportWidget : public QWidget
 {
@@ -48,19 +50,27 @@ public slots:
 
     void stepBackSlot();
 
+    void currentSectionChangedSlot(Section* section);
+    void sidebarExpansionChangedSlot();
+    void reportAboutToClearSlot();
+
 public:
     ReportWidget(TaskResultsWidget& task_result_widget);
     virtual ~ReportWidget();
 
+    /// whether the section sidebar is shown at the given width of the report widget
+    static bool sidebarShownForWidth(bool shown, int width);
+
+    static const int SidebarHideWidth;
+    static const int SidebarShowHysteresis;
+
     void setReport(const std::shared_ptr<Report>& report);
     void clear();
+    void releaseDocument();
 
     void expand();
 
-    void showResultWidget(Section* section, // can be nullptr
-                          bool preload_ondemand_contents); 
-
-    void selectID(const std::string& id, 
+    void selectID(const std::string& id,
                   bool show_figure,
                   const nlohmann::json& config);
     void reshowLastId ();
@@ -74,22 +84,32 @@ public:
     static const std::string FieldConfigScrollPosH;
 
 protected:
-    void expandAllParents (QModelIndex index);
+    void expandAllParents (QTreeView* view, QModelIndex index);
+    void expandSidebarInitially();
+
+    void resizeEvent(QResizeEvent* event) override;
+    void applySidebarShown(bool shown);
+    ReportDocumentLayout::SectionSet collapsedSections() const;
+    void selectInTrees(const QModelIndex& index);
+    QModelIndex modelIndex(Section* section) const;
     void updateBackButton ();
     void updateCurrentSectionLabel();
     void triggerItem (const QModelIndex& index,
                       bool preload_ondemand_contents);
-    
+
     bool configureSection(const nlohmann::json& config);
 
     TaskResultsWidget& task_result_widget_;
 
     ResultReport::TreeModel tree_model_;
     QTreeView* tree_view_;
+    QTreeView* sidebar_view_ {nullptr};
 
-    QStackedWidget* results_widget_{nullptr};
+    QSplitter*          splitter_      {nullptr};
+    ReportDocumentView* document_view_ {nullptr};
 
     QPushButton* sections_button_{nullptr};
+    bool         sidebar_shown_ {true};
     std::unique_ptr<PopupMenu> sections_menu_;
 
     QPushButton* back_button_ {nullptr};
@@ -99,6 +119,10 @@ protected:
     Section* current_section_       = nullptr;
 
     bool always_show_section_figure_ = true;
+
+    std::shared_ptr<Report> report_;
+    QMetaObject::Connection report_clear_connection_;
+    bool                    document_outdated_ = false;
 };
 
 }

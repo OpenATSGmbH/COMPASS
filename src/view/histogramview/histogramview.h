@@ -20,11 +20,13 @@
 #include "compass_view_export.h"
 
 #include "variableview.h"
-#include "histogram_raw.h"
+#include "histogramdisplaydata.h"
+
+#include <memory>
 
 class HistogramViewWidget;
 class HistogramViewDataSource;
-class HistogramViewDataWidget;
+class HistogramViewModel;
 
 namespace dbContent 
 {
@@ -63,11 +65,20 @@ public:
 
     virtual void accept(LatexVisitor& v) override;
 
+    std::string deckNamePrefix() const override;
+    QIcon deckIcon() const override;
+
     virtual bool canShowAnnotations() const override final { return true; }
     virtual std::set<std::string> acceptedAnnotationFeatureTypes() const override;
 
     bool useLogScale() const;
     void useLogScale(bool value, bool notify_changes);
+
+    HistogramViewModel& model() { return *model_; }
+    const HistogramViewModel& model() const { return *model_; }
+
+    /// the render options of the render widget, from the settings of the view
+    HistogramRenderOptions renderOptions() const;
 
     static const std::string ParamUseLogScale;
 
@@ -93,9 +104,11 @@ protected:
 
     virtual dbContent::VariableSet getBaseSet(const std::string& dbcontent_name) override;
 
-    HistogramViewDataWidget* getDataWidget();
-    const HistogramViewDataWidget* getDataWidget() const;
+    /// the display data can carry its own log scale, the setting follows it
+    void displayDataChanged();
 
+    /// For data processing, lives longer than the widget
+    std::unique_ptr<HistogramViewModel> model_;
     /// For data display
     HistogramViewWidget* widget_{nullptr};
     /// For data loading

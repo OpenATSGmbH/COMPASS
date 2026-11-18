@@ -16,6 +16,7 @@
  */
 
 #include "histogramview.h"
+#include "files.h"
 
 #include <QApplication>
 
@@ -24,8 +25,9 @@
 #include "dbcontent/variable/metavariable.h"
 #include "histogramviewconfigwidget.h"
 #include "histogramviewdatasource.h"
-#include "histogramviewdatawidget.h"
+#include "histogramviewmodel.h"
 #include "histogramviewwidget.h"
+#include "viewmanager.h"
 #include "logger.h"
 #include "latexvisitor.h"
 #include "viewpointgenerator.h"
@@ -61,6 +63,19 @@ HistogramView::HistogramView(nlohmann::json& config, ViewContainer* parent)
 
     addVariable("data_var", "", "data_var", META_OBJECT_NAME, dbcontent_vars::meta_var_timestamp_.name(), true, true, false, valid_types);
 
+    model_.reset(new HistogramViewModel(viewManager().dbContentManager(),
+                                        viewManager().dbContextManager(),
+                                        viewManager().appState()));
+    model_->setObjectName(QString::fromStdString(instanceName()));
+    model_->setVariable(variable(0));
+
+    setModel(model_.get());
+
+    connect(model_.get(), &ViewModel::displayDataChangedSignal, this, &HistogramView::displayDataChanged);
+
+    //note: triggers a view update, otherwise a manual update would be needed
+    connect(model_.get(), &ViewModel::selectionChangedSignal, this, &View::emitSelectionChange);
+
     // create sub done in init
 }
 
@@ -88,31 +103,6 @@ bool HistogramView::init_impl()
     createSubConfigurables();
 
     traced_assert(data_source_);
-
-//    connect(data_source_, &HistogramViewDataSource::loadingStartedSignal, widget_->getDataWidget(),
-//            &HistogramViewDataWidget::loadingStartedSlot);
-//    connect(data_source_, &HistogramViewDataSource::updateDataSignal, widget_->getDataWidget(),
-//            &HistogramViewDataWidget::updateDataSlot);
-
-//    connect(widget_->configWidget(), &HistogramViewConfigWidget::exportSignal,
-//            widget_->getDataWidget(), &HistogramViewDataWidget::exportDataSlot);
-//    connect(widget_->getDataWidget(), &HistogramViewDataWidget::exportDoneSignal,
-//            widget_->configWidget(), &HistogramViewConfigWidget::exportDoneSlot);
-
-//    connect(data_source_, &HistogramViewDataSource::loadingStartedSignal, widget_->configWidget(),
-//            &HistogramViewConfigWidget::loadingStartedSlot);
-
-    //    connect(this, &HistogramView::showOnlySelectedSignal, widget_->getDataWidget(),
-    //            &HistogramViewDataWidget::showOnlySelectedSlot);
-    //    connect(this, &HistogramView::usePresentationSignal, widget_->getDataWidget(),
-    //            &HistogramViewDataWidget::usePresentationSlot);
-    //    connect(this, &HistogramView::showAssociationsSignal, widget_->getDataWidget(),
-    //            &HistogramViewDataWidget::showAssociationsSlot);
-
-    //    widget_->getDataWidget()->showOnlySelectedSlot(show_only_selected_);
-    //    widget_->getDataWidget()->usePresentationSlot(use_presentation_);
-    //    widget_->getDataWidget()->showAssociationsSlot(show_associations_);
-
 
     return true;
 }
@@ -154,18 +144,25 @@ void HistogramView::checkSubConfigurables()
 
 /**
  */
-HistogramViewDataWidget* HistogramView::getDataWidget()
+HistogramRenderOptions HistogramView::renderOptions() const
 {
-    traced_assert(widget_);
-    return widget_->getViewDataWidget();
+    HistogramRenderOptions options;
+    options.use_log_scale = settings_.use_log_scale;
+
+    return options;
 }
 
 /**
  */
-const HistogramViewDataWidget* HistogramView::getDataWidget() const
+void HistogramView::displayDataChanged()
 {
-    traced_assert(widget_);
-    return widget_->getViewDataWidget();
+    auto data = model_->displayData();
+
+    if (!data || !data->histogram.useLogScale().has_value())
+        return;
+
+    useLogScale(data->histogram.useLogScale().value(), false);
+    updateComponents();
 }
 
 /**
@@ -181,6 +178,20 @@ VariableSet HistogramView::getBaseSet(const std::string& dbcontent_name)
 void HistogramView::accept(LatexVisitor& v)
 {
     v.visit(this);
+}
+
+/**
+ */
+std::string HistogramView::deckNamePrefix() const
+{
+    return "Histo";
+}
+
+/**
+ */
+QIcon HistogramView::deckIcon() const
+{
+    return Utils::Files::IconProvider::getIcon("view_histogram.png");
 }
 
 /**
@@ -206,9 +217,6 @@ void HistogramView::useLogScale(bool use_log_scale, bool notify_changes)
 {
     setParameter(settings_.use_log_scale, use_log_scale);
 
-    HistogramViewDataWidget* data_widget = dynamic_cast<HistogramViewDataWidget*>(getDataWidget());
-    traced_assert(data_widget);
-
     if (notify_changes)
     {
         updateView(VU_Redraw);
@@ -222,7 +230,7 @@ void HistogramView::updateSelection_impl()
     loginf;
     traced_assert(widget_);
     
-    widget_->getViewDataWidget()->redrawData(true);
+    widget_->redrawData(true);
 
     //    if (show_only_selected_)
     //        widget_->getDataWidget()->updateToSelection();
@@ -234,29 +242,7 @@ void HistogramView::updateSelection_impl()
  */
 ViewInfos HistogramView::viewInfos_impl() const
 {
-    HistogramViewDataWidget::ViewInfo info = getDataWidget()->getViewInfo();
-
-    ViewInfos vinfos;
-
-    vinfos.addSection("Histogram Range");
-
-    if (!info.has_result)
-    {
-        vinfos.addInfo("info_range_min", "Minimum:"            , "-");
-        vinfos.addInfo("info_range_max", "Maximum:"            , "-");
-        vinfos.addInfo("info_oor_count", "Out of range values:", "-");
-    }
-    else 
-    {
-        vinfos.addInfo("info_range_min", "Minimum:", info.min.isEmpty() ? "Not available" : info.min.toStdString(), info.min.isEmpty());
-        vinfos.addInfo("info_range_max", "Maximum:", info.max.isEmpty() ? "Not available" : info.max.toStdString(), info.max.isEmpty());
-        vinfos.addInfo("info_oor_count", "Out of range values:", std::to_string(info.out_of_range), false);
-
-        if (info.zoom_active)
-            vinfos.addInfo("info_zoom_active", "", "Zoom active", true);
-    }
-
-    return vinfos;
+    return model_->viewInfo();
 }
 
 /**

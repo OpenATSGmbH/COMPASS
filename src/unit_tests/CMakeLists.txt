@@ -32,6 +32,7 @@ include("${CMAKE_SOURCE_DIR}/src/gui/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/view/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/view/viewbase/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/view/histogramview/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/view/scatterplotview/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/app/unit_tests/CMakeLists.txt")
 
 target_include_directories(compass_tests PRIVATE

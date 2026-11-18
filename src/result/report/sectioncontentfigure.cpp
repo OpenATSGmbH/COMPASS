@@ -23,7 +23,11 @@
 #include "taskresult.h"
 
 #include "itaskprovider.h"
+#include "viewmanager.h"
 #include "viewpointgenerator.h"
+#include "reportfigure.h"
+#include "viewrenderwidget.h"
+#include "ui_test_common.h"
 
 #include "logger.h"
 #include "stringconv.h"
@@ -35,6 +39,8 @@
 #include <QApplication>
 #include <QThread>
 #include <QImage>
+
+#include <algorithm>
 
 namespace ResultReport
 {
@@ -101,25 +107,84 @@ void SectionContentFigure::addContentUI(QVBoxLayout* layout,
     if (isLocked())
     {
         layout->addWidget(lockStatePlaceholderWidget());
+        return;
     }
-    else
+
+    QLabel* label = new QLabel(("Figure: " + name()).c_str());
+
+    QPushButton* view_button = new QPushButton("View");
+    view_button->setIcon(QIcon());
+    view_button->setToolTip("Show the figure in the views");
+    UI_TEST_OBJ_NAME(view_button, QString::fromStdString("Figure " + name() + " View Button"));
+
+    QObject::connect (view_button, &QPushButton::clicked, [ this ] () { this->view(false, true); });
+
+    const auto entries = renderEntries();
+
+    if (entries.empty())
     {
         QHBoxLayout* fig_layout = new QHBoxLayout();
 
-        fig_layout->addWidget(new QLabel(("Figure: " + name()).c_str()));
+        fig_layout->addWidget(label);
         fig_layout->addStretch();
-
-        QPushButton* view_button = new QPushButton("View");
-        QObject::connect (view_button, &QPushButton::clicked, [ this ] () { this->view(); });
         fig_layout->addWidget(view_button);
 
         layout->addLayout(fig_layout);
+        return;
     }
+
+    layout->addWidget(label);
+
+    const bool geographic = std::any_of(entries.begin(), entries.end(),
+                                        [] (const report_figure::RenderEntry& e) { return e.geographic; });
+
+    const auto* ctx_man = geographic ? sectorSource() : nullptr;
+
+    for (const auto& entry : entries)
+    {
+        ViewRenderWidget* render_widget = report_figure::createRenderWidget(entry, ctx_man).release();
+        UI_TEST_OBJ_NAME(render_widget, QString::fromStdString("Figure " + name() + " " + entry.image_name));
+
+        layout->addWidget(render_widget);
+    }
+
+    QHBoxLayout* button_layout = new QHBoxLayout();
+
+    button_layout->addStretch();
+    button_layout->addWidget(view_button);
+
+    layout->addLayout(button_layout);
 }
 
 /**
  */
-bool SectionContentFigure::view(bool load_blocking) const
+const context::DBContextManager* SectionContentFigure::sectorSource()
+{
+    auto result = taskResult();
+    if (!result)
+        return nullptr;
+
+    return &result->taskManager().viewManager().dbContextManager();
+}
+
+/**
+ */
+std::vector<report_figure::RenderEntry> SectionContentFigure::renderEntries() const
+{
+    //the content of an on-demand figure is not built only to draw it, such a figure stays with the views
+    if (isOnDemand())
+        return {};
+
+    auto content = viewableContent();
+    if (!content)
+        return {};
+
+    return report_figure::selectRenderEntries(nlohmann::json(*content));
+}
+
+/**
+ */
+bool SectionContentFigure::view(bool load_blocking, bool open_view_deck) const
 {
     loginf << "viewing figure '" << name() << "'";
 
@@ -139,7 +204,7 @@ bool SectionContentFigure::view(bool load_blocking) const
 
     //view content
     logdbg << "content: " << nlohmann::json(*content).dump(4);
-    report_->setCurrentViewable(*content, load_blocking);
+    report_->setCurrentViewable(*content, load_blocking, open_view_deck);
 
     return true;
 }

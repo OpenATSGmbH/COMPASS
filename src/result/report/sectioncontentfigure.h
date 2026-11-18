@@ -24,6 +24,16 @@
 
 #include "json_fwd.hpp"
 
+namespace report_figure
+{
+    struct RenderEntry;
+}
+
+namespace context
+{
+    class DBContextManager;
+}
+
 namespace ResultReport
 {
 
@@ -61,7 +71,8 @@ public:
     virtual void addContentUI(QVBoxLayout* layout,
                               bool force_ui_reset) override;
 
-    bool view (bool load_blocking = false) const;
+    /// open_view_deck: a collapsed View Deck opens to show the figure (View button)
+    bool view (bool load_blocking = false, bool open_view_deck = false) const;
     void executeRenderDelay() const;
 
     FigureType figureType() const { return fig_type_; }
@@ -72,6 +83,12 @@ public:
 
     /// stored view point of the figure, loads on-demand content if needed (empty pointer if none)
     std::shared_ptr<nlohmann::json::object_t> viewableContent() const;
+
+    /// The render widgets that draw the figure in the report GUI and in the export, one per annotation.
+    /// Empty: the views show the figure ("View" button, image of each view with content).
+    std::vector<report_figure::RenderEntry> renderEntries() const;
+    /// the sectors the geographic grids of the render widgets draw, nullptr without a task result
+    const context::DBContextManager* sectorSource();
 
     static const std::string FieldFigureType;
     static const std::string FieldCaption;

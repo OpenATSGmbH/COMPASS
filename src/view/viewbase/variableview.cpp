@@ -18,8 +18,10 @@
 #include "variableview.h"
 #include "viewvariable.h"
 #include "viewwidget.h"
-#include "variableviewdatawidget.h"
 #include "variableviewconfigwidget.h"
+#include "variableviewmodel.h"
+#include "viewlayertreemodel.h"
+#include "annotationsrootitem.h"
 #include "viewpointgenerator.h"
 
 #include "viewabledataconfig.h"
@@ -41,18 +43,6 @@ VariableView::~VariableView()
 
 /**
  */
-VariableViewDataWidget* VariableView::getDataWidget()
-{
-    traced_assert(widget_);
-
-    auto data_widget = dynamic_cast<VariableViewDataWidget*>(widget_->getViewDataWidget());
-    traced_assert(data_widget);
-
-    return data_widget;
-}
-
-/**
- */
 VariableViewConfigWidget* VariableView::getConfigWidget()
 {
     traced_assert(widget_);
@@ -61,6 +51,57 @@ VariableViewConfigWidget* VariableView::getConfigWidget()
     traced_assert(config_wigdet);
 
     return config_wigdet;
+}
+
+/**
+ */
+void VariableView::setModel(VariableViewModel* model)
+{
+    traced_assert(model);
+    traced_assert(!model_);
+
+    model_ = model;
+
+    // the layer panel may be attached later, and the view may have collected annotations before
+    // (e.g. a view point load)
+    connect(this, &VariableView::annotationsChangedSignal, this, &VariableView::updateAnnotationsTree);
+    connect(model_, &ViewModel::layerPanelAttachedSignal, this, &VariableView::updateAnnotationsTree);
+}
+
+/**
+ */
+void VariableView::updateAnnotationsTree()
+{
+    auto* layer_model = model_ ? model_->layerPanelModel() : nullptr;
+    if (!layer_model || !layer_model->annotationsRootItem())
+        return;
+
+    layer_model->annotationsRootItem()->updateFrom(annotations(),
+                                                   currentAnnotationGroupIdx(),
+                                                   currentAnnotationIdx(),
+                                                   this);
+}
+
+/**
+ */
+void VariableView::updateModelAnnotation()
+{
+    if (!model_)
+        return;
+
+    if (!show_annotation_ || !hasCurrentAnnotation())
+    {
+        model_->clearAnnotation();
+        return;
+    }
+
+    const auto& anno = currentAnnotation();
+
+    model_->setAnnotationIndices(currentAnnotationGroupIdx(), currentAnnotationIdx());
+
+    std::string error;
+    if (!model_->setAnnotation(anno.feature_json, anno.metadata, &error) && hasViewPoint())
+        viewPoint().reportError(getName(), "annotation error: " + error);
 }
 
 /**
@@ -316,7 +357,9 @@ void VariableView::onShowAnnotationChanged()
     // covers tree-driven activation, view-point auto-switch, and unshow.
     getConfigWidget()->updateConfig();
 
-    widget_->getViewDataWidget()->redrawData(true);
+    updateModelAnnotation();
+
+    widget_->redrawData(true);
     widget_->updateComponents();
 }
 
@@ -383,19 +426,11 @@ void VariableView::clearAnnotations()
 
 /**
  */
-void VariableView::scanViewPointForAnnotations()
+std::vector<VariableView::AnnotationGroup> VariableView::scanForAnnotations(const nlohmann::json& view_point,
+                                                                            const std::set<std::string>& feature_types)
 {
-    clearAnnotations();
-
-    if (!current_view_point_)
-        return;
-
-    const auto& j = current_view_point_->data();
-
     //scan view point for annotation features
-    auto features = ViewPointGenVP::scanForFeatures(j, acceptedAnnotationFeatureTypes());
-    if (features.empty())
-        return;
+    auto features = ViewPointGenVP::scanForFeatures(view_point, feature_types);
 
     std::map<std::string, AnnotationGroup> groups;
 
@@ -416,14 +451,30 @@ void VariableView::scanViewPointForAnnotations()
         group.annotations.push_back(anno);
     }
 
-    for (const auto& g : groups)
-        annotations_.push_back(g.second);
+    std::vector<AnnotationGroup> annotations;
 
-    if (!annotations_.empty())
-    {
-        current_annotation_group_idx_ = 0;
-        current_annotation_idx_       = 0;
-    }
+    for (const auto& g : groups)
+        annotations.push_back(g.second);
+
+    return annotations;
+}
+
+/**
+ */
+void VariableView::scanViewPointForAnnotations()
+{
+    clearAnnotations();
+
+    if (!current_view_point_)
+        return;
+
+    annotations_ = scanForAnnotations(current_view_point_->data(), acceptedAnnotationFeatureTypes());
+
+    if (annotations_.empty())
+        return;
+
+    current_annotation_group_idx_ = 0;
+    current_annotation_idx_       = 0;
 
     emit annotationsChangedSignal();
 }

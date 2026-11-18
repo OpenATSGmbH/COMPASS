@@ -338,7 +338,22 @@ In a nice formatting such a string can look like this:
 
 Please note that 'dbcontent\_name\_ref' cannot be set to CAT001 or CAT048; these categories do not provide the maximum X/Y standard deviation required for reference accuracy filtering and are rejected as reference data. \\
 
-The configuration of such parameters is rather complex, and it is recommended to contact the author if detailed information is needed.
+The configuration of such parameters is rather complex, and it is recommended to contact the author if detailed information is needed. \\
+
+The parameter 'report\_figure\_background' sets the background of the geographic report figures, see \nameref{sec:eval_report_figure_background}. It replaces the stored set, a missing field gets its default:
+
+\begin{itemize}
+\item color: background color, e.g. "\#000000"
+\item map\_show, map\_file, map\_opacity (percent): map
+\item borders\_show: national borders
+\item sectors\_show, hidden\_sector\_layers (names), hidden\_sectors (sector IDs): sectors. Without 'hidden\_sector\_layers' the default sector selection of the task applies.
+\end{itemize}
+\ \\
+
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+--evaluation_parameters '{"report_figure_background": {"borders_show": false, "map_opacity": 30}}'
+\end{lstlisting}
+\ \\
 
 \subsubsection{-{}-evaluate\_run\_filter}
 
@@ -354,7 +369,13 @@ Triggers the Analyze Data Source task for the given DSType. In the current relea
 
 \subsubsection{-{}-analyze\_parameters 'str'}
 
-Provides a JSON parameter block for the Analyze task, analogous to \nameref{sec:command_line}'s '--evaluation\_parameters' for the Evaluation task. The exact JSON schema depends on the chosen DSType and is documented alongside \nameref{chap:analyze}.
+Provides a JSON parameter block for the Analyze task, analogous to \nameref{sec:command_line}'s '--evaluation\_parameters' for the Evaluation task. The exact JSON schema depends on the chosen DSType and is documented alongside \nameref{chap:analyze}. \\
+
+The parameter 'report\_figure\_background' sets the background of the geographic report figures, with the same fields as for the Evaluation, see \nameref{sec:analyze_report_figure_background}:
+
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+--analyze_parameters '{"report_figure_background": {"color": "#202020", "hidden_sector_layers": []}}'
+\end{lstlisting}
 
 
 \subsubsection{-{}-export\_report 'str'}

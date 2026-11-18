@@ -26,6 +26,7 @@
 #include "evaluationdatasourcewidget.h"
 #include "evaluationsectorwidget.h"
 #include "evaluationstandardcombobox.h"
+#include "ui_test_common.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -52,6 +53,7 @@ EvaluationDialog::EvaluationDialog(EvaluationCalculator& calculator, QWidget* pa
     QVBoxLayout* main_layout = new QVBoxLayout();
 
     QTabWidget* tab_widget = new QTabWidget();
+    UI_TEST_OBJ_NAME(tab_widget, "tab_widget");
 
     main_tab_widget_.reset(new EvaluationMainTabWidget(calculator_, *this));
     tab_widget->addTab(main_tab_widget_.get(), "Main");

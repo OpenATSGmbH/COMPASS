@@ -169,9 +169,9 @@ std::vector<std::string> ViewPointsWidget::toolLabels() const
 
 /**
  */
-toolbox::ScreenRatio ViewPointsWidget::defaultScreenRatio() const 
+int ViewPointsWidget::defaultWidthPercent() const
 {
-    return ToolBoxWidget::defaultScreenRatio();
+    return 40;
 }
 
 /**

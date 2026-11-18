@@ -26,10 +26,11 @@
 
 class MainLoadWidget;
 class View;
+class ViewDeck;
 class ViewManager;
 class QHBoxLayout;
 class QPushButton;
-class QTabWidget;
+class QWidget;
 
 class ViewManager;
 
@@ -39,9 +40,8 @@ class ViewContainer : public QObject, public Configurable
 
   public slots:
     void showAddViewMenuSlot();
-    void showViewMenuSlot();
     // void saveViewTemplate ();
-    void deleteViewSlot();
+    void closeViewSlot(QWidget* view_widget);
     void addNewViewSlot();
 
   public:
@@ -49,7 +49,7 @@ class ViewContainer : public QObject, public Configurable
     DECLARE_SUBCONFIGURABLE_FACTORY(viewFactory, View, ViewContainer, None)
 
     ViewContainer(nlohmann::json& config, ViewManager& view_manager,
-                  Configurable* parent, QTabWidget* tab_widget, int window_cnt);
+                  Configurable* parent, ViewDeck* view_deck, int window_cnt);
     virtual ~ViewContainer();
 
     const std::vector<std::unique_ptr<View>>& getViews() const;
@@ -60,13 +60,16 @@ class ViewContainer : public QObject, public Configurable
     //static unsigned int getViewCount() { return view_count_; }
 
     void addView(const std::string& class_name);
-    void enableViewTab(QWidget* widget, bool value);
+    void enableView(QWidget* widget, bool value);
+    /// selects the view in the View Deck and opens the deck if it is collapsed
     void showView(QWidget* widget);
 
-    /// View whose central widget is the currently-selected tab in this
-    /// container; nullptr if the container is empty or the current tab does
-    /// not correspond to any owned view.
+    /// View selected in the View Deck of this container (also while the deck
+    /// is collapsed), nullptr if the container is empty.
     View* currentView() const;
+
+    /// true if the View Deck shows only its icon bar, so no view is visible
+    bool viewDeckCollapsed() const;
 
     void resetToStartupConfiguration();
 
@@ -76,7 +79,7 @@ class ViewContainer : public QObject, public Configurable
   protected:
     ViewManager& view_manager_;
 
-    QTabWidget* tab_widget_{nullptr};
+    ViewDeck* view_deck_{nullptr};
 
     int window_cnt_{0};
     bool disable_add_remove_views_ {false};

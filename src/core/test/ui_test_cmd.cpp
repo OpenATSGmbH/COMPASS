@@ -184,6 +184,20 @@ bool RTCommandUIGet::run_impl()
         result_string = receiver.second->styleSheet().toStdString();
         result        = result_string;
     }
+    else if (what == "geometry")
+    {
+        //position in the parent widget and size, in the pixels of the layout (not of the screen)
+        const QRect geometry = receiver.second->geometry();
+
+        nlohmann::json v;
+        v[ "x"      ] = geometry.x();
+        v[ "y"      ] = geometry.y();
+        v[ "width"  ] = geometry.width();
+        v[ "height" ] = geometry.height();
+
+        result        = v;
+        result_string = v.dump();
+    }
     else if (what.startsWith("grab:"))
     {
         //save an image of the widget as rendered by the application (no desktop screenshot needed)

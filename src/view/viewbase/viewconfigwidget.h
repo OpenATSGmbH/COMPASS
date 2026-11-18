@@ -63,7 +63,7 @@ protected:
 
     ViewWidget* getWidget() { return view_widget_; }
 
-    /// layer panel attached to the view's data widget, its Data expansion follows the color mode
+    /// layer panel attached to the view's model, its Data expansion follows the color mode
     /// Notice: the caller places it in its layout
     ViewLayerPanelWidget* createLayerPanel(const std::vector<LayerColumnSpec>& custom_columns,
                                            bool show_annotations);

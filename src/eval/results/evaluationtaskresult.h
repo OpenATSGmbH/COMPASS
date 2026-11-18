@@ -59,6 +59,8 @@ public:
 
     std::string startSection() const override final;
 
+    bool loadOnDemandOffMainThread(const ResultReport::SectionContent& content) const override final;
+
     static const std::string FieldTargets;
     static const std::string FieldTargetUTN;
     static const std::string FieldTargetInfo;

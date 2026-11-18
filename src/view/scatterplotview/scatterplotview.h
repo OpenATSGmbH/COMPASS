@@ -20,12 +20,15 @@
 #include "compass_view_export.h"
 
 #include "variableview.h"
+#include "scatterplotdisplaydata.h"
+
+#include <memory>
 
 class QColor;
 class ViewContainer;
 class ScatterPlotViewWidget;
 class ScatterPlotViewDataSource;
-class ScatterPlotViewDataWidget;
+class ScatterPlotViewModel;
 
 /**
 */
@@ -67,15 +70,27 @@ public:
 
     virtual void accept(LatexVisitor& v) override;
 
+    std::string deckNamePrefix() const override;
+    QIcon deckIcon() const override;
+
     virtual bool canShowAnnotations() const override final { return true; }
     virtual std::set<std::string> acceptedAnnotationFeatureTypes() const override;
 
     bool useConnectionLines();
     void useConnectionLines(bool value, bool redraw = true);
 
+    ScatterPlotViewModel& model() { return *model_; }
+    const ScatterPlotViewModel& model() const { return *model_; }
+
+    /// the render options of the render widget, from the settings of the view
+    ScatterPlotRenderOptions renderOptions() const;
+
+    virtual void loadingDone() override;
+
     static const std::string ParamUseConnectionLines;
 
-    ScatterPlotViewDataWidget* getDataWidget();
+    /// above this number of loaded values a load turns the connection lines off
+    static const int ConnectLinesDataCountMax;
 
 protected:
     friend class LatexVisitor;
@@ -93,6 +108,11 @@ protected:
     virtual void unshowViewPoint(ViewableDataConfig* vp) override;
     virtual void showViewPoint(ViewableDataConfig* vp) override;
 
+    /// the display data can carry its own connection lines value, the setting follows it
+    void displayDataChanged();
+
+    /// For data processing, lives longer than the widget
+    std::unique_ptr<ScatterPlotViewModel> model_;
     /// For data display
     ScatterPlotViewWidget* widget_{nullptr};
     /// For data loading

@@ -76,7 +76,8 @@ public:
     virtual void resultContentChanged(const TaskResult& result) = 0;
 
     virtual void setViewableDataConfig(const nlohmann::json::object_t& data,
-                                       bool load_blocking = false) = 0;
+                                       bool load_blocking = false,
+                                       bool open_view_deck = false) = 0;
     virtual void unsetViewableDataConfig() = 0;
 
     virtual std::shared_ptr<ResultReport::SectionContent> loadContent(ResultReport::Section* section,

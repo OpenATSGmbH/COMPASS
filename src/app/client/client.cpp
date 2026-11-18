@@ -46,6 +46,7 @@
 #include <QApplication>
 #include <QScreen>
 #include "questiondialog.h"
+#include "apppalette.h"
 
 #include <QMessageBox>
 #include <QMetaEnum>
@@ -884,12 +885,7 @@ void Client::applyDarkMode(bool dark)
         // resolved light palette, so every role flips back. Repro requires
         // the AppImage's bundled Qt - the system Qt used in local builds
         // resolves more of the startup palette by default.
-        QStyle* fusion = QStyleFactory::create("Fusion");
-        if (fusion)
-        {
-            QApplication::setPalette(fusion->standardPalette());
-            delete fusion;
-        }
+        QApplication::setPalette(app_palette::light());
         qApp->setStyleSheet(QString());
         return;
     }

@@ -48,8 +48,10 @@ public:
     virtual void clearDataInViews() = 0;
     virtual dbContent::VariableSet getReadSet(const std::string& dbcontent_name) = 0;
 
+    /// open_view_deck: a collapsed View Deck opens to show a compatible view (explicit user request)
     virtual void setCurrentViewPoint(std::shared_ptr<ViewableDataConfig> viewable,
-                                     bool load_blocking = false) = 0;
+                                     bool load_blocking = false,
+                                     bool open_view_deck = false) = 0;
     virtual void storeSelectedRecNums(const std::vector<std::uint64_t>& selected) = 0;
 
     virtual bool hasMaxLatency() const = 0;

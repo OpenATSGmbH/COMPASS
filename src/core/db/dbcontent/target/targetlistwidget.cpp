@@ -122,9 +122,9 @@ std::vector<std::string> TargetListWidget::toolLabels() const
 
 /**
  */
-toolbox::ScreenRatio TargetListWidget::defaultScreenRatio() const 
+int TargetListWidget::defaultWidthPercent() const
 {
-    return ToolBoxWidget::defaultScreenRatio();
+    return 50;
 }
 
 /**

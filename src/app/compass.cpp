@@ -600,6 +600,8 @@ Result COMPASS::closeDBInternal()
         managers_.context_manager->saveCountsToDB();
         managers_.context_manager->saveAsterixInfoToDB();
 
+        emit databaseAboutToCloseSignal();
+
         managers_.db_interface->closeDB();
         traced_assert(!managers_.db_interface->ready());
 

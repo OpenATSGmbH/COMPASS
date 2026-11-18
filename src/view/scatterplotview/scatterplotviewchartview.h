@@ -27,7 +27,7 @@
 
 #include <algorithm>
 
-class ScatterPlotViewDataWidget;
+class ScatterPlotViewRenderWidget;
 
 namespace QtCharts
 {
@@ -38,13 +38,14 @@ class COMPASS_VIEW_API ScatterPlotViewChartView : public ChartView
 {
     Q_OBJECT
 public:
-    ScatterPlotViewChartView (ScatterPlotViewDataWidget* data_widget, QChart* chart, QWidget* parent = nullptr);
+    /// use_opengl: the series of the chart are drawn with OpenGL, then the selection rectangle is too
+    ScatterPlotViewChartView (ScatterPlotViewRenderWidget* render_widget,
+                              QChart* chart,
+                              bool use_opengl,
+                              QWidget* parent = nullptr);
     virtual ~ScatterPlotViewChartView();
 
     virtual void onToolChanged() override;
-
-signals:
-    void rectangleSelectedSignal (QPointF p1, QPointF p2);
 
 protected:
     void sendSelectedRegion();
@@ -55,7 +56,7 @@ protected:
     virtual bool handleMouseRelease(Qt::MouseButtons buttons, const QPointF& widget_pos, bool update_pos) override;
     virtual bool handleMouseMove(Qt::MouseButtons buttons, const QPointF& widget_pos) override;
 
-    ScatterPlotViewDataWidget* data_widget_ {nullptr};
+    ScatterPlotViewRenderWidget* render_widget_ {nullptr};
 
     QPoint  p1_;
     QPointF p1_data_;

@@ -39,6 +39,10 @@ class SectionContent;
 class Report : public QObject, public TreeItem
 {
     Q_OBJECT
+signals:
+    // emitted before clear() deletes all sections, while they still exist
+    void aboutToClearSignal();
+
 public:
     Report(TaskResult* result);
     virtual ~Report();
@@ -62,8 +66,9 @@ public:
 
     std::vector<std::string> getReportSectionIDs(ReportExportMode* export_mode = nullptr) const;
 
-    void setCurrentViewable(const nlohmann::json::object_t& data, 
-                            bool load_blocking = false);
+    void setCurrentViewable(const nlohmann::json::object_t& data,
+                            bool load_blocking = false,
+                            bool open_view_deck = false);
     void unsetCurrentViewable();
     void setCurrentSection(const std::string& section_name, bool show_figure = false);
     std::shared_ptr<ResultReport::SectionContent> loadContent(ResultReport::Section* section, 

@@ -30,7 +30,7 @@
  * Abstract view-supplied adapter for the leaf payload of a DBContent row.
  *
  * Owned by the view (typically one-per-series in a vector kept alive for the
- * lifetime of the data widget). The DBContentLeafItem stores a raw pointer
+ * lifetime of the model). The DBContentLeafItem stores a raw pointer
  * back into this and forwards visibility / custom-column queries.
  *
  * Notes:

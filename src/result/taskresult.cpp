@@ -28,6 +28,7 @@
 #include "dbcontentdataengine.h"
 #include "viewmanager.h"
 #include "view.h"
+#include "reportfigure.h"
 
 #include "timeconv.h"
 #include "logger.h"
@@ -38,6 +39,8 @@
 
 #include <QMenu>
 #include <QApplication>
+
+#include <algorithm>
 
 const std::string  TaskResult::DBTableName          = "task_results";
 const Property     TaskResult::DBColumnID           = Property("result_id"    , PropertyDataType::UINT  );
@@ -1023,6 +1026,30 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
         return std::vector<std::pair<QImage, std::string>>();
 
     std::vector<std::pair<QImage, std::string>> renderings;
+
+    //a figure with render widgets is drawn without the views: one image per annotation
+    const auto render_entries = figure.renderEntries();
+
+    if (!render_entries.empty())
+    {
+        //the sectors of the geographic grids
+        const bool geographic = std::any_of(render_entries.begin(), render_entries.end(),
+                                            [] (const report_figure::RenderEntry& e) { return e.geographic; });
+
+        const context::DBContextManager* ctx_man = geographic ? &task_manager_.viewManager().dbContextManager() : nullptr;
+
+        for (const auto& entry : render_entries)
+        {
+            QImage image;
+
+            if (report_figure::renderExportImage(entry, image, ctx_man))
+                renderings.emplace_back(image, entry.image_name);
+            else
+                logerr << "figure '" << figure.name() << "': image '" << entry.image_name << "' could not be rendered";
+        }
+
+        return renderings;
+    }
 
     DBContentManager& dbcont_man = task_manager_.dbContentManager();
     ViewManager&      view_man   = task_manager_.viewManager();

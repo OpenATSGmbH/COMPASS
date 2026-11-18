@@ -21,7 +21,6 @@
 #include "dbcontent/variable/variableselectionwidget.h"
 #include "scatterplotviewwidget.h"
 #include "scatterplotview.h"
-#include "scatterplotviewdatawidget.h"
 #include "logger.h"
 #include "variable.h"
 #include "metavariable.h"

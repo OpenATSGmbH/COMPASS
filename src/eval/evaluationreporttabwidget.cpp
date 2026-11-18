@@ -17,6 +17,8 @@
 
 #include "evaluationreporttabwidget.h"
 #include "evaluationcalculator.h"
+#include "evaluationmanager.h"
+#include "reportfigurebackgroundwidget.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -97,9 +99,21 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     connect(grid_num_cells_y_box_, QOverload<int>::of(&QSpinBox::valueChanged), [ settings_ptr ] (int v) { settings_ptr->grid_num_cells_y = v; });
     layout->addRow("#Grid Cells Y", grid_num_cells_y_box_);
 
+    background_widget_ = new ReportFigureBackgroundWidget(
+        calculator.manager().dbContextManager(),
+        [ this ] () { return calculator_.reportFigureDefaultHiddenLayers(); });
+    background_widget_->setBackground(calculator.reportFigureBackgroundConfig());
+    connect(background_widget_, &ReportFigureBackgroundWidget::backgroundChangedSignal, this,
+            [ this ] () { calculator_.reportFigureBackgroundConfig(background_widget_->background()); });
+
     setContentsMargins(0, 0, 0, 0);
 
-    main_layout->addLayout(layout);
+    QVBoxLayout* left_layout = new QVBoxLayout();
+    left_layout->addLayout(layout);
+    left_layout->addWidget(background_widget_);
+    left_layout->addStretch();
+
+    main_layout->addLayout(left_layout);
     main_layout->addStretch();
 
     setLayout(main_layout);
@@ -123,6 +137,8 @@ void EvaluationReportTabWidget::updateFromSettings()
 
     grid_num_cells_x_box_->setValue(eval_settings.grid_num_cells_x);
     grid_num_cells_y_box_->setValue(eval_settings.grid_num_cells_y);
+
+    background_widget_->setBackground(calculator_.reportFigureBackgroundConfig());
 }
 
 /**

@@ -54,12 +54,14 @@ public:
     void storeBackupSection();
     void restoreBackupSection();
 
+    void releaseReportDocument();
+
     //ToolBoxWidget
     QIcon toolIcon() const override final;
     std::string toolName() const override final;
     std::string toolInfo() const override final;
     std::vector<std::string> toolLabels() const override final;
-    toolbox::ScreenRatio defaultScreenRatio() const override final;
+    int defaultWidthPercent() const override final;
     void addToConfigMenu(QMenu* menu) override final;
     void addToToolBar(QToolBar* tool_bar) override final;
     void loadingStarted() override final;

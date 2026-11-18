@@ -133,9 +133,9 @@ std::vector<std::string> FilterManagerWidget::toolLabels() const
 
 /**
  */
-toolbox::ScreenRatio FilterManagerWidget::defaultScreenRatio() const 
+int FilterManagerWidget::defaultWidthPercent() const
 {
-    return ToolBoxWidget::defaultScreenRatio();
+    return 30;
 }
 
 /**

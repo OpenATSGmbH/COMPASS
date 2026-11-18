@@ -16,12 +16,6 @@
  */
 
 #include "gridbackgroundrenderer.h"
-#include "gridview.h"
-
-#include "viewmanager.h"
-#include "db_context_manager.h"
-#include "sector.h"
-#include "sectorlayer.h"
 
 #include "logger.h"
 
@@ -41,6 +35,7 @@ namespace
     //as in the minimal 2D map of the Geographic View (minimal_2d.earth)
     const QColor BorderColor(255, 255, 0);
     const double BorderWidth = 2.0;
+    const double SectorWidth = 2.0;
 
     /// pixel rectangle of a lon/lat area in the plot showing the lon/lat viewport
     QRectF lonLatToPlot(const QRectF& area, const QRectF& plot_rect, const QRectF& lonlat)
@@ -83,9 +78,8 @@ struct GridBackgroundRenderer::Guard
 
 /**
  */
-GridBackgroundRenderer::GridBackgroundRenderer(GridView& view, QObject* parent)
+GridBackgroundRenderer::GridBackgroundRenderer(QObject* parent)
 :   QObject(parent)
-,   view_  (view)
 ,   guard_ (std::make_shared<Guard>())
 {
     guard_->owner = this;
@@ -95,12 +89,7 @@ GridBackgroundRenderer::GridBackgroundRenderer(GridView& view, QObject* parent)
 
     connect(&request_timer_, &QTimer::timeout, this, &GridBackgroundRenderer::startMapRequest);
 
-    auto& ctx_man = view_.viewManager().dbContextManager();
-
-    connect(&ctx_man, &context::DBContextManager::sectorsChangedSignal, this, &GridBackgroundRenderer::sectorsChanged);
-    connect(&ctx_man, &context::DBContextManager::activeContextChangedSignal, this, &GridBackgroundRenderer::sectorsChanged);
-
-    last_map_shown_ = view_.settings().background_map_show;
+    last_map_shown_ = settings_.map_show;
 }
 
 /**
@@ -117,34 +106,42 @@ GridBackgroundRenderer::~GridBackgroundRenderer()
  */
 void GridBackgroundRenderer::setAvailable(bool available)
 {
+    if (available == available_)
+        return;
+
     available_ = available;
+
+    emit availableChangedSignal();
 }
 
 /**
  */
 bool GridBackgroundRenderer::active() const
 {
-    return available_ && view_.settings().background_show;
+    return available_ && settings_.show;
 }
 
 /**
  */
 bool GridBackgroundRenderer::mapShown() const
 {
-    return active() && view_.settings().background_map_show;
+    return active() && settings_.map_show;
 }
 
 /**
  */
-void GridBackgroundRenderer::settingsChanged()
+void GridBackgroundRenderer::setSettings(const GridBackgroundSettings& settings)
 {
-    const auto& settings = view_.settings();
+    if (settings == settings_)
+        return;
+
+    settings_ = settings;
 
     //switching the map off and on, or another file => try again
     const bool file_changed = !tile_source_file_.empty() &&
-                              QFileInfo(QString::fromStdString(tile_source_file_)).fileName().toStdString() != settings.background_map_file;
+                              QFileInfo(QString::fromStdString(tile_source_file_)).fileName().toStdString() != settings.map_file;
 
-    if (file_changed || (settings.background_map_show && !last_map_shown_))
+    if (file_changed || (settings.map_show && !last_map_shown_))
     {
         map_unavailable_ = false;
         requested_lonlat_ = QRectF();
@@ -157,7 +154,7 @@ void GridBackgroundRenderer::settingsChanged()
         map_image_ = QImage();
     }
 
-    last_map_shown_ = settings.background_map_show;
+    last_map_shown_ = settings.map_show;
 
     ++revision_;
 
@@ -166,19 +163,20 @@ void GridBackgroundRenderer::settingsChanged()
 
 /**
  */
-void GridBackgroundRenderer::sectorsChanged()
+void GridBackgroundRenderer::setSectors(std::shared_ptr<const std::vector<GridSectorLine>> sectors)
 {
-    sectors_.reset();
-    ++revision_;
+    if (sectors == sectors_)
+        return;
 
-    emit updateSignal();
+    sectors_ = std::move(sectors);
+    ++revision_;
 }
 
 /**
  */
 bool GridBackgroundRenderer::ensureTileSource()
 {
-    const std::string path = gridbackground::mapDirectory() + view_.settings().background_map_file;
+    const std::string path = gridbackground::mapDirectory() + settings_.map_file;
 
     if (!tile_source_ || tile_source_file_ != path)
     {
@@ -230,7 +228,7 @@ void GridBackgroundRenderer::startMapRequest()
 
     if (!ensureTileSource())
     {
-        logwrn << "map '" << view_.settings().background_map_file << "' not available";
+        logwrn << "map '" << settings_.map_file << "' not available";
 
         map_unavailable_ = true;
         emit updateSignal();
@@ -294,7 +292,7 @@ void GridBackgroundRenderer::mapRequestDone(unsigned int generation, const GridB
 
     if (result.failed())
     {
-        logwrn << "no map tiles of '" << view_.settings().background_map_file << "' available";
+        logwrn << "no map tiles of '" << settings_.map_file << "' available";
 
         map_unavailable_ = true;
     }
@@ -367,20 +365,18 @@ void GridBackgroundRenderer::paintBelow(QPainter& painter, const QRectF& plot_re
     if (!active() || plot_rect.isEmpty() || lonlat.width() <= 0.0 || lonlat.height() <= 0.0)
         return;
 
-    const auto& settings = view_.settings();
-
     painter.save();
     painter.setClipRect(plot_rect);
 
-    painter.fillRect(plot_rect, toColor(settings.background_color, Qt::white));
+    painter.fillRect(plot_rect, toColor(settings_.color, Qt::white));
 
-    if (settings.background_map_show)
+    if (settings_.map_show)
     {
         requestMap(lonlat, plot_rect.size().toSize());
 
         if (!map_image_.isNull() && map_image_lonlat_.width() > 0.0 && map_image_lonlat_.height() > 0.0)
         {
-            painter.setOpacity(settings.background_map_opacity / 100.0);
+            painter.setOpacity(settings_.map_opacity / 100.0);
             painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
             painter.drawImage(lonLatToPlot(map_image_lonlat_, plot_rect, lonlat), map_image_);
         }
@@ -391,61 +387,17 @@ void GridBackgroundRenderer::paintBelow(QPainter& painter, const QRectF& plot_re
 
 /**
  */
-void GridBackgroundRenderer::updateSectors()
-{
-    if (sectors_.has_value())
-        return;
-
-    auto t0 = boost::posix_time::microsec_clock::local_time();
-
-    sectors_ = std::vector<SectorLine>();
-
-    auto& ctx_man = view_.viewManager().dbContextManager();
-
-    if (!ctx_man.hasActiveContext() || !ctx_man.sectorsLoaded())
-        return;
-
-    for (const auto& layer : ctx_man.sectorLayers())
-    {
-        for (const auto& sector : layer->sectors())
-        {
-            const auto& points = sector->points();
-            if (points.size() < 2)
-                continue;
-
-            QPolygonF poly;
-            poly.reserve((int)points.size() + 1);
-
-            for (const auto& p : points)
-                poly.append(QPointF(p.second, p.first)); // first = latitude, second = longitude
-
-            if (poly.first() != poly.last())
-                poly.append(poly.first());
-
-            sectors_->push_back({ gridbackground::makeLine(std::move(poly)),
-                                  toColor(sector->colorStr(), Qt::black),
-                                  layer->name(),
-                                  sector->id() });
-        }
-    }
-
-    loginf << "sectors " << sectors_->size() << " in "
-           << (boost::posix_time::microsec_clock::local_time() - t0).total_milliseconds() << " ms";
-}
-
-/**
- */
 void GridBackgroundRenderer::paintAboveImage(QImage& image, const QRectF& lonlat)
 {
-    const auto& settings = view_.settings();
-
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setBrush(Qt::NoBrush);
 
-    const QTransform t = lonLatTransform(image.size(), lonlat);
+    //the painter of an image with a device pixel ratio works in layout pixels
+    const double     dpr = image.devicePixelRatioF();
+    const QTransform t   = lonLatTransform(QSizeF(image.size()) / dpr, lonlat);
 
-    if (settings.background_show && settings.background_borders_show)
+    if (settings_.show && settings_.borders_show)
     {
         if (!borders_.has_value())
         {
@@ -458,7 +410,7 @@ void GridBackgroundRenderer::paintAboveImage(QImage& image, const QRectF& lonlat
         }
 
         QPen pen(BorderColor);
-        pen.setWidthF(BorderWidth);
+        pen.setWidthF(BorderWidth * dpr); // a cosmetic width is in device pixels
         pen.setCosmetic(true);
         painter.setPen(pen);
 
@@ -467,23 +419,18 @@ void GridBackgroundRenderer::paintAboveImage(QImage& image, const QRectF& lonlat
                 painter.drawPolyline(t.map(line.points));
     }
 
-    if (settings.background_sectors_show)
+    if (settings_.sectors_show && sectors_)
     {
-        updateSectors();
-
-        const auto hidden_layers  = view_.backgroundHiddenSectorLayers();
-        const auto hidden_sectors = view_.backgroundHiddenSectors();
-
         for (const auto& sector : *sectors_)
         {
             if (!sector.line.bounds.intersects(lonlat) && !lonlat.contains(sector.line.bounds))
                 continue;
 
-            if (hidden_layers.count(sector.layer) || hidden_sectors.count(sector.id))
+            if (settings_.hidden_sector_layers.count(sector.layer_name) || settings_.hidden_sectors.count(sector.sector_id))
                 continue;
 
             QPen pen(sector.color);
-            pen.setWidthF(2.0);
+            pen.setWidthF(SectorWidth * dpr);
             pen.setCosmetic(true);
             painter.setPen(pen);
 
@@ -499,24 +446,29 @@ void GridBackgroundRenderer::paintAbove(QPainter& painter, const QRectF& plot_re
     if (!available_ || plot_rect.isEmpty() || lonlat.width() <= 0.0 || lonlat.height() <= 0.0)
         return;
 
-    const auto& settings = view_.settings();
-
     //sectors are a top level item, independent of the Background Map
-    const bool borders = settings.background_show && settings.background_borders_show;
+    const bool borders = settings_.show && settings_.borders_show;
 
-    if (!borders && !settings.background_sectors_show)
+    if (!borders && !settings_.sectors_show)
         return;
 
     const QSize size = plot_rect.size().toSize();
     if (size.isEmpty())
         return;
 
+    //the pixels of the painted device, e.g. an export image with a scale factor: lines drawn at layout size
+    //and scaled up would be blurred
+    const double dpr     = painter.device() ? painter.device()->devicePixelRatioF() : 1.0;
+    const QSize  size_px = (QSizeF(size) * dpr).toSize();
+
     //redrawn only on changes of viewport, size, settings or sectors
-    if (above_image_.size() != size || above_lonlat_ != lonlat || above_revision_ != revision_)
+    if (above_image_.size() != size_px || above_image_.devicePixelRatioF() != dpr ||
+        above_lonlat_ != lonlat || above_revision_ != revision_)
     {
         auto t0 = boost::posix_time::microsec_clock::local_time();
 
-        above_image_ = QImage(size, QImage::Format_ARGB32_Premultiplied);
+        above_image_ = QImage(size_px, QImage::Format_ARGB32_Premultiplied);
+        above_image_.setDevicePixelRatio(dpr);
         above_image_.fill(Qt::transparent);
 
         paintAboveImage(above_image_, lonlat);

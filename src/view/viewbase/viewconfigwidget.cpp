@@ -17,7 +17,6 @@
 
 #include "viewconfigwidget.h"
 #include "viewwidget.h"
-#include "viewdatawidget.h"
 #include "view.h"
 #include "viewlayerpanelwidget.h"
 #include "viewpresetwidget.h"
@@ -97,7 +96,7 @@ void ViewConfigWidget::configChanged()
 
 /**
  * Reacts on changes in the display (e.g. if display information should be visualized in the config widget).
- * (Note: Only called if both config and data widget exist)
+ * (Note: Only called if both config and render widget exist)
  */
 void ViewConfigWidget::onDisplayChange()
 {
@@ -127,8 +126,8 @@ ViewLayerPanelWidget* ViewConfigWidget::createLayerPanel(const std::vector<Layer
 {
     auto* layer_panel = new ViewLayerPanelWidget(custom_columns, show_annotations, this);
 
-    // the data widget fills the data rows and reacts on visibility changes
-    view_widget_->getViewDataWidget()->attachLayerPanel(layer_panel->model());
+    // the model fills the data rows and reacts on visibility changes
+    view_widget_->attachLayerPanel(layer_panel->model());
 
     layer_panel->followColorMode(view_widget_->getView()->viewManager().appState());
 

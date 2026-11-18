@@ -15,4 +15,5 @@ target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_logger.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_colormap.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_rtcommand_string.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_toolbox_width.cpp
 )

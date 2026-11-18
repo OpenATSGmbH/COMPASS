@@ -122,8 +122,7 @@ public:
  *
  * `hashed_fallback` supplies a stable color for keys that aren't resolvable
  * through the active context's palettes. Pass a cached hash-based function
- * (e.g. ViewDataWidget::colorForGroupName) to keep the caller's per-group
- * color map in sync; an empty std::function falls back to
+ * to keep the caller's per-group color map in sync; an empty std::function falls back to
  * ColorProvider::hashedColor.
  */
 QColor resolveSeriesColor(const std::string& ds_type,

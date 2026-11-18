@@ -151,6 +151,19 @@ Note: `dbcontent_name_ref` cannot be `CAT001` or `CAT048`; these categories do n
 provide the maximum X/Y standard deviation required for reference accuracy filtering
 and are rejected as reference data.
 
+Both `--evaluation_parameters` and `--analyze_parameters` (and the `config` of the
+`evaluate` / `analyze_data_source` runtime commands) take `report_figure_background`,
+the background set of the geographic report figures (`ReportFigureBackground`,
+`src/view/gridview/gridbackgroundsettings.h`): `color`, `map_show`, `map_file`,
+`map_opacity`, `borders_show`, `sectors_show`, `hidden_sector_layers`, `hidden_sectors`.
+The value replaces the stored set, a missing field gets its report default, a missing
+`hidden_sector_layers` gives the default sector selection of the task (evaluation: the
+evaluated sector layers, analysis: none). A value that is not readable is rejected.
+
+```json
+{"report_figure_background": {"borders_show": false, "map_opacity": 30}}
+```
+
 ## Examples
 
 Each invocation runs its options in order; multi-step workflows with different

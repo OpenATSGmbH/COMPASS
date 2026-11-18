@@ -23,7 +23,7 @@
 #include <QObject>
 #include <QWidget>
 
-class HistogramViewDataWidget;
+class HistogramViewRenderWidget;
 
 namespace QtCharts
 {
@@ -35,16 +35,13 @@ class COMPASS_VIEW_API HistogramViewChartView : public ChartView
 {
     Q_OBJECT
 public:
-    HistogramViewChartView(HistogramViewDataWidget* data_widget, 
+    HistogramViewChartView(HistogramViewRenderWidget* render_widget, 
                            QChart* chart, 
                            QWidget* parent = nullptr);
     virtual ~HistogramViewChartView();
 
-signals:
-    void rectangleSelectedSignal (unsigned int index1, unsigned int index2);
-
 protected:
-    void sendSelectedBins();
+    void sendSelectedRegion();
 
     void wheelEvent(QWheelEvent* event) override;
 
@@ -52,7 +49,7 @@ protected:
     virtual bool handleMouseRelease(Qt::MouseButtons buttons, const QPointF& widget_pos, bool update_pos) override;
     virtual bool handleMouseMove(Qt::MouseButtons buttons, const QPointF& widget_pos) override;
 
-    HistogramViewDataWidget* data_widget_ {nullptr};
+    HistogramViewRenderWidget* render_widget_ {nullptr};
 
     QPoint  p1_;
     QPointF p1_data_;

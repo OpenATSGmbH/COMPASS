@@ -307,9 +307,9 @@ refreshes stay synchronous where they were):
   survives only for live and the no-data case.
 - **Table View**: `launchAsyncPrepare()` (layer scan + row index + sort on a worker,
   `commitLoadedData` applies) - shared verbatim with `loadingDone_impl`.
-- **Histogram / Scatterplot / Grid**: `VariableViewDataWidget::redrawData_impl` fires the same
-  `postLoadTrigger()` the load-done path uses (generator / stash fill on a worker, display
-  commit on the main thread). Annotation display and live decline and fall through to the
+- **Histogram / Scatterplot / Grid**: `VariableViewModel::recompute_impl` launches the same
+  asynchronous recompute the load-done path uses (generator / stash fill on a worker, display
+  data commit on the main thread). Annotation display and live decline and fall through to the
   synchronous path.
 
 Three pieces make this safe against interaction, mirroring what the load dialog provides
@@ -378,8 +378,8 @@ offline or paused display load - they would otherwise keep data that the ticks c
 `ViewDataWidget::updateFromSource` mirrors `data_ = source.buffers()` (so the existing
 `viewData()`/redraw/selection machinery is undisturbed), feeds the borrowed
 `DBContentItemProvider` if the view has one, and calls the view's `updateFromSource_impl`:
-- **Standard views** (table/scatter/grid) read `source.buffers()`; histogram (via
-  `VariableViewDataWidget`) does a full refresh on `last`. None own a provider.
+- **Standard views** (table/scatter/grid) read `source.buffers()`; histogram, scatterplot and grid
+  (via `VariableViewModel`) do a full refresh on `last`. None own a provider.
 - **Geographic View** owns a `GeometryItemProvider`, fed here: `setSource(&source)` +
   `applyChange(names, reset, last)` → `resetData()` (if `reset`) → `rebuildContent(id)` per name
   → `contentRebuilt()` (if `last`), reading `source.index()`/`source.buffers()`. So OSG never

@@ -21,7 +21,7 @@
 
 #include "configurable.h"
 
-class QTabWidget;
+class ViewDeck;
 class ViewManager;
 class ViewContainer;
 
@@ -55,7 +55,7 @@ class ViewContainerWidget : public QWidget, public Configurable
     unsigned int min_width_;
     unsigned int min_height_;
 
-    QTabWidget* tab_widget_{nullptr};
+    ViewDeck* view_deck_{nullptr};
     ViewContainer* view_container_{nullptr};
 
     void updateWindowTitle();

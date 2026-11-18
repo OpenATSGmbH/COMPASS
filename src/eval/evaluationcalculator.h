@@ -28,6 +28,7 @@
 #include "evaluationresultsgenerator.h"
 #include "datasourcecompoundcoverage.h"
 #include "sectorsfilter.h"
+#include "gridbackgroundsettings.h"
 
 #include "target.h"
 
@@ -209,7 +210,21 @@ public:
                                                                         const std::string& result_id) const; // empty load
     std::unique_ptr<nlohmann::json::object_t> getViewableForEvaluation (unsigned int utn, 
                                                                         const std::string& req_grp_id, 
-                                                                        const std::string& result_id) const; // with data                                                            
+                                                                        const std::string& result_id) const; // with data
+    /// Background set of the report figures of a result with longitude / latitude grids: the stored set. The
+    /// other evaluated sector layers are hidden, the sector layers that are not evaluated follow the stored
+    /// selection (default: hidden).
+    GridBackgroundSettings reportFigureBackground(const std::string& sector_layer_name) const;
+
+    /// Stored background set of the report figures, edited in the dialog
+    ReportFigureBackground reportFigureBackgroundConfig() const;
+    void reportFigureBackgroundConfig(const ReportFigureBackground& background);
+    /// Sector layers that are hidden in the default sector selection: the layers that are not evaluated
+    std::set<std::string> reportFigureDefaultHiddenLayers() const;
+
+    /// Checks the background set of the report figures, then applies the parameters
+    Result applyJSONParameters(const nlohmann::json& params_json) override;
+
     // results
     ResultIterator begin();
     ResultIterator end();

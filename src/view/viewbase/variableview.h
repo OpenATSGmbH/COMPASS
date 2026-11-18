@@ -24,11 +24,13 @@
 #include "plotmetadata.h"
 
 #include <memory>
+#include <set>
+#include <string>
 #include <vector>
 
 class ViewVariable;
-class VariableViewDataWidget;
 class VariableViewConfigWidget;
+class VariableViewModel;
 class ViewableDataConfig;
 
 /**
@@ -41,7 +43,7 @@ signals:
     /// Emitted whenever annotations_ is repopulated or cleared. Subscribers
     /// (e.g. data widgets) refresh the annotations subtree of their layer
     /// panel from annotations() / currentAnnotationGroupIdx() /
-    /// currentAnnotationIdx().
+    /// currentAnnotationIdx(). With a view model (setModel()) the view does this itself.
     void annotationsChangedSignal();
 
 public:
@@ -60,7 +62,13 @@ public:
     VariableView(nlohmann::json& config, ViewContainer* parent);
     virtual ~VariableView();
 
-    virtual void loadingDone() override final;
+    /// The annotations of a view point with the given feature types, in the order the views show them:
+    /// groups sorted by the plot group name, inside a group in the order found.
+    /// The report figures use the same order (report_figure::selectRenderEntries()).
+    static std::vector<AnnotationGroup> scanForAnnotations(const nlohmann::json& view_point,
+                                                           const std::set<std::string>& feature_types);
+
+    virtual void loadingDone() override;
 
     ViewVariable& variable(int idx);
     const ViewVariable& variable(int idx) const;
@@ -113,6 +121,10 @@ protected:
 
     virtual dbContent::VariableSet getBaseSet(const std::string& dbcontent_name) = 0;
 
+    /// The model of a view that is split into model and render widget (NOT owned). The view gives it
+    /// the current annotation and keeps the annotations subtree of its layer panel up to date.
+    void setModel(VariableViewModel* model);
+
     virtual void preVariableChangedEvent(int idx, const std::string& dbcont, const std::string& name) {}
     virtual void postVariableChangedEvent(int idx) {}
 
@@ -124,12 +136,15 @@ protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const override;
 
 private:
-    VariableViewDataWidget* getDataWidget();
     VariableViewConfigWidget* getConfigWidget();
 
     void clearAnnotations();
     void scanViewPointForAnnotations();
     void onShowAnnotationChanged();
+    /// the model shows the current annotation, or the variables
+    void updateModelAnnotation();
+    /// annotations subtree of the model's layer panel from the annotations (if attached and shown)
+    void updateAnnotationsTree();
     void onEvalResultsChanged();
 
     void showVariables(bool force);
@@ -143,4 +158,6 @@ private:
     bool                         show_annotation_              = false;
 
     ViewableDataConfig* current_view_point_ {nullptr};
+
+    VariableViewModel* model_ {nullptr}; // see setModel()
 };

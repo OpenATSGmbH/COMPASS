@@ -68,6 +68,8 @@ ITaskProvider& Report::taskManager()
  */
 void Report::clear()
 {
+    emit aboutToClearSignal();
+
     root_section_ = std::make_shared<Section>(SectionID::SectionResults, "", this, this);
 }
 
@@ -324,9 +326,10 @@ Result Report::toJSONDocument_impl(nlohmann::json& j,
 /**
  */
 void Report::setCurrentViewable(const nlohmann::json::object_t& data,
-                                bool load_blocking)
+                                bool load_blocking,
+                                bool open_view_deck)
 {
-    result_->taskManager().setViewableDataConfig(data, load_blocking);
+    result_->taskManager().setViewableDataConfig(data, load_blocking, open_view_deck);
 }
 
 /**
