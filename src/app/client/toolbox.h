@@ -124,7 +124,7 @@ private:
 
     void setWidthPercent(int percent);
     void applyWidthPercent();
-    void splitterMovedSlot();
+    void handleDragged(int panel_width);
     void shrink();
     void grow();
     void toggleExpansion();

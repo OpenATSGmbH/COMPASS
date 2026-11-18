@@ -36,9 +36,12 @@
 #include <QMenu>
 #include <QToolBar>
 #include <QSplitter>
+#include <QSplitterHandle>
+#include <QMouseEvent>
 #include <QSettings>
 
 #include <cmath>
+#include <functional>
 
 namespace
 {
@@ -46,6 +49,49 @@ namespace
     {
         return "WidthPercent/" + QString::fromStdString(tool_name);
     }
+
+    /**
+     * Does not move during a drag, it only reports the dragged position. The owner sets the
+     * sizes in steps, so the widgets are resized once per step and not once per mouse move.
+     */
+    class StepSplitterHandle : public QSplitterHandle
+    {
+    public:
+        StepSplitterHandle(QSplitter* parent, const std::function<void(int)>& dragged_cb)
+        :   QSplitterHandle(Qt::Horizontal, parent), dragged_cb_(dragged_cb) {}
+
+    protected:
+        void mousePressEvent(QMouseEvent* e) override
+        {
+            press_x_ = e->pos().x();
+            QSplitterHandle::mousePressEvent(e);
+        }
+
+        void mouseMoveEvent(QMouseEvent* e) override
+        {
+            if (!(e->buttons() & Qt::LeftButton))
+                return;
+
+            dragged_cb_(splitter()->mapFromGlobal(e->globalPos()).x() - press_x_);
+        }
+
+    private:
+        std::function<void(int)> dragged_cb_;
+        int                      press_x_ = 0;
+    };
+
+    class StepSplitter : public QSplitter
+    {
+    public:
+        StepSplitter(const std::function<void(int)>& dragged_cb)
+        :   QSplitter(Qt::Horizontal), dragged_cb_(dragged_cb) {}
+
+    protected:
+        QSplitterHandle* createHandle() override { return new StepSplitterHandle(this, dragged_cb_); }
+
+    private:
+        std::function<void(int)> dragged_cb_;
+    };
 }
 
 const int   ToolBox::ToolIconSize      = 50;
@@ -101,10 +147,8 @@ void ToolBox::createUI()
     
     layout->addLayout(icon_bar_layout);
 
-    splitter_ = new QSplitter(Qt::Horizontal);
+    splitter_ = new StepSplitter([ this ] (int panel_width) { this->handleDragged(panel_width); });
     splitter_->setChildrenCollapsible(false);
-
-    connect(splitter_, &QSplitter::splitterMoved, this, &ToolBox::splitterMovedSlot);
 
     layout->addWidget(splitter_);
 
@@ -507,21 +551,23 @@ void ToolBox::setWidthPercent(int percent)
 }
 
 /**
- * The dragged width snaps to the nearest step, so the handle moves in steps.
+ * The dragged width snaps to the nearest step. The sizes change only when the step changes.
  */
-void ToolBox::splitterMovedSlot()
+void ToolBox::handleDragged(int panel_width)
 {
     if (expanded_ || active_tool_idx_ < 0)
         return;
 
-    const auto sizes = splitter_->sizes();
-    const int  total = sizes.value(0) + sizes.value(1);
+    const int total = splitter_->width() - splitter_->handleWidth();
     if (total <= 0)
         return;
 
-    const int dragged_percent = (int)std::lround(100.0 * sizes.value(0) / total);
+    const int percent = toolbox::snapWidthPercent((int)std::lround(100.0 * panel_width / total));
 
-    setWidthPercent(toolbox::snapWidthPercent(dragged_percent));
+    if (percent == tools_.at(active_tool_idx_).width_percent)
+        return;
+
+    setWidthPercent(percent);
     applyWidthPercent();
 }
 
