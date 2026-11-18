@@ -31,7 +31,6 @@
 #include <QLabel>
 #include <QSplitter>
 #include <QPushButton>
-#include <QSettings>
 #include <QMenu>
 #include <QWidgetAction>
 #include <QApplication>
@@ -51,18 +50,29 @@ const std::string ReportWidget::FieldConfigScrollPosH = "container_scroll_pos_h"
 
 namespace
 {
-    const QString SettingSidebarVisible = "sidebar_visible";
-    const int     SidebarMinWidth       = 180;
-    const int     SidebarDefaultWidth   = 280;
+    const int SidebarMinWidth     = 180;
+    const int SidebarDefaultWidth = 280;
+}
+
+const int ReportWidget::SidebarHideWidth       = SidebarDefaultWidth + 500;
+const int ReportWidget::SidebarShowHysteresis  = 50;
+
+/**
+ * The sidebar hides below SidebarHideWidth and shows again only above it plus the hysteresis, so it does
+ * not show and hide repeatedly while the width changes.
+ */
+bool ReportWidget::sidebarShownForWidth(bool shown, int width)
+{
+    if (shown)
+        return width >= SidebarHideWidth;
+
+    return width >= SidebarHideWidth + SidebarShowHysteresis;
 }
 
 ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
     : QWidget(nullptr), task_result_widget_(task_result_widget)
 {
     QVBoxLayout* main_layout = new QVBoxLayout();
-
-    QSettings settings("COMPASS", "ReportWidget");
-    const bool sidebar_visible = settings.value(SettingSidebarVisible, true).toBool();
 
     { // button layout
         QHBoxLayout* button_layout = new QHBoxLayout();
@@ -79,17 +89,9 @@ ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
 
         button_layout->addStretch();
 
-        sidebar_button_ = new QPushButton("Sidebar");
-        sidebar_button_->setIcon(QIcon());
-        sidebar_button_->setToolTip("Show or hide the section sidebar");
-        sidebar_button_->setObjectName("report_sidebar_button");
-        sidebar_button_->setCheckable(true);
-        sidebar_button_->setChecked(sidebar_visible);
-        connect (sidebar_button_, &QPushButton::toggled, this, &ReportWidget::sidebarToggledSlot);
-        button_layout->addWidget(sidebar_button_);
-
         sections_button_ = new QPushButton("Sections");
         sections_button_->setObjectName("report_sections_button");
+        sections_button_->setToolTip("Show the section tree (disabled while the section sidebar is shown)");
         button_layout->addWidget(sections_button_);
 
         main_layout->addLayout(button_layout);
@@ -116,7 +118,6 @@ ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
     sidebar_view_->setRootIsDecorated(false);
     sidebar_view_->setMinimumWidth(SidebarMinWidth);
     sidebar_view_->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
-    sidebar_view_->setVisible(sidebar_visible);
 
     connect (sidebar_view_, &QTreeView::clicked, this, &ReportWidget::itemClickedSlot);
     connect (sidebar_view_, &QTreeView::customContextMenuRequested, this, &ReportWidget::contextMenuSlot);
@@ -141,7 +142,28 @@ ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
     setContentsMargins(0, 0, 0, 0);
     setLayout(main_layout);
 
+    applySidebarShown(true);
+
     updateBackButton();
+}
+
+/**
+ */
+void ReportWidget::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+
+    applySidebarShown(sidebarShownForWidth(sidebar_shown_, width()));
+}
+
+/**
+ */
+void ReportWidget::applySidebarShown(bool shown)
+{
+    sidebar_shown_ = shown;
+
+    sidebar_view_->setVisible(shown);
+    sections_button_->setEnabled(!shown);
 }
 
 ReportWidget::~ReportWidget()
@@ -239,14 +261,6 @@ void ReportWidget::currentSectionChangedSlot(Section* section)
 
     if (section)
         selectInTrees(modelIndex(section));
-}
-
-void ReportWidget::sidebarToggledSlot(bool visible)
-{
-    sidebar_view_->setVisible(visible);
-
-    QSettings settings("COMPASS", "ReportWidget");
-    settings.setValue(SettingSidebarVisible, visible);
 }
 
 /**

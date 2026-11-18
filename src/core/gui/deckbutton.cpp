@@ -23,7 +23,7 @@
 #include <algorithm>
 
 const int DeckButton::IconSize      = 50;
-const int DeckButton::LabelFontSize = 8;
+const int DeckButton::LabelFontSize = 9;
 const int DeckButton::LabelRows     = 2;
 
 /**

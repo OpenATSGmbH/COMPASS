@@ -24,6 +24,8 @@
 #include "ui_test_common.h"
 
 #include <QEvent>
+#include <QPainter>
+#include <QPen>
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QToolButton>
@@ -64,8 +66,19 @@ namespace
 
         void paintEvent(QPaintEvent* e) override
         {
-            if (parentWidget()->underMouse())
-                QToolButton::paintEvent(e);
+            if (!parentWidget()->underMouse())
+                return;
+
+            //background, so the icon stays visible on top of the view icon
+            {
+                QPainter painter(this);
+                painter.setRenderHint(QPainter::Antialiasing);
+                painter.setPen(QPen(palette().color(QPalette::Mid), 1));
+                painter.setBrush(palette().color(QPalette::Base));
+                painter.drawEllipse(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5));
+            }
+
+            QToolButton::paintEvent(e);
         }
     };
 }

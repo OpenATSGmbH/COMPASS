@@ -79,6 +79,7 @@
 #include <QApplication>
 #include <QFileDialog>
 #include <QCloseEvent>
+#include <QFrame>
 #include <QSettings>
 #include <QStackedWidget>
 #include <QLocale>
@@ -165,6 +166,7 @@ void MainWindow::createUI()
 
     QVBoxLayout* main_layout = new QVBoxLayout();
     main_layout->setContentsMargins(0, 0, 0, 0);
+    main_layout->setSpacing(2);
     main_widget_->setLayout(main_layout);
 
     QHBoxLayout* content_layout = new QHBoxLayout;
@@ -256,6 +258,11 @@ void MainWindow::createUI()
     bottom_widget->setLayout(bottom_layout);
 
     updateBottomWidget();
+
+    QFrame* bottom_separator = new QFrame();
+    bottom_separator->setFrameShape(QFrame::HLine);
+    bottom_separator->setFrameShadow(QFrame::Sunken);
+    main_layout->addWidget(bottom_separator);
 
     main_layout->addWidget(bottom_widget);
 

@@ -51,13 +51,18 @@ public slots:
     void stepBackSlot();
 
     void currentSectionChangedSlot(Section* section);
-    void sidebarToggledSlot(bool visible);
     void sidebarExpansionChangedSlot();
     void reportAboutToClearSlot();
 
 public:
     ReportWidget(TaskResultsWidget& task_result_widget);
     virtual ~ReportWidget();
+
+    /// whether the section sidebar is shown at the given width of the report widget
+    static bool sidebarShownForWidth(bool shown, int width);
+
+    static const int SidebarHideWidth;
+    static const int SidebarShowHysteresis;
 
     void setReport(const std::shared_ptr<Report>& report);
     void clear();
@@ -81,6 +86,9 @@ public:
 protected:
     void expandAllParents (QTreeView* view, QModelIndex index);
     void expandSidebarInitially();
+
+    void resizeEvent(QResizeEvent* event) override;
+    void applySidebarShown(bool shown);
     ReportDocumentLayout::SectionSet collapsedSections() const;
     void selectInTrees(const QModelIndex& index);
     QModelIndex modelIndex(Section* section) const;
@@ -100,8 +108,8 @@ protected:
     QSplitter*          splitter_      {nullptr};
     ReportDocumentView* document_view_ {nullptr};
 
-    QPushButton* sidebar_button_{nullptr};
     QPushButton* sections_button_{nullptr};
+    bool         sidebar_shown_ {true};
     std::unique_ptr<PopupMenu> sections_menu_;
 
     QPushButton* back_button_ {nullptr};

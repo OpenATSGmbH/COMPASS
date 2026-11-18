@@ -19,9 +19,11 @@
 
 #include "report/reportdocumentlayout.h"
 #include "report/reportdocumentview.h"
+#include "report/reportwidget.h"
 #include "report/section.h"
 
 using ResultReport::ReportDocumentLayout;
+using ResultReport::ReportWidget;
 using ResultReport::SectionContentType;
 
 namespace
@@ -336,4 +338,19 @@ TEST_CASE("ReportDocumentView - wheel passes from an inner scroll area", "[Repor
     // horizontal wheel stays with the inner area
     REQUIRE(!ReportDocumentView::innerAreaPassesWheel(0, 0, 0, 120, 0));
     REQUIRE(!ReportDocumentView::innerAreaPassesWheel(0, 0, 0, 120, 30));
+}
+
+TEST_CASE("Report sidebar follows the width", "[ReportDocumentLayout]")
+{
+    const int hide = ReportWidget::SidebarHideWidth;
+    const int show = ReportWidget::SidebarHideWidth + ReportWidget::SidebarShowHysteresis;
+
+    // shown: hides only below the hide width
+    REQUIRE(ReportWidget::sidebarShownForWidth(true, hide));
+    REQUIRE(!ReportWidget::sidebarShownForWidth(true, hide - 1));
+
+    // hidden: shows only at the hide width plus the hysteresis
+    REQUIRE(!ReportWidget::sidebarShownForWidth(false, hide));
+    REQUIRE(!ReportWidget::sidebarShownForWidth(false, show - 1));
+    REQUIRE(ReportWidget::sidebarShownForWidth(false, show));
 }

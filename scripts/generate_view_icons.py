@@ -15,7 +15,8 @@ from PIL import Image, ImageDraw
 
 SIZE   = 512
 SCALE  = 4      # drawn larger and scaled down, for smooth edges
-STROKE = 18
+STROKE = 15     # outlines, similar to the Flight Deck icons
+INNER  = 11     # inner lines
 BLACK  = (0, 0, 0, 255)
 
 
@@ -58,8 +59,11 @@ class Canvas:
         self.draw.ellipse([ (x - radius) * s, (y - radius) * s, (x + radius) * s, (y + radius) * s ],
                           fill=(0, 0, 0, 0))
 
-    def save(self, path):
-        self.image.resize((SIZE, SIZE), Image.LANCZOS).save(path)
+    def save(self, path, mirror=False):
+        image = self.image.resize((SIZE, SIZE), Image.LANCZOS)
+        if mirror:
+            image = image.transpose(Image.FLIP_LEFT_RIGHT)
+        image.save(path)
 
 
 def axes(c, x0=72, y0=440, x1=448, y1=72):
@@ -73,18 +77,16 @@ def view_table(c):
     header_bottom = 176
 
     c.rect(left, top, right, bottom, radius=28)
-    c.rect(left, top, right, header_bottom, radius=28, fill=True)
-    # square lower corners of the header row
-    c.rect(left, header_bottom - 40, right, header_bottom, fill=True)
+    c.line([ (left, header_bottom), (right, header_bottom) ], round_caps=False)
 
     rows = 3
     row_height = (bottom - header_bottom) / rows
     for i in range(1, rows):
         y = header_bottom + i * row_height
-        c.line([ (left, y), (right, y) ], width=14, round_caps=False)
+        c.line([ (left, y), (right, y) ], width=INNER, round_caps=False)
 
     for x in (left + (right - left) / 3.0, left + 2 * (right - left) / 3.0):
-        c.line([ (x, header_bottom), (x, bottom) ], width=14, round_caps=False)
+        c.line([ (x, top), (x, bottom) ], width=INNER, round_caps=False)
 
 
 def view_histogram(c):
@@ -94,7 +96,7 @@ def view_histogram(c):
     base = 440 - STROKE / 2.0
     bars = [ (120, 300), (200, 180), (280, 110), (360, 240) ]   # left edge, top
     for x, top in bars:
-        c.rect(x, top, x + 56, base + STROKE, radius=6, fill=True)
+        c.rect(x, top, x + 56, base + STROKE, radius=6)
 
     # the axis stays visible below the bars
     c.line([ (72, 440), (448, 440) ])
@@ -107,7 +109,7 @@ def view_scatterplot(c):
     dots = [ (140, 370), (190, 300), (170, 220), (250, 330), (260, 240), (300, 170),
              (340, 280), (360, 200), (400, 130), (410, 240) ]
     for x, y in dots:
-        c.dot(x, y, 22)
+        c.dot(x, y, 18)
 
 
 def view_grid(c):
@@ -116,14 +118,16 @@ def view_grid(c):
     cells = 4
     step  = (right - left) / cells
 
-    filled = { (1, 0), (2, 1), (3, 1), (0, 2), (1, 2), (2, 3) }   # column, row, no corner cell
+    filled = { (1, 0), (3, 1), (0, 2), (2, 2), (1, 3) }   # column, row, no corner cell
+    inset  = 16                                            # lighter than full cells
     for col, row in filled:
-        c.rect(left + col * step, top + row * step, left + (col + 1) * step, top + (row + 1) * step, fill=True)
+        c.rect(left + col * step + inset, top + row * step + inset,
+               left + (col + 1) * step - inset, top + (row + 1) * step - inset, radius=6, fill=True)
 
     c.rect(left, top, right, bottom, radius=20)
     for i in range(1, cells):
-        c.line([ (left + i * step, top), (left + i * step, bottom) ], width=14, round_caps=False)
-        c.line([ (left, top + i * step), (right, top + i * step) ], width=14, round_caps=False)
+        c.line([ (left + i * step, top), (left + i * step, bottom) ], width=INNER, round_caps=False)
+        c.line([ (left, top + i * step), (right, top + i * step) ], width=INNER, round_caps=False)
 
 
 def view_geographic(c):
@@ -131,13 +135,13 @@ def view_geographic(c):
     cx, cy, r = 216, 296, 168
 
     c.ellipse(cx - r, cy - r, cx + r, cy + r)
-    c.ellipse(cx - r * 0.45, cy - r, cx + r * 0.45, cy + r, width=14)   # meridian
-    c.line([ (cx, cy - r), (cx, cy + r) ], width=14, round_caps=False)
-    c.line([ (cx - r, cy), (cx + r, cy) ], width=14, round_caps=False)  # equator
+    c.ellipse(cx - r * 0.45, cy - r, cx + r * 0.45, cy + r, width=INNER)   # meridian
+    c.line([ (cx, cy - r), (cx, cy + r) ], width=INNER, round_caps=False)
+    c.line([ (cx - r, cy), (cx + r, cy) ], width=INNER, round_caps=False)  # equator
 
     for dy in (-0.55, 0.55):                                            # parallels
         half = r * math.sqrt(1.0 - dy * dy)
-        c.line([ (cx - half, cy + r * dy), (cx + half, cy + r * dy) ], width=14, round_caps=False)
+        c.line([ (cx - half, cy + r * dy), (cx + half, cy + r * dy) ], width=INNER, round_caps=False)
 
     # location mark: a pin with its tip on the globe
     px, py, pr = 372, 132, 84
@@ -153,17 +157,21 @@ def view_geographic(c):
     c.clear_dot(px, py, pr + 22)
     c.clear_polygon(pin(pr + 22, tip[ 1 ] + 34, 62))
 
+    # outlined pin with a ring in its head
     c.dot(px, py, pr)
     c.polygon(pin(pr, tip[ 1 ], 62))
-    c.clear_dot(px, py, 34)
+    c.clear_dot(px, py, pr - STROKE)
+    c.clear_polygon(pin(pr - STROKE, tip[ 1 ] - STROKE * 1.8, 62))
+    c.dot(px, py, 32)
+    c.clear_dot(px, py, 32 - STROKE)
 
 
-ICONS = {
-    'view_table.png':       view_table,
-    'view_histogram.png':   view_histogram,
-    'view_scatterplot.png': view_scatterplot,
-    'view_grid.png':        view_grid,
-    'view_geographic.png':  view_geographic,
+ICONS = {   # file name: (draw function, mirrored)
+    'view_table.png':       (view_table,       False),
+    'view_histogram.png':   (view_histogram,   False),
+    'view_scatterplot.png': (view_scatterplot, False),
+    'view_grid.png':        (view_grid,        False),
+    'view_geographic.png':  (view_geographic,  True),   # pin on the left
 }
 
 
@@ -171,12 +179,12 @@ def main():
     default_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'icons')
     out_dir     = sys.argv[ 1 ] if len(sys.argv) > 1 else default_dir
 
-    for name, draw in ICONS.items():
+    for name, (draw, mirror) in ICONS.items():
         canvas = Canvas()
         draw(canvas)
 
         path = os.path.normpath(os.path.join(out_dir, name))
-        canvas.save(path)
+        canvas.save(path, mirror)
         print('written', path)
 
 
