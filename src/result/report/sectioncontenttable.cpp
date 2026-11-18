@@ -2099,7 +2099,7 @@ void SectionContentTableModel::executeAndReset(const std::function<void()>& func
  ***************************************************************************************************/
 
 const int SectionContentTableWidget::DoubleClickCheckIntervalMSecs = 300;
-const int SectionContentTableWidget::MaxVisibleRows                = 50;
+const int SectionContentTableWidget::MaxVisibleRows                = 20;
 
 const std::string SectionContentTableWidget::FieldConfigSortColumn = SectionContentTable::FieldSortColumn;
 const std::string SectionContentTableWidget::FieldConfigSortOrder  = SectionContentTable::FieldSortOrder;
