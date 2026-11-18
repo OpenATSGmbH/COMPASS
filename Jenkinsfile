@@ -1,3 +1,151 @@
+// Test tags of the checked boxes, as passed to test_suite.py --tags
+def selectedTags() {
+    def tags = []
+    if (params.TAG_SYSTEM)          tags << 'system'
+    if (params.TAG_IMPORT)          tags << 'import'
+    if (params.TAG_CALCULATE)       tags << 'calculate'
+    if (params.TAG_CONTEXT)         tags << 'context'
+    if (params.TAG_CTX_GUI)         { tags << 'ctx_gui'; tags << 'ctx_gui_loww' }
+    if (params.TAG_EVAL)            { tags << 'eval'; tags << 'eval_loww'; tags << 'eval_eddf' }
+    if (params.TAG_UI)              tags << 'ui'
+    if (params.TAG_VIEWS)           tags << 'views'
+    if (params.TAG_TABLEVIEW)       tags << 'tableview'
+    if (params.TAG_HISTOGRAMVIEW)   tags << 'histogramview'
+    if (params.TAG_SCATTERPLOTVIEW) tags << 'scatterplotview'
+    if (params.TAG_GEOGRAPHICVIEW)  tags << 'geographicview'
+    if (params.TAG_ANALYZE)         { tags << 'analyze'; tags << 'analyze_smr' }
+    if (params.TAG_ARTAS_SPF)       tags << 'artas_spf'
+    if (params.TAG_MLAT_RU)         tags << 'mlat_ru'
+    if (params.TAG_SENSOR_STATUS)   tags << 'sensor_status'
+    if (params.TAG_TRACKER_CONTRIB) tags << 'tracker_contrib'
+    if (params.TAG_LIVE)            tags << 'live'
+    return tags
+}
+
+// Datasets of the checked boxes: name (names the output dir and the log file) + manifest
+// path. Each manifest declares the tags its dataset supports; unsupported selected tags
+// simply resolve to no targets for that dataset.
+def selectedDatasets() {
+    def path = env.TEST_DATA_PATH
+    def datasets = []
+    if (params.DATASET_05H)    datasets << [name: 'at_20230422_05h',  manifest: "${path}/at_20230422/at_20230422_05h.json"]
+    if (params.DATASET_2H)     datasets << [name: 'at_20230422_2h',   manifest: "${path}/at_20230422/at_20230422_2h.json"]
+    if (params.DATASET_LOWW)   datasets << [name: 'loww_20260609_4h', manifest: "${path}/loww_20260609/loww_20260609_4h.json"]
+    if (params.DATASET_SKEYES) datasets << [name: 'skeyes_20251203',  manifest: "${path}/skeyes_20251203/skeyes_20251203.json"]
+    if (params.DATASET_EDDF)   datasets << [name: 'eddf_20251117',    manifest: "${path}/eddf_20251117/eddf_20251117.json"]
+    return datasets
+}
+
+def hasIntegrationSelection() {
+    return !selectedTags().isEmpty() && !selectedDatasets().isEmpty()
+}
+
+// Runs one step of an OS build (build, unit tests, package, integration tests). A failure
+// marks the stage and the build as failed but does not stop the pipeline: the remaining
+// steps of this OS are skipped (osOk), the other OS continues. An abort stops the build.
+def osStep(String os, Closure body) {
+    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', catchInterruptions: false) {
+        try {
+            body()
+        }
+        catch (e) {
+            env.FAILED_OS = ((env.FAILED_OS ?: '') + " ${os}").trim()
+            throw e
+        }
+    }
+}
+
+// false once a step of the OS build failed (osStep)
+def osOk(String os) {
+    return !(env.FAILED_OS ?: '').tokenize(' ').contains(os)
+}
+
+// Shell command of one CI step in a build image container. Killing a `docker run`
+// client (abort, Jenkins restart) does not stop the container - it keeps compiling in
+// the workspace and collides with the next build. Every container is therefore labeled
+// with branch and build, so it can be found and removed again (Checkout, post), and
+// named so it is recognizable in `docker ps`. cmd runs in bash, without single quotes.
+def dockerRun(String name, String image, String opts, String cmd) {
+    return """docker run --rm --init \
+        --name compass-${name}-${env.CI_TAG} \
+        --label compass_ci_branch=${env.CI_BRANCH} \
+        --label compass_ci_build=${env.CI_TAG} \
+        ${opts} \
+        ${image} \
+        bash -c '${cmd}'"""
+}
+
+// Prepares Wine in the Windows image container: a fresh prefix in the home folder of the
+// container (gone with it). Mono and Gecko are disabled, their install dialogs would block
+// wineboot under Xvfb, COMPASS needs neither. Software OpenGL (Mesa) as in the Linux unit
+// tests. LANG: Wine maps the Unix file names with the locale charset.
+def wineInit() {
+    return 'export WINEPREFIX=$HOME/wine WINEDEBUG=-all LANG=C.UTF-8 ' +
+           'MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 && ' +
+           'WINEDLLOVERRIDES="mscoree,mshtml=" xvfb-run -a sh -c "wineboot -i && wineserver -w"'
+}
+
+// Runs the integration tests of all checked datasets for one OS build. suiteCmd(dataset,
+// suiteArgs) returns the shell command that runs test_suite.py in <RUN_DIR>/scripts/test_infra
+// with the given arguments. Each dataset writes into its own output dir
+// <TEST_DATA_PATH>/runs/<os>/<dataset>: a shared one makes every run overwrite the previous
+// one's results - and junit_results.xml with them, so only the last dataset would reach
+// the Jenkins test report.
+def runIntegrationTests(String os, Closure suiteCmd) {
+    def tagsStr    = selectedTags().join(',')
+    def runsDir    = "${env.TEST_DATA_PATH}/runs/${os}"
+    def scriptsDir = "${env.RUN_DIR}/scripts"
+    def failures   = []
+
+    // the post actions publish the results of the OS builds tested here
+    env.TESTED_OS = ((env.TESTED_OS ?: '') + " ${os}").trim()
+
+    sh "rm -rf ${runsDir}"
+
+    for (dataset in selectedDatasets()) {
+        echo "Running ${os} tests for dataset: ${dataset.name} (tags: ${tagsStr})${params.ASAN && os == env.LINUX_OS ? ' [ASan]' : ''}"
+
+        def suiteArgs = "--path=\"${scriptsDir}/tests\" --manifest=\"${dataset.manifest}\" " +
+                        "--output=\"${runsDir}/${dataset.name}\" --tags=\"${tagsStr}\" " +
+                        "--deps=tests --no-prompt --gui " +
+                        "--mem-interval=${env.MEM_SAMPLE_INTERVAL_SEC} --mem-warn=${env.MEM_WARN_MB} " +
+                        "--cfg-override=none"
+
+        // The exit code of test_suite.py has to survive the `tee`: a shell
+        // pipeline reports the status of its LAST command, so without this the
+        // suite could crash and the step would still report success. `pipefail`
+        // is not used since it is not available in every /bin/sh - instead the
+        // status is written to a file inside the pipeline and re-raised after it.
+        // Streaming through tee is kept so the Jenkins console shows test
+        // progress live. returnStatus keeps the loop going: every dataset runs
+        // even if an earlier one failed, the stage is failed afterwards.
+        def logBase = "${env.RUN_DIR}/test_${os}_${dataset.name}"
+        def rc = sh(returnStatus: true, script: """
+            set +e
+            cd '${scriptsDir}/test_infra' || exit 2
+            { ${suiteCmd(dataset, suiteArgs)} ; \
+              echo \$? > '${logBase}.rc' ; } \
+                2>&1 | tee '${logBase}.log'
+            exit `cat '${logBase}.rc'`
+        """)
+
+        // 0 = all tests passed, 1 = tests failed, 2 = suite could not be run
+        // (see ExitCode* in test_suite.py)
+        if (rc != 0) {
+            def reason = (rc == 1) ? 'test failures' : "suite error (exit ${rc})"
+            echo "Dataset ${dataset.name} (${os}): ${reason}"
+            failures << "${dataset.name} (${reason})"
+        }
+    }
+
+    // Fail the stage here, after all datasets have run, so the Stage View shows
+    // the failure on the integration test stage instead of on the post actions
+    // where the junit step publishes results.
+    if (failures) {
+        error "${os} integration tests failed: ${failures.join(', ')}"
+    }
+}
+
 pipeline {
     agent any
 
@@ -32,9 +180,15 @@ pipeline {
         booleanParam(name: 'TAG_TRACKER_CONTRIB', defaultValue: true, description: 'Tag: tracker_contrib (CAT062 contributing sensors, skeyes_20251203)')
         booleanParam(name: 'TAG_LIVE',            defaultValue: true, description: 'Tag: live (live network replay, at_20230422 + skeyes_20251203)')
 
+        // Builds and test runs per OS. With both builds checked, Linux runs first, then Windows.
+        booleanParam(name: 'BUILD_LINUX',             defaultValue: true,  description: 'Linux: build, unit tests and AppImage (alma8 image)')
+        booleanParam(name: 'LINUX_INTEGRATION_TESTS', defaultValue: true,  description: 'Linux: integration tests against the AppImage (needs BUILD_LINUX)')
+        booleanParam(name: 'BUILD_WINDOWS',           defaultValue: false, description: 'Windows: cross build, unit tests in Wine and ZIP file (win_deb12 image)')
+        booleanParam(name: 'WIN_INTEGRATION_TESTS',   defaultValue: false, description: 'Windows: integration tests in Wine, in the win_deb12 image under Xvfb (needs BUILD_WINDOWS)')
+
         // Build options
-        booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove the build dirs before building)')
-        booleanParam(name: 'ASAN',                   defaultValue: false, description: 'Build with AddressSanitizer (slower; use to diagnose heap/memory corruption)')
+        booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove the build dirs before building, Linux and Windows)')
+        booleanParam(name: 'ASAN',                   defaultValue: false, description: 'Linux: build with AddressSanitizer (slower; use to diagnose heap/memory corruption)')
 
         // Datasets (checkboxes)
         booleanParam(name: 'DATASET_05H',    defaultValue: true,  description: 'Dataset: at_20230422_05h (0.5h)')
@@ -49,18 +203,17 @@ pipeline {
         GITHUB_TOKEN    = credentials('github-pat')
         CI_DIR          = '/home/user/ci'
         TEST_DATA_PATH  = '/home/user/ci/test'
-        // OS_NAME of the build image: names the image, the build dirs and the AppImage
-        BUILD_OS        = 'alma8'
-        DOCKER_IMAGE    = "compass/build_${BUILD_OS}"
+        // OS_NAME of the build images: names the image, the build dirs and the
+        // artifacts (COMPASS_alma8-x86_64.AppImage, build_win_deb12)
+        LINUX_OS        = 'alma8'
+        LINUX_IMAGE     = "compass/build_${LINUX_OS}"
+        WIN_OS          = 'win_deb12'
+        WIN_IMAGE       = "compass/build_${WIN_OS}"
         DISPLAY             = ':0'
         COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
         PYTHONUNBUFFERED    = '1'
-        // Container identity. Killing a `docker run` client (abort, Jenkins
-        // restart) does not stop the container - it keeps compiling in the
-        // workspace and collides with the next build. Every container is
-        // labeled so it can be found and removed again, and named so it is
-        // recognizable in `docker ps`. Branch names may contain characters
-        // that are illegal in a container name.
+        // Container identity, see dockerRun(). Branch names may contain
+        // characters that are illegal in a container name.
         CI_BRANCH           = "${env.BRANCH_NAME.replaceAll('[^A-Za-z0-9_.-]', '_')}"
         CI_TAG              = "${env.BRANCH_NAME.replaceAll('[^A-Za-z0-9_.-]', '_')}-${env.BUILD_NUMBER}"
         // Memory sampling of the COMPASS process. Most test cases reuse one
@@ -83,6 +236,12 @@ pipeline {
                     // workspace and would compile into it while this build does.
                     sh "docker ps -aq --filter label=compass_ci_branch=${CI_BRANCH} | xargs -r docker rm -f || true"
 
+                    // Run dir of this build on the host: artifacts of all OS builds
+                    // (collect_artifacts.sh), test logs, crash logs
+                    def stamp = sh(script: 'date +%Y%m%d-%H%M%S', returnStdout: true).trim()
+                    env.RUN_DIR = "${CI_DIR}/${stamp}-${BUILD_NUMBER}-${BRANCH_NAME}"
+                    echo "run dir: ${env.RUN_DIR}"
+
                     // Resolve branch parameters
                     // experimental_src: explicit param > pipeline branch > devel
                     def expBranch = params.EXPERIMENTAL_SRC_BRANCH?.trim() ?: env.BRANCH_NAME
@@ -102,27 +261,25 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        // Every OS step runs in osStep(): a failed step skips the remaining ones of its OS
+        // (osOk in the when conditions), the other OS continues.
+        stage('Linux Build') {
+            when { expression { params.BUILD_LINUX } }
             steps {
                 script {
                     def cleanFlag = params.CLEAN_BUILD ? '--clean' : ''
                     def asanFlag  = params.ASAN ? '--asan' : ''
-                    sh """
-                        docker run --rm --init \
-                            --name compass-build-${CI_TAG} \
-                            --label compass_ci_branch=${CI_BRANCH} \
-                            --label compass_ci_build=${CI_TAG} \
-                            -v \$(pwd):/workspace/compass \
-                            -v \$(pwd)/jasterix:/workspace/jasterix \
-                            -w /workspace/compass/docker \
-                            ${DOCKER_IMAGE} \
-                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh ${cleanFlag} ${asanFlag} && ./build_compass.sh ${cleanFlag} ${asanFlag}'
-                    """
+                    osStep(LINUX_OS) {
+                        sh dockerRun('build', LINUX_IMAGE,
+                                     '-v $(pwd):/workspace/compass -v $(pwd)/jasterix:/workspace/jasterix -w /workspace/compass/docker',
+                                     "set -e; export WORKSPACE_BASE=/workspace; ./build_jasterix.sh ${cleanFlag} ${asanFlag} && ./build_compass.sh ${cleanFlag} ${asanFlag}")
+                    }
                 }
             }
         }
 
-        stage('Unit Tests') {
+        stage('Linux Unit Tests') {
+            when { expression { params.BUILD_LINUX && osOk(env.LINUX_OS) } }
             steps {
                 script {
                     // When ASAN=true, LSan runs at process exit and returns its own
@@ -136,106 +293,81 @@ pipeline {
                     // only listed in ld.so.conf => ldconfig after the install.
                     // LANG: the container has the POSIX locale, Qt 5.15 then decodes file
                     // names as ASCII (test_utf8_paths). Desktop sessions are UTF-8.
-                    sh """
-                        docker run --rm --init \
-                            --name compass-unittests-${CI_TAG} \
-                            --label compass_ci_branch=${CI_BRANCH} \
-                            --label compass_ci_build=${CI_TAG} \
-                            -v \$(pwd):/workspace/compass \
-                            -v \$(pwd)/jasterix:/workspace/jasterix \
-                            -w /workspace/compass \
-                            ${DOCKER_IMAGE} \
-                            bash -c 'set -e; sudo cmake --install /workspace/jasterix/build_${BUILD_OS} > /dev/null && sudo ldconfig && ${lsanEnv}LANG=C.UTF-8 MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_${BUILD_OS}/bin/compass_tests'
-                    """
+                    osStep(LINUX_OS) {
+                        sh dockerRun('unittests', LINUX_IMAGE,
+                                     '-v $(pwd):/workspace/compass -v $(pwd)/jasterix:/workspace/jasterix -w /workspace/compass',
+                                     "set -e; sudo cmake --install /workspace/jasterix/build_${LINUX_OS} > /dev/null && sudo ldconfig && ${lsanEnv}LANG=C.UTF-8 MESA_GL_VERSION_OVERRIDE=3.3 MESA_GLSL_VERSION_OVERRIDE=330 xvfb-run -a ./build_${LINUX_OS}/bin/compass_tests")
+                    }
                 }
             }
         }
 
-        stage('AppImage') {
+        stage('Linux AppImage') {
+            when { expression { params.BUILD_LINUX && osOk(env.LINUX_OS) } }
             steps {
                 script {
                     def asanFlag = params.ASAN ? '--asan' : ''
-                    sh """
-                        docker run --rm --init \
-                            --name compass-appimage-${CI_TAG} \
-                            --label compass_ci_branch=${CI_BRANCH} \
-                            --label compass_ci_build=${CI_TAG} \
-                            -v \$(pwd):/workspace/compass \
-                            -v \$(pwd)/jasterix:/workspace/jasterix \
-                            -v ${CI_DIR}:${CI_DIR} \
-                            -w /workspace/compass \
-                            ${DOCKER_IMAGE} \
-                            bash -c 'set -e; export WORKSPACE_BASE=/workspace; sudo cmake --install /workspace/jasterix/build_${BUILD_OS} && sudo cmake --install /workspace/compass/build_${BUILD_OS} && sudo ldconfig && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}'
-                    """
-                    // Collect artifacts
-                    sh "bash docker/collect_artifacts.sh \$(pwd) ${BUILD_NUMBER} ${BRANCH_NAME} ${BUILD_OS}"
+                    osStep(LINUX_OS) {
+                        sh dockerRun('appimage', LINUX_IMAGE,
+                                     "-v \$(pwd):/workspace/compass -v \$(pwd)/jasterix:/workspace/jasterix -v ${CI_DIR}:${CI_DIR} -w /workspace/compass",
+                                     "set -e; export WORKSPACE_BASE=/workspace; sudo cmake --install /workspace/jasterix/build_${LINUX_OS} && sudo cmake --install /workspace/compass/build_${LINUX_OS} && sudo ldconfig && cd /workspace/compass/docker && ./deploy_compass.sh ${asanFlag}")
+                        sh "bash docker/collect_artifacts.sh \$(pwd) ${env.RUN_DIR} ${LINUX_OS}"
+                    }
                 }
             }
         }
 
-        stage('Integration Tests') {
-            when {
-                expression {
-                    def anyTag = params.TAG_SYSTEM || params.TAG_IMPORT || params.TAG_CALCULATE || params.TAG_EVAL ||
-                                 params.TAG_CONTEXT || params.TAG_CTX_GUI ||
-                                 params.TAG_UI || params.TAG_VIEWS || params.TAG_TABLEVIEW ||
-                                 params.TAG_HISTOGRAMVIEW || params.TAG_SCATTERPLOTVIEW || params.TAG_GEOGRAPHICVIEW ||
-                                 params.TAG_ANALYZE || params.TAG_ARTAS_SPF || params.TAG_MLAT_RU ||
-                                 params.TAG_SENSOR_STATUS || params.TAG_TRACKER_CONTRIB
-                    def anyDataset = params.DATASET_05H || params.DATASET_2H || params.DATASET_LOWW ||
-                                     params.DATASET_SKEYES || params.DATASET_EDDF
-                    return anyTag && anyDataset
-                }
-            }
+        // The Windows image runs as root by default: its containers run as the Jenkins user
+        // (--user), so that the build files belong to it (as the Linux image user, uid 1000).
+        stage('Windows Build') {
+            when { expression { params.BUILD_WINDOWS } }
             steps {
                 script {
-                    // Build tags string from checkboxes
-                    def tags = []
-                    if (params.TAG_SYSTEM)          tags << 'system'
-                    if (params.TAG_IMPORT)          tags << 'import'
-                    if (params.TAG_CALCULATE)       tags << 'calculate'
-                    if (params.TAG_CONTEXT)         tags << 'context'
-                    if (params.TAG_CTX_GUI)         { tags << 'ctx_gui'; tags << 'ctx_gui_loww' }
-                    if (params.TAG_EVAL)            { tags << 'eval'; tags << 'eval_loww'; tags << 'eval_eddf' }
-                    if (params.TAG_UI)              tags << 'ui'
-                    if (params.TAG_VIEWS)           tags << 'views'
-                    if (params.TAG_TABLEVIEW)       tags << 'tableview'
-                    if (params.TAG_HISTOGRAMVIEW)   tags << 'histogramview'
-                    if (params.TAG_SCATTERPLOTVIEW) tags << 'scatterplotview'
-                    if (params.TAG_GEOGRAPHICVIEW)  tags << 'geographicview'
-                    if (params.TAG_ANALYZE)         { tags << 'analyze'; tags << 'analyze_smr' }
-                    if (params.TAG_ARTAS_SPF)       tags << 'artas_spf'
-                    if (params.TAG_MLAT_RU)         tags << 'mlat_ru'
-                    if (params.TAG_SENSOR_STATUS)   tags << 'sensor_status'
-                    if (params.TAG_TRACKER_CONTRIB) tags << 'tracker_contrib'
-                    if (params.TAG_LIVE)            tags << 'live'
-                    def tagsStr = tags.join(',')
-
-                    // Build dataset list from checkboxes: name (used for the log file
-                    // name) + manifest path. Each manifest declares the tags its
-                    // dataset supports; unsupported selected tags simply resolve to
-                    // no targets for that dataset.
-                    def datasets = []
-                    if (params.DATASET_05H)  datasets << [name: 'at_20230422_05h',  manifest: "${TEST_DATA_PATH}/at_20230422/at_20230422_05h.json"]
-                    if (params.DATASET_2H)   datasets << [name: 'at_20230422_2h',   manifest: "${TEST_DATA_PATH}/at_20230422/at_20230422_2h.json"]
-                    if (params.DATASET_LOWW) datasets << [name: 'loww_20260609_4h', manifest: "${TEST_DATA_PATH}/loww_20260609/loww_20260609_4h.json"]
-                    if (params.DATASET_SKEYES) datasets << [name: 'skeyes_20251203', manifest: "${TEST_DATA_PATH}/skeyes_20251203/skeyes_20251203.json"]
-                    if (params.DATASET_EDDF) datasets << [name: 'eddf_20251117',   manifest: "${TEST_DATA_PATH}/eddf_20251117/eddf_20251117.json"]
-
-                    // Find the run directory created by collect_artifacts.sh
-                    def runDir = sh(
-                        script: "ls -dt ${CI_DIR}/*-${BUILD_NUMBER}-${BRANCH_NAME} 2>/dev/null | head -1",
-                        returnStdout: true
-                    ).trim()
-
-                    if (!runDir) {
-                        error "No artifact directory found for build ${BUILD_NUMBER}"
+                    def cleanFlag = params.CLEAN_BUILD ? '--clean' : ''
+                    osStep(WIN_OS) {
+                        sh dockerRun('winbuild', WIN_IMAGE,
+                                     '--user $(id -u):$(id -g) -v $(pwd):/workspace/compass -v $(pwd)/jasterix:/workspace/jasterix -w /workspace/compass/docker',
+                                     "set -e; export WORKSPACE_BASE=/workspace; ./win_build.sh all ${cleanFlag}")
                     }
+                }
+            }
+        }
 
-                    def appimage = "${runDir}/COMPASS_${BUILD_OS}-x86_64.AppImage"
-                    def scriptsDir = "${runDir}/scripts"
+        stage('Windows Unit Tests') {
+            when { expression { params.BUILD_WINDOWS && osOk(env.WIN_OS) } }
+            steps {
+                script {
+                    // compass_tests.exe runs from a deployment with all DLLs and Qt plugins.
+                    // It finds the repository through COMPASS_SOURCE_DIR, the Linux path of the
+                    // build (/workspace/compass), which Wine resolves on drive Z:.
+                    osStep(WIN_OS) {
+                        sh dockerRun('winunittests', WIN_IMAGE,
+                                     '--user $(id -u):$(id -g) -v $(pwd):/workspace/compass -w /workspace/compass/docker',
+                                     "set -e; export WORKSPACE_BASE=/workspace; ./win_deploy.sh --with_tests; ${wineInit()}; xvfb-run -a wine /workspace/compass/build_${WIN_OS}/compass_deploy/compass_tests.exe")
+                    }
+                }
+            }
+        }
 
-                    // Run tests for each selected dataset
+        stage('Windows ZIP') {
+            when { expression { params.BUILD_WINDOWS && osOk(env.WIN_OS) } }
+            steps {
+                script {
+                    osStep(WIN_OS) {
+                        sh dockerRun('winzip', WIN_IMAGE,
+                                     '--user $(id -u):$(id -g) -v $(pwd):/workspace/compass -w /workspace/compass/docker',
+                                     'set -e; export WORKSPACE_BASE=/workspace; ./win_deploy.sh --zip')
+                        sh "bash docker/collect_artifacts.sh \$(pwd) ${env.RUN_DIR} ${WIN_OS}"
+                    }
+                }
+            }
+        }
+
+        // Integration tests run after all builds, Linux first, then Windows.
+        stage('Linux Integration Tests') {
+            when { expression { params.BUILD_LINUX && params.LINUX_INTEGRATION_TESTS && osOk(env.LINUX_OS) && hasIntegrationSelection() } }
+            steps {
+                script {
                     // When ASAN=true, set runtime options for the sanitized binary:
                     //   abort_on_error=1 makes ASan SIGABRT on first error so the
                     //     test framework's shutdown-crash flagging catches it.
@@ -250,64 +382,41 @@ pipeline {
                     // COMPASS_QUIT_TIMEOUT_SEC=180: ASan's atexit leak scan adds
                     // 10-30s to shutdown; the default 60s in closeCOMPASS would
                     // force-kill slow shutdowns, spuriously flagging tests as crashed.
-                    def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:log_path=${runDir}/asan' LSAN_OPTIONS='exitcode=0' ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer COMPASS_QUIT_TIMEOUT_SEC=180 " : ''
+                    def asanEnv = params.ASAN ? "ASAN_OPTIONS='abort_on_error=1:log_path=${env.RUN_DIR}/asan' LSAN_OPTIONS='exitcode=0' ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer COMPASS_QUIT_TIMEOUT_SEC=180 " : ''
+                    def appimage = "${env.RUN_DIR}/COMPASS_${LINUX_OS}-x86_64.AppImage"
 
-                    def testFailures = []
-
-                    // Each dataset writes into its own output dir. A shared one
-                    // makes the second run overwrite the first's results - and
-                    // junit_results.xml with them, so only the last dataset ever
-                    // reached the Jenkins test report.
-                    sh "rm -rf ${TEST_DATA_PATH}/runs"
-
-                    for (dataset in datasets) {
-                        echo "Running tests for dataset: ${dataset.name} (tags: ${tagsStr})${params.ASAN ? ' [ASan]' : ''}"
-
-                        // The exit code of test_suite.py has to survive the `tee`:
-                        // a shell pipeline reports the status of its LAST command,
-                        // so without this the suite could crash and the step would
-                        // still report success. `pipefail` is not used since it is
-                        // not available in every /bin/sh - instead the status is
-                        // written to a file inside the pipeline and re-raised after
-                        // it. Streaming through tee is kept so the Jenkins console
-                        // shows test progress live.
-                        // returnStatus keeps the loop going: every dataset runs even
-                        // if an earlier one failed, the stage is failed afterwards.
-                        def rcFile = "${runDir}/test_${dataset.name}.rc"
-                        def rc = sh(returnStatus: true, script: """
-                            set +e
-                            cd '${scriptsDir}/test_infra' || exit 2
-                            { ${asanEnv}PYTHONPATH='${scriptsDir}' python3 test_suite.py \
-                                --binary='${appimage}' \
-                                --path='${scriptsDir}/tests' \
-                                --manifest='${dataset.manifest}' \
-                                --output='${TEST_DATA_PATH}/runs/${dataset.name}' \
-                                --tags='${tagsStr}' \
-                                --deps=tests \
-                                --no-prompt \
-                                --gui \
-                                --mem-interval=${MEM_SAMPLE_INTERVAL_SEC} \
-                                --mem-warn=${MEM_WARN_MB} \
-                                --cfg-override=none ; \
-                              echo \$? > '${rcFile}' ; } \
-                                2>&1 | tee '${runDir}/test_${dataset.name}.log'
-                            exit `cat '${rcFile}'`
-                        """)
-
-                        // 0 = all tests passed, 1 = tests failed, 2 = suite could
-                        // not be run (see ExitCode* in test_suite.py)
-                        if (rc != 0) {
-                            def reason = (rc == 1) ? 'test failures' : "suite error (exit ${rc})"
-                            echo "Dataset ${dataset.name}: ${reason}"
-                            testFailures << "${dataset.name} (${reason})"
+                    // natively on the host, for OpenGL on its GPU (DISPLAY)
+                    osStep(LINUX_OS) {
+                        runIntegrationTests(LINUX_OS) { dataset, suiteArgs ->
+                            "${asanEnv}PYTHONPATH='${env.RUN_DIR}/scripts' python3 test_suite.py --binary='${appimage}' ${suiteArgs}"
                         }
                     }
+                }
+            }
+        }
 
-                    // Fail the stage here, after all datasets have run, so the
-                    // Stage View shows the failure on Integration Tests instead of
-                    // on the post actions where the junit step publishes results.
-                    if (testFailures) {
-                        error "Integration tests failed: ${testFailures.join(', ')}"
+        stage('Windows Integration Tests') {
+            when { expression { params.BUILD_WINDOWS && params.WIN_INTEGRATION_TESTS && osOk(env.WIN_OS) && hasIntegrationSelection() } }
+            steps {
+                script {
+                    osStep(WIN_OS) {
+                        // unpacked ZIP file of the build (collect_artifacts.sh), started in Wine
+                        // by compass_client_wine.sh
+                        def deployDir = sh(script: "ls -d ${env.RUN_DIR}/win64/COMPASS_*_win64 | head -1", returnStdout: true).trim()
+
+                        // in the Windows image, one container per dataset (fresh Wine prefix),
+                        // under Xvfb with software OpenGL. The run dir and the test data are
+                        // mounted at their host paths, which Wine resolves on drive Z:. --gui:
+                        // COMPASS windows on the Xvfb display (the Linux offscreen default is
+                        // not used for the Windows build). Python: venv of the image (pandas).
+                        runIntegrationTests(WIN_OS) { dataset, suiteArgs ->
+                            dockerRun("wintests-${dataset.name}", env.WIN_IMAGE,
+                                      "--user \$(id -u):\$(id -g) -v ${env.CI_DIR}:${env.CI_DIR} " +
+                                      "-e COMPASS_EXTRA_ARGS -e PYTHONUNBUFFERED " +
+                                      "-e COMPASS_WIN_DEPLOY=${deployDir} -e PYTHONPATH=${env.RUN_DIR}/scripts " +
+                                      "-w ${env.RUN_DIR}/scripts/test_infra",
+                                      "set -e; ${wineInit()}; xvfb-run -a -s \"-screen 0 1920x1080x24\" /opt/py_tests/bin/python3 test_suite.py --binary=\"${env.RUN_DIR}/compass_client_wine.sh\" ${suiteArgs}")
+                        }
                     }
                 }
             }
@@ -320,35 +429,37 @@ pipeline {
             // client - on abort Jenkins kills the client, not the container, and
             // the container would keep compiling into the workspace.
             sh "docker ps -aq --filter label=compass_ci_build=${CI_TAG} | xargs -r docker rm -f || true"
-            // Crash logs are kept on the host under
+            // Crash logs are kept on the host in the run dir
             // ${CI_DIR}/*-${BUILD_NUMBER}-${BRANCH_NAME}/compass_crash_*.log
             // so they're available per-build via SSH but don't clutter the
             // Jenkins artifact list. Workspace cleanup of any leftover copies
             // from earlier pipeline versions that did archive them.
             sh "rm -f compass_crash_*.log"
-            // Collect the per-dataset memory curves next to the test logs, so an
-            // OOM-killed run can be read back from the build artifacts alone.
+            // Collect the memory curves and the JUnit XML of each tested OS build and
+            // dataset into the workspace - only of the OS builds tested in this build,
+            // the runs dir of the others holds the results of an earlier build.
+            // memory.csv: an OOM-killed run can be read back from the build artifacts
+            // alone. JUnit: one file per dataset, a single file would only ever carry
+            // the last dataset's tests. Suite and class names get the OS as prefix,
+            // the OS builds run the same test ids.
             sh """
-                rm -rf memory_csv && mkdir -p memory_csv
-                for f in ${TEST_DATA_PATH}/runs/*/results/memory.csv; do
-                    [ -f "\$f" ] || continue
-                    ds=\$(basename \$(dirname \$(dirname "\$f")))
-                    cp "\$f" "memory_csv/memory_\$ds.csv"
+                rm -rf memory_csv junit_results && mkdir -p memory_csv junit_results
+                for os in ${env.TESTED_OS ?: ''}; do
+                    for d in ${TEST_DATA_PATH}/runs/\$os/*/results; do
+                        [ -d "\$d" ] || continue
+                        ds=\$(basename \$(dirname "\$d"))
+                        if [ -f "\$d/memory.csv" ]; then
+                            cp "\$d/memory.csv" "memory_csv/memory_\${os}_\$ds.csv"
+                        fi
+                        if [ -f "\$d/junit_results.xml" ]; then
+                            sed -e 's/<testsuite name="/&'"\$os"'./' -e 's/ classname="/&'"\$os"'./' \
+                                "\$d/junit_results.xml" > "junit_results/\${os}_\$ds.xml"
+                        fi
+                    done
                 done
             """
             // Archive test logs and memory curves
             archiveArtifacts artifacts: '**/test_*.log, memory_csv/*.csv', allowEmptyArchive: true
-            // Copy each dataset's JUnit XML into the workspace and publish
-            // per-test results. One file per dataset - a single file would only
-            // ever carry the last dataset's tests.
-            sh """
-                rm -rf junit_results && mkdir -p junit_results
-                for f in ${TEST_DATA_PATH}/runs/*/results/junit_results.xml; do
-                    [ -f "\$f" ] || continue
-                    ds=\$(basename \$(dirname \$(dirname "\$f")))
-                    cp "\$f" "junit_results/\$ds.xml"
-                done
-            """
             junit testResults: 'junit_results/*.xml', allowEmptyResults: true
         }
         failure {

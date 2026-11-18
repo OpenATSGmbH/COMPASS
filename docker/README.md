@@ -7,7 +7,8 @@ Dockerfiles and scripts for building the COMPASS AppImage inside an AlmaLinux co
 
 - **Dockerfile_alma8** - AlmaLinux 8 build environment for the AppImage (glibc 2.28 as Debian 10, Qt 5.15, gcc-toolset-13)
 - **Dockerfile_win_deb12** - Windows build environment on Debian 12: own MinGW-w64 compiler (GCC 14.2), Qt 5.15.3
-  and all other Windows libraries built from source
+  and all other Windows libraries built from source. Wine 10 (WineHQ), Xvfb and Python with pandas for the Windows
+  tests of the CI (`compass_tests.exe` and the integration tests in Wine, see `experimental_src/py/readme_ci.md`)
 
 Each Dockerfile bakes in an `OS_NAME` env var (`alma8` / `win_deb12`) used by the build scripts.
 

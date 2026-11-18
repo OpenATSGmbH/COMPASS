@@ -484,6 +484,35 @@ RUN for m in qtbase qtsvg qtimageformats qtcharts; do \
 
 ENV QT_WIN_DIR=/opt/qt/5.15.3/mingw_64
 
+# Wine 10 (WineHQ, as on the development machines) for the Windows tests of the CI: compass_tests.exe
+# and the Python integration tests against compass_client.exe, under Xvfb with Mesa software OpenGL.
+# The WineHQ packages need the i386 architecture.
+ARG WINE_VERSION=10.0.0.0~bookworm-1
+RUN dpkg --add-architecture i386 \
+  && mkdir -pm755 /etc/apt/keyrings \
+  && wget -q -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
+  && wget -q -P /etc/apt/sources.list.d/ \
+     https://dl.winehq.org/wine-builds/debian/dists/bookworm/winehq-bookworm.sources \
+  && apt-get update \
+  && apt-get install -y --install-recommends winehq-stable=${WINE_VERSION} wine-stable=${WINE_VERSION} \
+     wine-stable-amd64=${WINE_VERSION} wine-stable-i386=${WINE_VERSION} \
+  && apt-get install -y --no-install-recommends xvfb xauth libgl1-mesa-dri libglx-mesa0 procps \
+  && rm -rf /var/lib/apt/lists/* \
+  && wine --version
+
+# Python test framework (test_suite.py) in its own venv, as on the CI host: pandas 2.1 or later
+# (Styler.map in the result report), Debian 12 has 1.5
+RUN python3 -m venv /opt/py_tests \
+  && /opt/py_tests/bin/pip install --no-cache-dir pandas==2.3.3 jinja2==3.1.6
+
+# user of the host (build_docker.sh), as in the Linux images: the CI runs the container with
+# --user <uid>:<gid>, Wine needs a passwd entry for it
+ARG USER_NAME
+ARG USER_ID
+ARG USER_GROUP_ID
+RUN groupadd --gid=${USER_GROUP_ID} someusers \
+  && useradd --uid=${USER_ID} --gid=${USER_GROUP_ID} --create-home --shell /bin/bash ${USER_NAME}
+
 # as the Linux images: OS_NAME names the build folder (build_win_deb12), run_docker.sh mounts the
 # home folder as /app and the container starts in the docker folder of the COMPASS source
 ENV OS_NAME=win_deb12
