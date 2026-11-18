@@ -507,8 +507,7 @@ void ToolBox::setWidthPercent(int percent)
 }
 
 /**
- * The dragged width is kept as is within the limits. It is only reset to the limit
- * when dragged beyond it, so the handle does not jump in 1 percent steps while dragging.
+ * The dragged width snaps to the nearest step, so the handle moves in steps.
  */
 void ToolBox::splitterMovedSlot()
 {
@@ -522,10 +521,8 @@ void ToolBox::splitterMovedSlot()
 
     const int dragged_percent = (int)std::lround(100.0 * sizes.value(0) / total);
 
-    setWidthPercent(dragged_percent);
-
-    if (dragged_percent != tools_.at(active_tool_idx_).width_percent)
-        applyWidthPercent();
+    setWidthPercent(toolbox::snapWidthPercent(dragged_percent));
+    applyWidthPercent();
 }
 
 /**

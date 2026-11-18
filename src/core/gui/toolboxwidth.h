@@ -49,9 +49,15 @@ inline int widthPercentStepUp(int percent)
     return clampWidthPercent(p / WidthStepPercent * WidthStepPercent + WidthStepPercent);
 }
 
+/// nearest multiple of the step, within the limits
+inline int snapWidthPercent(int percent)
+{
+    return clampWidthPercent((percent + WidthStepPercent / 2) / WidthStepPercent * WidthStepPercent);
+}
+
 inline int widthPercentOrDefault(const std::optional<int>& saved_percent, int default_percent)
 {
-    return clampWidthPercent(saved_percent.value_or(default_percent));
+    return snapWidthPercent(saved_percent.value_or(default_percent));
 }
 
 }

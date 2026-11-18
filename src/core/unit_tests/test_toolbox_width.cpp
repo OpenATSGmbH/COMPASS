@@ -81,7 +81,19 @@ TEST_CASE("Flight Deck width default lookup", "[toolbox_width]")
 {
     REQUIRE(widthPercentOrDefault(std::nullopt, 30) == 30);
     REQUIRE(widthPercentOrDefault(std::nullopt, 50) == 50);
-    REQUIRE(widthPercentOrDefault(45, 30) == 45);
+    REQUIRE(widthPercentOrDefault(45, 30) == 50);
+    REQUIRE(widthPercentOrDefault(44, 30) == 40);
     REQUIRE(widthPercentOrDefault(3, 30) == 10);
     REQUIRE(widthPercentOrDefault(95, 30) == 70);
+}
+
+TEST_CASE("Flight Deck width snap", "[toolbox_width]")
+{
+    REQUIRE(snapWidthPercent(30) == 30);
+    REQUIRE(snapWidthPercent(34) == 30);
+    REQUIRE(snapWidthPercent(35) == 40);
+    REQUIRE(snapWidthPercent(66) == 70);
+    REQUIRE(snapWidthPercent(4) == 10);
+    REQUIRE(snapWidthPercent(76) == 70);
+    REQUIRE(snapWidthPercent(100) == 70);
 }
