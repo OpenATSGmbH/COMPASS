@@ -48,7 +48,7 @@
 #ifdef USE_ASYNC_JOBS
 class COMPASS_CORE_API Job : public QObject
 #else
-class Job : public QObject, public QRunnable
+class COMPASS_CORE_API Job : public QObject, public QRunnable
 #endif
 {
     Q_OBJECT
