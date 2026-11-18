@@ -18,7 +18,8 @@
 #include "viewwidget.h"
 #include "view.h"
 #include "viewtoolwidget.h"
-#include "viewdatawidget.h"
+#include "viewmodel.h"
+#include "viewrenderwidget.h"
 #include "viewconfigwidget.h"
 #include "viewtoolswitcher.h"
 #include "viewtool.h"
@@ -31,13 +32,20 @@
 #include "dbcontentmanager.h"
 #include "dbcontent.h"
 #include "viewmanager.h"
+#include "buffer.h"
+#include "dbcontent/variable/variable.h"
+#include "logger.h"
 
+#include "json.hpp"
+
+#include <QApplication>
 #include <QVBoxLayout>
 #include <QSplitter>
 #include <QAction>
 #include <QSignalBlocker>
 #include <QSettings>
 #include <QPainter>
+#include <QScopedValueRollback>
 
 const int ViewWidget::DataWidgetStretch   = 3;
 const int ViewWidget::ConfigWidgetStretch = 1;
@@ -62,6 +70,10 @@ ViewWidget::ViewWidget(View* view, QWidget* parent)
 */
 ViewWidget::~ViewWidget()
 {
+    //the model outlives the view widget, the render widget can still trigger it while it is destroyed
+    if (model_)
+        model_->disconnect(this);
+
     if (main_splitter_)
     {
         traced_assert(view_);
@@ -104,7 +116,7 @@ void ViewWidget::createStandardLayout()
         top_layout_->addSpacerItem(new QSpacerItem(PresetSelectionSpacer, 1, QSizePolicy::Fixed, QSizePolicy::Preferred));
     }
 
-    //the tool widget follows in setDataWidget(), it needs the tool switcher
+    //the tool widget follows in setRenderWidget(), it needs the tool switcher
 
     //central layout
     QHBoxLayout* central_layout = new QHBoxLayout;
@@ -225,7 +237,8 @@ void ViewWidget::init()
         throw std::runtime_error("ViewWidget: init: Called twice");
 
     //check if all relevant widgets have been constructed
-    traced_assert(data_widget_);
+    traced_assert(model_);
+    traced_assert(render_widget_);
     traced_assert(config_widget_);
     traced_assert(tool_widget_);
     traced_assert(state_widget_);
@@ -250,38 +263,39 @@ void ViewWidget::init()
  */
 void ViewWidget::runPostInit()
 {
-    data_widget_->onInit();
     config_widget_->onInit();
 }
 
 /**
  */
-void ViewWidget::setDataWidget(ViewDataWidget* w)
+void ViewWidget::setRenderWidget(ViewModel* model,
+                                 ViewRenderWidget* render_widget,
+                                 const UpdateDisplayFunc& update_display,
+                                 bool initial_display)
 {
-    if (!w)
-        throw std::runtime_error("ViewWidget: setDataWidget: Null pointer passed");
+    if (!model || !render_widget || !update_display)
+        throw std::runtime_error("ViewWidget: setRenderWidget: Null pointer passed");
     if (!data_widget_container_)
-        throw std::runtime_error("ViewWidget: setDataWidget: No container to add to");
-    if (data_widget_)
-        throw std::runtime_error("ViewWidget: setDataWidget: Already set");
-    
+        throw std::runtime_error("ViewWidget: setRenderWidget: No container to add to");
+    if (render_widget_)
+        throw std::runtime_error("ViewWidget: setRenderWidget: Already set");
+
     QVBoxLayout* layout = new QVBoxLayout;
     layout->setContentsMargins(0, 0, 0, 0);
 
     data_widget_container_->setLayout(layout);
 
-    layout->addWidget(w);
+    layout->addWidget(render_widget);
 
-    data_widget_ = w;
+    model_          = model;
+    render_widget_  = render_widget;
+    update_display_ = update_display;
 
-    //a render widget owns its tools, the other data widgets get the switcher from here
-    tool_switcher_ = data_widget_->renderToolSwitcher();
+    //the UI tests address the data area by this name
+    render_widget_->setObjectName("datawidget");
 
-    if (!tool_switcher_)
-    {
-        own_tool_switcher_.reset(new ViewToolSwitcher);
-        tool_switcher_ = own_tool_switcher_.get();
-    }
+    //the render widget owns its tools
+    tool_switcher_ = &render_widget_->toolSwitcher();
 
     //create tool widget
     {
@@ -291,13 +305,15 @@ void ViewWidget::setDataWidget(ViewDataWidget* w)
         top_layout_->addWidget(tool_widget_);
     }
 
-    if (own_tool_switcher_)
-        data_widget_->setToolSwitcher(own_tool_switcher_.get());
+    connect(model_, &ViewModel::displayDataChangedSignal, this, &ViewWidget::displayDataChanged);
+    connect(model_, &ViewModel::processingFinishedSignal, this, &ViewWidget::modelProcessingFinished);
 
-    connect(data_widget_, &ViewDataWidget::redrawStarted, this, &ViewWidget::redrawStarted);
-    connect(data_widget_, &ViewDataWidget::redrawDone, this, &ViewWidget::redrawDone);
-    connect(data_widget_, &ViewDataWidget::processingFinishedSignal,
-            this, &ViewWidget::dataWidgetProcessingFinished);
+    // the display before the first load does not count as drawn
+    if (initial_display)
+    {
+        update_display_();
+        render_widget_->resetDrawState();
+    }
 
     //try to connect
     connectWidgets();
@@ -385,12 +401,12 @@ void ViewWidget::setConfigWidget(ViewConfigWidget* w)
  */
 void ViewWidget::connectWidgets()
 {
-    if (config_widget_ && data_widget_)
+    if (config_widget_ && render_widget_)
     {
-        connect(data_widget_, &ViewDataWidget::displayChanged, config_widget_, &ViewConfigWidget::onDisplayChange);
+        connect(this, &ViewWidget::displayChangedSignal, config_widget_, &ViewConfigWidget::onDisplayChange);
 
         if (info_widget_)
-            connect(data_widget_, &ViewDataWidget::displayChanged, info_widget_, &ViewInfoWidget::onDisplayChange);
+            connect(this, &ViewWidget::displayChangedSignal, info_widget_, &ViewInfoWidget::onDisplayChange);
     }
 }
 
@@ -484,8 +500,9 @@ bool ViewWidget::refreshView()
 */
 void ViewWidget::clearData()
 {
-    if (getViewDataWidget())
-        getViewDataWidget()->clearData();
+    //the render widget first: the Table View and the Geographic View draw again in the clear of the model
+    render_widget_->clear();
+    model_->clearData();
 
     updateComponents();
 }
@@ -494,8 +511,15 @@ void ViewWidget::clearData()
 */
 void ViewWidget::loadingStarted()
 {
+    loginf;
+
+    //clear and update display, see clearData() for the order
+    render_widget_->clear();
+    model_->loadingStarted();
+
+    redrawData(false, false);
+
     //propagate to subwidgets (note: order might be important)
-    getViewDataWidget()->loadingStarted();
     getViewConfigWidget()->loadingStarted();
     getViewLoadStateWidget()->loadingStarted();
     getViewToolWidget()->loadingStarted();
@@ -506,18 +530,20 @@ void ViewWidget::loadingStarted()
 */
 void ViewWidget::loadingDone()
 {
+    loginf;
+
     //propagate to subwidgets (note: order might be important)
-    getViewDataWidget()->loadingDone();
+    model_->loadingDone();
     getViewConfigWidget()->loadingDone();
     getViewLoadStateWidget()->loadingDone();
     getViewToolWidget()->loadingDone();
     getViewInfoWidget()->loadingDone();
 
-    // The data widget may process the load asynchronously, in which case its
+    // The model may process the load asynchronously, in which case its
     // loadingDone() only launched the work. viewRefreshed() means "the view shows the
     // new data" to everything waiting on it - runtime commands and the UI tests read
     // the view right after it - so it must wait for the commit, not for the launch.
-    if (getViewDataWidget()->hasPendingProcessing())
+    if (model_->hasPendingProcessing())
     {
         refresh_pending_ = true;
         return;
@@ -527,10 +553,10 @@ void ViewWidget::loadingDone()
 }
 
 /**
- * The data widget finished its asynchronous processing: emit the refresh edge that
+ * The model finished its asynchronous processing: emit the refresh edge that
  * loadingDone() held back.
  */
-void ViewWidget::dataWidgetProcessingFinished()
+void ViewWidget::modelProcessingFinished()
 {
     if (!refresh_pending_)
         return;
@@ -561,11 +587,11 @@ void ViewWidget::redrawDone()
     getViewToolWidget()->redrawDone();
     getViewInfoWidget()->redrawDone();
 
-    // The data widget may run the redraw's compute phase asynchronously, in which
+    // The model may run the redraw's compute phase asynchronously, in which
     // case redrawData() only launched the work - the same edge loadingDone() holds
     // back: viewRefreshed() means "the view shows the result", so it must wait for
-    // the commit (dataWidgetProcessingFinished), not for the launch.
-    if (getViewDataWidget()->hasPendingProcessing())
+    // the commit (modelProcessingFinished), not for the launch.
+    if (model_->hasPendingProcessing())
     {
         refresh_pending_ = true;
         return;
@@ -579,7 +605,6 @@ void ViewWidget::redrawDone()
 void ViewWidget::appModeSwitch(AppMode app_mode)
 {
     //propagate to subwidgets (note: order might be important)
-    getViewDataWidget()->appModeSwitch(app_mode);
     getViewConfigWidget()->appModeSwitch(app_mode);
     getViewLoadStateWidget()->appModeSwitch(app_mode);
     getViewToolWidget()->appModeSwitch(app_mode);
@@ -592,7 +617,6 @@ void ViewWidget::configChanged()
 {
     //propagate to subwidgets (note: order might be important)
     getViewConfigWidget()->configChanged();
-    getViewDataWidget()->configChanged();
     getViewToolWidget()->configChanged();
     getViewInfoWidget()->configChanged();
 }
@@ -658,7 +682,7 @@ nlohmann::json ViewWidget::viewInfoJSON() const
     nlohmann::json info;
 
     //add component information
-    info[ "data"       ] = getViewDataWidget()->viewInfoJSON();
+    info[ "data"       ] = dataInfoJSON();
     info[ "config"     ] = getViewConfigWidget()->viewInfoJSON();
     info[ "load_state" ] = getViewLoadStateWidget()->viewInfoJSON();
     info[ "toolbar"    ] = getViewToolWidget()->viewInfoJSON();
@@ -672,19 +696,239 @@ nlohmann::json ViewWidget::viewInfoJSON() const
 }
 
 /**
-*/
+ * Information on the data area: the data state, the loaded buffers, then the view specific information
+ * of the model and the render widget.
+ */
+nlohmann::json ViewWidget::dataInfoJSON() const
+{
+    nlohmann::json info;
+
+    //add general information
+    info[ "has_data"            ] = hasData();
+    info[ "has_annotations"     ] = hasAnnotations();
+    info[ "drawn"               ] = isDrawn();
+    info[ "drawn_content"       ] = isContentDrawn();
+    info[ "has_visible_content" ] = hasVisibleContent();
+
+    const auto& buffers = model_->viewData();
+
+    info[ "num_buffers" ] = buffers.size();
+
+    nlohmann::json buffer_infos = nlohmann::json::array();
+    for (const auto& dbc_data : buffers)
+    {
+        nlohmann::json buffer_info;
+        buffer_info[ "dbcontent" ] = dbc_data.first;
+        buffer_info[ "size"      ] = dbc_data.second->size();
+
+        buffer_infos.push_back(buffer_info);
+    }
+
+    info[ "buffers" ] = buffer_infos;
+
+    //add view-specific information
+    if (data_info_)
+    {
+        data_info_(info);
+    }
+    else
+    {
+        model_->viewInfoJSON(info);
+        render_widget_->viewInfoJSON(info);
+    }
+
+    return info;
+}
+
+/**
+ * Checks if the required read set of the view is available in the loaded data.
+ */
 bool ViewWidget::isVariableSetLoaded() const
 {
-    traced_assert(data_widget_);
-    return data_widget_->isVariableSetLoaded();
+    const auto& view_data = model().viewData();
+    if (view_data.empty())
+        return false;
+
+    for (const auto& dbcontent_data : view_data)
+    {
+        auto var_set = view_->getSet(dbcontent_data.first);
+        for (auto var : var_set.getSet())
+        {
+            if (!dbcontent_data.second->hasAnyPropertyNamed(var->name()))
+                return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ */
+void ViewWidget::updateFromSource(const DBContentDataSet& source,
+                                  const std::vector<std::string>& names, bool reset, bool last)
+{
+    model_->updateFromSource(source, names, reset, last);
+}
+
+/**
+ * A recompute runs in the model, which reports its new display data with a signal, at once or after an
+ * asynchronous computation.
+ */
+void ViewWidget::redrawData(bool recompute, bool notify)
+{
+    loginf << "recompute " << recompute << " notify " << notify;
+
+    //the model runs one recompute when its outstanding work has finished
+    if (recompute && model_->hasPendingProcessing())
+    {
+        model_->recompute();
+        return;
+    }
+
+    if (notify)
+    {
+        redrawStarted();
+        QApplication::processEvents(); //process any ui reactions on this signal before ui is blocked by redraw
+    }
+
+    {
+        QScopedValueRollback<bool> redrawing(redrawing_, true);
+
+        if (recompute)
+            model_->recompute();
+        else
+            update_display_();
+    }
+
+    if (notify)
+    {
+        redrawDone();
+    }
+
+    //signal display changed to whom it may concern
+    emit displayChangedSignal();
+}
+
+/**
+ */
+void ViewWidget::displayDataChanged()
+{
+    update_display_();
+
+    renderDisplayChanged();
+}
+
+/**
+ */
+void ViewWidget::renderDisplayChanged()
+{
+    if (!redrawing_)
+        emit displayChangedSignal();
+}
+
+/**
+ */
+void ViewWidget::liveReload()
+{
+    model_->liveReload();
+}
+
+/**
+ */
+void ViewWidget::beginDataReload()
+{
+    model_->beginDataReload();
+}
+
+/**
+ */
+void ViewWidget::attachLayerPanel(ViewLayerTreeModel* layer_model)
+{
+    model_->attachLayerPanel(layer_model);
+}
+
+/**
+ * Checks if the view stores any data (mirrored from the current source).
+ */
+bool ViewWidget::hasData() const
+{
+    return model().hasData();
+}
+
+/**
+ */
+bool ViewWidget::hasAnnotations() const
+{
+    return model().hasAnnotation();
+}
+
+/**
+ * Checks if the view has any content (data or annotations).
+ */
+bool ViewWidget::hasContent() const
+{
+    return hasData() || hasAnnotations();
+}
+
+/**
+ * Checks if the view has any content (data or annotations) which is currently drawn.
+ */
+bool ViewWidget::hasVisibleContent() const
+{
+    return hasContent() && isContentDrawn();
+}
+
+/**
+ * Checks if the display has been drawn.
+ */
+bool ViewWidget::isDrawn() const
+{
+    return renderWidget().isDrawn();
+}
+
+/**
+ * Checks if any content has been drawn.
+ */
+bool ViewWidget::isContentDrawn() const
+{
+    return renderWidget().hasContent();
+}
+
+/**
+ */
+bool ViewWidget::hasPendingProcessing() const
+{
+    return model().hasPendingProcessing();
+}
+
+/**
+ */
+bool ViewWidget::hasScreenshotContent() const
+{
+    return hasContent() && isDrawn();
+}
+
+/**
+ * Renders the contents of the render widget.
+ * Notice: does not work with OpenGL widgets, e.g. the OSG view => override as needed.
+ */
+QImage ViewWidget::renderData()
+{
+    QImage img(render_widget_->size(), QImage::Format_ARGB32);
+    QPainter painter(&img);
+
+    //the widget render, ViewRenderWidget::render() renders the display data
+    static_cast<QWidget*>(render_widget_)->render(&painter);
+
+    return img;
 }
 
 /**
 */
 QImage ViewWidget::renderContents()
 {
-    traced_assert(data_widget_);  
-    QImage data_img = data_widget_->renderData();
+    traced_assert(render_widget_);
+    QImage data_img = renderData();
 
     QImage img(this->size(), QImage::Format_ARGB32);
     QPainter painter(&img);
@@ -692,7 +936,7 @@ QImage ViewWidget::renderContents()
     render(&painter);
 
     auto p0 = this->mapToGlobal(QPoint(0,0));
-    auto p1 = data_widget_->mapToGlobal(QPoint(0,0));
+    auto p1 = render_widget_->mapToGlobal(QPoint(0,0));
 
     painter.drawImage(p1 - p0, data_img);
 
@@ -732,8 +976,8 @@ void ViewWidget::uiRefresh()
  */
 void ViewWidget::databaseOpened()
 {
-    if (data_widget_)
-        data_widget_->databaseOpened();
+    if (model_)
+        model_->databaseOpened();
 
     //the config widget shows the stored config, with the availability in this database (e.g. Report Variables)
     if (config_widget_)
@@ -744,8 +988,8 @@ void ViewWidget::databaseOpened()
  */
 void ViewWidget::databaseClosed()
 {
-    if (data_widget_)
-        data_widget_->databaseClosed();
+    if (model_)
+        model_->databaseClosed();
 
     if (config_widget_)
         config_widget_->configChanged();

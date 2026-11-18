@@ -1,6 +1,6 @@
 # View Models and View Render Widgets
 
-Status: all seven steps planned and agreed (2026-11-17), sections 7.1 to 7.6. Steps 1 to 5 are implemented and committed (2026-11-17, 2026-11-18), steps 6 and 7 are open. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
+Status: all seven steps planned and agreed (2026-11-17), sections 7.1 to 7.6. Steps 1 to 6 are implemented and committed (2026-11-17, 2026-11-18). Step 7 is implemented (2026-11-18, results in section 7.6), not committed yet. `ViewDataWidget` and the adapter are removed. All planning questions P1 to P13 are answered (section 9). Three Qt Charts questions are answered by a prototype (section 12). Open: the items marked "not checked" or "not known", they are checks at implementation time.
 Audience: the agent that implements this. Read `CLAUDE.md` first (library layering, code conventions).
 
 This document is the current specification. It holds no superseded text. The decision history is in the handover, section 10.
@@ -36,7 +36,9 @@ Related documents:
    - They get a minimal port in step 7, with listed exceptions from the rules of section 4 (section 7.6).
 10. Steps 1 to 6: an adapter class keeps `View`, `ViewWidget` and `ViewLoadStateWidget` unchanged (section 6). Step 7 removes the adapter and `ViewDataWidget`.
 
-## 3. Assembly Today
+## 3. Assembly Before Step 1
+
+This section shows the code before step 1. Section 6 shows the assembly after step 7.
 
 ```
 View (QObject, Configurable)            settings, load and update control
@@ -83,10 +85,10 @@ Rules:
 - The annotation path is a static function of the model class (section 4.2). The model calls it in `setAnnotation()`. The report calls it without a model object.
 - A render widget reads only the display data and the render options. It does not read buffers or view settings.
 - The owner gives both to the render widget in one call, `setDisplayData(data, options)`:
-  - In a view the owner is the adapter (section 6).
+  - In a view the owner is the `ViewWidget` (section 6).
   - In a report the owner is the factory function (section 6).
   - The data is a `std::shared_ptr<const ...DisplayData>`. A change of the options calls again with the same pointer. Nothing is copied.
-- Signals go from the model to the adapter. Tool callbacks go into the model. The view registers them (section 5).
+- Signals go from the model to the `ViewWidget`. Tool callbacks go into the model. The view registers them (section 5).
 - These rules are for the three chart views. The Table View and the Geographic View have exceptions (section 7.6).
 
 Classes per view:
@@ -222,7 +224,7 @@ public:
 - The argument types are examples. Take the exact types from today's functions.
 - The model gets `DBContentManager&`, `DBContextManager&` and `AppState&` in its constructor. Only the buffer path uses them (section 4.4).
 - The render widget has no `setModel()` and no separate `setOptions()`. One call gives one redraw, and data and options always fit together.
-- In a view, the adapter calls `setDisplayData(model.displayData(), options)` on `displayDataChangedSignal` and on each change of a render option.
+- In a view, the `ViewWidget` calls `setDisplayData(model.displayData(), options)` (the update function of the view widget) on `displayDataChangedSignal` and on each redraw without recompute.
 - The report creates no model object. The factory calls `displayDataFromAnnotation()` and then `setDisplayData()`.
 - The Scatterplot View and the Grid View use the same pattern. The static function of `GridViewModel` takes the sector lines as an extra input (section 7.5).
 
@@ -348,8 +350,8 @@ Example, the Select tool of the Scatterplot View:
 |---|---|
 | `View`, `VariableView` | Stay. The view creates its model and fills the render options from its settings. `VariableView` keeps the annotation list and gives the current annotation to the model. |
 | `ViewWidget` | Stays, same layout. |
-| `ViewDataWidget` | Stays until step 7. Table View and Geographic View use it without change until then. |
-| New: `ViewDataWidgetAdapter : ViewDataWidget` | Adapter. Holds the render widget and a pointer to the model of the view. Forwards the base functions (`updateFromSource`, `redrawData`, `clearData`, ...) to them. Gives the display data of the model and the render options of the view to the render widget (`setDisplayData`). `View`, `ViewWidget` and `ViewLoadStateWidget` need no second code path. |
+| `ViewDataWidget` | Removed in step 7. Until then the Table View and the Geographic View used it without change. |
+| `ViewDataWidgetAdapter : ViewDataWidget` | Steps 1 to 6 only, removed in step 7. It held the render widget and a pointer to the model, forwarded the base functions to them and gave the display data and the render options to the render widget. Since step 7 these flows are in `ViewWidget` (section 7.6, results). |
 | `HistogramViewDataWidget`, `ScatterPlotViewDataWidget`, `GridViewDataWidget` | Removed. Each is split into model and render widget. |
 | `VariableViewDataWidget`, `VariableViewStashDataWidget` | Removed when the third view is ported. |
 | `ChartView` and its three subclasses | Stay. They get the render widget in place of the data widget. The tool checks in the mouse handlers go away. |
@@ -361,11 +363,12 @@ Assembly of a ported view:
 ```
 View
 +- <View>Model                          created by the view
-+- ViewWidget
-   +- ViewDataWidgetAdapter             adapter
-   |  +- <View>RenderWidget             gets display data and options from the adapter
-   +- ViewConfigWidget, ...             as today
++- ViewWidget                           runs the data flows on the model and the render widget
+   +- <View>RenderWidget                object name "datawidget", gets display data and options from the view widget
+   +- ViewConfigWidget, ...             as before
 ```
+
+Steps 1 to 6 had the adapter (`ViewDataWidgetAdapter`) between `ViewWidget` and the render widget.
 
 In the report:
 - `SectionContentFigure` gets the render widget from one factory function in `compass_view`.
@@ -981,11 +984,44 @@ Done criteria for step 7:
 - `python3 scripts/check_layering.py --build-dir build` reports no new violations.
 - Changes reported per repository (the Geographic View is in `experimental_src`). Commit after the step is done, per repository (section 11).
 
+Results of step 7 (2026-11-18):
+- New classes: `TableViewModel`, `TableViewRenderWidget` (`src/view/tableview/`), `GeographicViewModel`, `GeographicViewRenderWidget` (`experimental_src/plugins/geoview/geographicview/`). The two render widgets are the old data widgets with a new name and the base `ViewRenderWidget`. The tool classes of the Geographic View take the render widget (renamed by script).
+- Removed: `ViewDataWidget`, `ViewDataWidgetAdapter`, `TableViewDataWidget`, `GeographicViewDataWidget`. Adapter unit tests did not exist, so none were removed.
+- `ViewWidget` runs the data flows of the adapter for all five views: `setRenderWidget(model, render_widget, update_display, initial_display)` replaces `setDataWidget()`. It holds the model (owned by the view) and the render widget, and it builds the `data` view info with the same keys. The draw state comes from the render widget. The render widget gets the object name `datawidget`.
+- `ViewModel` base: the parts of the old `ViewDataWidget` base that the two views need, with the old call order:
+  - Borrowed item provider (`setItemProvider()`): fed in `updateFromSource()`, reset in `clearData()`, `finishPendingRefresh()` at the load end, `clearItemStates()` on database close.
+  - `layerTreeModel()` (virtual, the Geographic View has its own layer model), `hasPendingAsyncWork()` (virtual, the geometry builds), `notifyProcessingFinished()` (protected).
+  - Hooks `loadingStarted_impl()`, `loadingDone_impl()` (default: `recompute()`), `databaseOpened()`, `databaseClosed()`, `liveReload()`.
+  - The constants `MarkerSizePx`, `MarkerSizeSelectedPx`, `ColorSelected` moved from `ViewDataWidget` to `ViewModel`.
+- The two models emit a signal from each hook. The view widgets connect the signals to the slots of the render widgets (`clearDataSlot`, `loadingDoneSlot`, `recomputeSlot`, ...). A render widget reports a display change outside a redraw (asynchronous commit, coalesced recompute) with `displayChangedSignal()`, the view widget forwards it to the components.
+- Geographic View specific functions go through overrides in `GeographicViewWidget`: `hasAnnotations()`, `hasScreenshotContent()`, `renderData()`, `prepareForRender()`, `setExporting()`, `appModeSwitch()`. The render widget has no pointer to its view widget: it signals tool state changes and the enabled state of the tool buttons.
+- Tools: the Geographic View registers all tools and actions with `registerTool()` (`GeographicViewWidget::registerTools()`). The actions get the ids 100 to 108. The Table View has no tools.
+- Processor shutdown: `~TableViewRenderWidget()` calls `TableViewModel::shutdownAsyncProcessor()`. The commits of the model's tasks write into the render widget and are discarded after that. `~ViewWidget()` disconnects the model from the view widget first. The views own the models and delete the view widget first.
+
+Use of the five exceptions:
+1. Model pointer: `TableViewRenderWidget::model_`, `GeographicViewRenderWidget::model_`.
+2. Buffers and processing in the render widget: table rows (`launchAsyncPrepare()`, `redrawData()`, on the asynchronous processor of the model), geometry (`updateFromSourceSlot()`, `redrawGeometry()`, the geometry item provider of the render widget).
+3. View settings: `TableView` (show only selected, presentation), `GeographicView` (all display settings).
+4. No static annotation function: `GeographicViewModel::setAnnotation()` returns false. The render widget reads the annotations as before (`updateAnnotations()`).
+5. `render()`: the Table View gives the widget screenshot, the Geographic View gives `renderData()` (framebuffer and overlay).
+
+Deviations and findings:
+- Order: `ViewWidget::clearData()` and `loadingStarted()` clear the render widget before the model (the adapter did it after). The old base set "not drawn" before `clearData_impl()`, and the Geographic View draws in it. The chart models emit no display data change in their clear.
+- The Geographic View runs its load start work (`loadingStartedSlot()`) before the redraw without recompute of the load start (before: after it). After the clear that redraw does nothing.
+- `ViewWidget::configChanged()` and `runPostInit()` no longer call `configChanged()` / `onInit()` of the data widget. No data widget implemented them.
+- The Table View no longer sets the arrow cursor on all its child widgets at the start (before: a tool switch to "no tool" from `setToolSwitcher()`). It has no tools.
+- Not used and removed with `ViewDataWidget`: `Color_CAT*`, `colorForGroupName()`, `dbContentColors()`, `releaseWidgetLater()`.
+- Three tests of `ui/geographicview/` do not run with the manifest `at_20230422_05h.json`: `ui_geographicview_contrib_sensors_style`, `ui_geographicview_style_modes`, `ui_geographicview_track_age_variables` (tag `tracker_contrib`).
+- Verification (2026-11-18, local build):
+  - Build without errors. `compass_tests`: all passed (840 test cases). `check_layering.py --build-dir build`: 0 in all categories.
+  - Table View and Geographic View tests alone (29 runnable of 32): 31 of 31 succeeded with the dependencies. Against a baseline of HEAD (step 6): 17 equal, 13 without results, 1 difference (`import_asterix`, data source colors, different in every run).
+  - Together with the view tests of steps 1 to 6: 107 of 107 succeeded. Differences against the step 6 baseline only in the data source colors, in the date of the run (`ui_open_views` table line, the time axis bounds of `ui_scatterplotview_select_cat048_modec_over_time` move by exactly one day), and in the Table View and Geographic View tests from the extra RefTraj buffer (`calculate_references` ran before them in that run).
+
 ## 8. Risks
 
 - `GridBackgroundRenderer` takes a `GridView&` today. It must work from the background settings and the sector lines of the display data, without a view and without a manager.
 - The data widget creates the layer panel items of the grid background today (`GridBackgroundRootItem`, `GridBackgroundSectorsItem`, with `GridView&`). Their checked states are in the `GridView` settings. In step 4 the view creates them (section 7.5).
-- The layer panel tree items point into the layer snapshots. The snapshots move to the model. The update rules stay (main thread only, see `ViewDataWidget::updateLayerTree`).
+- The layer panel tree items point into the layer snapshots. The snapshots move to the model. The update rules stay (main thread only, see `ViewModel::updateLayerTree`).
 - The asynchronous processing moves to the model. The rule for the destructor stays (`shutdownAsyncProcessor()` before the derived part is destroyed).
 - `View` and the config widgets call the data widgets directly, and the data widgets have friends. These calls are not counted yet.
 - The views must look and behave the same after each step.

@@ -21,7 +21,6 @@
 #include "gridviewmodel.h"
 #include "gridview.h"
 #include "gridbackgrounditems.h"
-#include "viewdatawidgetadapter.h"
 #include "viewlayertreemodel.h"
 #include "dbcontentlayer.h"
 #include "viewmanager.h"
@@ -50,10 +49,10 @@ GridViewWidget::GridViewWidget(GridView* view, QWidget* parent)
         render_widget->setDisplayData(view->model().displayData(), view->renderOptions());
     };
 
-    auto data_widget = new ViewDataWidgetAdapter(this, model, render_widget, update_display);
+    setRenderWidget(model, render_widget, update_display);
 
     //the zoom state needs the data bounds of the model and the axis ranges of the render widget
-    data_widget->setViewInfoFunc([ model, render_widget ] (nlohmann::json& info)
+    setDataInfoFunc([ model, render_widget ] (nlohmann::json& info)
     {
         model->viewInfoJSON(info);
         render_widget->viewInfoJSON(info);
@@ -64,8 +63,6 @@ GridViewWidget::GridViewWidget(GridView* view, QWidget* parent)
         info[ "axis_zoom_active" ] = data_bounds.has_value() && axis_ranges.has_value() ?
                                      GridViewRenderWidget::zoomActive(data_bounds.value(), axis_ranges.value()) : false;
     });
-
-    setDataWidget(data_widget);
 
     //the config widget attaches the layer panel
     connect(model, &ViewModel::layerPanelAttachedSignal, this, [ this ] () { layerPanelAttached(); });
@@ -153,7 +150,7 @@ void GridViewWidget::backgroundSettingsChanged()
 {
     auto view = getView();
 
-    //the display before the first load does not count as drawn, see ViewDataWidgetAdapter
+    //the display before the first load does not count as drawn, see ViewWidget::setRenderWidget()
     const bool drawn = render_widget_->isDrawn();
 
     render_widget_->setDisplayData(view->model().displayData(), view->renderOptions());

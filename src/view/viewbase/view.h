@@ -89,7 +89,7 @@ public:
 
     virtual void loadingStarted();
 
-    // the single data-delivery callback, drives the data widget's updateFromSource.
+    // the single data-delivery callback, drives the model's updateFromSource.
     // Notice: must not be skipped, the views share the buffers (live overload is handled by
     // holding the tick, see LiveController)
     virtual void updateFromSource(const DBContentDataSet& source,
@@ -100,7 +100,7 @@ public:
     virtual bool followsLiveData() const { return false; }
     virtual void loadingDone();
     virtual void clearData();
-    /// a reload follows the next clear, see ViewDataWidget::beginDataReload()
+    /// a reload follows the next clear, see ViewModel::beginDataReload()
     void beginDataReload();
     virtual void appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current);
 
@@ -176,7 +176,7 @@ public:
 signals:
     void selectionChangedSignal();  // do not emit manually, call emitSelectionChange()
     void presetChangedSignal();
-    // emitted when the view started asynchronous data processing (the data widget's
+    // emitted when the view started asynchronous data processing (the model's
     // processor went busy); ViewManager shows the busy state on it outside a load
     void processingStartedSignal();
     // emitted when the view has finished asynchronous data processing (see

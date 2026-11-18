@@ -43,5 +43,5 @@ class HistogramViewWidget : public VariableViewWidget
   private:
     void registerTools(HistogramView* view);
 
-    HistogramViewRenderWidget* render_widget_ = nullptr; // owned by the data widget (adapter)
+    HistogramViewRenderWidget* render_widget_ = nullptr; // owned by the view widget (Qt parent)
 };

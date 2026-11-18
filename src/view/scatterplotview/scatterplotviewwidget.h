@@ -51,5 +51,5 @@ public:
 private:
     void registerTools(ScatterPlotView* view);
 
-    ScatterPlotViewRenderWidget* render_widget_ = nullptr; // owned by the data widget (adapter)
+    ScatterPlotViewRenderWidget* render_widget_ = nullptr; // owned by the view widget (Qt parent)
 };

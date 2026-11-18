@@ -23,11 +23,16 @@
 #include "color_provider.h"
 #include "buffer.h"
 #include "dbcontentdataset.h"
+#include "dbcontentitemprovider.h"
 #include "dbcontent/dbcontent.h"
 #include "logger.h"
 #include "traced_assert.h"
 
 #include <QScopedValueRollback>
+
+const double ViewModel::MarkerSizePx         = 6.0;
+const double ViewModel::MarkerSizeSelectedPx = 4.0;
+const QColor ViewModel::ColorSelected        = Qt::yellow; // darker than yellow #808000
 
 /**
  */
@@ -104,11 +109,11 @@ void ViewModel::notifyProcessingFinished()
     {
         pending_loading_done_ = false;
 
-        recompute();
+        loadingDone_impl();
 
         if (hasPendingAsyncWork())
         {
-            // the recompute launched follow-up work; data loaded once that completed
+            // the load-done work launched follow-up work; data loaded once that completed
             pending_data_loaded_ = true;
             return;
         }
@@ -154,12 +159,14 @@ void ViewModel::loadingStarted()
     pending_recompute_    = false;
 
     clearData();
+
+    loadingStarted_impl();
 }
 
 /**
- * Reacts on loading ended. With asynchronous processing outstanding the recompute is
- * deferred: it runs once the pending work completed (it reads the processed results), and
- * dataLoadedSignal is emitted once the recompute's own launched work completed.
+ * Reacts on loading ended. With asynchronous processing outstanding the load-done work
+ * (default: the recompute) is deferred: it runs once the pending work completed (it reads the
+ * processed results), and dataLoadedSignal is emitted once its own launched work completed.
  * See notifyProcessingFinished().
  */
 void ViewModel::loadingDone()
@@ -171,11 +178,11 @@ void ViewModel::loadingDone()
         return;
     }
 
-    recompute();
+    loadingDone_impl();
 
     if (hasPendingAsyncWork())
     {
-        //the recompute launched asynchronous work; data loaded once that completed
+        //the load-done work launched asynchronous work; data loaded once that completed
         pending_data_loaded_ = true;
         return;
     }
@@ -194,18 +201,39 @@ void ViewModel::finishDataLoad()
 }
 
 /**
- * Mirrors the source's buffers and invokes the derived hook, which finalizes on last=true.
+ */
+void ViewModel::setItemProvider(DBContentItemProvider* provider)
+{
+    disconnect(provider_reset_connection_);
+
+    item_provider_ = provider;
+
+    // the reset releases the payloads the layer tree's leaves point at
+    if (item_provider_)
+        provider_reset_connection_ = connect(item_provider_, &DBContentItemProvider::dataAboutToBeResetSignal,
+                                             this, &ViewModel::beginDataReload);
+}
+
+/**
+ * Mirrors the source's buffers, feeds the borrowed item provider and invokes the derived hook,
+ * which finalizes on last=true.
  */
 void ViewModel::updateFromSource(const DBContentDataSet& source,
-                                 const std::vector<std::string>& /*names*/, bool reset, bool last)
+                                 const std::vector<std::string>& names, bool reset, bool last)
 {
     logdbg;
 
     data_                   = source.buffers();
     data_fulfills_read_set_ = source.fulfillsReadSet();
 
-    // set before the derived class rebuilds from the data (reload end and live tick alike)
+    // set before the provider and the derived class rebuild from the data (reload end and live tick alike)
     setLayerDataComplete(last);
+
+    if (item_provider_)
+    {
+        item_provider_->setSource(&source);
+        item_provider_->applyChange(names, reset, last);
+    }
 
     updateFromSource_impl(reset, last);
 }
@@ -227,18 +255,27 @@ void ViewModel::clearData()
     pending_loading_done_ = false;
     pending_data_loaded_  = false;
 
+    // before the provider reset below empties the data subtree
     setLayerDataComplete(false);
 
     // no reload follows => the data rows go (forgotten, see readme F7), before the payloads are released;
     // a reload keeps them stale until its data arrives
-    if (layer_model_ && !layer_model_->dataReloading())
-        layer_model_->clearDataSubtree();
+    auto* layer_model = layerTreeModel();
+    if (layer_model && !layer_model->dataReloading())
+        layer_model->clearDataSubtree();
 
     data_                   = {};
     data_fulfills_read_set_ = true;
 
     count_null_.reset();
     count_nan_.reset();
+
+    // wipe + detach the item provider (if any) from the current source
+    if (item_provider_)
+    {
+        item_provider_->reset();
+        item_provider_->setSource(nullptr);
+    }
 
     clearData_impl();
 }
@@ -345,20 +382,25 @@ void ViewModel::clearSelection()
  */
 void ViewModel::beginDataReload()
 {
-    if (layer_model_)
-        layer_model_->beginDataReload();
+    if (auto* layer_model = layerTreeModel())
+        layer_model->beginDataReload();
 }
 
 /**
  */
 void ViewModel::endDataReload()
 {
-    if (!layer_model_ || !layer_model_->dataReloading())
+    // the item list (stale until the provider's refresh) as the layer tree below
+    if (item_provider_)
+        item_provider_->finishPendingRefresh();
+
+    auto* layer_model = layerTreeModel();
+    if (!layer_model || !layer_model->dataReloading())
         return;
 
     logwrn << "data rows not updated by the reload, removing them";
 
-    layer_model_->clearDataSubtree();
+    layer_model->clearDataSubtree();
 }
 
 /**
@@ -366,17 +408,20 @@ void ViewModel::endDataReload()
  */
 void ViewModel::setLayerDataComplete(bool complete)
 {
-    if (layer_model_)
-        layer_model_->setDataComplete(complete);
+    if (auto* layer_model = layerTreeModel())
+        layer_model->setDataComplete(complete);
 }
 
 /**
  */
 void ViewModel::databaseClosed()
 {
-    //hidden-layer memory is per database session - forget it on close
-    if (layer_model_)
-        layer_model_->state().clear();
+    //hidden-layer and item memory is per database session - forget it on close
+    if (auto* layer_model = layerTreeModel())
+        layer_model->state().clear();
+
+    if (item_provider_)
+        item_provider_->clearItemStates();
 }
 
 /**

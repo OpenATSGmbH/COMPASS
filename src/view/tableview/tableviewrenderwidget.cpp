@@ -15,10 +15,10 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tableviewdatawidget.h"
+#include "tableviewrenderwidget.h"
+#include "tableviewmodel.h"
 #include "appstate.h"
 #include "viewmanager.h"
-#include "tableviewwidget.h"
 #include "tableview.h"
 #include "allbuffertablewidget.h"
 #include "allbuffertablemodel.h"
@@ -38,80 +38,103 @@
 #include "stringconv.h"
 #include "viewasyncprocessor.h"
 
+#include "json.hpp"
+
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 #include <QApplication>
-#include <QHBoxLayout>
+#include <QBoxLayout>
 #include <QMessageBox>
+#include <QPainter>
 #include <QTableView>
 #include <QHeaderView>
 
-TableViewDataWidget::TableViewDataWidget(TableViewWidget* view_widget,
-                                             QWidget* parent,
-                                             Qt::WindowFlags f)
-:   ViewDataWidget(view_widget, parent, f)
+TableViewRenderWidget::TableViewRenderWidget(TableView& view, TableViewModel& model, QWidget* parent)
+:   ViewRenderWidget(parent)
+,   view_           (view)
+,   model_          (model)
 {
-    view_ = view_widget->getView();
-    traced_assert(view_);
-
-    data_source_ = view_->getDataSource();
+    data_source_ = view_.getDataSource();
     traced_assert(data_source_);
 
-    QHBoxLayout* layout = new QHBoxLayout();
-    layout->setMargin(0);
-
-    all_buffer_table_widget_ = new AllBufferTableWidget(*view_, *data_source_);
-    layout->addWidget(all_buffer_table_widget_);
+    all_buffer_table_widget_ = new AllBufferTableWidget(view_, *data_source_);
+    contentLayout()->addWidget(all_buffer_table_widget_);
     connect(all_buffer_table_widget_, &AllBufferTableWidget::exportDoneSignal, this,
-            &TableViewDataWidget::exportDoneSlot);
-
-    setLayout(layout);
+            &TableViewRenderWidget::exportDoneSlot);
 }
-
-TableViewDataWidget::~TableViewDataWidget() = default;
 
 /**
- * Single fire at the end of any visibility change (group toggles cascade through multiple
- * leaves but emit hiddenChangedSignal once). A color mode change only rebuilds the layer
- * tree (default): AllBufferTableModel::setLayerColors emits dataChanged so the icon column
- * refreshes without a full redraw.
+ * The asynchronous tasks of the model commit into this widget (commitLoadedData()):
+ * their commits must not run after it is destroyed.
  */
-void TableViewDataWidget::layerVisibilityChanged()
+TableViewRenderWidget::~TableViewRenderWidget()
 {
-    pushLayerStateToModel();
-    redrawData(true);
+    model_.shutdownAsyncProcessor();
 }
 
-void TableViewDataWidget::clearData_impl()
+/**
+ */
+void TableViewRenderWidget::layerStateChangedSlot()
+{
+    if (!all_buffer_table_widget_)
+        return;
+
+    auto* model = all_buffer_table_widget_->allBufferTableModel();
+    if (!model)
+        return;
+
+    const auto& layers = model_.layerSnapshots();
+
+    if (layers.empty())
+    {
+        model->setAllowedLayerIds(std::nullopt);
+        model->setLayerColors({});
+        return;
+    }
+
+    std::set<std::string> allowed;
+    std::map<std::string, QColor> layer_colors;
+
+    auto& dbcont_man = view_.viewManager().dbContentManager();
+    for (const auto& layer : layers)
+    {
+        if (layer->visible())
+            allowed.insert(layer->key());
+
+        // Only target-report DBContents get a colored icon. Matches scatter's
+        // leafColorFor rule: non-TR DBContents render as blank space.
+        const std::string& dbcontent = layer->id().dbcontent;
+
+        QColor color;
+        if (dbcont_man.existsDBContent(dbcontent) &&
+            dbcont_man.dbContent(dbcontent).containsTargetReports())
+            color = layer->color();
+
+        layer_colors.emplace(layer->key(), color);
+    }
+
+    model->setAllowedLayerIds(std::move(allowed));
+    model->setLayerColors(std::move(layer_colors));
+}
+
+/**
+ */
+void TableViewRenderWidget::clearDataSlot()
 {
     logdbg << "begin";
 
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->clear();
 
-    invalidateLayerAggregates();
-
     logdbg << "end";
 }
 
-void TableViewDataWidget::clearIntermediateRedrawData_impl()
+/**
+ * The model cleared before, see ViewWidget::clearData().
+ */
+void TableViewRenderWidget::clear()
 {
-    //nothing to do here
-}
-
-void TableViewDataWidget::loadingStarted_impl()
-{
-    loginf;
-
-    //new data incoming - the cached layer aggregation goes stale; the async prepare
-    //commit refills it
-    invalidateLayerAggregates();
-}
-
-void TableViewDataWidget::updateFromSource_impl(const DBContentDataSet& /*source*/,
-                                                const std::vector<std::string>& /*names*/, bool /*reset*/, bool /*last*/)
-{
-    // nothing to do - the table model reads viewData() (source-fed) at redraw
+    setDrawState(DrawState::NotDrawn);
 }
 
 // Offline the heavy per-redraw work - the layer scan, the row index build and the
@@ -120,13 +143,15 @@ void TableViewDataWidget::updateFromSource_impl(const DBContentDataSet& /*source
 // path and interactive recompute redraws (style, color mode, filter changes). Live
 // stays synchronous: the feed mutates the same buffers every tick. Returns false
 // when the synchronous path should run instead.
-bool TableViewDataWidget::launchAsyncPrepare()
+bool TableViewRenderWidget::launchAsyncPrepare()
 {
+    const auto& view_data = model_.viewData();
+
     unsigned int num_records = 0;
-    for (auto& buf_it : viewData())
+    for (auto& buf_it : view_data)
         num_records += buf_it.second->size();
 
-    bool async = view_->viewManager().appState().appMode() != AppMode::LiveRunning && num_records > 0;
+    bool async = view_.viewManager().appState().appMode() != AppMode::LiveRunning && num_records > 0;
 
     if (!async)
         return false;
@@ -137,16 +162,16 @@ bool TableViewDataWidget::launchAsyncPrepare()
     traced_assert(model);
 
     auto scan_input = std::make_shared<view_layer_scan::ScanInput>(
-        view_layer_scan::makeScanInput(viewData(),
-                                       view_->viewManager().dbContentManager(),
-                                       view_->viewManager().dbContextManager()));
+        view_layer_scan::makeScanInput(view_data,
+                                       view_.viewManager().dbContentManager(),
+                                       view_.viewManager().dbContextManager()));
     auto prep_input = std::make_shared<AllBufferTableModel::PrepareInput>(
-        model->makePrepareInput(viewData(), /*for_load*/ true));
+        model->makePrepareInput(view_data, /*for_load*/ true));
 
     auto agg      = std::make_shared<std::map<std::string, view_layer_scan::LayerAgg>>();
     auto prepared = std::make_shared<AllBufferTableModel::PreparedData>();
 
-    asyncProcessor().launch(
+    model_.asyncProcessor().launch(
         "table view row data with " + std::to_string(num_records) + " records",
         [ scan_input, prep_input, agg, prepared ] ()
         {
@@ -161,12 +186,12 @@ bool TableViewDataWidget::launchAsyncPrepare()
     return true;
 }
 
-void TableViewDataWidget::loadingDone_impl()
+void TableViewRenderWidget::loadingDoneSlot()
 {
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
     unsigned int num_records = 0;
-    for (auto& buf_it : viewData())
+    for (auto& buf_it : model_.viewData())
         num_records += buf_it.second->size();
 
     loginf << "begin with " << num_records << " records";
@@ -175,12 +200,12 @@ void TableViewDataWidget::loadingDone_impl()
         return;
 
     // Rebuild the layer tree first so the panel reflects current data; the
-    // base redraw below will then consult the allowed-layer-ids set we push
-    // into the model from rebuildLayerTree.
-    rebuildLayerTree();
+    // recompute below will then consult the allowed-layer-ids set we push
+    // into the table model from rebuildLayerTree.
+    model_.rebuildLayerTree();
 
     //default behavior
-    ViewDataWidget::loadingDone_impl();
+    model_.recompute();
 
     boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
     double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
@@ -192,7 +217,7 @@ void TableViewDataWidget::loadingDone_impl()
 /**
  * Main-thread commit of the asynchronously prepared load data.
  */
-void TableViewDataWidget::commitLoadedData(const std::map<std::string, view_layer_scan::LayerAgg>& agg,
+void TableViewRenderWidget::commitLoadedData(const std::map<std::string, view_layer_scan::LayerAgg>& agg,
                                            AllBufferTableModel::PreparedData&& prepared)
 {
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
@@ -201,17 +226,14 @@ void TableViewDataWidget::commitLoadedData(const std::map<std::string, view_laye
 
     setUpdatesEnabled(false);
 
-    //keep the worker-computed aggregation: color mode changes restyle the panel from
-    //it without another full row scan (see rebuildLayerTree)
-    setLayerAggregates(agg);
-
-    applyLayerTree(layerAggregates());
+    //the layer tree from the worker-computed aggregation
+    model_.applyLayerAggregates(agg);
 
     auto selected_ranges = std::move(prepared.selected_ranges);
 
     all_buffer_table_widget_->showPrepared(std::move(prepared));
 
-    if (anyLayerHidden())
+    if (model_.anyLayerHidden())
     {
         // the prepared row data is unfiltered; re-filter against the freshly pushed
         // allowed set (rare - only when the stored panel state hides layers)
@@ -227,9 +249,9 @@ void TableViewDataWidget::commitLoadedData(const std::map<std::string, view_laye
 
     setUpdatesEnabled(true);
 
-    setDrawState(all_buffer_table_widget_->rowCount() > 0 ? ViewDrawState::DrawnContent
-                                                          : ViewDrawState::Drawn);
-    emit displayChanged();
+    setDrawState(all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent
+                                                          : DrawState::Drawn);
+    emit displayChangedSignal();
 
     boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
     double elapsed_s = (stop_time - start_time).total_milliseconds() / 1000.0;
@@ -238,12 +260,31 @@ void TableViewDataWidget::commitLoadedData(const std::map<std::string, view_laye
            << Utils::String::timeStringFromDouble(elapsed_s, true);
 }
 
-ViewDataWidget::ViewDrawState TableViewDataWidget::redrawData_impl(bool recompute)
+/**
+ */
+void TableViewRenderWidget::redraw()
+{
+    setDrawState(redrawData(false));
+}
+
+/**
+ * Computes the rows again, the model has reset its counts.
+ */
+void TableViewRenderWidget::recomputeSlot()
+{
+    setDrawState(redrawData(true));
+
+    emit displayChangedSignal();
+}
+
+/**
+ */
+TableViewRenderWidget::DrawState TableViewRenderWidget::redrawData(bool recompute)
 {
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
     unsigned int num_records = 0;
-    for (auto& buf_it : viewData())
+    for (auto& buf_it : model_.viewData())
         num_records += buf_it.second->size();
 
     loginf << "start - recompute " << recompute << " records " << num_records;
@@ -254,11 +295,11 @@ ViewDataWidget::ViewDrawState TableViewDataWidget::redrawData_impl(bool recomput
     //the view keeps showing the previous rows until the commit, and viewRefreshed is
     //held back by the pending processing guard
     if (launchAsyncPrepare())
-        return (all_buffer_table_widget_->rowCount() > 0 ? ViewDrawState::DrawnContent : ViewDrawState::Drawn);
+        return (all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent : DrawState::Drawn);
 
     setUpdatesEnabled(false);
 
-    all_buffer_table_widget_->show(viewData());
+    all_buffer_table_widget_->show(model_.viewData());
 
     selectFirstSelectedRow();
 
@@ -270,15 +311,10 @@ ViewDataWidget::ViewDrawState TableViewDataWidget::redrawData_impl(bool recomput
     loginf << "done with " << num_records << " records in "
            << Utils::String::timeStringFromDouble(elapsed_s, true);
 
-    return (all_buffer_table_widget_->rowCount() > 0 ? ViewDrawState::DrawnContent : ViewDrawState::Drawn);
+    return (all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent : DrawState::Drawn);
 }
 
-void TableViewDataWidget::liveReload_impl()
-{
-    //implement live reload behavior here
-}
-
-void TableViewDataWidget::exportDataSlot()
+void TableViewRenderWidget::exportDataSlot()
 {
     logdbg;
 
@@ -296,12 +332,12 @@ void TableViewDataWidget::exportDataSlot()
     all_buffer_table_widget_->exportSlot();
 }
 
-void TableViewDataWidget::exportDoneSlot(bool canceled)
+void TableViewRenderWidget::exportDoneSlot(bool canceled)
 {
     emit exportDoneSignal(canceled);
 }
 
-void TableViewDataWidget::updateToSettingsChange()
+void TableViewRenderWidget::updateToSettingsChange()
 {
     loginf;
 
@@ -309,36 +345,44 @@ void TableViewDataWidget::updateToSettingsChange()
         all_buffer_table_widget_->updateToSettingsChange();
 }
 
-void TableViewDataWidget::resetModels()
+void TableViewRenderWidget::resetModels()
 {
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->resetModel();
 }
 
-void TableViewDataWidget::updateToSelection()
+void TableViewRenderWidget::updateToSelection()
 {
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->updateToSelection();
 }
 
-void TableViewDataWidget::selectFirstSelectedRow()
+void TableViewRenderWidget::selectFirstSelectedRow()
 {
     if (all_buffer_table_widget_)
         all_buffer_table_widget_->selectSelectedRows();
 }
 
-AllBufferTableWidget* TableViewDataWidget::getAllBufferTableWidget ()
+AllBufferTableWidget* TableViewRenderWidget::getAllBufferTableWidget ()
 {
     traced_assert(all_buffer_table_widget_);
     return all_buffer_table_widget_;
 }
 
-void TableViewDataWidget::toolChanged_impl(int mode)
+/**
+ * Today's screenshot of the widget.
+ */
+bool TableViewRenderWidget::render(QImage& image, const QSize& /*size*/, double /*scale*/)
 {
-    //nothing to do here
+    image = QImage(this->size(), QImage::Format_ARGB32);
+
+    QPainter painter(&image);
+    QWidget::render(&painter);
+
+    return !image.isNull();
 }
 
-void TableViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
+void TableViewRenderWidget::viewInfoJSON(nlohmann::json& info) const
 {
     nlohmann::json table_infos = nlohmann::json::array();
 
@@ -390,88 +434,8 @@ void TableViewDataWidget::viewInfoJSON_impl(nlohmann::json& info) const
 
     addTable("All",
              all_buffer_table_widget_->table(),
-             view_->showOnlySelected(),
-             view_->usePresentation(), view_->ignoreNonTargetReports());
+             view_.showOnlySelected(),
+             view_.usePresentation(), view_.ignoreNonTargetReports());
 
     info[ "tables" ] = table_infos;
-}
-
-/**
- * Records per (ds_type, ds_name, line, dbcontent) layer from the (cached) layer aggregation;
- * on the asynchronous load path the scan runs on a worker instead, see loadingDone_impl.
- */
-void TableViewDataWidget::rebuildLayerTree()
-{
-    if (!hasLayerPanel())
-        return;
-
-    applyLayerTree(layerAggregates());
-}
-
-/**
- * The tree part of rebuildLayerTree, from precomputed layer aggregates.
- */
-void TableViewDataWidget::applyLayerTree(const LayerAggregates& agg)
-{
-    if (!hasLayerPanel())
-        return;
-
-    updateLayerTree(snapshotsFromAggregates(agg));
-
-    // Push initial allowed set to the model so the first redraw filters correctly.
-    pushLayerStateToModel();
-}
-
-/**
- */
-bool TableViewDataWidget::anyLayerHidden() const
-{
-    for (const auto& layer : layerSnapshots())
-        if (!layer->visible())
-            return true;
-
-    return false;
-}
-
-void TableViewDataWidget::pushLayerStateToModel()
-{
-    if (!all_buffer_table_widget_)
-        return;
-
-    auto* model = all_buffer_table_widget_->allBufferTableModel();
-    if (!model)
-        return;
-
-    const auto& layers = layerSnapshots();
-
-    if (layers.empty())
-    {
-        model->setAllowedLayerIds(std::nullopt);
-        model->setLayerColors({});
-        return;
-    }
-
-    std::set<std::string> allowed;
-    std::map<std::string, QColor> layer_colors;
-
-    auto& dbcont_man = view_->viewManager().dbContentManager();
-    for (const auto& layer : layers)
-    {
-        if (layer->visible())
-            allowed.insert(layer->key());
-
-        // Only target-report DBContents get a colored icon. Matches scatter's
-        // leafColorFor rule: non-TR DBContents render as blank space.
-        const std::string& dbcontent = layer->id().dbcontent;
-
-        QColor color;
-        if (dbcont_man.existsDBContent(dbcontent) &&
-            dbcont_man.dbContent(dbcontent).containsTargetReports())
-            color = layer->color();
-
-        layer_colors.emplace(layer->key(), color);
-    }
-
-    model->setAllowedLayerIds(std::move(allowed));
-    model->setLayerColors(std::move(layer_colors));
 }

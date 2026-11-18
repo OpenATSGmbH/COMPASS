@@ -20,7 +20,6 @@
 #include "gridviewmodel.h"
 #include "gridviewrenderwidget.h"
 #include "gridviewwidget.h"
-#include "viewdatawidget.h"
 #include "viewvariable.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
@@ -227,7 +226,7 @@ void GridView::updateSelection_impl()
     loginf;
     traced_assert(widget_);
 
-    widget_->getViewDataWidget()->redrawData(true);
+    widget_->redrawData(true);
 }
 
 /**

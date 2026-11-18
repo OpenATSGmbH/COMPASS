@@ -19,7 +19,6 @@
 #include "scatterplotviewconfigwidget.h"
 #include "scatterplotviewrenderwidget.h"
 #include "scatterplotviewmodel.h"
-#include "viewdatawidgetadapter.h"
 #include "scatterplotview.h"
 #include "viewtoolwidget.h"
 #include "viewtoolswitcher.h"
@@ -46,8 +45,7 @@ ScatterPlotViewWidget::ScatterPlotViewWidget(ScatterPlotView* view, QWidget* par
         render_widget->setDisplayData(view->model().displayData(), view->renderOptions());
     };
 
-    auto data_widget = new ViewDataWidgetAdapter(this, &view->model(), render_widget, update_display);
-    setDataWidget(data_widget);
+    setRenderWidget(&view->model(), render_widget, update_display);
 
     auto config_widget = new ScatterPlotViewConfigWidget(this);
     setConfigWidget(config_widget);

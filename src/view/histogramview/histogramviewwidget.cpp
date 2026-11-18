@@ -19,7 +19,6 @@
 #include "histogramviewconfigwidget.h"
 #include "histogramviewrenderwidget.h"
 #include "histogramviewmodel.h"
-#include "viewdatawidgetadapter.h"
 //#include "files.h"
 #include "viewtoolwidget.h"
 
@@ -47,18 +46,16 @@ HistogramViewWidget::HistogramViewWidget(HistogramView* view, QWidget* parent)
         render_widget->setDisplayData(view->model().displayData(), view->renderOptions());
     };
 
-    auto data_widget = new ViewDataWidgetAdapter(this, model, render_widget, update_display);
+    setRenderWidget(model, render_widget, update_display);
 
     //the chart is listed only together with a result of the buffers
-    data_widget->setViewInfoFunc([ render_widget, model ] (nlohmann::json& info)
+    setDataInfoFunc([ render_widget, model ] (nlohmann::json& info)
     {
         model->viewInfoJSON(info);
 
         if (model->hasValidResult())
             render_widget->viewInfoJSON(info);
     });
-
-    setDataWidget(data_widget);
 
     auto config_widget = new HistogramViewConfigWidget(this);
     setConfigWidget(config_widget);

@@ -18,7 +18,6 @@
 #include "variableview.h"
 #include "viewvariable.h"
 #include "viewwidget.h"
-#include "viewdatawidget.h"
 #include "variableviewconfigwidget.h"
 #include "variableviewmodel.h"
 #include "viewlayertreemodel.h"
@@ -360,7 +359,7 @@ void VariableView::onShowAnnotationChanged()
 
     updateModelAnnotation();
 
-    widget_->getViewDataWidget()->redrawData(true);
+    widget_->redrawData(true);
     widget_->updateComponents();
 }
 

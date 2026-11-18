@@ -26,7 +26,7 @@
 
 #include "viewpoint.h"
 #include "tableview.h"
-#include "tableviewdatawidget.h"
+#include "tableviewrenderwidget.h"
 #include "allbuffertablewidget.h"
 #include "histogramview.h"
 #include "histogramviewwidget.h"
@@ -41,7 +41,6 @@
 #include "gridviewwidget.h"
 #include "gridviewrenderwidget.h"
 #include "gridviewmodel.h"
-#include "viewdatawidget.h"
 
 #include "logger.h"
 #include "stringconv.h"
@@ -186,7 +185,7 @@ void LatexVisitor::visit(TableView* e)
     if (ignore_table_views_)
         return;
 
-    AllBufferTableWidget* allbuf = e->getDataWidget()->getAllBufferTableWidget();
+    AllBufferTableWidget* allbuf = e->getRenderWidget()->getAllBufferTableWidget();
     traced_assert(allbuf);
 
     // bound the scraped table: a view point selection can hold hundreds of thousands of
@@ -401,7 +400,7 @@ void LatexVisitor::visit(GridView* e)
         return;
 
     // normal screenshot of the chart with its legend
-    auto screenshot = e->widget_->getViewDataWidget()->renderData();
+    auto screenshot = e->widget_->renderData();
 
     std::string image_path = screenshot_path+"/"+image_prefix_+"_"+e->instanceName()+".jpg";
     traced_assert(!screenshot.isNull());

@@ -23,7 +23,7 @@
 #include "viewwidget.h"
 #include "viewabledataconfig.h"
 #include "dbcontentmanager.h"
-#include "viewdatawidget.h"
+#include "viewmodel.h"
 #include "viewconfigwidget.h"
 #include "config.h"
 #include "timeconv.h"
@@ -139,11 +139,11 @@ bool View::init()
     //init view widget
     w->init();
 
-    // forward the data widget's asynchronous-processing edges; ViewManager's deferred
+    // forward the model's asynchronous-processing edges; ViewManager's deferred
     // load-done edge and the interactive busy state listen on the view-level signals
-    connect(w->getViewDataWidget(), &ViewDataWidget::processingStartedSignal,
+    connect(&w->model(), &ViewModel::processingStartedSignal,
             this, &View::processingStartedSignal);
-    connect(w->getViewDataWidget(), &ViewDataWidget::processingFinishedSignal,
+    connect(&w->model(), &ViewModel::processingFinishedSignal,
             this, &View::processingFinishedSignal);
 
     init_ = true;
@@ -291,8 +291,8 @@ void View::loadingStarted()
 void View::updateFromSource(const DBContentDataSet& source,
                             const std::vector<std::string>& names, bool reset, bool last)
 {
-    if (widget_ && widget_->getViewDataWidget())
-        widget_->getViewDataWidget()->updateFromSource(source, names, reset, last);
+    if (widget_)
+        widget_->updateFromSource(source, names, reset, last);
 }
 
 /**
@@ -309,7 +309,7 @@ void View::loadingDone()
 */
 bool View::hasPendingProcessing() const
 {
-    return widget_ && widget_->getViewDataWidget()->hasPendingProcessing();
+    return widget_ && widget_->hasPendingProcessing();
 }
 
 /**
@@ -326,8 +326,8 @@ void View::clearData()
 */
 void View::beginDataReload()
 {
-    if (widget_ && widget_->getViewDataWidget())
-        widget_->getViewDataWidget()->beginDataReload();
+    if (widget_)
+        widget_->beginDataReload();
 }
 
 /**
@@ -402,12 +402,12 @@ void View::onModified()
 }
 
 /**
- * Renders the data widget into an image.
+ * Renders the render widget into an image.
  */
 QImage View::renderData() const
 {
-    traced_assert(widget_ && widget_->getViewDataWidget());  
-    return widget_->getViewDataWidget()->renderData();
+    traced_assert(widget_);
+    return widget_->renderData();
 }
 
 /**
@@ -423,25 +423,25 @@ QImage View::renderView() const
  */
 void View::prepareForRender()
 {
-    traced_assert(widget_ && widget_->getViewDataWidget());
-    widget_->getViewDataWidget()->prepareForRender();
+    traced_assert(widget_);
+    widget_->prepareForRender();
 }
 
 /**
  */
 void View::setExporting(bool ok)
 {
-    traced_assert(widget_ && widget_->getViewDataWidget());
-    return widget_->getViewDataWidget()->isExporting(ok);
+    traced_assert(widget_);
+    widget_->setExporting(ok);
 }
 
 /**
- * Asks the data widget if it shows any data.
+ * Asks the view widget if it shows any data.
  */
 bool View::hasScreenshotContent() const
 {
-    traced_assert(widget_ && widget_->getViewDataWidget());  
-    return widget_->getViewDataWidget()->hasScreenshotContent();
+    traced_assert(widget_);
+    return widget_->hasScreenshotContent();
 }
 
 /**
@@ -531,9 +531,9 @@ void View::notifyViewUpdateNeeded(int flags, bool add)
     {
         if (flags & VU_Reload)
         {
-            //in live mode a view handles its reload internally in its data widget
+            //in live mode a view handles its reload internally in its model
             //(not via the global DB based reload)
-            widget_->getViewDataWidget()->liveReload();
+            widget_->liveReload();
         }
         else if (flags & VU_Redraw)
         {
@@ -669,7 +669,7 @@ void View::updateView(int flags)
     else //handle all other updates
     {
         if (flags & VU_Redraw)
-            widget_->getViewDataWidget()->redrawData(flags & VU_Recompute, true);
+            widget_->redrawData(flags & VU_Recompute, true);
         if (flags & VU_UpdateComponents)
             widget_->updateComponents();
     }

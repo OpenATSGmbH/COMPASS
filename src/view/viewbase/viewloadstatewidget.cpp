@@ -18,7 +18,6 @@
 #include "viewloadstatewidget.h"
 #include "appstate.h"
 #include "viewwidget.h"
-#include "viewdatawidget.h"
 #include "view.h"
 #include "viewmanager.h"
 #include "dbcontentmanager.h"
@@ -92,7 +91,7 @@ bool ViewLoadStateWidget::viewUpdateRequired() const
     traced_assert(view_widget_);
 
     //@TODO: if the view has no data the state should actually be State::NoData, but for safety query data widget nontheless...
-    return (view_widget_->getViewDataWidget()->hasData() && (state_ == State::RedrawRequired || state_ == State::ReloadRequired));
+    return (view_widget_->hasData() && (state_ == State::RedrawRequired || state_ == State::ReloadRequired));
 }
 
 /**
@@ -101,7 +100,7 @@ bool ViewLoadStateWidget::viewReloadRequired() const
 {
     traced_assert(view_widget_);
 
-    return (!view_widget_->getViewDataWidget()->hasData() || state_ == State::NoData);
+    return (!view_widget_->hasData() || state_ == State::NoData);
 }
 
 /**
@@ -190,7 +189,7 @@ void ViewLoadStateWidget::updateState()
     //ask widget for special states
     bool needs_reload =  view_widget_->getView()->viewManager().reloadNeeded();
     bool needs_redraw =  view_widget_->getView()->updateNeeded();
-    bool needs_data   = !view_widget_->getViewDataWidget()->hasData();
+    bool needs_data   = !view_widget_->hasData();
 
     //std::cout << "needs reload: " << needs_reload << std::endl;
     //std::cout << "needs redraw: " << needs_redraw << std::endl;

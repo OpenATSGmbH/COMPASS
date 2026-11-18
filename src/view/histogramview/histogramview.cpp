@@ -27,7 +27,6 @@
 #include "histogramviewmodel.h"
 #include "histogramviewwidget.h"
 #include "viewmanager.h"
-#include "viewdatawidget.h"
 #include "logger.h"
 #include "latexvisitor.h"
 #include "viewpointgenerator.h"
@@ -216,7 +215,7 @@ void HistogramView::updateSelection_impl()
     loginf;
     traced_assert(widget_);
     
-    widget_->getViewDataWidget()->redrawData(true);
+    widget_->redrawData(true);
 
     //    if (show_only_selected_)
     //        widget_->getDataWidget()->updateToSelection();

@@ -25,7 +25,6 @@
 #include "dbcontent/variable/reportvariable.h"
 #include "viewlayersnapshot.h"
 #include "viewasyncprocessor.h"
-#include "viewdatawidget.h"
 #include "viewvariable.h"
 #include "plotmetadata.h"
 #include "property_templates.h"
@@ -460,7 +459,7 @@ std::shared_ptr<const HistogramDisplayData> HistogramViewModel::displayDataFromG
     for (const auto& layer : layerSnapshots())
         group_colors.try_emplace(groupKeyFor(layer->key(), color_mode), layer->color());
 
-    histogram_generator_->getResults().toRaw(data->histogram, group_colors, ViewDataWidget::ColorSelected);
+    histogram_generator_->getResults().toRaw(data->histogram, group_colors, ViewModel::ColorSelected);
 
     data->valid = data->histogram.hasData();
 

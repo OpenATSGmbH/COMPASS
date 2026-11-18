@@ -20,7 +20,6 @@
 #include "color_provider.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/metavariable.h"
-#include "viewdatawidget.h"
 #include "viewlayerscan.h"
 #include "viewlayersnapshot.h"
 #include "viewvariable.h"
@@ -239,7 +238,7 @@ void ScatterPlotViewModel::processStash(const VariableViewStash<double>& stash)
                 layer_id.ds_type, layer_id.ds_name, layer_id.line_index, layer_id.dbcontent, dbContextManager(),
                 [ ] (const std::string& key) { return QColor::fromRgb(Utils::String::hash(key)); });
 
-            data->series.addDataSeries(dbc_series, name, line_color, ViewDataWidget::MarkerSizePx, dbc_null_count);
+            data->series.addDataSeries(dbc_series, name, line_color, ViewModel::MarkerSizePx, dbc_null_count);
         }
     }
 
@@ -250,7 +249,7 @@ void ScatterPlotViewModel::processStash(const VariableViewStash<double>& stash)
     if (!selected_series.points.empty())
     {
         data->series.addDataSeries(selected_series, ScatterPlotDisplayData::SelectedSeriesName,
-                                   ViewDataWidget::ColorSelected, ViewDataWidget::MarkerSizeSelectedPx);
+                                   ViewModel::ColorSelected, ViewModel::MarkerSizeSelectedPx);
     }
 
     correctSeriesDateTime(*data);

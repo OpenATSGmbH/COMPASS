@@ -20,7 +20,7 @@
 #include "viewwidget.h"
 
 class TableView;
-class TableViewDataWidget;
+class TableViewRenderWidget;
 class TableViewConfigWidget;
 
 class QSplitter;
@@ -29,7 +29,7 @@ class QTabWidget;
 /**
  * @brief Used for textual data display in a TableView.
  *
- * Consists of a TableViewDataWidget for data view and a TableViewConfigWidget for configuration
+ * Consists of a TableViewRenderWidget for data view and a TableViewConfigWidget for configuration
  * and starting the loading process.
  */
 class TableViewWidget : public ViewWidget
@@ -39,11 +39,14 @@ class TableViewWidget : public ViewWidget
     /// @brief Destructor
     virtual ~TableViewWidget();
 
-    TableViewDataWidget* getViewDataWidget();
-    const TableViewDataWidget* getViewDataWidget() const;
+    TableViewRenderWidget* getRenderWidget() { return render_widget_; }
+    const TableViewRenderWidget* getRenderWidget() const { return render_widget_; }
     TableViewConfigWidget* getViewConfigWidget();
     const TableViewConfigWidget* getViewConfigWidget() const;
 
     /// @brief Returns the basis view
     TableView* getView();
+
+private:
+    TableViewRenderWidget* render_widget_ = nullptr;
 };

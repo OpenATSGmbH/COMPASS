@@ -20,6 +20,7 @@
 #include "viewlayerscan.h"
 #include "json_fwd.hpp"
 
+#include <QColor>
 #include <QObject>
 
 #include <map>
@@ -32,6 +33,7 @@
 
 class Buffer;
 class DBContentDataSet;
+class DBContentItemProvider;
 class DBContentManager;
 class AppState;
 class ViewLayerTreeModel;
@@ -89,10 +91,22 @@ public:
     void attachLayerPanel(ViewLayerTreeModel* layer_model);
     ViewLayerTreeModel* layerPanelModel() const { return layer_model_; }
 
+    /// The layer tree model of the per database session state, the data rows and the reload handling.
+    /// Default: the attached layer panel model.
+    virtual ViewLayerTreeModel* layerTreeModel() const { return layer_model_; }
+
+    // Optional item provider, NOT owned. Its owner must call setItemProvider(nullptr) before it destroys it.
+    // The model drives its input from the current source (updateFromSource()) and resets it on clearData().
+    // Every provider reset starts a reload of the layer tree's data rows (beginDataReload()).
+    void setItemProvider(DBContentItemProvider* provider);
+
     /// a reload follows: the layer tree keeps its data rows (stale, detached from their payloads)
     /// until the reloaded data updates them, instead of being emptied by the clear
     void beginDataReload();
-    void databaseClosed();
+    virtual void databaseOpened() {}
+    virtual void databaseClosed();
+    /// data reload in the live running mode (not via a database reload)
+    virtual void liveReload() {}
 
     // state
 
@@ -115,6 +129,10 @@ public:
     void invertSelection();
     void clearSelection();
 
+    static const double MarkerSizePx;
+    static const double MarkerSizeSelectedPx;
+    static const QColor ColorSelected;
+
 signals:
     void displayDataChangedSignal();
     void selectionChangedSignal();
@@ -136,9 +154,18 @@ protected:
     /// Computes the display data and emits displayDataChangedSignal(), from the main thread.
     /// Can launch the computation on asyncProcessor(), then the commit emits the signal.
     virtual void recompute_impl() = 0;
+    /// a load started, after the clear
+    virtual void loadingStarted_impl() {}
+    /// the loaded data is complete and the processing of the data updates has finished
+    virtual void loadingDone_impl() { recompute(); }
 
     ViewAsyncProcessor& asyncProcessor(); // created on first use
-    bool hasPendingAsyncWork() const;
+    /// processing is outstanding, default: tasks of asyncProcessor()
+    virtual bool hasPendingAsyncWork() const;
+    /// All processing has finished: runs the deferred load-done parts and emits processingFinishedSignal().
+    /// Connected to the finished signal of asyncProcessor(). A model with its own asynchronous processing
+    /// calls it when that processing has finished.
+    void notifyProcessingFinished();
 
     // Invalidates and joins outstanding asynchronous work. MUST be called from the
     // destructor of any derived model whose work functions capture `this`: the base
@@ -196,7 +223,6 @@ protected:
     bool hiddenLayerIdsChanged() const;
 
 private:
-    void notifyProcessingFinished();
     void setLayerDataComplete(bool complete);
     /// stale data rows left after the data was loaded (the model updated nothing) are removed
     void endDataReload();
@@ -205,6 +231,9 @@ private:
     DBContentManager&          dbcont_man_;
     context::DBContextManager& ctx_man_;
     AppState&                  app_state_;
+
+    DBContentItemProvider*  item_provider_ = nullptr;   // optional, NOT owned (see setItemProvider)
+    QMetaObject::Connection provider_reset_connection_; // reset => reload of the layer tree's data rows
 
     ViewLayerTreeModel* layer_model_         = nullptr; // attached layer panel model, NOT owned
     std::vector<QMetaObject::Connection> layer_connections_; // of the attached layer panel

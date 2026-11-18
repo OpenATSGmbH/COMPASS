@@ -57,7 +57,7 @@ private:
     GridBackgroundRootItem* backgroundRootItem() const;
     GridBackgroundSectorsItem* sectorsRootItem() const;
 
-    GridViewRenderWidget* render_widget_ = nullptr; // owned by the data widget (adapter)
+    GridViewRenderWidget* render_widget_ = nullptr; // owned by the view widget (Qt parent)
 
     QPointer<LayerTreeModel>   background_model_;          // model holding the items below
     GridBackgroundRootItem*    background_root_ = nullptr;

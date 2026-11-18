@@ -18,7 +18,6 @@
 #include "tableviewconfigwidget.h"
 #include "viewmanager.h"
 #include "tableviewwidget.h"
-#include "tableviewdatawidget.h"
 #include "tableview.h"
 //#include "tableviewsetconfigwidget.h"
 

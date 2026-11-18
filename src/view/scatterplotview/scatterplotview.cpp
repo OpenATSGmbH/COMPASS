@@ -26,7 +26,6 @@
 #include "scatterplotviewdatasource.h"
 #include "scatterplotviewmodel.h"
 #include "scatterplotviewwidget.h"
-#include "viewdatawidget.h"
 #include "logger.h"
 #include "latexvisitor.h"
 #include "viewpointgenerator.h"
@@ -245,7 +244,7 @@ void ScatterPlotView::updateSelection_impl()
     loginf;
     traced_assert(widget_);
 
-    widget_->getViewDataWidget()->redrawData(true);
+    widget_->redrawData(true);
 
     //    if (show_only_selected_)
     //        widget_->getDataWidget()->updateToSelection();
