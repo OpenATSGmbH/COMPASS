@@ -16,7 +16,8 @@
         "recipe_hint": "how the image could be automated, not yet tested",
         "gaps": "what is missing for automation",
         "volatile": "content that can change between runs",
-        "fresh": "true = the database is opened again before the capture, so no data is loaded"
+        "fresh": "true = the database is opened again before the capture, so no data is loaded",
+        "new": "true = image for a former figure placeholder (FIGURE TODO box) in the tex file"
     },
     "defaults": {
         "main_window_size": [
@@ -1081,6 +1082,37 @@
                     "recipe_hint": "open DB, open menu 'Process' of mainwindow.mainmenu without trigger, compose grab of mainwindow region + popup",
                     "gaps": "no command opens a menu bar menu without triggering an action; popup + parent composition and crop",
                     "volatile": "context name in menu bar"
+                },
+                {
+                    "file": "ui/figures/ui_select_variable_reports.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "ui/ui_views.tex:33"
+                    ],
+                    "shows": "'Select Variable' dialog with the 'Reports' group expanded and an evaluation report selected",
+                    "category": "dialog",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "stored report \"Radar Feichtberg Mode-S L1 Evaluation\"",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Scatterplot View\" --async",
+                        "sleep 1000",
+                        "uiset last_view.variable_selection_y.select_button \"\" --async",
+                        "wait dialog",
+                        "uiset dialog.report_expand_button \"\"",
+                        "sleep 500",
+                        "uiset \"dialog.content_Radar Feichtberg Mode-S L1 Evaluation\" true",
+                        "sleep 1000",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
                 },
                 {
                     "file": "ui/figures/view_preset_add.png",
@@ -2674,6 +2706,33 @@
                     "volatile": "none"
                 },
                 {
+                    "file": "flightdeck/filters/figures/filter_sectors.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "flightdeck/filters/filters.tex:218"
+                    ],
+                    "shows": "Sectors filter with the sector layer check boxes and the Surrounding Delta",
+                    "category": "flight_deck",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Sectors.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Sectors\"",
+                        "uiset \"mainwindow.filter_widget_Sectors.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
+                },
+                {
                     "file": "flightdeck/filters/figures/filter_timestamp.png",
                     "dirty": true,
                     "used": true,
@@ -3132,6 +3191,35 @@
                     "recipe_hint": null,
                     "gaps": "crop of icon from button grab (or render data/icons/refresh.png directly)",
                     "volatile": "none"
+                },
+                {
+                    "file": "flightdeck/reports/figures/report_variable_scatter.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "flightdeck/reports/reports.tex:264"
+                    ],
+                    "shows": "Scatterplot View with the Report Variable '<Radar report>: Range Offset' on the y-axis over 'Timestamp'",
+                    "category": "view",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "stored report \"Radar Feichtberg Mode-S L1 Evaluation\"",
+                    "filters": null,
+                    "flight_deck": false,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Scatterplot View\" --async",
+                        "sleep 1000",
+                        "uiset last_view.variable_selection_x \"Meta|Timestamp\"",
+                        "uiset last_view.variable_selection_y \"Radar Feichtberg Mode-S L1 Evaluation|Radar Feichtberg Mode-S L1 Evaluation: Range Offset\"",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 2000",
+                        "grab last_view"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
                 },
                 {
                     "file": "flightdeck/reports/figures/reports.png",
@@ -4273,6 +4361,56 @@
                     "volatile": "GPU-rendered pixels, version watermark"
                 },
                 {
+                    "file": "analyze/figures/analyze_mlat_ru_effect_settings.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "analyze/analyze_mlat_inspectors.tex:160"
+                    ],
+                    "shows": "Analyze MLAT dialog, RU Effect inspector settings page",
+                    "category": "dialog",
+                    "automation": "hard",
+                    "database": "at_20230422",
+                    "requires": "Pro license with the ExtraAnalysis component",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": null,
+                    "recipe_hint": null,
+                    "gaps": "RU Effect page is not available: license_openats_2026.txt has only the ProbIMMReconstructor component, the page needs the ExtraAnalysis (Pro analysis) component",
+                    "volatile": "",
+                    "new": true
+                },
+                {
+                    "file": "analyze/figures/analyze_mlat_scope_filter.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "analyze/analyze_dialog.tex:48"
+                    ],
+                    "shows": "Analyze MLAT dialog, Data Sources page, Scope Filter with 'Use Evaluation Exclusions' and 'Limit by Sectors' checked, sector layer selected",
+                    "category": "dialog",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Analyze|MLAT\" --async",
+                        "wait dialog",
+                        "uiset dialog.use_eval_exclusions_check true",
+                        "uiset dialog.limit_by_sectors_check true",
+                        "uiset dialog.sector_fir_cut_sim_check true",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
+                },
+                {
                     "file": "analyze/figures/analyze_mlat_senscov.png",
                     "dirty": false,
                     "used": false,
@@ -4355,6 +4493,34 @@
                     "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "data source names and SAC/SIC from the DB"
+                },
+                {
+                    "file": "analyze/figures/analyze_report_figure_background.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "analyze/analyze_dialog.tex:100"
+                    ],
+                    "shows": "Analyze MLAT dialog, Report page with the 'Report Figure Background' group, sector layers expanded",
+                    "category": "dialog",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Analyze|MLAT\" --async",
+                        "wait dialog",
+                        "uiset dialog.page_tree \"Report\"",
+                        "uiset dialog.sector_tree \"fir_cut_sim\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
                 }
             ]
         },
@@ -4519,6 +4685,34 @@
                     "volatile": "report path, author"
                 },
                 {
+                    "file": "eval/figures/eval_report_figure_background.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "eval/evaluation.tex:361"
+                    ],
+                    "shows": "Evaluation dialog Results Config tab with the 'Report Figure Background' group, sector layers expanded",
+                    "category": "dialog",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
+                        "wait dialog",
+                        "uiset dialog.tab_widget \"Results Config\"",
+                        "uiset dialog.sector_tree \"fir_cut_sim\"",
+                        "sleep 500",
+                        "grab dialog.results_config_tab"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
+                },
+                {
                     "file": "eval/figures/eval_report_overview.png",
                     "dirty": true,
                     "used": true,
@@ -4596,6 +4790,36 @@
                     "recipe_hint": null,
                     "gaps": "Standard tab: tree_view_ and requirements_widget_ (QStackedWidget in a QScrollArea) in src/eval/standard/evaluationstandardwidget.cpp have no object name, standard_box_ (EvaluationStandardComboBox) in evaluationstandardtabwidget.cpp has no object name; requirement config widgets have no object name (unverified for all types)",
                     "volatile": "width depends on dialog size and splitter state, which EvaluationStandardWidget restores from QSettings(\"COMPASS\", \"EvalStandardWidget<standard>\") in ~/.config, not in ~/.compass"
+                },
+                {
+                    "file": "eval/figures/eval_req_adsb_latency.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "eval/eval_req_adsb_latency.tex:8"
+                    ],
+                    "shows": "ADS-B Latency requirement configuration (ED-129C Latency 95th Percentile)",
+                    "category": "dialog",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
+                        "wait dialog",
+                        "uiset dialog.tab_widget \"Standard\"",
+                        "uiset dialog.standard_tab.standard_combo \"EUROCAE ED-129C\"",
+                        "sleep 500",
+                        "uiset dialog.standard_tab.standard_tree \"EUROCAE ED-129C|Common|Latency 95th Percentile\"",
+                        "sleep 500",
+                        "grab dialog.standard_tab.requirement_stack"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
                 },
                 {
                     "file": "eval/figures/eval_req_coasting.png",
@@ -4770,6 +4994,36 @@
                     "recipe_hint": null,
                     "gaps": "Standard tab: tree_view_ and requirements_widget_ (QStackedWidget in a QScrollArea) in src/eval/standard/evaluationstandardwidget.cpp have no object name, standard_box_ (EvaluationStandardComboBox) in evaluationstandardtabwidget.cpp has no object name; requirement config widgets have no object name (unverified for all types)",
                     "volatile": "width depends on dialog size and splitter state, which EvaluationStandardWidget restores from QSettings(\"COMPASS\", \"EvalStandardWidget<standard>\") in ~/.config, not in ~/.compass"
+                },
+                {
+                    "file": "eval/figures/eval_req_id_change_delay.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "eval/eval_req_id.tex:158"
+                    ],
+                    "shows": "Identification Change Delay requirement configuration (ED-129C ACID Change Delay)",
+                    "category": "dialog",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
+                        "wait dialog",
+                        "uiset dialog.tab_widget \"Standard\"",
+                        "uiset dialog.standard_tab.standard_combo \"EUROCAE ED-129C\"",
+                        "sleep 500",
+                        "uiset dialog.standard_tab.standard_tree \"EUROCAE ED-129C|3NM Service|ACID Change Delay\"",
+                        "sleep 500",
+                        "grab dialog.standard_tab.requirement_stack"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
                 },
                 {
                     "file": "eval/figures/eval_req_id_correct.png",
@@ -5640,6 +5894,8 @@
                         "wait dialog",
                         "uiset dialog.tab_widget \"Standard\"",
                         "uiset dialog.standard_tab.standard_combo \"Tracker Comparison\"",
+                        "sleep 500",
+                        "uiset dialog.standard_tab.standard_tree \"Tracker Comparison\"",
                         "sleep 500",
                         "grab dialog.standard_tab"
                     ],
@@ -6573,6 +6829,45 @@
                     "volatile": "OSG-rendered map pixels (GPU / Mesa under Xvfb), version text in overlay, time stamps"
                 },
                 {
+                    "file": "geographicview/figures/geoview_grid_coloring.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "geographicview/geo_layers_annotation_ops.tex:133"
+                    ],
+                    "shows": "'Grid Coloring' dialog, opened by 'Edit Coloring' on a grid sent from a Grid View",
+                    "category": "dialog",
+                    "automation": "medium",
+                    "database": "at_20230422",
+                    "requires": "",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
+                        "sleep 1000",
+                        "uiset last_view.variable_selection_z \"Meta|Mode C Code\"",
+                        "uiset last_view.value_type \"Mean\"",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 2000",
+                        "uiset last_view.export \"Export to GeographicView\" --async",
+                        "wait dialog",
+                        "uiset dialog \"accept\"",
+                        "sleep 2000",
+                        "uiset mainwindow.view_deck \"Geographic View 0\"",
+                        "sleep 3000",
+                        "uiinject mainwindow.geographicview0.layer_tree \"contextmenu(Annotations|Grids|Meta - Mode C Code - Mean)\"",
+                        "wait popup",
+                        "uiset popup \"Edit Coloring\" --async",
+                        "wait dialog",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
+                },
+                {
                     "file": "geographicview/figures/geoview_gridops_grid.png",
                     "dirty": true,
                     "used": true,
@@ -6587,8 +6882,24 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open DB, add Geographic View, import GeoTIFF (drop event), uiinject last_view.layer_tree \"contextmenu(Annotations|Grids|geotiff1.tif)\", grab layer_tree + popup, compose",
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
+                        "sleep 1000",
+                        "uiset last_view.variable_selection_z \"Meta|Mode C Code\"",
+                        "uiset last_view.value_type \"Mean\"",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 2000",
+                        "uiset last_view.export \"Export to GeographicView\" --async",
+                        "wait dialog",
+                        "uiset dialog \"accept\"",
+                        "sleep 2000",
+                        "uiset mainwindow.view_deck \"Geographic View 0\"",
+                        "sleep 3000",
+                        "uiinject mainwindow.geographicview0.layer_tree \"contextmenu(Annotations|Grids|Meta - Mode C Code - Mean)\"",
+                        "wait popup",
+                        "grab popup"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "no command to import a GeoTIFF without drag and drop (dropEvent in geographicviewrenderwidget.cpp), compose popup + parent",
                     "volatile": "none"
                 },
@@ -7449,6 +7760,68 @@
                     "volatile": "none"
                 },
                 {
+                    "file": "geographicview/figures/geoview_sector_edit.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "geographicview/geo_layers_sectors_ops.tex:136"
+                    ],
+                    "shows": "Geographic View, sector edit tool in Edit Polygon mode, vertices and segment center nodes, help text",
+                    "category": "view",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "",
+                    "filters": null,
+                    "flight_deck": false,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.view_deck \"Geographic View 0\"",
+                        "sleep 1000",
+                        "uiinject mainwindow.geographicview0.layer_tree \"checkclick(Data)\"",
+                        "uiinject mainwindow.geographicview0.layer_tree \"checkclick(Annotations)\"",
+                        "uiinject mainwindow.geographicview0.layer_tree \"contextmenu(Context|Sectors|fir_cut_sim|fir_cut_sim1)\"",
+                        "wait popup",
+                        "uiset popup \"Edit Polygon\"",
+                        "sleep 3000",
+                        "shot mainwindow.geographicview0",
+                        "uiinject mainwindow.geographicview0.overlay \"mouse(right,click,50%,50%)\"",
+                        "sleep 1000",
+                        "uiinject mainwindow.geographicview0.layer_tree \"checkclick(Data)\"",
+                        "uiinject mainwindow.geographicview0.layer_tree \"checkclick(Annotations)\""
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
+                },
+                {
+                    "file": "geographicview/figures/geoview_sector_layer_menu.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "geographicview/geo_layers_sectors_ops.tex:54"
+                    ],
+                    "shows": "Layers tree, context menu of a sector layer (Add New, Rename Layer, Set Color, Delete All)",
+                    "category": "menu",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.view_deck \"Geographic View 0\"",
+                        "sleep 1000",
+                        "uiinject mainwindow.geographicview0.layer_tree \"contextmenu(Context|Sectors|fir_cut_sim)\"",
+                        "wait popup",
+                        "grab popup"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
+                },
+                {
                     "file": "geographicview/figures/geoview_sectors2d.png",
                     "dirty": true,
                     "used": true,
@@ -7803,6 +8176,41 @@
             "chapter": "gridview",
             "title": "Grid View",
             "images": [
+                {
+                    "file": "gridview/figures/grid_background.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "gridview/view.tex:173"
+                    ],
+                    "shows": "Grid View over Longitude / Latitude with background map, sectors shown, Layers Tree with 'Sectors' and 'Background Map' expanded",
+                    "category": "view",
+                    "automation": "medium",
+                    "database": "at_20230422",
+                    "requires": "network access for the OpenStreetMap tiles",
+                    "filters": null,
+                    "flight_deck": false,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
+                        "sleep 1000",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 2000",
+                        "uiinject last_view.layer_tree \"checkclick(Background Map|Map: openstreetmap_2d)\"",
+                        "uiinject last_view.layer_tree \"contextmenu(Background Map|Map: openstreetmap_2d)\"",
+                        "wait popup",
+                        "uiset popup \"Opacity|50%\"",
+                        "sleep 500",
+                        "uiset last_view.layer_tree \"Sectors\"",
+                        "uiset last_view.layer_tree \"Background Map\"",
+                        "sleep 8000",
+                        "grab last_view"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "",
+                    "volatile": "",
+                    "new": true
+                },
                 {
                     "file": "gridview/figures/grid_colorbox.png",
                     "dirty": true,
