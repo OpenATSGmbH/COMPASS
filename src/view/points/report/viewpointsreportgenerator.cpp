@@ -305,7 +305,7 @@ void ViewPointsReportGenerator::run ()
 
                             loginf << "opening '" << fullpath << "'";
 
-                            QDesktopServices::openUrl(QUrl(fullpath.c_str()));
+                            QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(fullpath)));
                         }
                         else
                             logerr << "opening not possible since wrong file ending";

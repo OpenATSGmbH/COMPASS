@@ -471,7 +471,7 @@ Result ReportExporterLatex::writePDF() const
 
         loginf << "opening '" << fullpath << "'";
 
-        if (!QDesktopServices::openUrl(QUrl(fullpath.c_str())))
+        if (!QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(fullpath))))
             logerr << "could not open created file";
     }
 

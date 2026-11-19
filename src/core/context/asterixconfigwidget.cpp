@@ -396,7 +396,7 @@ void ASTERIXConfigWidget::categoryEditionEditSlot()
 
     loginf << "cat " << cat << " path '" << def_path << "'";
 
-    QDesktopServices::openUrl(QUrl(def_path.c_str()));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(def_path)));
 }
 
 void ASTERIXConfigWidget::categoryREFEditionEditSlot()
@@ -422,7 +422,7 @@ void ASTERIXConfigWidget::categoryREFEditionEditSlot()
 
     loginf << "cat " << cat << " ref path '" << def_path << "'";
 
-    QDesktopServices::openUrl(QUrl(def_path.c_str()));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(def_path)));
 }
 
 void ASTERIXConfigWidget::categorySPFEditionEditSlot()
@@ -448,5 +448,5 @@ void ASTERIXConfigWidget::categorySPFEditionEditSlot()
 
     loginf << "cat " << cat << " spf path '" << def_path << "'";
 
-    QDesktopServices::openUrl(QUrl(def_path.c_str()));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(def_path)));
 }

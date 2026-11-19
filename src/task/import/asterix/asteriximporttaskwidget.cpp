@@ -678,10 +678,10 @@ void ASTERIXImportTaskWidget::framingChangedSlot()
 
 void ASTERIXImportTaskWidget::framingEditSlot()
 {
-    std::string framing_path = "file:///" + task_.jASTERIX()->framingsFolderPath() + "/" +
+    std::string framing_path = task_.jASTERIX()->framingsFolderPath() + "/" +
             task_.settings().activeFileFraming() + ".json";
     loginf << "path '" << framing_path << "'";
-    QDesktopServices::openUrl(QUrl(framing_path.c_str()));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(framing_path)));
 }
 
 

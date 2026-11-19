@@ -27,6 +27,8 @@
 
 #include "traced_assert.h"
 
+#include <boost/filesystem.hpp>
+
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QFrame>
@@ -114,7 +116,8 @@ std::string SectionContent::resourceFilename(const std::string& postfix) const
  */
 std::string SectionContent::resourceRelDirectory(ResourceDir rdir) const
 {
-    return Utils::Files::join(ReportExporter::resourceSubDir(rdir), contentPath());
+    // generic separators: the relative link is stored in exported documents (e.g. JSON)
+    return (boost::filesystem::path(ReportExporter::resourceSubDir(rdir)) / contentPath()).generic_string();
 }
 
 /**
