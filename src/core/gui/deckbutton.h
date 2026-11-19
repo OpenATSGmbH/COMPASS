@@ -41,10 +41,15 @@ public:
      * labels get the same height.
      */
     static QSize sizeForLabels(const std::vector<std::vector<std::string>>& labels, const QFont& font);
+    /// one row label shortened with "…" so it fits a button of the given size (unchanged if it fits)
+    static QString elidedLabel(const QString& label, const QSize& size, const QFont& font);
+    /// font of the button labels, for size computations without a button
+    static QFont labelFont();
 
-    static const int IconSize;
-    static const int LabelFontSize;
-    static const int LabelRows;
+    static const int    IconSize;
+    static const int    LabelFontSize;
+    static const int    LabelRows;
+    static const double LabelWidthFactor; // button width per label width
 
 signals:
     void rightClickedSignal();

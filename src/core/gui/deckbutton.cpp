@@ -17,24 +17,23 @@
 
 #include "deckbutton.h"
 
+#include <QApplication>
 #include <QFontMetrics>
 #include <QMouseEvent>
 
 #include <algorithm>
 
-const int DeckButton::IconSize      = 50;
-const int DeckButton::LabelFontSize = 9;
-const int DeckButton::LabelRows     = 2;
+const int    DeckButton::IconSize         = 50;
+const int    DeckButton::LabelFontSize    = 9;
+const int    DeckButton::LabelRows        = 2;
+const double DeckButton::LabelWidthFactor = 1.1;
 
 /**
  */
 DeckButton::DeckButton(QWidget* parent)
 :   QToolButton(parent)
 {
-    auto label_font = font();
-    label_font.setPointSize(LabelFontSize);
-
-    setFont(label_font);
+    setFont(labelFont());
     setToolButtonStyle(Qt::ToolButtonStyle::ToolButtonTextUnderIcon);
     setIconSize(QSize(IconSize, IconSize));
     setCheckable(true);
@@ -63,10 +62,33 @@ QSize DeckButton::sizeForLabels(const std::vector<std::vector<std::string>>& lab
         }
     }
 
-    const int text_w = max_w * 1.1;
+    const int text_w = max_w * LabelWidthFactor;
     const int text_h = max_rows * max_h * 1.3;
 
     return QSize(std::max(IconSize + 2, text_w), IconSize + 2 + text_h);
+}
+
+/**
+ */
+QString DeckButton::elidedLabel(const QString& label, const QSize& size, const QFont& font)
+{
+    const QFontMetrics fm(font);
+    const int          max_w = size.width() / LabelWidthFactor;
+
+    if (fm.boundingRect(label).width() <= max_w)
+        return label;
+
+    return fm.elidedText(label, Qt::ElideRight, max_w);
+}
+
+/**
+ */
+QFont DeckButton::labelFont()
+{
+    QFont font = QApplication::font("QToolButton");
+    font.setPointSize(LabelFontSize);
+
+    return font;
 }
 
 /**

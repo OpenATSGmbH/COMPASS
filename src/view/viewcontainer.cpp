@@ -222,11 +222,11 @@ const std::vector<std::unique_ptr<View>>& ViewContainer::getViews() const { retu
  */
 ViewContainer::viewFactoryType& ViewContainer::viewFactory()
 {
-    static viewFactoryType factory = { { "TableView",       &viewFactoryType::createDefault<TableView>,       "Table View"       },
-                                       { "HistogramView",   &viewFactoryType::createDefault<HistogramView>,   "Histogram View"   },
-                                       { "ScatterPlotView", &viewFactoryType::createDefault<ScatterPlotView>, "Scatterplot View" },
-                                       { "GridView",        &viewFactoryType::createDefault<GridView>,        "Grid View"        },
-                                       { "GeographicView",  nullptr,                                          "Geographic View",
+    static viewFactoryType factory = { { "TableView",       &viewFactoryType::createDefault<TableView>,       "Table View",       "Table"   },
+                                       { "HistogramView",   &viewFactoryType::createDefault<HistogramView>,   "Histogram View",   "Histo"   },
+                                       { "ScatterPlotView", &viewFactoryType::createDefault<ScatterPlotView>, "Scatterplot View", "Scatter" },
+                                       { "GridView",        &viewFactoryType::createDefault<GridView>,        "Grid View",        "Grid"    },
+                                       { "GeographicView",  nullptr,                                          "Geographic View",  "Geo",
                                          CreationSource::Plugin } };
     return factory;
 }

@@ -223,13 +223,6 @@ void ScatterPlotView::accept(LatexVisitor& v)
 
 /**
 */
-std::string ScatterPlotView::deckNamePrefix() const
-{
-    return "Scatter";
-}
-
-/**
-*/
 QIcon ScatterPlotView::deckIcon() const
 {
     return Utils::Files::IconProvider::getIcon("view_scatterplot.png");

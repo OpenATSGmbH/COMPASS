@@ -16,6 +16,7 @@
  */
 
 #include "viewdeck.h"
+#include "viewcontainer.h"
 
 #include "deckbutton.h"
 #include "files.h"
@@ -173,6 +174,7 @@ void ViewDeck::addView(QWidget* view_widget,
     entry.button       = button;
     entry.close_button = close_button;
     entry.name         = name;
+    entry.label        = label;
 
     entries_.push_back(entry);
     button_layout_->addWidget(button);
@@ -333,21 +335,62 @@ void ViewDeck::updateButtons()
 
 /**
  */
+QSize ViewDeck::buttonSize() const
+{
+    if (button_size_.isValid())
+        return button_size_;
+
+    return DeckButton::sizeForLabels(referenceLabels(), DeckButton::labelFont());
+}
+
+/**
+ */
+void ViewDeck::setButtonSize(const QSize& size)
+{
+    traced_assert(size.isValid());
+
+    button_size_ = size;
+    setMinimumWidth(button_size_.width());
+
+    updateButtonSizes();
+}
+
+/**
+ */
+std::vector<std::vector<std::string>> ViewDeck::referenceLabels()
+{
+    const auto& factory = ViewContainer::viewFactory();
+
+    std::vector<std::vector<std::string>> labels;
+
+    for (const auto& class_name : factory.classNames())
+        labels.push_back({ factory.shortName(class_name) + " 99" });
+
+    return labels;
+}
+
+/**
+ * Applies the fixed button size. Without a set size it is fixed with the first view: all view types are
+ * registered by then, the plugin types too.
+ */
 void ViewDeck::updateButtonSizes()
 {
     if (entries_.empty())
         return;
 
-    std::vector<std::vector<std::string>> labels;
-    for (const auto& e : entries_)
-        labels.push_back({ e.button->text().toStdString() });
+    if (!button_size_.isValid())
+    {
+        button_size_ = buttonSize();
+        setMinimumWidth(button_size_.width());
+    }
 
-    const QSize size = DeckButton::sizeForLabels(labels, entries_.front().button->font());
+    const QFont font = entries_.front().button->font();
 
     for (auto& e : entries_)
     {
-        e.button->setFixedSize(size);
-        e.close_button->move(size.width() - e.close_button->width() - 1, 1);
+        e.button->setFixedSize(button_size_);
+        e.button->setText(DeckButton::elidedLabel(e.label, button_size_, font));
+        e.close_button->move(button_size_.width() - e.close_button->width() - 1, 1);
     }
 }
 

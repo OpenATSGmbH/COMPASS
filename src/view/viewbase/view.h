@@ -122,8 +122,8 @@ public:
     void enableInViewDeck(bool value);
     void showInViewDeck();
 
-    /// prefix of the short name under the View Deck icon, e.g. "Table" for "Table 0"
-    virtual std::string deckNamePrefix() const = 0;
+    /// prefix of the short name under the View Deck icon, e.g. "Table" for "Table 0" (short name of the view factory)
+    std::string deckNamePrefix() const;
     virtual QIcon deckIcon() const = 0;
     /// short name under the View Deck icon: the prefix and the number of the instance name
     std::string deckName() const;

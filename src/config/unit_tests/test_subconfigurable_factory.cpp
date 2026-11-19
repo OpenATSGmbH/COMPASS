@@ -252,7 +252,7 @@ protected:
 */
 FactoryParent::itemFactoryType& FactoryParent::itemFactory()
 {
-    static itemFactoryType factory = { { "ItemA", &itemFactoryType::createDefault<ItemA>, "Item A" },
+    static itemFactoryType factory = { { "ItemA", &itemFactoryType::createDefault<ItemA>, "Item A", "A" },
                                        { "ItemB", [ ] (json& cfg, FactoryParent& parent)
                                                   {
                                                       return std::unique_ptr<ItemBase>(new ItemB(cfg, &parent, parent.tag_));
@@ -282,7 +282,7 @@ DefaultsParent::itemFactoryType& DefaultsParent::itemFactory()
 PluginParent::itemFactoryType& PluginParent::itemFactory()
 {
     static itemFactoryType factory = { { "ItemA", &itemFactoryType::createDefault<ItemA>, "" },
-                                       { "ItemP", nullptr, "Plugin Item", CreationSource::Plugin } };
+                                       { "ItemP", nullptr, "Plugin Item", "", CreationSource::Plugin } };
     return factory;
 }
 
@@ -318,6 +318,9 @@ TEST_CASE("SubConfigurableFactory entries", "[configurable][subconfigurablefacto
 
     REQUIRE(factory.displayName("ItemA") == "Item A");
     REQUIRE(factory.displayName("ItemB") == "ItemB"); // no display name => class name
+
+    REQUIRE(factory.shortName("ItemA") == "A");
+    REQUIRE(factory.shortName("ItemB") == "ItemB"); // no short name => display name, here the class name
 
     auto names = factory.classNames();
     REQUIRE(std::find(names.begin(), names.end(), "ItemA") != names.end());

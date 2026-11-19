@@ -132,7 +132,6 @@ public:
 
     virtual void accept(LatexVisitor& v) override;
 
-    std::string deckNamePrefix() const override;
     QIcon deckIcon() const override;
 
     virtual bool canShowAnnotations() const override final { return true; }

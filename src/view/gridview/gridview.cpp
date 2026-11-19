@@ -222,13 +222,6 @@ void GridView::accept(LatexVisitor& v)
 
 /**
 */
-std::string GridView::deckNamePrefix() const
-{
-    return "Grid";
-}
-
-/**
-*/
 QIcon GridView::deckIcon() const
 {
     return Utils::Files::IconProvider::getIcon("view_grid.png");

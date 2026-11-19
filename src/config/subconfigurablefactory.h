@@ -117,6 +117,8 @@ public:
         std::string    class_name;
         Creator        creator;                           // empty for a plugin type until the plugin adds it
         std::string    display_name;                      // name shown in menus (empty = class name)
+        std::string    short_name;                        // name for compact UI elements, e.g. icon labels
+                                                          // (empty = display name)
         CreationSource source = CreationSource::BuiltIn;
     };
 
@@ -148,6 +150,7 @@ public:
 
     std::vector<std::string> classNames() const override;
     std::string displayName(const std::string& class_name) const;
+    std::string shortName(const std::string& class_name) const;
 
 private:
     std::map<std::string, Entry> entries_; // class name -> entry
@@ -181,7 +184,7 @@ void SubConfigurableFactory<Base, Parent>::add(const std::string& class_name,
     traced_assert_msg(!knows(class_name),
                       ("sub-configurable class '" + class_name + "' already listed or added").c_str());
 
-    entries_[ class_name ] = Entry{ class_name, creator, display_name, CreationSource::Plugin };
+    entries_[ class_name ] = Entry{ class_name, creator, display_name, "", CreationSource::Plugin };
 }
 
 /**
@@ -332,4 +335,16 @@ std::string SubConfigurableFactory<Base, Parent>::displayName(const std::string&
     traced_assert(it != entries_.end());
 
     return it->second.display_name.empty() ? class_name : it->second.display_name;
+}
+
+/**
+ * Returns the short name of the given class, or the display name if none is set.
+ */
+template<typename Base, typename Parent>
+std::string SubConfigurableFactory<Base, Parent>::shortName(const std::string& class_name) const
+{
+    auto it = entries_.find(class_name);
+    traced_assert(it != entries_.end());
+
+    return it->second.short_name.empty() ? displayName(class_name) : it->second.short_name;
 }
