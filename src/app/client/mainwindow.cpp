@@ -205,7 +205,13 @@ void MainWindow::createUI()
     //@TODO: !handle filter check box!
 
     tool_box_->setViewDeck(view_deck_);
-    tool_box_->finalize();
+
+    // both decks get the same button size, fixed for the session
+    const QSize deck_button_size = tool_box_->buttonSize().expandedTo(view_deck_->buttonSize());
+
+    tool_box_->setButtonSize(deck_button_size);
+    view_deck_->setButtonSize(deck_button_size);
+
     tool_box_->selectTool("Data Sources");
 
     //disable sensor status by default (only available in live mode)

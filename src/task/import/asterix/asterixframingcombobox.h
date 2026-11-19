@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "traced_assert.h"
 
 #include <jasterix/jasterix.h>
@@ -25,7 +27,7 @@
 
 #include "asteriximporttask.h"
 
-class ASTERIXFramingComboBox : public QComboBox
+class COMPASS_TASK_API ASTERIXFramingComboBox : public QComboBox
 {
     Q_OBJECT
 

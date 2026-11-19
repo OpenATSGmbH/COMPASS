@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include <string>
 
 #include <QFrame>
@@ -27,7 +29,7 @@ class DBContentComboBox;
 class QCheckBox;
 class QGridLayout;
 
-class EvaluationDataSourceWidget : public QFrame
+class COMPASS_EVAL_API EvaluationDataSourceWidget : public QFrame
 {
     Q_OBJECT
 

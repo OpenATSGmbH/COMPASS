@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <QComboBox>
 
 #include <set>
@@ -26,7 +28,7 @@
 #include "dbcontent/dbcontentmanager.h"
 #include "global.h"
 
-class DBContentComboBox : public QComboBox
+class COMPASS_CORE_API DBContentComboBox : public QComboBox
 {
     Q_OBJECT
 

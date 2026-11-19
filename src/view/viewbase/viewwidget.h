@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <functional>
 #include <memory>
 #include <string>
@@ -108,7 +110,7 @@ The widget's container is only visible if the widget is set.
 The ViewWidget acts both to generate the basic layout and to handle interaction between all these components.
 It also serves as the View's main interface to all ui and display functionality.
 */
-class ViewWidget : public QWidget, public ui_test::UITestable
+class COMPASS_VIEW_API ViewWidget : public QWidget, public ui_test::UITestable
 {
     Q_OBJECT
 

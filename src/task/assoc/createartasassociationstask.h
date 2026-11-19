@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "configurable.h"
 #include "createartasassociationsjob.h"
 #include "createartasassociationsstatusdialog.h"
@@ -40,7 +42,7 @@ class Variable;
 class MetaVariable;
 }
 
-class CreateARTASAssociationsTask : public Task, public Configurable
+class COMPASS_TASK_API CreateARTASAssociationsTask : public Task, public Configurable
 {
     Q_OBJECT
 

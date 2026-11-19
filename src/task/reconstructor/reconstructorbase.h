@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <cstdint>
 #include "dbcontentaccessor.h"
 #include "accuracyestimatorbase.h"
@@ -156,7 +158,7 @@ class ReconstructorBaseSettings
 
 /**
  */
-class ReconstructorBase : public QObject, public Configurable
+class COMPASS_TASK_API ReconstructorBase : public QObject, public Configurable
 {
     Q_OBJECT
 public:

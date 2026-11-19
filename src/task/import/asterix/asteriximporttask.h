@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "asteriximportsettings.h"
 #include "asterixdecodejob.h"
 #include "asterixpostprocess.h"
@@ -71,7 +73,7 @@ struct ASTERIXFileInfo
 
 /**
 */
-class ASTERIXImportTask : public Task, public Configurable
+class COMPASS_TASK_API ASTERIXImportTask : public Task, public Configurable
 {
     Q_OBJECT
 

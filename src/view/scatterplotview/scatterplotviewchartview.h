@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <chartview.h>
 
 #include <QObject>
@@ -32,7 +34,7 @@ namespace QtCharts
 
 /**
  */
-class ScatterPlotViewChartView : public ChartView
+class COMPASS_VIEW_API ScatterPlotViewChartView : public ChartView
 {
     Q_OBJECT
 public:

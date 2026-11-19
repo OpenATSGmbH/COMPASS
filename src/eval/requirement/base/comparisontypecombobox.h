@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include "requirement/base/comparisontype.h"
 
 #include <QComboBox>
@@ -24,7 +26,7 @@
 namespace EvaluationRequirement
 {
 
-class ComparisonTypeComboBox : public QComboBox
+class COMPASS_EVAL_API ComparisonTypeComboBox : public QComboBox
 {
     Q_OBJECT
 

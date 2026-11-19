@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 
 #include <QColor>
 #include <QMenu>
@@ -211,7 +213,7 @@ class QHBoxLayout;
 
 /**
  */
-class DataSourcesWidget : public QWidget
+class COMPASS_CORE_API DataSourcesWidget : public QWidget
 {
     Q_OBJECT
 

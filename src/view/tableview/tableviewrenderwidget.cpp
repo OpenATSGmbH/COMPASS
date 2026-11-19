@@ -134,7 +134,7 @@ void TableViewRenderWidget::clearDataSlot()
  */
 void TableViewRenderWidget::clear()
 {
-    setDrawState(DrawState::NotDrawn);
+    setDrawState(RenderState::NotDrawn);
 }
 
 // Offline the heavy per-redraw work - the layer scan, the row index build and the
@@ -249,8 +249,8 @@ void TableViewRenderWidget::commitLoadedData(const std::map<std::string, view_la
 
     setUpdatesEnabled(true);
 
-    setDrawState(all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent
-                                                          : DrawState::Drawn);
+    setDrawState(all_buffer_table_widget_->rowCount() > 0 ? RenderState::DrawnContent
+                                                          : RenderState::Drawn);
     emit displayChangedSignal();
 
     boost::posix_time::ptime stop_time = boost::posix_time::microsec_clock::local_time();
@@ -279,7 +279,7 @@ void TableViewRenderWidget::recomputeSlot()
 
 /**
  */
-TableViewRenderWidget::DrawState TableViewRenderWidget::redrawData(bool recompute)
+TableViewRenderWidget::RenderState TableViewRenderWidget::redrawData(bool recompute)
 {
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
@@ -295,7 +295,7 @@ TableViewRenderWidget::DrawState TableViewRenderWidget::redrawData(bool recomput
     //the view keeps showing the previous rows until the commit, and viewRefreshed is
     //held back by the pending processing guard
     if (launchAsyncPrepare())
-        return (all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent : DrawState::Drawn);
+        return (all_buffer_table_widget_->rowCount() > 0 ? RenderState::DrawnContent : RenderState::Drawn);
 
     setUpdatesEnabled(false);
 
@@ -311,7 +311,7 @@ TableViewRenderWidget::DrawState TableViewRenderWidget::redrawData(bool recomput
     loginf << "done with " << num_records << " records in "
            << Utils::String::timeStringFromDouble(elapsed_s, true);
 
-    return (all_buffer_table_widget_->rowCount() > 0 ? DrawState::DrawnContent : DrawState::Drawn);
+    return (all_buffer_table_widget_->rowCount() > 0 ? RenderState::DrawnContent : RenderState::Drawn);
 }
 
 void TableViewRenderWidget::exportDataSlot()

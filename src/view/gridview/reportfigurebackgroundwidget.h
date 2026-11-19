@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "gridbackgroundsettings.h"
 
 #include <QGroupBox>
@@ -44,7 +46,7 @@ namespace context
  * The sector tree shows the task default selection until the user changes a sector checkbox. Then the selection
  * is stored as hidden layers and hidden sectors.
  */
-class ReportFigureBackgroundWidget : public QGroupBox
+class COMPASS_VIEW_API ReportFigureBackgroundWidget : public QGroupBox
 {
     Q_OBJECT
 

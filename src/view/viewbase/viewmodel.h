@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewlayerscan.h"
 #include "json_fwd.hpp"
 
@@ -59,7 +61,7 @@ namespace context
  * thread, commit on the main thread). loadingDone() then defers its recompute (work pending at entry)
  * or dataLoadedSignal() (work launched by the recompute) until the work has finished.
  */
-class ViewModel : public QObject
+class COMPASS_VIEW_API ViewModel : public QObject
 {
     Q_OBJECT
 public:

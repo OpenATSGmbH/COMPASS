@@ -17,10 +17,12 @@
 
 #pragma once
 
+#include "compass_gui_export.h"
+
 #include <QDialog>
 #include <QTimer>
 
-class AutoResumeDialog : public QDialog
+class COMPASS_GUI_API AutoResumeDialog : public QDialog
 {
     Q_OBJECT
 

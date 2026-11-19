@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "chartview.h"
 
 #include <QPointer>
@@ -30,7 +32,7 @@ namespace QtCharts
  * Chart view of the grid render widget. Paints the background, the grid image and the sectors above
  * the chart, and handles the mouse for the tools of the render widget.
  */
-class GridViewChart : public ChartView
+class COMPASS_VIEW_API GridViewChart : public ChartView
 {
     Q_OBJECT
 public:

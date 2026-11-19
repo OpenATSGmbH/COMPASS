@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewrenderwidget.h"
 #include "viewlayerscan.h"
 #include "allbuffertablemodel.h"
@@ -37,7 +39,7 @@ class AllBufferTableWidget;
  * data and no render options. render() gives the screenshot of the widget.
  * The slots below are the flows of the model, connected by the view widget.
  */
-class TableViewRenderWidget : public ViewRenderWidget
+class COMPASS_VIEW_API TableViewRenderWidget : public ViewRenderWidget
 {
     Q_OBJECT
 
@@ -78,7 +80,7 @@ public:
 
 private:
     /// shows the rows of the buffers, returns the new draw state
-    DrawState redrawData(bool recompute);
+    RenderState redrawData(bool recompute);
 
     /// main-thread commit of the asynchronously prepared load data: layer tree, model
     /// row data, selection, draw state

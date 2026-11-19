@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "configurable.h"
 #include "dbcontent/variable/variableset.h"
 #include "jsondatamapping.h"
@@ -37,7 +39,7 @@ class ASTERIXImportTask;
 class ASTERIXJSONParsingSchema;
 class TaskManager;
 
-class ASTERIXJSONParser : public QAbstractItemModel, public Configurable
+class COMPASS_TASK_API ASTERIXJSONParser : public QAbstractItemModel, public Configurable
 {
     Q_OBJECT
 

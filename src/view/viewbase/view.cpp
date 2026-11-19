@@ -201,6 +201,13 @@ void View::showInViewDeck()
 
 /**
 */
+std::string View::deckNamePrefix() const
+{
+    return ViewContainer::viewFactory().shortName(className());
+}
+
+/**
+*/
 std::string View::deckName() const
 {
     return deckNamePrefix() + " " + std::to_string(Utils::String::getAppendedInt(instanceName()));

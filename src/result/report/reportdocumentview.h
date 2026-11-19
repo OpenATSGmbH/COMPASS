@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_result_export.h"
+
 #include "report/reportdocumentlayout.h"
 
 #include <QAbstractScrollArea>
@@ -40,7 +42,7 @@ class SectionContent;
  * Shows all sections of a report one after the other as one scrollable document.
  * Only the sections near the visible area have widgets, the others have estimated heights.
  */
-class ReportDocumentView : public QAbstractScrollArea
+class COMPASS_RESULT_API ReportDocumentView : public QAbstractScrollArea
 {
     Q_OBJECT
 

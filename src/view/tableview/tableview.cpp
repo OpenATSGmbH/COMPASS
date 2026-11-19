@@ -202,11 +202,6 @@ void TableView::accept(LatexVisitor& v)
     v.visit(this);
 }
 
-std::string TableView::deckNamePrefix() const
-{
-    return "Table";
-}
-
 QIcon TableView::deckIcon() const
 {
     return Utils::Files::IconProvider::getIcon("view_table.png");

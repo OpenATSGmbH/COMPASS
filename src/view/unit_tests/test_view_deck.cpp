@@ -372,3 +372,44 @@ TEST_CASE("Deck buttons: one row labels get the height of two row labels", "[vie
         REQUIRE(f.button("view_deck_tableview0")->height() == flight_deck.height());
     }
 }
+
+TEST_CASE("View Deck: the button size comes from the view types, not from the open views", "[view_deck]")
+{
+    DeckFixture f;
+
+    const QSize reference = f.deck->buttonSize();
+
+    // the Scatterplot View type is registered, so its label with two digits fits
+    REQUIRE(reference.width() >= DeckButton::sizeForLabels({ { "Scatter 99" } }, DeckButton::labelFont()).width());
+    REQUIRE(f.button("view_deck_tableview0")->size() == reference);
+
+    SECTION("a view added later does not change the size")
+    {
+        f.deck->addView(new QWidget, "ScatterPlotView12", "Scatterplot View 12", "Scatter 12", QIcon(), "");
+
+        REQUIRE(f.button("view_deck_scatterplotview12")->size() == reference);
+        REQUIRE(f.button("view_deck_tableview0")->size() == reference);
+    }
+    SECTION("a label wider than the reference is shortened, the view name stays the tooltip")
+    {
+        const QString label = "Scatter 1234567890";
+
+        f.deck->addView(new QWidget, "ScatterPlotView1234567890", "Scatterplot View 1234567890", label, QIcon(), "");
+
+        auto b = f.button("view_deck_scatterplotview1234567890");
+        REQUIRE(b);
+        REQUIRE(b->size() == reference);
+        REQUIRE(b->text() != label);
+        REQUIRE(b->text().startsWith("Sca"));
+        REQUIRE(b->toolTip() == "Scatterplot View 1234567890");
+    }
+    SECTION("a set size applies to all buttons")
+    {
+        const QSize size(reference.width() + 20, reference.height());
+
+        f.deck->setButtonSize(size);
+
+        REQUIRE(f.button("view_deck_tableview0")->size() == size);
+        REQUIRE(f.button("view_deck_geographicview1")->size() == size);
+    }
+}

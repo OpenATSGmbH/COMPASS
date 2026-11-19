@@ -87,14 +87,14 @@ public:
     virtual void viewInfoJSON(nlohmann::json& info) const {}
 
 protected:
-    enum class DrawState
+    enum class RenderState
     {
         NotDrawn,    // not drawn yet
         Drawn,       // drawn, but no content
         DrawnContent // drawn with content
     };
 
-    void setDrawState(DrawState state) { draw_state_ = state; }
+    void setDrawState(RenderState state) { draw_state_ = state; }
 
     /// the layout of the widget, the derived class adds its display to it
     QBoxLayout* contentLayout() { return content_layout_; }
@@ -114,7 +114,7 @@ private:
     std::unique_ptr<ViewToolSwitcher> tool_switcher_;
     QBoxLayout*                       content_layout_ = nullptr;
 
-    DrawState draw_state_ = DrawState::NotDrawn;
+    RenderState draw_state_ = RenderState::NotDrawn;
 
     boost::optional<QPalette> fixed_palette_;
 

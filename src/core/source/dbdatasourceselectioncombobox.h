@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "db_context_manager.h"
 #include "data_source.h"
 #include "logger.h"
@@ -27,7 +29,7 @@
 namespace dbContent
 {
 
-class DBDataSourceComboBox : public QComboBox
+class COMPASS_CORE_API DBDataSourceComboBox : public QComboBox
 {
     Q_OBJECT
 

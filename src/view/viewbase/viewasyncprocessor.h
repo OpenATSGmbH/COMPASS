@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <QObject>
 
 #include <deque>
@@ -45,7 +47,7 @@
  *
  * All public methods must be called from the main thread.
  */
-class ViewAsyncProcessor : public QObject
+class COMPASS_VIEW_API ViewAsyncProcessor : public QObject
 {
     Q_OBJECT
 

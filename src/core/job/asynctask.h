@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "result.h"
 
 #include <QObject>
@@ -121,7 +123,7 @@ struct AsyncTaskProgress
 /**
  * Wraps an AsyncTaskProgress and informs about progress changes.
 */
-class AsyncTaskProgressWrapper : public QObject
+class COMPASS_CORE_API AsyncTaskProgressWrapper : public QObject
 {
     Q_OBJECT
 public:
@@ -246,7 +248,7 @@ struct AsyncTaskState
 /**
  * An async task.
 */
-class AsyncTask : public QObject
+class COMPASS_CORE_API AsyncTask : public QObject
 {
     Q_OBJECT
 public:

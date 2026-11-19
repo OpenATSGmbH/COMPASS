@@ -182,13 +182,6 @@ void HistogramView::accept(LatexVisitor& v)
 
 /**
  */
-std::string HistogramView::deckNamePrefix() const
-{
-    return "Histo";
-}
-
-/**
- */
 QIcon HistogramView::deckIcon() const
 {
     return Utils::Files::IconProvider::getIcon("view_histogram.png");

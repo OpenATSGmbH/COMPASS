@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_result_export.h"
+
 #include "reportdefs.h"
 #include "configurable.h"
 
@@ -45,7 +47,7 @@ class ReportExporter;
 
 /**
  */
-class ReportExport : public QObject, public Configurable
+class COMPASS_RESULT_API ReportExport : public QObject, public Configurable
 {
     Q_OBJECT
 public:

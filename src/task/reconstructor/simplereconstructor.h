@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "reconstructorbase.h"
 #include "global.h"
 #include "reconstructortarget.h"
@@ -39,7 +41,7 @@ class SimpleReconstructorSettings : public ReconstructorBaseSettings
 
 class SimpleReconstructorWidget;
 
-class SimpleReconstructor : public ReconstructorBase
+class COMPASS_TASK_API SimpleReconstructor : public ReconstructorBase
 {
     Q_OBJECT
 

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include "configurable.h"
 #include "evaluationstandardtreeitem.h"
 #include "evaluationstandardrootitem.h"
@@ -36,7 +38,7 @@ namespace ResultReport
     class Report;
 }
 
-class EvaluationStandard : public QObject, public Configurable, public EvaluationStandardTreeItem
+class COMPASS_EVAL_API EvaluationStandard : public QObject, public Configurable, public EvaluationStandardTreeItem
 {
     Q_OBJECT
 

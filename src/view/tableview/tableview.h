@@ -74,7 +74,6 @@ public:
 
     virtual void accept(LatexVisitor& v) override;
 
-    std::string deckNamePrefix() const override;
     QIcon deckIcon() const override;
 
     const Settings& settings() const;

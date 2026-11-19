@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <taskwidget.h>
 
 class ViewPointsImportTask;
@@ -25,7 +27,7 @@ class QPushButton;
 class QListWidget;
 class QTextEdit;
 
-class ViewPointsImportTaskWidget : public QWidget
+class COMPASS_TASK_API ViewPointsImportTaskWidget : public QWidget
 {
     Q_OBJECT
 

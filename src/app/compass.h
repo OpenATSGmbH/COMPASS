@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_app_export.h"
+
 #include "configurable.h"
 #include "json_fwd.hpp"
 #include "appmode.h"
@@ -59,7 +61,7 @@ namespace context
  * - database session, owner of the app state (its settings are config parameters of COMPASS)
  * - host of the runtime command execution (rtcommand::IRTCommandHost)
  */
-class COMPASS : public QObject, public Configurable, public rtcommand::IRTCommandHost
+class COMPASS_APP_API COMPASS : public QObject, public Configurable, public rtcommand::IRTCommandHost
 {
     Q_OBJECT
 

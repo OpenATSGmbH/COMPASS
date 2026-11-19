@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <string>
 #include <vector>
 
@@ -26,7 +28,7 @@
  * Icon button with a label under the icon, used by the Flight Deck and the View Deck.
  * The check state shows the selection of the deck. The deck sets it, a click does not toggle it.
  */
-class DeckButton : public QToolButton
+class COMPASS_CORE_API DeckButton : public QToolButton
 {
     Q_OBJECT
 public:
@@ -39,10 +41,15 @@ public:
      * labels get the same height.
      */
     static QSize sizeForLabels(const std::vector<std::vector<std::string>>& labels, const QFont& font);
+    /// one row label shortened with "…" so it fits a button of the given size (unchanged if it fits)
+    static QString elidedLabel(const QString& label, const QSize& size, const QFont& font);
+    /// font of the button labels, for size computations without a button
+    static QFont labelFont();
 
-    static const int IconSize;
-    static const int LabelFontSize;
-    static const int LabelRows;
+    static const int    IconSize;
+    static const int    LabelFontSize;
+    static const int    LabelRows;
+    static const double LabelWidthFactor; // button width per label width
 
 signals:
     void rightClickedSignal();

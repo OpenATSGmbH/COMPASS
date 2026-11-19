@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "datasourcesstatus.h"
 
 #include <QObject>
@@ -40,7 +42,7 @@ namespace context
  * - keeps the sensor states and status events per tracker line, and the active tracker line
  * - shown and modified by the Sensor Status tool (DataSourcesStatusToolWidget), read by get_sensor_status
  */
-class SensorStatusTracker : public QObject
+class COMPASS_CORE_API SensorStatusTracker : public QObject
 {
     Q_OBJECT
 

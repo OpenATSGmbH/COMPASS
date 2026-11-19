@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewrenderwidget.h"
 
 #include <QImage>
@@ -36,7 +38,7 @@ class QPainter;
  * The derived class builds a complete chart view from its display data (createChartView()). redraw() shows
  * it in the widget, render() draws it into an image. So the drawing code exists once.
  */
-class ChartRenderWidget : public ViewRenderWidget
+class COMPASS_VIEW_API ChartRenderWidget : public ViewRenderWidget
 {
     Q_OBJECT
 public:

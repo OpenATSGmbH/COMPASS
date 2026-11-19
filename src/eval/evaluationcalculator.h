@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include "configurable.h"
 
 #include "evaluationdefs.h"
@@ -61,7 +63,7 @@ namespace EvaluationRequirementResult
 
 /**
  */
-class EvaluationCalculator : public QObject, public Configurable
+class COMPASS_EVAL_API EvaluationCalculator : public QObject, public Configurable
 {
     Q_OBJECT
 public:

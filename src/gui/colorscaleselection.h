@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_gui_export.h"
+
 #include "colormap_defs.h"
 
 #include <QWidget>
@@ -25,7 +27,7 @@ class QComboBox;
 
 /**
  */
-class ColorScaleSelection : public QWidget
+class COMPASS_GUI_API ColorScaleSelection : public QWidget
 {
     Q_OBJECT
 public:

@@ -111,8 +111,8 @@ void ViewRenderWidget::registerTool(const ViewTool& tool)
  */
 bool ViewRenderWidget::isDrawn() const
 {
-    return draw_state_ == DrawState::Drawn ||
-           draw_state_ == DrawState::DrawnContent;
+    return draw_state_ == RenderState::Drawn ||
+           draw_state_ == RenderState::DrawnContent;
 }
 
 /**
@@ -120,7 +120,7 @@ bool ViewRenderWidget::isDrawn() const
  */
 bool ViewRenderWidget::hasContent() const
 {
-    return draw_state_ == DrawState::DrawnContent;
+    return draw_state_ == RenderState::DrawnContent;
 }
 
 /**
@@ -216,5 +216,5 @@ void ViewRenderWidget::setWheelIgnored(bool ignored)
  */
 void ViewRenderWidget::resetDrawState()
 {
-    draw_state_ = DrawState::NotDrawn;
+    draw_state_ = RenderState::NotDrawn;
 }

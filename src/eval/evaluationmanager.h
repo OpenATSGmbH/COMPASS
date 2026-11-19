@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include "configurable.h"
 #include "ievalprovider.h"
 #include "imanager.h"
@@ -59,7 +61,7 @@ class QWidget;
 
 /**
  */
-class EvaluationManager : public QObject, public Configurable, public IEvalProvider, public IManager
+class COMPASS_EVAL_API EvaluationManager : public QObject, public Configurable, public IEvalProvider, public IManager
 {
     Q_OBJECT
 

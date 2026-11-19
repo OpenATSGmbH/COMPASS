@@ -19,6 +19,7 @@
 #include "viewtoolswitcher.h"
 #include "viewtool.h"
 #include "timeconv.h"
+#include "json.hpp"
 
 #include "ui_test_common.h"
 

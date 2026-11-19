@@ -94,7 +94,7 @@ ReconstructorTask::reconstructorFactoryType& ReconstructorTask::reconstructorFac
 {
     static reconstructorFactoryType factory = { { "SimpleReconstructor",  &createSimpleReconstructor, ScoringUMReconstructorName },
                                                 { "ProbIMMReconstructor", nullptr,                    ProbImmReconstructorName,
-                                                  CreationSource::Plugin } };
+                                                  "", CreationSource::Plugin } };
     return factory;
 }
 

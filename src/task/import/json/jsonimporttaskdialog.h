@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 
 #include <QDialog>
 
@@ -25,7 +27,7 @@ class JSONImportTaskWidget;
 
 class QPushButton;
 
-class JSONImportTaskDialog : public QDialog
+class COMPASS_TASK_API JSONImportTaskDialog : public QDialog
 {
     Q_OBJECT
 

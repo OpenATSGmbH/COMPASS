@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "view.h"
 #include "property.h"
 #include "plotmetadata.h"
@@ -33,7 +35,7 @@ class ViewableDataConfig;
 
 /**
 */
-class VariableView : public View
+class COMPASS_VIEW_API VariableView : public View
 {
     Q_OBJECT
 

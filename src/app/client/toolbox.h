@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_app_export.h"
+
 #include "ui_test_testable.h"
 #include "decklayout.h"
 
@@ -48,7 +50,7 @@ class QSplitter;
  * its tool panel, and the View Deck with the view area. The View Deck asks for a change and follows
  * viewDeckCollapsedSignal(), see setViewDeck().
  */
-class ToolBox : public QWidget, public ui_test::UITestable
+class COMPASS_APP_API ToolBox : public QWidget, public ui_test::UITestable
 {
     Q_OBJECT
 public:
@@ -65,7 +67,11 @@ public:
 
     void disableTools(std::set<unsigned int> indexes);
 
-    void finalize();
+    /// own button size from the tool labels, the set one once set
+    QSize buttonSize() const;
+    /// sets the fixed size of all tool buttons
+    void setButtonSize(const QSize& size);
+
     void adjustSizings();
 
     void selectTool(size_t idx);
@@ -130,6 +136,8 @@ private:
     QWidget*        main_widget_          = nullptr;
     QVBoxLayout*    main_layout_          = nullptr;
     QWidget*        main_content_widget_  = nullptr;
+
+    QSize button_size_; // fixed size of the tool buttons, invalid until set
 
     std::unique_ptr<PopupMenu> config_menu_;
 

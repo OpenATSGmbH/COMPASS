@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <QWidget>
 
 class SimpleReconstructor;
@@ -26,7 +28,7 @@ class QLineEdit;
 class QCheckBox;
 class QSpinBox;
 
-class SimpleReconstructorAssociationWidget : public QWidget
+class COMPASS_TASK_API SimpleReconstructorAssociationWidget : public QWidget
 {
     Q_OBJECT
 

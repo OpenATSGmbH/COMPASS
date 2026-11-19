@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "configurable.h"
 #include "dbcontent/variable/variable.h"
 #include "dbcontent/variable/variableset.h"
@@ -95,7 +97,7 @@ enum class MOM_VERT_RATE
 
 /**
  */
-class DBContent : public QObject, public Configurable
+class COMPASS_CORE_API DBContent : public QObject, public Configurable
 {
     Q_OBJECT
 

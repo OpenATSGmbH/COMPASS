@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "ui_test_testable.h"
 
 #include <QIcon>
@@ -41,7 +43,7 @@ class QVBoxLayout;
  * and the host that owns the window layout answers with setCollapsedSlot(). In a window without a host
  * for these requests the deck stays open.
  */
-class ViewDeck : public QWidget, public ui_test::UITestable
+class COMPASS_VIEW_API ViewDeck : public QWidget, public ui_test::UITestable
 {
     Q_OBJECT
 public:
@@ -75,6 +77,14 @@ public:
 
     void setAddRemoveEnabled(bool enabled);
 
+    /**
+     * Fixed size of all buttons, the set one or the one of the view types (referenceLabels()).
+     * Notice: call it after all view types are registered (plugins).
+     */
+    QSize buttonSize() const;
+    /// sets the fixed size of all buttons, also of the views added later; labels that do not fit are shortened
+    void setButtonSize(const QSize& size);
+
     bool collapsed() const { return collapsed_; }
 
     /// shows the view with the given name, e.g. 'uiset mainwindow.view_deck "Table View 0"'
@@ -96,8 +106,15 @@ private:
         DeckButton*  button       = nullptr;
         QToolButton* close_button = nullptr;
         QString      name;
+        QString      label;                  // full short name, shortened on the button if it does not fit
         bool         enabled      = true;
     };
+
+    /**
+     * Labels the button size is computed for, one per creatable view type: its short name with a two digit
+     * number. A three digit number needs 100 open views of one type, its label is shortened.
+     */
+    static std::vector<std::vector<std::string>> referenceLabels();
 
     int indexOf(QWidget* view_widget) const;
 
@@ -113,6 +130,8 @@ private:
     QPointer<QStackedWidget> view_area_;
     QVBoxLayout*             button_layout_ = nullptr;
     QPushButton*             add_button_    = nullptr;
+
+    QSize button_size_; // fixed button size, invalid until set or fixed with the first view
 
     bool add_remove_enabled_ = true;
     bool collapsed_          = false;

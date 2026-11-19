@@ -1,5 +1,11 @@
 add_library(compass_app SHARED "")
 
+# COMPASS_APP_API for the classes with signals (top-level CMakeLists.txt)
+generate_export_header(compass_app
+    EXPORT_MACRO_NAME COMPASS_APP_API
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/compass_app_export.h")
+target_include_directories(compass_app PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+
 # Disable AUTOMOC: compass_app links libraries (compass_view, compass_eval, etc.)
 # whose PUBLIC include dirs expose Q_OBJECT headers. AUTOMOC would re-MOC those
 # headers, creating duplicate symbols with the library that already MOC'd them.

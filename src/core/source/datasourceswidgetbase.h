@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <QMenu>
 #include <QPushButton>
 #include <QTreeWidgetItem>
@@ -140,7 +142,7 @@ class QHBoxLayout;
 
 /**
  */
-class DataSourcesWidgetBase : public QWidget
+class COMPASS_CORE_API DataSourcesWidgetBase : public QWidget
 {
     Q_OBJECT
 

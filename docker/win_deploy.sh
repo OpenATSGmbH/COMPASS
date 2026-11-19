@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# Collects the Windows build of COMPASS with all runtime files into /out/compass_deploy,
-# in the same layout as the AppImage (see Utils::System::appDir):
+# Collects the Windows build of COMPASS with all runtime files into compass_deploy in the build
+# folder (paths as in win_build.sh), in the same layout as the AppImage (see Utils::System::appDir):
 #
 #   compass_client.exe, compass_handler.exe, *.dll   executables and runtime libraries
-#   compass_client.exe.debug, compass_*.dll.debug     debug information for gdb (not in the zip)
+#   compass_client.exe.debug, libcompass_*.dll.debug  debug information for gdb (not in the zip)
 #   plugins/compass_plugin_*.dll                      plugin modules (+ .debug)
 #   platforms/, styles/, imageformats/, iconengines/  Qt plugins
 #   lib/osgPlugins-<version>/                         OSG/osgEarth plugins
@@ -16,13 +16,19 @@
 #
 # Usage (inside the container, after win_build.sh): win_deploy.sh [--with_tests] [--zip]
 #   --with_tests  also compass_tests.exe (not for the zip file)
-#   --zip         /out/COMPASS_<version>_win64.zip with the folder COMPASS_<version>_win64,
-#                 the Windows counterpart of the AppImage
+#   --zip         COMPASS_<version>_win64.zip in the build folder, with the folder
+#                 COMPASS_<version>_win64, the Windows counterpart of the AppImage
 
 set -e
 
-BUILD=/out/compass_build
-DEPLOY=/out/compass_deploy
+: "${OS_NAME:?OS_NAME is not set, rebuild the image with ./build_docker.sh win_deb12}"
+
+BASE=${WORKSPACE_BASE:-/app/workspace}
+COMPASS_SRC=$BASE/compass
+OUT=$COMPASS_SRC/build_$OS_NAME
+
+BUILD=$OUT/compass_build
+DEPLOY=$OUT/compass_deploy
 STRIP=x86_64-w64-mingw32-strip
 
 rm -rf "$DEPLOY"
@@ -56,9 +62,9 @@ for exe in $EXES; do
     fi
 done
 
-# COMPASS libraries (one DLL per module): debug information
+# COMPASS libraries (one DLL per module, with the "lib" prefix of MinGW): debug information
 # split off as for compass_client.exe, into <name>.dll.debug next to them
-for dll in "$BUILD"/bin/compass_*.dll; do
+for dll in "$BUILD"/bin/libcompass_*.dll; do
     name=$(basename "$dll")
     $OBJCOPY --only-keep-debug "$dll" "$DEPLOY/$name.debug"
     $STRIP -o "$DEPLOY/$name" "$dll"
@@ -77,7 +83,7 @@ for dll in "$BUILD"/lib/compass_plugins/compass_plugin_*.dll; do
 done
 
 # jASTERIX (shared, installed by win_build.sh)
-$STRIP -o "$DEPLOY/libjasterix.dll" /out/jasterix_install/lib/libjasterix.dll
+$STRIP -o "$DEPLOY/libjasterix.dll" "$OUT/jasterix_install/lib/libjasterix.dll"
 
 # runtime of the MinGW toolchain (libssp: stack protection, needed by TBB)
 cp "$MINGW_GCC_DLL_DIR/libstdc++-6.dll" "$MINGW_GCC_DLL_DIR/libgcc_s_seh-1.dll" \
@@ -97,26 +103,26 @@ for plugin_dir in platforms styles imageformats iconengines; do
 done
 
 # COMPASS configuration, data and view presets (as in the AppImage), licence
-cp -r /src/compass/conf /src/compass/data /src/compass/presets "$DEPLOY/compass/"
-cp /src/compass/LICENSE "$DEPLOY/"
+cp -r "$COMPASS_SRC/conf" "$COMPASS_SRC/data" "$COMPASS_SRC/presets" "$DEPLOY/compass/"
+cp "$COMPASS_SRC/LICENSE" "$DEPLOY/"
 
 # DLLs that nothing imports (e.g. Qt modules COMPASS does not use)
-python3 /src/compass/docker/win_unused_dlls.py "$DEPLOY" --remove | tail -1
+python3 "$COMPASS_SRC/docker/win_unused_dlls.py" "$DEPLOY" --remove | tail -1
 
 echo "deployed to $DEPLOY"
 du -sh "$DEPLOY"
 
 if [ $ZIP == 1 ]; then
-    VERSION=$(grep -oP 'CPACK_PACKAGE_VERSION_(MAJOR|MINOR|PATCH) "\K[0-9]+' /src/compass/CMakeLists.txt \
+    VERSION=$(grep -oP 'CPACK_PACKAGE_VERSION_(MAJOR|MINOR|PATCH) "\K[0-9]+' "$COMPASS_SRC/CMakeLists.txt" \
               | paste -sd.)
     NAME="COMPASS_${VERSION}_win64"
-    STAGE=/out/zip_stage
-    rm -rf "$STAGE" "/out/$NAME.zip"
+    STAGE=$OUT/zip_stage
+    rm -rf "$STAGE" "$OUT/$NAME.zip"
     mkdir -p "$STAGE"
     ln -s "$DEPLOY" "$STAGE/$NAME"
     # without the debug file (about 2 GB), potato_win_deploy.sh copies it separately
-    (cd "$STAGE" && 7z a -tzip -mx=7 -l "-xr!*.debug" "/out/$NAME.zip" "$NAME" > /dev/null)
+    (cd "$STAGE" && 7z a -tzip -mx=7 -l "-xr!*.debug" "$OUT/$NAME.zip" "$NAME" > /dev/null)
     rm -rf "$STAGE"
-    echo "zip file /out/$NAME.zip"
-    ls -la "/out/$NAME.zip"
+    echo "zip file $OUT/$NAME.zip"
+    ls -la "$OUT/$NAME.zip"
 fi

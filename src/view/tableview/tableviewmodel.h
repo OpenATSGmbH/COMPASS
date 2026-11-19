@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewmodel.h"
 
 /**
@@ -27,7 +29,7 @@
  * pointer to the model, reads the buffers and builds the table rows. There is no display data.
  * The model reports its flows with signals, the view widget connects them to the render widget.
  */
-class TableViewModel : public ViewModel
+class COMPASS_VIEW_API TableViewModel : public ViewModel
 {
     Q_OBJECT
 

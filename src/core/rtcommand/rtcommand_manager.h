@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "configurable.h"
 #include "imanager.h"
 //#include "logger.h"
@@ -59,7 +61,7 @@ namespace rtcommand
  * Class for listening for and processing string commands at runtime,
  * either coming externally from a TCP port or internally from the application itself.
  */
-class RTCommandManager : public QThread, public Configurable, public IManager
+class COMPASS_CORE_API RTCommandManager : public QThread, public Configurable, public IManager
 {
     Q_OBJECT
 public:

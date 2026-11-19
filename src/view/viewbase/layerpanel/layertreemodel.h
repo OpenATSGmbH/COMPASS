@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "layertreedefs.h"
 #include "layertreestate.h"
 
@@ -54,7 +56,7 @@ class QMenu;
  * and the effective-hidden ids live in state(), the model applies the config on attach and on
  * config changes.
  */
-class LayerTreeModel : public QAbstractItemModel
+class COMPASS_VIEW_API LayerTreeModel : public QAbstractItemModel
 {
     Q_OBJECT
 

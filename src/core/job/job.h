@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "jobdefs.h"
 
 #include "logger.h"
@@ -44,9 +46,9 @@
  * Important: The Job and the contained data must be deleted in the callback functions.
  */
 #ifdef USE_ASYNC_JOBS
-class Job : public QObject
+class COMPASS_CORE_API Job : public QObject
 #else
-class Job : public QObject, public QRunnable
+class COMPASS_CORE_API Job : public QObject, public QRunnable
 #endif
 {
     Q_OBJECT

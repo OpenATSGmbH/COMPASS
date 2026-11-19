@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <cstdint>
 #include "configurable.h"
 #include "iviewprovider.h"
@@ -66,7 +68,7 @@ class LiveController;
 
 /**
 */
-class ViewManager : public QObject, public Configurable, public IViewProvider, public IManager
+class COMPASS_VIEW_API ViewManager : public QObject, public Configurable, public IViewProvider, public IManager
 {
     Q_OBJECT
 

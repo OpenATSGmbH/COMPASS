@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "configurable.h"
 #include "license.h"
 
@@ -32,7 +34,7 @@
 
 /**
 */
-class LicenseManager : public QObject, public Configurable
+class COMPASS_CORE_API LicenseManager : public QObject, public Configurable
 {
     Q_OBJECT
 public:

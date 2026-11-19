@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <QObject>
 
 #include <map>
@@ -38,7 +40,7 @@ class DBContentAccessor;
 // plus a lazily-built index/accessor, and emits one change signal. Subtypes:
 // LoadOperation (one-shot) and LiveDataFeed (continuous). Deliberately thin -
 // no query state (spec/state/cancel) lives here.
-class DBContentDataSet : public QObject
+class COMPASS_CORE_API DBContentDataSet : public QObject
 {
     Q_OBJECT
 

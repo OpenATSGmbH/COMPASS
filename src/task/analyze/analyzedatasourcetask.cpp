@@ -86,12 +86,12 @@ AnalyzeDataSourceTask::inspectorSettingsFactoryType& AnalyzeDataSourceTask::insp
         { "SMRDataItemInspectorSettings",     &Factory::createDefault<SMRDataItemInspectorSettings>  },
         { "SMRCoverageInspectorSettings",     &Factory::createDefault<SMRCoverageInspectorSettings>  },
 
-        { "MLATAccuracyInspectorSettings",    nullptr, "", CreationSource::Plugin },
-        { "MLATRUCoverageInspectorSettings",  nullptr, "", CreationSource::Plugin },
-        { "MLATRUEffectInspectorSettings",    nullptr, "", CreationSource::Plugin },
-        { "ADSBAccuracyInspectorSettings",    nullptr, "", CreationSource::Plugin },
-        { "SMRAccuracyInspectorSettings",     nullptr, "", CreationSource::Plugin },
-        { "SMRUnassociatedInspectorSettings", nullptr, "", CreationSource::Plugin } };
+        { "MLATAccuracyInspectorSettings",    nullptr, "", "", CreationSource::Plugin },
+        { "MLATRUCoverageInspectorSettings",  nullptr, "", "", CreationSource::Plugin },
+        { "MLATRUEffectInspectorSettings",    nullptr, "", "", CreationSource::Plugin },
+        { "ADSBAccuracyInspectorSettings",    nullptr, "", "", CreationSource::Plugin },
+        { "SMRAccuracyInspectorSettings",     nullptr, "", "", CreationSource::Plugin },
+        { "SMRUnassociatedInspectorSettings", nullptr, "", "", CreationSource::Plugin } };
 
     return factory;
 }

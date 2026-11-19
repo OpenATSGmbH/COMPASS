@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewtool.h"
 
 #include <QString>
@@ -39,7 +41,7 @@ class QShortcut;
  * registerTool() stores tools of all three kinds (ViewTool). The first registered mode tool is the default tool.
  * A mode tool gets its callback with true when it becomes the current tool, and with false when it is left.
  */
-class ViewToolSwitcher : public QObject
+class COMPASS_VIEW_API ViewToolSwitcher : public QObject
 {
     Q_OBJECT
 public:

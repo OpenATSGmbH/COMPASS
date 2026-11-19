@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <chartview.h>
 
 #include <QObject>
@@ -29,7 +31,7 @@ class QBarSet;
 
 /**
  */
-class HistogramViewChartView : public ChartView
+class COMPASS_VIEW_API HistogramViewChartView : public ChartView
 {
     Q_OBJECT
 public:

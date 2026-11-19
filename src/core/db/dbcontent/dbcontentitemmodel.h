@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "dbcontentitemprovider.h"
 
 #include <functional>
@@ -49,7 +51,7 @@ class QMenu;
  *                              view->viewport()->mapToGlobal(pos), view);
  *   });
  */
-class DBContentItemModel : public QAbstractListModel
+class COMPASS_CORE_API DBContentItemModel : public QAbstractListModel
 {
     Q_OBJECT
 

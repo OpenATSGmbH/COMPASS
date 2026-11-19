@@ -483,19 +483,29 @@ void ToolBox::setState(deck::Layout layout, int tool_idx)
 
 /**
  */
-void ToolBox::finalize()
+QSize ToolBox::buttonSize() const
 {
-    if (tools_.empty())
-        return;
+    if (button_size_.isValid())
+        return button_size_;
 
     std::vector<std::vector<std::string>> labels;
     for (const auto& t : tools_)
         labels.push_back(t.widget->toolLabels());
 
-    const QSize size = DeckButton::sizeForLabels(labels, tools_.front().button->font());
+    return DeckButton::sizeForLabels(labels, DeckButton::labelFont());
+}
+
+/**
+ * Notice: tools are added before, the buttons of later tools keep their own size.
+ */
+void ToolBox::setButtonSize(const QSize& size)
+{
+    traced_assert(size.isValid());
+
+    button_size_ = size;
 
     for (auto& t : tools_)
-        t.button->setFixedSize(size);
+        t.button->setFixedSize(button_size_);
 }
 
 /**

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <cstdint>
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <boost/optional.hpp>
@@ -42,7 +44,7 @@ class Buffer;
 // Single door to the DB connection for DBContent data: executes one
 // LoadOperation at a time (fills its buffers, drives its state) and owns the
 // insert/delete DB writes. Serialized behind the one DB connection via JobManager.
-class DBContentDataEngine : public QObject
+class COMPASS_CORE_API DBContentDataEngine : public QObject
 {
     Q_OBJECT
 

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <cstdint>
 #include "job.h"
 
@@ -38,7 +40,7 @@ struct UniqueARTASTrack
     boost::posix_time::ptime last_ts_;
 };
 
-class CreateARTASAssociationsJob : public Job
+class COMPASS_TASK_API CreateARTASAssociationsJob : public Job
 {
     Q_OBJECT
 

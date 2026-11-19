@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <QDialog>
 
 namespace context { class DBContextManager; }
@@ -25,7 +27,7 @@ class DSTypeSelectionComboBox;
 class QLineEdit;
 class QPushButton;
 
-class DataSourceCreateDialog : public QDialog
+class COMPASS_CORE_API DataSourceCreateDialog : public QDialog
 {
     Q_OBJECT
 

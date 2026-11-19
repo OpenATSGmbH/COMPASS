@@ -45,7 +45,13 @@ struct MainContentFixture
         tool_box->addTool(new WrappedToolBoxWidget(tool_b, "Tool B", "Info B", { "Tool B" }, QIcon(), false, 30));
 
         tool_box->setViewDeck(view_deck);
-        tool_box->finalize();
+
+        // as the main window: both decks get the common button size
+        const QSize deck_button_size = tool_box->buttonSize().expandedTo(view_deck->buttonSize());
+
+        tool_box->setButtonSize(deck_button_size);
+        view_deck->setButtonSize(deck_button_size);
+
         tool_box->selectTool("Tool A");
 
         auto layout = new QHBoxLayout(&window);
@@ -120,6 +126,16 @@ TEST_CASE("Decks: both decks are open at the start", "[toolbox_decks]")
     SECTION("both decks have the same button size")
     {
         REQUIRE(f.toolButton("Tool\nA")->size() == f.viewButton("view_deck_tableview0")->size());
+    }
+    SECTION("a view added later keeps the button size of both decks")
+    {
+        const QSize size = f.toolButton("Tool\nA")->size();
+
+        f.view_deck->addView(new QWidget, "ScatterPlotView12", "Scatterplot View 12", "Scatter 12", QIcon(), "");
+        QCoreApplication::processEvents();
+
+        REQUIRE(f.viewButton("view_deck_scatterplotview12")->size() == size);
+        REQUIRE(f.toolButton("Tool\nA")->size() == size);
     }
 }
 

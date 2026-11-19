@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "dbcontent/variable/variable.h"
 //#include "global.h"
 #include "logger.h"
@@ -25,7 +27,7 @@
 
 #include <stdexcept>
 
-class StringRepresentationComboBox : public QComboBox
+class COMPASS_CORE_API StringRepresentationComboBox : public QComboBox
 {
     Q_OBJECT
 

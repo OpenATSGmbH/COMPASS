@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <jasterix/category.h>
 #include <jasterix/jasterix.h>
 #include "logger.h"
@@ -26,7 +28,7 @@
 #include <memory>
 #include <string>
 
-class ASTERIXEditionComboBox : public QComboBox
+class COMPASS_CORE_API ASTERIXEditionComboBox : public QComboBox
 {
     Q_OBJECT
 

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "job.h"
 
 #include <list>
@@ -31,7 +33,7 @@ namespace dbContent
 class Variable;
 }
 
-class UpdateBufferDBJob : public Job
+class COMPASS_CORE_API UpdateBufferDBJob : public Job
 {
     Q_OBJECT
 

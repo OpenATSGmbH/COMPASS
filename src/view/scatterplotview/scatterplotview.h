@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "variableview.h"
 #include "scatterplotdisplaydata.h"
 
@@ -30,7 +32,7 @@ class ScatterPlotViewModel;
 
 /**
 */
-class ScatterPlotView : public VariableView
+class COMPASS_VIEW_API ScatterPlotView : public VariableView
 {
     Q_OBJECT
 
@@ -68,7 +70,6 @@ public:
 
     virtual void accept(LatexVisitor& v) override;
 
-    std::string deckNamePrefix() const override;
     QIcon deckIcon() const override;
 
     virtual bool canShowAnnotations() const override final { return true; }
