@@ -2,12 +2,17 @@
 #include "catch.hpp"
 #include "files.h"
 #include "global.h"
+#include "system.h"
 #include "traced_assert.h"
 
 #if USE_EXPERIMENTAL_SOURCE == true
 #include "probimmplugin.h"
 #include "docxplugin.h"
 #include "extraanalysisplugin.h"
+#endif
+
+#ifdef _WIN32
+#include <osgDB/Registry>
 #endif
 
 #include <QApplication>
@@ -40,6 +45,12 @@ int main(int argc, char* argv[])
     const std::string data_dir = std::string(COMPASS_SOURCE_DIR) + "/data/";
     traced_assert(Utils::Files::directoryExists(data_dir));
     Utils::Files::setDataDirectory(data_dir);
+
+#ifdef _WIN32
+    // OSG plugins (e.g. the osgEarth terrain engine) in lib/ of the deployment (win_deploy.sh --with_tests),
+    // as in the client (client.cpp). On Linux OSG finds them in the system paths.
+    osgDB::Registry::instance()->setLibraryFilePathList(std::string(Utils::System::appDir()) + "/lib");
+#endif
 
     // same plugins as the client (main.cpp), core step only (factory entries)
 #if USE_EXPERIMENTAL_SOURCE == true
