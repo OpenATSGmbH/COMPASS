@@ -3,9 +3,9 @@
 Takes the user manual screenshots listed in screenshots.json (next to this file) with the local
 build under Xvfb, driven by runtime commands. Only images with steps are taken, by default only
 the dirty ones. The images go to --out in the folder layout of the manual, plus compare/ with the
-old image next to the new one. The manual itself is not changed.
+old image next to the new one. The manual is only changed with --install.
 
-    python3 doc/user_manual/manual_screenshots.py --out ~/tmp/manual_shots [--all] [--only a.png,b.png]
+    python3 doc/user_manual/manual_screenshots.py --out ~/tmp/manual_shots [--all] [--only a.png,b.png] [--install]
 """
 
 import argparse, io, json, os, shlex, shutil, subprocess, sys, time
@@ -30,13 +30,13 @@ DB_DIR  = BASE + '/db'
 
 
 class Client:
-    def __init__(self, log_fn, font):
+    def __init__(self, log_fn, font, extra_args=()):
         env = dict(os.environ, HOME=HOME, DISPLAY=DISPLAY, QT_SCALE_FACTOR='1')
         for k in ('WAYLAND_DISPLAY', 'XDG_SESSION_TYPE', 'QT_QPA_PLATFORM'):
             env.pop(k, None)
 
         self.log  = open(log_fn, 'w')
-        self.proc = subprocess.Popen([BINARY, '--open_rt_cmd_port', '--no_cfg_save', '--bundled_font', font],
+        self.proc = subprocess.Popen([BINARY, '--open_rt_cmd_port', '--no_cfg_save', '--bundled_font', font] + list(extra_args),
                                      env=env, stdout=self.log, stderr=subprocess.STDOUT)
         self.ci = COMPASSInterface()
         for i in range(240):
@@ -86,6 +86,7 @@ def seedHome():
     version_dir = os.path.join(HOME, '.compass', VERSION)
     shutil.copytree(os.path.join(REPO, 'conf'), os.path.join(version_dir, 'conf'))
     shutil.copytree(os.path.join(REPO, 'data'), os.path.join(version_dir, 'data'))
+    shutil.copytree(os.path.join(REPO, 'presets'), os.path.join(version_dir, 'presets'))
 
     key = msgpack.unpackb(bytes.fromhex(open(LICENSE).read().strip()), raw=False)
     os.makedirs(os.path.join(HOME, '.compass', 'license'))
@@ -142,6 +143,20 @@ def buildDB(name, ds, font, log_dir):
 
         c.cmd('reconstruct_references --config="{}"'.format(
             escaped({'current_reconstructor_str': ds['reconstructor']})))
+
+        # stored reports, e.g. for the Reports tool and the result images
+        for cfg in ds.get('evaluations', []):
+            params = json.load(open(path(cfg)))['parameters']
+            c.cmd('evaluate --config="{}"'.format(escaped(params)))
+
+        sources = c.cmd('get_data_sources')
+        for ds_type in ds.get('analyses', []):
+            ids  = [s['sac'] * 256 + s['sic'] for s in sources if s.get('ds_type') == ds_type]
+            refs = {str(s['sac'] * 256 + s['sic']): s.get('name') == 'CalcRef'
+                    for s in sources if s.get('ds_type') == 'RefTraj'}
+            params = {'use_data_sources': {str(i): True for i in ids},
+                      'use_reference_data_sources': refs, 'custom_report_name': ''}
+            c.cmd('analyze_data_source --ds_type={} --config="{}"'.format(ds_type, escaped(params)))
         c.cmd('close_db')
     finally:
         c.close()
@@ -244,6 +259,7 @@ def main():
     p.add_argument('--all', action='store_true', help='also images that are not dirty')
     p.add_argument('--only', default='', help='comma-separated image file names, e.g. main_window.png')
     p.add_argument('--rebuild_db', action='store_true', help='build the databases of the selected images again')
+    p.add_argument('--install', action='store_true', help='copy each new image over its file in the manual')
     a = p.parse_args()
 
     spec     = json.load(open(a.list))
@@ -280,7 +296,7 @@ def main():
             print('db {} ({:.0f} s)'.format(built, time.time() - t0), flush=True)
 
         seedHome()
-        c = Client(os.path.join(out_dir, 'client.log'), font)
+        c = Client(os.path.join(out_dir, 'client.log'), font, defaults.get('client_args', []))
         open_db = None
         for img in images:
             # fresh: reopen the DB, so no data is loaded, e.g. for an empty view
@@ -298,6 +314,8 @@ def main():
                 old = os.path.join(MANUAL, img['file'])
                 if os.path.exists(old):
                     compareImage(old, new, os.path.join(out_dir, 'compare', img['file']))
+                if a.install:
+                    shutil.copy(new, old)
             except Exception as e:
                 report['ok'] = False
                 report['error'] = str(e)
