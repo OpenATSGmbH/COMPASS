@@ -198,6 +198,21 @@ bool RTCommandUIGet::run_impl()
         result        = v;
         result_string = v.dump();
     }
+    else if (what == "screen_geometry")
+    {
+        //position on the screen and size, in layout pixels, e.g. to crop a desktop screenshot
+        //(OpenGL widgets are missing in a QWidget::grab() image)
+        const QPoint top_left = receiver.second->mapToGlobal(QPoint(0, 0));
+
+        nlohmann::json v;
+        v[ "x"      ] = top_left.x();
+        v[ "y"      ] = top_left.y();
+        v[ "width"  ] = receiver.second->width();
+        v[ "height" ] = receiver.second->height();
+
+        result        = v;
+        result_string = v.dump();
+    }
     else if (what.startsWith("grab:"))
     {
         //save an image of the widget as rendered by the application (no desktop screenshot needed)
