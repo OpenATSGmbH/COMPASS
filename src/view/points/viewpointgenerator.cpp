@@ -617,8 +617,9 @@ void ViewPointGenFeatureGeoImage::toJSON_impl(nlohmann::json& j, bool write_bina
         source[ FeatureGeoImageFieldNameFn ] = fn_;
     }
 
-    //reference
-    j[FeatureGeoImageFieldNameReference] = ref_.toJSON();
+    //reference, left out when not set: the reader then takes it from the GeoTIFF file
+    if (!ref_.srs.empty())
+        j[FeatureGeoImageFieldNameReference] = ref_.toJSON();
 
     //legend
     if (!legend_.empty())
