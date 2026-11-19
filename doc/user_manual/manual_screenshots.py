@@ -126,6 +126,8 @@ def buildDB(name, ds, font, log_dir):
                 c.cmd('import_data_sources {}'.format(f))
             for f in files(path(ds['sectors'])):
                 c.cmd('import_sectors_json {}'.format(f))
+            if 'ffts' in ds:
+                c.cmd('import_ffts_json {}'.format(path(ds['ffts'])))
         c.cmd('set_context {}'.format(ds['context']))
         c.cmd('create_db {}'.format(tmp))
 
@@ -162,6 +164,7 @@ def screenShot(c, objs, dst, dpi):
         g = c.cmd('uiget {} --what screen_geometry'.format('"{}"'.format(obj) if ' ' in obj else obj))
         if isinstance(g, str):
             g = json.loads(g)
+        g = g.get('visible') or g
         boxes.append((g['x'], g['y'], g['x'] + g['width'], g['y'] + g['height']))
     box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
     png = subprocess.run(['import', '-display', DISPLAY, '-window', 'root', 'png:-'],
@@ -240,7 +243,7 @@ def main():
     p.add_argument('--list', default=os.path.join(MANUAL, 'screenshots.json'))
     p.add_argument('--all', action='store_true', help='also images that are not dirty')
     p.add_argument('--only', default='', help='comma-separated image file names, e.g. main_window.png')
-    p.add_argument('--rebuild_db', action='store_true')
+    p.add_argument('--rebuild_db', action='store_true', help='build the databases of the selected images again')
     a = p.parse_args()
 
     spec     = json.load(open(a.list))
@@ -266,10 +269,10 @@ def main():
     results = []
     c = None
     try:
-        if a.rebuild_db:
-            shutil.rmtree(DB_DIR, ignore_errors=True)
         dbs = {}
         for name in sorted({i['database'] for i in images if i['database']}):
+            if a.rebuild_db and os.path.exists(os.path.join(DB_DIR, name + '.db')):
+                os.remove(os.path.join(DB_DIR, name + '.db'))
             t0 = time.time()
             built = buildDB(name, spec['databases'][name], font, out_dir)
             dbs[name] = os.path.join(BASE, os.path.basename(built))

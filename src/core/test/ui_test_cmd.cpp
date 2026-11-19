@@ -210,6 +210,15 @@ bool RTCommandUIGet::run_impl()
         v[ "width"  ] = receiver.second->width();
         v[ "height" ] = receiver.second->height();
 
+        //the part not clipped by the parents, e.g. of a widget inside a scroll area
+        const QRect visible = receiver.second->visibleRegion().boundingRect();
+        const QPoint visible_top_left = receiver.second->mapToGlobal(visible.topLeft());
+
+        v[ "visible" ][ "x"      ] = visible_top_left.x();
+        v[ "visible" ][ "y"      ] = visible_top_left.y();
+        v[ "visible" ][ "width"  ] = visible.width();
+        v[ "visible" ][ "height" ] = visible.height();
+
         result        = v;
         result_string = v.dump();
     }

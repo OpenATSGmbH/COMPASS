@@ -44,7 +44,8 @@
                 "obfuscate_secondary_info": true,
                 "date_str": "2023-04-22"
             },
-            "reconstructor": "Probabilistic + IMM"
+            "reconstructor": "Probabilistic + IMM",
+            "ffts": "context/ffts.json"
         },
         "loww_20260609": {
             "use": "ground situations only",
@@ -329,12 +330,19 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026 with network lines on the data source",
+                    "requires": "at_20230422 context (data sources, sectors/sectors.json, context/ffts.json), restored from the DB",
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.mainmenu \"AT_2026|Edit\" --async, uiset dialog.ctx_tree \"Data Sources|<type>|<ds>\", uiset dialog.ds_edit_tabs \"Network\", uiget dialog.ds_edit_tabs --what \"grab:...\"",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
+                        "wait dialog",
+                        "uiset dialog.ctx_tree \"Data Sources|Radar|Wien Schwechat (50/11)\"",
+                        "uiset dialog.ds_edit_tabs \"Network\"",
+                        "sleep 500",
+                        "shot dialog.ctx_detail_stack"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -349,12 +357,19 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026 with radar bias values",
+                    "requires": "at_20230422 context (data sources, sectors/sectors.json, context/ffts.json), restored from the DB",
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.mainmenu \"AT_2026|Edit\" --async, uiset dialog.ctx_tree \"Data Sources|Radar|<radar>\", uiset dialog.ds_edit_tabs \"Accuracies\", grab dialog",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
+                        "wait dialog",
+                        "uiset dialog.ctx_tree \"Data Sources|Radar|Wien Schwechat (50/11)\"",
+                        "uiset dialog.ds_edit_tabs \"Accuracies\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none (tree scroll position follows the selected item, may differ from the old image)",
                     "volatile": "none"
                 },
@@ -497,12 +512,17 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026",
+                    "requires": "at_20230422 context (data sources, sectors/sectors.json, context/ffts.json), restored from the DB",
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.mainmenu \"AT_2026|Edit\" --async, grab dialog",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
+                        "wait dialog",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -537,12 +557,18 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026",
+                    "requires": "at_20230422 context (data sources, sectors/sectors.json, context/ffts.json), restored from the DB",
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.mainmenu \"AT_2026|Edit\" --async, uiset dialog.ctx_tree \"ASTERIX Configuration\", grab dialog",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
+                        "wait dialog",
+                        "uiset dialog.ctx_tree \"ASTERIX Configuration\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none (tree scroll position may differ)",
                     "volatile": "none"
                 },
@@ -557,12 +583,18 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026 (sector layers differ between the old images, use one fixed context state)",
+                    "requires": "at_20230422 context (data sources, sectors/sectors.json, context/ffts.json), restored from the DB",
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.mainmenu \"AT_2026|Edit\" --async, uiset dialog.ctx_tree \"Colors\", grab dialog",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
+                        "wait dialog",
+                        "uiset dialog.ctx_tree \"Colors\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -577,12 +609,18 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026",
+                    "requires": "at_20230422 context (data sources, sectors/sectors.json, context/ffts.json), restored from the DB",
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.mainmenu \"AT_2026|Edit\" --async, uiset dialog.ctx_tree \"Data Sources|ADSB|AWAM ADSB\", grab dialog",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
+                        "wait dialog",
+                        "uiset dialog.ctx_tree \"Data Sources|ADSB|AWAM ADSB (50/80)\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none (item text has the SAC/SIC in column 1, path uses column 0, unverified)",
                     "volatile": "none"
                 },
@@ -597,12 +635,18 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026",
+                    "requires": "at_20230422 context (data sources, sectors/sectors.json, context/ffts.json), restored from the DB",
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.mainmenu \"AT_2026|Edit\" --async, uiset dialog.ctx_tree \"FFTs|FFTJav\", grab dialog",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
+                        "wait dialog",
+                        "uiset dialog.ctx_tree \"FFTs|FFTJav\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -617,12 +661,19 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026",
+                    "requires": "at_20230422 context (data sources, sectors/sectors.json, context/ffts.json), restored from the DB",
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.mainmenu \"AT_2026|Edit\" --async, uiset dialog.ctx_tree \"Data Sources|Radar|<radar without ranges>\", uiset dialog.ds_edit_tabs \"Ranges\", grab dialog",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
+                        "wait dialog",
+                        "uiset dialog.ctx_tree \"Data Sources|Radar|Javornik (48/1)\"",
+                        "uiset dialog.ds_edit_tabs \"Ranges\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -637,12 +688,18 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026 with sector layer DOI_2020_1",
+                    "requires": "at_20230422 context (data sources, sectors/sectors.json, context/ffts.json), restored from the DB",
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.mainmenu \"AT_2026|Edit\" --async, uiset dialog.ctx_tree \"Sector Layers|DOI_2020_1|DOI_2020_11\", grab dialog",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
+                        "wait dialog",
+                        "uiset dialog.ctx_tree \"Sector Layers|fir_cut_sim|fir_cut_sim1\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -1941,8 +1998,13 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Data Sources\"; uiset mainwindow.toolbox_config_button --async; uiget popup --what \"grab:..\"; uiinject popup \"key(Escape)\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Data Sources\"",
+                        "uiset mainwindow.toolbox_config_button --async",
+                        "wait popup",
+                        "grab popup"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "unverified: plain click on toolbox_config_button opens the PopupMenu under --async",
                     "volatile": "none"
                 },
@@ -2959,8 +3021,13 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "open DB, uiset mainwindow.toolbox \"Targets\", uiset mainwindow.toolbox_config_button \"Evaluation|Edit Global Excluded Time Windows\" --async, grab dialog, uiset dialog reject",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Targets\"",
+                        "uiset mainwindow.toolbox_config_button \"Evaluation|Edit Global Excluded Time Windows\" --async",
+                        "wait dialog",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none (timestamps from fixed DB)"
                 },
@@ -3039,8 +3106,13 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "open reconstructed DB, uiset mainwindow.toolbox \"Targets\", uiset mainwindow.toolbox_config_button \"Evaluation|Filter Usage\" --async, grab dialog, uiset dialog reject",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Targets\"",
+                        "uiset mainwindow.toolbox_config_button \"Evaluation|Filter Usage\" --async",
+                        "wait dialog",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -3099,8 +3171,18 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open reconstructed DB, uiset mainwindow.toolbox \"Targets\", uiset mainwindow.toolbox_config_button \"Edit Columns|Duration\", grab mainwindow.toolbox, crop the views area in the script (width minus toolbox_views geometry width, unverified)",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Targets\"",
+                        "uiset mainwindow.toolbox_grow_button \"\"",
+                        "uiset mainwindow.toolbox_grow_button \"\"",
+                        "uiset mainwindow.toolbox_config_button \"Edit Columns|Duration\"",
+                        "sleep 1000",
+                        "shot mainwindow.toolbox_data_sources_button+mainwindow.toolbox_panel",
+                        "uiset mainwindow.toolbox_shrink_button \"\"",
+                        "uiset mainwindow.toolbox_shrink_button \"\"",
+                        "uiset mainwindow.toolbox_config_button \"Edit Columns|Duration\""
+                    ],
+                    "recipe_hint": null,
                     "gaps": "no named widget covers only icon bar + tool panel (mainwindow.toolbox includes the views area, toolbox_panel lacks the icon bar), crop in script",
                     "volatile": "tool width comes from QSettings COMPASS/ToolBox (~/.config, outside the config dir): needs a fresh HOME"
                 },
@@ -3157,8 +3239,13 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open DB, uiset mainwindow.toolbox \"Targets\", uiset mainwindow.toolbox_config_button --async, uiget popup --what \"grab:<file>\", uiinject popup \"key(Escape)\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Targets\"",
+                        "uiset mainwindow.toolbox_config_button --async",
+                        "wait popup",
+                        "grab popup"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none (button click with empty value opening the menu is unverified for this button, same mechanism as report_sections_button)",
                     "volatile": "none"
                 },
@@ -3197,8 +3284,16 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "create DB, import ASTERIX, reconstruct (non-UI commands), uiset mainwindow.toolbox \"Log\", grab mainwindow.toolbox, crop the views area in the script (width minus toolbox_views geometry width, unverified)",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Log\"",
+                        "uiset mainwindow.toolbox_grow_button \"\"",
+                        "uiset mainwindow.toolbox_grow_button \"\"",
+                        "sleep 500",
+                        "shot mainwindow.toolbox_data_sources_button+mainwindow.toolbox_panel",
+                        "uiset mainwindow.toolbox_shrink_button \"\"",
+                        "uiset mainwindow.toolbox_shrink_button \"\""
+                    ],
+                    "recipe_hint": null,
                     "gaps": "no named widget covers only icon bar + tool panel (mainwindow.toolbox includes the views area, toolbox_panel lacks the icon bar), crop in script",
                     "volatile": "entry time stamps, file paths (user home), import durations and rates, reconstructor run time; tool width comes from QSettings COMPASS/ToolBox (~/.config, outside the config dir): needs a fresh HOME"
                 },
@@ -3217,8 +3312,12 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open DB without view points, uiset mainwindow.toolbox \"View Points\", grab mainwindow.toolbox, crop the views area in the script (width minus toolbox_views geometry width, unverified)",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"View Points\"",
+                        "sleep 500",
+                        "shot mainwindow.toolbox_data_sources_button+mainwindow.toolbox_panel"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "no named widget covers only icon bar + tool panel (mainwindow.toolbox includes the views area, toolbox_panel lacks the icon bar), crop in script",
                     "volatile": "tool width comes from QSettings COMPASS/ToolBox (~/.config, outside the config dir): needs a fresh HOME"
                 },

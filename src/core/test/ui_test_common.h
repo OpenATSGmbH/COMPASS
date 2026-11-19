@@ -105,7 +105,8 @@ inline QString normalizedActionName(const QString& text)
     QString txt = strippedMnemonics(text).trimmed();
     txt.remove(QRegularExpression("[.]+$"));
 
-    return txt;
+    //"Filter Usage ..." => "Filter Usage"
+    return txt.trimmed();
 }
 
 } // namespace ui_test
