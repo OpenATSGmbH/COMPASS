@@ -12,7 +12,7 @@
         "filters": "filter settings before loading, null = no filter active",
         "flight_deck": "false = Flight Deck collapsed before the capture, so the view gets the full width",
         "frame": "true = the tex file draws a frame around the image",
-        "steps": "runner steps: runtime commands, sleep <ms>, wait <obj>, dump <cmd>, grab <obj> [suffix] (QWidget::grab), shot <obj> [suffix] (Xvfb screen cropped to the widget, needed for OpenGL)",
+        "steps": "runner steps: runtime commands, sleep <ms>, wait <obj>, dump <cmd>, grab <obj> [suffix] (QWidget::grab), shot <obj>[+<obj>...] (Xvfb screen cropped to the widget or the union of several widgets, needed for OpenGL)",
         "recipe_hint": "how the image could be automated, not yet tested",
         "gaps": "what is missing for automation",
         "volatile": "content that can change between runs",
@@ -882,7 +882,7 @@
                     "steps": [
                         "uiset mainwindow.toolbox \"Data Sources\"",
                         "sleep 500",
-                        "grab mainwindow.toolbox"
+                        "shot mainwindow.toolbox_data_sources_button+mainwindow.toolbox_panel"
                     ],
                     "recipe_hint": null,
                     "gaps": "none (toolbox width depends on the main window size / splitter)",
@@ -1509,9 +1509,21 @@
                     "frame": true,
                     "steps": [
                         "uifiledialog \"/home/sk/data/test/loww_20260609/gps/FlusiReach_solution_20260609192508.NMEA.txt\"",
-                        "uiset mainwindow.mainmenu \"Import|GPS Trail NMEA\" --async",
+                        "uiset mainwindow.mainmenu \"Import|GPS Trail NMEA\"",
                         "wait dialog",
                         "uiset dialog.gps_import_tab_widget \"Config\"",
+                        "uiset dialog.gps_import_name_edit \"GPS Trail\"",
+                        "uiset dialog.gps_import_sac_edit \"255\"",
+                        "uiset dialog.gps_import_sic_edit \"0\"",
+                        "uiset dialog.gps_import_tod_offset_check \"false\"",
+                        "uiset dialog.gps_import_date_check \"true\"",
+                        "uiset dialog.gps_import_date_edit \"2026-06-09\"",
+                        "uiset dialog.gps_import_mode3a_check \"true\"",
+                        "uiset dialog.gps_import_mode3a_edit \"0001\"",
+                        "uiset dialog.gps_import_address_check \"true\"",
+                        "uiset dialog.gps_import_address_edit \"447AF0\"",
+                        "uiset dialog.gps_import_callsign_check \"true\"",
+                        "uiset dialog.gps_import_callsign_edit \"FLUSI60\"",
                         "sleep 500",
                         "grab dialog"
                     ],
@@ -1536,7 +1548,7 @@
                     "frame": true,
                     "steps": [
                         "uifiledialog \"/home/sk/data/test/loww_20260609/gps/FlusiReach_solution_20260609192508.NMEA.txt\"",
-                        "uiset mainwindow.mainmenu \"Import|GPS Trail NMEA\" --async",
+                        "uiset mainwindow.mainmenu \"Import|GPS Trail NMEA\"",
                         "wait dialog",
                         "uiset dialog.gps_import_tab_widget \"Main\"",
                         "sleep 500",

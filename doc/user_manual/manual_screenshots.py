@@ -154,14 +154,19 @@ def savePng(src, dst, dpi):
     os.remove(src)
 
 
-def screenShot(c, obj, dst, dpi):
-    g = c.cmd('uiget {} --what screen_geometry'.format(obj))
-    if isinstance(g, str):
-        g = json.loads(g)
+def screenShot(c, objs, dst, dpi):
+    # objs: one object path or several joined by '+', cropped to the union of their screen rects
+    boxes = []
+    for obj in objs.split('+'):
+        obj = obj.strip('"')
+        g = c.cmd('uiget {} --what screen_geometry'.format('"{}"'.format(obj) if ' ' in obj else obj))
+        if isinstance(g, str):
+            g = json.loads(g)
+        boxes.append((g['x'], g['y'], g['x'] + g['width'], g['y'] + g['height']))
+    box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
     png = subprocess.run(['import', '-display', DISPLAY, '-window', 'root', 'png:-'],
                          check=True, capture_output=True).stdout
-    im = Image.open(io.BytesIO(png)).convert('RGB')
-    im.crop((g['x'], g['y'], g['x'] + g['width'], g['y'] + g['height'])).save(dst, dpi=(dpi, dpi))
+    Image.open(io.BytesIO(png)).convert('RGB').crop(box).save(dst, dpi=(dpi, dpi))
 
 
 def compareImage(old_fn, new_fn, out_fn):
@@ -208,7 +213,7 @@ def takeImage(c, img, out_dir, dpi, report):
             savePng(tmp, target, dpi)
             taken = True
         elif step.startswith('shot '):
-            screenShot(c, objArg(step), target, dpi)
+            screenShot(c, shlex.split(step)[1], target, dpi)
             taken = True
         else:
             c.cmd(step)
