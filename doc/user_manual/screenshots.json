@@ -15,7 +15,8 @@
         "steps": "runner steps: runtime commands, sleep <ms>, wait <obj>, dump <cmd>, grab <obj> [suffix] (QWidget::grab), shot <obj> [suffix] (Xvfb screen cropped to the widget, needed for OpenGL)",
         "recipe_hint": "how the image could be automated, not yet tested",
         "gaps": "what is missing for automation",
-        "volatile": "content that can change between runs"
+        "volatile": "content that can change between runs",
+        "fresh": "true = the database is opened again before the capture, so no data is loaded"
     },
     "defaults": {
         "main_window_size": [
@@ -270,8 +271,12 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "fresh config dir, uiset mainwindow.mainmenu \"Configuration|Licenses\" --async, uiget dialog --what \"grab:configure_licenses.png\", uiset dialog \"reject\"",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Configuration|Licenses\" --async",
+                        "wait dialog",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -874,8 +879,12 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open DB, uiset mainwindow.toolbox \"Data Sources\", uiget mainwindow.toolbox --what \"grab:...\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Data Sources\"",
+                        "sleep 500",
+                        "grab mainwindow.toolbox"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none (toolbox width depends on the main window size / splitter)",
                     "volatile": "none"
                 },
@@ -1074,8 +1083,12 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "add view, uiget last_view.presets --what \"grab:...\"",
+                    "steps": [
+                        "uiset mainwindow.view_deck \"Table View 0\"",
+                        "sleep 500",
+                        "grab mainwindow.tableview0.presets.show_presets_button"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none (grab includes widget margins, old crop is the button only)",
                     "volatile": "none"
                 },
@@ -1490,12 +1503,19 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "NMEA file, e.g. /home/sk/data/test/eddf_20251117/dgps/2025-11-17_EDDF-Messsfahrt_DGPS-Daten.nmea",
+                    "requires": "NMEA file /home/sk/data/test/loww_20260609/gps/FlusiReach_solution_20260609192508.NMEA.txt",
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "open_db, uifiledialog \"<nmea>\", uiset mainwindow.mainmenu \"Import|GPS Trail NMEA\" (as ig_gps_nmea.py), set fields via dialog.gps_import_*, uiset dialog.gps_import_tab_widget \"Config\", uiget dialog --what \"grab:...\", uiset dialog.gps_import_cancel_button",
+                    "steps": [
+                        "uifiledialog \"/home/sk/data/test/loww_20260609/gps/FlusiReach_solution_20260609192508.NMEA.txt\"",
+                        "uiset mainwindow.mainmenu \"Import|GPS Trail NMEA\" --async",
+                        "wait dialog",
+                        "uiset dialog.gps_import_tab_widget \"Config\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none (field values come from config, set them explicitly)"
                 },
@@ -1510,12 +1530,19 @@
                     "category": "dialog",
                     "automation": "easy",
                     "database": "at_20230422",
-                    "requires": "NMEA file, e.g. /home/sk/data/test/eddf_20251117/dgps/2025-11-17_EDDF-Messsfahrt_DGPS-Daten.nmea",
+                    "requires": "NMEA file /home/sk/data/test/loww_20260609/gps/FlusiReach_solution_20260609192508.NMEA.txt",
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "uifiledialog \"<nmea>\", uiset mainwindow.mainmenu \"Import|GPS Trail NMEA\", uiset dialog.gps_import_tab_widget \"Main\", grab dialog, uiset dialog.gps_import_cancel_button",
+                    "steps": [
+                        "uifiledialog \"/home/sk/data/test/loww_20260609/gps/FlusiReach_solution_20260609192508.NMEA.txt\"",
+                        "uiset mainwindow.mainmenu \"Import|GPS Trail NMEA\" --async",
+                        "wait dialog",
+                        "uiset dialog.gps_import_tab_widget \"Main\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "absolute file path in the label"
                 },
@@ -1768,8 +1795,12 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "open DB with CAT062 data, uiset mainwindow.mainmenu \"Process|Calculate ARTAS Target Report Usage\" --async, uiget dialog --what \"grab:...\", uiset dialog reject",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Calculate ARTAS Target Report Usage\" --async",
+                        "wait dialog",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none for grab (dialog modal, createartasassociationstaskdialog.cpp:34); widgets unnamed if values must be changed",
                     "volatile": "none"
                 },
@@ -1788,8 +1819,12 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "open DB with radar data, uiset mainwindow.mainmenu \"Process|Calculate Radar Plot Positions\" --async, uiget dialog --what \"grab:...\", uiset dialog reject",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Calculate Radar Plot Positions\" --async",
+                        "wait dialog",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none (dialog modal, radarplotpositioncalculatortaskdialog.cpp:35)",
                     "volatile": "none"
                 },
@@ -2012,8 +2047,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Aircraft Address.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Aircraft Address\" --what \"grab:filter_acad.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Aircraft Address.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Aircraft Address\"",
+                        "uiset \"mainwindow.filter_widget_Aircraft Address.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2032,8 +2073,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Aircraft Identification.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Aircraft Identification\" --what \"grab:filter_acid.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Aircraft Identification.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Aircraft Identification\"",
+                        "uiset \"mainwindow.filter_widget_Aircraft Identification.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2117,8 +2164,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_ADSBMOPS.filter_visible_check\" true; uiget \"mainwindow.filter_widget_ADSBMOPS\" --what \"grab:filter_adsb_mops.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_ADSBMOPS.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_ADSBMOPS\"",
+                        "uiset \"mainwindow.filter_widget_ADSBMOPS.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2137,8 +2190,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_ADSB Quality.filter_visible_check\" true; uiget \"mainwindow.filter_widget_ADSB Quality\" --what \"grab:filter_adsb_quality.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_ADSB Quality.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_ADSB Quality\"",
+                        "uiset \"mainwindow.filter_widget_ADSB Quality.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "checkboxes and edits of ADSB Quality widget unnamed (defaults match, no change needed)",
                     "volatile": "none"
                 },
@@ -2182,8 +2241,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Detection Type.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Detection Type\" --what \"grab:filter_detection_type.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Detection Type.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Detection Type\"",
+                        "uiset \"mainwindow.filter_widget_Detection Type.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2222,8 +2287,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Ground Bit.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Ground Bit\" --what \"grab:filter_ground_bit.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Ground Bit.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Ground Bit\"",
+                        "uiset \"mainwindow.filter_widget_Ground Bit.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2242,8 +2313,15 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_MLAT RUs.filter_visible_check\" true; uiset \"mainwindow.filter_widget_MLAT RUs.filter_value_edit\" \"1,2,3,4\"; uiget \"mainwindow.filter_widget_MLAT RUs\" --what \"grab:filter_mlatrus.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_MLAT RUs.filter_visible_check\" true",
+                        "uiset \"mainwindow.filter_widget_MLAT RUs.filter_value_edit\" \"1,2,3,4\"",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_MLAT RUs\"",
+                        "uiset \"mainwindow.filter_widget_MLAT RUs.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2257,13 +2335,20 @@
                     "shows": "MLAT RUs filter expanded, value null,1,name1,name2",
                     "category": "flight_deck",
                     "automation": "easy",
-                    "database": "at_20230422",
-                    "requires": "any DB (filter widget from default config)",
+                    "database": "loww_20260609",
+                    "requires": "MLAT data source with remote unit names (LOWW_26 context has RU01...), at_20230422 has none",
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_MLAT RUs.filter_visible_check\" true; uiset \"mainwindow.filter_widget_MLAT RUs.filter_value_edit\" \"null,1,name1,name2\"; uiget \"mainwindow.filter_widget_MLAT RUs\" --what \"grab:filter_mlatrus2.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_MLAT RUs.filter_visible_check\" true",
+                        "uiset \"mainwindow.filter_widget_MLAT RUs.filter_value_edit\" \"null,1,RU07\"",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_MLAT RUs\"",
+                        "uiset \"mainwindow.filter_widget_MLAT RUs.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2282,8 +2367,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Mode 3/A Codes.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Mode 3/A Codes\" --what \"grab:filter_mode3a.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Mode 3/A Codes.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Mode 3/A Codes\"",
+                        "uiset \"mainwindow.filter_widget_Mode 3/A Codes.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2302,8 +2393,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Mode C Codes.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Mode C Codes\" --what \"grab:filter_modec.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Mode C Codes.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Mode C Codes\"",
+                        "uiset \"mainwindow.filter_widget_Mode C Codes.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2322,8 +2419,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Position.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Position\" --what \"grab:filter_position.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Position.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Position\"",
+                        "uiset \"mainwindow.filter_widget_Position.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2342,8 +2445,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Primary Only.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Primary Only\" --what \"grab:filter_primary_only.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Primary Only.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Primary Only\"",
+                        "uiset \"mainwindow.filter_widget_Primary Only.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2362,8 +2471,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_RefTraj Accuracy.filter_visible_check\" true; uiget \"mainwindow.filter_widget_RefTraj Accuracy\" --what \"grab:filter_reftrajacc.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_RefTraj Accuracy.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_RefTraj Accuracy\"",
+                        "uiset \"mainwindow.filter_widget_RefTraj Accuracy.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2382,8 +2497,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Timestamp.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Timestamp\" --what \"grab:filter_timestamp.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Timestamp.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Timestamp\"",
+                        "uiset \"mainwindow.filter_widget_Timestamp.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "timestamps from config or DB time span (unverified which)"
                 },
@@ -2402,8 +2523,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Time of Day.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Time of Day\" --what \"grab:filter_tod.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Time of Day.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Time of Day\"",
+                        "uiset \"mainwindow.filter_widget_Time of Day.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "values from config or DB time span (unverified which)"
                 },
@@ -2422,9 +2549,15 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Tracker Track Number.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Tracker Track Number\" --what \"grab:filter_trackertracknum.png\"",
-                    "gaps": "none",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Tracker Track Number.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Tracker Track Number\"",
+                        "uiset \"mainwindow.filter_widget_Tracker Track Number.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "Tracker Track Number filter shows no tracker row (ARTAS L1 Track Number IN) in the current build, also after a load; FilterManager::dataSourcesChangedSlot runs at DB open, cause unknown",
                     "volatile": "none"
                 },
                 {
@@ -2442,8 +2575,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_Track Number.filter_visible_check\" true; uiget \"mainwindow.filter_widget_Track Number\" --what \"grab:filter_tracknum.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_Track Number.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_Track Number\"",
+                        "uiset \"mainwindow.filter_widget_Track Number.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -2462,8 +2601,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.toolbox \"Filters\"; uiset \"mainwindow.filter_widget_UTNs.filter_visible_check\" true; uiget \"mainwindow.filter_widget_UTNs\" --what \"grab:filter_utn.png\"",
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Filters\"",
+                        "uiset \"mainwindow.filter_widget_UTNs.filter_visible_check\" true",
+                        "sleep 300",
+                        "grab \"mainwindow.filter_widget_UTNs\"",
+                        "uiset \"mainwindow.filter_widget_UTNs.filter_visible_check\" false"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -5218,8 +5363,23 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.add_view \"Add In New Window|Table View\", reload, uncheck MLAT/Radar/Tracker in the layer tree (layer_tree item check via uiset, check toggle unverified), grab last_view",
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Table View\" --async",
+                        "sleep 1000",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 1000",
+                        "uiinject last_view.layer_tree \"checkclick(Data|MLAT)\"",
+                        "uiinject last_view.layer_tree \"checkclick(Data|Radar)\"",
+                        "uiinject last_view.layer_tree \"checkclick(Data|RefTraj)\"",
+                        "uiinject last_view.layer_tree \"checkclick(Data|Tracker)\"",
+                        "uiinject last_view.layer_tree \"contextmenu()\"",
+                        "wait popup",
+                        "uiset popup \"Collapse All\"",
+                        "uiset last_view.layer_tree \"Data\"",
+                        "sleep 1000",
+                        "grab last_view"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "check box toggle in layer_tree via uiset unverified",
                     "volatile": "none"
                 },
@@ -5258,10 +5418,15 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.add_view \"Add In New Window|Table View\", grab last_view (before reload)",
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Table View\" --async",
+                        "sleep 1000",
+                        "grab last_view"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
-                    "volatile": "none"
+                    "volatile": "none",
+                    "fresh": true
                 }
             ]
         },
@@ -5302,8 +5467,18 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.add_view \"Add In New Window|Histogram View\", uiset last_view.variable_selection_data_var \"Meta|Mode C Code\", set log check (UI_TEST_OBJ_NAME from its text), select Data Sources tool (uiset mainwindow.toolbox \"Data Sources\") and set color_mode combo to Data Source, reload, grab last_view",
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
+                        "sleep 1000",
+                        "uiset last_view.variable_selection_data_var \"Meta|Mode C Code\"",
+                        "uiset last_view.logarithmic_y_scale true",
+                        "uiset mainwindow.color_mode \"Data Source\"",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 1000",
+                        "grab last_view",
+                        "uiset mainwindow.color_mode \"DSType\""
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none (log check name derived from text, exact name unverified)",
                     "volatile": "none"
                 },
@@ -5389,10 +5564,15 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.add_view \"Add In New Window|Histogram View\", grab last_view (before reload)",
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
+                        "sleep 1000",
+                        "grab last_view"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
-                    "volatile": "none"
+                    "volatile": "none",
+                    "fresh": true
                 },
                 {
                     "file": "histogramview/figures/histogram_zoom.png",
@@ -6848,10 +7028,15 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.add_view \"Add In New Window|Scatterplot View\", grab last_view (before reload)",
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Scatterplot View\" --async",
+                        "sleep 1000",
+                        "grab last_view"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
-                    "volatile": "none"
+                    "volatile": "none",
+                    "fresh": true
                 }
             ]
         },
@@ -6914,8 +7099,14 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.add_view \"Add In New Window|Grid View\", view window size from config (ViewContainerWidget width/height, default 1200x900), uiset mainwindow.reload --wait_signal=last_view.viewRefreshed;300000 (signal path as in fg_filtered_load.py), uiset last_view.layer_tree to expand Data (unverified), grab last_view",
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
+                        "sleep 1000",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 2000",
+                        "grab last_view"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -6992,10 +7183,15 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.add_view \"Add In New Window|Grid View\", view window size from config (ViewContainerWidget width/height, default 1200x900), grab last_view (before reload)",
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
+                        "sleep 1000",
+                        "grab last_view"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
-                    "volatile": "none"
+                    "volatile": "none",
+                    "fresh": true
                 }
             ]
         },

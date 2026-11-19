@@ -240,6 +240,14 @@ bool injectUIEvent(QWidget* parent,
 
         return injectContextMenuEvent(w.second, "", path_to_item, delay);
     }
+    else if (evt_type == "checkclick")
+    {
+        //tree item path (A|B|C): click on the check box drawn at the start of the item
+        if (params.size() != 1 || params[ 0 ].trimmed().isEmpty())
+            return false;
+
+        return injectTreeItemCheckClickEvent(w.second, "", params[ 0 ].split("|"), delay);
+    }
     else if (evt_type == "focusout")
     {
         //makes a QLineEdit emit editingFinished. the event is sent directly

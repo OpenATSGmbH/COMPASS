@@ -8,7 +8,7 @@ old image next to the new one. The manual itself is not changed.
     python3 doc/user_manual/manual_screenshots.py --out ~/tmp/manual_shots [--all] [--only a.png,b.png]
 """
 
-import argparse, io, json, os, shutil, subprocess, sys, time
+import argparse, io, json, os, shlex, shutil, subprocess, sys, time
 
 import msgpack
 from PIL import Image, ImageDraw
@@ -177,6 +177,12 @@ def compareImage(old_fn, new_fn, out_fn):
     m.save(out_fn)
 
 
+def objArg(step):
+    # object paths may contain spaces, e.g. "mainwindow.filter_widget_Aircraft Address"
+    obj = shlex.split(step)[1]
+    return '"{}"'.format(obj) if ' ' in obj else obj
+
+
 def takeImage(c, img, out_dir, dpi, report):
     target = os.path.join(out_dir, img['file'])
     os.makedirs(os.path.dirname(target), exist_ok=True)
@@ -191,18 +197,18 @@ def takeImage(c, img, out_dir, dpi, report):
         if step.startswith('sleep '):
             time.sleep(int(step.split()[1]) / 1000.0)
         elif step.startswith('wait '):
-            obj = step.split()[1]
+            obj = objArg(step)
             c.waitFor(lambda: c.visible(obj), '{} did not show'.format(obj))
             time.sleep(0.5)
         elif step.startswith('dump '):
             report['dumps'].append({'cmd': step[5:], 'value': c.tryCmd(step[5:])})
         elif step.startswith('grab '):
             tmp = target + '.tmp.png'
-            c.cmd('uiget {} --what "grab:{}"'.format(step.split()[1], tmp))
+            c.cmd('uiget {} --what "grab:{}"'.format(objArg(step), tmp))
             savePng(tmp, target, dpi)
             taken = True
         elif step.startswith('shot '):
-            screenShot(c, step.split()[1], target, dpi)
+            screenShot(c, objArg(step), target, dpi)
             taken = True
         else:
             c.cmd(step)
@@ -269,7 +275,8 @@ def main():
         c = Client(os.path.join(out_dir, 'client.log'), font)
         open_db = None
         for img in images:
-            if img['database'] != open_db:
+            # fresh: reopen the DB, so no data is loaded, e.g. for an empty view
+            if img['database'] != open_db or (img.get('fresh') and open_db):
                 if open_db:
                     c.cmd('close_db')
                 if img['database']:

@@ -113,6 +113,10 @@ namespace ui_test
                              const QString& obj_name,
                              const QStringList& path_to_item,
                              int delay = -1);
+    bool injectTreeItemCheckClickEvent(QWidget* root,
+                                       const QString& obj_name,
+                                       const QStringList& path_to_item,
+                                       int delay = -1);
     bool injectContextMenuEvent(QWidget* root,
                                 const QString& obj_name,
                                 const QStringList& path_to_item = QStringList(),

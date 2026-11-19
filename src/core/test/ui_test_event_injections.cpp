@@ -843,6 +843,38 @@ bool injectTreeViewEvent(QWidget* root,
 }
 
 /**
+ * Clicks the check box of a tree item (path of display texts), for delegates which draw it
+ * at the start of the item, one font height wide (e.g. the view layer trees). The click
+ * toggles the check state.
+ */
+bool injectTreeItemCheckClickEvent(QWidget* root,
+                                   const QString& obj_name,
+                                   const QStringList& path_to_item,
+                                   int delay)
+{
+    auto obj = findObjectAs<QTreeView>(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectTreeItemCheckClickEvent", obj_name, obj.first);
+        return false;
+    }
+
+    QTreeView* tree = obj.second;
+
+    QModelIndex current = resolveTreeItem(tree, path_to_item);
+    if (!current.isValid())
+        return false;
+
+    QRect r = tree->visualRect(current);
+    if (!r.isValid())
+        return false;
+
+    const int x = r.left() + QFontMetrics(QApplication::font()).height() / 2;
+
+    return injectClickEvent(tree, "", x, r.center().y(), Qt::LeftButton, delay);
+}
+
+/**
  * Posts a context menu event to the given widget. For item views the event is
  * posted at the given item (path of display texts, tree views only), else at the
  * current item, otherwise at the widget center. The item path avoids a click,
