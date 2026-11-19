@@ -3873,8 +3873,13 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "open DB, uiset mainwindow.mainmenu \"Process|Analyze|MLAT\" --async, uiget dialog --what \"grab:<file>\", uiset dialog \"reject\"",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Analyze|MLAT\" --async",
+                        "wait dialog",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "data source names and SAC/SIC from the DB"
                 },
@@ -3893,8 +3898,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "open DB, uiset mainwindow.mainmenu \"Process|Analyze|MLAT\" --async, uiset dialog.page_tree \"Position Accuracy\", uiget dialog --what \"grab:<file>\", uiset dialog \"reject\"",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Analyze|MLAT\" --async",
+                        "wait dialog",
+                        "uiset dialog.page_tree \"Position Accuracy\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "data source names and SAC/SIC from the DB"
                 },
@@ -3913,8 +3924,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "open DB, uiset mainwindow.mainmenu \"Process|Analyze|MLAT\" --async, uiset dialog.page_tree \"Data Item Analysis\", uiget dialog --what \"grab:<file>\", uiset dialog \"reject\"",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Analyze|MLAT\" --async",
+                        "wait dialog",
+                        "uiset dialog.page_tree \"Data Item Analysis\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "data source names and SAC/SIC from the DB"
                 },
@@ -4091,8 +4108,14 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "open DB, uiset mainwindow.mainmenu \"Process|Analyze|MLAT\" --async, uiset dialog.page_tree \"Sensor Coverage\", uiget dialog --what \"grab:<file>\", uiset dialog \"reject\"",
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Analyze|MLAT\" --async",
+                        "wait dialog",
+                        "uiset dialog.page_tree \"Sensor Coverage\"",
+                        "sleep 500",
+                        "grab dialog"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "data source names and SAC/SIC from the DB"
                 }
@@ -5862,8 +5885,15 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open DB, add Geographic View, set_view_point (with annotation), uiset last_view.config_tabs \"Layers\", uiget last_view.config_tabs --what \"grab:...\"",
+                    "steps": [
+                        "uiset mainwindow.view_deck \"Geographic View 0\"",
+                        "sleep 1000",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 2000",
+                        "uiset mainwindow.geographicview0.config_tabs \"Layers\"",
+                        "grab mainwindow.geographicview0.config_tabs"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "Annotations|Grids node needs a GeoTIFF import (drag and drop only, unverified if shown without), panel size depends on window and splitter size",
                     "volatile": "record counts depend on DB, map file name"
                 },
@@ -6174,8 +6204,19 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": true,
-                    "steps": null,
-                    "recipe_hint": "open DB, add Geographic View, uiset last_view.config_tabs \"Labels\", uiset last_view.label_edit_button --async, uiset popup \"Edit CAT062\" --async, uiget dialog --what \"grab:...\", uiset dialog.done_button",
+                    "steps": [
+                        "uiset mainwindow.view_deck \"Geographic View 0\"",
+                        "sleep 1000",
+                        "uiset mainwindow.geographicview0.config_tabs \"Labels\"",
+                        "uiset mainwindow.geographicview0.label_edit_button --async",
+                        "wait popup",
+                        "uiset popup \"Edit Contents|CAT062\" --async",
+                        "wait dialog",
+                        "grab dialog",
+                        "uiset dialog.done_button \"\"",
+                        "uiset mainwindow.geographicview0.config_tabs \"Layers\""
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none (title bar is not in the grab)",
                     "volatile": "none"
                 },
@@ -6293,8 +6334,16 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open DB, add Geographic View, uiset last_view.config_tabs \"Labels\", uiset last_view.label_edit_button --async, uiget popup --what \"grab:...\", uiinject popup \"key(Escape)\"",
+                    "steps": [
+                        "uiset mainwindow.view_deck \"Geographic View 0\"",
+                        "sleep 1000",
+                        "uiset mainwindow.geographicview0.config_tabs \"Labels\"",
+                        "uiset mainwindow.geographicview0.label_edit_button --async",
+                        "wait popup",
+                        "grab popup",
+                        "uiset mainwindow.geographicview0.config_tabs \"Layers\""
+                    ],
+                    "recipe_hint": null,
                     "gaps": "button part needs compose (optional), entry texts changed in code (now 'Select All Data Sources' / 'Deselect All Data Sources')",
                     "volatile": "none"
                 },
@@ -6334,8 +6383,15 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open DB, add Geographic View, uiset last_view.config_tabs \"Labels\", uiget last_view.config_tabs --what \"grab:...\"",
+                    "steps": [
+                        "uiset mainwindow.view_deck \"Geographic View 0\"",
+                        "sleep 1000",
+                        "uiset mainwindow.geographicview0.config_tabs \"Labels\"",
+                        "sleep 500",
+                        "grab mainwindow.geographicview0.config_tabs",
+                        "uiset mainwindow.geographicview0.config_tabs \"Layers\""
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "data source list from context"
                 },
@@ -6354,8 +6410,16 @@
                     "filters": null,
                     "flight_deck": true,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open DB, add Geographic View, load, uiinject last_view.layer_tree \"contextmenu(Data|Radar)\", uiget popup --what \"grab:...\", uiinject popup \"key(Escape)\"",
+                    "steps": [
+                        "uiset mainwindow.view_deck \"Geographic View 0\"",
+                        "sleep 1000",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 2000",
+                        "uiinject mainwindow.geographicview0.layer_tree \"contextmenu(Data|Radar)\"",
+                        "wait popup",
+                        "grab popup"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -6619,8 +6683,15 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open_db <db> --assure_open, uiset mainwindow.add_view \"Add In New Window|Geographic View\", uirefresh last_view --wait_signal=last_view.viewRefreshed;300000 (no data load needed), uiset last_view.configwidget.config_tabs \"Other\", uiget last_view.configwidget.config_tabs --what \"grab:geoview_others_tab.png\"",
+                    "steps": [
+                        "uiset mainwindow.view_deck \"Geographic View 0\"",
+                        "sleep 1000",
+                        "uiset mainwindow.geographicview0.config_tabs \"Other\"",
+                        "sleep 500",
+                        "grab mainwindow.geographicview0.config_tabs",
+                        "uiset mainwindow.geographicview0.config_tabs \"Layers\""
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -7254,8 +7325,24 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "uiset mainwindow.add_view \"Add In New Window|Grid View\", view window size from config (ViewContainerWidget width/height, default 1200x900), uiset last_view.variable_selection_z \"Meta|Mode C Code\", uiset last_view.value_type \"Mean\", uiset last_view.color_scale.combo \"Blue2Green2Red\", uiset last_view.color_steps 20, uiset last_view.color_min 20000, color_max 40000 (+ focusout), reload, grab last_view",
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
+                        "sleep 1000",
+                        "uiset last_view.variable_selection_z \"Meta|Mode C Code\"",
+                        "uiset last_view.value_type \"Mean\"",
+                        "uiset last_view.color_scale.combo \"Blue2Green2Red\"",
+                        "uiset last_view.color_steps \"20\"",
+                        "uiinject last_view.color_steps \"focusout()\"",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 1000",
+                        "uiset last_view.color_min.edit \"20000\"",
+                        "uiinject last_view.color_min.edit \"focusout()\"",
+                        "uiset last_view.color_max.edit \"40000\"",
+                        "uiinject last_view.color_max.edit \"focusout()\"",
+                        "sleep 2000",
+                        "grab last_view"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -7274,8 +7361,19 @@
                     "filters": null,
                     "flight_deck": false,
                     "frame": false,
-                    "steps": null,
-                    "recipe_hint": "as grid_modec_mean_limits without color_min/color_max, grab last_view",
+                    "steps": [
+                        "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
+                        "sleep 1000",
+                        "uiset last_view.variable_selection_z \"Meta|Mode C Code\"",
+                        "uiset last_view.value_type \"Mean\"",
+                        "uiset last_view.color_scale.combo \"Blue2Green2Red\"",
+                        "uiset last_view.color_steps \"20\"",
+                        "uiinject last_view.color_steps \"focusout()\"",
+                        "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
+                        "sleep 2000",
+                        "grab last_view"
+                    ],
+                    "recipe_hint": null,
                     "gaps": "none",
                     "volatile": "focus/selection highlight in Color Steps field (from manual editing)"
                 },
