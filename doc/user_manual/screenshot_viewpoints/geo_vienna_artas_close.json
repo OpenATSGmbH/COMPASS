@@ -1,0 +1,19 @@
+{
+    "id": 1,
+    "name": "ARTAS Vienna Close",
+    "type": "Saved",
+    "status": "open",
+    "position_latitude": 48.12,
+    "position_longitude": 16.55,
+    "position_window_latitude": 0.2,
+    "position_window_longitude": 0.30000000000000004,
+    "filters": {
+        "Timestamp": {
+            "Timestamp Minimum": "2023-04-22 10:20:00.000",
+            "Timestamp Maximum": "2023-04-22 10:20:20.000"
+        }
+    },
+    "data_source_types": [
+        "Tracker"
+    ]
+}

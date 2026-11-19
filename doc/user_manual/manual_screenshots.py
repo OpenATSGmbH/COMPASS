@@ -8,7 +8,7 @@ old image next to the new one. The manual is only changed with --install.
     python3 doc/user_manual/manual_screenshots.py --out ~/tmp/manual_shots [--all] [--only a.png,b.png] [--install]
 """
 
-import argparse, io, json, os, shlex, shutil, subprocess, sys, time
+import argparse, io, json, os, shlex, shutil, subprocess, sys, threading, time
 
 import msgpack
 from PIL import Image, ImageDraw, ImageFilter
@@ -23,6 +23,7 @@ BINARY  = os.path.join(REPO, 'build', 'bin', 'compass_client')
 LICENSE = os.path.join(REPO, 'license_openats_2026.txt')
 VERSION = '1.1.0'
 DISPLAY = ':99'
+IMAGE_TIMEOUT = 600
 # fixed, because the status bar shows the DB path
 BASE    = '/tmp/compass_manual'
 HOME    = BASE + '/home'
@@ -104,6 +105,17 @@ def escaped(obj):
     return json.dumps(obj).replace('"', '\\"')
 
 
+def analyze(c, ds_type):
+    # Analyze Data Source for all data sources of the DSType, against the calculated references
+    sources = c.cmd('get_data_sources')
+    ids  = [s['sac'] * 256 + s['sic'] for s in sources if s.get('ds_type') == ds_type]
+    refs = {str(s['sac'] * 256 + s['sic']): s.get('name') == 'CalcRef'
+            for s in sources if s.get('ds_type') == 'RefTraj'}
+    params = {'use_data_sources': {str(i): True for i in ids},
+              'use_reference_data_sources': refs, 'custom_report_name': ''}
+    c.cmd('analyze_data_source --ds_type={} --config="{}"'.format(ds_type, escaped(params)))
+
+
 def buildDB(name, ds, font, log_dir):
     # import with the settings of the databases entry, then reconstruction, cached in DB_DIR
     db = os.path.join(DB_DIR, name + '.db')
@@ -149,14 +161,8 @@ def buildDB(name, ds, font, log_dir):
             params = json.load(open(path(cfg)))['parameters']
             c.cmd('evaluate --config="{}"'.format(escaped(params)))
 
-        sources = c.cmd('get_data_sources')
         for ds_type in ds.get('analyses', []):
-            ids  = [s['sac'] * 256 + s['sic'] for s in sources if s.get('ds_type') == ds_type]
-            refs = {str(s['sac'] * 256 + s['sic']): s.get('name') == 'CalcRef'
-                    for s in sources if s.get('ds_type') == 'RefTraj'}
-            params = {'use_data_sources': {str(i): True for i in ids},
-                      'use_reference_data_sources': refs, 'custom_report_name': ''}
-            c.cmd('analyze_data_source --ds_type={} --config="{}"'.format(ds_type, escaped(params)))
+            analyze(c, ds_type)
         c.cmd('close_db')
     finally:
         c.close()
@@ -194,8 +200,8 @@ def screenShot(c, objs, dst, dpi):
 
 
 def editImage(c, step, target, origin, dpi):
-    # box / blur / crop / cropw <objs>: on the image taken last, in screen coordinates relative to its
-    # origin, cropw crops only the width
+    # box / blur / crop / cropw / croph <objs>: on the image taken last, in screen coordinates relative
+    # to its origin, cropw and croph crop only the width or the height
     kind, objs = step.split(' ', 1)
     x0, y0, x1, y1 = screenBox(c, shlex.split(objs)[0])
     r = (x0 - origin[0], y0 - origin[1], x1 - origin[0], y1 - origin[1])
@@ -207,6 +213,9 @@ def editImage(c, step, target, origin, dpi):
     elif kind == 'cropw':
         im = im.crop((r[0], 0, r[2], im.height))
         origin = (x0, origin[1])
+    elif kind == 'croph':
+        im = im.crop((0, r[1], im.width, r[3]))
+        origin = (origin[0], y0)
     else:
         im = im.crop(r)
         origin = (x0, y0)
@@ -233,7 +242,7 @@ def objArg(step):
     return '"{}"'.format(obj) if ' ' in obj else obj
 
 
-def takeImage(c, img, out_dir, dpi, report):
+def takeImage(c, img, out_dir, dpi, report, ds):
     target = os.path.join(out_dir, img['file'])
     os.makedirs(os.path.dirname(target), exist_ok=True)
 
@@ -244,15 +253,31 @@ def takeImage(c, img, out_dir, dpi, report):
 
     origin = None
     for step in img['steps']:
+        step = step.replace('{repo}', REPO).replace('{license}', open(LICENSE).read().strip())
         if step.startswith('sleep '):
             time.sleep(int(step.split()[1]) / 1000.0)
+        elif step.startswith('until '):
+            # until <obj> <text>: polls the widget value until it contains the text, e.g. a progress state
+            obj, text = objArg(step), shlex.split(step)[2]
+            c.waitFor(lambda: text in str(c.tryCmd('uiget {}'.format(obj))), '{} did not show {}'.format(obj, text),
+                      polls=3000)
         elif step.startswith('wait '):
             obj = objArg(step)
             c.waitFor(lambda: c.visible(obj), '{} did not show'.format(obj))
             time.sleep(0.5)
+        elif step.startswith('analyze '):
+            analyze(c, step.split()[1])
+        elif step.startswith('evaluate '):
+            params = json.load(open(os.path.join(ds['dir'], step.split()[1])))['parameters']
+            c.cmd('evaluate --config="{}"'.format(escaped(params)))
         elif step.startswith('viewpoint '):
+            # --async: the view point may open a dialog, e.g. the warning for a 3D map
             vp = json.load(open(os.path.join(MANUAL, 'screenshot_viewpoints', step.split()[1] + '.json')))
-            c.cmd('set_view_point "{}"'.format(json.dumps(vp, separators=(',', ':')).replace('"', '\\"')))
+            c.cmd('set_view_point "{}"{}'.format(json.dumps(vp, separators=(',', ':')).replace('"', '\\"'),
+                                                 ' --async' if step.endswith(' --async') else ''))
+        elif step.startswith('try '):
+            # a command that may fail, e.g. closing a warning that shows only once per session
+            c.tryCmd(step[4:])
         elif step.startswith('dump '):
             report['dumps'].append({'cmd': step[5:], 'value': c.tryCmd(step[5:])})
         elif step.startswith('grab '):
@@ -262,7 +287,7 @@ def takeImage(c, img, out_dir, dpi, report):
             origin = screenBox(c, shlex.split(step)[1], visible=False)[:2]
         elif step.startswith('shot '):
             origin = screenShot(c, shlex.split(step)[1], target, dpi)
-        elif step.split(' ')[0] in ('box', 'blur', 'crop', 'cropw'):
+        elif step.split(' ')[0] in ('box', 'blur', 'crop', 'cropw', 'croph'):
             origin = editImage(c, step, target, origin, dpi)
         else:
             c.cmd(step)
@@ -305,8 +330,10 @@ def main():
               if i['steps'] and (a.all or i['dirty'] or only)
               and (only is None or os.path.basename(i['file']) in only or i['file'] in only)]
     # images without a database first, then per database in chapter order. A view point sets the
-    # data sources to load, so the images with a view point come last per database
-    images.sort(key=lambda i: (i['database'] or '', any(s.startswith('viewpoint ') for s in i['steps'])))
+    # data sources to load, so the images with a view point come after the others, and images that
+    # change the database state for good (order > 1) come last
+    images.sort(key=lambda i: (i['database'] or '',
+                               i.get('order', 1 if any(s.startswith('viewpoint ') for s in i['steps']) else 0)))
 
     out_dir = os.path.abspath(os.path.expanduser(a.out))
     shutil.rmtree(out_dir, ignore_errors=True)
@@ -342,8 +369,12 @@ def main():
                 open_db = img['database']
             report = {'file': img['file'], 'dumps': []}
             t0 = time.time()
+            # a modal dialog inside a command blocks the command queue for good: kill the client after
+            # IMAGE_TIMEOUT, the next image gets a new one
+            watchdog = threading.Timer(IMAGE_TIMEOUT, c.proc.kill)
+            watchdog.start()
             try:
-                new = takeImage(c, img, out_dir, dpi, report)
+                new = takeImage(c, img, out_dir, dpi, report, spec['databases'].get(img['database']))
                 report['ok'] = True
                 old = os.path.join(MANUAL, img['file'])
                 if os.path.exists(old):
@@ -353,6 +384,17 @@ def main():
             except Exception as e:
                 report['ok'] = False
                 report['error'] = str(e)
+            watchdog.cancel()
+            if c.proc.poll() is not None:
+                report['ok'] = False
+                report['error'] = report.get('error', '') + ' (client ended, restarted)'
+                c.close()
+                c = Client(os.path.join(out_dir, 'client_{}.log'.format(len(results))), font,
+                           defaults.get('client_args', []))
+                open_db = None
+                results.append(report)
+                print('{:55s} ERR {}'.format(img['file'], report['error']), flush=True)
+                continue
             cleanup(c)
             report['seconds'] = round(time.time() - t0, 1)
             results.append(report)

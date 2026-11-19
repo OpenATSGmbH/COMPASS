@@ -88,6 +88,7 @@ void JSONImportTaskWidget::addMainTab()
 
         // date
         QDateEdit* date_edit = new QDateEdit();
+        date_edit->setObjectName("utc_day_edit");
         date_edit->setDisplayFormat("yyyy-MM-dd");
 
         //loginf << "UGA " << Time::toDateString(task_.date());

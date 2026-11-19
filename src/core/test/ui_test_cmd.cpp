@@ -210,12 +210,19 @@ bool RTCommandUIGet::run_impl()
         v[ "width"  ] = receiver.second->width();
         v[ "height" ] = receiver.second->height();
 
-        //the part not clipped by the parents, e.g. of a widget inside a scroll area
-        const QRect visible = receiver.second->visibleRegion().boundingRect();
-        const QPoint visible_top_left = receiver.second->mapToGlobal(visible.topLeft());
+        //the part not clipped by the parents, e.g. of a widget inside a scroll area. Not
+        //visibleRegion(), it also leaves out the area covered by the children. A window, e.g. a popup,
+        //is not clipped by the widget it belongs to
+        QRect visible(top_left, receiver.second->size());
+        for (QWidget* p = receiver.second->isWindow() ? nullptr : receiver.second->parentWidget(); p; p = p->parentWidget())
+        {
+            visible &= QRect(p->mapToGlobal(QPoint(0, 0)), p->size());
+            if (p->isWindow())
+                break;
+        }
 
-        v[ "visible" ][ "x"      ] = visible_top_left.x();
-        v[ "visible" ][ "y"      ] = visible_top_left.y();
+        v[ "visible" ][ "x"      ] = visible.x();
+        v[ "visible" ][ "y"      ] = visible.y();
         v[ "visible" ][ "width"  ] = visible.width();
         v[ "visible" ][ "height" ] = visible.height();
 

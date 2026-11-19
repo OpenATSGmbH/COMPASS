@@ -1,0 +1,33 @@
+{
+    "id": 1,
+    "name": "Text Example",
+    "type": "Saved",
+    "status": "open",
+    "data_sources": [],
+    "position_latitude": 12.0,
+    "position_longitude": 22.0,
+    "position_window_latitude": 1.5,
+    "position_window_longitude": 1.5,
+    "annotations": [
+        {
+            "name": "Text",
+            "symbol_color": "#AA00FF",
+            "hidden": false,
+            "features": [
+                {
+                    "type": "text",
+                    "text": "My Text",
+                    "position": [
+                        12.0,
+                        22.0
+                    ],
+                    "properties": {
+                        "color": "#AA00FF",
+                        "direction": "left-up",
+                        "font_size": 10
+                    }
+                }
+            ]
+        }
+    ]
+}

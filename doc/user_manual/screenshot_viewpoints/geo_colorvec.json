@@ -1,0 +1,53 @@
+{
+    "id": 1,
+    "name": "Color Array Example",
+    "type": "Saved",
+    "status": "open",
+    "data_sources": [],
+    "position_latitude": 46.5,
+    "position_longitude": 19.0,
+    "position_window_latitude": 5.0,
+    "position_window_longitude": 5.0,
+    "annotations": [
+        {
+            "name": "Points",
+            "symbol_color": "#AA00FF",
+            "hidden": false,
+            "features": [
+                {
+                    "type": "points",
+                    "geometry": {
+                        "coordinates": [
+                            [
+                                45.0,
+                                18.0
+                            ],
+                            [
+                                46.0,
+                                19.0
+                            ],
+                            [
+                                45.0,
+                                20.0
+                            ],
+                            [
+                                48.0,
+                                20.0
+                            ]
+                        ],
+                        "colors": [
+                            "#AA00FF",
+                            "#AA66FF",
+                            "#AAAAFF",
+                            "#AAEEFF"
+                        ]
+                    },
+                    "properties": {
+                        "symbol": "square",
+                        "symbol_size": 24
+                    }
+                }
+            ]
+        }
+    ]
+}

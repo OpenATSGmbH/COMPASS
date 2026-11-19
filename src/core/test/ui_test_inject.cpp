@@ -24,6 +24,10 @@
 #include <QWidget>
 #include <QApplication>
 #include <QFocusEvent>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
 #include <QComboBox>
 #include <QAbstractItemView>
 #include <QTableView>
@@ -328,10 +332,23 @@ bool injectUIEvent(QWidget* parent,
 
         if (evt_type == "selectrows")
         {
-            //rows and row ranges, e.g. selectrows(4,8-14)
+            //rows and row ranges, e.g. selectrows(4,8-14), or the rows containing a text, e.g. selectrows(=060.Mode-3/A)
             QItemSelection selection;
             for (const QString& p : params)
             {
+                if (p.trimmed().startsWith("="))
+                {
+                    const QString text = p.trimmed().mid(1);
+                    for (int r = 0; r < model->rowCount(); ++r)
+                        for (int c = 0; c < model->columnCount(); ++c)
+                            if (model->index(r, c).data().toString().contains(text))
+                            {
+                                selection.select(model->index(r, 0), model->index(r, model->columnCount() - 1));
+                                break;
+                            }
+                    continue;
+                }
+
                 QStringList range = p.trimmed().split("-");
                 bool ok0, ok1 = true;
                 int r0 = range[ 0 ].toInt(&ok0);
@@ -341,6 +358,9 @@ bool injectUIEvent(QWidget* parent,
 
                 selection.select(model->index(r0, 0), model->index(r1, model->columnCount() - 1));
             }
+
+            if (selection.isEmpty())
+                return false;
 
             view->selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
             view->selectionModel()->setCurrentIndex(selection.first().topLeft(), QItemSelectionModel::NoUpdate);
@@ -375,6 +395,30 @@ bool injectUIEvent(QWidget* parent,
             view->scrollTo(model->index(row, col), QAbstractItemView::PositionAtTop);
             return true;
         }
+    }
+    else if (evt_type == "drop")
+    {
+        //drop(<file>[;<file>...]): drops local files on the widget center, like a drag from a file manager
+        if (params.size() != 1 || params[ 0 ].trimmed().isEmpty())
+            return false;
+
+        QList<QUrl> urls;
+        for (const QString& f : params[ 0 ].split(";"))
+            urls.append(QUrl::fromLocalFile(f.trimmed()));
+
+        QMimeData mime;
+        mime.setUrls(urls);
+
+        QPoint pos = w.second->rect().center();
+
+        QDragEnterEvent enter(pos, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+        QApplication::sendEvent(w.second, &enter);
+        if (!enter.isAccepted())
+            return false;
+
+        QDropEvent drop(pos, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+        QApplication::sendEvent(w.second, &drop);
+        return true;
     }
     else if (evt_type == "checkclick")
     {

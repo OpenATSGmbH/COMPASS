@@ -1,0 +1,86 @@
+{
+    "content_type": "view_points",
+    "content_version": "0.4",
+    "view_point_context": {
+        "datasets": [],
+        "description": "COMPASS user manual example view points"
+    },
+    "view_points": [
+        {
+            "id": 0,
+            "name": "UTN 0",
+            "type": "Correlation",
+            "status": "open",
+            "comment": "",
+            "text": "Target report not associated",
+            "timestamp": "2023-04-22 10:00:03.092",
+            "time_window": 60.0,
+            "position_latitude": 47.6515,
+            "position_longitude": 11.9753,
+            "position_window_latitude": 0.3,
+            "position_window_longitude": 0.45,
+            "filters": {
+                "UTNs": {
+                    "utns": "0"
+                }
+            }
+        },
+        {
+            "id": 1,
+            "name": "UTN 3",
+            "type": "Extra Track",
+            "status": "open",
+            "comment": "",
+            "text": "Additional track for target",
+            "timestamp": "2023-04-22 10:00:02.696",
+            "time_window": 60.0,
+            "position_latitude": 46.7137,
+            "position_longitude": 13.7662,
+            "position_window_latitude": 0.3,
+            "position_window_longitude": 0.45,
+            "filters": {
+                "UTNs": {
+                    "utns": "3"
+                }
+            }
+        },
+        {
+            "id": 2,
+            "name": "UTN 4",
+            "type": "Short Track",
+            "status": "closed",
+            "comment": "checked",
+            "text": "Track shorter than 60 s",
+            "timestamp": "2023-04-22 10:00:00.500",
+            "time_window": 60.0,
+            "position_latitude": 48.5144,
+            "position_longitude": 15.6431,
+            "position_window_latitude": 0.3,
+            "position_window_longitude": 0.45,
+            "filters": {
+                "UTNs": {
+                    "utns": "4"
+                }
+            }
+        },
+        {
+            "id": 3,
+            "name": "UTN 5",
+            "type": "Position Deviation",
+            "status": "open",
+            "comment": "",
+            "text": "Position offset above 200 m",
+            "timestamp": "2023-04-22 10:00:03.296",
+            "time_window": 60.0,
+            "position_latitude": 47.116,
+            "position_longitude": 15.2913,
+            "position_window_latitude": 0.3,
+            "position_window_longitude": 0.45,
+            "filters": {
+                "UTNs": {
+                    "utns": "5"
+                }
+            }
+        }
+    ]
+}

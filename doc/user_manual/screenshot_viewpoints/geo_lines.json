@@ -1,0 +1,47 @@
+{
+    "id": 1,
+    "name": "Lines Example",
+    "type": "Saved",
+    "status": "open",
+    "data_sources": [],
+    "position_latitude": 46.5,
+    "position_longitude": 19.0,
+    "position_window_latitude": 5.0,
+    "position_window_longitude": 5.0,
+    "annotations": [
+        {
+            "name": "Lines",
+            "symbol_color": "#FFFFFF",
+            "hidden": false,
+            "features": [
+                {
+                    "type": "lines",
+                    "geometry": {
+                        "coordinates": [
+                            [
+                                45.0,
+                                18.0
+                            ],
+                            [
+                                45.0,
+                                20.0
+                            ],
+                            [
+                                48.0,
+                                20.0
+                            ],
+                            [
+                                46.0,
+                                19.0
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "color": "#FFFFFF",
+                        "line_width": 3.5
+                    }
+                }
+            ]
+        }
+    ]
+}

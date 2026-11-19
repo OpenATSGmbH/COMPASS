@@ -37,6 +37,7 @@
 #include "sector.h"
 #include "sectorlayer.h"
 #include "logger.h"
+#include "dialogs.h"
 
 #include <set>
 
@@ -45,7 +46,7 @@
 
 #include <QApplication>
 #include <QComboBox>
-#include <QFileDialog>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QLabel>
@@ -563,7 +564,7 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
 
     menu.addAction("Import...", [this]()
     {
-        QString path = QFileDialog::getOpenFileName(this, "Import Sensors", "", "JSON Files (*.json)");
+        QString path = Dialogs::getOpenFileName(this, "Import Sensors", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -581,7 +582,7 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
 
     menu.addAction("Export...", [this]()
     {
-        QString path = QFileDialog::getSaveFileName(this, "Export Sensors", "", "JSON Files (*.json)");
+        QString path = Dialogs::getSaveFileName(this, "Export Sensors", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -684,7 +685,7 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
 
     menu.addAction("Import from File...", [this]()
     {
-        QString path = QFileDialog::getOpenFileName(this, "Import Sectors",  "",
+        QString path = Dialogs::getOpenFileName(this, "Import Sectors",  "",
             "Vector Files (*.shp *.geojson *.json *.gml *.kml);;All Files (*)");
         if (path.isEmpty()) return;
 
@@ -747,7 +748,7 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
 
     menu.addAction("Import JSON...", [this]()
     {
-        QString path = QFileDialog::getOpenFileName(this, "Import Sectors (JSON)", "", "JSON Files (*.json)");
+        QString path = Dialogs::getOpenFileName(this, "Import Sectors (JSON)", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -765,7 +766,7 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
 
     menu.addAction("Export JSON...", [this]()
     {
-        QString path = QFileDialog::getSaveFileName(this, "Export Sectors", "", "JSON Files (*.json)");
+        QString path = Dialogs::getSaveFileName(this, "Export Sectors", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -873,7 +874,7 @@ void DBContextEditDialog::importAirSpace()
 {
     loginf;
 
-    QString filename = QFileDialog::getOpenFileName(
+    QString filename = Dialogs::getOpenFileName(
         this, "Import Air Space Sectors from JSON",
         QString::fromStdString(manager_.appState().lastUsedPath()), "*.json");
 
@@ -1036,7 +1037,7 @@ void DBContextEditDialog::showFFTsGroupMenu()
 
     menu.addAction("Import...", [this]()
     {
-        QString path = QFileDialog::getOpenFileName(this, "Import FFTs", "", "JSON Files (*.json)");
+        QString path = Dialogs::getOpenFileName(this, "Import FFTs", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -1054,7 +1055,7 @@ void DBContextEditDialog::showFFTsGroupMenu()
 
     menu.addAction("Export...", [this]()
     {
-        QString path = QFileDialog::getSaveFileName(this, "Export FFTs", "", "JSON Files (*.json)");
+        QString path = Dialogs::getSaveFileName(this, "Export FFTs", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -1141,7 +1142,7 @@ void DBContextEditDialog::exportZipSlot()
 
     const auto& name = manager_.activeContext().name();
 
-    QString filepath = QFileDialog::getSaveFileName(
+    QString filepath = Dialogs::getSaveFileName(
         this, "Export Context as Zip", QString::fromStdString(name + ".zip"),
         "Zip Archives (*.zip)");
 
@@ -1164,7 +1165,7 @@ void DBContextEditDialog::exportZipSlot()
 
 void DBContextEditDialog::importZipSlot()
 {
-    QString filepath = QFileDialog::getOpenFileName(
+    QString filepath = Dialogs::getOpenFileName(
         this, "Import Context from Zip", "",
         "Zip Archives (*.zip)");
 

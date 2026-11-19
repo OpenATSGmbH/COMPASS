@@ -1,0 +1,11 @@
+{
+    "id": 1,
+    "name": "Central Europe",
+    "type": "Saved",
+    "status": "open",
+    "data_sources": [],
+    "position_latitude": 47.5,
+    "position_longitude": 13.0,
+    "position_window_latitude": 8.0,
+    "position_window_longitude": 12.0
+}

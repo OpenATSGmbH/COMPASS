@@ -1,0 +1,19 @@
+{
+    "id": 1,
+    "name": "MLAT Contributing RUs",
+    "type": "Saved",
+    "status": "open",
+    "data_source_types": [
+        "MLAT"
+    ],
+    "position_latitude": 48.112,
+    "position_longitude": 16.566,
+    "position_window_latitude": 0.06,
+    "position_window_longitude": 0.09,
+    "filters": {
+        "Timestamp": {
+            "Timestamp Minimum": "2026-06-09 18:59:59.830",
+            "Timestamp Maximum": "2026-06-09 18:59:59.850"
+        }
+    }
+}

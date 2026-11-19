@@ -1,0 +1,22 @@
+{
+    "id": 1,
+    "name": "Vienna Area Box",
+    "type": "Saved",
+    "status": "open",
+    "position_latitude": 48.15,
+    "position_longitude": 16.55,
+    "position_window_latitude": 0.5,
+    "position_window_longitude": 0.75,
+    "filters": {
+        "Timestamp": {
+            "Timestamp Minimum": "2023-04-22 10:15:00.000",
+            "Timestamp Maximum": "2023-04-22 10:20:00.000"
+        },
+        "Position": {
+            "Latitude Maximum": "48.45",
+            "Latitude Minimum": "47.85",
+            "Longitude Maximum": "17.05",
+            "Longitude Minimum": "16.05"
+        }
+    }
+}
