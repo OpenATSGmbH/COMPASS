@@ -5870,8 +5870,10 @@
                         "uiset mainwindow.toolbox_grow_button \"\"",
                         "uiset mainwindow.report_combo \"Tracker Comparison AWAM ADSB L1 Evaluation\"",
                         "sleep 1000",
-                        "uiset mainwindow.report_section_sidebar \"Results|Targets|UTN 1|fir_cut_sim|Mandatory|Detection\"",
+                        "uiset mainwindow.report_section_sidebar \"Results|Targets|UTN 1|fir_cut_sim|Mandatory|Speed\"",
                         "sleep 1000",
+                        "uiinject mainwindow.report_document_view \"wheel(-960)\"",
+                        "sleep 1500",
                         "shot mainwindow.toolbox_data_sources_button+mainwindow.toolbox_panel",
                         "uiset mainwindow.toolbox_shrink_button \"\"",
                         "uiset mainwindow.toolbox_shrink_button \"\""
