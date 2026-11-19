@@ -269,7 +269,9 @@ std::string getFilenameFromPath(const std::string& path)
 
 bool createMissingDirectories(const std::string& path)
 {
-    QDir dir = QDir::root();
+    // relative to the working directory as all other file accesses (QDir::root() would put driveless
+    // paths on drive C: on Windows)
+    QDir dir;
     bool ret = dir.mkpath(path.c_str());
     return ret;
 }
